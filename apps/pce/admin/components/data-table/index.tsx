@@ -417,6 +417,7 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   renderFilterOptionValue,
   toolbarSlot,
   searchAriaLabel = "Search table",
+  edgeInset = true,
 }: {
   state: ReturnType<typeof useTableState<TData>>
   columns: ColumnDef<TData>[]
@@ -426,6 +427,8 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   toolbarSlot?: (state: ReturnType<typeof useTableState<TData>>) => React.ReactNode
   /** Passed to the search input `aria-label` (e.g. "Search placements") */
   searchAriaLabel?: string
+  /** When false, toolbar omits horizontal inset (parent owns page padding). Mirrors the DS DataTable API. */
+  edgeInset?: boolean
 }) {
   const {
     search, setSearch, searchOpen, setSearchOpen, searchRef,
@@ -456,7 +459,8 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 px-4 lg:px-6",
+        "flex items-center gap-1.5",
+        edgeInset && "px-4 lg:px-6",
         showQueryControls ? "min-h-10 pt-2 pb-2" : "min-h-0 justify-end py-1.5",
       )}
     >
@@ -622,6 +626,12 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   groupOrder?: string[]
   /** Optional leading icon per group key, rendered before the group label (PCE extension). */
   groupIcons?: Record<string, React.ReactNode>
+  /**
+   * When false, table toolbar and grid omit `mx-4 lg:mx-6` / `px-4 lg:px-6` insets.
+   * Use on embedded surfaces where the page shell or content rail already pads
+   * horizontally (e.g. wizard steps). Mirrors the DS DataTable API (v0.6.55).
+   */
+  edgeInset?: boolean
 }
 
 type DataTableInnerProps<TData extends Record<string, unknown>> = DataTableExtendedProps<TData> & {
@@ -648,6 +658,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   showColumnHeaders = true,
   state,
   groupIcons,
+  edgeInset = true,
 }: DataTableInnerProps<TData>) {
   const {
     sortRules, setSortRules,
@@ -748,13 +759,14 @@ function DataTableInner<TData extends Record<string, unknown>>({
         renderFilterOptionValue={renderFilterOptionValue}
         toolbarSlot={toolbarSlot}
         searchAriaLabel="Search table"
+        edgeInset={edgeInset}
       />
 
       {/* ── Table ────────────────────────────────────────────────────────── */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={cn("mx-4 lg:mx-6 overflow-x-auto border border-border", hasFooter ? "rounded-t-lg" : "rounded-lg")}
+        className={cn("overflow-x-auto border border-border", edgeInset && "mx-4 lg:mx-6", hasFooter ? "rounded-t-lg" : "rounded-lg")}
       >
         <table
           className="w-full text-sm border-separate border-spacing-0"

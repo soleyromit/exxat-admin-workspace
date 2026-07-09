@@ -326,7 +326,10 @@ export function StepCommunication({
 
 
   return (
-    <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
+    /* Full-bleed step — content and footer both span the content area,
+       consistent with the table steps (1–2). */
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -603,7 +606,9 @@ export function StepCommunication({
         </Card>
       </div>
 
-      {/* Nav */}
+      </div>
+
+      {/* Nav — full content width (DS WizardFooter anatomy: Back left, primary right) */}
       <div className="border-t border-border pt-4 flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={onBack}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />

@@ -185,7 +185,9 @@ export function StepReview({
     : null
 
   return (
-    <div className="flex flex-col gap-4" style={{ maxWidth: 620 }}>
+    /* Full-bleed step — the three summary sections sit side-by-side in a grid
+       so label/value rows keep a readable width without capping the page. */
+    <div className="flex flex-col gap-4">
       {/* ── Headline ───────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -208,7 +210,8 @@ export function StepReview({
         )}
       </div>
 
-      {/* ── Sections ───────────────────────────────────────────────────────── */}
+      {/* ── Sections — one column per wizard step, shared hairline band ────── */}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-4 lg:grid-cols-3">
       <Section
         title="Recipients"
         onEdit={() => onEdit(1)}
@@ -247,6 +250,7 @@ export function StepReview({
           ['From', senderName || 'Exxat Surveys'],
         ]}
       />
+      </div>
 
       {/* ── Email preview (dialog) ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between border-t border-border pt-4">
@@ -314,30 +318,36 @@ export function StepReview({
         </div>
       )}
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 border-t border-border pt-4">
-        {surveyMode === 'course_evaluation' && (
-          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-            <i className="fa-light fa-shield-check text-xs" aria-hidden="true" style={{ marginTop: 2 }} />
-            <span>Responses are anonymous. Results release to instructors on {fmtShort(releaseDate)}.</span>
-          </p>
-        )}
-        {!allReady && (
-          <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--insight-severity-warning-fg)' }}>
-            <i className="fa-solid fa-circle-exclamation text-xs" aria-hidden="true" style={{ marginTop: 2 }} />
-            <span>
-              {!subjectAck || !windowAck
-                ? 'Acknowledge the flagged warnings above to continue.'
-                : 'Resolve the flagged sections before pushing.'}
-            </span>
-          </p>
-        )}
-        <Button variant="default" size="sm" className="w-full" disabled={!allReady} onClick={() => setConfirmOpen(true)}>
-          Push evaluation{totalRecipients > 0 ? ` · ${totalRecipients} ${totalRecipients === 1 ? 'person' : 'people'}` : ''}
+      {/* ── Footer — same single-row anatomy as every other step (Back left,
+             primary right); one contextual note rides inline beside the
+             submit, warning taking priority over the anonymity note. ── */}
+      <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
+        <Button variant="outline" size="sm" onClick={onBack}>
+          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
+          Back
         </Button>
-        <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-foreground" onClick={onBack}>
-          Back to Communication
-        </Button>
+        <div className="flex items-center gap-4 min-w-0">
+          {!allReady ? (
+            <p className="text-xs flex items-center gap-1.5 min-w-0" style={{ color: 'var(--insight-severity-warning-fg)' }}>
+              <i className="fa-solid fa-circle-exclamation text-xs" aria-hidden="true" />
+              <span className="truncate">
+                {!subjectAck || !windowAck
+                  ? 'Acknowledge the flagged warnings above to continue.'
+                  : 'Resolve the flagged sections before pushing.'}
+              </span>
+            </p>
+          ) : surveyMode === 'course_evaluation' ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
+              <i className="fa-light fa-shield-check text-xs" aria-hidden="true" />
+              <span className="truncate">
+                Responses are anonymous. Results release to instructors on {fmtShort(releaseDate)}.
+              </span>
+            </p>
+          ) : null}
+          <Button variant="default" size="sm" className="shrink-0" disabled={!allReady} onClick={() => setConfirmOpen(true)}>
+            Push evaluation{totalRecipients > 0 ? ` · ${totalRecipients} ${totalRecipients === 1 ? 'person' : 'people'}` : ''}
+          </Button>
+        </div>
       </div>
 
       {/* ── Email preview dialog ───────────────────────────────────────────── */}

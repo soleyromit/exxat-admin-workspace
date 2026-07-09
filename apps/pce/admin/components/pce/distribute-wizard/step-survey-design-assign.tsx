@@ -133,7 +133,9 @@ export function StepSurveyDesignAssign({
   }
 
   return (
-    <div className="flex flex-col gap-4" style={{ maxWidth: 940 }}>
+    /* Full-bleed step: the wizard shell owns the horizontal padding, so the
+       assignment table spans 100% of the content area (edgeInset=false). */
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -181,6 +183,7 @@ export function StepSurveyDesignAssign({
           getRowId={(r) => r.id}
           selectable
           searchable
+          edgeInset={false}
           emptyState={
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <i className="fa-light fa-book-open text-lg" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />

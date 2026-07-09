@@ -230,7 +230,9 @@ export function StepCoursesEvaluatees({
   }, [rows, tableState.selected])
 
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 1160 }}>
+    /* Full-bleed step: the wizard shell owns the horizontal padding, so the
+       readiness table spans 100% of the content area (edgeInset=false). */
+    <div className="flex flex-col gap-5">
       {/* ── Scope band ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
@@ -349,6 +351,7 @@ export function StepCoursesEvaluatees({
           searchable
           hideBulkActions
           hasFooter
+          edgeInset={false}
           groupIcons={{
             gap: (
               <i
@@ -366,7 +369,7 @@ export function StepCoursesEvaluatees({
             ),
           }}
         />
-        <div className="mx-4 lg:mx-6 border-x border-b border-border rounded-b-lg overflow-hidden">
+        <div className="border-x border-b border-border rounded-b-lg overflow-hidden">
           <PaginationBar
             page={safePage}
             pageSize={pageSize}
