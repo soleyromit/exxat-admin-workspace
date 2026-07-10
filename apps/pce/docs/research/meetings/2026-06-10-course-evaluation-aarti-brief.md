@@ -234,13 +234,16 @@ Currently lives inside the push wizard only (gap: PARTIAL). Promote to standalon
 │  │ Please complete your evaluation for {{courseName}} taught by      │  │
 │  │ {{facultyNames}}. It closes on {{closeDate}}.                     │  │
 │  │                                                                   │  │
-│  │            [ Open evaluation ]   ← required CTA link              │  │
+│  │     [ Complete this evaluation → ]   ← direct survey link         │  │
+│  │     [ See all my pending activities ]  ← activity dashboard link  │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │  Variables: {{studentFirstName}} {{courseName}} {{facultyNames}}         │
 │             {{closeDate}} {{daysRemaining}}* (*reminder tab only)        │
 │                                                           [ Save ]       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Two CTAs required (Romit Jun 4):** Every survey email must have BOTH a direct-survey link and a link to the lightweight student activity dashboard. The activity dashboard aggregates all pending surveys for that email address (no auth — email token only). Most students use the direct link; the dashboard is an optional low-traffic path. Source: `apps/pce/docs/research/meetings/2026-06-04-romit-pce-ux-direction.md §7-8`.
 
 **No student login/invitation** (verbatim): *"Students don't get invited. They don't get a login. They don't create their profile… we do want the student email addresses… a call to action in the email so they can click on it."*
 
@@ -639,9 +642,14 @@ Admin sees low completion on NUR 250 in Fall 2026.
 | Evaluation Card | Section-level scores only | Rebuild to per-question viz; multi-faculty repeat; breadcrumb drill source | — |
 | Ad-hoc Nudge | Not present | — | Manual reminder action on By-Term grid |
 | Course-type → template auto-assign | Built | Resolve OPEN-1 (>1 template per type) | — |
+| Email: two CTAs | Single CTA only (CONTRADICTS Jun 4) | Update email body to include second CTA + dashboard URL variable | — |
+| Student activity dashboard | Missing | — | No-auth surface aggregating all pending surveys by email token; route `/student/activities` |
+| Survey form progress bar | Missing | — | Section-progress bar at top of student survey-taking screen |
+| Student entity: merged CE + institutional view | CE columns only | Add institutional survey completion columns | — |
+| CE vs institutional anonymity | Not distinguished in data model | Add `isAnonymous` flag to `PceSurvey` + `PceTemplate`; CE=true, institutional=false | — |
 
 ### Summary
-**Net-new surfaces:** Email Templates (standalone), Reminder Schedule config, Setup-defaults model, Save≠Send / SCHEDULED state, By-Faculty analytics door, By-Course cross-term analytics door, faculty role-variant template structure, ad-hoc Nudge action.
+**Net-new surfaces:** Email Templates (standalone), Reminder Schedule config, Setup-defaults model, Save≠Send / SCHEDULED state, By-Faculty analytics door, By-Course cross-term analytics door, faculty role-variant template structure, ad-hoc Nudge action, **student activity dashboard** (no-auth, email-token aggregation — Jun 4), **two CTAs in survey emails** (Jun 4).
 
 **Changed (existing) surfaces:** 4 entity list pages (read-only + eval cols + KPI + Prism link), Academic Years/Terms (enable toggle), Survey Templates (faculty variants + upload mode), Term Activation wizard (2 flows → 1), Evaluation Card (section → per-question), By-Term analytics (row drill + nudge).
 
@@ -888,3 +896,443 @@ Course.allOfferings       → By Course cross-term aggregation
 | By Faculty analytics | After CLOSE | Faculty + Responses | Faculty performance view |
 | By Course analytics | After CLOSE | Course history + Responses | Cross-term trend view |
 | Evaluation Card | After CLOSE | One offering × one faculty | Per-question breakdown |
+
+---
+
+## 11. Setup Overview Dashboard — Design Spec
+
+**Added:** 2026-06-15 · **Route:** `/admin/setup` · **Status:** Spec — pending build
+
+---
+
+### Why this page exists
+
+The Setup nav has 8 items. To confirm everything is ready before activation, an admin currently clicks across 4 separate config pages — with no signal that all 4 are complete, no view of program-level health, and no way to spot which faculty or students need attention without opening Analytics. This page consolidates that into one scrollable surface: setup readiness + program pulse + entity directory.
+
+---
+
+### Nav change
+
+```
+BEFORE (8 items)                    AFTER (2 items)
+─────────────────────               ─────────────────────
+Setup                               Setup
+  Terms                               Overview        ← new landing (this page)
+  Email Templates                     Survey Templates ← stays: has /templates/[id] builder
+  Reminder Schedule
+  Survey Templates
+  Students
+  Faculty
+  Courses
+  Offerings
+```
+
+Individual routes (`/admin/terms`, `/admin/students`, etc.) remain valid — linked from this page. Only the nav entries are removed.
+
+---
+
+### Full page layout
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ≡  SiteHeader — "Setup"                                                  │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ZONE A ─ Activation Readiness (sticky below header)                     │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │  ① Terms      →  ② Templates  →  ③ Email  →  ④ Schedule  →  ⑤ Activate │
+│  │  ✓ 3 of 4        ✓ 4 active      ✓ Both      ✓ 7 days       [→]  │  │
+│  │  enabled          templates       set         before end           │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│                                                                          │
+│  ZONE B ─ Program Pulse                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────────────┐│
+│  │ 24           │ │ 68%          │ │ 6            │ │ Response rate     ││
+│  │ Offerings    │ │ Avg          │ │ Currently    │ │ last 4 terms      ││
+│  │ this AY      │ │ completion   │ │ collecting   │ │                   ││
+│  │              │ │ this term    │ │              │ │  ▄  ▆  █  ▇       ││
+│  │ △ +3 vs      │ │ ▲ +4pp vs    │ │ 3 closed ·  │ │ 54 61 68 71 %    ││
+│  │   last AY    │ │   last term  │ │ 2 released  │ │ F24 S25 F25 S26  ││
+│  └──────────────┘ └──────────────┘ └──────────────┘ └───────────────────┘│
+│                                                                          │
+│  ZONE C ─ Current Term Snapshot  (Spring 2026 — Collecting)              │
+│                                                                          │
+│  ┌─ Offering status breakdown ──────┐  ┌─ Faculty attention needed ─────┐│
+│  │                                  │  │                                ││
+│  │   Collecting  ████████░░  6      │  │  3 faculty below 60%           ││
+│  │   Closed      ████░░░░░░  3      │  │                                ││
+│  │   Released    ██░░░░░░░░  2      │  │  [JD] D. Johnson   42%  [Nudge]││
+│  │   Scheduled   █░░░░░░░░░  1      │  │  [MG] M. Garcia    51%  [Nudge]││
+│  │   Planned     ██░░░░░░░░  2      │  │  [RK] R. Kim       58%  [Nudge]││
+│  │                                  │  │                                ││
+│  │   Donut: 68% overall             │  │  [View all in Analytics →]     ││
+│  │         ◕ (brand-color fill)     │  │                                ││
+│  └──────────────────────────────────┘  └────────────────────────────────┘│
+│                                                                          │
+│  ZONE D ─ Setup Configuration (4 cards)                                  │
+│  ┌──────────────────────┐  ┌──────────────────────┐                      │
+│  │ fa-calendar-days     │  │ fa-file-lines        │                      │
+│  │ Terms                │  │ Survey Templates     │                      │
+│  │                      │  │                      │                      │
+│  │  Spring 2026  ✓ On   │  │  6 templates         │                      │
+│  │  Fall 2026    ✓ On   │  │  4 active            │                      │
+│  │  Spring 2025  ✗ Off  │  │  2 didactic · 2 clinical                   │
+│  │  Fall 2025    ✗ Off  │  │  Last edited 3d ago  │                      │
+│  │                      │  │                      │                      │
+│  │  ● Ready             │  │  ● Ready             │                      │
+│  │  [Manage terms →]    │  │  [View all →]        │                      │
+│  └──────────────────────┘  └──────────────────────┘                      │
+│  ┌──────────────────────┐  ┌──────────────────────┐                      │
+│  │ fa-envelope-open-text│  │ fa-bell              │                      │
+│  │ Email Templates      │  │ Reminder Schedule    │                      │
+│  │                      │  │                      │                      │
+│  │  Initial email   ✓   │  │  7 days before       │                      │
+│  │  Reminder email  ✓   │  │  term end            │                      │
+│  │                      │  │                      │                      │
+│  │  Subject preview:    │  │  Next fire:          │                      │
+│  │  "Your course eval   │  │  Jun 18 · 14 days    │                      │
+│  │   is ready…"         │  │  away                │                      │
+│  │                      │  │                      │                      │
+│  │  ● Ready             │  │  ● Ready             │                      │
+│  │  [Edit templates →]  │  │  [Edit schedule →]   │                      │
+│  └──────────────────────┘  └──────────────────────┘                      │
+│                                                                          │
+│  ZONE E ─ Entity Directory                                               │
+│  [ Offerings 24 ]  [ Faculty 18 ]  [ Courses 42 ]  [ Students 310 ]     │
+│  ──────────────────────────────────────────────────────────────────────  │
+│  (Offerings tab shown by default)                                        │
+│                                                                          │
+│  ┌─ toolbar: search · term filter · status filter ──────────────────┐   │
+│  │                                                              [⋮]  │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  Course      Term         Faculty           Enrolled  Completion  Status  │
+│  ──────────  ───────────  ────────────────  ────────  ──────────  ──────  │
+│  DPT-501     Spring 2026  [JD] D. Johnson      28       68%      ● Collecting│
+│  DPT-502     Spring 2026  [MG] M. Garcia        22       51%      ● Collecting│
+│  DPT-510     Fall 2025    [AB] A. Brown          18        —       ● Released │
+│  DPT-503     Fall 2025    [RK] R. Kim            24       72%      ● Closed   │
+│  …                                                                       │
+│  ◀  1–10 of 24   10 per page ▼   ▶                                      │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Zone A — Activation Readiness Stepper
+
+Sticky below `SiteHeader`. Horizontal 5-step flow. Each step is a node: number + label + status + detail.
+
+```
+  ①──────────────②──────────────③──────────────④──────────────⑤
+  Terms          Templates      Email          Schedule       Activate
+  ✓ 3 of 4      ✓ 4 active     ✓ Configured   ✓ 7 days      [Activate →]
+  enabled        templates      (both)         before end
+  [link]         [link]         [link]         [link]         /surveys/activate
+```
+
+**Node states:**
+
+| State | Visual | Condition |
+|---|---|---|
+| Complete | Green circle ✓, solid connector line | Condition met (see Zone D card table) |
+| Needs setup | Amber circle !, dashed connector | Condition not met |
+| Blocked | Grey circle –, dashed connector | Prior steps not complete |
+
+Step 5 (Activate) is always a `Button variant="default"` → `/surveys/activate`. It is never disabled — activation will show its own validation. The stepper just signals readiness.
+
+**Sticky behaviour:** Scrolls with page until it hits the header, then pins. Background `var(--background)` with `border-b` so it separates cleanly from Zone B below.
+
+---
+
+### Zone B — Program Pulse (KPIs + trend chart)
+
+4-column strip. Left 3 columns = `KeyMetrics variant="compact"` cards. Right column = bar chart (last 4 terms, response rate %).
+
+```
+┌──────────────────┬──────────────────┬──────────────────┬──────────────────────┐
+│ 24               │ 68%              │ 6                │ Response rate        │
+│ Offerings this AY│ Avg completion   │ Collecting now   │ (bar chart)          │
+│                  │ current term     │                  │                      │
+│ △ +3 vs last AY  │ ▲ +4pp last term │ 3 closed         │  ▄  ▆  █  ▇          │
+│                  │                  │ 2 released       │ 54 61 68 71%         │
+│                  │                  │                  │ F24 S25 F25 S26      │
+└──────────────────┴──────────────────┴──────────────────┴──────────────────────┘
+```
+
+**Chart spec:**
+- Type: `BarChart` via `ChartContainer` + `ChartTooltip`
+- X-axis: last 4 term labels (e.g. "Fall '24", "Spr '25", "Fall '25", "Spr '26")
+- Y-axis: 0–100%, hidden (values shown as bar labels)
+- Bar fill: `var(--brand-color)` — last bar is current/active term, slightly lighter if still collecting
+- Tooltip: "Spring 2026 · 68% avg completion · 6 of 9 offerings closed"
+- No legend needed (single series)
+- Height: 80px (compact, spark-style)
+- Data source: computed from `MOCK_SURVEYS` grouped by `term` field
+
+**Delta indicators:** `▲` green if improvement vs prior term, `▽` amber if decline, `—` if no prior data.
+
+---
+
+### Zone C — Current Term Snapshot
+
+Two-column panel. Only visible when at least one term has active offerings (status `collecting` or `closed`). Shows the most recently activated term by default.
+
+#### Left — Offering status breakdown
+
+Horizontal bar strip + donut centre figure.
+
+```
+  Collecting  ██████████░░░░░░  6   (brand-color)
+  Closed      ███████░░░░░░░░░  3   (chart-2 green)
+  Released    █████░░░░░░░░░░░  2   (chart-2 green, lighter)
+  Scheduled   ██░░░░░░░░░░░░░░  1   (muted-foreground)
+  Planned     ████░░░░░░░░░░░░  2   (border-control-35)
+
+             ◕ 68%
+        avg completion
+        (donut, brand-color)
+```
+
+Donut is `recharts PieChart` (2-slice: completed % + remaining %). Segment colours: `var(--brand-color)` + `var(--muted)`. No legend — centre label only. Size: 80×80px.
+
+Bars are CSS `div` width-percentage strips (no recharts needed — plain Tailwind). Colour tokens per status row match `OFFERING_STATUS_BADGE` tints.
+
+#### Right — Faculty attention needed
+
+Lists faculty with completion rate below 60% for the current collecting term. Max 5 rows before "View X more in Analytics →".
+
+```
+  3 faculty below 60% completion  ← section label
+
+  ┌─ row ─────────────────────────────────────────┐
+  │ [JD]  D. Johnson    DPT-501    42%   [Nudge]  │
+  │       Prof · PT                ▽ −8pp          │
+  ├───────────────────────────────────────────────┤
+  │ [MG]  M. Garcia     DPT-502    51%   [Nudge]  │
+  │       Assoc Prof · PT          ▽ −3pp          │
+  ├───────────────────────────────────────────────┤
+  │ [RK]  R. Kim        DPT-503    58%   [Nudge]  │
+  │       Prof · Core Sci          → −2pp          │
+  └───────────────────────────────────────────────┘
+  [View all faculty in Analytics →]
+```
+
+**Row anatomy:**
+- `Avatar` (initials, `h-8 w-8 rounded-full`) + name + department (`text-xs text-muted-foreground`)
+- Course code right of name
+- Completion % in `tierColor` (amber for <60%)
+- Delta vs last term: ▽ amber = declined, ▲ green = improved, → neutral
+- `[Nudge]` button: `variant="outline" size="sm"` — triggers the same ad-hoc nudge dialog as Analytics By Term
+
+**Empty state:** If all faculty ≥ 60%: green banner "All faculty on track this term" (no rows).
+
+**No active collecting term:** Zone C hidden entirely. Show placeholder: "Activate a term to see live metrics."
+
+---
+
+### Zone D — Setup Configuration Cards (2×2 grid)
+
+Four `Card` components in a 2-column grid. Each card is taller and richer than a KPI strip — it shows the config state in detail so the admin doesn't need to open the sub-page just to confirm.
+
+#### Card 1 — Terms
+
+```
+┌─ fa-calendar-days  Terms ─────────────────── ● Ready ─┐
+│                                                        │
+│  Spring 2026  ✓ Enabled for evaluation                │
+│  Fall 2026    ✓ Enabled for evaluation                │
+│  Spring 2025  ✗ Not enabled                           │
+│  Fall 2025    ✗ Not enabled                           │
+│                                                        │
+│  Term end dates shown inline:                          │
+│  Spring 2026  ends Jun 30 · opens Jun 23 → Jul 14     │
+│  Fall 2026    ends Dec 15 · not yet configured         │
+│                                                        │
+│  [Manage terms →]                    /admin/terms      │
+└────────────────────────────────────────────────────────┘
+```
+
+Each term row: name · ToggleSwitch (read-only display, not interactive here) · end date · eval window dates. Max 4 rows; "View X more →" if longer. Clicking [Manage terms →] opens `/admin/terms`.
+
+#### Card 2 — Survey Templates
+
+```
+┌─ fa-file-lines  Survey Templates ─────────── ● Ready ─┐
+│                                                        │
+│  6 templates · 4 active                               │
+│                                                        │
+│  ┌────────────────────────────────────────────────┐   │
+│  │ General CE Template          active  · Didactic │   │
+│  │ Clinical Rotation Template   active  · Clinical │   │
+│  │ Short Form Template          active  · General  │   │
+│  │ Faculty-only Template        active  · General  │   │
+│  │ Seminar Template             draft              │   │
+│  └────────────────────────────────────────────────┘   │
+│                                                        │
+│  Last edited: 3 days ago by Admin                     │
+│  [View all templates →]               /templates      │
+└────────────────────────────────────────────────────────┘
+```
+
+Rows: template name · `ListHubStatusBadge` (active/draft) · course type badge. Max 5 rows before "X more".
+
+#### Card 3 — Email Templates
+
+```
+┌─ fa-envelope-open-text  Email Templates ───── ● Ready ─┐
+│                                                         │
+│  Initial email    ✓  configured                        │
+│  Reminder email   ✓  configured                        │
+│                                                         │
+│  Subject preview (Initial):                            │
+│  "Your course evaluation for {{courseName}} is ready"  │
+│                                                         │
+│  CTAs configured:                                      │
+│  ✓  Direct survey link  {{survey_url}}                 │
+│  ✓  Activity dashboard  {{activity_dashboard_url}}     │
+│                                                         │
+│  [Edit templates →]          /admin/email-templates    │
+└─────────────────────────────────────────────────────────┘
+```
+
+Shows subject line preview (truncated at 60 chars) and CTA chip checklist. If a CTA is missing: ✗ amber + "Add {{activity_dashboard_url}} to enable two-tap access".
+
+#### Card 4 — Reminder Schedule
+
+```
+┌─ fa-bell  Reminder Schedule ───────────────── ● Ready ─┐
+│                                                         │
+│  Reminder fires: 7 days before term end                │
+│                                                         │
+│  Spring 2026 (active):                                 │
+│    Term ends:        Jun 30                            │
+│    Reminder fires:   Jun 23  · 15 days away            │
+│                                                         │
+│  Fall 2026 (upcoming):                                  │
+│    Term ends:        Dec 15                            │
+│    Reminder fires:   Dec 8   · not yet scheduled       │
+│                                                         │
+│  [Edit schedule →]           /admin/reminder-schedule  │
+└─────────────────────────────────────────────────────────┘
+```
+
+Calculated "X days away" for each enabled term. Amber if <7 days away and term is still collecting. Shows per-term dates so the admin can confirm the anchor logic is correct before activating.
+
+**Card status chip (all 4):**
+
+| Chip | Colour | Condition |
+|---|---|---|
+| `● Ready` | `LIST_HUB_STATUS_TINT_SUCCESS` | All required fields complete |
+| `● Needs setup` | `LIST_HUB_STATUS_TINT_WARNING` | Missing required config |
+
+---
+
+### Zone E — Entity Directory
+
+Tabs. Default: Offerings. Each tab label includes a `Badge variant="secondary"` count.
+
+```
+[ Offerings  24 ]  [ Faculty  18 ]  [ Courses  42 ]  [ Students  310 ]
+──────────────────────────────────────────────────────────────────────
+```
+
+#### Offerings tab
+
+Same `DataTablePaginated` as `/admin/offerings` today. Avatar column added: primary faculty `Avatar` initials beside faculty name.
+
+```
+ Course     Term          Faculty                  Enrolled  Completion  Status
+ ─────────  ────────────  ───────────────────────  ────────  ──────────  ────────────────
+ DPT-501    Spring 2026   [JD] D. Johnson              28      68%       ● Collecting
+ DPT-502    Spring 2026   [MG] M. Garcia               22      51%       ● Collecting
+ DPT-510    Fall 2025     [AB] A. Brown                18       —        ● Released
+ DPT-503    Fall 2025     [RK] R. Kim                  24      72%       ● Closed
+```
+
+Row click → Evaluation Card (if survey exists) or Prism (otherwise) — same logic as today.
+
+#### Faculty tab
+
+Same `DataTablePaginated` as `/admin/faculty`. Avatar always shown.
+
+```
+ Faculty                        Dept            Offerings  Completion  Avg rating
+ ─────────────────────────────  ──────────────  ─────────  ──────────  ──────────
+ [JD] D. Johnson                Physical Therapy    4         62%       4.1 / 5
+ [MG] M. Garcia                 Core Sciences       3         51%       3.8 / 5
+ [AB] A. Brown                  Clinical             2         84%       4.6 / 5
+```
+
+Completion and rating colour-coded with `tierColor` — same as current page. No changes to columns.
+
+#### Courses tab
+
+Same `DataTablePaginated` as `/admin/courses`. Type badge + avg rating.
+
+```
+ Code      Name                           Type       Offered  Avg rating
+ ────────  ─────────────────────────────  ─────────  ───────  ──────────
+ DPT-501   Human Anatomy & Kinesiology    Didactic      8       4.2 / 5
+ DPT-510   Musculoskeletal PT I           Didactic      6       4.5 / 5
+ DPT-610   Clinical Internship I          Clinical      5       4.8 / 5
+```
+
+#### Students tab
+
+Same `DataTablePaginated` as `/admin/students`. Avatar + enrollment badge + eval counts.
+
+```
+ Student                      ID          Cohort       Status        Evals
+ ──────────────────────────   ─────────   ──────────   ──────────    ──────────────
+ [AJ] A. Johnson              S2024-001   2024 Cohort  ● Enrolled    2 done · 1 open
+ [MG] M. Garcia               S2024-002   2024 Cohort  ● Enrolled    1 done · 2 open
+ [JW] J. Williams             S2022-001   2022 Cohort  ● Graduated   4 done
+ [TL] T. Lee                  S2023-003   2023 Cohort  ○ On Leave    1 done
+```
+
+`EnrollmentStatusBadge` (already built). Evals open in amber when > 0.
+
+---
+
+### Responsive behaviour
+
+| Breakpoint | Zone A stepper | Zone B KPIs | Zone C panels | Zone D cards | Zone E tabs |
+|---|---|---|---|---|---|
+| `lg` (≥1024) | 5 nodes inline | 4-col | 2-col | 2×2 grid | full-width |
+| `md` (768–1023) | scrollable horizontal | 2-col + chart below | stacked | 2×1 | full-width |
+| `sm` (<768) | collapsed to "Step 3 of 5" chip | stacked 1-col | stacked | 1-col | horizontally scrollable |
+
+---
+
+### What does NOT change
+
+| Surface | Notes |
+|---|---|
+| `/surveys/activate` wizard | Unchanged. Overview links to it but does not duplicate it. |
+| `/analytics` | Unchanged. Zone C links to it for deeper drill. |
+| `/templates/[id]` builder | Unchanged. Zone D card links to `/templates`. |
+| All DataTable columns / filters / row clicks | Identical to current individual pages. |
+| Individual entity routes | Valid; removed from nav only. |
+
+---
+
+### DS component map
+
+| Zone | Element | DS Component |
+|---|---|---|
+| A | Stepper nodes | Custom — flex row, `Badge` for number, connector `div` with `bg-border` |
+| A | Step 5 button | `Button variant="default" size="sm"` |
+| B | KPI cards | `KeyMetrics variant="compact"` (3 left cards) |
+| B | Bar chart | `ChartContainer` + `recharts BarChart + Bar` |
+| C | Donut | `recharts PieChart` (2-slice) inside `ChartContainer` |
+| C | Status bars | Plain `div` with `var(--brand-color)` / status token fills |
+| C | Faculty rows | `Avatar + AvatarFallback` + `Button variant="outline" size="sm"` for Nudge |
+| D | Config cards | `Card + CardHeader + CardContent` |
+| D | Status chip | `ListHubStatusBadge` (success / warning tint) |
+| D | Template list rows | `Badge` (active tint) + plain text |
+| E | Tabs chrome | `Tabs / TabsList / TabsTrigger / TabsContent` |
+| E | Tab counts | `Badge variant="secondary"` inside `TabsTrigger` |
+| E | All tables | `DataTablePaginated` (already built) |
+| E | Avatars in rows | `Avatar + AvatarFallback` (already used in faculty/students pages) |

@@ -483,7 +483,7 @@ Per ANALOGY-01 (TypeForm one-at-a-time): single question per screen reduces cogn
 
 ### 9.3 AI affordance discipline (per ai-vs-pulled-lane.md)
 
-- AI lane has `--brand-color` accent + `fa-sparkles` (NOT `fa-star-christmas` — that's reserved for Leo per CLAUDE-DS-REFERENCE)
+- AI lane has `--brand-color` accent + `fa-sparkles` (NOT `fa-star-christmas` — that's reserved for Leo per the DS — Leo = AvatarLeoAssistant)
 - AI source citation MUST be visible — "based on 829 qualitative responses"
 - AI confidence indicator MUST be visible — `●●●` high / `●●○` medium / `●○○` low
 - AI output is REJECTABLE — never auto-applied. Faculty + admin decide.

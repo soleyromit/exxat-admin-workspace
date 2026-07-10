@@ -34,6 +34,18 @@
 "use strict"
 
 import { readFileSync, existsSync } from "node:fs"
+import { resolve } from "node:path"
+
+function imageIaEscalation(cwd) {
+  const flagPath = resolve(cwd, ".cursor", ".exxat-ds-image-prompt.json")
+  if (!existsSync(flagPath)) return ""
+  return (
+    `\n\n[exxat-image-ia-gate] This user turn included an uploaded image. ` +
+    `The image is IA reference ONLY — MUST NOT pixel-copy layout, colors, or chrome. ` +
+    `Post a design brief with Image reference (IA only), DS mapping, and Visual chrome ` +
+    `lines BEFORE edits. MUST NOT use frontend-design to match the upload.`
+  )
+}
 
 function emit(payload) {
   process.stdout.write(JSON.stringify(payload))
@@ -54,13 +66,17 @@ function allow() {
 //
 // Why still ask: creating a NEW design-critical file is a real design
 // decision, so the user should still see and approve it before the write runs.
-function askNewBrief(reason, path) {
+function askNewBrief(reason, path, cwd) {
+  const imageNote = imageIaEscalation(cwd)
   emit({
     permission: "ask",
     user_message:
       `Exxat DS brief-gate: about to CREATE a new design-critical surface.\n\n` +
       `What:   ${reason} (NEW file)\n` +
       `Where:  ${path}\n\n` +
+      (imageNote
+        ? `This turn includes an uploaded image — approve only if the brief maps IA to DS (no pixel-copy).\n\n`
+        : "") +
       `Approve only if a design brief has already been posted AND confirmed ` +
       `in chat for this work. Otherwise reject and ask the agent to post the ` +
       `brief first, then retry the file creation.`,
@@ -82,17 +98,22 @@ function askNewBrief(reason, path) {
       `existing file just to avoid create-file prompts.\n\n` +
       `If a brief was already posted and confirmed earlier in this chat, ` +
       `point the user to it when requesting approval. Otherwise, post the ` +
-      `brief now.`,
+      `brief now.` +
+      imageNote,
   })
 }
 
-function askBrief(reason, path) {
+function askBrief(reason, path, cwd) {
+  const imageNote = imageIaEscalation(cwd)
   emit({
     permission: "ask",
     user_message:
       `Exxat DS brief-gate: about to edit a design-critical surface.\n\n` +
       `What:   ${reason}\n` +
       `Where:  ${path}\n\n` +
+      (imageNote
+        ? `This turn includes an uploaded image — approve only if the brief maps IA to DS (no pixel-copy).\n\n`
+        : "") +
       `Approve only if a design brief has been posted AND confirmed in chat ` +
       `for this work. Otherwise reject and ask the agent to post a brief ` +
       `first (Problem / Persona / Job-to-be-done / Pattern / Reference / ` +
@@ -111,7 +132,8 @@ function askBrief(reason, path) {
       `for the user's reply.\n\n` +
       `If a brief was already posted and confirmed earlier in this chat, ` +
       `mention that explicitly when requesting approval so the user can ` +
-      `recognise it.`,
+      `recognise it.` +
+      imageNote,
   })
 }
 
@@ -221,6 +243,13 @@ process.stdin.on("end", () => {
     return
   }
 
+  const cwd =
+    typeof input.cwd === "string" && input.cwd.length > 0
+      ? input.cwd
+      : typeof input.workspace_roots?.[0] === "string"
+        ? input.workspace_roots[0]
+        : process.cwd()
+
   const toolInput = input.tool_input ?? input.toolInput ?? {}
   // Cursor passes the target path under DIFFERENT keys depending on which
   // tool the agent called. Missing one of these = silent allow = brief-gate
@@ -327,9 +356,9 @@ process.stdin.on("end", () => {
     if (test.test(normalized)) {
       const isNewFile = !existsSync(normalized)
       if (isNewFile) {
-        askNewBrief(label, normalized)
+        askNewBrief(label, normalized, cwd)
       } else {
-        askBrief(label, normalized)
+        askBrief(label, normalized, cwd)
       }
       return
     }

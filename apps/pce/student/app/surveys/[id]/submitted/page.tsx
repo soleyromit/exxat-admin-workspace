@@ -52,7 +52,8 @@ export default function SubmittedPage() {
             <i
               className="fa-light fa-circle-check"
               aria-hidden="true"
-              style={{ fontSize: 40, color: 'var(--brand-color)' }}
+              className="text-[40px]"
+              style={{ color: 'var(--brand-color)' }}
             />
           </div>
 
@@ -103,7 +104,8 @@ export default function SubmittedPage() {
                     <i
                       className={`fa-light ${item.icon}`}
                       aria-hidden="true"
-                      style={{ fontSize: 13, color: 'var(--brand-color)' }}
+                      className="text-[13px]"
+                      style={{ color: 'var(--brand-color)' }}
                     />
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -126,7 +128,7 @@ export default function SubmittedPage() {
             style={{ width: '100%' }}
           >
             Back to Surveys
-            <i className="fa-light fa-arrow-right ms-1.5" aria-hidden="true" style={{ fontSize: 12 }} />
+            <i className="fa-light fa-arrow-right ms-1.5 text-xs" aria-hidden="true" />
           </Link>
 
           {/* Re-edit path — only while survey is still editable */}
@@ -139,7 +141,7 @@ export default function SubmittedPage() {
                   color: 'var(--chart-4)',
                 }}
               >
-                <i className="fa-light fa-pen-to-square shrink-0 mt-0.5" aria-hidden="true" style={{ fontSize: 13 }} />
+                <i className="fa-light fa-pen-to-square shrink-0 mt-0.5 text-[13px]" aria-hidden="true" />
                 <span>
                   Changed your mind? You can edit your responses until this survey closes
                   {survey.deadline ? ` on ${survey.deadline}` : ''}.
@@ -150,7 +152,7 @@ export default function SubmittedPage() {
                 className={buttonVariants({ variant: 'outline', size: 'default' })}
                 style={{ width: '100%' }}
               >
-                <i className="fa-light fa-pen me-1.5" aria-hidden="true" style={{ fontSize: 12 }} />
+                <i className="fa-light fa-pen me-1.5 text-xs" aria-hidden="true" />
                 Edit my responses
               </Link>
             </>

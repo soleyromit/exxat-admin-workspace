@@ -12,9 +12,11 @@
 2. Transcript alignment: implementation vs Gate 1 transcript decisions (✅ match / ⚠ assumption / ❌ contradiction)
 3. Spawn `compliance-reviewer` — WCAG 2.1 AA + FERPA + **HIPAA** (PCE-specific: clinical response exposure). **NEEDS-MORE blocks done claim.**
 4. Spawn `state-review` for list/form/async pages. **NEEDS-MORE blocks done claim.**
-5. Spawn `verification-reviewer` — Patterns A-F. **NEEDS-MORE blocks done claim.**
+5. Spawn `verification-reviewer` — all current patterns in `docs/governance/verification-discipline.md`. **NEEDS-MORE blocks done claim.**
 6. Grep: `uppercase tracking-wide` · `py-20 text-center` · `color-mix(in oklch` — any hit = violation
-7. Self-reflection: 3-5 bullets (what went well / mistakes / what to check next time)
+7. Spawn `Explore` to grep-verify every claimed change exists — never claim done from session memory (Pattern G).
+8. **Evidence block on every done claim** — axe-core path or "not run", DS import file:line per new component, grep result (Pattern I).
+9. **Two-tier verdict (Pattern L):** `GREENLIGHT (static)` — code analysis only / `GREENLIGHT (runtime)` — interactions.mjs ran. List what was NOT verified.
 
 **If a P1 flag or PRD change is mentioned:** read `docs/watch/digest-latest.md`
 
@@ -54,7 +56,7 @@
 | `apps/pce/docs/patterns/pce-ui-patterns.md` | Before writing any UI component |
 | `docs/governance/design-anti-patterns.md` | Before any UI component — banned pattern blacklist |
 | `docs/governance/component-consistency.md` | DataTable, header, sheet, dialog governance |
-| `docs/CLAUDE-DS-REFERENCE.md` | Need DS component list, tokens, theme system |
+| `node tools/ds/source.mjs` (+ globals.css) | Need DS component list, tokens, theme system |
 | `docs/BASE-ENTITIES.md` | Building Student / Faculty / Course / Term pages |
 | `docs/CLAUDE-RULES.md` | Scaffolding new app, full always/never rules, font loading |
 | `docs/watch/digest-latest.md` | P1 flag or PRD change mentioned |

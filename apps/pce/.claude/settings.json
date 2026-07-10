@@ -11,5 +11,23 @@
         ]
       }
     ]
+  },
+  "attribution": {
+    "sessionUrl": false
+  },
+  "permissions": {
+    "allow": [
+      "Agent(model:claude-opus-4-8)",
+      "Agent(model:claude-sonnet-4-6)",
+      "Agent(model:claude-sonnet-5*)"
+    ],
+    "deny": [
+      "Agent(model:claude-haiku*)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean -fd *)",
+      "Bash(git stash drop *)",
+      "Bash(git commit --amend *)"
+    ]
   }
 }

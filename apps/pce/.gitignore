@@ -1,0 +1,5 @@
+.vercel
+
+# local backup snapshots — never commit
+admin/.backups/
+admin/.exxat-ui/backups/

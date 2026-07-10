@@ -103,7 +103,8 @@ export default function SurveysPage() {
             <i
               className="fa-light fa-circle-check"
               aria-hidden="true"
-              style={{ fontSize: 40, color: 'var(--brand-color)' }}
+              className="text-[40px]"
+              style={{ color: 'var(--brand-color)' }}
             />
             <p className="text-base font-semibold text-foreground">
               All done — no surveys to complete
@@ -175,7 +176,7 @@ function SurveyCard({ survey }: { survey: StudentSurvey }) {
           {isOpen && (
             <Link href={`/surveys/${survey.id}`} className={buttonVariants({ variant: 'default', size: 'sm' })}>
               Start
-              <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 11 }} />
+              <i className="fa-light fa-arrow-right ms-1 text-xs" aria-hidden="true" />
             </Link>
           )}
           {survey.status === 'submitted' && (

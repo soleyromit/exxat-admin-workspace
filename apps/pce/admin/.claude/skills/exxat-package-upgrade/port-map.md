@@ -1,6 +1,6 @@
-# template-vite port map (consumer upgrades)
+# generated-starter port map (consumer upgrades)
 
-Diff **your app file** ↔ **`node_modules/@exxatdesignux/ui/template-vite/<same path>`**.
+Diff **your app file** ↔ **`node_modules/@exxatdesignux/ui/generated-starter/<same path>`**.
 
 Only port when release notes or a chrome bug require it. **Never** copy mock data or domain hubs wholesale.
 

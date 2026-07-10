@@ -181,6 +181,43 @@ From negative theme → "Create action plan" → AI recommends → accept/edit/c
 | 2026-05-06 | AI 3 pillars for CFE (analytics + action items + template builder) — high-level commitment, no surfaces designed yet |
 | 2026-05-08 | Persona collapse (8→3); kill mobile custom design; kill cohort readiness; kill competency rating; templates only (no QB); AI-first themes dynamic |
 
+---
+
+## 2026-06-04 — Romit's Product Alignment (UX Direction meeting)
+
+**Source:** `/Users/romitsoley/Downloads/Meeting with Romit Soley.docx`
+**Full record:** `apps/pce/docs/research/meetings/2026-06-04-romit-pce-ux-direction.md`
+
+These are Romit's directives from a design alignment meeting with the India designer. They carry the same authority as Aarti's decisions for what gets built.
+
+### New decisions (not in any prior doc)
+
+| Directive | Verbatim | Impact |
+|---|---|---|
+| Super admin only for P1 | *"today we just want to worry about the super admin role… to get it launched, I don't want to worry about it"* | Admin persona = super admin full-access. Fine-grained restrictions deferred. |
+| Independent module operation | *"This needs to function independently… I am not going to be in the situation, oh, you go to Prism, import the students, then you come here."* | Super admin can register students/faculty/courses directly in PCE if no Prism/LMS. PCE ≠ Prism-dependent. |
+| Email: two CTAs | *"This email should have both buttons, like see all my pending activities or click here to complete this survey."* | All survey emails need direct-survey link + activity-dashboard link. Current spec has one CTA only. |
+| Student activity dashboard | *"If an email was sent to rawmethat.com and I click on my dashboard, any pending survey that rawmethat.com needs to fulfill can be shown here."* | No-auth lightweight dashboard accessible via email link. Aggregates all pending surveys for that email. Net-new surface. |
+| Survey progress bar | Canvas reference: *"They have a bar at the top. So as I go to the next section, I know what I have completed."* | Student survey form needs top progress bar showing section completion. |
+| CE = anonymous; Institutional ≠ anonymous | *"All of the data that the students submit in here is anonymous. So if you have institutional surveys that they have done that is not anonymous, that's a different thing."* | Course & Faculty Evaluation responses = anonymous. Institutional surveys = not anonymous. First time explicitly distinguished. |
+| Student entity: merged CE + institutional view | *"What course and faculty evaluations they have failed and what institutional surveys they have failed should all be merged together."* | Admin student directory must show completion for both survey types in one merged view. |
+| Faculty question assignment → P2 | *"Is this feature going in the first phase? No, not yet."* | Faculty can't be assigned question-authoring tasks in P1 for any module. |
+
+### Confirmed (already in spec, June 4 reaffirms)
+
+- Two product sections: "Course and Faculty Feedback" + "Institutional Surveys"
+- Faculty comparative analytics: own score + dept avg + school avg
+- 3 personas: super admin / faculty / student
+- No student login for CE responses
+
+### Product framing Romit set
+
+> *"There are competitors who only do this. This entire product is only around this. So we have to think about this as its own product."*
+
+PCE/CE is a standalone, competitive product — not a Prism add-on. Design to that standard.
+
+---
+
 ## Things Aarti hasn't said yet (open questions)
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm.

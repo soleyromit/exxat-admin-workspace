@@ -85,7 +85,7 @@ export default function TakeSurveyPage() {
   if (!survey) {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-3 text-center px-6">
-        <i className="fa-light fa-circle-exclamation text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
+        <i className="fa-light fa-circle-exclamation text-[40px] text-muted-foreground" aria-hidden="true" />
         <p className="text-base font-semibold text-foreground">Survey not found</p>
         <Link href="/surveys" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           Back to Surveys
@@ -97,7 +97,7 @@ export default function TakeSurveyPage() {
   if (survey.status !== 'open' && survey.status !== 'submitted') {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-3 text-center px-6">
-        <i className="fa-light fa-lock-keyhole text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
+        <i className="fa-light fa-lock-keyhole text-[40px] text-muted-foreground" aria-hidden="true" />
         <p className="text-base font-semibold text-foreground">
           This survey is closed
         </p>
@@ -144,7 +144,7 @@ export default function TakeSurveyPage() {
             href="/surveys"
             className="flex items-center gap-1.5 text-sm text-muted-foreground"
           >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
             Surveys
           </Link>
           <span style={{ color: 'var(--border)' }}>·</span>
@@ -155,7 +155,7 @@ export default function TakeSurveyPage() {
         <div className="flex items-center gap-3">
           {/* Auto-save indicator */}
           <span className="text-xs flex items-center gap-1 text-muted-foreground">
-            <i className="fa-light fa-cloud-check" aria-hidden="true" style={{ fontSize: 11 }} />
+            <i className="fa-light fa-cloud-check text-xs" aria-hidden="true" />
             Progress saved
           </span>
           <span className="text-sm font-medium" style={{ color: 'var(--brand-color)' }}>
@@ -170,7 +170,7 @@ export default function TakeSurveyPage() {
           className="flex items-center gap-2 px-6 py-2 text-sm"
           style={{ backgroundColor: 'var(--brand-color-surface)', color: 'var(--brand-color-dark)' }}
         >
-          <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12 }} />
+          <i className="fa-light fa-rotate-left text-xs" aria-hidden="true" />
           Resumed where you left off
         </div>
       )}
@@ -185,7 +185,7 @@ export default function TakeSurveyPage() {
             color: 'var(--chart-4)',
           }}
         >
-          <i className="fa-light fa-pen-to-square shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-pen-to-square shrink-0 text-[13px]" aria-hidden="true" />
           <span>
             You&apos;re editing your previous submission. Re-submitting will replace your earlier answers.
           </span>
@@ -266,7 +266,7 @@ export default function TakeSurveyPage() {
           onClick={() => setCurrentSection(c => c - 1)}
           disabled={currentSection === 0}
         >
-          <i className="fa-light fa-arrow-left me-1" aria-hidden="true" style={{ fontSize: 12 }} />
+          <i className="fa-light fa-arrow-left me-1 text-xs" aria-hidden="true" />
           Previous
         </Button>
 
@@ -293,18 +293,18 @@ export default function TakeSurveyPage() {
         >
           {submitting ? (
             <>
-              <i className="fa-light fa-spinner-third fa-spin" aria-hidden="true" style={{ fontSize: 12 }} />
+              <i className="fa-light fa-spinner-third fa-spin text-xs" aria-hidden="true" />
               Submitting…
             </>
           ) : isLastSection ? (
             <>
               Submit
-              <i className="fa-light fa-check ms-1" aria-hidden="true" style={{ fontSize: 12 }} />
+              <i className="fa-light fa-check ms-1 text-xs" aria-hidden="true" />
             </>
           ) : (
             <>
               Next
-              <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 12 }} />
+              <i className="fa-light fa-arrow-right ms-1 text-xs" aria-hidden="true" />
             </>
           )}
         </Button>
