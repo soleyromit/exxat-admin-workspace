@@ -215,7 +215,7 @@ function SettingsInner() {
       />
 
       <div className="flex-1 overflow-auto" style={{ padding: '16px 28px 28px' }}>
-        <div className="max-w-4xl">
+        <div className="w-full">
           {saved && (
             <div className="mb-4">
               <LocalBanner variant="success" title="Settings saved">
