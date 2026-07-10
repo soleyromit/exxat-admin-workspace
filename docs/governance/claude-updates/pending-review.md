@@ -1,4 +1,6 @@
 # Pending review
 
-> Last cleared: 2026-06-01T15:06:12.569445+00:00 — batch reviewed by `claude-updates-watcher`.
-> No changes detected. Run `python3 scripts/claude-updates-watch.py` to re-fetch upstream changelogs.
+> Auto-populated by `scripts/claude-updates-watch.py` when upstream Claude/Anthropic sources change.
+> Empty file = nothing to review. The watcher subagent reads this file when invoked.
+
+_Last checked: 2026-07-07T16:55:01+00:00 — reviewed; proposal 2026-07-06-v2186-2201.md written (ADOPT-1/3 applied, ADOPT-2 held). No open signal._

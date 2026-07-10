@@ -43,7 +43,7 @@ Never use `@exxat/ds`, `exxat-ds/packages/ui/src`, or raw HTML primitives for DS
 Before writing the first JSX file:
 
 1. Run `ds-adoption-reviewer` — state "I'm about to write the first component for learning-contracts/admin"
-2. Read `docs/governance/ds-component-examples.md` — canonical usage for all key organisms
+2. Read the real `.d.ts` (`node tools/ds/source.mjs`) — canonical usage for all key organisms
 3. Read `docs/governance/design-anti-patterns.md` — banned patterns blacklist
 4. Pull any Granola transcripts for Learning Contracts decisions → create `docs/decisions/` entries
 5. Write a Screen Purpose Map (§0 above) for every planned screen before coding any of them

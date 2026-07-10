@@ -20,6 +20,7 @@ Every list hub **should** use **`FULL_HUB_SUPPORTED_VIEWS`** (table, list, board
 | --- | --- | --- |
 | **View tabs** (table / list / board, lifecycle filters) | `ListPageTemplate` (`ViewTab`, `renderContent`, optional metrics + export) | `components/library-hub-client.tsx` + `components/templates/list-page.tsx` |
 | **Table shell** (search, filter bar, sort, grouping, columns, pagination) | `HubTable` → `DataTable`, `DataTableToolbar`, `useTableState` | `components/data-table/`, `components/data-views/hub-table.tsx`, `components/columns-showcase.tsx` |
+| **Column cell renderers** (person, status, progress, …) | Named cells from `@/components/data-views` — **[`table-column-cells-pattern.md`](./table-column-cells-pattern.md)** | `library-table.tsx` Author column; `/columns` catalog |
 | **Properties drawer** (display, columns, filters, sort, view type tiles) | `TablePropertiesDrawer` from `@/components/table-properties` (auto-wired by `HubTable`) | `DrawerToolbar` / list–board shells in `library-table.tsx` |
 | **Board / list** | `PlacementsBoardView`, `PlacementListRowContent` (wrapped by `HubTable.renderListRow` → `DataRowList`) + same `useTableState` | `PlacementsTable` |
 | **Page header** (primary CTA + More ⋯ + export) | Per-hub page header composing `PageHeader` + `ExportDrawer` button | `components/library-page-header.tsx` |
@@ -72,6 +73,17 @@ Non-table view branches (e.g. **folder** icon grid, **panel** finder, OS-style f
 | Column headers / labels | `showColumnLabels` | Same source columns, list layout | Phase columns + optional board column menu | N/A (metrics from same columns/filters) |
 | Row click / navigation | From `PlacementsTable` | From list shell | Card `onOpen` | N/A |
 | Pagination | Optional `PaginationBar` + `CountSyncer` | Same pattern | N/A (board uses phase columns) | N/A |
+| **Vertical scroll** | **`[data-page-scroll]`** — KPIs, tabs, toolbar, grid scroll together | Same (via **`toolbarShell`**) | Same (via **`toolbarShell`** + **`ListPageBoardTemplate`**) | Tab viewport fill + canvas scroll (exception) |
+
+### Hub scroll (table / list / board)
+
+**One scroll owner:** `PrimaryPageTemplate` → `[data-page-scroll]`. Do **not** add a second vertical scrollbar under view tabs for table, list, or board.
+
+- **`HubTable` `toolbarShell`** — toolbar + view body in one block (`pb-6`); use for **list** and **board**.
+- **`ListPageTemplate`** — tab body uses **`min-h-min`** for table/list/board; **`min-h-0 flex-1`** only for folder / panel / tree / dashboard.
+- **`viewportToolbarShell`** — folder / panel / tree only (Miller columns, internal scroll).
+
+**Binding rule:** **`.cursor/rules/exxat-list-page-hub-scroll.mdc`**
 
 ## Toolbar and properties
 

@@ -1,5 +1,8 @@
 {
   "model": "claude-opus-4-8",
+  "attribution": {
+    "sessionUrl": false
+  },
   "permissions": {
     "allow": [
       "Agent(compliance-reviewer)",
@@ -9,6 +12,9 @@
       "Agent(ds-conformance-reviewer)",
       "Agent(ds-adoption-reviewer)",
       "Agent(Explore)",
+      "Agent(model:claude-opus-4-8)",
+      "Agent(model:claude-sonnet-4-6)",
+      "Agent(model:claude-sonnet-5*)",
       "Task(compliance-reviewer)",
       "Task(verification-reviewer)",
       "Task(visual-review)",
@@ -23,6 +29,9 @@
       "mcp__mobbin__search_flows",
       "mcp__claude_ai_Granola__get_meeting_transcript",
       "mcp__claude_ai_Granola__query_granola_meetings",
+      "mcp__claude_ai_Granola__get_meetings",
+      "mcp__claude_ai_Granola__list_meetings",
+      "mcp__claude_ai_Granola__list_meeting_folders",
       "Bash(ls /Users/romitsoley/Work/*.md)",
       "Bash(gh api *)",
       "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(item['path']\\) for item in data.get\\('tree',[]\\) if not item['path'].startswith\\('.'\\) and item['type']=='blob']\")",
@@ -80,12 +89,24 @@
       "WebFetch(domain:localhost)",
       "Bash(find apps/exam-management -name \"*.tsx\" -exec grep -l \"brand-foreground\" {} \\\\;)",
       "Bash(\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)",
-      "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)"
+      "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)",
+      "Bash(curl -s *)",
+      "Bash(curl -sI *)",
+      "Bash(node /Users/romitsoley/Work/tools/ds/source.mjs *)"
+    ],
+    "deny": [
+      "Agent(model:claude-haiku*)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean -fd *)",
+      "Bash(git stash drop *)",
+      "Bash(git commit --amend *)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "/Users/romitsoley/Work/apps/exam-management/admin/app/(app)/questions",
-      "/Users/romitsoley/Work/apps/exam-management/student/app/exam/[id]"
+      "/Users/romitsoley/Work/apps/exam-management/student/app/exam/[id]",
+      "/Users/romitsoley/Documents/research-repos"
     ]
   },
   "hooks": {
@@ -194,6 +215,24 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ds-claim-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/vault-citation-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/vault-capture-reminder.py",
             "timeout": 10
           }
         ]

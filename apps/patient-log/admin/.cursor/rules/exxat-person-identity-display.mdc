@@ -43,6 +43,7 @@ When multiple people share a row (face rail, reviewer pile, attendee list, colla
 
 ## See also
 
+- **`.cursor/rules/exxat-table-column-cells.mdc`** — data point → table cell (person avatar column, status, progress, …).
 - **`.cursor/rules/exxat-collaboration-access.mdc`** — face rail, invite sheet, access roster.
 - **`.cursor/skills/exxat-collaboration-access/SKILL.md`**
 - **`./AGENTS.md`** collaboration + list hub patterns where relevant.

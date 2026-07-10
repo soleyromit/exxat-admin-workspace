@@ -59,7 +59,7 @@ Read ALL of these for the active product before any UI work:
 
 ### 1c. DS component check
 
-Before importing any component, confirm it exists in `docs/watch/ds-snapshot.json`:
+Before importing any component, confirm it exists in `node tools/ds/source.mjs --list`:
 - Exact import path
 - All available variants and sizes
 - What DS already handles (don't re-implement)
@@ -114,9 +114,9 @@ Transcript alignment:
 ❌ Progress bar for completion — Aarti: "no bars in tables" (May 19/20)
 ```
 
-### 2c. WCAG 2.1 AA compliance — visual-check runner + `compliance-reviewer`
+### 2c. WCAG 2.1 AA compliance — visual-check runner + `ds-conformance-reviewer`
 
-> **Pattern I (2026-06-01):** Paste the subagent's literal first line of output — "GREENLIGHT" or "NEEDS-MORE: [first violation]". Claiming "I ran compliance-reviewer" without pasting output = not run.
+> **Pattern I (2026-06-01):** Paste the subagent's literal first line of output — "GREENLIGHT" or "NEEDS-MORE: [first violation]". Claiming "I ran ds-conformance-reviewer" without pasting output = not run.
 
 **Step 1 — Run the visual-check tools** (requires dev server at the product's port):
 
@@ -132,9 +132,9 @@ BASE_URL=http://localhost:3001 node tools/visual-check/interactions.mjs /student
 
 Results land in `/tmp/visual-check/` (static) and `/tmp/visual-check/interactions/` (interaction states).
 
-**Step 2 — Spawn `visual-review` subagent** to analyze the screenshots + axe output.
+**Step 2 — Spawn `ds-conformance-reviewer` subagent** to analyze the screenshots + axe output.
 
-**Step 3 — Spawn `compliance-reviewer`** for static code analysis. It checks:
+**Step 3 — Spawn `ds-conformance-reviewer`** for static code analysis. It checks:
 - Contrast ratios (text ≥4.5:1, UI ≥3:1, focus rings ≥3:1)
 - Touch targets (≥44px on mobile — `icon-sm` is at risk)
 - `aria-hidden="true"` on all FA icons
@@ -222,7 +222,7 @@ Per memory `feedback_end_of_response_reflection.md`.
 ## What blocks a "done" claim
 
 Any of these means the change is NOT done:
-- `compliance-reviewer` returns NEEDS-MORE
+- `ds-conformance-reviewer` returns NEEDS-MORE
 - `state-review` returns NEEDS-MORE
 - `verification-reviewer` returns NEEDS-MORE
 - Transcript alignment shows ❌ (implementation contradicts transcript)
@@ -243,14 +243,14 @@ A NEEDS-MORE with a known, documented exception (override ADR written) = accepta
 | Referencing a product decision | Pull Granola transcript — never use summaries |
 | Building exam-management UI | `apps/exam-management/docs/patterns/ui-patterns.md` |
 | Building PCE UI | `apps/pce/docs/patterns/pce-ui-patterns.md` |
-| Building portal UI | `docs/BASE-ENTITIES.md` + `docs/CLAUDE-DS-REFERENCE.md` |
+| Building portal UI | `docs/BASE-ENTITIES.md` + `node tools/ds/source.mjs` (+ globals.css) |
 | Any new component file | `ds-adoption-reviewer` subagent first |
-| Claiming a change done | `verification-reviewer` + `compliance-reviewer` + `state-review` |
+| Claiming a change done | `verification-reviewer` + `ds-conformance-reviewer` + `state-review` |
 
 ---
 
 ## Source
 
 - Romit directive: 2026-05-22 — "compliance check, transcript checks against any design you make as part of the sequential action so that it's WCAG 2.1 AA compliant and ensures you have taken everything into consideration by reading through granola notes, any corresponding md files, and any current or previous prompts containing pasted information"
-- Infrastructure: existing `compliance-reviewer`, `verification-reviewer`, `state-review`, `visual-review` subagents; `intake`, `design-critique` skills
+- Infrastructure: existing `ds-conformance-reviewer`, `verification-reviewer`, `state-review`, `ds-conformance-reviewer` subagents; `intake`, `design-critique` skills
 - Verification discipline: `docs/governance/verification-discipline.md` Patterns A-F

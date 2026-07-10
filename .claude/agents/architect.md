@@ -1,5 +1,6 @@
 ---
 name: architect
+model: claude-sonnet-4-6
 description: Use at session-end or when the discipline log grows by ≥2 entries to PROPOSE workspace architecture changes — new audit rules, retired rules, promoted rules, consolidated rules, new subagents, new pattern docs, CLAUDE.md edits. The architect reads evidence (commits + discipline log + blind-spots + audit hit counts + subagent telemetry) and writes a proposal markdown to docs/governance/architect-runs/. It never commits product code or governance changes — the parent + Romit review and apply. Rate-limited (max 3 new rules per run), evidence-required (every proposal cites file:line + ≥2 occurrences), self-retiring (proposals rejected 3 times stop appearing).
 tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit
@@ -150,7 +151,7 @@ The parent should NOT invoke `architect`:
 ## What this is NOT
 
 - A continuous-improvement engine that auto-tunes rules. Romit is the human in the loop.
-- A code-review agent. The `verification-reviewer` + `visual-review` + `state-review` agents cover code-claim review.
+- A code-review agent. The `verification-reviewer` + `ds-conformance-reviewer` + `state-review` agents cover code-claim review.
 - A retroactive blame engine. The discipline log records facts; the architect proposes structural responses. Tone matters.
 - A replacement for direct conversation. When the architect surfaces a tension (e.g., "promote rule X but it'll block ongoing exam-mgmt work"), Romit decides.
 

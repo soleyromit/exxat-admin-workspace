@@ -20,11 +20,12 @@ import { BuilderStart } from './builder/builder-start'
 import { OverviewPanel } from './builder/overview-panel'
 import { QuestionEditor } from './builder/question-editor'
 import { AIQuizGenerator, SmartReplace, SemanticSearch } from './builder/ai-tools'
-import { ConfigureTab, DeliveryTab } from './builder/configure-tab'
+import { StructureTab } from './builder/structure-tab'
+import { SettingsPanel } from './builder/settings-panel'
 import { CollabPanel } from './builder/collab-panel'
 import { PreviewSim } from './builder/preview-sim'
 
-type Tab = 'build' | 'configure' | 'delivery'
+type Tab = 'questions' | 'structure'
 interface DragState { type: 'q' | 'sec'; secId: string; qId?: string }
 
 export interface AssessmentBuilderProps {
@@ -39,13 +40,15 @@ export interface AssessmentBuilderProps {
   clearSmartTarget?: () => void
   onBack: () => void
   onReview: () => void
+  embedded?: boolean  // suppresses back link + routes onReview to outer Distribute tab
 }
 
 export function AssessmentBuilder({
   meta, setMeta, sections, setSections, persona = 'coordinator',
-  autoAI, clearAutoAI, smartTarget, clearSmartTarget, onBack, onReview,
+  autoAI, clearAutoAI, smartTarget, clearSmartTarget, onBack, onReview, embedded,
 }: AssessmentBuilderProps) {
-  const [tab, setTab] = useState<Tab>('build')
+  const [tab, setTab] = useState<Tab>('questions')
+  const [showSettings, setShowSettings] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [editing, setEditing] = useState<{ secId: string; q: Question } | null>(null)
@@ -244,7 +247,7 @@ export function AssessmentBuilder({
         <div className="page-head" style={{ alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <Button type="button" variant="ghost" size="sm" onClick={onBack}><Icon name="arrow-left" />All assessments</Button>
+              {!embedded && <Button type="button" variant="ghost" size="sm" onClick={onBack}><Icon name="arrow-left" />All assessments</Button>}
               <AssessmentStatusBadge state={meta.state} />
               {isInstructor && <Badge variant="outline"><Icon name="user" />Delegated: Section B</Badge>}
             </div>
@@ -262,29 +265,27 @@ export function AssessmentBuilder({
             </div>
           </div>
           <div className="actions">
+            <Button type="button" variant="outline" onClick={() => setShowSettings(true)}><Icon name="gear" />Settings</Button>
             <Button type="button" variant="outline" onClick={() => setShowPreview(true)}><Icon name="play" />Preview &amp; simulate</Button>
             <Button type="button" variant="outline" disabled={!dirty && savedAt != null} onClick={saveDraft}><Icon name={savedAt && !dirty ? 'circle-check' : 'check'} />{savedAt && !dirty ? `Saved ${savedAt}` : 'Save draft'}</Button>
             {isInstructor
               ? <Button type="button" variant="default" onClick={onReview}><Icon name="paper-plane" />Submit Section B</Button>
-              : <Button type="button" variant="default" onClick={onReview}><Icon name="paper-plane" />Submit for review</Button>}
+              : <Button type="button" variant="default" disabled={totalQuestions(sections) === 0} onClick={onReview}><Icon name="share" />{embedded ? 'Continue to Distribute' : 'Submit for review'}</Button>}
           </div>
         </div>
 
         {/* sub tabs */}
         <Tabs
           value={tab}
-          onValueChange={v => { if (v !== 'review') setTab(v as Tab) }}
+          onValueChange={v => setTab(v as Tab)}
           className="flex flex-col"
         >
           <TabsList aria-label="Builder sections" style={{ marginBottom: 22 }}>
-            {([['build', 'Build', 'list-check'], ['configure', 'Configure', 'gear'], ['delivery', 'Delivery & Security', 'shield-halved'], ['review', 'Review & Publish', 'paper-plane']] as const).map(([id, label, ic]) => (
-              <TabsTrigger key={id} value={id} onClick={id === 'review' ? () => onReview() : undefined}>
-                <Icon name={ic} />{label}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger value="questions"><Icon name="list-check" />Questions</TabsTrigger>
+            <TabsTrigger value="structure"><Icon name="layer-group" />Structure</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="build">
+          <TabsContent value="questions">
             {sections.length === 0
               ? <BuilderStart name={meta.name} onRecycle={startRecycle} onScratch={startScratch} onAI={startAI} onBank={startBank} />
               : <div style={{ display: 'grid', gridTemplateColumns: '1fr 332px', gap: 24, alignItems: 'start' }}>
@@ -292,8 +293,9 @@ export function AssessmentBuilder({
                   <OverviewPanel sections={sections} onAskLeo={askLeo} onJumpFlags={() => flagRef.current?.scrollIntoView({ block: 'center' })} />
                 </div>}
           </TabsContent>
-          <TabsContent value="configure"><ConfigureTab meta={meta} /></TabsContent>
-          <TabsContent value="delivery"><DeliveryTab meta={meta} setMeta={setMeta} /></TabsContent>
+          <TabsContent value="structure">
+            <StructureTab sections={sections} setSections={setSections} onAddSection={addSection} />
+          </TabsContent>
         </Tabs>
 
         {/* modals */}
@@ -302,7 +304,8 @@ export function AssessmentBuilder({
         {showAI && <AIQuizGenerator onAccept={addAIQuestions} onClose={() => setShowAI(false)} />}
         {showSearch && <SemanticSearch onAdd={addBankQuestions} onClose={() => setShowSearch(false)} />}
         {showPreview && <PreviewSim sections={sections} meta={meta} onClose={() => setShowPreview(false)} />}
-        {showCollab && <CollabPanel meta={meta} setMeta={setMeta} sections={sections} setSections={setSections} onClose={() => setShowCollab(false)} />}
+        {showCollab && <CollabPanel meta={meta} setMeta={setMeta} onClose={() => setShowCollab(false)} />}
+        {showSettings && <SettingsPanel meta={meta} setMeta={setMeta} onClose={() => setShowSettings(false)} />}
     </div>
   )
 }

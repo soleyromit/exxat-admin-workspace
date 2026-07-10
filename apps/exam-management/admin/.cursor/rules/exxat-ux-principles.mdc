@@ -1,7 +1,10 @@
 ---
-description: Exxat DS UX principles — what to follow, when to break, why
-alwaysApply: true
-appliesTo: [universal]
+description: Exxat DS UX principles — P1–P20. P1–P8 in _constitution.exxat-ds.mdc.
+alwaysApply: false
+tags: [ux, design]
+seeAlso:
+  - docs/exxat-ds/modern-saas-patterns.md
+  - .cursor/skills/exxat-senior-ux/SKILL.md
 ---
 
 # Exxat DS — UX principles (and when to break them)

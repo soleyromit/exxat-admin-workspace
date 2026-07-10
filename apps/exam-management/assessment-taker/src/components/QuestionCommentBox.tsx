@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { Button, Textarea } from '@exxatdesignux/ui';
+import { Button, Card, CardContent, CardFooter, CardHeader, Textarea } from '@exxatdesignux/ui';
 
 export interface QuestionCommentBoxProps {
   questionId: number;
@@ -21,13 +19,13 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
   };
 
   return (
-    <aside
+    <Card
+      role="complementary"
       aria-label="Report issue to faculty"
-      className="flex flex-col flex-shrink-0 self-start rounded-2xl border border-border shadow-sm overflow-hidden bg-card"
+      className="flex flex-col flex-shrink-0 self-start overflow-hidden"
       style={{ width: 360 }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
+      <CardHeader className="flex flex-row items-center justify-between flex-shrink-0 border-b border-border px-4 py-3 space-y-0">
         <div className="flex items-center gap-2">
           <i
             className="fa-light fa-triangle-exclamation fa-fw text-sm"
@@ -41,10 +39,9 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close report panel">
           <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
         </Button>
-      </div>
+      </CardHeader>
 
-      {/* Body */}
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <CardContent className="flex flex-col gap-3 px-4 py-4">
         <p className="text-sm leading-relaxed shrink-0" style={{ color: 'var(--muted-foreground)' }}>
           Describe the issue (typo, ambiguous wording, suspected error). Faculty will review post-exam — you will not receive a real-time response.
         </p>
@@ -74,10 +71,9 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
             'Saved comments are submitted with your exam'
           )}
         </p>
-      </div>
+      </CardContent>
 
-      {/* Footer */}
-      <div className="flex items-center justify-end gap-2 flex-shrink-0 px-4 py-3 border-t border-border">
+      <CardFooter className="flex items-center justify-end gap-2 flex-shrink-0 border-t border-border px-4 py-3">
         <Button variant="outline" size="sm" onClick={onClose}>
           Cancel
         </Button>
@@ -89,7 +85,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
         >
           Submit
         </Button>
-      </div>
-    </aside>
+      </CardFooter>
+    </Card>
   );
 }

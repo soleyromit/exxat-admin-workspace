@@ -6,6 +6,14 @@ appliesTo: [universal]
 
 # Exxat DS — UX discovery protocol
 
+## IMAGE ATTACHED — highest priority
+
+If the user's message includes an **image** (screenshot, mockup, legacy UI capture) **and** asks to build, match, redesign, or "make it like this":
+
+1. **Do NOT write code** in this turn — even if the image looks like a complete spec.
+2. **Load `exxat-senior-ux`** and post the design brief with **`Image reference (IA only)`**, **`DS mapping`**, and **`Visual chrome: unchanged from DS`** lines.
+3. **MUST NOT** use `frontend-design` or any skill whose goal is visual matching — **`exxat-no-image-pixel-copy.mdc`** wins.
+
 ## STOP — read before you write any file
 
 If the user's prompt asks you to **design, create, build, rebuild, redesign,
@@ -97,16 +105,7 @@ brief. No → edit.
 
 ## When the user attaches an image
 
-This is the most common P4 failure mode. Required sequence:
-
-1. Load **`exxat-senior-ux`** — post brief with **`Image reference (IA only)`**,
-   **`DS mapping`**, **`Visual chrome: unchanged from DS`** lines.
-2. Wait for user go-ahead — **no code in the brief turn**.
-3. Implement **DS primitives + reference hub** — image informs **what**, not **how it looks**.
-
-**Sidebar example:** legacy screenshot shows 6 nav items and a flat footer → add
-those **links** in **`navigation.tsx`**; **do not** replace DS `AppSidebar`
-header/footer styling to "match" the sparser legacy chrome.
+See **IMAGE ATTACHED — highest priority** above. Sidebar example: legacy screenshot shows 6 nav items → add links in `navigation.tsx`; do not fork `AppSidebar` styling to match the upload.
 
 ## Question bank by surface type
 

@@ -1,5 +1,7 @@
 # Exxat DS — KPI strip (max four)
 
+> **Consolidated skill:** prefer [`.cursor/skills/exxat-kpi/SKILL.md`](../exxat-kpi/SKILL.md) for new work.
+
 Use when building **`KeyMetrics`** on **`ListPageTemplate`** or **Data tab** key-metrics cards.
 
 ## Read first

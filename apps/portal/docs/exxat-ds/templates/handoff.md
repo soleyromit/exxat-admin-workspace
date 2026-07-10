@@ -145,34 +145,11 @@ generated files, and is done.
 
 - (example) Should the compliance badge link out to the source document or open in a side panel?
 
-## 15. Designer-stack → engineering-stack port (delete if same stack)
+## 15. Stack note
 
-> **Skip this section** if your designer prototype and your production app
-> are on the same framework (both Vite, both Next.js).
->
-> **Fill this in** if the designer prototyped on the **Vite scaffold**
-> (`create-exxat-app`, the lightweight default) but the production app
-> still runs on **Next.js**. The agent or engineer maps each Vite-specific
-> import to its Next equivalent before merging the work into prod.
-
-| Vite scaffold (designer) | Next.js prod (engineer) | Notes |
-|---|---|---|
-| `import { Link } from "@/lib/next-compat"` → `<Link to="…">` | `import Link from "next/link"` → `<Link href="…">` | Drop the shim re-export; rename `to` → `href` |
-| `import { useNavigate } from "react-router-dom"` | `import { useRouter } from "next/navigation"` + `router.push(...)` | One-line swap |
-| `import { useLocation } from "react-router-dom"` → `useLocation().pathname` | `import { usePathname } from "next/navigation"` | Direct equivalent |
-| `import { useSearchParams } from "react-router-dom"` returns `[params, setParams]` | `import { useSearchParams } from "next/navigation"` returns `ReadonlyURLSearchParams` | Drop the destructure, accept readonly shape |
-| `import { Navigate } from "react-router-dom"` (JSX redirect) | `import { redirect } from "next/navigation"` (function call) | Move from JSX to component body |
-| `React.lazy(() => import(...))` + `<Suspense>` | `dynamic(() => import(...), { loading, ssr: false })` | Functionally equivalent — pick whichever the surrounding file already uses |
-| `vite.config.ts` aliases | `next.config.mjs` `experimental.turbopack.resolveAlias` or `tsconfig.json` `paths` | Rare — most aliases live in `tsconfig.json` already |
-| `index.html` `<meta>` tags + `<title>` | `app/layout.tsx` `metadata` export | Move static meta into the route's `metadata`; dynamic meta moves into `generateMetadata` |
-| `document.cookie` reads in client components | `cookies()` from `next/headers` (server) | Most cases are client-only; only swap if the value must be SSR-rendered |
-| `@fontsource-variable/inter` import in `main.tsx` | `Inter()` from `next/font/google` in `app/layout.tsx` | Both produce zero-CLS variable fonts; Next has the edge on hashed asset names |
-
-The agent runs this map as a codemod — see
-`packages/ui/template-vite/scripts/port-next-imports.mjs` (template-vite
-internal use) for the inverse direction (Next → Vite, used during PR-2).
-Engineers porting **Vite → Next** can copy that script and reverse the
-regexes; the patterns are symmetric.
+The reference app and `create-exxat-app` scaffold both ship **Vite + react-router-dom**.
+Routes live under `src/views/`; navigation helpers are in `@/lib/router-compat`.
+No framework port step is required when merging designer work into production.
 
 ---
 

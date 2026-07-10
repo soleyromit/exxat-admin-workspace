@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
-import { Button as DSButton } from '@exxatdesignux/ui';
+import { Button as DSButton, Separator } from '@exxatdesignux/ui';
 
 export interface SidebarDrawerProps {
   onClose: () => void;
@@ -36,9 +36,11 @@ export function SidebarDrawer({
   const bookmarkedIdxSet = new Set(bookmarkedIndices);
   const otherIndices = questions.map((_, i) => i).filter(i => !bookmarkedIdxSet.has(i));
 
+  const isOverlay = style?.position === 'fixed';
   return (
     <div
-      role="complementary"
+      role={isOverlay ? 'dialog' : 'complementary'}
+      aria-modal={isOverlay ? 'true' : undefined}
       aria-label="Question navigator"
       className="animate-slide-in-right w-60 shrink-0 flex flex-col rounded-2xl border border-border shadow-sm bg-card overflow-hidden"
       style={style}
@@ -50,8 +52,11 @@ export function SidebarDrawer({
           {answeredSet.size}/{questions.length}
         </span>
         {flaggedSet.size > 0 && (
-          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-            · <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />{flaggedSet.size}
+          <span
+            className="text-xs text-muted-foreground font-medium flex items-center gap-1"
+            aria-label={`${flaggedSet.size} bookmarked`}
+          >
+            · <i className="fa-light fa-bookmark text-[9px]" aria-hidden="true" />{flaggedSet.size}
           </span>
         )}
         <DSButton
@@ -72,7 +77,7 @@ export function SidebarDrawer({
         {bookmarkedIndices.length > 0 && (
           <div>
             <div className="text-[12px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-              <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />
+              <i className="fa-light fa-bookmark text-[9px]" aria-hidden="true" />
               Bookmarked
             </div>
             <TileGrid>
@@ -90,7 +95,7 @@ export function SidebarDrawer({
 
         {/* Divider */}
         {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
-          <div className="h-px bg-border -my-1" />
+          <Separator className="-my-1" />
         )}
 
         {/* All others — answered + unanswered combined */}

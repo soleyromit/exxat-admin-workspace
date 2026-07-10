@@ -1,9 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
-/** Dashboard-shaped fallback used by dashboard routes and hydration gates. */
+/**
+ * Dashboard route fallback — used by the `<Suspense fallback>` wrapping the
+ * lazy dashboard tabs in `src/views/dashboard.tsx`.
+ */
 export function DashboardLoadingFallback() {
   return (
     <div
+      role="status"
+      aria-live="polite"
       className="flex flex-col gap-4 p-4 md:p-6"
       aria-busy="true"
       aria-label="Loading dashboard"

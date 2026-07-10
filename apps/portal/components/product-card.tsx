@@ -6,12 +6,12 @@ import {
   CardTitle,
   CardContent,
   Button,
-  Badge,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@exxatdesignux/ui'
+import { StatusBadge, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import type { Product } from '@/lib/products'
 
 function ProductHeader({ colorKey, icon, muted }: { colorKey: string; icon: string; muted?: boolean }) {
@@ -43,7 +43,7 @@ export function ProductCard({ product }: { product: Product }) {
         <ProductHeader colorKey={product.colorKey} icon={product.icon} muted />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-4 pb-4">
           <CardTitle className="text-base text-muted-foreground">{product.name}</CardTitle>
-          <Badge variant="secondary" className="rounded text-xs">Coming Soon</Badge>
+          <StatusBadge label="Coming Soon" icon="fa-clock" tint={STATUS_TINT_NEUTRAL} />
         </CardHeader>
       </Card>
     )

@@ -10,7 +10,7 @@
  */
 
 import * as React from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useLocation } from "react-router-dom"
 import { motion, useReducedMotion } from "motion/react"
 
@@ -26,6 +26,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Shortcut,
 } from "@/components/ui/dropdown-menu"
 import {
   Popover,
@@ -43,16 +44,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarSeparator,
+  useRegisterNavFlyoutToggle,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { SidebarNavLabel } from "@/components/ui/sidebar-nav-label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
   TooltipContent,
@@ -63,22 +65,34 @@ import { Button } from "@/components/ui/button"
 import { Tip } from "@/components/ui/tip"
 import { requestOpenCommandMenu } from "@/components/command-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { useAltKeyLabel, useModKeyLabel } from "@/hooks/use-mod-key-label"
-import { useAskLeo } from "@/components/ask-leo-sidebar"
+import { useModKeyLabel } from "@/hooks/use-mod-key-label"
 import { useLocationHash } from "@/hooks/use-location-hash"
 import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
+import { useSidebarDrillInWidth } from "@/hooks/use-sidebar-drill-in-width"
 import { useProduct, type Product } from "@/contexts/product-context"
 import { useProductSwitch } from "@/contexts/product-route-sync"
+import { productSlug } from "@/stores/app-store"
 import { isListedCustomProduct } from "@/stores/app-store"
 import { NavUser } from "./nav-user"
 import { useSecondaryPanel } from "./secondary-panel"
+import { SidebarDrillIn } from "./sidebar-drill-in"
+import { LeoSidebarDrillInPanel } from "./leo-sidebar-drill-in-panel"
+import { DesignSystemSidebarDrillInPanel } from "./design-system-sidebar-drill-in-panel"
+import { SidebarDrillInResizeHandle } from "./sidebar-drill-in-resize-handle"
 import { ExxatProductLogo, ExxatProductMark } from "@/components/exxat-product-logo"
 import { motionHeaderEnter } from "@/lib/motion-ui"
 import { customProductBrandConfig, productBrandLabel } from "@/lib/product-brand"
 import { isProductRefHidden, type ProductRef } from "@/lib/product-ref"
 import {
+  isLibraryPrimaryListNavActive,
+  LIBRARY_PRIMARY_LIST_NAV_KEY,
+} from "@/lib/library-nav"
+import {
   NAV_BY_PRODUCT,
   getPrimaryNavForProduct,
+  getPrimaryNavLayoutForProduct,
+  type NavPrimaryLayout,
+  type NavSection,
   NAV_DOCUMENTS,
   NAV_DOCUMENTS_LABEL,
   NAV_SCHOOL_DEFAULT,
@@ -89,13 +103,13 @@ import {
   NAV_LOCATION_DEFAULT,
   NAV_SITES,
   NAV_SECONDARY,
+  getSecondaryNavForProduct,
   NAV_USER,
+  type NavDrillInConfig,
   type NavLinkItem,
   type NavSecondaryItem,
   type NavSchool,
-  type NavProgram,
   type NavSite,
-  type NavLocation,
 } from "@/lib/mock/navigation"
 import {
   buildNavHashClaims,
@@ -108,15 +122,27 @@ import {
   customProductSlugFromSuffix,
   primaryNavLinksForSlug,
 } from "@exxatdesignux/product-framework"
+import {
+  expandSwitcherProducts,
+  resolveActiveSwitcherEntry,
+  type SwitcherProductEntry,
+} from "@/lib/product-switcher-catalog"
 
 // Active-link disambiguation needs to know about every URL the sidebar can
 // expose in any product (longest-prefix wins). Spreading the registry keeps
 // the nav-active helper accurate even when the user switches products and
 // the *displayed* primary nav changes.
+const BUILTIN_PRODUCT_SETTINGS_URLS = (
+  ["exxat-prism", "exxat-design-os", "exxat-one-schools", "exxat-one-sites"] as const
+).map(p => `/${productSlug(p)}/settings`)
+
 const STATIC_NAV_URLS = collectNavUrls([
   ...Object.values(NAV_BY_PRODUCT).flat(),
   ...NAV_DOCUMENTS,
   ...NAV_SECONDARY,
+  ...BUILTIN_PRODUCT_SETTINGS_URLS.map(url => ({ url })),
+  { url: "/settings/profile" },
+  { url: "/settings/organization" },
 ])
 
 // Custom-product nav lives in the tenant registry, which is hydrated at
@@ -150,13 +176,21 @@ function isNavActive(pathname: string, url: string, locationHash = ""): boolean 
   })
 }
 
-/** Sub-item active — catalog detail routes, hash fragments, or duplicate hub URLs (Rotations). */
+/** Sub-item active — catalog detail routes, hash fragments, duplicate hub URLs, or nested children. */
 function isCollapsibleChildActive(
   pathname: string,
   parent: NavLinkItem,
   child: NavLinkItem,
   locationHash: string
 ): boolean {
+  if (child.children?.length) {
+    const anyNestedActive = child.children.some((grandchild) =>
+      isCollapsibleChildActive(pathname, child, grandchild, locationHash),
+    )
+    if (anyNestedActive) return true
+    return isNavActive(pathname, child.url, locationHash)
+  }
+
   const children = parent.children
   if (!children?.length) return isNavActive(pathname, child.url, locationHash)
 
@@ -174,6 +208,11 @@ function isCollapsibleChildActive(
   }
 
   if (!isNavActive(pathname, child.url, locationHash)) return false
+
+  /** Primary “Library” (`library-all`) — list hub route, independent of secondary scope. */
+  if (child.key === LIBRARY_PRIMARY_LIST_NAV_KEY && parent.key === "library") {
+    return isLibraryPrimaryListNavActive(pathname)
+  }
 
   /** Hub entry (`/library`) must not stay “active” on `/library/all` etc. */
   if (parent.primaryHubChildKey && child.key === parent.primaryHubChildKey) {
@@ -229,6 +268,23 @@ function badgeAccessibleSuffix(badge: number | string): string {
   return String(badge)
 }
 
+function NavItemBadgeContent({ badge }: { badge: number | string }) {
+  if (typeof badge === "number") {
+    return (
+      <Badge className="h-4 min-w-4 px-1 text-xs leading-none font-semibold rounded-full tabular-nums border-transparent bg-destructive text-destructive-foreground hover:bg-destructive">
+        {badge}
+      </Badge>
+    )
+  }
+  if (badge === "New") return <StatusBadge status="new" />
+  if (badge === "Beta") return <StatusBadge status="beta" />
+  return (
+    <Badge className="h-4 px-1.5 text-xs leading-none font-semibold rounded-full">
+      {badge}
+    </Badge>
+  )
+}
+
 /** Child row for expandable nav items — shared by inline sub-menu and collapsed-rail popover. */
 const SidebarNavChildLink = React.forwardRef<
   HTMLAnchorElement,
@@ -238,6 +294,8 @@ const SidebarNavChildLink = React.forwardRef<
     pathname: string
     locationHash: string
     onNavigate?: () => void
+    /** Inline sub-menu pins badge on `SidebarMenuSubItem`; flyout keeps badge in-row. */
+    hideBadge?: boolean
     /** Popover uses surface tokens; inline sub-menu uses `SidebarMenuSubButton`. */
     linkClassName?: string
   } & Omit<React.ComponentPropsWithoutRef<typeof Link>, "to">
@@ -248,6 +306,7 @@ const SidebarNavChildLink = React.forwardRef<
     pathname,
     locationHash,
     onNavigate,
+    hideBadge = false,
     linkClassName,
     className: incomingClassName,
     onClick,
@@ -263,17 +322,27 @@ const SidebarNavChildLink = React.forwardRef<
     <Link
       ref={ref}
       to={child.url}
-      className={cn("flex min-w-0 items-center gap-2", linkClassName, incomingClassName)}
+      className={cn(
+        "flex w-full min-w-0 items-center gap-2",
+        linkClassName,
+        incomingClassName,
+      )}
       aria-current={childActive ? "page" : undefined}
+      aria-label={
+        child.badge !== undefined
+          ? `${child.title}, ${badgeAccessibleSuffix(child.badge)}`
+          : undefined
+      }
       onClick={e => {
         onNavigate?.()
-        if (
-          parent.secondaryPanel &&
-          pathname === childPath &&
-          !child.url.includes("#")
-        ) {
-          e.preventDefault()
-          openPanel(parent.secondaryPanel)
+        if (parent.secondaryPanel && !child.url.includes("#")) {
+          const panelId = parent.secondaryPanel
+          // Same-route only — first navigation to `/library/all` opens the panel
+          // from `library/_layout.tsx` after the URL updates (avoids pathname race).
+          if (pathname === childPath) {
+            e.preventDefault()
+            openPanel(panelId)
+          }
         }
         onClick?.(e)
       }}
@@ -282,11 +351,132 @@ const SidebarNavChildLink = React.forwardRef<
       <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
         {childActive && child.iconActive ? child.iconActive : child.icon}
       </span>
-      <span className="min-w-0 flex-1 truncate">{child.title}</span>
+      <SidebarNavLabel>{child.title}</SidebarNavLabel>
+      {!hideBadge && child.badge !== undefined ? (
+        <span className="ms-auto shrink-0" aria-hidden="true">
+          <NavItemBadgeContent badge={child.badge} />
+        </span>
+      ) : null}
     </Link>
   )
 })
 SidebarNavChildLink.displayName = "SidebarNavChildLink"
+
+/** Inline sub-menu row — badge pinned to far end (same contract as `SidebarMenuBadge`). */
+function SidebarNavSubMenuRow({
+  parent,
+  child,
+  pathname,
+  locationHash,
+}: {
+  parent: NavLinkItem
+  child: NavLinkItem
+  pathname: string
+  locationHash: string
+}) {
+  const childActive = isCollapsibleChildActive(pathname, parent, child, locationHash)
+
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton asChild isActive={childActive} className="min-w-0 flex-1">
+        <SidebarNavChildLink
+          parent={parent}
+          child={child}
+          pathname={pathname}
+          locationHash={locationHash}
+          hideBadge
+        />
+      </SidebarMenuSubButton>
+      {child.badge !== undefined ? (
+        <span
+          aria-hidden="true"
+          data-sidebar="nav-sub-badge"
+          className="me-2 shrink-0 self-center"
+        >
+          <NavItemBadgeContent badge={child.badge} />
+        </span>
+      ) : null}
+    </SidebarMenuSubItem>
+  )
+}
+
+/** Nested collapsible inside an expanded parent sub-menu (e.g. Compliance under Program). */
+function CollapsibleNavSubItem({
+  item,
+  pathname,
+}: {
+  item: NavLinkItem
+  pathname: string
+}) {
+  const locationHash = useLocationHash()
+  const isAnyNestedActive =
+    item.children?.some((child) => isCollapsibleChildActive(pathname, item, child, locationHash)) ??
+    false
+  const parentMenuButtonActive = isCollapsibleParentMenuButtonActive(pathname, item, locationHash)
+  const [open, setOpen] = React.useState(false)
+
+  const navRouteKey = `${pathname}|${locationHash}|${isAnyNestedActive}`
+  const prevNavRouteKeyRef = React.useRef(navRouteKey)
+  if (navRouteKey !== prevNavRouteKeyRef.current) {
+    prevNavRouteKeyRef.current = navRouteKey
+    setOpen(isAnyNestedActive)
+  }
+
+  if (!item.children?.length) return null
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild>
+      <SidebarMenuSubItem className="group/collapsible-sub flex-col !items-stretch">
+        <CollapsibleTrigger asChild>
+          <SidebarMenuSubButton isActive={parentMenuButtonActive} className="w-full min-w-0">
+            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {parentMenuButtonActive && item.iconActive ? item.iconActive : item.icon}
+            </span>
+            <SidebarNavLabel>{item.title}</SidebarNavLabel>
+            <span
+              className="ms-auto flex size-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              <i
+                className="fa-light fa-chevron-right text-xs text-current transition-transform duration-200 ease-out group-data-[state=open]/collapsible-sub:rotate-90 motion-reduce:transition-none"
+                aria-hidden="true"
+              />
+            </span>
+          </SidebarMenuSubButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="w-full overflow-hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
+          <SidebarMenuSub>
+            {item.children.map((child) => (
+              <SidebarNavSubMenuRow
+                key={child.key}
+                parent={item}
+                child={child}
+                pathname={pathname}
+                locationHash={locationHash}
+              />
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuSubItem>
+    </Collapsible>
+  )
+}
+
+function collectFlyoutLinks(
+  parent: NavLinkItem,
+): { parent: NavLinkItem; child: NavLinkItem }[] {
+  const links: { parent: NavLinkItem; child: NavLinkItem }[] = []
+  for (const child of parent.children ?? []) {
+    if (child.children?.length) {
+      for (const grandchild of child.children) {
+        links.push({ parent: child, child: grandchild })
+      }
+    } else {
+      links.push({ parent, child })
+    }
+  }
+  return links
+}
 
 /**
  * CollapsibleNavItem — isolated component so each collapsible has its own
@@ -299,6 +489,7 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
   const isAnyChildActive =
     item.children?.some(c => isCollapsibleChildActive(pathname, item, c, locationHash)) ?? false
   const parentMenuButtonActive = isCollapsibleParentMenuButtonActive(pathname, item, locationHash)
+  const { secondaryFlyoutHidden, activePanel } = useSecondaryPanel()
   const { state, isMobile } = useSidebar()
   const [open, setOpen] = React.useState(false)
   const [flyoutOpen, setFlyoutOpen] = React.useState(false)
@@ -344,13 +535,22 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
       ? item.iconActive
       : item.icon
 
-  React.useEffect(() => {
+  const navRouteKey = `${pathname}|${locationHash}|${isAnyChildActive}`
+  const prevNavRouteKeyRef = React.useRef(navRouteKey)
+  if (navRouteKey !== prevNavRouteKeyRef.current) {
+    prevNavRouteKeyRef.current = navRouteKey
     setOpen(isAnyChildActive)
-  }, [pathname, isAnyChildActive, locationHash])
-
-  React.useEffect(() => {
     setFlyoutOpen(false)
-  }, [pathname])
+  }
+
+  /** Expand parent when scope nav is open (desktop rail or flyout Main menu). */
+  React.useEffect(() => {
+    const scopePanelOpen =
+      item.secondaryPanel != null && activePanel === item.secondaryPanel
+    if (isAnyChildActive && (secondaryFlyoutHidden || scopePanelOpen)) {
+      setOpen(true)
+    }
+  }, [secondaryFlyoutHidden, isAnyChildActive, activePanel, item.secondaryPanel])
 
   if (!item.children?.length) return null
 
@@ -402,13 +602,13 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
             <h2 id={flyoutTitleId} className="sr-only">
               {item.title}
             </h2>
-            <ul className="flex flex-col gap-0.5" role="list">
-              {item.children.map(child => {
-                const childActive = isCollapsibleChildActive(pathname, item, child, locationHash)
+            <ul className="flex flex-col gap-0.5">
+              {collectFlyoutLinks(item).map(({ parent: linkParent, child }) => {
+                const childActive = isCollapsibleChildActive(pathname, linkParent, child, locationHash)
                 return (
-                  <li key={child.key}>
+                  <li key={`${linkParent.key}-${child.key}`}>
                     <SidebarNavChildLink
-                      parent={item}
+                      parent={linkParent}
                       child={child}
                       pathname={pathname}
                       locationHash={locationHash}
@@ -442,33 +642,35 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
           Radix `data-state` (e.g. chevron rotate, content slide). Radix's
           asChild merges the data-state onto this `<SidebarMenuItem>`. */}
       <SidebarMenuItem className="group/collapsible">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton isActive={parentMenuButtonActive}>
-                <span
-                  key={parentMenuButtonActive ? "active" : "idle"}
-                  className={cn(
-                    "size-4 shrink-0 flex items-center justify-center",
-                    parentMenuButtonActive &&
-                      "[animation:sidebar-icon-pop_380ms_cubic-bezier(0.34,1.56,0.64,1)_both]",
-                  )}
-                  aria-hidden="true"
-                >
-                  {triggerIcon}
-                </span>
-                <span>{item.title}</span>
-                <i
-                  className="fa-light fa-chevron-right ms-auto text-xs text-current transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none"
-                  aria-hidden="true"
-                />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile}>
-            {item.title}
-          </TooltipContent>
-        </Tooltip>
+        <SidebarMenuButton
+          asChild
+          isActive={parentMenuButtonActive}
+          tooltip={item.title}
+        >
+          <CollapsibleTrigger>
+            <span
+              key={parentMenuButtonActive ? "active" : "idle"}
+              className={cn(
+                "size-4 shrink-0 flex items-center justify-center",
+                parentMenuButtonActive &&
+                  "[animation:sidebar-icon-pop_380ms_cubic-bezier(0.34,1.56,0.64,1)_both]",
+              )}
+              aria-hidden="true"
+            >
+              {triggerIcon}
+            </span>
+            <SidebarNavLabel>{item.title}</SidebarNavLabel>
+            <span
+              className="ms-auto flex size-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              <i
+                className="fa-light fa-chevron-right text-xs text-current transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none"
+                aria-hidden="true"
+              />
+            </span>
+          </CollapsibleTrigger>
+        </SidebarMenuButton>
         {/* Slide the children open/closed using Radix's
             `--radix-collapsible-content-height` CSS variable. `overflow-hidden`
             is required so the height clip is visible during the animation.
@@ -476,18 +678,20 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
         <CollapsibleContent className="overflow-hidden group-data-[collapsible=icon]:hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
           <SidebarMenuSub>
             {item.children.map(child => {
-              const childActive = isCollapsibleChildActive(pathname, item, child, locationHash)
+              if (child.children?.length && child.children.length <= 40) {
+                return (
+                  <CollapsibleNavSubItem key={child.key} item={child} pathname={pathname} />
+                )
+              }
+
               return (
-                <SidebarMenuSubItem key={child.key}>
-                  <SidebarMenuSubButton asChild isActive={childActive}>
-                    <SidebarNavChildLink
-                      parent={item}
-                      child={child}
-                      pathname={pathname}
-                      locationHash={locationHash}
-                    />
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                <SidebarNavSubMenuRow
+                  key={child.key}
+                  parent={item}
+                  child={child}
+                  pathname={pathname}
+                  locationHash={locationHash}
+                />
               )
             })}
           </SidebarMenuSub>
@@ -498,8 +702,11 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
 }
 
 function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: string }) {
-  const { openPanel } = useSecondaryPanel()
+  const { activePanel, openPanel, closePanel, secondaryFlyoutHidden, showSecondaryFlyout } =
+    useSecondaryPanel()
+  const { dismissNavFlyout, state, isMobile } = useSidebar()
   const locationHash = useLocationHash()
+  const iconRailCollapsed = state === "collapsed" && !isMobile
   return (
     <>
       {items.map(item => {
@@ -512,20 +719,22 @@ function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: str
 
         const isActive = isNavActive(pathname, item.url, locationHash)
         const itemPath = navUrlPath(item.url)
+        const linkAriaLabel =
+          item.badge !== undefined
+            ? `${item.title}, ${badgeAccessibleSuffix(item.badge)}`
+            : iconRailCollapsed
+              ? item.title
+              : undefined
         return (
           <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
               <Link
                 to={item.url}
                 aria-current={isActive ? "page" : undefined}
-                aria-label={
-                  item.badge !== undefined
-                    ? `${item.title}, ${badgeAccessibleSuffix(item.badge)}`
-                    : undefined
-                }
+                {...(linkAriaLabel ? { "aria-label": linkAriaLabel } : {})}
                 onClick={e => {
                   // Reopen the panel when the user clicks a panel-driving row
-                  // while ALREADY on its route — Next.js `<Link>` does not
+                  // while ALREADY on its route — react-router-dom `<Link>` does not
                   // navigate to the same URL, so without this the panel could
                   // stay closed (e.g. after the user collapsed it manually).
                   // On first click (different route), default navigation runs
@@ -537,7 +746,23 @@ function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: str
                     !item.url.includes("#")
                   ) {
                     e.preventDefault()
-                    openPanel(item.secondaryPanel)
+                    if (
+                      secondaryFlyoutHidden &&
+                      activePanel === item.secondaryPanel
+                    ) {
+                      showSecondaryFlyout()
+                    } else {
+                      openPanel(item.secondaryPanel)
+                    }
+                  }
+                  // Leaf navigation — close mobile / high-zoom flyout. Skip rows
+                  // that open a drill-in stack so the user can pick a section item.
+                  if (!item.drillIn && !item.secondaryPanel) {
+                    dismissNavFlyout()
+                  }
+                  // Leaving a hub with a nested scope rail (Library) — drop panel state.
+                  if (!item.secondaryPanel && activePanel) {
+                    closePanel({ mainSidebar: "leave" })
                   }
                 }}
               >
@@ -552,40 +777,27 @@ function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: str
                 >
                   {isActive && item.iconActive ? item.iconActive : item.icon}
                 </span>
-                <span>{item.title}</span>
+                <SidebarNavLabel>{item.title}</SidebarNavLabel>
+                {item.badge !== undefined ? (
+                  <span className="ms-auto shrink-0" aria-hidden="true">
+                    <NavItemBadgeContent badge={item.badge} />
+                  </span>
+                ) : null}
               </Link>
             </SidebarMenuButton>
-            {item.badge !== undefined && (
-              <>
-                {/* Full badge — visible when sidebar is expanded */}
-                <SidebarMenuBadge aria-hidden="true">
-                  {typeof item.badge === "number" ? (
-                    <Badge className="h-4 min-w-4 px-1 text-xs leading-none font-semibold rounded-full tabular-nums border-transparent bg-red-600 text-white hover:bg-red-600">
-                      {item.badge}
-                    </Badge>
-                  ) : item.badge === "New" ? (
-                    <StatusBadge status="new" />
-                  ) : item.badge === "Beta" ? (
-                    <StatusBadge status="beta" />
-                  ) : (
-                    <Badge className="h-4 px-1.5 text-xs leading-none font-semibold rounded-full">
-                      {item.badge}
-                    </Badge>
-                  )}
-                </SidebarMenuBadge>
-                {/* Dot indicator — visible only when sidebar is collapsed */}
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "absolute top-1 right-1 size-2 rounded-full hidden group-data-[collapsible=icon]:block",
-                    typeof item.badge === "number" ? "bg-red-600"
-                      : item.badge === "New" ? "bg-brand"
-                      : item.badge === "Beta" ? "bg-yellow-400"
-                      : "bg-primary"
-                  )}
-                />
-              </>
-            )}
+            {item.badge !== undefined ? (
+              /* Dot indicator — visible only when sidebar is collapsed */
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute top-1 right-1 size-2 rounded-full hidden group-data-[collapsible=icon]:block",
+                  typeof item.badge === "number" ? "bg-destructive"
+                    : item.badge === "New" ? "bg-brand"
+                    : item.badge === "Beta" ? "bg-[var(--insight-severity-warning)]"
+                    : "bg-primary"
+                )}
+              />
+            ) : null}
           </SidebarMenuItem>
         )
       })}
@@ -593,18 +805,113 @@ function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: str
   )
 }
 
+/** Expanded sidebar: Ask Leo (labeled) + Search / Notifications icon-only in one row. */
+function SidebarQuickActions({ pathname }: { pathname: string }) {
+  const { state, isMobile } = useSidebar()
+  const mod = useModKeyLabel()
+  const { product } = useProduct()
+  const leoHref = `/${productSlug(product)}/leo`
+  const isOnLeoLanding = pathname === leoHref || pathname.startsWith(`${leoHref}/`)
+  const askLeo = NAV_QUICK_ACTIONS.find((item) => item.opensAskLeo)
+  const search = NAV_QUICK_ACTIONS.find((item) => item.opensCommandMenu)
+  const notifications = NAV_QUICK_ACTIONS.find((item) => item.key === "notifications")
+
+  if (state === "collapsed" && !isMobile) {
+    return (
+      <SidebarNavSecondaryItems
+        items={NAV_QUICK_ACTIONS}
+        pathname={pathname}
+        iconOnly
+      />
+    )
+  }
+
+  if (!askLeo || !search || !notifications) {
+    return <SidebarNavSecondaryItems items={NAV_QUICK_ACTIONS} pathname={pathname} />
+  }
+
+  const searchTooltip = (
+    <span className="inline-flex items-center gap-1.5">
+      Search
+      <KbdGroup>
+        <Kbd>{mod}</Kbd>
+        <Kbd>K</Kbd>
+      </KbdGroup>
+    </span>
+  )
+
+  return (
+    <SidebarMenuItem>
+      <div
+        role="toolbar"
+        aria-label="Quick actions"
+        className="flex w-full min-w-0 items-center gap-0.5"
+      >
+        <SidebarMenuButton
+          asChild
+          isActive={isOnLeoLanding}
+          tooltip={askLeo.title}
+          className="min-h-8 min-w-0 flex-1 justify-start"
+        >
+          <Link to={leoHref} aria-current={isOnLeoLanding ? "page" : undefined}>
+            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {askLeo.icon}
+            </span>
+            <SidebarNavLabel>{askLeo.title}</SidebarNavLabel>
+          </Link>
+        </SidebarMenuButton>
+
+        <SidebarMenuButton
+          type="button"
+          tooltip={searchTooltip}
+          aria-label="Search"
+          className="!size-8 !min-h-8 !max-h-8 !w-8 !min-w-8 !max-w-8 aspect-square shrink-0 justify-center gap-0 p-0"
+          onClick={() => requestOpenCommandMenu()}
+        >
+          <span className="flex size-4 items-center justify-center" aria-hidden="true">
+            {search.icon}
+          </span>
+        </SidebarMenuButton>
+        <Shortcut keys={`${mod}K`} onInvoke={requestOpenCommandMenu} />
+
+        <SidebarMenuButton
+          asChild
+          tooltip={notifications.title}
+          aria-label="Notifications"
+          className="!size-8 !min-h-8 !max-h-8 !w-8 !min-w-8 !max-w-8 aspect-square shrink-0 justify-center gap-0 p-0"
+        >
+          <Link to={notifications.url}>
+            <span className="flex size-4 items-center justify-center" aria-hidden="true">
+              {notifications.icon}
+            </span>
+          </Link>
+        </SidebarMenuButton>
+      </div>
+    </SidebarMenuItem>
+  )
+}
+
 /** Utilities-style rows (⌘K, Ask Leo, Settings, …) — shared by quick actions + bottom group. */
 function SidebarNavSecondaryItems({
   items,
   pathname,
+  iconOnly = false,
 }: {
   items: NavSecondaryItem[]
   pathname: string
+  /** Collapsed icon rail — label + shortcut hints hidden. */
+  iconOnly?: boolean
 }) {
   const mod = useModKeyLabel()
-  const alt = useAltKeyLabel()
   const locationHash = useLocationHash()
-  const { toggle: toggleAskLeo, open: askLeoOpen } = useAskLeo()
+  const { product } = useProduct()
+  const leoHref = `/${productSlug(product)}/leo`
+  // Active when on the Leo landing route for the current product (drop the
+  // ⌘⌥K hint — that shortcut opens the side-panel Sheet, not the route; per
+  // `exxat-kbd-shortcuts.mdc` Rule 1, Kbd hints must match the click action).
+  const isOnLeoLanding = pathname === leoHref || pathname.startsWith(`${leoHref}/`)
+  const { dismissNavFlyout, state, isMobile } = useSidebar()
+  const iconRailCollapsed = iconOnly || (state === "collapsed" && !isMobile)
   return (
     <>
       {items.map((item) => {
@@ -614,7 +921,9 @@ function SidebarNavSecondaryItems({
           !item.opensAskLeo &&
           Boolean(pathOnly) &&
           pathOnly !== "#" &&
-          isNavActive(pathname, item.url, locationHash)
+          (item.key === "settings" || item.key === "site-configuration"
+            ? pathname.endsWith("/settings") || pathname === "/settings/organization"
+            : isNavActive(pathname, item.url, locationHash))
 
         return (
           <SidebarMenuItem key={item.key}>
@@ -628,33 +937,39 @@ function SidebarNavSecondaryItems({
                 <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
                   {item.icon}
                 </span>
-                <span>{item.title}</span>
-                <KbdGroup className="ms-auto">
-                  <Kbd>{mod}</Kbd>
-                  <Kbd>K</Kbd>
-                </KbdGroup>
+                {!iconOnly ? <SidebarNavLabel>{item.title}</SidebarNavLabel> : null}
+                {!iconOnly ? (
+                  <KbdGroup className="ms-auto">
+                    <Kbd>{mod}</Kbd>
+                    <Kbd>K</Kbd>
+                  </KbdGroup>
+                ) : null}
               </SidebarMenuButton>
             ) : item.opensAskLeo ? (
-              <SidebarMenuButton
-                type="button"
-                tooltip={item.title}
-                isActive={askLeoOpen}
-                onClick={toggleAskLeo}
-                aria-expanded={askLeoOpen}
-              >
-                <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span>{item.title}</span>
-                <KbdGroup className="ms-auto">
-                  <Kbd>{mod}</Kbd>
-                  <Kbd>{alt}</Kbd>
-                  <Kbd>K</Kbd>
-                </KbdGroup>
+              // Ask Leo is a route destination (per-product `/<slug>/leo`) —
+              // the Sheet (`AskLeoSidebar`) remains the fast quick-ask path
+              // for ⌘⌥K and inline KPI/chart triggers. See `views/leo.tsx`.
+              <SidebarMenuButton asChild isActive={isOnLeoLanding} tooltip={item.title}>
+                <Link
+                  to={leoHref}
+                  aria-current={isOnLeoLanding ? "page" : undefined}
+                  {...(iconRailCollapsed ? { "aria-label": item.title } : {})}
+                  onClick={() => dismissNavFlyout()}
+                >
+                  <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  {!iconOnly ? <SidebarNavLabel>{item.title}</SidebarNavLabel> : null}
+                </Link>
               </SidebarMenuButton>
             ) : (
               <SidebarMenuButton asChild isActive={linkActive} tooltip={item.title}>
-                <Link to={item.url} aria-current={linkActive ? "page" : undefined}>
+                <Link
+                  to={item.url}
+                  aria-current={linkActive ? "page" : undefined}
+                  {...(iconRailCollapsed ? { "aria-label": item.title } : {})}
+                  onClick={() => dismissNavFlyout()}
+                >
                   <span
                     key={linkActive ? "active" : "idle"}
                     className={cn(
@@ -666,7 +981,7 @@ function SidebarNavSecondaryItems({
                   >
                     {linkActive && item.iconActive ? item.iconActive : item.icon}
                   </span>
-                  <span>{item.title}</span>
+                  {!iconOnly ? <SidebarNavLabel>{item.title}</SidebarNavLabel> : null}
                 </Link>
               </SidebarMenuButton>
             )}
@@ -766,16 +1081,21 @@ function TeamSwitcherInner({
     setSubView("main")
   }
 
+  const iconRailCollapsed = state === "collapsed" && !isMobile
+
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
+    <SidebarMenuItem>
     <DropdownMenu onOpenChange={(open) => { if (!open) setSubView("main") }}>
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              aria-label={`${parent.name} · ${child.name}. ${scope.ariaSuffix}`}
+              {...(iconRailCollapsed
+                ? {
+                    "aria-label": `${parent.name} · ${child.name}. ${scope.ariaSuffix}`,
+                  }
+                : {})}
               className={cn(
                 "py-2 text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
                 /* `size=lg` is `h-12` + `overflow-hidden` — two lines + avatar need more height */
@@ -788,7 +1108,7 @@ function TeamSwitcherInner({
             >
               <Avatar
                 className={cn(
-                  "h-8 w-8 shrink-0",
+                  "size-8 shrink-0",
                   /* Icon rail: same 36px frame as product mark + header button */
                   "group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8",
                 )}
@@ -840,17 +1160,15 @@ function TeamSwitcherInner({
           <>
             {/* Selected parent — click to switch parent */}
             <div className="p-1">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 type="button"
                 onClick={() => setSubView("parents")}
                 className={cn(
-                  "flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition-colors",
+                  "flex w-full items-start gap-2.5 rounded-md p-2 text-left transition-colors",
                   "hover:bg-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 )}
               >
-                <Avatar className="h-9 w-9 shrink-0">
+                <Avatar className="size-9 shrink-0">
                   <AvatarImage
                     src={parent.logo}
                     alt=""
@@ -862,10 +1180,10 @@ function TeamSwitcherInner({
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-muted-foreground leading-tight">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground leading-tight">
                     {scope.childNoun}
                   </p>
-                  <p className="mt-0.5 text-[13px] font-semibold leading-snug">
+                  <p className="mt-0.5 text-xs font-semibold leading-snug">
                     {child.name}
                   </p>
                   <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{parent.name}</p>
@@ -884,7 +1202,7 @@ function TeamSwitcherInner({
                 onClick={() => setChild(c)}
                 className="items-start py-2"
               >
-                <i className={`fa-light fa-${scope.childIcon} mt-0.5 shrink-0 text-[13px]`} aria-hidden="true" />
+                <i className={`fa-light fa-${scope.childIcon} mt-0.5 shrink-0 text-xs`} aria-hidden="true" />
                 <span className="min-w-0 flex-1 break-words whitespace-normal">{c.name}</span>
                 {c.id === child.id && (
                   <i className="fa-solid fa-check ms-1 shrink-0 text-brand text-xs mt-0.5" aria-hidden="true" />
@@ -896,7 +1214,7 @@ function TeamSwitcherInner({
           <>
             {/* Back + parent list */}
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubView("main") }}>
-              <i className="fa-light fa-arrow-left text-[13px]" aria-hidden="true" />
+              <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
               <span>Back</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -923,8 +1241,7 @@ function TeamSwitcherInner({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    </SidebarMenuItem>
   )
 }
 
@@ -938,41 +1255,28 @@ function TeamSwitcherInner({
 // disambiguator ("Schools" / "Sites") that the dropdown renders next to the
 // shared "Exxat One" wordmark; `label` is the full accessible name used
 // in `aria-label` and the collapsed-rail tooltip.
-const PRODUCTS: { id: Product; label: string; scope?: "Schools" | "Sites" }[] = [
-  { id: "exxat-prism",       label: "Exxat Prism"           },
-  { id: "exxat-one-schools", label: "Exxat One — Schools",  scope: "Schools" },
-  { id: "exxat-one-sites",   label: "Exxat One — Sites",    scope: "Sites"   },
-  { id: "exxat-custom",      label: "Custom product"        },
-]
 
 function ProductLogoButton() {
   const { product, customProducts, activeCustomIndex, hiddenProducts } = useProduct()
   const switchProduct = useProductSwitch()
   const { state, isMobile } = useSidebar()
   const products = React.useMemo(
-    () =>
-      PRODUCTS.flatMap((p): { id: Product; label: string; scope?: "Schools" | "Sites"; customIndex?: number }[] => {
-        if (p.id !== "exxat-custom") {
-          const ref: ProductRef = { product: p.id }
-          if (isProductRefHidden(ref, hiddenProducts)) return []
-          return [p]
-        }
-        return customProducts.flatMap((cp, customIndex) => {
-          if (!isListedCustomProduct(cp)) return []
-          const ref: ProductRef = { product: "exxat-custom", customIndex }
-          if (isProductRefHidden(ref, hiddenProducts)) return []
-          return [{ ...p, label: productBrandLabel(customProductBrandConfig(cp)), customIndex }]
-        })
-      }),
+    () => expandSwitcherProducts(customProducts, hiddenProducts),
     [customProducts, hiddenProducts],
   )
   const isCurrentProduct = React.useCallback(
-    (entry: { id: Product; customIndex?: number }) =>
+    (entry: SwitcherProductEntry) =>
       entry.id === product &&
       (entry.customIndex === undefined || entry.customIndex === activeCustomIndex),
     [activeCustomIndex, product],
   )
-  const current = products.find(isCurrentProduct) ?? products[0] ?? PRODUCTS[0]
+  const current = resolveActiveSwitcherEntry(
+    products,
+    product,
+    activeCustomIndex,
+    customProducts,
+    isCurrentProduct,
+  )
   const iconRail = state === "collapsed" && !isMobile
   const expandedOrMobile = state === "expanded" || isMobile
 
@@ -1009,29 +1313,27 @@ function ProductLogoButton() {
                   />
                 </span>
               ) : (
-                <span className="flex min-h-0 min-w-0 flex-1 items-stretch gap-2">
+                <span className="flex min-h-0 min-w-0 flex-1 items-center gap-2">
+                  {/* Adaptive product lock-up. The `"sidebar"` variant runs
+                      the A → B1 → B2 cascade based on the wordmark area's
+                      width — full wordmark inline, suffix-only on one line,
+                      or wrapped suffix up to 2 lines. Mark is always
+                      visible. Scope chip is intentionally NOT rendered here
+                      (Exxat One — Schools / Sites read identically in the
+                      sidebar; the dropdown rows still show scope to
+                      distinguish them). */}
+                  <ExxatProductLogo
+                    product={current.id}
+                    variant="sidebar"
+                    previewCustomBrand={
+                      current.customIndex !== undefined
+                        ? customProducts[current.customIndex]
+                        : undefined
+                    }
+                    className="min-w-0 flex-1"
+                  />
                   <span
-                    className="flex min-h-0 min-w-0 flex-1 items-center justify-start gap-1.5 overflow-visible"
-                    aria-hidden="true"
-                  >
-                    <ExxatProductLogo
-                      product={current.id}
-                      variant="sidebar"
-                      previewCustomBrand={
-                        current.customIndex !== undefined
-                          ? customProducts[current.customIndex]
-                          : undefined
-                      }
-                      className="w-auto max-w-[min(100%,280px)] object-left object-contain"
-                    />
-                    {current.scope && (
-                      <span className="text-xs font-medium text-muted-foreground">
-                        — {current.scope}
-                      </span>
-                    )}
-                  </span>
-                  <span
-                    className="flex w-6 shrink-0 items-center justify-center self-stretch text-muted-foreground"
+                    className="flex w-6 shrink-0 items-center justify-center self-center text-muted-foreground"
                     aria-hidden="true"
                   >
                     <i
@@ -1044,7 +1346,12 @@ function ProductLogoButton() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile}>
+        {/* Tooltip fires in both states. In the collapsed rail it's the only
+            way to discover the product name; in the expanded rail it's the
+            wrap affordance for Lock-up B2 (when the suffix needs to wrap to
+            2 lines, hover/focus surfaces the full `current.label` including
+            the scope qualifier). */}
+        <TooltipContent side="right" align="center">
           {current.label}
         </TooltipContent>
       </Tooltip>
@@ -1062,17 +1369,20 @@ function ProductLogoButton() {
             aria-selected={isCurrentProduct(p)}
             aria-label={p.label}
           >
+            {/* Same adaptive lock-up as the trigger; the dropdown row is
+                wider, so the cascade settles to Lock-up A in the typical
+                case and only steps down for very long custom suffixes. */}
             <ExxatProductLogo
               product={p.id}
               variant="sidebar"
               previewCustomBrand={
                 p.customIndex !== undefined ? customProducts[p.customIndex] : undefined
               }
-              className="w-auto shrink-0 max-w-[min(100%,260px)]"
+              className="min-w-0 flex-1"
             />
             {p.scope && (
               <span
-                className="text-xs font-medium text-muted-foreground"
+                className="shrink-0 text-xs font-medium text-muted-foreground"
                 aria-hidden="true"
               >
                 — {p.scope}
@@ -1107,15 +1417,162 @@ function SidebarHeaderStack({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+/** Drilled-in section's nav rows — rendered inside `SidebarDrillIn`.
+ *
+ *  Active state uses **exact path + search compare** rather than the shared
+ *  `isNavActive` prefix matcher because drilled-in items routinely share a
+ *  pathname and disambiguate via `?param=value` (Tokens categories all live
+ *  at `/tokens-themes` and pivot on `?category=…`). Prefix matching would
+ *  light up every category row at once. Two items with distinct paths
+ *  (e.g. `/settings/profile` vs `/settings/organization`) also work
+ *  correctly because the search is `""` on both sides. */
+function SidebarDrillInItems({
+  items,
+  pathname,
+}: {
+  items: NavLinkItem[]
+  pathname: string
+}) {
+  const locationSearch = useLocation().search
+  const currentHref = `${pathname}${locationSearch}`
+  const { dismissNavFlyout, state, isMobile } = useSidebar()
+  const { activePanel, closePanel } = useSecondaryPanel()
+  const iconRailCollapsed = state === "collapsed" && !isMobile
+  return (
+    <SidebarMenu className="gap-0.5">
+      {items.map(item => {
+        const isActive = item.url === currentHref
+        return (
+          <SidebarMenuItem key={item.key}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+              <Link
+                to={item.url}
+                aria-current={isActive ? "page" : undefined}
+                {...(iconRailCollapsed ? { "aria-label": item.title } : {})}
+                onClick={() => {
+                  dismissNavFlyout()
+                  if (activePanel) {
+                    closePanel({ mainSidebar: "leave" })
+                  }
+                }}
+              >
+                <span
+                  key={isActive ? "active" : "idle"}
+                  className={cn(
+                    "size-4 shrink-0 flex items-center justify-center",
+                    isActive &&
+                      "[animation:sidebar-icon-pop_380ms_cubic-bezier(0.34,1.56,0.64,1)_both]",
+                  )}
+                  aria-hidden="true"
+                >
+                  {isActive && item.iconActive ? item.iconActive : item.icon}
+                </span>
+                <SidebarNavLabel>{item.title}</SidebarNavLabel>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
+    </SidebarMenu>
+  )
+}
+
+/** Type-narrowing helper: returns the nav row IFF it carries a `drillIn`
+ *  config whose `sectionRouteRoot` (or `sectionRouteMatch` override)
+ *  matches the current pathname. */
+function findActiveDrillInSection(
+  rows: ReadonlyArray<NavLinkItem | NavSecondaryItem>,
+  pathname: string,
+): (NavLinkItem | NavSecondaryItem) & { drillIn: NavDrillInConfig } | undefined {
+  for (const row of rows) {
+    if (!row.drillIn) continue
+    const match = row.drillIn.sectionRouteMatch
+      ? row.drillIn.sectionRouteMatch(pathname)
+      : pathname.startsWith(row.drillIn.sectionRouteRoot)
+    if (match) {
+      return row as (NavLinkItem | NavSecondaryItem) & { drillIn: NavDrillInConfig }
+    }
+  }
+  return undefined
+}
+
+function NavPrimaryPreamble({
+  items,
+  pathname,
+}: {
+  items: NavLinkItem[]
+  pathname: string
+}) {
+  if (items.length === 0) return null
+  return <NavLinkItems items={items} pathname={pathname} />
+}
+
+function NavPrimaryEpilogue({
+  items,
+  pathname,
+}: {
+  items: NavLinkItem[]
+  pathname: string
+}) {
+  if (items.length === 0) return null
+  return (
+    <SidebarGroup className="py-2 pt-0" role="group" aria-label="Primary">
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-0.5">
+          <NavLinkItems items={items} pathname={pathname} />
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+}
+
+function NavPrimarySectionGroup({
+  section,
+  pathname,
+}: {
+  section: NavSection
+  pathname: string
+}) {
+  return (
+    <SidebarGroup
+      className="py-0 pt-0"
+      role="group"
+      aria-label={section.label.trim() || "Primary navigation"}
+    >
+      {section.label.trim() ? (
+        <SidebarGroupLabel
+          className="text-xs font-medium uppercase tracking-wide px-2 text-sidebar-section-label"
+          suppressHydrationWarning
+        >
+          {section.label}
+        </SidebarGroupLabel>
+      ) : null}
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-0.5">
+          <NavLinkItems items={section.items} pathname={pathname} />
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+}
+
+export function AppSidebar({ className, ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = useLocation().pathname
-  const { isMobile, setOpen } = useSidebar()
+  const navigate = useNavigate()
+  const { isMobile, open, setOpen } = useSidebar()
   const reflowZoom = useSidebarReflowZoom()
+  const { activePanel, focusShellSupersedesPrimarySidebar } = useSecondaryPanel()
   const { product, customProducts, activeCustomIndex } = useProduct()
   // Per Rule 5 of the multi-product routing pattern: each product registers
   // its own primary nav. AppSidebar selects from the registry based on the
   // active product so switching products swaps the entire primary tree.
   const primaryNav = getPrimaryNavForProduct(product, customProducts, activeCustomIndex)
+  const primaryNavLayout = getPrimaryNavLayoutForProduct(
+    product,
+    customProducts,
+    activeCustomIndex,
+  )
+  const secondaryNav = getSecondaryNavForProduct(product)
 
   // Feed custom-product nav URLs into the active-state helper so links like
   // `/<custom-slug>/dashboard` actually win the longest-prefix match. The
@@ -1132,108 +1589,235 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     syncCustomNavUrls(extras)
   }, [customProducts])
 
+  // Drill-in detection. The URL is the source of truth — any nav row in
+  // primary / documents / footer that carries a `drillIn` config + matches
+  // the current pathname swaps the sidebar content area to a stacked
+  // `[← Back] · <sectionTitle> · <items>` view via the `SidebarDrillIn`
+  // primitive.
+  //
+  // Today only Tokens opts in (in `NAV_DOCUMENTS`); the search covers
+  // every array so future drill-in sections work without changing this file.
+  const drillInSection = React.useMemo(
+    () => findActiveDrillInSection(
+      // NAV_QUICK_ACTIONS includes the Ask Leo row which carries its own
+      // drill-in for `/<product>/leo` — search it alongside the existing
+      // primary / documents / footer arrays so the Leo drill-in fires.
+      [...NAV_QUICK_ACTIONS, ...primaryNav, ...NAV_DOCUMENTS, ...secondaryNav],
+      pathname,
+    ),
+    [primaryNav, pathname, secondaryNav],
+  )
+  const isDrilledIn = Boolean(drillInSection)
+  const isLeoDrillIn = drillInSection?.key === "ask-leo"
+  const isDesignSystemDrillIn = drillInSection?.key === "design-system"
+  const navFlyout = isMobile || reflowZoom
+  const widenSidebarForDrillIn = isDrilledIn && !navFlyout
+  const showDrillInResize = widenSidebarForDrillIn && open
+  const { width: drillInWidth, setWidth: setDrillInWidth } =
+    useSidebarDrillInWidth(widenSidebarForDrillIn)
+  const drillInWidthRef = React.useRef(drillInWidth)
+  drillInWidthRef.current = drillInWidth
+
+  const handleDrillInNavFlyoutToggle = React.useCallback((): boolean => {
+    if (!navFlyout || !isDrilledIn) return false
+    setOpen((current) => !current, { persist: false })
+    return true
+  }, [navFlyout, isDrilledIn, setOpen])
+
+  useRegisterNavFlyoutToggle(handleDrillInNavFlyoutToggle)
+
+  const productDashboardHref = `/${productSlug(product)}/dashboard`
+  const handleDrillInBack = React.useCallback(() => {
+    navigate(productDashboardHref)
+  }, [navigate, productDashboardHref])
+
+  // Incidental sidebar state while drilled in — same contract as
+  // `SidebarAutoCollapse`: visual only (`persist: false`), restore pre-visit
+  // state on leave. Desktop drill-in expands the rail; flyout (mobile / ≥200%
+  // zoom) stays closed until the user opens it explicitly.
+  const openRef = React.useRef(open)
+  openRef.current = open
+  const setOpenRef = React.useRef(setOpen)
+  setOpenRef.current = setOpen
+  const savedOpenRef = React.useRef<boolean | null>(null)
+
+  React.useEffect(() => {
+    const rememberCurrentOpen = () => {
+      if (savedOpenRef.current === null) {
+        savedOpenRef.current = openRef.current
+      }
+    }
+
+    if (isLeoDrillIn) {
+      rememberCurrentOpen()
+      if (!navFlyout) {
+        setOpenRef.current(true, { persist: false })
+      } else {
+        setOpenRef.current(false, { persist: false })
+      }
+      return
+    }
+    if (isDrilledIn && !focusShellSupersedesPrimarySidebar) {
+      rememberCurrentOpen()
+      if (!navFlyout) {
+        setOpenRef.current(true, { persist: false })
+      } else {
+        setOpenRef.current(false, { persist: false })
+      }
+      return
+    }
+    if (savedOpenRef.current !== null) {
+      setOpenRef.current(savedOpenRef.current, { persist: false })
+      savedOpenRef.current = null
+    }
+  }, [isDrilledIn, isLeoDrillIn, focusShellSupersedesPrimarySidebar, navFlyout])
+
+  if (focusShellSupersedesPrimarySidebar) {
+    return null
+  }
+
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className={cn("pt-1", className)} {...props}>
       {/*
-        Normal: scrollable primary rail + sticky bottom block (Settings, Help, profile).
-        High zoom / very short viewport (`useSidebarReflowZoom`): single scroll on <nav>
-        so nothing is pinned off-screen (WCAG 1.4.10 reflow).
+        Scroll ownership:
+        - Desktop / normal height: primary rail scrolls in `SidebarContent`; Settings,
+          Help, and profile stay pinned in `SidebarFooter` below the scroll port.
+        - Reflow / zoom / short viewport (`reflowZoom`): one scroll column on `<nav>`
+          so utilities + profile scroll with the rail (WCAG 1.4.10).
+        - Drill-in: footer hidden; section pane owns the full height.
       */}
       <nav
         aria-label="Application"
         data-exxat-sidebar="application-nav"
         data-reflow-zoom={reflowZoom ? "true" : "false"}
+        data-drill-in-open={isDrilledIn ? "true" : undefined}
         className={cn(
-          "flex min-h-0 flex-1 flex-col",
-          reflowZoom && "overflow-y-auto",
+          "relative flex min-h-0 flex-1 flex-col",
+          isDrilledIn
+            ? "overflow-hidden"
+            : reflowZoom
+              ? "overflow-y-auto overflow-x-hidden overscroll-y-contain"
+              : "overflow-hidden",
         )}
       >
         <SidebarContent
           className={cn(
-            "gap-0",
-            reflowZoom && "!flex-none !overflow-visible",
+            "gap-0 !overflow-visible",
+            isDrilledIn
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+              : reflowZoom
+                ? "!flex-none"
+                : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain",
           )}
         >
-          <SidebarHeader className="border-b border-sidebar-border pb-2">
-            {/* Mobile/zoomed: visible close button — WCAG 2.1.1 Keyboard, 4.1.2 Name/Role/Value */}
-            {isMobile && (
-              <div className="flex items-center justify-end px-1 pt-0.5">
-                <Tip label="Close navigation" side="bottom">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Close navigation"
-                    onClick={() => setOpen(false)}
-                  >
-                    <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
-                  </Button>
-                </Tip>
-              </div>
-            )}
-            <SidebarHeaderStack>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <ProductLogoButton />
-                </SidebarMenuItem>
-              </SidebarMenu>
-              <div className="flex w-full justify-center px-2">
-                <Separator
-                  orientation="horizontal"
-                  decorative
-                  className="my-1.5 h-px w-full max-w-none shrink-0 bg-sidebar-border group-data-[collapsible=icon]:w-8"
-                />
-              </div>
-              <TeamSwitcher />
-            </SidebarHeaderStack>
-          </SidebarHeader>
+          <SidebarDrillIn
+            open={isDrilledIn}
+            sectionTitle={
+              isDesignSystemDrillIn ? "" : (drillInSection?.drillIn.sectionTitle ?? "")
+            }
+            onBack={handleDrillInBack}
+            baseContent={
+              <>
+                <SidebarHeader className="gap-1 border-b border-sidebar-border p-0 pb-2 pt-0">
+                  {/* Mobile / high-zoom flyout: visible close button — WCAG 2.1.1 Keyboard */}
+                  {(isMobile || reflowZoom) && (
+                    <div className="flex items-center justify-end px-1 pt-0.5">
+                      <Tip label="Close navigation" side="bottom">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Close navigation"
+                          onClick={() => setOpen(false)}
+                        >
+                          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
+                        </Button>
+                      </Tip>
+                    </div>
+                  )}
+                  <SidebarHeaderStack>
+                    <SidebarMenu className="gap-0.5">
+                      <SidebarMenuItem>
+                        <ProductLogoButton />
+                      </SidebarMenuItem>
+                      <SidebarSeparator className="mx-0 my-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+                      <TeamSwitcher />
+                    </SidebarMenu>
+                  </SidebarHeaderStack>
+                </SidebarHeader>
 
-          <SidebarGroup className="py-2" role="group" aria-label="Primary">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <SidebarNavSecondaryItems items={NAV_QUICK_ACTIONS} pathname={pathname} />
-                <NavLinkItems items={primaryNav} pathname={pathname} />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                <SidebarGroup className="py-2" role="group" aria-label="Primary">
+                  <SidebarGroupContent>
+                    <SidebarMenu className="gap-0.5">
+                      <SidebarQuickActions pathname={pathname} />
+                      <NavPrimaryPreamble items={primaryNavLayout.preamble} pathname={pathname} />
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
 
-          <SidebarGroup
-            className="py-0 pt-0"
-            role="group"
-            aria-label={NAV_DOCUMENTS_LABEL}
+                {primaryNavLayout.sections.map(section => (
+                  <NavPrimarySectionGroup
+                    key={section.key}
+                    section={section}
+                    pathname={pathname}
+                  />
+                ))}
+
+                <NavPrimaryEpilogue items={primaryNavLayout.epilogue ?? []} pathname={pathname} />
+              </>
+            }
           >
-            <SidebarGroupLabel
-              id="sidebar-documents-heading"
-              className="text-xs font-medium uppercase tracking-wide px-2 text-sidebar-section-label"
-              suppressHydrationWarning
-            >
-              {NAV_DOCUMENTS_LABEL}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <NavLinkItems items={NAV_DOCUMENTS} pathname={pathname} />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            {drillInSection ? (
+              isLeoDrillIn ? (
+                // Leo's drill-in is a custom panel (search + new chat +
+                // recents list) — the `drillIn.items` array is unused.
+                <LeoSidebarDrillInPanel />
+              ) : isDesignSystemDrillIn ? (
+                <DesignSystemSidebarDrillInPanel />
+              ) : (
+                <SidebarDrillInItems
+                  items={drillInSection.drillIn.items}
+                  pathname={pathname}
+                />
+              )
+            ) : null}
+          </SidebarDrillIn>
 
+          {/* Esc + Cmd/Ctrl+[ exit the drilled-in view. Bound only while
+              drilled in so the chords don't shadow anything else app-wide.
+              `useShortcut` already skips inputs/textareas/contenteditable
+              and open dialogs, so Esc closes a Dialog first if one is up. */}
+          {isDrilledIn && (
+            <>
+              <Shortcut keys="Escape" onInvoke={handleDrillInBack} />
+              <Shortcut keys="Cmd+[" onInvoke={handleDrillInBack} />
+              <Shortcut keys="Ctrl+[" onInvoke={handleDrillInBack} />
+            </>
+          )}
         </SidebarContent>
 
-        {/* Settings + Help + profile — pinned under the scrollable rail unless reflow-zoom. */}
-        <SidebarFooter
-          className={cn(
-            "mt-auto border-t border-sidebar-border bg-sidebar",
-            reflowZoom && "mt-0 shrink-0",
-          )}
-        >
-          <SidebarGroup className="py-2" role="group" aria-label="Utilities">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <SidebarNavSecondaryItems items={NAV_SECONDARY} pathname={pathname} />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          <NavUser user={NAV_USER} />
-        </SidebarFooter>
+        {/* Settings + Help + profile — pinned below the scroll port on desktop;
+            scroll with the rail at reflow / zoom. Hidden while drilled in. */}
+        {!isDrilledIn && (
+          <SidebarFooter className="shrink-0 border-t border-sidebar-border bg-sidebar">
+            <SidebarGroup className="py-2" role="group" aria-label="Utilities">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  <SidebarNavSecondaryItems items={secondaryNav} pathname={pathname} />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <NavUser user={NAV_USER} />
+          </SidebarFooter>
+        )}
+        {showDrillInResize ? (
+          <SidebarDrillInResizeHandle
+            className="-end-px"
+            widthPx={drillInWidth}
+            getWidth={() => drillInWidthRef.current}
+            onResizeTo={setDrillInWidth}
+          />
+        ) : null}
       </nav>
     </Sidebar>
   )

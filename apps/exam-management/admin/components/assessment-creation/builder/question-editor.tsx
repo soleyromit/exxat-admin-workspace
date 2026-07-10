@@ -25,6 +25,14 @@ import { Icon, LeoStar } from '../icons'
 import { Field, useApp } from '../primitives'
 import { QTYPE, qIcon, type Question, type Grading, type QOption } from '../data'
 
+// Extend Question type locally for media fields (stored on the question object)
+interface QuestionWithMedia extends Question {
+  imageUrl?: string | null
+  audioUrl?: string | null
+  passageText?: string | null
+  mediaCaption?: string | null
+}
+
 export function QuestionEditor({
   question,
   sectionName,
@@ -36,7 +44,14 @@ export function QuestionEditor({
   onSave: (q: Question) => void
   onClose: () => void
 }) {
-  const [q, setQ] = useState<Question>(() => JSON.parse(JSON.stringify(question)))
+  const [q, setQ] = useState<QuestionWithMedia>(() => JSON.parse(JSON.stringify(question)))
+  const [mediaTab, setMediaTab] = useState<'none' | 'image' | 'audio' | 'passage'>(() => {
+    const qm = question as QuestionWithMedia
+    if (qm.imageUrl) return 'image'
+    if (qm.audioUrl) return 'audio'
+    if (qm.passageText) return 'passage'
+    return 'none'
+  })
   const { notify } = useApp()
   const [improving, setImproving] = useState(false)
 
@@ -54,7 +69,7 @@ export function QuestionEditor({
     }, 1100)
   }
 
-  const up = (patch: Partial<Question>) => setQ((prev) => ({ ...prev, ...patch }))
+  const up = (patch: Partial<QuestionWithMedia>) => setQ((prev) => ({ ...prev, ...patch }))
   const upGrade = (patch: Partial<Grading>) =>
     setQ((prev) => ({ ...prev, grading: { ...prev.grading, ...patch } }))
   const t = QTYPE[q.type]
@@ -178,6 +193,34 @@ export function QuestionEditor({
           <Field label="Question stem" req>
             <Textarea rows={3} value={q.stem} onChange={(e) => up({ stem: e.target.value })} />
           </Field>
+
+          {/* media attachment */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Media attachment</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {([['none', 'None', 'ban'], ['image', 'Image', 'image'], ['audio', 'Audio', 'volume-high'], ['passage', 'Passage', 'align-left']] as const).map(([k, l, ic]) => (
+                <Button key={k} type="button" variant={mediaTab === k ? 'default' : 'outline'} size="sm" aria-pressed={mediaTab === k}
+                  onClick={() => { setMediaTab(k); if (k === 'none') up({ imageUrl: null, audioUrl: null, passageText: null }) }}>
+                  <Icon name={ic} />{l}
+                </Button>
+              ))}
+            </div>
+            {mediaTab === 'image' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Input value={q.imageUrl ?? ''} onChange={e => up({ imageUrl: e.target.value || null })} placeholder="https://… or upload URL" aria-label="Image URL" />
+                <Input value={q.mediaCaption ?? ''} onChange={e => up({ mediaCaption: e.target.value || null })} placeholder="Caption (optional)" aria-label="Media caption" />
+              </div>
+            )}
+            {mediaTab === 'audio' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Input value={q.audioUrl ?? ''} onChange={e => up({ audioUrl: e.target.value || null })} placeholder="Audio file URL" aria-label="Audio URL" />
+                <Input value={q.mediaCaption ?? ''} onChange={e => up({ mediaCaption: e.target.value || null })} placeholder="Transcript / caption (optional)" aria-label="Audio caption" />
+              </div>
+            )}
+            {mediaTab === 'passage' && (
+              <Textarea value={q.passageText ?? ''} onChange={e => up({ passageText: e.target.value || null })} placeholder="Clinical vignette or reading passage displayed above the question…" rows={4} aria-label="Passage text" />
+            )}
+          </div>
 
           {/* type-specific body */}
           {(q.type === 'mcq' || q.type === 'msq' || q.type === 'tf') && (

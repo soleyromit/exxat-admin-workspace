@@ -34,6 +34,18 @@
 "use strict"
 
 import { readFileSync, existsSync } from "node:fs"
+import { resolve } from "node:path"
+
+function imageIaEscalation(cwd) {
+  const flagPath = resolve(cwd, ".cursor", ".exxat-ds-image-prompt.json")
+  if (!existsSync(flagPath)) return ""
+  return (
+    `\n\n[exxat-image-ia-gate] This user turn included an uploaded image. ` +
+    `The image is IA reference ONLY — MUST NOT pixel-copy layout, colors, or chrome. ` +
+    `Post a design brief with Image reference (IA only), DS mapping, and Visual chrome ` +
+    `lines BEFORE edits. MUST NOT use frontend-design to match the upload.`
+  )
+}
 
 function emit(payload) {
   process.stdout.write(JSON.stringify(payload))
@@ -54,13 +66,17 @@ function allow() {
 //
 // Why still ask: creating a NEW design-critical file is a real design
 // decision, so the user should still see and approve it before the write runs.
-function askNewBrief(reason, path) {
+function askNewBrief(reason, path, cwd) {
+  const imageNote = imageIaEscalation(cwd)
   emit({
     permission: "ask",
     user_message:
       `Exxat DS brief-gate: about to CREATE a new design-critical surface.\n\n` +
       `What:   ${reason} (NEW file)\n` +
       `Where:  ${path}\n\n` +
+      (imageNote
+        ? `This turn includes an uploaded image — approve only if the brief maps IA to DS (no pixel-copy).\n\n`
+        : "") +
       `Approve only if a design brief has already been posted AND confirmed ` +
       `in chat for this work. Otherwise reject and ask the agent to post the ` +
       `brief first, then retry the file creation.`,
@@ -82,17 +98,22 @@ function askNewBrief(reason, path) {
       `existing file just to avoid create-file prompts.\n\n` +
       `If a brief was already posted and confirmed earlier in this chat, ` +
       `point the user to it when requesting approval. Otherwise, post the ` +
-      `brief now.`,
+      `brief now.` +
+      imageNote,
   })
 }
 
-function askBrief(reason, path) {
+function askBrief(reason, path, cwd) {
+  const imageNote = imageIaEscalation(cwd)
   emit({
     permission: "ask",
     user_message:
       `Exxat DS brief-gate: about to edit a design-critical surface.\n\n` +
       `What:   ${reason}\n` +
       `Where:  ${path}\n\n` +
+      (imageNote
+        ? `This turn includes an uploaded image — approve only if the brief maps IA to DS (no pixel-copy).\n\n`
+        : "") +
       `Approve only if a design brief has been posted AND confirmed in chat ` +
       `for this work. Otherwise reject and ask the agent to post a brief ` +
       `first (Problem / Persona / Job-to-be-done / Pattern / Reference / ` +
@@ -111,7 +132,8 @@ function askBrief(reason, path) {
       `for the user's reply.\n\n` +
       `If a brief was already posted and confirmed earlier in this chat, ` +
       `mention that explicitly when requesting approval so the user can ` +
-      `recognise it.`,
+      `recognise it.` +
+      imageNote,
   })
 }
 
@@ -221,6 +243,13 @@ process.stdin.on("end", () => {
     return
   }
 
+  const cwd =
+    typeof input.cwd === "string" && input.cwd.length > 0
+      ? input.cwd
+      : typeof input.workspace_roots?.[0] === "string"
+        ? input.workspace_roots[0]
+        : process.cwd()
+
   const toolInput = input.tool_input ?? input.toolInput ?? {}
   // Cursor passes the target path under DIFFERENT keys depending on which
   // tool the agent called. Missing one of these = silent allow = brief-gate
@@ -327,130 +356,11 @@ process.stdin.on("end", () => {
     if (test.test(normalized)) {
       const isNewFile = !existsSync(normalized)
       if (isNewFile) {
-        askNewBrief(label, normalized)
+        askNewBrief(label, normalized, cwd)
       } else {
-        askBrief(label, normalized)
+        askBrief(label, normalized, cwd)
       }
       return
-    }
-  }
-
-  // ── Step 3: banned-pattern content checks (TSX/JSX only) ────────────────
-  //
-  // These fire on ANY .tsx/.jsx write — not just design-critical paths.
-  // They catch the four most common DS violations before the file is written.
-  // Permission is `ask` not `deny` so legitimate post-contract writes are
-  // not blocked (the user approves the write they already confirmed in chat).
-  if (lower.endsWith(".tsx") || lower.endsWith(".jsx")) {
-    // Extract written content from whatever tool is being used.
-    const writtenContent =
-      toolInput.content ??                                       // Write
-      toolInput.new_string ??                                    // Edit / StrReplace
-      (Array.isArray(toolInput.edits)
-        ? toolInput.edits.map(e => e.new_string ?? "").join("\n") // MultiEdit
-        : "") ??
-      ""
-
-    if (typeof writtenContent === "string" && writtenContent.length > 0) {
-      // P1 — raw <button (lowercase b, not a DS Button component)
-      // Match `<button` but not `<Button` (capital = DS component).
-      if (/<button[\s>]/.test(writtenContent)) {
-        emit({
-          permission: "ask",
-          user_message:
-            `[P1 — raw <button>] About to write a raw HTML <button> element.\n` +
-            `Path: ${normalized}\n\n` +
-            `Use DS <Button variant="…" size="…"> instead. ` +
-            `Approve only if this is an intentional exception with a written reason.`,
-          agent_message:
-            `[exxat-brief-gate P1] HOLD. You are writing a raw <button> element ` +
-            `(${normalized}).\n\n` +
-            `RULE: Never use raw <button> — use DS <Button variant=… size=…>.\n` +
-            `Available variants: default · outline · ghost · secondary · destructive · link\n` +
-            `Available sizes: default · sm · lg · icon · icon-sm\n\n` +
-            `If this is a selectable list item / radio tile:\n` +
-            `  → Use <RadioGroup> + <RadioGroupItem className="sr-only"> + <label> wrapping.\n` +
-            `  → Pattern: assessment-builder-client.tsx:4085\n\n` +
-            `If you have a written exception reason, state it in your next message.`,
-        })
-        return
-      }
-
-      // P2 — inline fontSize in style prop
-      // Catches: style={{ fontSize: 12 }}, style={{ fontSize: "13px" }}, etc.
-      if (/style=\{[^}]*fontSize\s*:/.test(writtenContent)) {
-        emit({
-          permission: "ask",
-          user_message:
-            `[P2 — inline fontSize] About to write inline fontSize in a style prop.\n` +
-            `Path: ${normalized}\n\n` +
-            `Use Tailwind text-xs (12px) / text-sm (14px) / text-base (16px) classes instead.\n` +
-            `For FA icons specifically: add the class directly to the <i> element.\n` +
-            `Approve only if this is an intentional exception.`,
-          agent_message:
-            `[exxat-brief-gate P2] HOLD. You are writing inline fontSize in a style prop ` +
-            `(${normalized}).\n\n` +
-            `RULE: Never write fontSize: N inside a style prop.\n` +
-            `USE INSTEAD:\n` +
-            `  FA icon small:    className="... text-xs"  (= 12px)\n` +
-            `  FA icon medium:   className="... text-sm"  (= 14px)\n` +
-            `  FA icon large:    className="... text-base" (= 16px)\n` +
-            `  Conditional color: className={\`... \${active ? "text-[var(--brand-color)]" : "text-muted-foreground"}\`}\n` +
-            `  Color + size together: className="text-sm text-muted-foreground"\n\n` +
-            `If you have a written exception reason, state it.`,
-        })
-        return
-      }
-
-      // P3 — banned card row pattern
-      // Catches the "Claude vanilla" px-3 py-2.5 + rounded-lg + border combo.
-      if (/px-3\s+py-2\.5/.test(writtenContent) && /rounded-lg/.test(writtenContent) && /border/.test(writtenContent)) {
-        emit({
-          permission: "ask",
-          user_message:
-            `[P3 — banned card row] About to write the banned px-3 py-2.5 rounded-lg border pattern.\n` +
-            `Path: ${normalized}\n\n` +
-            `This is the "Claude vanilla design" card-row anti-pattern. ` +
-            `Use flat border-b rows instead: className="flex items-center gap-3 border-b border-border px-4 py-3"\n` +
-            `Approve only if this is an intentional exception.`,
-          agent_message:
-            `[exxat-brief-gate P3] HOLD. You are writing the banned card-row pattern ` +
-            `(px-3 py-2.5 rounded-lg border) in ${normalized}.\n\n` +
-            `RULE: This is "Claude vanilla design" — banned.\n` +
-            `USE INSTEAD for list rows:\n` +
-            `  className="flex items-center gap-3 border-b border-border px-4 py-3"\n` +
-            `USE INSTEAD for selectable tiles:\n` +
-            `  className="rounded-lg border border-border p-[10px_14px] cursor-pointer has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:bg-[var(--brand-tint)]"\n\n` +
-            `If you have a written exception reason, state it.`,
-        })
-        return
-      }
-
-      // P4 — raw HTML form/table elements (not DS components)
-      // Catches: <input , <select , <table  (with space or > after, to avoid false positives)
-      // Does NOT catch: Input, Select, DataTable (capital = DS component)
-      const rawHtmlMatch = writtenContent.match(/<(input|select|table)[\s>]/)
-      if (rawHtmlMatch) {
-        const el = rawHtmlMatch[1]
-        const dsMap = { input: "DS <Input>", select: "DS <Select>", table: "DS DataTable (import from '@/components/data-table')" }
-        emit({
-          permission: "ask",
-          user_message:
-            `[P4 — raw HTML <${el}>] About to write a raw HTML <${el}> element.\n` +
-            `Path: ${normalized}\n\n` +
-            `Use ${dsMap[el]} instead.\n` +
-            `Approve only if this is an intentional exception with a written reason.`,
-          agent_message:
-            `[exxat-brief-gate P4] HOLD. You are writing a raw HTML <${el}> element ` +
-            `(${normalized}).\n\n` +
-            `RULE: Never write raw <${el}> — use ${dsMap[el]}.\n` +
-            `Import from '@exxatdesignux/ui'.\n\n` +
-            `Exception valid for: date inputs (DS has DatePickerField), ` +
-            `canvas, SVG internals, or vendor code you do not own.\n` +
-            `State your exception reason if applicable.`,
-        })
-        return
-      }
     }
   }
 

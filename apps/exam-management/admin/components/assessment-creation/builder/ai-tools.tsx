@@ -63,8 +63,8 @@ function AIBanner({ children, style }: { children: React.ReactNode; style?: Reac
   return (
     <div style={{
       display: 'flex', gap: 11, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 12,
-      background: 'oklch(from var(--brand-rose-500) l c h / 0.07)',
-      border: '1px solid oklch(from var(--brand-rose-500) l c h / 0.26)',
+      background: 'oklch(from var(--brand-color) l c h / 0.07)',
+      border: '1px solid oklch(from var(--brand-color) l c h / 0.26)',
       ...style,
     }}>{children}</div>
   )
@@ -74,7 +74,7 @@ function AIBanner({ children, style }: { children: React.ReactNode; style?: Reac
 function LeoTile({ size = 38 }: { size?: number }) {
   return (
     <div style={{ width: size, height: size, borderRadius: 12, background: 'var(--leo-gradient)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-      <LeoStar style={{ color: 'white', fontSize: size * 0.45, filter: 'brightness(3)' }} />
+      <LeoStar style={{ color: 'var(--primary-foreground)', fontSize: size * 0.45, filter: 'brightness(3)' }} />
     </div>
   )
 }
@@ -169,8 +169,8 @@ function AIGenPanel({ onAccept, onClose, embedded }: { onAccept: (qs: GeneratedQ
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
             {steps.map((s, i) => (
               <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 11, opacity: i <= stepIdx ? 1 : 0.4, transition: 'opacity .3s' }}>
-                <div style={{ width: 20, height: 20, borderRadius: 999, display: 'grid', placeItems: 'center', background: i < stepIdx ? 'var(--chip-2)' : i === stepIdx ? 'var(--brand-color)' : 'var(--muted)', color: 'white', fontSize: 12 }}>
-                  {i < stepIdx ? <Icon name="check" style={{ fontSize: 11 }} /> : <span>{i + 1}</span>}
+                <div style={{ width: 20, height: 20, borderRadius: 999, display: 'grid', placeItems: 'center', background: i < stepIdx ? 'var(--chip-2)' : i === stepIdx ? 'var(--brand-color)' : 'var(--muted)', color: 'var(--primary-foreground)', fontSize: 12 }}>
+                  {i < stepIdx ? <Icon name="check" style={{ fontSize: 12 }} /> : <span>{i + 1}</span>}
                 </div>
                 <span style={{ fontSize: 13, fontWeight: i === stepIdx ? 600 : 400 }}>{s}</span>
               </div>
@@ -265,7 +265,7 @@ export function SmartReplace({ question, onAccept, onClose }: { question: Questi
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}>{stem}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {opts.map((o, i) => <div key={i} style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', display: 'flex', gap: 6, alignItems: 'center' }}><Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 11 }} />{o.text}</div>)}
+        {opts.map((o, i) => <div key={i} style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', display: 'flex', gap: 6, alignItems: 'center' }}><Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 12 }} />{o.text}</div>)}
       </div>
       </CardContent>
     </Card>
@@ -303,21 +303,102 @@ export function SmartReplace({ question, onAccept, onClose }: { question: Questi
   )
 }
 
+// ---- QB Detail Panel ----
+function QBDetailPanel({ q, onSelect, onClose }: { q: BankQuestion & { rel: number }; onSelect: () => void; onClose: () => void }) {
+  const SAMPLE_OPTIONS: Record<string, { text: string; correct: boolean }[]> = {
+    qb1: [{ text: 'Bradykinin accumulation', correct: true }, { text: 'Prostaglandin release', correct: false }, { text: 'Direct mast cell activation', correct: false }, { text: 'Histamine release', correct: false }],
+    qb3: [{ text: 'Nifedipine', correct: true }, { text: 'Diltiazem', correct: false }, { text: 'Verapamil', correct: false }, { text: 'Amlodipine', correct: false }],
+    qb5: [{ text: 'Neprilysin inhibition → natriuretic peptide accumulation', correct: true }, { text: 'ACE inhibition → bradykinin accumulation', correct: false }, { text: 'ARB → AT1 blockade', correct: false }, { text: 'Direct vasodilation', correct: false }],
+    qb9: [{ text: 'Thick ascending limb of the loop of Henle', correct: true }, { text: 'Proximal convoluted tubule', correct: false }, { text: 'Distal convoluted tubule', correct: false }, { text: 'Collecting duct', correct: false }],
+  }
+  const opts = SAMPLE_OPTIONS[q.id]
+  const diffBar = (v: number, color: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--muted)', overflow: 'hidden' }}>
+        <div style={{ width: `${v * 100}%`, height: '100%', background: color, borderRadius: 3 }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 600, color, width: 32 }}>{fmt2(v)}</span>
+    </div>
+  )
+  return (
+    <div
+      style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 360, background: 'var(--background)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', zIndex: 10 }}
+      onClick={e => e.stopPropagation()}
+    >
+      {/* header */}
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+            <Badge variant="outline"><Icon name={qIcon(q.type)} />{QTYPE[q.type].short}</Badge>
+            <Badge variant="secondary">{q.difficulty}</Badge>
+            <Badge variant="outline">{q.topic}</Badge>
+            {q.used && <Badge variant="outline"><Icon name="clock" />Used</Badge>}
+          </div>
+        </div>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label="Close detail panel" onClick={onClose}>
+          <Icon name="xmark" style={{ fontSize: 12 }} />
+        </Button>
+      </div>
+      {/* body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+        <div style={{ fontSize: 13, lineHeight: 1.55, marginBottom: 14 }}>{q.stem}</div>
+        {opts && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 14 }}>
+            {opts.map((o, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', borderRadius: 8, background: o.correct ? 'oklch(from var(--chart-2) l c h / 0.08)' : 'var(--muted)', border: `1px solid ${o.correct ? 'oklch(from var(--chart-2) l c h / 0.3)' : 'var(--border)'}` }}>
+                <Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 13, color: o.correct ? 'var(--chart-2)' : 'var(--muted-foreground)', marginTop: 1, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, lineHeight: 1.4 }}>{o.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Psychometrics</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          <div><div className="hint" style={{ marginBottom: 4 }}>Difficulty index (p)</div>{diffBar(q.p, q.p > 0.9 || q.p < 0.3 ? 'var(--chart-4)' : 'var(--chart-2)')}</div>
+          <div><div className="hint" style={{ marginBottom: 4 }}>Discrimination</div>{diffBar(q.disc, q.disc < 0.15 ? 'var(--destructive)' : q.disc < 0.3 ? 'var(--chart-4)' : 'var(--chart-2)')}</div>
+          <div><div className="hint" style={{ marginBottom: 4 }}>Point-biserial</div>{diffBar(q.pbi, q.pbi < 0.1 ? 'var(--destructive)' : q.pbi < 0.25 ? 'var(--chart-4)' : 'var(--chart-2)')}</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span className="hint">Bloom&apos;s</span><span>{q.bloom}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span className="hint">Topic</span><span>{q.topic}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span className="hint">Used before</span><span>{q.used ? 'Yes' : 'No'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span className="hint">Relevance</span><span style={{ fontWeight: 600, color: 'var(--brand-color-dark)' }}>{q.rel}%</span>
+          </div>
+        </div>
+      </div>
+      {/* footer */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+        <Button type="button" variant="default" style={{ width: '100%' }} onClick={onSelect}>
+          <Icon name="plus" />Add to assessment
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 // ---- Semantic Search (Question Bank) ----
 export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[]) => void; onClose: () => void }) {
   const [query, setQuery] = useState("fundamental cardiology pharmacology under Bloom's recall level")
   const [picked, setPicked] = useState<string[]>([])
   const [fTopic, setFTopic] = useState('Any')
+  const [detail, setDetail] = useState<(BankQuestion & { rel: number }) | null>(null)
   const toggle = (id: string) => setPicked(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
 
-  // fake relevance ranking
-  const ranked = QUESTION_BANK.map(q => ({ ...q, rel: Math.round(60 + Math.random() * 38) })).sort((a, b) => b.rel - a.rel)
+  // fake relevance ranking — stable per mount (no Math.random in render)
+  const ranked = QUESTION_BANK.map((q, i) => ({ ...q, rel: Math.round(62 + ((i * 17) % 38)) })).sort((a, b) => b.rel - a.rel)
     .filter(q => fTopic === 'Any' || q.topic === fTopic)
   const topics = ['Any', ...Array.from(new Set(QUESTION_BANK.map(q => q.topic)))]
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-[820px]" style={{ height: '82vh', display: 'flex', flexDirection: 'column' }}>
+      <DialogContent className="max-w-[820px]" style={{ height: '82vh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
         <DialogHeader>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--muted)', display: 'grid', placeItems: 'center', color: 'var(--brand-color-dark)', flexShrink: 0 }}><Icon name="rectangle-list" style={{ fontSize: 17 }} /></div>
@@ -339,16 +420,17 @@ export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[])
               <SelectTrigger size="sm" style={{ width: 200 }}><SelectValue /></SelectTrigger>
               <SelectContent>{topics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
-            <Button type="button" variant="outline" size="sm"><Icon name="gauge-high" />Bloom's: Any</Button>
+            <Button type="button" variant="outline" size="sm"><Icon name="gauge-high" />Bloom&apos;s: Any</Button>
             <Button type="button" variant="outline" size="sm"><Icon name="circle-half-stroke" />Difficulty: Any</Button>
           </div>
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginRight: detail ? 360 : 0, transition: 'margin-right 0.2s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             {ranked.map(q => {
               const on = picked.includes(q.id)
+              const isDetail = detail?.id === q.id
               return (
-                <Card key={q.id} style={{ borderRadius: 12, cursor: 'pointer', borderColor: on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }} onClick={() => toggle(q.id)}>
+                <Card key={q.id} style={{ borderRadius: 12, cursor: 'pointer', borderColor: isDetail ? 'var(--brand-color)' : on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }} onClick={() => toggle(q.id)}>
                   <CardContent style={{ padding: '12px 14px', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                   <Checkbox checked={on} onCheckedChange={() => toggle(q.id)} aria-label={on ? 'Deselect question' : 'Select question'} onClick={e => e.stopPropagation()} style={{ marginTop: 2 }} />
                   <div style={{ flex: 1 }}>
@@ -365,7 +447,13 @@ export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[])
                       </span>
                     </div>
                     <div style={{ fontSize: 13, lineHeight: 1.4 }}>{q.stem}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 5 }}>{q.bloom} · difficulty {q.p} · discrimination {q.disc} · pt-biserial {q.pbi}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{q.bloom} · p={fmt2(q.p)} · disc={fmt2(q.disc)} · pbi={fmt2(q.pbi)}</span>
+                      <Button type="button" variant="ghost" size="sm" style={{ marginLeft: 'auto', fontSize: 12 }}
+                        onClick={e => { e.stopPropagation(); setDetail(isDetail ? null : q) }}>
+                        <Icon name={isDetail ? 'chevron-right' : 'expand'} style={{ fontSize: 11 }} />{isDetail ? 'Close' : 'View'}
+                      </Button>
+                    </div>
                   </div>
                   </CardContent>
                 </Card>
@@ -373,6 +461,13 @@ export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[])
             })}
           </div>
         </div>
+        {detail && (
+          <QBDetailPanel
+            q={detail}
+            onSelect={() => { if (!picked.includes(detail.id)) setPicked(p => [...p, detail.id]); setDetail(null) }}
+            onClose={() => setDetail(null)}
+          />
+        )}
         <DialogFooter>
           <span style={{ fontSize: 12, color: 'var(--muted-foreground)', marginRight: 'auto' }}>Adding pins a reference; editing here creates a local draft only.</span>
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>

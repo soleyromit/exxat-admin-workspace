@@ -5,6 +5,13 @@
 ## Session Start — Self-Brief (before any task)
 Surface known failures yourself; don't wait to be reminded. Skim `MEMORY.md` for the feedback/project entries relevant to this task + product, and `docs/governance/verification-discipline.md` for the latest patterns. If a recurring failure applies, state it at the top of your response.
 
+## Knowledge Vault (shared brain — Obsidian ⇄ Claude)
+Durable knowledge lives canonically in the Obsidian vault at `/Users/romitsoley/Documents/research-repos` (decisions, research, meeting notes, architecture reference, the memory atoms).
+- **Read (token-economical):** start at `_Insights.md` (curated, value-ranked index of decisions/research/meetings) or `_Home.md` → open only the matching note. Grep by frontmatter (`type:`/`tags:`/`product:`/`relevance:`) or dispatch `Explore`. **NEVER load the whole vault.**
+- **🎨 On ANY design/UX task, consult the vault FIRST — before mockups or JSX.** Open `_Insights.md`, find the feature's product/theme, and read the relevant `Decisions/`, `Meetings/`, and `Research/` notes. This is your **persistent design memory** — prior stakeholder calls (Aarti / Vishaka / Nipun), settled decisions, and research findings live there distilled. Skipping it = losing context and re-litigating decisions already made. State which vault notes you consulted at the top of the response.
+- **Write:** when you learn something durable (a decision, research insight, meeting takeaway, architecture rule), write an **atomic note** there with the schema (`type · product · tags · status · source · date · links`) and add it to the relevant `MOCs/MOC-*.md` + `_Home.md`.
+- Romit edits the same vault in Obsidian; his edits are your context next session. **This is the two-way loop** — keep the schema + MOC index intact so both sides stay queryable.
+
 ## Identity
 Romit Soley (Product Designer II, Exxat). Main branch = Himanshu Suthar (Engineering). Never merge to main without Himanshu review.
 
@@ -39,7 +46,7 @@ Active: `exam-management` (3001), `pce` (3005), `portal` (3100). Full registry: 
 
 **Pre-task declaration (before touching any file):** write `File / Current DS violations / Hand-rolled w/ DS equivalent / WCAG issues (static read)`. Anchors the session; prevents hallucinating prior state.
 
-**Gate 1 — before any JSX:** (1) Granola `query_granola_meetings` → raw transcript for the feature; (2) read per-product `ui-patterns.md` + `design-anti-patterns.md` + `component-consistency.md`; (3) `node tools/ds/source.mjs <Component>` (real API + `localhost:4000/library/<id>`) — generate against this, not memory; (4) spawn `ds-adoption-reviewer` before any new component file.
+**Gate 1 — before any JSX:** (1) **Consult the Obsidian vault first** — `_Insights.md` → the feature's `Decisions/` + `Meetings/` + `Research/` notes (your persistent design memory; pull a raw Granola transcript only for a deep-dive the distilled note doesn't cover); (2) read per-product `ui-patterns.md` + `design-anti-patterns.md` + `component-consistency.md`; (3) `node tools/ds/source.mjs <Component>` (real API + `localhost:4000/library/<id>`) — generate against this, not memory; (4) spawn `ds-adoption-reviewer` before any new component file.
 
 **Gate 2 — before claiming done:** spawn `ds-conformance-reviewer` (visual-diff vs localhost:4000 + tokens + axe + WCAG/FERPA), `state-review` (list/form/async), `verification-reviewer` — **paste each literal verdict**. Grep changed files for `uppercase tracking-wide`, `py-20 text-center`, `color-mix(in oklch`. Spawn `Explore` to grep-verify every claimed change (Pattern G). Evidence block on every done claim (axe path or "not run", DS import `file:line`, grep result — Pattern I).
 

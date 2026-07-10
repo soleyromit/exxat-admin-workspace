@@ -140,6 +140,18 @@ export function RadioMCQRenderer({
               onKeyDown={e => {
                 if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
                 if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+                // ARIA radiogroup: ArrowDown/Up move focus between options.
+                // stopPropagation on the native event prevents the window-level
+                // handler in App.tsx from consuming these keys for question nav.
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  e.nativeEvent.stopPropagation();
+                  const group = e.currentTarget.closest('[role="radiogroup"]');
+                  if (!group) return;
+                  const radios = Array.from(group.querySelectorAll<HTMLElement>('[role="radio"]'));
+                  const cur = radios.indexOf(e.currentTarget as HTMLElement);
+                  radios[e.key === 'ArrowDown' ? Math.min(cur + 1, radios.length - 1) : Math.max(cur - 1, 0)]?.focus();
+                }
               }}
               tabIndex={0}
               className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] pe-12 rounded-xl border-2`}
@@ -222,6 +234,15 @@ export function CheckboxRenderer({
               onKeyDown={e => {
                 if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); }
                 if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  e.nativeEvent.stopPropagation();
+                  const group = e.currentTarget.closest('[role="group"]') ?? e.currentTarget.parentElement?.parentElement;
+                  if (!group) return;
+                  const checks = Array.from(group.querySelectorAll<HTMLElement>('[role="checkbox"]'));
+                  const cur = checks.indexOf(e.currentTarget as HTMLElement);
+                  checks[e.key === 'ArrowDown' ? Math.min(cur + 1, checks.length - 1) : Math.max(cur - 1, 0)]?.focus();
+                }
               }}
               tabIndex={0}
               className="w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] pe-12 rounded-xl border-2"

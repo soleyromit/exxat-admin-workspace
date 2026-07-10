@@ -32,6 +32,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
   StatusBadge,
+  Textarea,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -335,15 +336,9 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
           {/* Notes */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="term-notes">Notes</Label>
-            <textarea
+            <Textarea
               id="term-notes"
-              className="flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                borderColor: 'var(--border-control-35)',
-                backgroundColor: 'var(--background)',
-                color: 'var(--foreground)',
-                resize: 'vertical',
-              }}
+              className="min-h-20"
               placeholder="Optional notes about this term…"
               value={draft.notes ?? ''}
               onChange={(e) => field('notes', e.target.value)}

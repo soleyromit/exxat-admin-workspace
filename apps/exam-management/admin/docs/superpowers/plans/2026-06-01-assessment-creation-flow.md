@@ -881,7 +881,7 @@ cd /Users/romitsoley/Work/apps/exam-management/admin && pnpm tsc --noEmit 2>&1 |
 
 Expected: 0 errors (or only errors from `step2-section-settings-panel.tsx` which doesn't exist yet).
 
-Fix any TS errors by checking the actual props accepted by DS components (`Button`, `Input`, `Label`, `Switch`, `Select`) in `docs/watch/ds-snapshot.json`.
+Fix any TS errors by checking the actual props accepted by DS components (`Button`, `Input`, `Label`, `Switch`, `Select`) in `node tools/ds/source.mjs --list`.
 
 - [ ] **Step 3: Commit**
 

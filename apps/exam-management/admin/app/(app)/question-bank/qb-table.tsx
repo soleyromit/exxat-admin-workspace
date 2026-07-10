@@ -16,7 +16,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, Tip,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-  TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   FieldError,
 } from '@exxatdesignux/ui'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
@@ -189,8 +189,8 @@ function FolderTreePicker({
             paddingLeft: indentPx, paddingRight: 8, height: 36,
             borderRadius: 6, margin: '1px 0',
             cursor: (isCurrent || !isEligible) ? 'default' : 'pointer',
-            backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
-            border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+            backgroundColor: isSelected ? 'var(--muted)' : 'transparent',
+            border: `1px solid ${isSelected ? 'var(--border)' : 'transparent'}`,
             opacity: isCurrent ? 0.45 : 1,
             transition: 'background 80ms',
           }}
@@ -211,16 +211,14 @@ function FolderTreePicker({
             <i className="fa-light fa-chevron-right" aria-hidden="true"
               style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
           </Button>
-          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`}
+          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'} text-xs shrink-0 ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}
             aria-hidden="true"
-            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}
           />
-          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
-            style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
+          <span className={`flex-1 text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
             {getFolderLabel(node)}
           </span>
           {isCurrent && <span className="text-[10px] text-muted-foreground shrink-0">current</span>}
-          {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
+          {isSelected && <i className="fa-solid fa-check text-[10px] text-foreground shrink-0" aria-hidden="true" />}
         </div>
         {isExpanded && (
           <>
@@ -277,7 +275,7 @@ function FolderTreePicker({
     <div>
       {/* Search */}
       <div style={{ padding: '8px 12px' }}>
-        <InputGroup style={{ borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+        <InputGroup style={{ borderColor: 'var(--brand-color)' }}>
           <InputGroupAddon align="inline-start">
             <i className="fa-light fa-magnifying-glass" aria-hidden="true"
               style={{ fontSize: 12, color: 'var(--brand-color)', padding: '0 6px' }} />
@@ -315,17 +313,15 @@ function FolderTreePicker({
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 8px', borderRadius: 6, margin: '1px 0', cursor: 'pointer',
-                  backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+                  backgroundColor: isSelected ? 'var(--muted)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--border)' : 'transparent'}`,
                 }}
                 onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
                 onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
               >
-                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`} aria-hidden="true"
-                  style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined, flexShrink: 0 }} />
+                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-xs shrink-0 ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className={`text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
-                    style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
+                  <div className={`text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
                     {getFolderLabel(f)}
                   </div>
                   {ancestorPath && (
@@ -334,7 +330,7 @@ function FolderTreePicker({
                     </div>
                   )}
                 </div>
-                {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
+                {isSelected && <i className="fa-solid fa-check text-[10px] text-foreground shrink-0" aria-hidden="true" />}
               </div>
             )
           }) : (
@@ -798,7 +794,7 @@ function LocationCell({ question }: { question: Question }) {
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="p-2" style={{ width: 260 }} onClick={e => e.stopPropagation()}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground mb-1.5">
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">
             {allLocations.length} locations
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -950,7 +946,18 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         </div>
         {/* Search options */}
         <div style={{ padding: '8px 10px 6px' }}>
-          <Input placeholder="Search options…" value={optSearch} onChange={e => setOptSearch(e.target.value)} className="h-8 text-sm" />
+          <InputGroup>
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search options…"
+              value={optSearch}
+              onChange={e => setOptSearch(e.target.value)}
+              className="text-sm"
+              style={{ height: 32 }}
+            />
+          </InputGroup>
         </div>
         {/* Checkbox list */}
         <div role="listbox" aria-multiselectable="true" style={{ maxHeight: 232, overflowY: 'auto', padding: '2px 0 8px' }}>
@@ -1142,12 +1149,18 @@ function QBFilterCard({
       {expanded && (
         <div className="border-t border-border">
           <div className="px-3 pt-2 pb-1">
-            <Input
-              placeholder="Search options…"
-              value={optSearch}
-              onChange={e => setOptSearch(e.target.value)}
-              className="h-8 text-sm"
-            />
+            <InputGroup>
+              <InputGroupAddon align="inline-start">
+                <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search options…"
+                value={optSearch}
+                onChange={e => setOptSearch(e.target.value)}
+                className="text-sm"
+                style={{ height: 32 }}
+              />
+            </InputGroup>
           </div>
           <div role="listbox" aria-multiselectable="true" aria-label={`${fieldDef.label} options`}
             className="py-1 max-h-52 overflow-y-auto">
@@ -1166,17 +1179,7 @@ function QBFilterCard({
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                    style={{
-                      width: 14, height: 14,
-                      background: checked ? 'var(--primary)' : 'var(--background)',
-                      borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)',
-                    }}
-                  >
-                    {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
-                  </span>
+                  <Checkbox checked={checked} onCheckedChange={() => toggleValue(opt)} onClick={e => e.stopPropagation()} style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }} />
                   <span className="flex-1">{opt}</span>
                   {fieldDef.counts?.has(opt) && (
                     <span className="text-xs text-muted-foreground tabular-nums">{fieldDef.counts.get(opt)}</span>
@@ -1399,7 +1402,7 @@ function FilterPropertiesSheet({
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
               {/* Appearance */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Appearance</p>
                 <div className="space-y-0.5">
                   {([
                     { id: 'gridlines',  icon: 'fa-border-all',  label: 'Gridlines',  checked: showGridlines,     onChange: onShowGridlinesChange },
@@ -1418,7 +1421,7 @@ function FilterPropertiesSheet({
 
               {/* Row height */}
               <div className="border-t border-border pt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Row height</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Row height</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([
                     { h: 'compact',     icon: 'fa-arrow-down-to-line' },
@@ -1445,7 +1448,7 @@ function FilterPropertiesSheet({
 
               {/* Display options */}
               <div className="border-t border-border pt-4 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Display options</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Display options</p>
                 {([
                   { id: 'table-title', icon: 'fa-heading',         label: 'Table title',   desc: 'Show the page heading and subtitle.', checked: showTableTitle,    onChange: onShowTableTitleChange },
                   { id: 'col-labels',  icon: 'fa-table-columns',   label: 'Column labels', desc: 'Column headers in the table.',        checked: showColumnLabels,  onChange: onShowColumnLabelsChange },
@@ -1847,7 +1850,7 @@ function FilterPropertiesSheet({
 
                       {/* Highlight color swatch row — always visible */}
                       <div className="border-t border-border px-3 py-2.5">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Highlight color</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Highlight color</p>
                         <div className="flex flex-wrap gap-2">
                           {QB_RULE_COLORS.map(c => (
                             <Button
@@ -1888,10 +1891,7 @@ function FilterPropertiesSheet({
                                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = checked ? rule.values.filter(v => v !== opt) : [...rule.values, opt]; onUpdateConditionalRule(rule.id, { values: next }) } }}
                                   className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-interactive-hover cursor-pointer select-none focus-visible:outline-none focus-visible:bg-interactive-hover"
                                 >
-                                  <span aria-hidden="true" className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                                    style={{ width: 14, height: 14, background: checked ? 'var(--primary)' : 'var(--background)', borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)' }}>
-                                    {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
-                                  </span>
+                                  <Checkbox checked={checked} onCheckedChange={() => { const next = checked ? rule.values.filter(v => v !== opt) : [...rule.values, opt]; onUpdateConditionalRule(rule.id, { values: next }) }} onClick={e => e.stopPropagation()} style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }} />
                                   <span className="text-foreground">{opt}</span>
                                 </div>
                               )
@@ -2075,7 +2075,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 1: Tags & Classification ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Tags &amp; Classification</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Tags &amp; Classification</p>
             <DetailRow label="Bloom's"><BloomsBadge blooms={question.blooms} /></DetailRow>
             <DetailRow label="Difficulty"><DiffBadge diff={question.difficulty} /></DetailRow>
             <DetailRow label="Type"><span>{question.type}</span></DetailRow>
@@ -2094,7 +2094,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 2: Creator & History ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Creator &amp; History</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Creator &amp; History</p>
 
             <DetailRow label="Created by">
               {creatorPersona ? (
@@ -2170,7 +2170,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 3: Usage ── */}
           <div style={{ padding: '16px 18px' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Usage</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Usage</p>
             <DetailRow label="Used in">
               <span>{question.usage > 0 ? `${question.usage} exam${question.usage !== 1 ? 's' : ''}` : '—'}</span>
             </DetailRow>
@@ -3217,7 +3217,7 @@ export function QBTable() {
             flexShrink: isHighZoom ? 1 : 0,
           }}>
             {searchOpen ? (
-              <InputGroup style={{ width: isHighZoom ? '100%' : 200, flexShrink: isHighZoom ? 1 : 0, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+              <InputGroup style={{ width: isHighZoom ? '100%' : 200, flexShrink: isHighZoom ? 1 : 0, borderColor: 'var(--brand-color)' }}>
                 <InputGroupAddon align="inline-start">
                   <i
                     className="fa-light fa-magnifying-glass"
@@ -3387,9 +3387,8 @@ export function QBTable() {
                   This folder doesn&apos;t have any questions yet. Your department admin can add questions or give you edit access.
                 </p>
               </div>
-              <Button variant="ghost" size="sm"
-                style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)', gap: 5 }}>
-                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <i className="fa-light fa-envelope" aria-hidden="true" />
                 Contact your admin
               </Button>
             </div>
@@ -3445,7 +3444,7 @@ export function QBTable() {
                 {/* Suggested filter shortcuts */}
                 {topSuggestions.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%', maxWidth: 380 }}>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Try these instead
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
@@ -3486,7 +3485,7 @@ export function QBTable() {
           <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: isHighZoom ? 'none' : '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Table scroll: at high zoom vertical overflow visible (page scrolls); normal: auto (internal scroll) */}
           <div className="qb-table-scroll" style={{ flex: isHighZoom ? 'none' : 1, minHeight: 0, overflowX: 'auto', overflowY: isHighZoom ? 'visible' : 'auto' }}>
-            <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
+            <Table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
@@ -3794,7 +3793,7 @@ export function QBTable() {
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent align="end" className="w-72 p-3">
-                                    <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 10 }}>
+                                    <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>
                                       Version History
                                     </div>
                                     {Array.from({ length: q.version }, (_, i) => {
@@ -3972,7 +3971,7 @@ export function QBTable() {
                   )
                 })}
               </TableBody>
-            </table>
+            </Table>
           </div>{/* inner scroll */}
           {/* ── Pagination footer — inside clip, border-t separates from table rows */}
           {paginationEnabled && sortedQuestions.length > 0 && (
@@ -4113,7 +4112,7 @@ export function QBTable() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-52">
-                  <DropdownMenuLabel className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.06em]">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-medium">
                     Change status to
                   </DropdownMenuLabel>
                   <DropdownMenuItem

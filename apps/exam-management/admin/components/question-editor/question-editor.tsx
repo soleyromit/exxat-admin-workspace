@@ -26,6 +26,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Checkbox,
   Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   LocalBanner,
   StatusBadge,
 } from '@exxatdesignux/ui'
@@ -243,7 +244,7 @@ export function QuestionEditor({
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xs font-semibold text-muted-foreground">
-                  Answer
+                  Answer &amp; Rationale
                 </h2>
                 {(draft.payload.type === 'mcq' || draft.payload.type === 'multi-select') && (
                   <Button
@@ -602,33 +603,39 @@ function McqControls({
               }
             }
             return (
+              /* The row container is a non-interactive group: a radio must NOT
+                 contain other interactive controls (axe: nested-interactive).
+                 The radio role lives on the dedicated indicator button below;
+                 the text input, lock/remove buttons and rationale are siblings. */
               <div
                 key={opt.id}
-                role="radio"
-                aria-checked={opt.correct}
-                tabIndex={opt.correct || (noCorrect && i === 0) ? 0 : -1}
-                onClick={() => setOption(i, { correct: true })}
-                onKeyDown={handleKeyDown}
-                className="rounded-lg border overflow-hidden transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                role="group"
+                aria-label={`Option ${letter}`}
+                className="rounded-lg border overflow-hidden transition-colors"
                 style={cardStyle(opt.correct)}
               >
                 <div className="flex items-center gap-2 px-3 py-2.5">
-                  {/* Custom radio indicator — renders from opt.correct, no Radix dependency */}
-                  <div
-                    className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                  {/* Custom radio control — the only interactive radio in the row */}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={opt.correct}
+                    aria-label={`Mark option ${letter} correct`}
+                    tabIndex={opt.correct || (noCorrect && i === 0) ? 0 : -1}
+                    onClick={() => setOption(i, { correct: true })}
+                    onKeyDown={handleKeyDown}
+                    className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     style={{ borderColor: opt.correct ? 'var(--chart-2)' : 'var(--border)' }}
                   >
                     {opt.correct && (
                       <div className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} />
                     )}
-                  </div>
+                  </button>
                   <span className="font-mono text-xs font-bold w-4 shrink-0 text-center text-muted-foreground">{letter}</span>
                   <Input
                     type="text"
                     value={opt.text}
                     onChange={e => setOption(i, { text: e.target.value })}
-                    onClick={e => e.stopPropagation()}
-                    onKeyDown={e => e.stopPropagation()}
                     placeholder={`Option ${letter}`}
                     className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1"
                     aria-label={`Option ${letter} text`}
@@ -639,7 +646,7 @@ function McqControls({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={e => { e.stopPropagation(); setOption(i, { locked: !opt.locked }) }}
+                        onClick={() => setOption(i, { locked: !opt.locked })}
                         aria-label={opt.locked ? 'Unlock' : 'Lock position'}
                         aria-pressed={!!opt.locked}
                         disabled={!payload.shuffle}
@@ -655,7 +662,7 @@ function McqControls({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={e => { e.stopPropagation(); removeOption(i) }}
+                        onClick={() => removeOption(i)}
                         disabled={payload.options.length <= 2}
                         aria-label={`Remove option ${letter}`}
                       >
@@ -672,8 +679,6 @@ function McqControls({
                       <Textarea
                         value={opt.rationale ?? ''}
                         onChange={e => setOption(i, { rationale: e.target.value })}
-                        onClick={e => e.stopPropagation()}
-                        onKeyDown={e => e.stopPropagation()}
                         placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'}
                         className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0"
                         rows={2}
@@ -860,7 +865,12 @@ function NumericControls({
         />
       </div>
       <div>
-        <Label htmlFor="num-tol" className="text-xs font-medium block mb-1">Tolerance ±</Label>
+        <Label htmlFor="num-tol" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Tolerance ±
+          <Tip label="Acceptable range around the correct answer. A student's response is graded correct if |response − answer| ≤ tolerance.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Input
           id="num-tol"
           type="number"
@@ -1342,7 +1352,12 @@ function MetadataPanel({
       </div>
 
       <div>
-        <Label htmlFor="meta-difficulty" className="text-xs font-medium block mb-1">Difficulty</Label>
+        <Label htmlFor="meta-difficulty" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Difficulty
+          <Tip label="Estimated cognitive load. Easy = most students answer correctly; Hard = few do. Informs question-bank balance and psychometric analysis.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Select value={draft.difficulty} onValueChange={v => onUpdate('difficulty', v as QuestionDraft['difficulty'])}>
           <SelectTrigger id="meta-difficulty" className="text-xs">
             <SelectValue />
@@ -1356,7 +1371,12 @@ function MetadataPanel({
       </div>
 
       <div>
-        <Label htmlFor="meta-bloom" className="text-xs font-medium block mb-1">Bloom level</Label>
+        <Label htmlFor="meta-bloom" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Bloom level
+          <Tip label="Bloom's Taxonomy: Remember → Understand → Apply → Analyze → Evaluate → Create. Higher levels require deeper reasoning.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Select value={draft.blooms} onValueChange={v => onUpdate('blooms', v as QuestionDraft['blooms'])}>
           <SelectTrigger id="meta-bloom" className="text-xs">
             <SelectValue />

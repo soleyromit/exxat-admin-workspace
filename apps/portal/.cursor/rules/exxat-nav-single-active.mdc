@@ -28,5 +28,5 @@ Only **one** primary sidebar row, collapsible child, or secondary-panel link may
 ## Reference
 
 - `packages/ui/src/lib/nav-active.ts`
-- `packages/ui/template-vite/components/sidebar/app-sidebar.tsx`
-- `packages/ui/template-vite/components/sidebar/secondary-nav.tsx`
+- `packages/ui/generated-starter/components/sidebar/app-sidebar.tsx`
+- `packages/ui/generated-starter/components/sidebar/secondary-nav.tsx`

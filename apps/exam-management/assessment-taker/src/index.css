@@ -160,15 +160,13 @@
 }
 
 /* ─── Dark theme overrides ────────────────────────────────────────────────── */
+/* Note: --state-answered-* and --state-flagged-* are NOT overridden here.
+   The :root color-mix() expressions already auto-adapt in dark mode because
+   var(--background) resolves to the DS dark value when .dark is on <html>.
+   Hardcoded hex overrides here would conflict with the chart-token derivation chain. */
 .theme-dark {
   --shadow-card:  rgba(0, 0, 0, 0.4);
   --shadow-heavy: rgba(0, 0, 0, 0.6);
-  --state-answered-bg: #064E3B;
-  --state-answered-border: #059669;
-  --state-answered-text: #34D399;
-  --state-flagged-bg: #78350F;
-  --state-flagged-border: #D97706;
-  --state-flagged-text: #FBBF24;
   --highlight-bg:     #854D0E;
   --highlight-bg-end: #713F12;
   --highlight-text:   #FEF9C3;
@@ -391,34 +389,4 @@
 @keyframes tooltip-in {
   0%   { opacity: 0; transform: scale(0.95); }
   100% { opacity: 1; transform: scale(1); }
-}
-
-/* ─── Custom select dropdowns ────────────────────────────────────────────── */
-.exam-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.6em center;
-  background-size: 1em;
-  padding-right: 2.2em !important;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-.exam-select:hover {
-  border-color: var(--brand-color) !important;
-  background-color: var(--card);
-}
-.exam-select:focus {
-  outline: none;
-  border-color: var(--brand-color) !important;
-  box-shadow: 0 0 0 3px var(--brand-tint);
-}
-.exam-select option { padding: 8px 12px; background-color: var(--card); color: var(--foreground); }
-.exam-select option:checked { background-color: var(--brand-tint); color: var(--foreground); }
-.exam-select option:disabled { color: var(--muted-foreground); }
-.theme-dark .exam-select,
-.theme-high-contrast .exam-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }

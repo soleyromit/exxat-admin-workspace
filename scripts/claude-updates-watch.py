@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -53,13 +54,29 @@ USER_AGENT = "claude-updates-watcher/1.0 (+exxat-ds-workspace)"
 TIMEOUT_SECONDS = 20
 
 
+def _ssl_context() -> ssl.SSLContext:
+    """Cert-verifying SSL context that works across interpreters.
+
+    Prefers certifi's CA bundle (present in the pyenv interpreter); otherwise
+    falls back to the system default context, which honors the SSL_CERT_FILE
+    env var the launchd plist sets. This is the fix for the silent
+    scheduled-run failure: the launchd-resolved python had no CA bundle, so
+    every HTTPS fetch died with CERTIFICATE_VERIFY_FAILED and was skipped.
+    """
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
 def fetch(url: str) -> str | None:
-    """Fetch URL content; return None on failure (network, 404, etc.)."""
+    """Fetch URL content; return None on failure (network, 404, TLS, etc.)."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS, context=_ssl_context()) as resp:
             return resp.read().decode("utf-8", errors="replace")
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ssl.SSLError, OSError) as exc:
         print(f"  ! fetch failed for {url}: {exc}", file=sys.stderr)
         return None
 
@@ -99,12 +116,17 @@ def main() -> int:
     snapshot = load_snapshot()
     now_iso = datetime.now(timezone.utc).isoformat()
     changes: list[dict] = []
+    failures: list[str] = []
 
     print(f"claude-updates-watch — {now_iso}")
     for src_id, src in SOURCES.items():
         print(f"  fetching {src_id} ...")
         text = fetch(src["url"])
         if text is None:
+            # DEFECT-A fix: a fetch failure used to be a silent `continue`, which
+            # made a total outage look identical to a clean "no changes" run.
+            # Record it so the tail can surface it loudly and exit non-zero.
+            failures.append(src_id)
             continue
 
         new_hash = content_hash(text)
@@ -131,9 +153,38 @@ def main() -> int:
         }
 
     snapshot["last_checked"] = now_iso
+    if failures:
+        snapshot["last_fetch_failures"] = {"at": now_iso, "sources": failures}
+    else:
+        snapshot.pop("last_fetch_failures", None)
     save_snapshot(snapshot)
 
+    # DEFECT-A fix: a warning banner whenever any source could not be fetched,
+    # so a partial/total outage is never mistaken for a clean result.
+    failure_banner = ""
+    if failures:
+        failure_banner = (
+            f"> ⚠️ **{len(failures)} of {len(SOURCES)} sources FAILED to fetch** "
+            f"({', '.join(failures)}) at {now_iso}.\n"
+            "> This is NOT a clean 'no changes' result — the watcher could not see "
+            "these sources. Check network / TLS (see StandardErrorPath in the "
+            "launchd plist) and re-run `python3 scripts/claude-updates-watch.py`.\n"
+        )
+
     if not changes:
+        if failures:
+            # Never write the reassuring "no changes detected" when a fetch failed —
+            # that false clean bill of health is exactly what hid the outage.
+            PENDING.write_text(
+                "# Pending review\n\n"
+                f"{failure_banner}\n"
+                "_No changes could be confirmed — the fetch failed, so upstream state "
+                "is unknown. Re-run once connectivity/TLS is restored._\n",
+                encoding="utf-8",
+            )
+            print(f"  FETCH FAILURES: {failures} — wrote warning to pending-review.md",
+                  file=sys.stderr)
+            return 1
         # Touch pending-review.md back to "empty" only if it currently shows changes
         # from a prior run — preserves manual edits otherwise.
         if PENDING.exists() and "no changes detected" not in PENDING.read_text():
@@ -155,6 +206,10 @@ def main() -> int:
     body = [
         "# Pending review",
         "",
+    ]
+    if failure_banner:
+        body.append(failure_banner)
+    body += [
         f"> Auto-populated {now_iso} by `scripts/claude-updates-watch.py`.",
         f"> {len(changes)} of {len(SOURCES)} sources changed since last check.",
         f"> The `claude-updates-watcher` subagent reads this file when invoked.",
@@ -182,7 +237,8 @@ def main() -> int:
 
     PENDING.write_text("\n".join(body) + "\n", encoding="utf-8")
     print(f"  wrote {PENDING.relative_to(REPO_ROOT)} with {len(changes)} change(s)")
-    return 0
+    # Non-zero if some sources changed but others failed — the run is incomplete.
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

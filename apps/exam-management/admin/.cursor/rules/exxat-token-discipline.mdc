@@ -1,7 +1,13 @@
 ---
-description: Token discipline — no hex literals, prefer Exxat L0 tokens (--exxat-color-*, --exxat-radius-*, --exxat-spacing-*), no deprecated tokens. ESLint enforces via @exxatdesignux/eslint-plugin.
-alwaysApply: true
-appliesTo: [universal]
+description: Token discipline — no hex literals, prefer Exxat L0 tokens, no deprecated tokens. ESLint enforces.
+alwaysApply: false
+globs: 
+  - apps/web/**/*.{tsx,ts,css}
+  - packages/ui/**/*.{tsx,ts,css}
+tags: [tokens]
+seeAlso:
+  - docs/exxat-ds/token-taxonomy.md
+  - .cursor/rules/_constitution.exxat-ds.mdc
 ---
 
 # Exxat DS — token discipline

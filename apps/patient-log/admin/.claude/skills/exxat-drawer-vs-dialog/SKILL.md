@@ -1,5 +1,7 @@
 # Exxat DS — drawer vs dialog
 
+> **Consolidated skill:** prefer [`.cursor/skills/exxat-overlays/SKILL.md`](../exxat-overlays/SKILL.md) for new work.
+
 Use when choosing **Radix `Dialog` / `AlertDialog`** vs **floating `Sheet` panels** vs **route** for a flow.
 
 ## Read first

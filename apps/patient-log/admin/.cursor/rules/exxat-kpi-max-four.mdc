@@ -1,7 +1,14 @@
 ---
 description: Exxat DS — at most four KPI tiles on primary hub strips and key-metrics dashboard cards.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - lib/mock/**/*-kpi.ts
+  - components/key-metrics.tsx
+  - lib/dashboard-layout-merge.ts
+tags: [hub, kpi]
+seeAlso:
+  - docs/exxat-ds/kpi-strip-max-four-pattern.md
+  - .cursor/skills/exxat-kpi/SKILL.md
 ---
 
 # Exxat DS — KPI strip (max four)

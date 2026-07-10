@@ -30,28 +30,30 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  InputGroup, InputGroupAddon, InputGroupInput,
   Separator,
+  KeyMetrics,
+  SelectionTileGrid,
+  Field, FieldLabel, FieldContent,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
-import { facultyStudents, type ExtendedFaculty, facultyAccommodations } from '@/lib/faculty-mock-data'
+import { facultyStudents, type ExtendedFaculty } from '@/lib/faculty-mock-data'
 import { allFaculty } from '@/lib/faculty-mock-data'
-import { allStudents } from '@/lib/student-mock-data'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
-import { MOCK_QB_FOLDERS, mockAssessments } from '@/lib/qb-mock-data'
+import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, mockAssessments } from '@/lib/qb-mock-data'
 import { findPersona } from '@/lib/personas'
 import { ImportAssessmentModal } from '@/components/import-assessment-modal'
-import { AssessmentsLanding } from '@/components/assessment-creation/screens/assessments-landing'
 import { ASSESSMENTS as FLOW_ASSESSMENTS } from '@/components/assessment-creation/data'
 
 const IS_LMS_ACTIVE = false
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type EnrolledStudent = { id: string; name: string; email: string; status: 'enrolled' | 'completed' | 'withdrawn' }
+type EnrolledStudent = { id: string; name: string; email: string; studentId: string; cohort: string; status: 'enrolled' | 'completed' | 'withdrawn' }
 type AssignedFaculty = { id: string; name: string; role: 'Course Coordinator' | 'Instructor' }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -68,13 +70,13 @@ function nameInitials(name: string): string {
 // ── Shared badge configs ──────────────────────────────────────────────────────
 
 const OFFERING_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  ongoing:   { label: 'Ongoing',   bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
-  completed: { label: 'Completed', bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  upcoming:  { label: 'Upcoming',  bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
+  active:   { label: 'Active',   bg: 'var(--chip-green-surface)', fg: 'var(--chip-green-fg)' },
+  past:     { label: 'Past',     bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
+  upcoming: { label: 'Upcoming', bg: 'var(--brand-tint)',          fg: 'var(--brand-color-dark)' },
 }
 
 const STUDENT_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  enrolled:  { label: 'Enrolled',  bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
+  enrolled:  { label: 'Enrolled',  bg: 'var(--chip-green-surface)', fg: 'var(--chip-green-fg)' },
   completed: { label: 'Completed', bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
   withdrawn: { label: 'Withdrawn', bg: 'var(--muted)', fg: 'var(--destructive)' },
 }
@@ -109,7 +111,7 @@ function EnrollStudentSheet({
   }, [available, search])
 
   function handleEnroll(s: typeof facultyStudents[0]) {
-    onEnroll({ id: s.id, name: `${s.firstName} ${s.lastName}`, email: s.email, status: 'enrolled' })
+    onEnroll({ id: s.id, name: `${s.firstName} ${s.lastName}`, email: s.email, studentId: s.studentId, cohort: s.cohort, status: 'enrolled' })
     setJustAdded(prev => new Set(prev).add(s.id))
   }
 
@@ -122,26 +124,26 @@ function EnrollStudentSheet({
   return (
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="right" showOverlay={false} showCloseButton
-        style={{ width: 480, maxWidth: '100vw', display: 'flex', flexDirection: 'column' }}>
+        className="w-[480px] max-w-full flex flex-col">
         <SheetHeader>
           <SheetTitle>Enroll Student</SheetTitle>
           <SheetDescription>Search and add students to this course offering.</SheetDescription>
         </SheetHeader>
 
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div className="flex items-center gap-2 rounded-md border"
-            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}>
-            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-[13px]" aria-hidden="true" />
-            <input
+          <InputGroup className="w-full">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               type="search"
               placeholder="Search by name, student ID, or cohort…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search students"
               autoFocus
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />
@@ -160,10 +162,9 @@ function EnrollStudentSheet({
               {filtered.map(s => {
                 const added = justAdded.has(s.id)
                 return (
-                  <li key={s.id} className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
-                    <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
-                      <AvatarFallback className="text-xs font-bold"
-                        style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                  <li key={s.id} className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-muted transition-colors">
+                    <Avatar size="sm" className="shrink-0">
+                      <AvatarFallback className="text-xs font-bold">
                         {s.initials}
                       </AvatarFallback>
                     </Avatar>
@@ -172,7 +173,7 @@ function EnrollStudentSheet({
                       <p className="text-xs text-muted-foreground truncate">{s.studentId} · {s.cohort}</p>
                     </div>
                     {added ? (
-                      <span className="text-xs font-medium shrink-0 flex items-center gap-1"
+                      <span className="text-sm font-medium shrink-0 flex items-center gap-1"
                         style={{ color: 'var(--qb-status-saved-fg)' }}>
                         <i className="fa-light fa-circle-check" aria-hidden="true" />
                         Enrolled
@@ -243,26 +244,26 @@ function AssignFacultySheet({
   return (
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="right" showOverlay={false} showCloseButton
-        style={{ width: 480, maxWidth: '100vw', display: 'flex', flexDirection: 'column' }}>
+        className="w-[480px] max-w-full flex flex-col">
         <SheetHeader>
           <SheetTitle>Assign Faculty</SheetTitle>
           <SheetDescription>Select faculty and set their role for this offering.</SheetDescription>
         </SheetHeader>
 
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div className="flex items-center gap-2 rounded-md border"
-            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}>
-            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-[13px]" aria-hidden="true" />
-            <input
+          <InputGroup className="w-full">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               type="search"
               placeholder="Search faculty…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search faculty"
               autoFocus
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />
@@ -282,13 +283,9 @@ function AssignFacultySheet({
                 const initials = f.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
                 const role = getRole(f.id)
                 return (
-                  <li key={f.id} className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
-                    <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
-                      <AvatarFallback className="text-xs font-bold"
-                        style={{
-                          backgroundColor: 'var(--brand-tint)',
-                          color: 'var(--brand-color)',
-                        }}>
+                  <li key={f.id} className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-muted transition-colors">
+                    <Avatar size="sm" className="shrink-0">
+                      <AvatarFallback className="text-xs font-bold">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -400,40 +397,18 @@ function LegacyCreateAssessmentModal({
 
         {step === 'pick-mode' && (
           <div className="flex flex-col gap-3 pt-1">
-            <div className="flex flex-col gap-2" role="radiogroup" aria-label="Assessment creation mode">
-              {MODES.map(m => (
-                <Button
-                  key={m.id}
-                  variant="outline"
-                  size="sm"
-                  role="radio"
-                  aria-checked={mode === m.id}
-                  onClick={() => setMode(m.id)}
-                  className="flex items-start gap-4 rounded-xl p-4 text-left h-auto justify-start"
-                  style={{
-                    borderColor: mode === m.id ? 'var(--brand-color)' : 'var(--border)',
-                    background: mode === m.id ? 'var(--brand-tint)' : 'var(--card)',
-                  }}
-                >
-                  <div
-                    className="flex size-10 shrink-0 items-center justify-center rounded-lg"
-                    style={{
-                      backgroundColor: 'var(--brand-tint)',
-                      color: 'var(--brand-color)',
-                    }}
-                  >
-                    <i className={`fa-light ${m.icon} text-base`} aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">{m.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
-                  </div>
-                  {mode === m.id && (
-                    <i className="fa-light fa-circle-check text-sm mt-1 shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
-                  )}
-                </Button>
-              ))}
-            </div>
+            <SelectionTileGrid
+              interaction="radio"
+              columns={2}
+              idPrefix="create-mode"
+              options={MODES.map(m => ({
+                value: m.id,
+                label: m.label,
+                icon: m.icon,
+              }))}
+              value={mode}
+              onValueChange={(v) => setMode(v as typeof mode)}
+            />
             <div className="flex items-center justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={close}>Cancel</Button>
               <Button variant="default" size="sm" onClick={handleContinue} className="gap-1.5">
@@ -452,7 +427,7 @@ function LegacyCreateAssessmentModal({
             </Button>
             <p className="text-sm font-medium text-foreground">Select a previous assessment to copy from:</p>
             {prevAssessments.length === 0 ? (
-              <Card className="bg-muted/30 text-center">
+              <Card className="bg-muted text-center">
                 <CardContent className="py-5">
                 <p className="text-sm text-muted-foreground">No previous assessments found for this course.</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => { setMode('blank'); setStep('pick-mode') }}>
@@ -467,7 +442,7 @@ function LegacyCreateAssessmentModal({
                   variant="outline"
                   size="sm"
                   onClick={() => handleSource(a.id)}
-                  className="flex items-center gap-4 rounded-xl p-4 text-left h-auto justify-start w-full hover:bg-muted/30"
+                  className="flex items-center gap-4 rounded-lg p-4 text-left h-auto justify-start w-full hover:bg-muted"
                 >
                   <div
                     className="flex size-9 shrink-0 items-center justify-center rounded-lg"
@@ -494,13 +469,226 @@ function LegacyCreateAssessmentModal({
 
 // ── Assessments tab ───────────────────────────────────────────────────────────
 
-function AssessmentsTab({ onNewAssessment }: { offering: ExtendedCourseOffering; onNewAssessment: () => void }) {
-  const router = useRouter()
+type AssessmentRow = ExtendedCourseOffering['assessments'][0] & Record<string, unknown>
+
+const ASSESSMENT_STATUS_CONFIG: Record<string, { label: string; bg: string; fg: string }> = {
+  Published: { label: 'Published', bg: 'var(--chip-green-surface)', fg: 'var(--chip-green-fg)' },
+  Scheduled: { label: 'Scheduled', bg: 'var(--brand-tint)',          fg: 'var(--brand-color-dark)' },
+  Review:    { label: 'Review',    bg: 'var(--chip-amber-surface)',   fg: 'var(--chip-4)' },
+  Draft:     { label: 'Draft',     bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
+  Grading:   { label: 'Grading',   bg: 'var(--chip-blue-surface)',   fg: 'var(--chip-3)' },
+}
+
+const assessmentColumns: ColumnDef<AssessmentRow>[] = [
+  {
+    key: 'title', label: 'Name', width: 260, sortable: true, sortKey: 'title',
+    cell: (row) => (
+      <span className="text-sm font-medium text-foreground">{row.title as string}</span>
+    ),
+  },
+  {
+    key: 'type', label: 'Type', width: 110, sortable: true, sortKey: 'type',
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground">{row.type as string}</span>
+    ),
+  },
+  {
+    key: 'durationMinutes', label: 'Duration', width: 90, sortable: true, sortKey: 'durationMinutes',
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground tabular-nums">
+        {row.durationMinutes ? `${row.durationMinutes as number} min` : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'date', label: 'Schedule', width: 130, sortable: true, sortKey: 'date',
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground tabular-nums">
+        {row.date ? new Date(row.date as string).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'gradingScheme', label: 'Grading Scheme', width: 140,
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground">{(row.gradingScheme as string) ?? '—'}</span>
+    ),
+  },
+  {
+    key: 'weightage', label: 'Weightage', width: 90, sortable: true, sortKey: 'weightage',
+    cell: (row) => (
+      <span className="text-sm text-foreground tabular-nums">
+        {row.weightage != null ? `${row.weightage as number}%` : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'status', label: 'Status', width: 110, sortable: true, sortKey: 'status',
+    cell: (row) => {
+      const s = ASSESSMENT_STATUS_CONFIG[row.status as string] ?? ASSESSMENT_STATUS_CONFIG.Draft
+      return (
+        <Badge variant="secondary" className="rounded font-medium"
+          style={{ backgroundColor: s.bg, color: s.fg }}>
+          {s.label}
+        </Badge>
+      )
+    },
+  },
+  {
+    key: 'actions', label: '', width: 52, defaultPin: 'right', lockPin: true,
+    cell: (row) => (
+      <RowActions
+        row={row}
+        label={row.title as string}
+        actions={[
+          { label: 'Open in Builder', icon: 'fa-arrow-right', onClick: () => {} },
+          { label: 'Duplicate', icon: 'fa-copy', onClick: () => {} },
+          { label: 'Archive', icon: 'fa-box-archive', variant: 'destructive', divider: true, onClick: () => {} },
+        ]}
+      />
+    ),
+  },
+]
+
+function AssessmentsTab({ offering, onNewAssessment }: { offering: ExtendedCourseOffering; onNewAssessment: () => void }) {
+  const [query, setQuery] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [filterGrading, setFilterGrading] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+
+  const stats = {
+    scheduled: offering.assessments.filter(a => a.status === 'Scheduled').length,
+    draftReview: offering.assessments.filter(a => a.status === 'Draft' || a.status === 'Review').length,
+    attn: offering.assessments.filter(a => a.status === 'Draft').length,
+    totalWeight: offering.assessments.reduce((s, a) => s + (a.weightage ?? 0), 0),
+  }
+
+  const filtered = useMemo((): AssessmentRow[] => {
+    let rows = offering.assessments
+    if (query) {
+      const q = query.trim().toLowerCase()
+      rows = rows.filter(a =>
+        a.title.toLowerCase().includes(q) ||
+        a.type.toLowerCase().includes(q) ||
+        a.status.toLowerCase().includes(q)
+      )
+    }
+    if (filterType !== 'all') rows = rows.filter(a => a.type === filterType)
+    if (filterGrading !== 'all') rows = rows.filter(a => a.gradingScheme === filterGrading)
+    if (filterStatus !== 'all') rows = rows.filter(a => a.status === filterStatus)
+    return rows as AssessmentRow[]
+  }, [offering.assessments, query, filterType, filterGrading, filterStatus])
+
   return (
-    <AssessmentsLanding
-      onCreate={onNewAssessment}
-      onOpen={(a) => router.push(`/assessment-builder?id=${a.id}`)}
-    />
+    <div className="flex flex-col gap-4">
+      {/* Stats */}
+      <KeyMetrics
+        variant="compact"
+        metricsSingleRow
+        metrics={[
+          {
+            id: 'scheduled',
+            label: 'Scheduled',
+            value: stats.scheduled,
+            delta: '',
+            trend: 'neutral',
+            trendPolarity: 'higher_is_better',
+          },
+          {
+            id: 'draft-review',
+            label: 'Draft / Review',
+            value: stats.draftReview,
+            delta: '',
+            trend: 'neutral',
+            trendPolarity: 'lower_is_better',
+          },
+          {
+            id: 'attn',
+            label: 'Needs attention',
+            value: stats.attn,
+            delta: '',
+            trend: 'neutral',
+            trendPolarity: 'lower_is_better',
+          },
+          {
+            id: 'weight',
+            label: 'Total weightage',
+            value: `${stats.totalWeight}%`,
+            delta: '',
+            trend: 'neutral',
+            description: stats.totalWeight < 100 ? `${100 - stats.totalWeight}% unallocated` : 'Fully allocated',
+          },
+        ]}
+        className="shrink-0"
+      />
+
+      <DataTable<AssessmentRow>
+        data={filtered}
+        columns={assessmentColumns}
+        getRowId={(row) => row.id as string}
+        selectable={false}
+        searchable={false}
+        showQueryControls={false}
+        toolbarSlot={() => (
+          <>
+            <InputGroup className="w-52">
+              <InputGroupAddon>
+                <i className="fa-light fa-magnifying-glass text-muted-foreground text-[12px]" aria-hidden="true" />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search assessments…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                aria-label="Search assessments"
+                className="text-sm"
+              />
+            </InputGroup>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-8 w-32 text-sm">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                {Array.from(new Set(offering.assessments.map(a => a.type))).map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-8 w-32 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {Array.from(new Set(offering.assessments.map(a => a.status))).map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={onNewAssessment}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Add Assessment
+            </Button>
+          </>
+        )}
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-14 text-center gap-2">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-clipboard-list text-muted-foreground text-lg" aria-hidden="true" />
+            </div>
+            <p className="font-semibold text-foreground">
+              {query ? 'No assessments match your search' : 'No assessments yet'}
+            </p>
+            {!query && (
+              <Button size="sm" className="mt-1" onClick={onNewAssessment}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add Assessment
+              </Button>
+            )}
+          </div>
+        }
+      />
+    </div>
   )
 }
 
@@ -519,9 +707,8 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
       const initials = nameInitials(row.name as string)
       return (
         <div className="flex items-center gap-3">
-          <Avatar className="shrink-0" style={{ width: 32, height: 32 }} aria-hidden="true">
-            <AvatarFallback className="text-xs font-bold"
-              style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
+          <Avatar size="sm" className="shrink-0" aria-hidden="true">
+            <AvatarFallback className="text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -534,20 +721,26 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
     },
   },
   {
-    key: 'status',
-    label: 'Status',
-    width: 120,
+    key: 'studentId',
+    label: 'ID',
+    width: 140,
     sortable: true,
-    sortKey: 'status',
-    cell: (row) => {
-      const s = STUDENT_STATUS[row.status as string] ?? STUDENT_STATUS.enrolled
-      return (
-        <Badge variant="secondary" className="rounded font-medium"
-          style={{ backgroundColor: s.bg, color: s.fg }}>
-          {s.label}
-        </Badge>
-      )
-    },
+    sortKey: 'studentId',
+    cell: (row) => (
+      <span className="text-sm font-mono text-muted-foreground tabular-nums">
+        {(row.studentId as string) || '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'cohort',
+    label: 'Cohort',
+    width: 160,
+    sortable: true,
+    sortKey: 'cohort',
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground">{(row.cohort as string) || '—'}</span>
+    ),
   },
   {
     key: 'actions',
@@ -566,7 +759,7 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
             onClick: (r) => { window.location.href = `/students/${r.id as string}` },
           },
           {
-            label: 'Remove from Course',
+            label: 'Unregister',
             icon: 'fa-user-minus',
             variant: 'destructive',
             divider: true,
@@ -583,9 +776,31 @@ function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
   onOpenEnroll: () => void
   onNavigateStudent: (id: string) => void
 }) {
+  const [studentQuery, setStudentQuery] = useState('')
+  const [studentCohort, setStudentCohort] = useState('all')
+
+  const cohorts = useMemo(
+    () => Array.from(new Set(localStudents.map(s => s.cohort).filter(Boolean))),
+    [localStudents]
+  )
+
+  const filteredStudents = useMemo((): EnrolledStudentRow[] => {
+    let rows = localStudents
+    if (studentQuery) {
+      const q = studentQuery.trim().toLowerCase()
+      rows = rows.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q) ||
+        s.studentId.toLowerCase().includes(q)
+      )
+    }
+    if (studentCohort !== 'all') rows = rows.filter(s => s.cohort === studentCohort)
+    return rows as EnrolledStudentRow[]
+  }, [localStudents, studentQuery, studentCohort])
+
   return (
     <DataTable<EnrolledStudentRow>
-      data={localStudents as EnrolledStudentRow[]}
+      data={filteredStudents}
       columns={enrolledStudentColumns}
       getRowId={(row) => row.id as string}
       selectable={false}
@@ -594,8 +809,33 @@ function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
       onRowClick={(row) => onNavigateStudent(row.id as string)}
       toolbarSlot={() => (
         <>
+          <InputGroup className="w-52">
+            <InputGroupAddon>
+              <i className="fa-light fa-magnifying-glass text-muted-foreground text-[12px]" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search students…"
+              value={studentQuery}
+              onChange={e => setStudentQuery(e.target.value)}
+              aria-label="Search students"
+              className="text-sm"
+            />
+          </InputGroup>
+          {cohorts.length > 0 && (
+            <Select value={studentCohort} onValueChange={setStudentCohort}>
+              <SelectTrigger className="h-8 w-36 text-sm">
+                <SelectValue placeholder="Cohort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All cohorts</SelectItem>
+                {cohorts.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <span className="text-xs text-muted-foreground">
-            {localStudents.length} student{localStudents.length !== 1 ? 's' : ''} enrolled
+            {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
           </span>
           {IS_LMS_ACTIVE ? (
             <Badge
@@ -636,78 +876,6 @@ function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
   )
 }
 
-// ── Accommodations tab ────────────────────────────────────────────────────────
-
-const ACC_TYPE_LABEL: Record<string, string> = {
-  'extended-time': 'Extended Time',
-  'separate-room': 'Separate Room',
-  'extended-breaks': 'Extended Breaks',
-  'screen-reader': 'Screen Reader',
-  'quiet-room': 'Quiet Room',
-  'font-size': 'Font Size',
-}
-
-function AccommodationsTab({ offering, onNavigateStudent }: {
-  offering: ExtendedCourseOffering
-  onNavigateStudent: (id: string) => void
-}) {
-  const accs = facultyAccommodations.filter(a => a.courseId === offering.courseId)
-  const studentMap = new Map(allStudents.map(s => [s.id, `${s.firstName} ${s.lastName}`]))
-
-  if (accs.length === 0) {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
-          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-            <i className="fa-light fa-universal-access text-muted-foreground text-lg" aria-hidden="true" />
-          </div>
-          <p className="font-semibold text-foreground">No accommodations for {offering.courseName}</p>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Students with approved accommodations registered for this offering will appear here.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <span className="text-xs text-muted-foreground">
-          {accs.length} accommodation{accs.length !== 1 ? 's' : ''}
-        </span>
-      </div>
-      <ul className="divide-y divide-border">
-        {accs.map(acc => {
-          const studentName = studentMap.get(acc.studentId) ?? acc.studentId
-          return (
-            <li key={acc.id} className="flex items-center gap-4 px-5 py-4">
-              <div className="flex-1 min-w-0">
-                <Button variant="ghost" size="sm" onClick={() => onNavigateStudent(acc.studentId)} className="text-sm font-medium hover:underline text-left h-auto p-0 justify-start" style={{ color: 'var(--brand-color)' }}>
-                  {studentName}
-                </Button>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{acc.detail}</p>
-              </div>
-              <Badge
-                variant="secondary"
-                className="rounded text-xs shrink-0"
-              >
-                {ACC_TYPE_LABEL[acc.type] ?? acc.type}
-              </Badge>
-              <div className="text-right shrink-0">
-                <p className="text-xs text-muted-foreground">{acc.approvedBy}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {new Date(acc.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
-
 // ── Faculty tab ───────────────────────────────────────────────────────────────
 
 type AssignedFacultyRow = AssignedFaculty & Record<string, unknown>
@@ -723,12 +891,8 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
       const initials = nameInitials(row.name as string)
       return (
         <div className="flex items-center gap-3">
-          <Avatar className="shrink-0" style={{ width: 32, height: 32 }} aria-hidden="true">
-            <AvatarFallback className="text-xs font-bold"
-              style={{
-                backgroundColor: 'var(--brand-tint)',
-                color: 'var(--brand-color)',
-              }}>
+          <Avatar size="sm" className="shrink-0" aria-hidden="true">
+            <AvatarFallback className="text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -786,9 +950,22 @@ function FacultyTab({ localFaculty, onOpenAssign, onNavigateFaculty }: {
   onOpenAssign: () => void
   onNavigateFaculty: (id: string) => void
 }) {
+  const [facultyQuery, setFacultyQuery] = useState('')
+  const [facultyRole, setFacultyRole] = useState('all')
+
+  const filteredFaculty = useMemo((): AssignedFacultyRow[] => {
+    let rows = localFaculty
+    if (facultyQuery) {
+      const q = facultyQuery.trim().toLowerCase()
+      rows = rows.filter(f => f.name.toLowerCase().includes(q))
+    }
+    if (facultyRole !== 'all') rows = rows.filter(f => f.role === facultyRole)
+    return rows as AssignedFacultyRow[]
+  }, [localFaculty, facultyQuery, facultyRole])
+
   return (
     <DataTable<AssignedFacultyRow>
-      data={localFaculty as AssignedFacultyRow[]}
+      data={filteredFaculty}
       columns={assignedFacultyColumns}
       getRowId={(row) => row.id as string}
       selectable={false}
@@ -797,8 +974,30 @@ function FacultyTab({ localFaculty, onOpenAssign, onNavigateFaculty }: {
       onRowClick={(row) => onNavigateFaculty(row.id as string)}
       toolbarSlot={() => (
         <>
+          <InputGroup className="w-44">
+            <InputGroupAddon>
+              <i className="fa-light fa-magnifying-glass text-muted-foreground text-[12px]" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search faculty…"
+              value={facultyQuery}
+              onChange={e => setFacultyQuery(e.target.value)}
+              aria-label="Search faculty"
+              className="text-sm"
+            />
+          </InputGroup>
+          <Select value={facultyRole} onValueChange={setFacultyRole}>
+            <SelectTrigger className="h-8 w-44 text-sm">
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All roles</SelectItem>
+              <SelectItem value="Course Coordinator">Course Coordinator</SelectItem>
+              <SelectItem value="Instructor">Instructor</SelectItem>
+            </SelectContent>
+          </Select>
           <span className="text-xs text-muted-foreground">
-            {localFaculty.length} faculty member{localFaculty.length !== 1 ? 's' : ''} assigned
+            {filteredFaculty.length} faculty member{filteredFaculty.length !== 1 ? 's' : ''} assigned
           </span>
           {IS_LMS_ACTIVE ? (
             <Badge
@@ -841,119 +1040,77 @@ function FacultyTab({ localFaculty, onOpenAssign, onNavigateFaculty }: {
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
 
-function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; isPrism: boolean }) {
+function OverviewTab({ offering, onNavigate }: { offering: ExtendedCourseOffering; onNavigate: (tab: string) => void }) {
   const status = OFFERING_STATUS[offering.status]
+
+  const kvRows = [
+    { label: 'Course Code',   value: offering.courseNumber },
+    { label: 'Academic Year', value: offering.academicYear },
+    { label: 'Term',          value: offering.term },
+    { label: 'Cohort',        value: offering.cohort },
+    { label: 'Start Date',    value: offering.startDate ? formatDate(offering.startDate) : 'TBD' },
+    { label: 'End Date',      value: offering.endDate ? formatDate(offering.endDate) : 'TBD' },
+    { label: 'Credits',       value: `${offering.credits} credits` },
+    { label: 'Status',        value: status?.label ?? offering.status },
+  ]
+
+  const nextAssessment = offering.assessments
+    .filter(a => a.status !== 'Published' && a.date > new Date().toISOString().split('T')[0])
+    .sort((a, b) => a.date.localeCompare(b.date))[0]
+
+  const nextDueDesc = nextAssessment
+    ? `Next: ${new Date(nextAssessment.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : 'No upcoming'
+
+  const summaryCards = [
+    { label: 'Students', count: offering.students.length, sub: `${offering.registeredStudents} registered`, tab: 'students' },
+    { label: 'Assessments', count: offering.assessments.length, sub: nextDueDesc, tab: 'assessments' },
+    { label: 'Faculty', count: offering.faculty.length, sub: offering.faculty[0]?.name ?? 'None assigned', tab: 'faculty' },
+    { label: 'Question Bank', count: `${offering.qbHealth}%`, sub: 'QB Health', tab: 'question-bank' },
+    { label: 'Resources', count: offering.resources.length, sub: `${offering.resources.filter(r => r.syncedFromPrism).length} synced from PRISM`, tab: 'resources' },
+  ]
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 flex flex-col gap-5">
-        {offering.description && (
-          <section className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Description</p>
+    <div className="flex flex-col gap-6">
+      {/* About this offering — kv-grid */}
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">About this offering</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
+            {kvRows.map(({ label, value }) => (
+              <Field key={label} orientation="vertical">
+                <FieldLabel className="text-xs text-muted-foreground">{label}</FieldLabel>
+                <FieldContent className="text-sm font-medium text-foreground">{value}</FieldContent>
+              </Field>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 5 summary metrics */}
+      <KeyMetrics
+        variant="compact"
+        metricsSingleRow
+        metrics={summaryCards.map(card => ({
+          id: card.tab,
+          label: card.label,
+          value: card.count,
+          delta: '',
+          trend: 'neutral' as const,
+          description: card.sub,
+          onClick: () => onNavigate(card.tab),
+        }))}
+      />
+
+      {/* Description (if present) */}
+      {offering.description && (
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Description</p>
             <p className="text-sm text-foreground leading-relaxed">{offering.description}</p>
-          </section>
-        )}
-
-        {/* Student outcome snapshot — completion rate + avg score across enrolled students */}
-        {offering.students.length > 0 && (
-          <section className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">Student Outcomes</p>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                {
-                  label: 'Enrolled',
-                  value: offering.students.length,
-                  icon: 'fa-users',
-                },
-                {
-                  label: 'Assessments',
-                  value: offering.assessments.length,
-                  icon: 'fa-clipboard-list',
-                },
-                {
-                  label: 'Published',
-                  value: offering.assessments.filter(a => a.status === 'Published').length,
-                  icon: 'fa-circle-check',
-                },
-              ].map(m => (
-                <div key={m.label} className="flex flex-col items-center gap-1 rounded-lg border border-border p-3 text-center"
-                  style={{ backgroundColor: 'var(--muted)' }}>
-                  <i className={`fa-light ${m.icon} text-muted-foreground text-base`} aria-hidden="true" />
-                  <p className="text-xl font-bold text-foreground tabular-nums leading-none mt-1">{m.value}</p>
-                  <p className="text-[11px] text-muted-foreground">{m.label}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <section className="rounded-xl border border-border bg-card p-5 flex flex-col gap-0">
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Quick Reference</p>
-          <div className="flex items-center justify-between py-2 border-b border-border">
-            <span className="text-xs text-muted-foreground">Status</span>
-            <Badge variant="secondary" className="rounded font-medium"
-              style={{ backgroundColor: status?.bg, color: status?.fg }}>
-              {status?.label ?? offering.status}
-            </Badge>
-          </div>
-          {[
-            { label: 'Credits',      value: `${offering.credits} cr` },
-            { label: 'Course Type',  value: offering.courseType },
-            { label: 'Hours / Week', value: `${offering.hoursPerWeek} hrs` },
-            { label: 'Start',        value: formatDate(offering.startDate) },
-            { label: 'End',          value: formatDate(offering.endDate) },
-            { label: 'Cohort',       value: offering.cohort },
-            { label: 'Faculty',      value: offering.facultyAssigned },
-            { label: 'Department',   value: offering.department },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0">
-              <span className="text-xs text-muted-foreground shrink-0">{label}</span>
-              <span className="text-xs text-foreground text-right truncate">{value}</span>
-            </div>
-          ))}
-        </section>
-
-        <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
-          <CardContent className="flex items-start gap-3 p-4">
-          <i className="fa-light fa-books text-sm mt-0.5 shrink-0" aria-hidden="true"
-            style={{ color: 'var(--brand-color)' }} />
-          <div>
-            <p className="text-sm font-medium text-foreground">Question bank</p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-              Questions, folders, and drafts for this course.
-            </p>
-            <a href="/question-bank"
-              className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 no-underline hover:underline"
-              style={{ color: 'var(--brand-color)' }}>
-              Open question bank
-              <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
-            </a>
-          </div>
           </CardContent>
         </Card>
-
-        {isPrism && (
-          <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
-            <CardContent className="flex items-start gap-3 p-4">
-            <i className="fa-light fa-arrow-up-right-from-square mt-0.5 shrink-0 text-[13px]" aria-hidden="true"
-              style={{ color: 'var(--brand-color)' }} />
-            <div>
-              <p className="text-sm font-medium text-foreground">Full course view in Prism</p>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                Syllabus, LMS content, and historical offerings.
-              </p>
-              <a href="#prism-course-view" target="_blank" rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 no-underline hover:underline"
-                style={{ color: 'var(--brand-color)' }}>
-                View in Prism
-                <i className="fa-light fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
-              </a>
-            </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      )}
     </div>
   )
 }
@@ -963,7 +1120,7 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
 function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
   if (offering.resources.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-14 text-center gap-2">
         <div className="flex size-12 items-center justify-center rounded-full bg-muted">
           <i className="fa-light fa-folder-open text-muted-foreground text-lg" aria-hidden="true" />
         </div>
@@ -972,29 +1129,51 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
       </div>
     )
   }
+  const TYPE_ICON: Record<string, { icon: string; bg: string; fg: string }> = {
+    PDF:   { icon: 'fa-file-pdf', bg: 'var(--chip-red-surface)', fg: 'var(--destructive)' },
+    Video: { icon: 'fa-play',     bg: 'var(--brand-tint)',       fg: 'var(--brand-color)' },
+    Link:  { icon: 'fa-link',     bg: 'var(--muted)',            fg: 'var(--muted-foreground)' },
+  }
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <ul className="divide-y divide-border">
-        {offering.resources.map((res, i) => (
-          <li key={i} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md"
-              style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-              <i className={`fa-light ${res.type === 'PDF' ? 'fa-file-pdf' : res.type === 'Video' ? 'fa-play' : 'fa-link'} text-[13px]`}
-                aria-hidden="true" />
-            </span>
-            <p className="text-sm font-medium text-foreground flex-1 truncate">{res.title}</p>
-            <Badge variant="secondary" className="rounded text-xs shrink-0"
-              style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-              {res.type}
-            </Badge>
-            {res.url && (
-              <Button variant="ghost" size="icon-sm" aria-label={`Open ${res.title}`}
-                onClick={() => window.open(res.url, '_blank', 'noopener,noreferrer')}>
-                <i className="fa-light fa-arrow-up-right-from-square text-[12px]" aria-hidden="true" />
-              </Button>
-            )}
-          </li>
-        ))}
+        {offering.resources.map((res, i) => {
+          const t = TYPE_ICON[res.type] ?? TYPE_ICON.Link
+          return (
+            <li key={i} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted transition-colors">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                style={{ backgroundColor: t.bg, color: t.fg }}>
+                <i className={`fa-light ${t.icon} text-[13px]`} aria-hidden="true" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{res.title}</p>
+                {(res.fileSize || res.updatedDate) && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {res.fileSize && <span>{res.fileSize}</span>}
+                    {res.fileSize && res.updatedDate && <span> · </span>}
+                    {res.updatedDate && <span>Updated {new Date(res.updatedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
+                  </p>
+                )}
+              </div>
+              {res.syncedFromPrism && (
+                <Badge variant="secondary" className="rounded-full text-xs shrink-0"
+                  style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
+                  Synced from PRISM
+                </Badge>
+              )}
+              <Badge variant="secondary" className="rounded text-xs shrink-0"
+                style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                {res.type}
+              </Badge>
+              {res.url && (
+                <Button variant="ghost" size="icon-sm" aria-label={`Open ${res.title}`}
+                  onClick={() => window.open(res.url, '_blank', 'noopener,noreferrer')}>
+                  <i className="fa-light fa-arrow-up-right-from-square text-[12px]" aria-hidden="true" />
+                </Button>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
@@ -1002,117 +1181,160 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
 
 // ── Question Bank tab ─────────────────────────────────────────────────────────
 
-function QuestionBankTab({ courseId }: { courseId: string }) {
-  const qbRootId = courseId.replace('course-', '')
+const QB_STATUS_CONFIG: Record<string, { bg: string; fg: string }> = {
+  Saved:    { bg: 'var(--qb-status-saved-bg)',    fg: 'var(--qb-status-saved-fg)' },
+  Draft:    { bg: 'var(--muted)',                  fg: 'var(--muted-foreground)' },
+  Archived: { bg: 'var(--muted)',                  fg: 'var(--destructive)' },
+}
+
+const QB_DIFF_CONFIG: Record<string, { bg: string; fg: string }> = {
+  Easy:   { bg: 'var(--chip-green-surface)',  fg: 'var(--chip-green-fg)' },
+  Medium: { bg: 'var(--chip-amber-surface)',  fg: 'var(--chip-4)' },
+  Hard:   { bg: 'var(--chip-red-surface)',    fg: 'var(--chip-destructive)' },
+}
+
+type QBQuestionRow = (typeof MOCK_QB_QUESTIONS)[0] & Record<string, unknown>
+
+const qbQuestionColumns: ColumnDef<QBQuestionRow>[] = [
+  {
+    key: 'title', label: 'Question', width: 380, sortable: true, sortKey: 'title',
+    cell: (row) => (
+      <p className="text-sm text-foreground line-clamp-2 leading-snug">{row.title as string}</p>
+    ),
+  },
+  {
+    key: 'type', label: 'Type', width: 120, sortable: true, sortKey: 'type',
+    cell: (row) => (
+      <span className="text-xs text-muted-foreground">{row.type as string}</span>
+    ),
+  },
+  {
+    key: 'blooms', label: "Bloom's", width: 110, sortable: true, sortKey: 'blooms',
+    cell: (row) => (
+      <span className="text-xs text-muted-foreground">{row.blooms as string}</span>
+    ),
+  },
+  {
+    key: 'difficulty', label: 'Difficulty', width: 90, sortable: true, sortKey: 'difficulty',
+    cell: (row) => {
+      const d = QB_DIFF_CONFIG[row.difficulty as string]
+      if (!d) return <span className="text-xs text-muted-foreground">{row.difficulty as string}</span>
+      return (
+        <Badge variant="secondary" className="rounded text-xs font-medium"
+          style={{ backgroundColor: d.bg, color: d.fg }}>
+          {row.difficulty as string}
+        </Badge>
+      )
+    },
+  },
+  {
+    key: 'status', label: 'Status', width: 90, sortable: true, sortKey: 'status',
+    cell: (row) => {
+      const s = QB_STATUS_CONFIG[row.status as string] ?? QB_STATUS_CONFIG.Draft
+      return (
+        <Badge variant="secondary" className="rounded text-xs font-medium"
+          style={{ backgroundColor: s.bg, color: s.fg }}>
+          {row.status as string}
+        </Badge>
+      )
+    },
+  },
+  {
+    key: 'folderPath', label: 'Source', width: 160,
+    cell: (row) => {
+      const fp = row.folderPath as string
+      const isShared = fp && !fp.startsWith((row as { courseFolder?: string }).courseFolder ?? '')
+      return (
+        <span className="text-xs text-muted-foreground truncate">
+          {isShared ? `Shared · ${fp.split('/')[0].trim()}` : 'This course'}
+        </span>
+      )
+    },
+  },
+]
+
+function QuestionBankTab({ offering }: { offering: ExtendedCourseOffering }) {
+  const [query, setQuery] = useState('')
+  const qbRootId = offering.courseId.replace('course-', '')
   const rootFolder = MOCK_QB_FOLDERS.find(f => f.id === qbRootId)
-  const childFolders = MOCK_QB_FOLDERS.filter(f => f.parentId === qbRootId)
 
-  if (!rootFolder) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <i className="fa-light fa-books text-muted-foreground text-lg" aria-hidden="true" />
-        </div>
-        <p className="font-semibold text-foreground">No question bank linked</p>
-        <p className="text-sm text-muted-foreground">A question bank folder will appear here once this course is set up in the QB.</p>
-      </div>
-    )
-  }
-
-  const collaborators = (rootFolder.collaborators ?? []).map(id => findPersona(id)).filter(Boolean)
-  const subfolderCountByFolder = Object.fromEntries(
-    childFolders.map(f => [f.id, MOCK_QB_FOLDERS.filter(sf => sf.parentId === f.id).length])
+  // Filter questions that belong to this course's folders (by folder prefix match)
+  const courseQuestions = useMemo(
+    () => MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(qbRootId.replace('101', '').replace('201', '').replace('301', '').replace('401', '').replace('501', '').replace('601', '')) || q.folder.includes(qbRootId.split('').slice(0, 4).join(''))),
+    [qbRootId]
   )
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return courseQuestions
+    return courseQuestions.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      r.type.toLowerCase().includes(q) ||
+      r.blooms.toLowerCase().includes(q) ||
+      r.status.toLowerCase().includes(q)
+    )
+  }, [courseQuestions, query])
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Summary card */}
-      <Card>
-      <CardContent className="p-4 flex items-start gap-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }}>
-          <i className="fa-light fa-books text-base" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{rootFolder.name}</p>
-          <div className="flex items-center gap-4 mt-1.5">
-            <span className="text-xs text-muted-foreground">
-              <strong className="text-foreground">{rootFolder.count}</strong> questions
-            </span>
-            <span className="text-xs text-muted-foreground">
-              <strong className="text-foreground">{childFolders.length}</strong> folders
-            </span>
-            <span className="text-xs text-muted-foreground">
-              <strong className="text-foreground">{collaborators.length}</strong> collaborators
-            </span>
-          </div>
-          {collaborators.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-2">
-              {collaborators.map(p => (
-                <Avatar key={p!.id} className="size-5">
-                  <AvatarFallback className="text-xs"
-                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-                    {p!.initials}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              <span className="text-[11px] text-muted-foreground ml-0.5">
-                {collaborators.map(p => p!.name.split(' ')[0]).join(', ')}
-              </span>
-            </div>
-          )}
-        </div>
-        <a href="/question-bank"
-          className="inline-flex items-center gap-1.5 text-xs font-medium shrink-0 no-underline hover:underline"
-          style={{ color: 'var(--brand-color)' }}>
-          Open QB
-          <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
-        </a>
-      </CardContent>
-      </Card>
+      {/* QB analytics strip */}
+      <KeyMetrics
+        variant="compact"
+        metricsSingleRow
+        metrics={[
+          { id: 'total',      label: 'Total questions',   value: offering.qbAnalytics.total,                delta: '', trend: 'neutral' as const },
+          { id: 'measure',    label: 'Measure-tagged',    value: `${offering.qbAnalytics.measurePct}%`,     delta: '', trend: offering.qbAnalytics.measurePct >= 70 ? 'up' as const : 'down' as const,      trendPolarity: 'higher_is_better' as const },
+          { id: 'competency', label: 'Competency-tagged', value: `${offering.qbAnalytics.competencyPct}%`, delta: '', trend: offering.qbAnalytics.competencyPct >= 70 ? 'up' as const : 'down' as const, trendPolarity: 'higher_is_better' as const },
+          { id: 'untagged',   label: 'Untagged',          value: offering.qbAnalytics.untagged,             delta: '', trend: offering.qbAnalytics.untagged > 0 ? 'up' as const : 'neutral' as const,     trendPolarity: 'lower_is_better' as const },
+          { id: 'flagged',    label: 'AI-flagged',        value: offering.qbAnalytics.aiFlagged,            delta: '', trend: offering.qbAnalytics.aiFlagged > 0 ? 'up' as const : 'neutral' as const,    trendPolarity: 'lower_is_better' as const },
+          { id: 'unused',     label: 'Never used',        value: offering.qbAnalytics.neverUsed,            delta: '', trend: offering.qbAnalytics.neverUsed > 0 ? 'up' as const : 'neutral' as const,    trendPolarity: 'lower_is_better' as const },
+        ]}
+        className="shrink-0"
+      />
 
-      {/* Folder list */}
-      {childFolders.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Folders</p>
+      <DataTable<QBQuestionRow>
+        data={filtered as QBQuestionRow[]}
+        columns={qbQuestionColumns}
+        getRowId={(row) => (row as { id: string }).id}
+        selectable={false}
+        searchable={false}
+        showQueryControls={false}
+        toolbarSlot={() => (
+          <>
+            <InputGroup className="w-52">
+              <InputGroupAddon>
+                <i className="fa-light fa-magnifying-glass text-muted-foreground text-[12px]" aria-hidden="true" />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search questions…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                aria-label="Search questions"
+                className="text-sm"
+              />
+            </InputGroup>
+            <span className="text-xs text-muted-foreground">
+              {rootFolder ? `${rootFolder.count} questions in QB` : `${filtered.length} questions`}
+            </span>
+            <Button variant="outline" size="sm" className="ms-auto" asChild>
+              <a href="/question-bank" aria-label="Open Question Bank">
+                <i className="fa-light fa-arrow-up-right-from-square text-[12px]" aria-hidden="true" />
+                Open Question Bank
+              </a>
+            </Button>
+          </>
+        )}
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-14 text-center gap-2">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-books text-muted-foreground text-lg" aria-hidden="true" />
+            </div>
+            <p className="font-semibold text-foreground">
+              {query ? 'No questions match your search' : 'No questions in this course QB'}
+            </p>
           </div>
-          <ul className="divide-y divide-border">
-            {childFolders.map(folder => {
-              const subCount = subfolderCountByFolder[folder.id] ?? 0
-              const folderCollabs = (folder.collaborators ?? []).map(id => findPersona(id)).filter(Boolean)
-              return (
-                <li key={folder.id} className="flex items-center gap-3 px-5 py-3.5">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md"
-                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-                    <i className={`fa-light ${folder.isPrivateSpace ? 'fa-lock' : 'fa-folder'} text-sm`}
-                      aria-hidden="true" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
-                      {folder.isPrivateSpace && (
-                        <Badge variant="secondary" className="rounded text-xs px-1.5 py-0 shrink-0"
-                          style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-                          Private
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {folder.count} questions
-                      {subCount > 0 && ` · ${subCount} subfolder${subCount > 1 ? 's' : ''}`}
-                      {folderCollabs.length > 0 && ` · ${folderCollabs.map(p => p!.name.split(' ')[0]).join(', ')}`}
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground tabular-nums">
-                    {folder.count}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      )}
+        }
+      />
     </div>
   )
 }
@@ -1134,12 +1356,17 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
     })
   }, [offering.id])
 
-  // Controlled tab state — matches all other detail pages in this codebase
-  const [activeTab, setActiveTab] = useState('assessments')
+  // Controlled tab state — overview is the default per the wireframe
+  const [activeTab, setActiveTab] = useState('overview')
 
   // Enrollment state — initialized from offering data, mutated locally
   const [localStudents, setLocalStudents] = useState<EnrolledStudent[]>(
-    offering.students.map(s => ({ id: s.id, name: s.name, email: s.email, status: s.status }))
+    offering.students.map(s => ({
+      id: s.id, name: s.name, email: s.email,
+      studentId: s.studentId ?? '',
+      cohort: s.cohort ?? offering.cohort,
+      status: s.status,
+    }))
   )
   const [localFaculty, setLocalFaculty] = useState<AssignedFaculty[]>(
     offering.faculty.map(f => ({ id: f.id, name: f.name, role: f.role }))
@@ -1165,9 +1392,17 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
         <PageHeader
           title={offering.courseName}
-          subtitle={`${offering.courseNumber} · ${offering.term} · ${offering.cohort}`}
+          subtitle={`${offering.courseNumber} · ${offering.academicYear} · ${offering.term} · ${offering.cohort} · ${offering.startDate ? formatDate(offering.startDate) : 'TBD'} → ${offering.endDate ? formatDate(offering.endDate) : 'TBD'} · ${offering.credits} credits`}
           actions={
             <div className="flex items-center gap-2">
+              {offering.isPrism && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href="#" target="_blank" rel="noopener noreferrer">
+                    <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
+                    View in Prism
+                  </a>
+                </Button>
+              )}
               {IS_LMS_ACTIVE && (
                 <Badge
                   variant="secondary"
@@ -1190,6 +1425,14 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                   {status.label}
                 </Badge>
               )}
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setCreateModalOpen(true)}
+              >
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add Assessment
+              </Button>
             </div>
           }
         />
@@ -1230,11 +1473,14 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
               <TabsTrigger value="question-bank">
                 <i className="fa-light fa-books text-xs" aria-hidden="true" />
                 Question Bank
-                {MOCK_QB_FOLDERS.some(f => f.id === offering.courseId.replace('course-', '')) && (
-                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
-                    {MOCK_QB_FOLDERS.filter(f => f.parentId === offering.courseId.replace('course-', '')).length}
-                  </Badge>
-                )}
+                {(() => {
+                  const rootFolder = MOCK_QB_FOLDERS.find(f => f.id === offering.courseId.replace('course-', ''))
+                  return rootFolder ? (
+                    <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
+                      {rootFolder.count}
+                    </Badge>
+                  ) : null
+                })()}
               </TabsTrigger>
               <TabsTrigger value="resources">
                 <i className="fa-light fa-folder-open text-xs" aria-hidden="true" />
@@ -1245,21 +1491,17 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="accommodations">
-                <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
-                Accommodations
-              </TabsTrigger>
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
             <TabsContent value="overview" className="m-0">
-              <OverviewTab offering={offering} isPrism={isPrism} />
+              <OverviewTab offering={offering} onNavigate={setActiveTab} />
             </TabsContent>
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => router.push(`/assessment-builder?new=1&courseId=${offering.courseId}`)}
+                onNewAssessment={() => setCreateModalOpen(true)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -1277,16 +1519,10 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
               />
             </TabsContent>
             <TabsContent value="question-bank" className="m-0">
-              <QuestionBankTab courseId={offering.courseId} />
+              <QuestionBankTab offering={offering} />
             </TabsContent>
             <TabsContent value="resources" className="m-0">
               <ResourcesTab offering={offering} />
-            </TabsContent>
-            <TabsContent value="accommodations" className="m-0">
-              <AccommodationsTab
-                offering={offering}
-                onNavigateStudent={(id) => router.push(`/students/${id}`)}
-              />
             </TabsContent>
           </div>
         </Tabs>
@@ -1304,6 +1540,13 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
         onOpenChange={setAssignOpen}
         assignedIds={assignedIds}
         onAssign={f => setLocalFaculty(prev => prev.some(e => e.id === f.id) ? prev : [...prev, f])}
+      />
+      <LegacyCreateAssessmentModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        offeringId={offering.id}
+        courseId={offering.courseId}
+        onOpenImport={() => setImportOpen(true)}
       />
       <ImportAssessmentModal
         open={importOpen}

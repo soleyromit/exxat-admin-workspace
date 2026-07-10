@@ -3,7 +3,7 @@
 /* SectionCard — a draggable section with header, question list, and add toolbar.
    Faithful port of the SectionCard render in the Claude Design builder.jsx. */
 
-import { Button, Card, CardHeader, CardContent, Badge, Input, AvatarInitials } from '@exxatdesignux/ui'
+import { Button, Card, CardHeader, CardContent, Badge, Input } from '@exxatdesignux/ui'
 import { Icon, LeoStar } from '../icons'
 import { FACULTY, type Section, type Question, type ReviewStatus } from '../data'
 import { QuestionItem } from './question-item'
@@ -47,8 +47,8 @@ export function SectionCard(p: SectionCardProps) {
   const pts = sec.questions.reduce((a, q) => a + (q.bonus ? 0 : q.points), 0)
 
   return (
-    <Card onDragOver={e => e.preventDefault()} onDrop={p.onSecDrop} style={{ opacity: p.dragId === sec.id ? 0.5 : 1, overflow: 'hidden' }}>
-      <CardHeader className="bg-muted flex flex-row items-center gap-2 p-3 space-y-0" draggable onDragStart={p.onSecDragStart}>
+    <Card onDragOver={e => e.preventDefault()} onDrop={p.onSecDrop} style={{ opacity: p.dragId === sec.id ? 0.5 : 1, overflow: 'visible' }}>
+      <CardHeader className="bg-muted flex flex-row items-center gap-2 p-3 space-y-0" draggable onDragStart={p.onSecDragStart} style={{ position: 'sticky', top: 0, zIndex: 10, borderRadius: 'var(--radius) var(--radius) 0 0', borderBottom: '1px solid var(--border)' }}>
         <span style={{ cursor: 'grab', color: 'var(--muted-foreground)' }}><Icon name="grip-vertical" /></span>
         <Button type="button" variant="ghost" size="icon-sm" aria-label={p.collapsed ? 'Expand section' : 'Collapse section'} onClick={p.onToggleCollapse}>
           <Icon name={p.collapsed ? 'chevron-right' : 'chevron-down'} />
@@ -62,9 +62,6 @@ export function SectionCard(p: SectionCardProps) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span title={`Delegated to ${FACULTY[sec.owner].name}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AvatarInitials size="sm" initials={FACULTY[sec.owner].initials} />
-          </span>
           <Button type="button" variant="ghost" size="icon-sm" aria-label="Section options" onClick={p.onSettings}><Icon name="ellipsis" /></Button>
         </div>
       </CardHeader>
@@ -76,11 +73,12 @@ export function SectionCard(p: SectionCardProps) {
               <Icon name="circle-plus" /><div>No questions yet — add from the bank, author manually, or generate with AI.</div>
             </div>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {sec.questions.map(q => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {sec.questions.map((q, i) => (
               <div key={q.id} ref={q.flagged && p.flagRef ? p.flagRef : null} onDragOver={e => e.preventDefault()} onDrop={e => { e.stopPropagation(); p.onQDrop(q.id) }}>
                 <QuestionItem
                   q={q}
+                  qIndex={i + 1}
                   selected={p.selectedIds.includes(q.id)}
                   dragging={p.dragId === q.id}
                   onSelect={() => p.onSelect(q.id)}

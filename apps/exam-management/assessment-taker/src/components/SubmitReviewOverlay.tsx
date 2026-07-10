@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Dialog, DialogContent } from '@exxatdesignux/ui';
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@exxatdesignux/ui';
 import { Question } from '../data/questions';
 
 interface SubmitReviewOverlayProps {
@@ -51,6 +51,7 @@ export function SubmitReviewOverlay({
       return {
         icon: 'fa-triangle-exclamation',
         iconColor: 'var(--state-warning-text)',
+        iconBg: 'var(--state-warning-bg)',
         headline: 'You still have unanswered questions',
         detail: `${unansweredCount} question${unansweredCount !== 1 ? 's' : ''} left unanswered and ${bookmarkedCount} bookmarked for review.`,
       };
@@ -59,6 +60,7 @@ export function SubmitReviewOverlay({
       return {
         icon: 'fa-triangle-exclamation',
         iconColor: 'var(--state-warning-text)',
+        iconBg: 'var(--state-warning-bg)',
         headline: 'You still have unanswered questions',
         detail: `${unansweredCount} question${unansweredCount !== 1 ? 's' : ''} left unanswered.`,
       };
@@ -67,6 +69,7 @@ export function SubmitReviewOverlay({
       return {
         icon: 'fa-bookmark',
         iconColor: 'var(--state-flagged-text)',
+        iconBg: 'var(--state-flagged-bg)',
         headline: 'You have bookmarked questions',
         detail: `${bookmarkedCount} question${bookmarkedCount !== 1 ? 's' : ''} marked for review.`,
       };
@@ -74,6 +77,7 @@ export function SubmitReviewOverlay({
     return {
       icon: 'fa-circle-check',
       iconColor: 'var(--state-answered-text)',
+      iconBg: 'var(--state-answered-bg)',
       headline: 'All questions answered',
       detail: `You've completed all ${questions.length} questions.`,
     };
@@ -93,27 +97,15 @@ export function SubmitReviewOverlay({
         {phase === 'review' && (
           <>
             {/* Header */}
-            <div style={{
-              padding: '20px 24px 16px',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 12,
-              flexShrink: 0,
-            }}>
+            <DialogHeader className="flex-row items-start justify-between border-b px-6 py-5 space-y-0 flex-shrink-0 gap-3">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>
-                  Ready to submit?
-                </h2>
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
-                  Click any question to go back to it.
-                </p>
+                <DialogTitle className="text-lg font-bold leading-tight">Ready to submit?</DialogTitle>
+                <p className="text-[13px] text-muted-foreground mt-1">Click any question to go back to it.</p>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Go back to exam">
-                <i className="fa-regular fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
+                <i className="fa-regular fa-xmark text-base" aria-hidden="true" />
               </Button>
-            </div>
+            </DialogHeader>
 
             {/* Summary strip */}
             <div style={{
@@ -210,15 +202,7 @@ export function SubmitReviewOverlay({
             </div>
 
             {/* Footer */}
-            <div style={{
-              padding: '14px 24px',
-              borderTop: '1px solid var(--border)',
-              display: 'flex',
-              gap: 10,
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}>
+            <DialogFooter className="border-t px-6 py-3.5 justify-between flex-shrink-0">
               <Button variant="ghost" onClick={onClose}>
                 <i className="fa-regular fa-arrow-left" aria-hidden="true" />
                 Cancel
@@ -227,22 +211,16 @@ export function SubmitReviewOverlay({
                 <i className="fa-regular fa-paper-plane" aria-hidden="true" />
                 Submit exam
               </Button>
-            </div>
+            </DialogFooter>
           </>
         )}
 
         {phase === 'confirm' && (
           <>
             {/* Confirmation header */}
-            <div style={{
-              padding: '20px 24px 16px',
-              borderBottom: '1px solid var(--border)',
-              flexShrink: 0,
-            }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--foreground)' }}>
-                Confirm submission
-              </h2>
-            </div>
+            <DialogHeader className="border-b px-6 py-5 flex-shrink-0">
+              <DialogTitle className="text-lg font-bold">Confirm submission</DialogTitle>
+            </DialogHeader>
 
             {/* Context-aware body */}
             <div style={{ padding: '28px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -251,7 +229,7 @@ export function SubmitReviewOverlay({
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  backgroundColor: `color-mix(in srgb, ${confirmBody.iconColor} 12%, var(--background))`,
+                  backgroundColor: confirmBody.iconBg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -291,15 +269,7 @@ export function SubmitReviewOverlay({
             </div>
 
             {/* Footer */}
-            <div style={{
-              padding: '14px 24px',
-              borderTop: '1px solid var(--border)',
-              display: 'flex',
-              gap: 10,
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}>
+            <DialogFooter className="border-t px-6 py-3.5 justify-between flex-shrink-0">
               <Button variant="ghost" onClick={() => setPhase('review')}>
                 <i className="fa-regular fa-arrow-left" aria-hidden="true" />
                 Go back
@@ -308,7 +278,7 @@ export function SubmitReviewOverlay({
                 <i className="fa-regular fa-check" aria-hidden="true" />
                 Confirm &amp; submit
               </Button>
-            </div>
+            </DialogFooter>
           </>
         )}
 

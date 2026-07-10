@@ -1,7 +1,12 @@
 ---
 description: Exxat DS — do not use toast / sonner / transient snackbars for product messaging.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*.tsx
+  - packages/ui/src/components/**/*.tsx
+tags: [feedback]
+seeAlso:
+  - .cursor/rules/_constitution.exxat-ds.mdc
 ---
 
 # Exxat DS — no toast

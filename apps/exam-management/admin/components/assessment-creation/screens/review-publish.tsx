@@ -11,7 +11,7 @@
    switching personas for you. Built on @exxatdesignux/ui DS components. */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { Button, Card, CardContent, Badge, Textarea, AvatarInitials } from '@exxatdesignux/ui'
+import { Button, Card, CardContent, Badge, Textarea, AvatarInitials, LocalBanner } from '@exxatdesignux/ui'
 import { Icon } from '../icons'
 import { useApp } from '../primitives'
 import { AssessmentStatusBadge } from '../assessment-status-badge'
@@ -76,7 +76,7 @@ interface JourneyStep {
 }
 
 const Avi = ({ id, size = 'sm' }: { id: FacultyId; size?: 'sm' | 'default' | 'lg' }) => (
-  <AvatarInitials size={size} initials={FACULTY[id]?.initials ?? '?'} aria-label={shortName(id)} />
+  <AvatarInitials size={size} initials={FACULTY[id]?.initials ?? '?'} role="img" aria-label={shortName(id)} />
 )
 
 export function ReviewPublish({
@@ -433,7 +433,7 @@ export function ReviewPublish({
                       style={{
                         width: 30,
                         height: 30,
-                        borderRadius: 'var(--radius-full, 999px)',
+                        borderRadius: 9999,
                         display: 'grid',
                         placeItems: 'center',
                         background: done ? 'var(--chip-2)' : active ? 'var(--brand-color)' : 'var(--muted)',
@@ -504,10 +504,10 @@ export function ReviewPublish({
               <div className="text-base font-semibold mb-3">Two-level review</div>
 
               {bounce && (
-                <Callout tone="destructive" icon="rotate" className="mb-3.5">
-                  <b>The Chairperson sent this back.</b> {shortName(bounce.who)}: “{bounce.text}” — address the note,
+                <LocalBanner variant="error" className="mb-3.5">
+                  <b>The Chairperson sent this back.</b> {shortName(bounce.who)}: &ldquo;{bounce.text}&rdquo; — address the note,
                   then resend to Level 2.
-                </Callout>
+                </LocalBanner>
               )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -562,12 +562,12 @@ export function ReviewPublish({
                         : 'Complete Level 1 — send to Chairperson'}
                   </Button>
                 ) : (
-                  <Callout tone="info" icon="circle-info" className="mt-3.5">
+                  <LocalBanner variant="info" className="mt-3.5">
                     Level 1 sign-off is the owner's gate.{' '}
                     {actor !== chairId
                       ? 'Submit your delegated section below — the owner reviews it.'
                       : "You'll act once the owner releases the exam to Level 2."}
-                  </Callout>
+                  </LocalBanner>
                 ))}
 
               {/* L2 chairperson gate */}
@@ -601,22 +601,22 @@ export function ReviewPublish({
                     </div>
                   )
                 ) : (
-                  <Callout tone="info" icon="circle-info" className="mt-3.5">
+                  <LocalBanner variant="info" className="mt-3.5">
                     Sent to the Chairperson ({shortName(chairId)}) for final validation. Act as the Chairperson to
                     approve or send it back.
-                  </Callout>
+                  </LocalBanner>
                 ))}
 
               {stage === 'ready' && (
-                <Callout tone="success" icon="circle-check" className="mt-3.5">
+                <LocalBanner variant="success" className="mt-3.5">
                   Approved by both reviewers.{' '}
                   {isOwner ? 'Publish to schedule student access.' : `The owner (${shortName(ownerId)}) can now publish.`}
-                </Callout>
+                </LocalBanner>
               )}
               {stage === 'published' && (
-                <Callout tone="success" icon="circle-check" className="mt-3.5">
+                <LocalBanner variant="success" className="mt-3.5">
                   Published. Inaccessible to students until 10/24/2026 09:00 AM EST.
-                </Callout>
+                </LocalBanner>
               )}
             </CardContent>
           </Card>
@@ -633,7 +633,7 @@ export function ReviewPublish({
                       className="text-xs"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted-foreground)' }}
                     >
-                      <span style={{ width: 7, height: 7, borderRadius: 'var(--radius-full, 999px)', background: v.dot }} />
+                      <span style={{ width: 7, height: 7, borderRadius: 9999, background: v.dot }} />
                       {v.label}
                     </span>
                     {i < 4 && <Icon name="arrow-right" style={{ color: 'var(--border-control-3)' }} />}
@@ -742,7 +742,7 @@ export function ReviewPublish({
                         style={{
                           width: 26,
                           height: 26,
-                          borderRadius: 'var(--radius-full, 999px)',
+                          borderRadius: 9999,
                           display: 'grid',
                           placeItems: 'center',
                           background: i === 0 ? 'oklch(from var(--brand-color) l c h / 0.12)' : 'var(--muted)',
@@ -842,12 +842,12 @@ export function ReviewPublish({
           </Card>
 
           {flags > 0 && (
-            <Callout tone="destructive" icon="triangle-exclamation">
+            <LocalBanner variant="error">
               <b>
                 {flags} flagged question{flags !== 1 ? 's' : ''}
               </b>{' '}
               still in the exam. Resolve in the builder before publishing high-stakes exams.
-            </Callout>
+            </LocalBanner>
           )}
         </div>
       </div>
@@ -865,45 +865,6 @@ export function ReviewPublish({
           onClose={() => setGuide({ on: false, i: 0 })}
         />
       )}
-    </div>
-  )
-}
-
-/* Tinted callout — replaces the scoped .flag-banner / .info-banner. A simple
-   token-tinted block built on a div (LocalBanner-style); no scoped class. */
-function Callout({
-  tone,
-  icon,
-  className,
-  children,
-}: {
-  tone: 'destructive' | 'info' | 'success'
-  icon: string
-  className?: string
-  children: React.ReactNode
-}) {
-  const T = {
-    destructive: { bg: 'oklch(from var(--destructive) l c h / 0.08)', bd: 'oklch(from var(--destructive) l c h / 0.3)', fg: 'var(--destructive)' },
-    info: { bg: 'oklch(from var(--chart-1) l c h / 0.08)', bd: 'oklch(from var(--chart-1) l c h / 0.28)', fg: 'var(--chip-1)' },
-    success: { bg: 'oklch(from var(--chart-2) l c h / 0.08)', bd: 'oklch(from var(--chart-2) l c h / 0.3)', fg: 'var(--chip-2)' },
-  }[tone]
-  return (
-    <div
-      className={className}
-      style={{
-        display: 'flex',
-        gap: 10,
-        padding: '10px 12px',
-        borderRadius: 'var(--radius)',
-        background: T.bg,
-        border: `1px solid ${T.bd}`,
-        color: T.fg,
-      }}
-    >
-      <Icon name={icon} style={{ marginTop: 1, flexShrink: 0 }} />
-      <div className="text-sm" style={{ lineHeight: 1.45, color: 'var(--foreground)' }}>
-        {children}
-      </div>
     </div>
   )
 }
@@ -1168,7 +1129,7 @@ function JourneyMap({ stage, secState, bounced }: { stage: Stage; secState: Reco
                   style={{
                     width: 46,
                     height: 46,
-                    borderRadius: 'var(--radius-full, 999px)',
+                    borderRadius: 9999,
                     display: 'grid',
                     placeItems: 'center',
                     background: done ? 'var(--chip-2)' : active ? 'var(--brand-color)' : 'var(--muted)',
@@ -1297,7 +1258,7 @@ function GuideRail({
           style={{
             width: 38,
             height: 38,
-            borderRadius: 'var(--radius-full, 999px)',
+            borderRadius: 9999,
             display: 'grid',
             placeItems: 'center',
             background: 'oklch(from var(--chart-2) l c h / 0.14)',

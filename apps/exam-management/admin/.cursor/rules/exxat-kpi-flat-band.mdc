@@ -3,6 +3,10 @@ description: KeyMetrics variant flat — transparent band, brand glow only, OKLC
 globs: components/**/*key-metrics*,src/styles/globals.css,docs/exxat-ds/kpi*.md
 alwaysApply: false
 appliesTo: [react]
+tags: [hub, kpi]
+seeAlso:
+  - docs/exxat-ds/kpi-flat-band-pattern.md
+  - .cursor/skills/exxat-kpi/SKILL.md
 ---
 
 # Exxat DS — KPI flat band (`variant="flat"`)

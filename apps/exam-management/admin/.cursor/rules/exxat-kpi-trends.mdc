@@ -1,7 +1,14 @@
 ---
 description: Exxat DS — KPI deltas and trend arrows must be contextual; use trendPolarity when “up” is not good news.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - lib/mock/**/*-kpi.ts
+  - components/key-metrics.tsx
+  - components/**/*-kpi*
+tags: [hub, kpi]
+seeAlso:
+  - docs/exxat-ds/kpi-trend-pattern.md
+  - .cursor/skills/exxat-kpi/SKILL.md
 ---
 
 # Exxat DS — KPI trends (`KeyMetrics` + chart mini-metrics)

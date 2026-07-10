@@ -122,7 +122,7 @@ function QBBreadcrumb() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             Parent folders
           </DropdownMenuLabel>
           {collapsedNodes.map(node => (
@@ -204,7 +204,7 @@ export function QBHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-1.5 h-7 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 26, height: 26 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
@@ -219,13 +219,13 @@ export function QBHeader() {
               return (
                 <div key={groupRole}>
                   {gi > 0 && <DropdownMenuSeparator />}
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-1">
+                  <DropdownMenuLabel className="text-xs font-medium text-muted-foreground py-1">
                     {groupRole === 'admin' ? 'Administrator' : 'Faculty'}
                   </DropdownMenuLabel>
                   {groupPersonas.map((p: Persona) => (
                     <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
                       <Avatar style={{ width: 24, height: 24 }}>
-                        <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                        <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                           {p.initials}
                         </AvatarFallback>
                       </Avatar>

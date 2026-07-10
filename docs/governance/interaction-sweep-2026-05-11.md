@@ -120,7 +120,7 @@ Ranked by leverage (single fix × routes affected):
 
 ## Per-route deep evidence
 
-All screenshots and axe JSON at `/tmp/visual-check/interactions/<slug>.<interaction>.{png,axe.json}` — preserved for the visual-review subagent to read on demand.
+All screenshots and axe JSON at `/tmp/visual-check/interactions/<slug>.<interaction>.{png,axe.json}` — preserved for the ds-conformance-reviewer subagent to read on demand.
 
 ---
 

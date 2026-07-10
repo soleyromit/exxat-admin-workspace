@@ -6,13 +6,15 @@ import type { FolderNode, AccessRole } from '@/lib/qb-types'
 import {
   Button, Tip, Checkbox,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  InputGroup, InputGroupAddon, InputGroupInput, Input,
+  InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Avatar, AvatarFallback,
   useSidebar,
+  LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS,
 } from '@exxatdesignux/ui'
 import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
@@ -604,9 +606,9 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
             {/* Pending add row — shown once a person is selected */}
             {selectedPerson && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span className="text-[10px] font-bold text-muted-foreground">{selectedPerson.initials}</span>
-                </div>
+                <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{selectedPerson.initials}</AvatarFallback>
+                </Avatar>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPerson.name}</div>
                   <div className="text-xs text-muted-foreground">{selectedPerson.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
@@ -630,16 +632,16 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
 
         {/* People with access */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 4 }}>
+          <p className="text-xs font-semibold text-muted-foreground" style={{ marginBottom: 4 }}>
             People with access
           </p>
 
           {/* Exam admins — always owner, not removable */}
           {adminPersonas.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="text-[10px] font-bold text-muted-foreground">{p.initials}</span>
-              </div>
+              <Avatar style={{ width: 30, height: 30, flexShrink: 0 }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{p.initials}</AvatarFallback>
+              </Avatar>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                 <div className="text-xs text-muted-foreground">Exam Admin</div>
@@ -653,9 +655,9 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
             const role: AccessRole = roles[p.id] ?? 'edit'
             return (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span className="text-[10px] font-bold text-muted-foreground">{p.initials}</span>
-                </div>
+                <Avatar style={{ width: 30, height: 30, flexShrink: 0 }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{p.initials}</AvatarFallback>
+                </Avatar>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                   <div className="text-xs text-muted-foreground">{p.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
@@ -1258,7 +1260,7 @@ function FolderRow({
         {/* Right slot: count fades out, ⋯ button fades in — contained within this flex item so text is never overlapped */}
         <div style={{ flexShrink: 0, position: 'relative', width: 24, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <span
-            className="text-[10px] text-muted-foreground"
+            className="text-xs text-muted-foreground"
             style={{ transition: 'opacity 100ms', opacity: (isRowHovered || isFocused || menuOpen) ? 0 : 1 }}
           >
             {folderQuestionCount}
@@ -1406,6 +1408,8 @@ export function QBSidebar() {
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [isNarrow, setIsNarrow] = useState(false)
+  const [userWidth, setUserWidth] = useState<number | null>(null)
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
   // Zoom ≥ ~350% regardless of monitor size — sidebar tree switches to page scroll.
   const [isHighZoom, setIsHighZoom] = useState(false)
   // Inactive section collapsed by default — toggle to expand.
@@ -1445,6 +1449,7 @@ export function QBSidebar() {
   useEffect(() => {
     if (!sidebarOpen) {
       setSidebarSearch('')
+      setUserWidth(null)
     }
   }, [sidebarOpen, setSidebarSearch])
 
@@ -1466,9 +1471,11 @@ export function QBSidebar() {
   )
   const allQCount = countableQuestions.length
   const myQCount = countableQuestions.filter(q => q.creator === currentPersona.id).length
+  const unassignedQCount = countableQuestions.filter(q => !q.folder || !folders.some(f => f.id === q.folder)).length
 
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
+  const isUnassignedSelected = navView === 'unassigned'
 
   const pinnedFolders = visibleFolders.filter(f => pinnedFolderIds.has(f.id))
 
@@ -1565,7 +1572,7 @@ export function QBSidebar() {
       <span className={`flex-1 text-sm text-left text-foreground ${active ? 'font-medium' : 'font-normal'}`}>
         {label}
       </span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         {count}
       </span>
     </Button>
@@ -1578,7 +1585,29 @@ export function QBSidebar() {
   const isSearching     = sidebarSearch.trim().length > 0
   const { state: navSidebarState } = useSidebar()
   // When the main nav sidebar collapses it frees ~220px — give that space to the QB tree
-  const treeWidth = sidebarOpen ? (navSidebarState === 'collapsed' ? 320 : 248) : 0
+  const treeWidth = navSidebarState === 'collapsed' ? 320 : 248
+  const effectiveWidth = sidebarOpen ? (userWidth ?? treeWidth) : 0
+
+  // Reset user-dragged width when nav sidebar collapses/expands so the
+  // computed treeWidth takes over again (prevents stale drag position).
+  useEffect(() => { setUserWidth(null) }, [navSidebarState])
+
+  function onDragHandleMouseDown(e: React.MouseEvent) {
+    e.preventDefault()
+    dragRef.current = { startX: e.clientX, startWidth: effectiveWidth }
+    function onMove(ev: MouseEvent) {
+      if (!dragRef.current) return
+      const delta = ev.clientX - dragRef.current.startX
+      setUserWidth(Math.max(220, Math.min(360, dragRef.current.startWidth + delta)))
+    }
+    function onUp() {
+      dragRef.current = null
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   return (
     <>
@@ -1597,8 +1626,8 @@ export function QBSidebar() {
     <aside
       aria-label="Question Bank Library"
       style={{
-        width: treeWidth,
-        minWidth: treeWidth,
+        width: effectiveWidth,
+        minWidth: effectiveWidth,
         display: 'flex',
         flexDirection: 'column',
         borderRight: sidebarOpen ? '1px solid var(--border)' : 'none',
@@ -1617,35 +1646,29 @@ export function QBSidebar() {
         } : {}),
       }}
     >
-      {/* Library header strip */}
-      <div style={{
-        height: 28, display: 'flex', alignItems: 'center',
-        padding: '0 12px', flexShrink: 0,
-      }}>
-        <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-          Library
-        </span>
-      </div>
-
-      {/* ── Quick Nav: All Questions + My Questions ── */}
-      <div style={{ padding: '1px 0 8px', flexShrink: 0 }}>
-        {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
-        {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
+      {/* Library section */}
+      <div style={{ flexShrink: 0 }}>
+        <div className="flex items-center h-8 px-2">
+          <span className="text-xs font-medium text-muted-foreground">Library</span>
+        </div>
+        <div style={{ padding: '0 0 6px' }}>
+          {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
+          {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
+          {navItem(isUnassignedSelected, 'fa-folder-open', 'Unassigned', unassignedQCount, () => setNavView('unassigned'))}
+        </div>
       </div>
 
       {/* ── Pinned section ── */}
       {pinnedFolders.length > 0 && (
         <div style={{ flexShrink: 0 }}>
           {/* Section header */}
-          <Button variant="ghost" size="sm" onClick={() => setPinnedExpanded(v => !v)} aria-expanded={pinnedExpanded} className="flex items-center gap-1 w-full px-3 h-6 justify-start rounded-none">
+          <Button variant="ghost" size="sm" onClick={() => setPinnedExpanded(v => !v)} aria-expanded={pinnedExpanded} className="flex items-center gap-1.5 w-full px-2 h-8 justify-start rounded-none">
             <i
               className={`fa-light ${pinnedExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
               aria-hidden="true"
               style={{ fontSize: 9, width: 10, flexShrink: 0 }}
             />
-            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-              Pinned
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Pinned</span>
           </Button>
           {/* Pinned folder rows — independent expand state, does not affect QB tree */}
           {pinnedExpanded && (
@@ -1680,52 +1703,38 @@ export function QBSidebar() {
 
       {/* ── Question Bank label + search — fixed, never scrolls ── */}
       {SEARCH_VARIANT === 'input' ? (
-        <div style={{ flexShrink: 0, padding: '4px 8px 4px' }}>
+        <div style={{ flexShrink: 0, backgroundColor: 'var(--background)' }}>
           {/* Section header */}
-          <Button variant="ghost" size="sm" onClick={() => setQbExpanded(v => !v)} aria-expanded={qbExpanded} className="flex items-center gap-1 w-full px-1 pb-0.5 h-auto justify-start rounded-none">
-            <i className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground text-[9px] shrink-0`} style={{ width: 10 }} aria-hidden="true" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Question Bank</span>
+          <Button variant="ghost" size="sm" onClick={() => setQbExpanded(v => !v)} aria-expanded={qbExpanded} className="flex items-center gap-1.5 w-full px-2 h-8 justify-start rounded-none">
+            <i className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground shrink-0`} style={{ fontSize: 9, width: 10 }} aria-hidden="true" />
+            <span className="text-xs font-medium text-muted-foreground">Question Bank</span>
           </Button>
           {/* Search + result count — hidden when section is collapsed */}
           {qbExpanded && (
             <>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <i
-                  className="fa-light fa-magnifying-glass text-muted-foreground"
-                  aria-hidden="true"
-                  style={{ position: 'absolute', left: 8, fontSize: 11, pointerEvents: 'none', zIndex: 1 }}
-                />
-                <Input
+              <InputGroup className="rounded-sm mx-3 mb-1" style={{ height: 28 }}>
+                <InputGroupAddon align="inline-start">
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11 }} />
+                </InputGroupAddon>
+                <InputGroupInput
                   placeholder="Search folders…"
                   value={sidebarSearch}
                   onChange={e => setSidebarSearch(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
                   aria-label="Search folders"
-                  style={{
-                    height: 28,
-                    paddingLeft: 26,
-                    paddingRight: sidebarSearch ? 28 : 8,
-                    fontSize: 12,
-                    backgroundColor: 'var(--muted)',
-                    border: '1px solid transparent',
-                    borderRadius: 5,
-                  }}
+                  className="text-xs"
                 />
                 {sidebarSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label="Clear search"
-                    onClick={() => setSidebarSearch('')}
-                    style={{ position: 'absolute', right: 2, width: 22, height: 22 }}
-                  >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
-                  </Button>
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton size="icon-xs" onClick={() => setSidebarSearch('')} aria-label="Clear search">
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                    </InputGroupButton>
+                  </InputGroupAddon>
                 )}
-              </div>
+              </InputGroup>
               {isSearching && (
-                <div style={{ padding: '3px 4px 0' }}>
-                  <span className="text-[10px] text-muted-foreground">
+                <div className="px-3 pt-1">
+                  <span className="text-xs text-muted-foreground">
                     {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -1749,8 +1758,8 @@ export function QBSidebar() {
 
       {/* Tree — at normal zoom: own scroll container (flex:1); at 400% zoom: flows into aside scroll */}
       <div style={isHighZoom
-        ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
-        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, display: qbExpanded ? undefined : 'none' }
+        ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, backgroundColor: 'var(--background)' }
+        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, display: qbExpanded ? undefined : 'none', backgroundColor: 'var(--background)' }
       }>
 
         {/* Command variant search results */}
@@ -1863,6 +1872,19 @@ export function QBSidebar() {
         )}
       </div>{/* end tree scroll div */}
     </aside>
+    {/* Drag handle — DS LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS + withHandle visual */}
+    {sidebarOpen && (
+      <div
+        aria-hidden="true"
+        onMouseDown={onDragHandleMouseDown}
+        className={`${LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS} relative flex items-center justify-center`}
+        style={{ cursor: 'col-resize', flexShrink: 0 }}
+      >
+        <div className="z-10 flex h-5 w-3.5 items-center justify-center rounded-sm border border-border bg-background shadow-sm">
+          <i className="fa-light fa-grip-lines-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 9 }} />
+        </div>
+      </div>
+    )}
     </>
   )
 }

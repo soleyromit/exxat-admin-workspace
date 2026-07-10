@@ -19,6 +19,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { StatusBadge, STATUS_TINT_SUCCESS, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import {
   Badge, Avatar, AvatarFallback,
   Tooltip, TooltipTrigger, TooltipContent,
@@ -109,13 +110,11 @@ const COLUMNS: ColumnDef<StudentTableRow>[] = [
       const s = row.status as string
       const inactive = s === 'inactive'
       return (
-        <Badge variant="secondary" className="rounded text-[11px] font-medium"
-          style={{
-            backgroundColor: inactive ? 'var(--muted)' : 'var(--state-success-bg-soft)',
-            color: inactive ? 'var(--muted-foreground)' : 'var(--state-success-dark)',
-          }}>
-          {inactive ? 'Inactive' : 'Active'}
-        </Badge>
+        <StatusBadge
+          label={inactive ? 'Inactive' : 'Active'}
+          icon={inactive ? 'fa-box-archive' : 'fa-circle-check'}
+          tint={inactive ? STATUS_TINT_NEUTRAL : STATUS_TINT_SUCCESS}
+        />
       )
     },
   },

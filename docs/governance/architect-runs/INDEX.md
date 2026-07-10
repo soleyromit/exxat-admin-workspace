@@ -18,6 +18,8 @@
 | Date | Slug | Status | Summary |
 |---|---|---|---|
 | 2026-05-11 | baseline | PARTIAL | Promoted 3 rules to block (datatable-no-empty-state, dialog-no-error-feedback, opacity-60-on-text-parent); consolidated Card-masquerade rules; demoted dead-link-audit from pre-commit. Deferred: async-fetch-no-skeleton + clickable-without-focus-ring promotion, subagent-telemetry wrapper. Open: Pattern A pre-tool-use hook (out of architect scope). |
+| 2026-06-03 | ds-component-truth | PROPOSED | Proposed 3 new hooks (DS-CSS-001 pre-tool CSS gate, DS-CSS-002 post-tool CSS regression guard, DS-CMP-001 component truth emit on import); demoted mandatory ds-product-compatibility.md read at Gate 1. Awaiting Romit review. |
+| 2026-06-09 | workspace-architecture-review | PROPOSED | Proposed: vercel-install-footgun-guard (EM+portal missing --ignore-scripts), raw-html-button promote to block (31 hits spike from builder rebuild), per-product CLAUDE.md Pattern A-L sync (all 3 products cite only A-F). Promoted async-fetch-no-skeleton to block (30 days at 0 hits). Identified: discipline log silent since 2026-06-01 (Pattern H risk). |
 
 ## How to invoke
 

@@ -240,6 +240,26 @@ export function VirtualKeyboard({
               return (
                 <button
                   key={j}
+                  aria-label={
+                    key === 'Space' ? 'Space' :
+                    key === 'Backspace' ? 'Backspace' :
+                    key === 'Enter' ? 'Enter' :
+                    key === 'Tab' ? 'Tab' :
+                    key === 'Caps' ? (capsLock ? 'Caps Lock (on)' : 'Caps Lock') :
+                    key === 'Shift' ? (shiftActive ? 'Shift (active)' : 'Shift') :
+                    key === '`' ? 'Backtick' :
+                    key === '-' ? 'Hyphen' :
+                    key === '=' ? 'Equals' :
+                    key === '[' ? 'Left bracket' :
+                    key === ']' ? 'Right bracket' :
+                    key === '\\' ? 'Backslash' :
+                    key === ';' ? 'Semicolon' :
+                    key === "'" ? 'Apostrophe' :
+                    key === ',' ? 'Comma' :
+                    key === '.' ? 'Period' :
+                    key === '/' ? 'Slash' :
+                    `Key ${key}`
+                  }
                   onMouseDown={(e) => {
                     e.preventDefault(); // Prevent stealing focus from textarea
                     handleKeyClick(key);

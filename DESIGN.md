@@ -30,7 +30,7 @@ When app-type changes, the matching DS profile auto-loads via SessionStart / Use
 
 | Layer | Responsibility | Source files | Auto-generated? |
 |---|---|---|---|
-| L0 Foundations | Tokens, components, DS surface | `exxat-ds/`, `studentUX/`, `docs/foundations/ds-snapshot.json`, `docs/foundations/ds-profiles/{admin,student}.md` | snapshot: yes; profiles: hand + auto-diff |
+| L0 Foundations | Tokens, components, DS surface | `exxat-ds/`, `studentUX/`, `node tools/ds/source.mjs --list`, `docs/foundations/ds-profiles/{admin,student}.md` | snapshot: yes; profiles: hand + auto-diff |
 | L1 Patterns | Composition recipes (viz, states, forms, nav, IA, onboarding, async, dashboards, admin, ai, experience) | `docs/patterns/<category>/<name>.md` | hand-written |
 | L2 Product UX | Strategy, personas, workflows, content per product | `apps/<product>/DESIGN.md`, `apps/<product>/docs/` | hand-written |
 | L3 Process | Research, ADRs, telemetry, decisions | `docs/research/`, `docs/decisions/`, `docs/telemetry/`, plus per-product equivalents | intake skill writes |
@@ -68,7 +68,7 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **DS-007** — Component imports must match the active DS profile. Admin: `@exxat/ds/packages/ui/src`. Student: `@exxat/student/components/...`. *Gate:* PreToolUse after profile load.
 - **DS-008** — Tailwind color utilities outside the semantic allowlist (`bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-card`, `bg-popover`, etc.) are banned. *Gate:* PreToolUse.
 - **DS-009** — DS components may not have visual treatments (shadow, border, hover bg, padding, gradient) beyond what the DS source defines, unless documented as an exception. *Gate:* code review; long-term AST diff against component defaults.
-- **DS-010** — Before importing any DS component, the import must resolve in `docs/foundations/ds-snapshot.json` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked. *Gate:* PreToolUse (blocking, v0.2).
+- **DS-010** — Before importing any DS component, the import must resolve in `node tools/ds/source.mjs --list` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked. *Gate:* PreToolUse (blocking, v0.2).
 - **DS-011** — No inline typography literals (`fontSize`, `fontWeight`, `fontFamily` as raw values in `style={{}}`). Use Tailwind classes (`text-xs`, `font-semibold`) or token references (`var(--text-xs)`, `var(--font-sans)`). *Gate:* PreToolUse (blocking, v0.2).
 - **DS-012** — Every admin app's `app/globals.css` MUST contain the DS overrides block (DS Tabs fix, sidebar token, datatable tokens) verbatim from `docs/foundations/admin-globals-template.css`. Without these, DS Tabs render with broken layout (wrong orientation, no underline indicator) and the sidebar/datatable lose their theme tokens on dark mode. *Gate:* `scripts/ds-globals-audit.py` in pre-commit (blocking, --strict). *Reason:* DS itself ships with broken Tailwind classes for Tabs (sets `data-orientation` but classes look for `data-horizontal`); each admin app must mirror the fix until exxat-ds patches upstream.
 - **DS-013** — No raw `oklch()` literal in inline `style` props. Define a CSS variable in `globals.css` and reference it as `var(--token)`. *Gate:* PreToolUse (blocking, v0.3).

@@ -32,7 +32,7 @@ except ImportError:
 
 
 WORKSPACE = Path("/Users/romitsoley/Work")
-SNAPSHOT_PATH = WORKSPACE / "docs/foundations/ds-snapshot.json"
+SNAPSHOT_PATH = WORKSPACE / "`node tools/ds/source.mjs --list`"
 
 
 # Pattern-based rules: (rule_id, regex_pattern, message, file_path_pattern, blocking)
@@ -295,14 +295,14 @@ _component_truth_cache: dict | None = None
 
 
 def load_component_truth() -> dict:
-    """Load component_truth from docs/foundations/ds-snapshot.json.
+    """Load component_truth from `node tools/ds/source.mjs --list`.
     Returns {} on any failure — callers treat empty dict as no-op.
     """
     global _component_truth_cache
     if _component_truth_cache is not None:
         return _component_truth_cache
     try:
-        foundations = WORKSPACE / "docs/foundations/ds-snapshot.json"
+        foundations = WORKSPACE / "`node tools/ds/source.mjs --list`"
         if not foundations.exists():
             _component_truth_cache = {}
             return {}
@@ -366,7 +366,7 @@ def emit_component_gaps(content: str) -> list[tuple[str, str, bool]]:
             checks_short = checks[:2]
             parts.append(f"  Verify in browser: {' | '.join(checks_short)}")
             if len(checks) > 2:
-                parts.append(f"    (+{len(checks)-2} more — see docs/watch/ds-snapshot.json)")
+                parts.append(f"    (+{len(checks)-2} more — see `node tools/ds/source.mjs --list`)")
 
         warnings.append(("DS-CMP-001", "\n  ".join(parts), False))
 

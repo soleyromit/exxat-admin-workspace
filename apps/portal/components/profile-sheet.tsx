@@ -9,39 +9,17 @@ import {
   SheetDescription,
   Avatar,
   AvatarFallback,
-  Badge,
   Separator,
   Button,
   Checkbox,
 } from '@exxatdesignux/ui'
+import { StatusBadge, STATUS_TINT_SUCCESS, STATUS_TINT_WARNING, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import { PRODUCTS } from '@/lib/products'
 
-function subscriptionLabel(status: 'active' | 'trial' | 'not-subscribed') {
-  if (status === 'active') return 'Active'
-  if (status === 'trial') return 'Trial'
-  return 'Not subscribed'
-}
-
-function statusBadgeStyle(status: 'active' | 'trial' | 'not-subscribed') {
-  if (status === 'active') {
-    return {
-      backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-      color: 'var(--brand-color)',
-      borderColor: 'color-mix(in oklch, var(--brand-color) 30%, var(--background))',
-    }
-  }
-  if (status === 'trial') {
-    return {
-      backgroundColor: 'var(--portal-amber-bg)',
-      color: 'var(--portal-amber-fg)',
-      borderColor: 'var(--portal-amber-border)',
-    }
-  }
-  return {
-    backgroundColor: 'var(--muted)',
-    color: 'var(--muted-foreground)',
-    borderColor: 'var(--border)',
-  }
+const SUBSCRIPTION_BADGE: Record<'active' | 'trial' | 'not-subscribed', { label: string; icon: string; tint: typeof STATUS_TINT_SUCCESS }> = {
+  'active':         { label: 'Active',        icon: 'fa-circle-check', tint: STATUS_TINT_SUCCESS },
+  'trial':          { label: 'Trial',         icon: 'fa-clock',        tint: STATUS_TINT_WARNING },
+  'not-subscribed': { label: 'Not subscribed', icon: 'fa-box-archive',  tint: STATUS_TINT_NEUTRAL },
 }
 
 type ProfileSheetProps = {
@@ -84,13 +62,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
             {PRODUCTS.map(product => (
               <div key={product.id} className="flex items-center justify-between gap-2 py-0.5">
                 <span className="text-sm">{product.name}</span>
-                <Badge
-                  variant="outline"
-                  className="rounded text-xs"
-                  style={statusBadgeStyle(product.subscriptionStatus)}
-                >
-                  {subscriptionLabel(product.subscriptionStatus)}
-                </Badge>
+                <StatusBadge {...SUBSCRIPTION_BADGE[product.subscriptionStatus]} />
               </div>
             ))}
           </div>

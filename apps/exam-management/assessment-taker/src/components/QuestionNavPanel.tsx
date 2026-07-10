@@ -1,7 +1,7 @@
 // src/components/QuestionNavPanel.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactDOM from 'react-dom';
 import { Button } from '@exxatdesignux/ui';
+import { Tooltip } from './Tooltip';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
 
@@ -17,19 +17,6 @@ export interface QuestionNavPanelProps {
 }
 
 type TileStatus = 'current' | 'flagged' | 'current-flagged' | 'answered' | 'unanswered' | 'locked';
-
-interface TipState {
-  visible: boolean;
-  left: number;
-  top: number;
-  qnum: number;
-  title: string;
-  status: TileStatus;
-  sectionLabel: string;
-}
-
-const TIP_WIDTH = 240;
-const TIP_GAP = 10;
 
 function getSectionIndex(sections: ExamSection[], index: number): number {
   let cum = 0;
@@ -55,13 +42,7 @@ export function QuestionNavPanel({
   onClose,
 }: QuestionNavPanelProps) {
   const [focusedTileIndex, setFocusedTileIndex] = useState(currentIndex);
-  const [tip, setTip] = useState<TipState>({
-    visible: false, left: 0, top: 0,
-    qnum: 0, title: '', status: 'unanswered', sectionLabel: '',
-  });
   const tileRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
-  const tipRef = useRef<HTMLDivElement>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // ── Locked detection ─────────────────────────────────────────────────────────
   const isLocked = useCallback((index: number): boolean => {
@@ -102,33 +83,6 @@ export function QuestionNavPanel({
 
   // Sync roving focus when current question changes externally
   useEffect(() => { setFocusedTileIndex(currentIndex); }, [currentIndex]);
-
-  // ── Tooltip helpers ───────────────────────────────────────────────────────────
-  const showTip = useCallback((tile: HTMLButtonElement, index: number) => {
-    clearTimeout(hideTimer.current);
-    const status = getTileStatus(index);
-    const sectionLabel =
-      sections?.length
-        ? `Section ${getSectionIndex(sections, index) + 1}`
-        : '';
-    // Two-pass: render offscreen to measure height, then position to the left of the tile
-    setTip({ visible: true, left: -9999, top: -9999, qnum: index + 1, title: truncate(questions[index].text), status, sectionLabel });
-    requestAnimationFrame(() => {
-      const rect = tile.getBoundingClientRect();
-      const tipH = tipRef.current?.offsetHeight ?? 80;
-      // Always to the left of the tile — panel is on the right edge, so this points into content area
-      const left = Math.min(rect.right + TIP_GAP, window.innerWidth - TIP_WIDTH - 8);
-      // Vertically centered with the tile, clamped to viewport
-      const top = Math.max(8, Math.min(rect.top + rect.height / 2 - tipH / 2, window.innerHeight - tipH - 8));
-      setTip(prev => ({ ...prev, left, top }));
-    });
-  }, [getTileStatus, sections, questions]);
-
-  const hideTip = useCallback(() => {
-    hideTimer.current = setTimeout(() => setTip(prev => ({ ...prev, visible: false })), 80);
-  }, []);
-
-  useEffect(() => () => clearTimeout(hideTimer.current), []);
 
   // ── Tile style ────────────────────────────────────────────────────────────────
   function tileStyle(status: TileStatus): React.CSSProperties {

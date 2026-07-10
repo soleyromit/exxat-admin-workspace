@@ -59,10 +59,25 @@
     <key>StandardErrorPath</key>
     <string>/tmp/claude-updates-watch.err</string>
 
+    <!--
+      DEFECT-B fix (2026-07-06): the scheduled run had been silently dying since
+      2026-06-22. The old PATH resolved python3 to /usr/local/bin/python3, which
+      has no CA bundle, so every HTTPS fetch failed with CERTIFICATE_VERIFY_FAILED
+      and was silently skipped. Point PATH at the pyenv shims (3.10.6 has certifi
+      and a working default cert store, matching the interactive run) and set
+      HOME/PYENV_ROOT so the shim resolves, plus SSL_CERT_FILE as a belt-and-
+      suspenders CA bundle honored by ssl.create_default_context().
+    -->
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+        <string>/Users/romitsoley/.pyenv/shims:/Users/romitsoley/.pyenv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/romitsoley</string>
+        <key>PYENV_ROOT</key>
+        <string>/Users/romitsoley/.pyenv</string>
+        <key>SSL_CERT_FILE</key>
+        <string>/Users/romitsoley/.pyenv/versions/3.10.6/lib/python3.10/site-packages/certifi/cacert.pem</string>
     </dict>
 </dict>
 </plist>

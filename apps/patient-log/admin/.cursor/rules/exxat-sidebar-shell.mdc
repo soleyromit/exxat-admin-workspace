@@ -31,6 +31,15 @@ Customer / legacy app **screenshots** may show **what links exist** — not **ho
 5. **Nav data:** Add or extend **`lib/mock/navigation.tsx`** (or a file it imports). **MUST NOT** paste a full legacy sidebar component from a customer repo into **`apps/web`**.
 6. **Consumer products:** Prism / customer hubs belong in a **separate consumer repo** with **`@exxatdesignux/ui`** — not product-specific rewrites of the DS monorepo sidebar.
 
+## Nav flyout mode (≤320px / zoom ≥ 200%)
+
+At **WCAG 1.4.10 reflow** (viewport width **≤ 320 CSS px**, browser zoom **≥ 200%**, or short viewport — via `computeReflowViewport()`), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` in **`packages/ui/src/components/ui/sidebar.tsx`**).
+
+1. **MUST NOT** leave the flyout **open by default** on load — entering flyout mode closes the sidebar so page content is not blocked.
+2. **MUST** call **`dismissNavFlyout()`** from **`useSidebar()`** when the user navigates to a **leaf** route (link that changes the URL to the destination). Reference: **`NavLinkItems`**, **`SidebarDrillInItems`**, **`library-secondary-nav.tsx`**, footer links in **`app-sidebar.tsx`**.
+3. **MUST NOT** dismiss on rows that only **open** nested nav (`drillIn`, `secondaryPanel`) — the user still needs the flyout to pick a child item.
+4. **Esc** closes the flyout when open (bound in **`SidebarProvider`**).
+
 ## Reference (canonical visual)
 
 - **`components/sidebar/app-sidebar.tsx`** + **`lib/mock/navigation.tsx`**

@@ -94,24 +94,18 @@ function AddStudentSheet({ open, onOpenChange, enrolledIds, onEnroll }: AddStude
         </SheetHeader>
 
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div
-            className="flex items-center gap-2 rounded-md border"
-            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}
-          >
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-sm"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
+          <InputGroup className="w-full max-w-sm">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search by name, student ID, or cohort…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search students to enroll"
               autoFocus
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />

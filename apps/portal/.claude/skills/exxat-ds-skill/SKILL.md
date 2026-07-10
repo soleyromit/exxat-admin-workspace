@@ -1,7 +1,7 @@
 ---
 name: exxat-ds
 description: >
-  Complete rules, patterns, and architecture guide for the Exxat DS Next.js design system.
+  Complete rules, patterns, and architecture guide for the Exxat DS Vite + React design system.
   Use this skill whenever working on any feature, page, component, or nav item in the Exxat DS
   codebase — including adding sidebar items, creating list pages, building data tables,
   wiring navigation, writing accessible UI, handling dates, adding tooltips, using icons,
@@ -18,12 +18,12 @@ description: >
 
 ## 1. Project Overview
 
-- **Stack:** Next.js 16 (App Router), React, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
-- **App root:** `apps/web/app/(app)/` — route group that wraps all authenticated pages
+- **Stack:** Vite + React + react-router-dom, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
+- **App root:** `apps/web/src/views/` — route modules wired in `src/App.tsx`
 - **Single source of truth:** `apps/web/AGENTS.md` for full prose explanations; this skill is the actionable summary
 - **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-primary-nav-secondary-panel`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.cursor/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
 - **Library folder-scoped header (rule + doc):** **`.cursor/rules/exxat-library-hub-header.mdc`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-primary-nav-secondary-panel`** when URL **`scope=folder`** drives the hub title.
-- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and template-vite shell ports without touching mock data or tenant copy. Then read **`node_modules/@exxatdesignux/ui/CHANGELOG.md`**, run **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/template-vite/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
+- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and generated-starter shell ports without touching mock data or tenant copy. Then read **`node_modules/@exxatdesignux/ui/CHANGELOG.md`**, run **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/generated-starter/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
 
 ---
 
@@ -85,7 +85,7 @@ To add a primary nav item, append to `NAV_PRIMARY`:
 
 ### 3.1 Application sidebar shell (`app-sidebar.tsx`)
 
-**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`NEXT_PUBLIC_LOGO_DEV_TOKEN`**).
+**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`VITE_LOGO_DEV_TOKEN`**).
 
 | Concern | Pattern |
 |--------|---------|
@@ -159,9 +159,22 @@ The data shape supports any number of children, but the collapsible variant is r
 
 **Reference:** `components/app-sidebar.tsx` (`CollapsibleNavItem`, `isCollapsibleParentMenuButtonActive`, `isCollapsibleChildActive`), `app/globals.css` (`@keyframes collapsible-down/up`), `lib/mock/navigation.tsx` (`NavLinkItem.children`).
 
+### 3.2.1 Nav flyout mode (≤320px / zoom ≥ 200%)
+
+At **WCAG 1.4.10 reflow** (viewport width **≤ 320 CSS px**, browser zoom **≥ 200%**, or short viewport — `computeReflowViewport()` in `packages/ui/src/lib/reflow-viewport.ts`), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
+
+| Rule | Implementation |
+|---|---|
+| Don't block the page on load | Entering flyout mode **closes** the sidebar (not persisted) |
+| Dismiss on leaf navigation | Call **`dismissNavFlyout()`** from **`useSidebar()`** when a nav link navigates to its destination |
+| Keep flyout open for nested nav parents | **Do not** dismiss on rows with **`drillIn`** or **`secondaryPanel`** — user still picks a child |
+| Keyboard exit | **Esc** closes the flyout when open |
+
+**Reference:** `components/sidebar/app-sidebar.tsx` (`NavLinkItems`, `SidebarDrillInItems`), `components/library-secondary-nav.tsx`, **`exxat-sidebar-shell.mdc`**.
+
 ### 3.3 Secondary panel auto-collapse on high zoom
 
-`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (browser zoom ≥ 200% **or** very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering high zoom**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when high zoom is active so freshly-navigated panels don't briefly flash expanded.
+`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (width **≤ 320px**, browser zoom **≥ 200%**, or very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering reflow**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when reflow is active so freshly-navigated panels don't briefly flash expanded.
 
 Any future secondary-panel-like rail should reuse `useSidebarReflowZoom` rather than inventing a parallel zoom hook.
 
@@ -261,6 +274,10 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 
 **Add view parity (binding):** `.cursor/rules/exxat-hub-supported-views.mdc`, `apps/web/docs/hub-supported-views-pattern.md`. **MUST NOT** use `supportedViewTypes={["table"]}` or four-view-only allowlists without a documented exception. List view **MUST** use **`ListPageBoardCard`** (`library-table.tsx`).
 
+**View tabs overflow:** The views toolbar is wrapped in **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** (segmented `[← | →]` after the tab bar). Record **`TabsList`** uses **`TabsListScrollRegion`**. SiteHeader breadcrumbs use the same primitive with **`alignEnd`**. **Do not** hand-build flanking chevrons — **`HorizontalScrollControls`** / **`useHorizontalScrollAffordances`** from `@exxatdesignux/ui/components/ui/horizontal-scroll-controls`. **`docs/horizontal-scroll-pattern.md`**, **`exxat-horizontal-scroll.mdc`**.
+
+**View tab persistence:** Pass **`persistKey`** (or **`productPersistKey(product, hubKey)`**) on **`ListPageTemplate`** for uncontrolled tabs. **Do not** pass **`tabs` / `onTabsChange`** and expect **`persistKey`** to restore — controlled mode disables tab persistence. Reference: **`tokens-themes-client.tsx`**.
+
 **Reference implementations:**
 - `components/library-client.tsx` + `components/library-table.tsx` — **canonical seven-view hub** (All questions)
 - `components/columns-showcase.tsx` — custom table via **`LibraryTable`** + same seven views
@@ -328,6 +345,8 @@ Align with **`apps/web/AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`
   cell: row => <span className="text-sm font-medium text-foreground">{row.name}</span>,
 }
 ```
+
+**Data point → cell:** Before authoring `cell:`, map each field with **`docs/table-column-cells-pattern.md`** — skill **`exxat-table-column-cells`**, rule **`exxat-table-column-cells.mdc`**. Person columns → **`AvatarInitials` + name + email** (not plain text); status → **`ListHubStatusBadge`**; progress / money / rating → named imports from **`@/components/data-views`**.
 
 **Pin conventions:**
 - `select` column: `defaultPin: "left"`, `lockPin: true`

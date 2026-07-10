@@ -6,7 +6,7 @@ import {
 } from '@exxatdesignux/ui';
 
 interface TooltipProps {
-  content: string;
+  content: React.ReactNode;
   children: React.ReactElement;
   position?: 'top' | 'bottom' | 'left' | 'right';
   disabled?: boolean;

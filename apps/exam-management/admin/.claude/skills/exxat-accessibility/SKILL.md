@@ -1,6 +1,6 @@
 ---
 name: exxat-accessibility
-description: WCAG 2.x / ARIA checklist for Exxat DS — tablists, touch targets, contrast, and audit follow-ups. Use when fixing axe/Deque issues, building nav or tab UIs, or reviewing accessibility.
+description: WCAG 2.x / ARIA checklist for Exxat DS — tablists, touch targets, contrast, audit follow-ups, axe gate + Lighthouse verification. Use when fixing axe/Deque issues, building nav or tab UIs, reviewing accessibility, or when the user wants Lighthouse a11y score 100.
 user-invocable: true
 ---
 
@@ -10,6 +10,51 @@ Standard target: **WCAG 2.1 Level AA** (and 2.2 where noted).
 
 **Canonical for agents (MUST/MUST NOT, checklist):** `apps/web/AGENTS.md` **§8** in the repo (same content summarized there; this skill stays the detailed checklist + product tokens).
 
+## Accessibility gate (axe + Lighthouse)
+
+When the user asks for **a11y verification**, **axe scan**, **Lighthouse accessibility 100**, or post-fix confirmation:
+
+1. **Ensure dev server** — `pnpm dev:web` (`http://127.0.0.1:4000`).
+2. **Run axe** (primary gate — fast, same engine as Lighthouse a11y):
+
+   ```bash
+   pnpm a11y:setup              # once per machine
+   pnpm a11y:axe                # smoke (~30s)
+   pnpm a11y:axe /design-os/library   # routes you changed
+   pnpm a11y:axe:all --variants ship  # pre-ship full matrix
+   ```
+
+3. **Read the report** — each run writes:
+   - `.axe-reports/<run>/axe-a11y-summary.json` (machine-readable)
+   - `.axe-reports/<run>/axe-a11y-report.md` (human-readable)
+   - Regenerate from an older run: `pnpm a11y:axe:report --dir .axe-reports/<run>`
+   - List runs: `pnpm a11y:axe:report --list`
+
+4. **Fix loop** — follow `.cursor/skills/exxat-accessibility/lighthouse-gate/SKILL.md` (fix playbook). Rebuild UI if `packages/ui/**` changed. Re-run axe on the same paths until `allPassed: true`.
+
+5. **Lighthouse spot-check** (slow, optional score-100 confirmation): `pnpm a11y:lighthouse`
+
+**Commands:**
+
+```bash
+pnpm a11y:setup              # once per machine
+pnpm a11y:axe                # smoke, desktop-light (~30s)
+pnpm a11y:axe:matrix         # smoke × 6 ship variants (theme + reflow-320, ~3–5 min)
+pnpm a11y:axe:themes         # smoke × 4 theme modes
+pnpm a11y:axe /design-os/design-system/wizard   # single route
+pnpm a11y:axe --variants theme /settings/profile
+pnpm a11y:axe:all            # full 163 routes, desktop-light (~4 min)
+pnpm a11y:axe:all --variants ship   # full × 6 variants (~25 min, pre-release)
+pnpm a11y:axe:report         # markdown report for latest run
+pnpm a11y:axe:report --list  # list saved runs
+node scripts/axe-a11y-gate.mjs --list-variants
+pnpm a11y:lighthouse         # slow spot-check — Lighthouse score 100
+```
+
+Reports: **`.axe-reports/`** (`axe-a11y-summary.json` + `axe-a11y-report.md`) · **`.lighthouse-reports/`** (Lighthouse, gitignored).
+
+---
+
 ## ARIA roles & structure (SC 1.3.1)
 
 - **`role="tablist"`** may only contain **`role="tab"`** (or elements that resolve to tabs). Do **not** place `role="button"`, menus (`aria-haspopup`), or ad-hoc controls **inside** the same `tablist` container.
@@ -18,8 +63,67 @@ Standard target: **WCAG 2.1 Level AA** (and 2.2 where noted).
 
 ## Touch targets (WCAG 2.2 AA — 2.5.8 Target Size Minimum)
 
-- Interactive controls (including icon-only chevrons and close icons) should be at least **24×24 CSS pixels**, or have **24px** spacing so their **24px** hit circles do not overlap adjacent targets.
-- Use **`min-h-6 min-w-6`** (or `size-6`) with centered icons; avoid `size-4` (16px) for sole click targets.
+- Interactive controls (including icon-only chevrons and close icons) should be at least **24×24 CSS pixels** in **computed** layout (verify in DevTools — do not assume Tailwind class names alone), or have **24px** spacing so their **24px** hit circles do not overlap adjacent targets.
+- **Prefer `size-8`** for tree expand/collapse chevrons, folder rail icon buttons, and list-page view-settings triggers. **`size-6`** (`1.5rem`) often computes to **~22.5px** when root font size is ~15px (browser zoom / user prefs) — axe still flags it.
+- **`min-h-[24px] min-w-[24px]` does not help** when `size-6` also sets width/height — drop `size-6` or bump to **`size-8`**.
+- Avoid `size-4` (16px) for sole click targets.
+
+Reference implementations: **`hub-tree-panel-view.tsx`** (expand chevron **`size-8`**), **`library-folder-tree-branch.tsx`**, **`list-page.tsx`** view settings (**`size-8`**).
+
+## Sidebar icon rail — link names (SC 2.4.4, 4.1.2)
+
+When **`SidebarProvider`** state is **`collapsed`** (desktop icon rail), **`SidebarMenuButton`** hides all children except the first icon via **`group-data-[collapsible=icon]:[&>*:not(:first-child)]:hidden`**. Screen readers then see an icon-only link unless you add a programmatic name.
+
+**Pattern:**
+
+```tsx
+const iconRailCollapsed = state === "collapsed" && !isMobile
+
+<SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+  <Link
+    to={item.url}
+    aria-current={isActive ? "page" : undefined}
+    {...(iconRailCollapsed ? { "aria-label": item.title } : {})}
+  >
+    <span aria-hidden="true">{item.icon}</span>
+    <SidebarNavLabel>{item.title}</SidebarNavLabel>
+  </Link>
+</SidebarMenuButton>
+```
+
+**Anti-pattern (breaks axe):**
+
+```tsx
+// ❌ explicit undefined on Link overrides SidebarMenuButton's collapsed tooltip aria-label
+<Link aria-label={iconRailCollapsed ? item.title : undefined} … />
+```
+
+**MUST** use conditional spread so the attribute is **omitted** when expanded. **`SidebarMenuButton`** also sets `aria-label` from `tooltip` when collapsed — child links must not clobber it with `undefined`.
+
+Apply in: primary nav (`NavLinkItems`), drill-in lists (`SidebarDrillInItems`), utilities / Ask Leo rows (`SidebarNavSecondaryItems`).
+
+## Vertical resize handles (SC 4.1.2)
+
+Drag handles on **`NestedSecondaryPanelShell`**, **`DataTable`** columns, and **`SidebarDrillInResizeHandle`** use **`role="separator"`** with **`aria-orientation="vertical"`**. axe requires **`aria-valuemin`**, **`aria-valuemax`**, and **`aria-valuenow`** (current width in px).
+
+**Use the shared helper** — do not hand-roll incomplete separator ARIA:
+
+```tsx
+import { verticalResizeSeparatorAria } from "@exxatdesignux/ui/lib/edge-resize-handle"
+
+<div
+  {...verticalResizeSeparatorAria({
+    label: "Resize secondary panel",
+    valueNow: panelWidthPx,
+    valueMin: 200,
+    valueMax: 480,
+  })}
+  onMouseDown={startResize}
+  className={EDGE_RESIZE_HANDLE_CLASS}
+/>
+```
+
+Column resize: `valueMin` = column `minWidth ?? 60`; `valueNow` = live `colWidths[key]`.
 
 ## Icons that communicate information — always have a text alternative (SC 1.1.1, 3.3.2, 2.4.6)
 
@@ -232,6 +336,43 @@ Placeholder text disappears on focus, is low-contrast by default, and is not rel
 5. Error messages (`FormMessage`) replace description announcement while active; keep the description concise so the combined `aria-describedby` string stays readable.
 6. Units belong in the description, not the label suffix, when they vary by context (e.g. "Out of 4.0" under GPA rather than in the label).
 
+## Reflow (WCAG 2.1 / 2.2 — SC 1.4.10 Level AA)
+
+Content **MUST** reflow at **320 CSS px** viewport width and at **~200% browser zoom** without loss of information or function, and without **page-level** horizontal scrolling — except where a **two-dimensional layout is essential** (data tables, wide chart canvases, maps).
+
+### Shell signal (reuse — do not fork)
+
+| API | Role |
+|-----|------|
+| `computeReflowViewport()` / `useSidebarReflowZoom()` | `packages/ui/src/lib/reflow-viewport.ts` |
+| `isNavFlyout` on `SidebarProvider` | Primary sidebar → overlay flyout |
+| `secondaryPanelCompact` | Nested scope rail collapses at reflow |
+| `useCompactFilterToolbar()` | Hub filter toolbar compact mode |
+| DataTable sticky columns | Disabled when reflow is active |
+
+**Triggers:** viewport width **≤ 320px**, `visualViewport.scale` **≥ 1.99**, or short viewport height (≤ 640px / ≤ 420px).
+
+### MUST (feature pages)
+
+1. **Read the reflow hook** when pinning multi-column chrome (side rails, split panes, fixed toolbars). At reflow, collapse to a single column or flyout — same contract as the app shell.
+2. **Allowed horizontal scroll** only **inside** the 2D region (`HubTable`, `HorizontalScrollRegion` for tabs/breadcrumbs, chart `ChartContainer`). **MUST NOT** force `min-width` on page shells that causes document-level `overflow-x`.
+3. **Typography at reflow** — `--text-xs` / `--text-2xs` stay at **12px** floor under zoom (`globals.css`); body copy **`text-sm`**+.
+4. **Verify manually** at **320px** and **200% zoom** before merge (see ship checklist § Reflow).
+
+### MUST NOT
+
+- Ship fixed dual-sidebar layouts that stay pinned at 320px without flyout/compact behavior.
+- Hide primary actions or filters behind horizontal page scroll at reflow.
+- Invent a parallel zoom/width hook — use **`useSidebarReflowZoom()`**.
+
+**Reference:** `apps/web/components/sidebar/app-sidebar.tsx` (`data-reflow-zoom`), `packages/ui/src/components/ui/sidebar.tsx`, **`.cursor/rules/exxat-horizontal-scroll.mdc`**.
+
+### Shell rail alignment (secondary panel)
+
+The **system banner** (`SystemBannerSlot`) **MUST** render inside **`[data-app-shell-main]`** only — not above the full `data-app-shell-row`. A full-width banner pushes the library secondary rail down while the primary sidebar stays `fixed inset-y-0`, producing a visible top gap on `/prism/library/all`.
+
+**Secondary panel height:** `NestedSecondaryPanelShell` uses **`self-stretch min-h-0`** in the shell row (not `100svh` + `sticky top-2`).
+
 ## High-Contrast modes
 
 There are **two** HC paths in this app. Fix both or the bar will still look broken in one of them:
@@ -270,13 +411,34 @@ Reference fix: `components/dashboard-quota-progress-card.tsx` `StudentScoreProgr
 
 | Severity | Rule | Criterion |
 |----------|------|-----------|
+| Critical | Required ARIA on `role="separator"` (vertical) — missing `aria-valuenow` | 4.1.2 |
+| Serious | Links must have discernible text (icon rail / `aria-label={undefined}` on `Link`) | 2.4.4, 4.1.2 |
 | Critical | Certain ARIA roles must contain particular children | 1.3.1 |
+| Serious | Content reflow without two-dimensional page scroll | 1.4.10 |
 | Serious | Touch targets must be ≥24px or spaced accordingly | 2.5.8 |
 
-When fixing, re-run **axe** or your preferred checker on the **Placements** page after changing the Views toolbar.
+After changing **views toolbar**, **sidebar nav**, **tree expanders**, or **resize handles**, re-run **axe** on **Library** (`/design-os/library/all` or `/prism/library/all`).
+
+For **Lighthouse accessibility 100** on a route, run **`pnpm a11y:lighthouse`** after axe passes. Fix playbook: **`.cursor/skills/exxat-accessibility/lighthouse-gate/SKILL.md`**.
 
 ## Charts (keyboard exploration)
 
 - **Chart region:** Product charts that support arrow-key exploration use **`ChartFigure`** (`role="application"`, focus ring on the chart container, click-or-Tab to focus per `charts-overview`).
 - **Selected datum:** Prefer **visible** feedback that matches the **`/dashboard` gallery** — Recharts **`activeBar`** + **`activeIndex`** for bars, **`activeShape`** + **`activeIndex`** for pies — via **`@/lib/chart-keyboard-selection`**. Avoid relying on **opacity-only** dimming as the only “selected” indicator; pair with ring/stroke so focus is perceivable (WCAG **2.4.7 Focus Visible** where applicable).
 - **Tables under charts:** **`ChartDataTable`** (`sr-only`) provides an equivalent programmatic structure for screen-reader users.
+
+## Pre-ship gate (MUST before merge)
+
+Complete **`apps/web/docs/accessibility-ship-checklist.md`** for every new or materially changed surface. Full WCAG 2.1 AA map: **`apps/web/docs/wcag-21-aa-matrix.md`**. Minimum:
+
+1. One **`<h1>`** in `<main>` only — panels/popovers use **`h2`**.
+2. **Case C** on all icon-only buttons — **`aria-label` + `Tip`**.
+3. **Format hints** — persistent **`FormDescription`**, not placeholder-only.
+4. **Four theme modes** — light, dark, **`data-contrast="high"`** light + dark when touching chrome/tokens/forms.
+5. **Reflow (1.4.10)** — manual pass at **320px** width + **200% zoom** per checklist § Reflow when touching layout, shell, tables, or nav.
+6. **Page title (2.4.2)** — `SiteHeader` / `useDocumentTitle` updates `<title>` per route.
+7. **axe** on `<main>` — zero WCAG 2.x AA violations on the affected route.
+8. **Icon rail** — collapse primary sidebar; every nav link has a discernible name (no `aria-label={undefined}` on `Link` children of `SidebarMenuButton asChild`).
+9. **Resize handles** — secondary panel + table column drag edges expose `aria-valuemin` / `aria-valuemax` / `aria-valuenow` via `verticalResizeSeparatorAria()`.
+
+Pair with **`AGENTS.md` §13** accessibility line and **`.cursor/rules/exxat-accessibility.mdc`** ship gate.

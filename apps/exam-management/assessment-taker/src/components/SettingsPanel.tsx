@@ -56,8 +56,8 @@ export function SettingsPanel({
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 h-11"
-        style={{ borderBottom: '1px solid var(--border)' }}
+        className="flex items-center justify-between px-4 h-11 border-b"
+        style={{ borderColor: 'var(--border)' }}
       >
         <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
           Settings
@@ -73,7 +73,7 @@ export function SettingsPanel({
       </div>
 
       {/* Theme */}
-      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
         <ToggleGroup
           type="single"
           value={theme}
@@ -101,7 +101,7 @@ export function SettingsPanel({
       </div>
 
       {/* Display — text size + color vision */}
-      <div style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="border-b" style={{ borderColor: 'var(--border)' }}>
         {/* Text size */}
         <div className="flex items-center justify-between px-4 h-11">
           <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export function SettingsPanel({
       </div>
 
       {/* Tools */}
-      <div style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="border-b" style={{ borderColor: 'var(--border)' }}>
         <Row
           icon={<i className="fa-light fa-calculator text-sm" aria-hidden="true" />}
           label="Calculator"
@@ -187,7 +187,7 @@ export function SettingsPanel({
 
       {/* Keyboard shortcuts + Report */}
       {(onShowKeyboardShortcuts || onReportIssue) && (
-        <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="border-b" style={{ borderColor: 'var(--border)' }}>
           {onShowKeyboardShortcuts && (
             <Row
               icon={<i className="fa-light fa-key text-sm" aria-hidden="true" />}
@@ -215,7 +215,6 @@ export function SettingsPanel({
           className="w-full font-semibold"
           onClick={() => { onClose(); onSubmit(); }}
         >
-          <i className="fa-light fa-paper-plane text-sm" aria-hidden="true" />
           Submit Exam
         </DSButton>
       </div>

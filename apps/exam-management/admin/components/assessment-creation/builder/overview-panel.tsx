@@ -25,7 +25,7 @@ function PsyRow({ label, value, raw, color, hint }: { label: string; value: stri
     <div style={{ marginBottom: 13 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
         <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-display)', color }}>{value}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-heading)', color }}>{value}</span>
       </div>
       <Bar pct={raw * 100} color={color} />
       {hint && <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>{hint}</div>}
@@ -63,7 +63,7 @@ export function OverviewPanel({ sections, onAskLeo, onJumpFlags }: { sections: S
               <Icon name={c.ic} style={{ fontSize: 14 }} />
             </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 20, lineHeight: 1 }}>{c.v}</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 20, lineHeight: 1 }}>{c.v}</div>
               <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{c.l}</div>
             </div>
           </div>
@@ -79,11 +79,11 @@ export function OverviewPanel({ sections, onAskLeo, onJumpFlags }: { sections: S
         <div style={{ display: 'flex', gap: 10, marginBottom: 13 }}>
           <div style={{ flex: 1, background: 'var(--muted)', borderRadius: 12, padding: '9px 11px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Upper 27%</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 18, color: 'var(--chart-2)' }}>{fmtPct(psy.upper)}</div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 18, color: 'var(--chart-2)' }}>{fmtPct(psy.upper)}</div>
           </div>
           <div style={{ flex: 1, background: 'var(--muted)', borderRadius: 12, padding: '9px 11px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Lower 27%</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 18, color: 'var(--chart-4)' }}>{fmtPct(psy.lower)}</div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 18, color: 'var(--chart-4)' }}>{fmtPct(psy.lower)}</div>
           </div>
         </div>
         <PsyRow label="Discrimination index" value={fmt2(psy.disc)} raw={psy.disc} color={discColor(psy.disc)} hint="separates strong from weak (target > 0.30)" />

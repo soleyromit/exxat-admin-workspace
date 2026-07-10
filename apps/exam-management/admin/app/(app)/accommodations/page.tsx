@@ -18,6 +18,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { StatusBadge, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import {
   Avatar, AvatarFallback,
   Badge, Button,
@@ -278,20 +279,13 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
 
         <div className="flex flex-wrap gap-2 mt-2">
           {entry.accommodations.map(a => (
-            <span
+            <StatusBadge
               key={a.id}
-              className="inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1"
-              style={{
-                background: 'var(--muted)',
-                border: '1px solid var(--border)',
-                color: 'var(--foreground)',
-              }}
-              title={a.notes ?? `${TYPE_LABEL[a.type]}: ${a.detail}`}
-            >
-              <i className={`fa-light ${TYPE_ICON[a.type]}`} aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-1)' }} />
-              <strong className="font-semibold">{TYPE_LABEL[a.type]}</strong>
-              <span className="text-muted-foreground">· {a.detail}</span>
-            </span>
+              label={`${TYPE_LABEL[a.type]} · ${a.detail}`}
+              icon={TYPE_ICON[a.type]}
+              tint={STATUS_TINT_NEUTRAL}
+              className="cursor-default"
+            />
           ))}
         </div>
 

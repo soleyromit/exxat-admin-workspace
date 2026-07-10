@@ -329,14 +329,7 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
 ]
 
 export const NAV_SECONDARY: NavSecondaryItem[] = [
-  {
-    key: "product-studio",
-    title: "Product Studio",
-    url: "/builder/products",
-    icon:       <i className="fa-light fa-screwdriver-wrench" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-screwdriver-wrench" aria-hidden="true" />,
-  },
-  {
+    {
     key: "settings",
     title: "Settings",
     url: "/settings/organization",

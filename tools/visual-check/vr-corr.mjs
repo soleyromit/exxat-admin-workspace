@@ -1,0 +1,12 @@
+import { chromium } from 'playwright'
+const b=await chromium.launch(); const p=await (await b.newContext({viewport:{width:1440,height:1000}})).newPage()
+await p.goto('http://localhost:3005/surveys/push',{waitUntil:'domcontentloaded',timeout:60000}); await p.waitForTimeout(6000)
+const before = await p.evaluate(()=>[...document.querySelectorAll('th')].map(h=>h.innerText.trim()).filter(Boolean))
+await p.getByRole('button',{name:'Course Coordinator'}).click(); await p.waitForTimeout(700)
+const afterOff = await p.evaluate(()=>[...document.querySelectorAll('th')].map(h=>h.innerText.trim()).filter(Boolean))
+await p.getByRole('button',{name:'Course Coordinator'}).click(); await p.waitForTimeout(700)
+const afterOn = await p.evaluate(()=>[...document.querySelectorAll('th')].map(h=>h.innerText.trim()).filter(Boolean))
+console.log('before      :', JSON.stringify(before))
+console.log('coord OFF   :', JSON.stringify(afterOff))
+console.log('coord ON    :', JSON.stringify(afterOn))
+await b.close()

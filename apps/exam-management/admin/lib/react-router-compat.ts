@@ -13,7 +13,11 @@
  */
 
 import * as React from "react"
-import { usePathname, useRouter } from "next/navigation"
+import {
+  usePathname,
+  useRouter,
+  useSearchParams as useNextSearchParams,
+} from "next/navigation"
 
 // ---------------------------------------------------------------------------
 // useLocation — provides { pathname, search, hash, state, key }
@@ -21,13 +25,57 @@ import { usePathname, useRouter } from "next/navigation"
 // ---------------------------------------------------------------------------
 export function useLocation() {
   const pathname = usePathname()
+  const search = useNextSearchParams()?.toString() ?? ""
   return {
     pathname,
-    search: "",
+    search: search ? `?${search}` : "",
     hash: "",
     state: null as unknown,
     key: "default",
   }
+}
+
+// ---------------------------------------------------------------------------
+// useSearchParams — returns [URLSearchParams, setSearchParams] like RR.
+// App components (e.g. library-secondary-nav) read the query string and
+// push updates. Backed by Next's useSearchParams (read) + useRouter (write).
+// ---------------------------------------------------------------------------
+type SearchParamsInit =
+  | URLSearchParams
+  | Record<string, string>
+  | ((prev: URLSearchParams) => URLSearchParams)
+
+export function useSearchParams(): [
+  URLSearchParams,
+  (next: SearchParamsInit, opts?: { replace?: boolean }) => void,
+] {
+  const router = useRouter()
+  const pathname = usePathname()
+  const nextParams = useNextSearchParams()
+  // Clone into a writable URLSearchParams (Next returns a read-only instance).
+  const currentString = nextParams?.toString() ?? ""
+  const params = React.useMemo(
+    () => new URLSearchParams(currentString),
+    [currentString],
+  )
+
+  const setSearchParams = React.useCallback(
+    (next: SearchParamsInit, opts?: { replace?: boolean }) => {
+      const resolved =
+        typeof next === "function"
+          ? next(new URLSearchParams(currentString))
+          : next instanceof URLSearchParams
+            ? next
+            : new URLSearchParams(next)
+      const qs = resolved.toString()
+      const url = qs ? `${pathname}?${qs}` : pathname
+      if (opts?.replace) router.replace(url)
+      else router.push(url)
+    },
+    [router, pathname, currentString],
+  )
+
+  return [params, setSearchParams]
 }
 
 // ---------------------------------------------------------------------------

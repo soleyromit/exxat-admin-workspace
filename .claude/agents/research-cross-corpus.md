@@ -1,5 +1,6 @@
 ---
 name: research-cross-corpus
+model: claude-sonnet-4-6
 description: Use when the user asks "what does the research / Aarti / Vishaka / rr-insights say about X" — questions that need synthesis across multiple corpora (Granola transcripts, storytelling files, rr-insights, ADRs, competitor intel). Returns a synthesized answer citing each source. Reserve for cross-corpus questions; single-corpus reads should stay inline.
 tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit

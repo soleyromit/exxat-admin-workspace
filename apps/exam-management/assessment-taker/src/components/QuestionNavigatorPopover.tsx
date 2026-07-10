@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { Button, Separator } from '@exxatdesignux/ui';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
 
@@ -160,20 +161,15 @@ export function QuestionNavigatorPopover({
           <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
             · {unansweredCount} left
           </span>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
             aria-label="Close question navigator"
-            style={{
-              width: 28, height: 28, borderRadius: 6,
-              background: 'transparent', border: 'none',
-              cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, color: 'var(--muted-foreground)',
-              marginLeft: 4,
-            }}
+            className="ml-1 text-muted-foreground shrink-0"
           >
             <i className="fa-regular fa-xmark" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
 
         {/* Grid body */}
@@ -209,7 +205,7 @@ export function QuestionNavigatorPopover({
 
           {/* All other questions — unified grid, numeric order */}
           {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
-            <div style={{ height: 1, backgroundColor: 'var(--border)', marginBottom: 12 }} />
+            <Separator className="mb-3" />
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 34px)', gap: 4 }}>
             {otherIndices.map(i => {

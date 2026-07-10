@@ -21,6 +21,7 @@ import {
   SheetFooter,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Separator,
+  InputGroup, InputGroupAddon, InputGroupInput,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -272,23 +273,17 @@ function AddFacultySheet({ open, onOpenChange, assignedIds, onAdd }: AddFacultyS
 
         {/* Search */}
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div
-            className="flex items-center gap-2 rounded-md border"
-            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}
-          >
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-sm"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
+          <InputGroup className="w-full max-w-sm">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search faculty…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search faculty to add"
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />

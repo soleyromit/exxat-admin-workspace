@@ -30,8 +30,8 @@ interface QBState {
   setCurrentPersona: (p: Persona) => void
   personas: Persona[]
 
-  navView: 'all' | 'my' | 'folder'
-  setNavView: (v: 'all' | 'my' | 'folder') => void
+  navView: 'all' | 'my' | 'folder' | 'unassigned'
+  setNavView: (v: 'all' | 'my' | 'folder' | 'unassigned') => void
 
   sidebarOpen: boolean
   setSidebarOpen: (v: boolean) => void
@@ -141,7 +141,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   // Global session is the source of truth — QB no longer holds its own persona state.
   const { currentPersona: globalPersona, setCurrentPersona: setGlobalPersona } = useFacultySession()
   const currentPersona = useMemo(() => toQBPersona(globalPersona), [globalPersona])
-  const [navView, setNavViewState] = useState<'all' | 'my' | 'folder'>('my')
+  const [navView, setNavViewState] = useState<'all' | 'my' | 'folder' | 'unassigned'>('my')
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // WCAG 1.4.10 (Reflow): auto-collapse the QB folder tree at narrow
@@ -230,7 +230,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setNavViewState('my')
   }
 
-  function setNavView(v: 'all' | 'my' | 'folder') {
+  function setNavView(v: 'all' | 'my' | 'folder' | 'unassigned') {
     setNavViewState(v)
     if (v !== 'folder') setSelectedFolderIdState(null)
   }
@@ -484,6 +484,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
       ? true
       : navView === 'my'
       ? q.creator === currentPersona.id
+      : navView === 'unassigned'
+      ? !q.folder || !folders.some(f => f.id === q.folder)
       : selectedFolderId
         ? isInSubtree(q.folder, selectedFolderId, folders) ||
           (q.extraFolders ?? []).some(e => isInSubtree(e.folder, selectedFolderId, folders))

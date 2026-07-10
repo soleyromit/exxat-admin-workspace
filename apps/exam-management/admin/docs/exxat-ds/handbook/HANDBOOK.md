@@ -4,7 +4,7 @@
 >
 > **Audience:** designers, engineers, contributors, AI agents — anyone shipping UI in the Exxat product.
 >
-> **Working with an AI assistant?** Read [`.cursor/skills/exxat-token-economy/SKILL.md`](../../../.cursor/skills/exxat-token-economy/SKILL.md) **first** (or `.claude/skills/exxat-token-economy/SKILL.md` for Claude Code). It's a one-page pre-flight that cuts token usage by ~50%: a task → minimum-file-set table, the five-question rule check, and tiny scaffolds that mean the assistant never has to re-read this handbook for the common case.
+> **Working with an AI assistant?** **`docs/component-selection-guide.md`** (UX router) → **`_constitution.exxat-ds.mdc`** → **`exxat-token-economy` skill**. Index: **`docs/INDEX.yaml`**.
 
 ---
 
@@ -22,18 +22,18 @@ Every screen, primitive, and pattern in this design system serves one or more of
 
 ## 2. How to build a hub in 6 steps
 
-This is the **happy path** for the most common task: "I have an entity (placements, sites, columns, tokens, …); ship a hub for it." Follow these in order and the page lands at "best UX/UI", not "random design".
+This is the **happy path** for the most common task: "I have an entity (records, library items, tokens, …); ship a hub for it." Follow these in order and the page lands at "best UX/UI", not "random design".
 
 | Step | What to do | Where it lives | Rule |
 |---|---|---|---|
 | 1 | Add typed mock rows in `lib/mock/<entity>.ts`. Aim for ~12 realistic records. | `apps/web/lib/mock/` | `.cursor/rules/exxat-centralized-list-dataset.mdc` |
 | 2 | Write **one** KPI helper `lib/mock/<entity>-kpi.ts` returning `MetricItem[]` (≤ 4 tiles). | same | `exxat-kpi-max-four.mdc`, `exxat-kpi-trends.mdc` |
-| 3 | Build the column defs (`ColumnDef[]`). Set `filter:` per column to get filter chips automatically. | `apps/web/components/<entity>-table.tsx` | `exxat-data-tables.mdc` |
+| 3 | Build the column defs (`ColumnDef[]`). Map each data point with [`table-column-cells-pattern.md`](./table-column-cells-pattern.md) (person → avatar column, status → badge, etc.); set `filter:` when filter UX should match the type. | `apps/web/components/<entity>-table.tsx` | `exxat-data-tables.mdc`, `exxat-table-column-cells.mdc` |
 | 4 | Mount **`HubTable`** (NOT raw `<DataTable>`) inside `ListPageTemplate.renderContent`. `HubTable` wires `useTableState`, toolbar (search + filter chips + sort), and the **Properties drawer** in one place. | `apps/web/components/<entity>-table.tsx` | `exxat-data-tables.mdc` |
 | 5 | Compose the page client with `PrimaryPageTemplate` → `ListPageTemplate` (KPIs in `metrics`, view tabs in `defaultTabs`, the `HubTable` in `renderContent`). | `apps/web/components/<entity>-client.tsx` | `exxat-list-page-connected-views.mdc` |
 | 6 | Add to nav (`lib/mock/navigation.tsx`). If the hub needs scoped sub-navigation (e.g. categories), declare `secondaryPanel: "<id>"` and register the panel. | `apps/web/lib/mock/navigation.tsx`, `apps/web/components/sidebar/secondary-panel.tsx` | `exxat-primary-nav-secondary-panel.mdc` |
 
-**Reference pages to copy:** `apps/web/components/library-table.tsx` + `library-client.tsx` (seven-view hub), `columns-showcase.tsx` (`LibraryTable` + custom columns), `tokens-themes-client.tsx` + `tokens-hub-auxiliary-views.tsx`. See **`hub-supported-views-pattern.md`** (vendored under `docs/exxat-ds/patterns/`).
+**Reference pages to copy:** `apps/web/components/library-table.tsx` + `library-client.tsx` (canonical seven-view hub), `apps/web/components/columns-showcase.tsx` (custom columns + same Add view via `LibraryTable`), `apps/web/components/tokens-themes-client.tsx` + `tokens-hub-auxiliary-views.tsx`. See **`hub-supported-views-pattern.md`** before changing Add view.
 
 > **Stop signs.** If you find yourself building a parallel table stack, a second metrics strip, a custom filter row, or pasting raw `<DataTable>` into `renderContent` — **stop and re-read** `.cursor/rules/exxat-reuse-before-custom.mdc`.
 
@@ -43,7 +43,15 @@ This is the **happy path** for the most common task: "I have an entity (placemen
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ PRINCIPLES + HANDBOOK   →  docs/HANDBOOK.md (this file)             │
+│ CONSTITUTION (4 files)  →  _constitution.exxat-ds.mdc + product-* + brief │
+│ UX ROUTER               →  docs/component-selection-guide.md              │
+│ PRINCIPLES + HANDBOOK     →  docs/HANDBOOK.md (this file)           │
+│                                                                     │
+│ JOBS (job-to-be-done)     →  docs/jobs/                             │
+│   list-hub · focus-workflow · catalog · record-detail · settings ·  │
+│   dedicated-search                                                  │
+│ AGENT CONTEXT             →  docs/agent-context-architecture.md     │
+│ LINK INDEX                →  docs/INDEX.yaml                        │
 │                                                                     │
 │ FOUNDATIONS                                                         │
 │   tokens                →  docs/token-taxonomy.md                   │
@@ -61,6 +69,7 @@ This is the **happy path** for the most common task: "I have an entity (placemen
 │     dialog vs route        + .cursor/rules/exxat-{drawer-vs-dialog, │
 │                              page-vs-drawer}.mdc                    │
 │   card vs row vs list   →  docs/card-vs-rows-pattern.md             │
+│   tab/breadcrumb scroll →  docs/horizontal-scroll-pattern.md        │
 │                                                                     │
 │ BLUEPRINTS  (framework-agnostic specs — one per pattern)            │
 │                         →  docs/blueprints/                         │
@@ -74,11 +83,14 @@ This is the **happy path** for the most common task: "I have an entity (placemen
 │                            pattern, dedicated-search,               │
 │                            command-menu, …)                         │
 │                                                                     │
-│ RULES  (binding MUST / MUST NOT — for AI agents + reviewers)        │
+│ RULES  (binding MUST / MUST NOT — scoped by glob where possible)    │
 │                         →  .cursor/rules/*.mdc                      │
+│                         →  4 always-on (see INDEX.yaml)             │
 │                                                                     │
-│ SKILLS  (workflows + checklists — for AI agents doing a task)       │
-│                         →  .cursor/skills/  +  .claude/skills/      │
+│ SKILLS  (workflows + checklists — load on demand)                   │
+│                         →  exxat-kpi · exxat-overlays ·             │
+│                            exxat-sidebar-nav (consolidated)         │
+│                         →  exxat-senior-ux · exxat-ux-audit         │
 │                                                                     │
 │ MIGRATIONS  (deprecation history, every breaking change)            │
 │                         →  docs/migrations/                         │
@@ -92,16 +104,16 @@ This is the **happy path** for the most common task: "I have an entity (placemen
 
 | You want to… | Open this |
 |---|---|
-| Pick the right component for a job | [`docs/component-selection-guide.md`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/apps/web/docs/component-selection-guide.md) |
+| Pick the right component for a job | [`docs/component-selection-guide.md`](./component-selection-guide.md) |
 | Know what "hub" / "view tab" / "KPI band" mean | [`docs/glossary.md`](./glossary.md) |
 | Write empty-state / error / button copy | [`docs/voice-and-tone.md`](./voice-and-tone.md) |
 | Find the canonical reference page to copy | [`docs/reference-implementations.md`](./reference-implementations.md) |
-| Know the spec for a pattern | [`docs/blueprints/`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/apps/web/docs/blueprints/) |
+| Know the spec for a pattern | [`docs/blueprints/`](./blueprints/) |
 | Understand the "why" of a pattern | [`docs/<pattern>-pattern.md`](.) |
 | Know the binding MUST / MUST NOT | [`.cursor/rules/`](../../../.cursor/rules/) |
 | Run a recurring agent workflow | [`.cursor/skills/`](../../../.cursor/skills/) or [`.claude/skills/`](../../../.claude/skills/) |
-| Token name & semantics | [`docs/token-taxonomy.md`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/apps/web/docs/token-taxonomy.md) |
-| Full authoritative handbook | [`apps/web/AGENTS.md`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/AGENTS.md) |
+| Token name & semantics | [`docs/token-taxonomy.md`](./token-taxonomy.md) |
+| Full authoritative handbook | [`apps/web/AGENTS.md`](../AGENTS.md) |
 
 ---
 
@@ -133,7 +145,7 @@ These are the ones you'll use on >90% of screens. If a screen needs something el
 | KPI strip / band | `KeyMetrics` (`variant="flat"` on hubs) | `packages/ui` |
 | Status chip + icon | `ListHubStatusBadge` + `lib/list-status-badges.ts` | `apps/web/components/` |
 | Board / kanban card | `ListPageBoardCard` + primitives | `packages/ui` |
-| Side overlay | `Sheet` / `Drawer` (NOT toast — `exxat-no-toast.mdc`) | `packages/ui` |
+| Side overlay | `Sheet` floating panels (NOT toast — `exxat-no-toast.mdc`) | `packages/ui` |
 | Persistent banner | `LocalBanner` / `SystemBanner` | `packages/ui` |
 | Inline status / format hint | `FormDescription`, inline `<small>` | `packages/ui` |
 | Tooltip | `Tip` / `Tooltip` | `packages/ui` |
@@ -141,13 +153,13 @@ These are the ones you'll use on >90% of screens. If a screen needs something el
 | Global search | `CommandMenu` (⌘K) | `apps/web/components/command-menu.tsx` |
 | AI assistant chrome | Ask Leo side panel (⌘⌥K) | `apps/web/components/` |
 
-For a fuller decision tree see [`docs/component-selection-guide.md`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/apps/web/docs/component-selection-guide.md).
+For a fuller decision tree see [`docs/component-selection-guide.md`](./component-selection-guide.md).
 
 ---
 
 ## 6. The shortest accessibility checklist
 
-Run this on every PR. If you can't tick every box, the change isn't ready. (Full list: `.cursor/skills/exxat-accessibility/SKILL.md` and [`AGENTS.md` §8](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/AGENTS.md).)
+Run this on every PR. If you can't tick every box, the change isn't ready. (Full list: `.cursor/skills/exxat-accessibility/SKILL.md` and [`AGENTS.md` §8](../AGENTS.md).)
 
 - [ ] **Keyboard.** Every interactive thing reachable via Tab + activatable via Enter / Space. Focus ring visible (≥ 3:1).
 - [ ] **Touch target ≥ 24×24 CSS px** (or 24 px spacing) per WCAG 2.5.8.
@@ -171,7 +183,7 @@ A hub or screen is **done** when:
 4. The §6 accessibility checklist is green.
 5. Copy passes [`docs/voice-and-tone.md`](./voice-and-tone.md).
 6. No new shared primitives were added without `.cursor/rules/exxat-reuse-before-custom.mdc` approval.
-7. The §13 PR-review checklist in [`AGENTS.md`](https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/AGENTS.md#section-13) is green.
+7. The §13 PR-review checklist in [`AGENTS.md`](../AGENTS.md#section-13) is green.
 
 ---
 

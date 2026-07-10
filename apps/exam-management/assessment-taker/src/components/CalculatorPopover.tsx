@@ -118,6 +118,36 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
   const SCIENTIFIC_BTNS = ['sin', 'cos', 'tan', 'π', 'log', 'ln', '√', 'e', 'x²', 'xʸ', '1/x', '|x|'];
   const STANDARD_BTNS   = ['C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', '='];
 
+  const SCIENTIFIC_LABELS: Record<string, string> = {
+    'sin': 'sine',
+    'cos': 'cosine',
+    'tan': 'tangent',
+    'π':   'pi',
+    'log': 'log base 10',
+    'ln':  'natural log',
+    '√':   'square root',
+    'e':   "Euler's number",
+    'x²':  'x squared',
+    'xʸ':  'x to the power of y',
+    '1/x': 'reciprocal',
+    '|x|': 'absolute value',
+  };
+
+  const standardLabel = (btn: string): string => {
+    const map: Record<string, string> = {
+      'C': 'clear',
+      '±': 'toggle sign',
+      '%': 'percent',
+      '÷': 'divide',
+      '×': 'multiply',
+      '-': 'subtract',
+      '+': 'add',
+      '=': 'equals',
+      '.': 'decimal point',
+    };
+    return map[btn] ?? btn;
+  };
+
   const wrapperClass = inline ? 'w-full mt-4 animate-card-enter' : 'fixed top-20 right-20 z-50 animate-pop-in';
 
   return (
@@ -137,9 +167,11 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
             style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)' }}
           >
             {(['standard', 'scientific'] as const).map(m => (
-              <button
+              <DSButton
                 key={m}
                 onClick={() => setMode(m)}
+                variant="ghost"
+                size="xs"
                 className="px-2 py-0.5 rounded text-xs font-semibold transition-colors"
                 style={
                   mode === m
@@ -149,7 +181,7 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
                 aria-pressed={mode === m}
               >
                 {m === 'standard' ? 'Standard' : 'Scientific'}
-              </button>
+              </DSButton>
             ))}
           </div>
 
@@ -184,6 +216,7 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
               {SCIENTIFIC_BTNS.map(btn => (
                 <button
                   key={btn}
+                  aria-label={SCIENTIFIC_LABELS[btn] ?? btn}
                   onClick={() => handleScientific(btn)}
                   className="h-9 rounded-lg text-[12px] font-medium transition-colors active:scale-95"
                   style={{
@@ -207,6 +240,7 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
               return (
                 <button
                   key={i}
+                  aria-label={standardLabel(btn)}
                   onClick={() => handleButton(btn)}
                   className={`h-12 rounded-lg text-lg font-medium transition-colors active:scale-95 ${isZero ? 'col-span-2' : ''}`}
                   style={{

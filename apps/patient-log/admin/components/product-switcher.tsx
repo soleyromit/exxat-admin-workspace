@@ -19,16 +19,11 @@ import {
 import { ExxatProductLogo, ExxatProductMark } from "@/components/exxat-product-logo"
 import { useProduct, type Product } from "@/contexts/product-context"
 import { useProductSwitch } from "@/contexts/product-route-sync"
-import { isListedCustomProduct } from "@/stores/app-store"
-import { customProductBrandConfig, productBrandLabel } from "@/lib/product-brand"
-import { isProductRefHidden, type ProductRef } from "@/lib/product-ref"
-
-type SwitcherEntry = {
-  id: Product
-  label: string
-  scope?: "Schools" | "Sites"
-  customIndex?: number
-}
+import {
+  expandSwitcherProducts,
+  resolveActiveSwitcherEntry,
+  type SwitcherProductEntry,
+} from "@/lib/product-switcher-catalog"
 
 // Exxat One ships as **two siblings** because School-side and Site-side have
 // different navs, scope hierarchies, and primary personas — see
@@ -36,12 +31,6 @@ type SwitcherEntry = {
 // Exxat One wordmark; the `scope` sub-line below the wordmark in the dropdown
 // disambiguates them visually for sighted users (the `label` carries the full
 // accessible name for screen readers).
-const PRODUCTS: { id: Product; label: string; scope?: "Schools" | "Sites" }[] = [
-  { id: "exxat-prism",       label: "Exxat Prism"           },
-  { id: "exxat-one-schools", label: "Exxat One — Schools",  scope: "Schools" },
-  { id: "exxat-one-sites",   label: "Exxat One — Sites",    scope: "Sites"   },
-  { id: "exxat-custom",      label: "Custom product"        },
-]
 
 export function ProductSwitcher() {
   const { product, customProducts, activeCustomIndex, hiddenProducts } = useProduct()
@@ -49,29 +38,22 @@ export function ProductSwitcher() {
   const { state, isMobile } = useSidebar()
 
   const products = React.useMemo(
-    () =>
-      PRODUCTS.flatMap((p): SwitcherEntry[] => {
-        if (p.id !== "exxat-custom") {
-          const ref: ProductRef = { product: p.id }
-          if (isProductRefHidden(ref, hiddenProducts)) return []
-          return [p]
-        }
-        return customProducts.flatMap((cp, customIndex) => {
-          if (!isListedCustomProduct(cp)) return []
-          const ref: ProductRef = { product: "exxat-custom", customIndex }
-          if (isProductRefHidden(ref, hiddenProducts)) return []
-          return [{ ...p, label: productBrandLabel(customProductBrandConfig(cp)), customIndex }]
-        })
-      }),
+    () => expandSwitcherProducts(customProducts, hiddenProducts),
     [customProducts, hiddenProducts],
   )
   const isCurrentProduct = React.useCallback(
-    (entry: SwitcherEntry) =>
+    (entry: SwitcherProductEntry) =>
       entry.id === product &&
       (entry.customIndex === undefined || entry.customIndex === activeCustomIndex),
     [activeCustomIndex, product],
   )
-  const current = products.find(isCurrentProduct) ?? products[0]
+  const current = resolveActiveSwitcherEntry(
+    products,
+    product,
+    activeCustomIndex,
+    customProducts,
+    isCurrentProduct,
+  )
   const iconRail = state === "collapsed" && !isMobile
   const expandedOrMobile = state === "expanded" || isMobile
 
@@ -88,7 +70,7 @@ export function ProductSwitcher() {
                   "h-auto min-h-12 overflow-x-clip overflow-y-visible",
                 "group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center",
                 iconRail &&
-                  "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!min-h-9 group-data-[collapsible=icon]:!max-h-9 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:overflow-visible",
+                  "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!min-h-8 group-data-[collapsible=icon]:!max-h-8 group-data-[collapsible=icon]:!w-8 group-data-[collapsible=icon]:!min-w-8 group-data-[collapsible=icon]:!max-w-8 group-data-[collapsible=icon]:aspect-square group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:overflow-visible",
               )}
               aria-label={`Current product: ${current.label}. Switch product`}
               suppressHydrationWarning

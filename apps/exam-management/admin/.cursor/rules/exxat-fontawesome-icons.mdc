@@ -1,32 +1,37 @@
 ---
-description: Font Awesome Pro icons — kit, weights, markup, subset audit, accessibility pairing
-globs: {components,lib,src}/**/*.{tsx,ts}
+description: Font Awesome Pro only — no Lucide; kit, weights, markup, subset audit, accessibility pairing
 alwaysApply: false
-appliesTo: [react]
+globs: 
+  - components/**/*.tsx
+  - packages/ui/src/components/**/*.tsx
+tags: [icons, a11y]
+seeAlso:
+  - .cursor/skills/exxat-fontawesome-icons/SKILL.md
 ---
 
-# Exxat DS — Font Awesome icons
+# Exxat DS — Font Awesome icons (no Lucide)
 
-Product UI uses **Font Awesome 6 Pro** via the **Kit script** in **`src/layout.tsx`** (not per-page ad-hoc CDNs). **Authoritative accessibility pairing** for decorative vs informational vs icon-only controls: **`.cursor/rules/exxat-accessibility.mdc`** (Case A/B/C).
+Product UI uses **Font Awesome 6 Pro** via the **Kit script** in **`src/layout.tsx`** (or consumer app layout). **Authoritative accessibility pairing:** **`.cursor/rules/exxat-accessibility.mdc`** (Case A/B/C).
 
 ## MUST
 
-1. **Markup** — Use **`<i className="…" />`** with **`fa-*`** weight + icon classes (e.g. **`fa-light fa-folder`**, **`fa-solid fa-check`**). Put **`aria-hidden="true"`** on the **`<i>`** when the **accessible name** lives on a parent (**`Button` `aria-label`**, adjacent text, **`Tip`** on interactive controls).
-2. **Weights** — Default inactive/ambient icons to **`fa-light`**; use **`fa-solid`** for **selected / active / strong emphasis** when the pattern already exists (e.g. sidebar rows, view tabs). Stay consistent within a surface.
-3. **Class strings** — Prefer **static** `className` strings so **`pnpm --filter web fa:subset-audit`** (see **`apps/web/scripts/fontawesome-subset-audit.mjs`**) can discover glyphs for **Kit subsetting** (`fontawesome-subset.manifest.json` → [fontawesome.com/kits](https://fontawesome.com/kits) Icon Selection).
-4. **Props APIs** — When a component accepts an icon, document **suffix only** (`fa-folder`) or **full classes** consistently with nearby code (**`lib/data-list-view.ts`**, **`lib/list-status-badges.ts`**, **`os-folder-glyph.tsx`**).
-
-## SHOULD
-
-- After adding **new** Font Awesome glyph names, run **`fa:subset-audit`** and refresh the **Kit** subset so production does not 404 missing icons.
-- Reuse **shared** maps (**`DATA_LIST_VIEW_TILES`**, **`lib/list-status-badges.ts`**) instead of one-off **`fa-*`** strings for the same semantic concept.
+1. **Markup** — **`<i className="fa-light fa-…" aria-hidden="true" />`** (or **`fa-solid`** when active/selected). Accessible name on parent **`Button` `aria-label`**, adjacent text, or **`Tip`** on icon-only controls.
+2. **Weights** — Default **`fa-light`**; **`fa-solid`** for selected / active / strong emphasis (sidebar rows, view tabs, verified checkmarks).
+3. **Class strings** — Prefer **static** `className` strings so **`pnpm --filter web fa:subset-audit`** discovers glyphs for Kit subsetting.
+4. **Icon sizing** — Use **`text-xs`**, **`text-[13px]`**, or **`size-*`** on the **`<i>`** or a wrapping flex box — not Lucide `strokeWidth` / SVG props.
 
 ## MUST NOT
 
-- Add **second** icon systems for **product chrome** (duplicate Lucide/Phosphor/Heroicons for the same nav, table toolbar, or hub cards) when Font Awesome is already the standard for that surface.
-- Put **meaningful** accessible names **only** on **`<i>`** without **`role`** / parent labelling — follow **Case B/C** in **`exxat-accessibility.mdc`**.
+1. **Import `lucide-react`** or any Lucide icon in **`apps/web/**`**, **`packages/ui/**`**, or consumer template apps.
+2. Add **Lucide**, **Heroicons**, **Phosphor**, or other SVG icon libraries for product chrome when Font Awesome covers the glyph.
+3. Put meaningful accessible names **only** on **`<i>`** without parent labelling — follow **Case B/C** in **`exxat-accessibility.mdc`**.
+
+## shadcn / UI primitives
+
+Base components under **`packages/ui/src/components/ui/`** use Font Awesome **`<i>`** tags — not Lucide SVG components. When upgrading shadcn blocks, **replace Lucide imports** before merging. Set **`"iconLibrary": "fontawesome"`** in **`components.json`**.
 
 ## See also
 
-- **`./AGENTS.md`** — handbook; **§8** accessibility.
-- **`.cursor/rules/exxat-accessibility.mdc`** — tooltips + **`aria-label`** for icon-only buttons.
+- **`.cursor/skills/exxat-fontawesome-icons/SKILL.md`**
+- **`./AGENTS.md`** §8 accessibility
+- **`.cursor/rules/exxat-accessibility.mdc`**

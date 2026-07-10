@@ -98,7 +98,7 @@ export default function CompetencyClient() {
         />
 
         <div className="flex flex-1 flex-col gap-5 p-6 overflow-auto">
-          <KeyMetrics variant="card" showHeader={false} metricsSingleRow metrics={metrics} />
+          <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={metrics} />
 
 
           <section className="flex flex-col gap-3">

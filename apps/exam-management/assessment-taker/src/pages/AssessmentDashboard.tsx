@@ -18,7 +18,8 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button } from '@exxatdesignux/ui';
+import { Badge, Button, Card } from '@exxatdesignux/ui';
+import { ExamBadge } from '../components/ExamBadge';
 import {
   MOCK_ASSESSMENTS,
   Assessment,
@@ -45,29 +46,22 @@ const t = {
   destructive: 'var(--destructive)',
 };
 
-// ─── Section label style ──────────────────────────────────────────────────────
-const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 700,
-  color: t.fgMuted,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  marginBottom: 10,
-};
+// ─── Section label class (shared across all four dashboard sections) ──────────
+const sectionLabelClass = 'text-xs font-semibold text-muted-foreground mb-2.5';
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<AssessmentStatus, string> = {
+  active:            'Ready to Start',
+  in_progress:       'In Progress',
+  upcoming:          'Upcoming',
+  submitted:         'Submitted',
+  results_pending:   'Results Pending',
+  results_published: 'Results Available',
+  review_available:  'Review Open',
+  review_complete:   'Review Complete',
+};
 function StatusBadge({ status }: { status: AssessmentStatus }) {
-  const labels: Record<AssessmentStatus, string> = {
-    active:            'Ready to Start',
-    in_progress:       'In Progress',
-    upcoming:          'Upcoming',
-    submitted:         'Submitted',
-    results_pending:   'Results Pending',
-    results_published: 'Results Available',
-    review_available:  'Review Open',
-    review_complete:   'Review Complete',
-  };
-  return <Badge variant="secondary" className="rounded-full text-xs font-semibold">{labels[status] ?? status}</Badge>;
+  return <ExamBadge>{STATUS_LABELS[status] ?? status}</ExamBadge>;
 }
 
 // ─── Accommodation chip ───────────────────────────────────────────────────────
@@ -108,11 +102,9 @@ function ActionRow({ exam, onNavigate }: { exam: Assessment; onNavigate: (path: 
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      padding: '12px 0 12px 12px',
+      padding: '12px 0',
       borderBottom: `1px solid ${t.border}`,
       gap: 12,
-      borderLeft: `3px solid var(--brand-color)`,
-      paddingLeft: 12,
     }}>
       {/* Left: title + meta */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -143,12 +135,12 @@ function ActionRow({ exam, onNavigate }: { exam: Assessment; onNavigate: (path: 
           </span>
         )}
         <Button
+          variant="default"
           size="sm"
           onClick={() => onNavigate(`/exam/${exam.id}/setup`)}
           aria-label={isInProgress ? `Continue ${exam.title}` : `Start ${exam.title}`}
         >
           {isInProgress ? 'Continue' : 'Start Exam'}
-          <i className={`fa-solid ${isInProgress ? 'fa-play' : 'fa-arrow-right'}`} aria-hidden="true" />
         </Button>
       </div>
     </div>
@@ -258,7 +250,7 @@ function SystemNotificationsSection() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h2
           id="sys-notif-heading"
-          style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.fgMuted }}
+          className={sectionLabelClass}
         >
           System Messages
         </h2>
@@ -274,14 +266,7 @@ function SystemNotificationsSection() {
           </Button>
         )}
       </div>
-      <div
-        style={{
-          background: t.card,
-          border: `1px solid ${t.border}`,
-          borderRadius: 12,
-          overflow: 'hidden',
-        }}
-      >
+      <Card className="overflow-hidden">
         {visible.map((n, idx) => {
           const cfg = KIND_CONFIG[n.kind]
           return (
@@ -296,13 +281,8 @@ function SystemNotificationsSection() {
               }}
             >
               {/* Icon */}
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: t.muted,
-              }}>
-                <i className={`fa-light ${cfg.icon}`} aria-hidden="true"
-                  style={{ fontSize: 13, color: t.fgMuted }} />
+              <div className="flex w-8 h-8 shrink-0 items-center justify-center rounded" style={{ background: t.muted }}>
+                <i className={`fa-light ${cfg.icon} text-[13px] text-muted-foreground`} aria-hidden="true" />
               </div>
 
               {/* Content */}
@@ -330,7 +310,7 @@ function SystemNotificationsSection() {
             </div>
           )
         })}
-      </div>
+      </Card>
     </section>
   )
 }
@@ -360,8 +340,8 @@ export function AssessmentDashboard() {
 
         {/* ── 1. Action Required — active + download queue together ────────── */}
         {hasActionItems && (
-          <section aria-label="Action required" style={{ marginBottom: 24 }}>
-            <p style={sectionLabelStyle}>Action Required</p>
+          <section aria-labelledby="section-action" style={{ marginBottom: 24 }}>
+            <h2 id="section-action" className={sectionLabelClass}>Action Required</h2>
             <div style={{ borderTop: `1px solid ${t.border}` }}>
               {active.map(e => (
                 <ActionRow key={e.id} exam={e} onNavigate={navigate} />
@@ -372,8 +352,8 @@ export function AssessmentDashboard() {
 
         {/* ── 2. Coming Up ─────────────────────────────────────────────────── */}
         {upcoming.length > 0 && (
-          <section aria-label="Coming up" style={{ marginBottom: 24 }}>
-            <p style={sectionLabelStyle}>Coming Up</p>
+          <section aria-labelledby="section-coming-up" style={{ marginBottom: 24 }}>
+            <h2 id="section-coming-up" className={sectionLabelClass}>Coming Up</h2>
             <div style={{ borderTop: `1px solid ${t.border}` }}>
               {upcoming.map(e => (
                 <UpcomingRow key={e.id} exam={e} />
@@ -392,8 +372,8 @@ export function AssessmentDashboard() {
           }, {});
           const termOrder = Object.keys(grouped);
           return (
-            <section aria-label="Results" style={{ marginBottom: 24 }}>
-              <p style={sectionLabelStyle}>Results</p>
+            <section aria-labelledby="section-results" style={{ marginBottom: 24 }}>
+              <h2 id="section-results" className={sectionLabelClass}>Results</h2>
               {termOrder.map(term => (
                 <div key={term} style={{ marginBottom: 16 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: t.fgMuted, marginBottom: 0 }}>{term}</p>
@@ -418,14 +398,11 @@ export function AssessmentDashboard() {
 
         {/* Empty state */}
         {!hasActionItems && upcoming.length === 0 && past.length === 0 && (
-          <div style={{
-            textAlign: 'center', padding: '60px 20px',
-            background: t.card, border: `1px solid ${t.border}`, borderRadius: 16,
-          }}>
-            <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 48, color: t.fgMuted, marginBottom: 16, display: 'block' }} />
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: t.fg, marginBottom: 8 }}>No assessments yet</h2>
-            <p style={{ fontSize: 14, color: t.fgMuted }}>Your scheduled exams will appear here. Check back closer to your exam date.</p>
-          </div>
+          <Card className="text-center px-5 py-16">
+            <i className="fa-light fa-graduation-cap block mb-4 text-5xl text-muted-foreground" aria-hidden="true" />
+            <h2 className="text-lg font-bold text-foreground mb-2">No assessments yet</h2>
+            <p className="text-sm text-muted-foreground">Your scheduled exams will appear here. Check back closer to your exam date.</p>
+          </Card>
         )}
 
       </div>

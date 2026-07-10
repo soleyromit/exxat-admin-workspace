@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * GlobalReferencePanel — assessment-level reference sheet accessible throughout the exam.
  *

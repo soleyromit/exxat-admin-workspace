@@ -2,7 +2,7 @@
 """
 Build a compact JSON snapshot of the Exxat DS public API surface.
 Reads exxat-ds/packages/ui/src/, extracts component APIs via regex.
-Output: docs/watch/ds-snapshot.json
+Output: `node tools/ds/source.mjs --list`
 Run: python3 scripts/build_ds_snapshot.py
 """
 import re, json, sys

@@ -10,6 +10,7 @@ import { QTYPE, qIcon, fmt2, type Question } from '../data'
 
 export interface QuestionItemProps {
   q: Question
+  qIndex?: number
   selected: boolean
   dragging?: boolean
   onSelect: () => void
@@ -19,7 +20,7 @@ export interface QuestionItemProps {
   dragProps?: { onDragStart?: DragEventHandler; onDragEnd?: DragEventHandler }
 }
 
-export function QuestionItem({ q, selected, dragging, onSelect, onEdit, onReplace, onDelete, dragProps }: QuestionItemProps) {
+export function QuestionItem({ q, qIndex, selected, dragging, onSelect, onEdit, onReplace, onDelete, dragProps }: QuestionItemProps) {
   const flagged = !!q.flagged
   const opts = q.options || []
   return (
@@ -28,11 +29,21 @@ export function QuestionItem({ q, selected, dragging, onSelect, onEdit, onReplac
       {...dragProps}
       onClick={onEdit}
       title="Open question to edit"
-      style={{ opacity: dragging ? 0.4 : 1, cursor: 'pointer', borderColor: flagged ? 'var(--destructive)' : undefined }}
+      style={{
+        opacity: dragging ? 0.4 : 1,
+        cursor: 'pointer',
+        borderColor: flagged ? 'var(--destructive)' : selected ? 'var(--ring)' : undefined,
+        borderWidth: selected ? 2 : undefined,
+      }}
     >
       <CardContent className="p-3">
       <div style={{ display: 'flex', gap: 11 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 2 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 2 }} onClick={e => e.stopPropagation()}>
+          {qIndex != null && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground)', lineHeight: 1, minWidth: 18, textAlign: 'center' }}>
+              Q{qIndex}
+            </span>
+          )}
           <span style={{ cursor: 'grab', color: 'var(--muted-foreground)' }}><Icon name="grip-vertical" /></span>
           <Checkbox aria-label={selected ? 'Deselect question' : 'Select question'} checked={selected} onCheckedChange={() => onSelect()} />
         </div>
@@ -55,7 +66,7 @@ export function QuestionItem({ q, selected, dragging, onSelect, onEdit, onReplac
             <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: opts.length > 3 ? '1fr 1fr' : '1fr', gap: '3px 16px' }}>
               {opts.slice(0, 5).map((o, i) => (
                 <div key={i} style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 11 }} />{o.text}
+                  <Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 12 }} />{o.text}
                 </div>
               ))}
             </div>
@@ -68,7 +79,7 @@ export function QuestionItem({ q, selected, dragging, onSelect, onEdit, onReplac
           )}
           {/* psychometrics */}
           {q.psy && (
-            <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 11, color: 'var(--muted-foreground)' }}>
+            <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 12, color: 'var(--muted-foreground)' }}>
               <span>Difficulty <b style={{ color: 'var(--foreground)' }}>{fmt2(q.psy.p)}</b></span>
               <span>Discrimination <b style={{ color: 'var(--foreground)' }}>{fmt2(q.psy.disc)}</b></span>
               <span>Pt-biserial <b style={{ color: q.psy.pbi < 0.1 ? 'var(--destructive)' : 'var(--foreground)' }}>{fmt2(q.psy.pbi)}</b></span>

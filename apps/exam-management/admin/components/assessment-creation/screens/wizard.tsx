@@ -102,17 +102,17 @@ function WizardFlowOverview({ step, onJump }: { step: number; onJump: (i: number
                       borderRadius: 999,
                       display: 'grid',
                       placeItems: 'center',
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: 700,
                       background: done ? 'var(--chip-2)' : active ? 'var(--brand-color)' : 'var(--muted)',
-                      color: done || active ? 'white' : 'var(--muted-foreground)',
+                      color: done || active ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                     }}
                   >
                     {done ? <Icon name="check" /> : i + 1}
                   </span>
                   <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.2 }}>{s.title}</span>
                 </div>
-                <div className="hint" style={{ fontSize: 11, lineHeight: 1.4 }}>{s.captures}</div>
+                <div className="hint" style={{ fontSize: 12, lineHeight: 1.4 }}>{s.captures}</div>
               </Button>
               <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', color: 'var(--border-control-3)', flexShrink: 0 }}>
                 <Icon name="arrow-right" style={{ fontSize: 13 }} />
@@ -137,7 +137,7 @@ function WizardFlowOverview({ step, onJump }: { step: number; onJump: (i: number
             <Icon name="hammer" style={{ fontSize: 15, color: 'var(--brand-color-dark)' }} />
             <span style={{ fontSize: 12.5, fontWeight: 700 }}>Builder</span>
           </div>
-          <div className="hint" style={{ fontSize: 11, marginTop: 6, maxWidth: 120, lineHeight: 1.4 }}>Author, configure & review</div>
+          <div className="hint" style={{ fontSize: 12, marginTop: 6, maxWidth: 120, lineHeight: 1.4 }}>Author, configure &amp; review</div>
         </Card>
       </div>
       </CardContent>
@@ -169,10 +169,10 @@ function StepGuide({ step }: { step: number }) {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap', marginBottom: 4 }}>
           <span style={{ fontSize: 13.5, fontWeight: 700 }}>{s.purpose}</span>
-          <Badge variant="secondary" style={{ fontSize: 9.5 }}>{s.phase}</Badge>
+          <Badge variant="secondary">{s.phase}</Badge>
         </div>
         <div className="hint" style={{ lineHeight: 1.45 }}>{s.why}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8, fontSize: 11.5, color: 'var(--brand-color-dark)', fontWeight: 500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8, fontSize: 12, color: 'var(--brand-color-dark)', fontWeight: 500 }}>
           <Icon name="arrow-right" style={{ fontSize: 11 }} />
           <span style={{ color: 'var(--muted-foreground)' }}>Feeds:</span> {s.feeds}
         </div>
@@ -352,7 +352,7 @@ export function BlueprintWizard({
                   renderLabel={(x) => (
                     <>
                       {x}
-                      {x === 'Assignment' && <span style={{ fontSize: 10 }}> · soon</span>}
+                      {x === 'Assignment' && <span className="text-xs text-muted-foreground"> · soon</span>}
                     </>
                   )}
                 />
@@ -606,7 +606,7 @@ export function BlueprintWizard({
             <Icon name="arrow-right" w="solid" />
           </Button>
         ) : (
-          <Button type="button" variant="default" style={{ background: 'var(--brand-color)', color: 'white' }} onClick={finish}>
+          <Button type="button" variant="default" style={{ background: 'var(--brand-color)', color: 'var(--primary-foreground)' }} onClick={finish}>
             <Icon name="hammer" w="solid" />
             Open builder
           </Button>

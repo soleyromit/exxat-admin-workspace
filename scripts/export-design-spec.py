@@ -30,7 +30,7 @@ from pathlib import Path
 WORKSPACE = Path("/Users/romitsoley/Work")
 DESIGN_MD = WORKSPACE / "DESIGN.md"
 TRIGGERS_MD = WORKSPACE / "docs/triggers.md"
-DS_SNAPSHOT = WORKSPACE / "docs/foundations/ds-snapshot.json"
+DS_SNAPSHOT = WORKSPACE / "`node tools/ds/source.mjs --list`"
 PATTERNS_DIR = WORKSPACE / "docs/patterns"
 APPS_DIR = WORKSPACE / "apps"
 DEFAULT_OUT_BASE = WORKSPACE / "docs/exports"

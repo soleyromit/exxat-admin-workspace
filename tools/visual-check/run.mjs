@@ -111,14 +111,16 @@ async function checkRoute(page, route) {
   page.on('console', errListener)
 
   try {
-    const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 20_000 })
+    // domcontentloaded avoids blocking on external CDN assets (Font Awesome kit,
+    // Adobe Fonts) that hang indefinitely in headless mode.
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 })
     result.httpStatus = response?.status() ?? null
     if (!response || response.status() >= 400) {
       result.error = `HTTP ${result.httpStatus}`
       return result
     }
-    // Give the page a moment to settle (animations, hydration).
-    await page.waitForTimeout(500)
+    // Let React hydrate and CSS tokens resolve before screenshot + axe.
+    await page.waitForTimeout(2500)
 
     // Screenshot — full page so we can see below-the-fold content too.
     await page.screenshot({ path: result.screenshot, fullPage: true })

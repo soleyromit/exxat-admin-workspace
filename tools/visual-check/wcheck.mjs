@@ -1,0 +1,17 @@
+import { chromium } from 'playwright'
+const b = await chromium.launch({ headless: true })
+const p = await b.newContext({ viewport: { width: 1280, height: 800 } })
+const pg = await p.newPage()
+const errs = []
+pg.on('console', m => { if (m.type()==='error') errs.push(m.text()) })
+pg.on('pageerror', e => errs.push('PAGEERROR: '+e.message))
+await pg.goto('http://localhost:3001/assessment-builder/create?courseId=course-phar101', { waitUntil: 'networkidle' })
+await pg.waitForTimeout(1500)
+const h1 = await pg.locator('h1').first().textContent().catch(()=>'(none)')
+const stepper = await pg.locator('text=Intent & details').count()
+const oldText = await pg.locator('text=How do you want to build this').count()
+console.log('h1:', JSON.stringify(h1))
+console.log('has "Intent & details":', stepper, '| has old "How do you want to build":', oldText)
+console.log('errors:', JSON.stringify(errs.slice(0,5)))
+await pg.screenshot({ path: '/tmp/visual-check/wizard-fresh.png', fullPage: false })
+await b.close()

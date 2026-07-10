@@ -207,6 +207,9 @@ function MetricCell({
   const isDown     = trend === "down"
   const isInteractive = !!(href || onClick)
   const isHero     = metricVariant === "hero"
+  // No comparison delta → render no trend chip (avoids a meaningless "—" glyph
+  // beside KPIs that have no period-over-period value).
+  const hasTrend   = isUp || isDown || String(delta ?? "").trim() !== ""
 
   const inner = (
     <>
@@ -246,22 +249,26 @@ function MetricCell({
           {value}
         </span>
 
-        {/* Trend chip — icon + text, never colour-only (WCAG 1.4.1) */}
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 font-medium leading-none",
-            dense ? "text-xs sm:text-xs" : "text-xs sm:text-sm",
-            isUp   && "text-chart-2",
-            isDown && "text-destructive",
-            !isUp && !isDown && "text-muted-foreground"
-          )}
-          aria-label={`${isUp ? "up" : isDown ? "down" : "no change"} ${delta}`}
-        >
-          {isUp   && <i className="fa-light fa-arrow-trend-up text-[0.8rem]"   aria-hidden="true" />}
-          {isDown && <i className="fa-light fa-arrow-trend-down text-[0.8rem]" aria-hidden="true" />}
-          {!isUp && !isDown && <i className="fa-light fa-minus text-[0.8rem]"  aria-hidden="true" />}
-          <span>{delta}</span>
-        </span>
+        {/* Trend chip — icon + text, never colour-only (WCAG 1.4.1). Omitted
+            entirely when there is no comparison delta. */}
+        {hasTrend && (
+          <span
+            role="img"
+            className={cn(
+              "inline-flex items-center gap-1 font-medium leading-none",
+              dense ? "text-xs sm:text-xs" : "text-xs sm:text-sm",
+              isUp   && "text-chart-2",
+              isDown && "text-destructive",
+              !isUp && !isDown && "text-muted-foreground"
+            )}
+            aria-label={`${isUp ? "up" : isDown ? "down" : "no change"} ${delta}`}
+          >
+            {isUp   && <i className="fa-light fa-arrow-trend-up text-[0.8rem]"   aria-hidden="true" />}
+            {isDown && <i className="fa-light fa-arrow-trend-down text-[0.8rem]" aria-hidden="true" />}
+            {!isUp && !isDown && <i className="fa-light fa-minus text-[0.8rem]"  aria-hidden="true" />}
+            <span>{delta}</span>
+          </span>
+        )}
       </div>
     </>
   )

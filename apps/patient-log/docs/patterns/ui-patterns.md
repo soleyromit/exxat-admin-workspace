@@ -54,7 +54,7 @@ No specific product decisions captured yet. All domain-specific patterns must wa
 Before writing the first JSX file:
 
 1. Run `ds-adoption-reviewer` — state "I'm about to write the first component for patient-log/admin"
-2. Read `docs/governance/ds-component-examples.md` — canonical usage for all key organisms
+2. Read the real `.d.ts` (`node tools/ds/source.mjs`) — canonical usage for all key organisms
 3. Read `docs/governance/design-anti-patterns.md` — banned patterns blacklist
 4. Pull any Granola transcripts for Patient Log decisions → create `docs/decisions/` entries
 5. Write a Screen Purpose Map (§0 placeholder above) for every planned screen before coding any of them

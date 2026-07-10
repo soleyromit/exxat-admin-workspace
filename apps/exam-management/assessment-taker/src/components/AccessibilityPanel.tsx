@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { tokens } from '../tokens/design-tokens';
 import { Button as DSButton, ToggleSwitch } from '@exxatdesignux/ui';
 
 export interface AccessibilityPanelProps {
@@ -8,6 +6,10 @@ export interface AccessibilityPanelProps {
   zoomPercent: number;
   zoomIn: () => void;
   zoomOut: () => void;
+  highContrast: boolean;
+  onHighContrastChange: (v: boolean) => void;
+  reduceMotion: boolean;
+  onReduceMotionChange: (v: boolean) => void;
 }
 
 export function AccessibilityPanel({
@@ -15,32 +17,35 @@ export function AccessibilityPanel({
   onClose,
   zoomPercent,
   zoomIn,
-  zoomOut
+  zoomOut,
+  highContrast,
+  onHighContrastChange,
+  reduceMotion,
+  onReduceMotionChange,
 }: AccessibilityPanelProps) {
-  const [highContrast, setHighContrast] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed top-20 right-20 z-50 animate-pop-in shadow-2xl rounded-2xl overflow-hidden border"
+      className="fixed top-20 right-20 z-50 animate-pop-in shadow-lg rounded-lg overflow-hidden border"
       style={{
         width: '320px',
-        backgroundColor: tokens.surface.white,
-        borderColor: tokens.border.default
+        backgroundColor: 'var(--card)',
+        borderColor: 'var(--border)',
       }}
       role="dialog"
+      aria-modal="true"
       aria-label="Accessibility options"
     >
       <div
         className="flex justify-between items-center p-4 border-b"
         style={{
-          backgroundColor: tokens.surface.subtle,
-          borderColor: tokens.border.default
+          backgroundColor: 'var(--muted)',
+          borderColor: 'var(--border)',
         }}
       >
-        <span className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.text.primary }}>
+        <span className="font-semibold text-sm text-foreground flex items-center gap-2">
           <i className="fa-light fa-universal-access" aria-hidden="true" style={{ fontSize: 16 }} />
           Accessibility Options
         </span>
@@ -52,12 +57,12 @@ export function AccessibilityPanel({
       <div className="p-5 flex flex-col gap-6">
         {/* Text Size */}
         <div>
-          <label className="block text-sm font-semibold mb-3 text-slate-700">
+          <label className="block text-sm font-semibold mb-3 text-foreground">
             Text Size
           </label>
           <div
-            className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border"
-            style={{ borderColor: tokens.border.default }}
+            className="flex items-center gap-4 bg-muted p-2 rounded-lg border"
+            style={{ borderColor: 'var(--border)' }}
           >
             <DSButton
               variant="outline"
@@ -68,7 +73,7 @@ export function AccessibilityPanel({
             >
               A-
             </DSButton>
-            <div className="flex-1 text-center font-mono font-bold text-slate-700">
+            <div className="flex-1 text-center font-mono font-bold text-foreground">
               {zoomPercent}%
             </div>
             <DSButton
@@ -85,27 +90,27 @@ export function AccessibilityPanel({
 
         {/* High Contrast */}
         <div className="flex items-center justify-between">
-          <label htmlFor="contrast-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+          <label htmlFor="contrast-toggle" className="flex items-center gap-2 text-sm font-semibold text-foreground cursor-pointer">
             <i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 16 }} />
             High Contrast
           </label>
           <ToggleSwitch
             id="contrast-toggle"
             checked={highContrast}
-            onChange={setHighContrast}
+            onChange={onHighContrastChange}
           />
         </div>
 
         {/* Reduce Motion */}
         <div className="flex items-center justify-between">
-          <label htmlFor="motion-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+          <label htmlFor="motion-toggle" className="flex items-center gap-2 text-sm font-semibold text-foreground cursor-pointer">
             <i className="fa-light fa-arrows-up-down-left-right" aria-hidden="true" style={{ fontSize: 16 }} />
             Reduce Motion
           </label>
           <ToggleSwitch
             id="motion-toggle"
             checked={reduceMotion}
-            onChange={setReduceMotion}
+            onChange={onReduceMotionChange}
           />
         </div>
       </div>

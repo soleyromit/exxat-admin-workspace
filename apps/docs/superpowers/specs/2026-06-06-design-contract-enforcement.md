@@ -181,7 +181,7 @@ Does NOT trigger on: CLAUDE.md files, governance docs, pattern docs, or memory f
 ```
 1. Read tool input → extract file_path
 2. If file_path ends with .tsx or .jsx:
-   a. Read docs/foundations/ds-snapshot.json
+   a. Read `node tools/ds/source.mjs --list`
    b. Extract profiles.admin.exports (flat component list)
    c. Return permission: "allow" with agent_message:
       "DS SNAPSHOT — valid @exxatdesignux/ui exports at write time:

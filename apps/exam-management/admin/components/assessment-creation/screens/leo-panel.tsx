@@ -110,7 +110,7 @@ export function LeoPanel({
               placeItems: 'center',
             }}
           >
-            <LeoStar style={{ color: 'white', fontSize: 16, filter: 'brightness(3)' }} />
+            <LeoStar style={{ color: 'var(--primary-foreground)', fontSize: 16, filter: 'brightness(3)' }} />
           </div>
           <div style={{ flex: 1 }}>
             <SheetTitle style={{ fontSize: 15, fontWeight: 600 }}>Leo</SheetTitle>
@@ -119,7 +119,7 @@ export function LeoPanel({
         </SheetHeader>
         <div
           ref={bodyRef}
-          style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'oklch(from var(--brand-rose-500) l c h / 0.025)' }}
+          style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'oklch(from var(--brand-color) l c h / 0.025)' }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {thread.map((m, i) =>
@@ -130,7 +130,7 @@ export function LeoPanel({
                     alignSelf: 'flex-end',
                     maxWidth: '85%',
                     background: 'var(--primary)',
-                    color: 'white',
+                    color: 'var(--primary-foreground)',
                     borderRadius: '14px 14px 4px 14px',
                     padding: '9px 13px',
                     fontSize: 13,
@@ -151,7 +151,7 @@ export function LeoPanel({
                       flexShrink: 0,
                     }}
                   >
-                    <LeoStar style={{ color: 'white', fontSize: 12, filter: 'brightness(3)' }} />
+                    <LeoStar style={{ color: 'var(--primary-foreground)', fontSize: 12, filter: 'brightness(3)' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     {m.blocks.map((b, j) => (
@@ -210,7 +210,7 @@ function LeoBlock({ b, onReplace }: { b: Block; onReplace: (q: Question) => void
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{s.l}</div>
             <div
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-heading)',
                 fontWeight: 300,
                 fontSize: 18,
                 color: s.c || 'var(--foreground)',

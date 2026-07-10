@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --ignore-scripts",
   "buildCommand": "pnpm build",
   "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; git fetch --depth=1 origin $VERCEL_GIT_PREVIOUS_SHA 2>/dev/null; git diff --quiet $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA -- apps/exam-management/admin/ 2>/dev/null || exit 1"
 }

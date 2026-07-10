@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DS Snapshot — generates docs/foundations/ds-snapshot.json from DS source.
+"""DS Snapshot — generates `node tools/ds/source.mjs --list` from DS source.
 
 Walks exxat-ds/packages/ui/src/ and studentUX/src/ to extract:
 - Component file list (kebab-case modules)
@@ -7,7 +7,7 @@ Walks exxat-ds/packages/ui/src/ and studentUX/src/ to extract:
 - Hooks
 - CSS custom properties (tokens) from theme.css / globals.css
 
-Output: docs/foundations/ds-snapshot.json — agent-readable surface map.
+Output: `node tools/ds/source.mjs --list` — agent-readable surface map.
 The PreToolUse hook (DS-010) uses the per-export identifiers to validate
 that imported components actually exist for the active profile.
 
@@ -240,7 +240,7 @@ def main() -> None:
         },
     }
 
-    out_path = WORKSPACE / "docs/foundations/ds-snapshot.json"
+    out_path = WORKSPACE / "`node tools/ds/source.mjs --list`"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(snapshot, indent=2))
 

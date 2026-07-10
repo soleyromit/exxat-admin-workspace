@@ -1,5 +1,6 @@
 ---
 name: verification-reviewer
+model: claude-sonnet-4-6
 description: Use BEFORE declaring any non-trivial change done, clean, or complete. Reads the discipline at docs/governance/verification-discipline.md and applies its 5 patterns (A clean-isn't-clean, B sibling-coverage, C scope-enumeration, D canonical-comparison, E adversarial-self-review) to the parent's recent work. Returns either GREENLIGHT or NEEDS-MORE with specific gaps. Reserve for "I'm about to claim done" moments; not for tiny edits or research-only tasks.
 tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit

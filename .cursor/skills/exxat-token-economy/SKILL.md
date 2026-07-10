@@ -11,18 +11,11 @@ user-invocable: true
 
 # Exxat DS — token economy (read this first)
 
-**Why this exists.** Every other DS skill / rule / pattern doc is a deep dive on
-one concern. When the user just wants to build a screen, the assistant tends to:
+**Canonical index:** `apps/web/docs/INDEX.yaml` — jobs, patterns, rules, references.
 
-1. Re-read `AGENTS.md` (~80 KB) on every turn.
-2. `grep` to "find the Button" when the import path is already known.
-3. Regenerate hub scaffolding it could copy from a reference page.
-4. Read 6 rule files speculatively when only 2 apply.
-5. Re-explain "we use HubTable because…" in 200 tokens.
+**Constitution (always loaded):** `.cursor/rules/_constitution.exxat-ds.mdc` — ten commandments; detail in scoped rules.
 
-This skill is the **pre-flight** for any DS work. Read it first; load other docs
-only when this skill explicitly points to one. **Target: ≥ 50% fewer input
-tokens per design turn vs. the naive "open AGENTS.md and grep" loop.**
+**Fast router:** run `node scripts/agent-context-router.mjs <surface>` or use `exxat-surface-router` before opening broader docs. Load `apps/web/docs/component-selection-guide.md` only when the surface archetype is unclear.
 
 ## When to use this skill
 
@@ -38,12 +31,19 @@ Open **only** these files. Skip everything else unless one of these files cites 
 
 | Task | Read (minimum) | Skip (do not open) |
 |------|----------------|--------------------|
-| **Build a new hub page** (table + KPIs + view tabs) | `apps/web/components/library-table.tsx` + `library-client.tsx`, `exxat-hub-supported-views.mdc` (or `hub-supported-views-pattern.md`) | `AGENTS.md`, `hub-table.tsx` source, all `*-pattern.md` |
-| **Add a column / cell pattern** | `apps/web/components/columns-showcase.tsx` (the live catalog) | `data-table/index.tsx`, the whole `types.ts` |
-| **Add a board / kanban view** | `apps/web/components/placements-board-card.tsx`, `exxat-board-cards.mdc` only | All other rules |
-| **Add a KPI strip** | `docs/exxat-ds/handbook/reference-implementations.md` § KPI flat band, `exxat-kpi-max-four.mdc`, `exxat-kpi-trends.mdc` | `key-metrics.tsx` source |
+| **Build a new hub page** | `docs/jobs/list-hub.md`, `table-column-cells-pattern.md`, `library-table.tsx` + `library-client.tsx` | Full `AGENTS.md`, all `*-pattern.md` |
+| **Focus / exam lock shell** | `docs/jobs/focus-workflow.md`, `focus-workflow-pattern.md`, showcase client | Hub rules, `ListPageTemplate` |
+| **Catalog / pattern browse** | `docs/jobs/catalog-browse.md`, `catalog-client.tsx` | Hub scaffolding |
+| **Settings / preferences** | `docs/jobs/settings-preferences.md`, `src/views/settings.tsx` | Full hub patterns |
+| **Dedicated search** | `docs/jobs/dedicated-search.md`, `exxat-dedicated-search-surfaces` skill | Full hub patterns |
+| **Add a column / cell pattern** | `exxat-table-column-cells` skill, `table-column-cells-pattern.md`, `columns-showcase.tsx` | `data-table/index.tsx` |
+| **Add a board / kanban view** | `placements-board-card.tsx`, `exxat-board-cards.mdc` | All other rules |
+| **Add a KPI strip** | `.cursor/skills/exxat-kpi/SKILL.md` | `key-metrics.tsx` source unless editing it |
+| **Add overlay (export, properties)** | `.cursor/skills/exxat-overlays/SKILL.md` | Full drawer source tree |
+| **Sidebar nav / panel / drill-in** | `.cursor/skills/exxat-sidebar-nav/SKILL.md` | Full `app-sidebar.tsx` unless editing |
 | **Write empty-state / error / button copy** | `docs/exxat-ds/handbook/voice-and-tone.md` | All rules |
 | **Theme / token tweak** | `apps/web/app/globals.css`, `packages/ui/tokens/hooks-index.json` | All pattern docs |
+| **Design reference / registry doc** | `exxat-design-reference-hub.mdc`, `exxat-page-scroll-ownership.mdc`, `doc-typography.ts` | Skeleton placeholders when live preview exists |
 | **Status chip color/icon** | `apps/web/lib/list-status-badges.ts` | Accessibility rule (already covered by the map) |
 | **Bug fix** | `rg` for the symbol, read only the matching file | Everything else |
 | **Overflowing tab / breadcrumb row** | `horizontal-scroll-controls.tsx` + `horizontal-scroll-region.tsx`, `exxat-horizontal-scroll.mdc` | Full `tabs.tsx` / `list-page.tsx` unless editing them |
@@ -64,14 +64,18 @@ Answer **yes / no / N/A** to each. A **no** means re-plan; you'll save a regener
 3. **Color + icon on every status chip?** — `ListHubStatusBadge` + a tint from `lib/list-status-badges.ts` + an FA icon. Color alone fails WCAG 1.4.1.
 4. **≤ 4 KPIs on the primary strip?** — `KEY_METRICS_KPI_COUNT_MAX = 4`. A fifth becomes a `MetricInsight` or a chart.
 5. **No toasts for product feedback?** — use `LocalBanner` / `SystemBanner` / inline status. Toasts are reserved for build-tool messages.
-6. **Seven views + real bodies?** — `FULL_HUB_SUPPORTED_VIEWS` on **`ListPageTemplate`** + **`HubTable`** (sync both); every allowed view has a renderer; list uses **`ListPageBoardCard`** — not `["table"]` / `PRIMARY_HUB_SUPPORTED_VIEWS` / empty `renderers={}`.
+6. **Multi-view only when asked?** — Default **`TABLE_ONLY_HUB_SUPPORTED_VIEWS`** (omit `supportedViewTypes`). Add **`FULL_HUB_SUPPORTED_VIEWS`** + renderers only when the user/product requests list/board/dashboard/folder views — not on every new hub.
 7. **Sheet only (no Vaul)?** — side panels use **`Sheet`**; **`vaul`** must not be in `package.json`.
 8. **Header + tabs + table preview?** — **`PageHeader`** + DS **`Button`** variants for actions; hub views via **`ListPageTemplate`** (not full-width tabs); record tabs **`TabsList`** `w-fit` + **`TabsListScrollRegion`** when overflowing; row preview via **`HoverCard`** + shared cells — not custom popovers.
 9. **Uploaded image ≠ spec?** — If the user attached a screenshot/mockup: extract **IA only** (labels, routes, fields); map to **`component-selection-guide`** + a **reference hub**; **MUST NOT** pixel-copy or plan "match the screenshot"; **MUST NOT** use **`frontend-design`** to mimic the upload — **`exxat-no-image-pixel-copy.mdc`** + **`exxat-senior-ux`** win.
 10. **Horizontal scroll on tabs/crumbs?** — **`HorizontalScrollRegion`** / **`HorizontalScrollControls`** with **`controlsLayout="group-end"`** — not bespoke flanking chevrons per surface.
 11. **Hub view tabs persist on reload?** — **`ListPageTemplate persistKey`** only in **uncontrolled** mode — no **`tabs` + `onTabsChange`** if persistence matters.
+12. **Correct cell per data point?** — Person → **`AvatarInitials` + name + email**; status → **`ListHubStatusBadge`**; progress / money / rating → named **`table-cells`** import — **`.cursor/rules/exxat-table-column-cells.mdc`**, skill **`exxat-table-column-cells`**.
+13. **Single page scroll?** — No `overflow-y-auto` / `max-h-[*vh]` doc wrappers inside **`[data-page-scroll]`** — **`.cursor/rules/exxat-page-scroll-ownership.mdc`**. Tables, charts, drawers are the exceptions.
+14. **Design reference reuse?** — Theme preview → **`ButtonSegmentedControl`** (`TokensThemeSwitcher`); doc copy → **`DS_DOC_*`** (`text-sm`); no bespoke doc chrome — **`.cursor/rules/exxat-design-reference-hub.mdc`**.
+15. **Tabs only for sections, not modes?** — Theme/chart type/view filter → **`ButtonSegmentedControl`** or **`ViewSegmentedControl`** (hubs) or **`DropdownMenu`**; **`Tabs`** only for record sections + ChartCard chart/trend — **`.cursor/rules/exxat-tabs-chrome.mdc`**.
 
-If all eleven are **yes**, generate. If any is **no**, either narrow the requirements
+If all fifteen are **yes**, generate. If any is **no**, either narrow the requirements
 with **one** clarifying question or fix the gap silently and note it in your response.
 
 ---
@@ -98,9 +102,14 @@ When the user says "X", reach for "Y". Save the search.
 | icon | FA `<i class="fa-light fa-{name}" aria-hidden />` | (Kit script in `app/layout.tsx`) |
 | keyboard shortcut hint | `Kbd variant="bare"` inside buttons; `tile` in tooltips | `@/components/ui/kbd` |
 | horizontal scroll, tab overflow, breadcrumb scroll | `HorizontalScrollRegion`, `HorizontalScrollControls`, `useHorizontalScrollAffordances` | `@/components/ui/horizontal-scroll-region`, `@/components/ui/horizontal-scroll-controls` |
+| mode, theme, view type, chart type, filter (2–5 options) | **`ButtonSegmentedControl`** (doc/theme) or **`ViewSegmentedControl`** (hub views) — **not** `Tabs` | `@/components/ui/{button-segmented-control,view-segmented-control}` · **`exxat-tabs-chrome.mdc`** |
+| section tabs, record sub-nav (Overview · Academics) | **`Tabs`** `w-fit` `variant="line"` | `@/components/ui/tabs` |
+| period / program filter (6+ or compact menu) | **`DropdownMenu`** on `Button` | `@/components/ui/dropdown-menu` |
 | toggle, switch | `ToggleSwitch` | `@/components/ui/toggle-switch` |
 
 ### Table cell renderers (ALL importable — do NOT re-implement)
+
+**Data point → cell:** full decision table in **`apps/web/docs/table-column-cells-pattern.md`** — skill **`exxat-table-column-cells`**. Person columns are the most common mistake (plain text instead of **`AvatarInitials` + name + email**).
 
 Every cell renderer below is exported from **`@/components/data-views`** (re-exported from `apps/web/components/data-views/table-cells.tsx`). Live catalog: `apps/web/components/columns-showcase.tsx` at route `/columns`.
 

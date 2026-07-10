@@ -1,5 +1,6 @@
 ---
 name: claude-updates-watcher
+model: claude-sonnet-4-6
 description: Use when `docs/governance/claude-updates/pending-review.md` is non-empty (or Romit invokes `/check-claude-updates`). Reads upstream Anthropic / Claude Code / Agent SDK changelog excerpts, maps each new feature to our local architecture (subagents, audit rules, hooks, slash commands, governance docs), and writes a proposal MD to `docs/governance/claude-updates/YYYY-MM-DD-<slug>.md`. The proposal flags each upstream feature as ADOPT / ALREADY-HAVE / DEFER / SKIP with cited reasoning. The watcher never commits — Romit + parent review and apply.
 tools: Read, Bash, Grep, Glob, WebFetch
 disallowedTools: Edit, Write, NotebookEdit

@@ -14,12 +14,14 @@
    results-explorer.jsx. */
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { StatusBadge, STATUS_TINT_SUCCESS, STATUS_TINT_WARNING } from '@/components/status-badge'
 import {
   Card, CardContent, Button, Badge, AvatarInitials,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Input,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
+import { EmptyState } from '@/components/empty-state'
 import { Icon, LeoStar } from '../icons'
 import { AskLeo, Field, useApp } from '../primitives'
 import { AssessmentStatusBadge } from '../assessment-status-badge'
@@ -61,8 +63,6 @@ interface Results {
   completionRate: number
 }
 
-// green-tinted "Healthy"/"Approved" pill, consistent with AssessmentStatusBadge
-const HEALTHY_TINT: CSSProperties = { backgroundColor: 'oklch(from var(--chart-2) l c h / 0.14)', color: 'var(--chip-2)' }
 
 // deterministic PRNG so every render of an assessment shows the same numbers
 function seeded(str: string) {
@@ -154,7 +154,7 @@ function LifecycleRail({ state }: { state: LifecycleState }) {
             return (
               <div key={st} className="flex items-center" style={{ flex: i < LIFE.length - 1 ? 1 : '0 0 auto' }}>
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="grid size-7 place-items-center rounded-full text-xs font-semibold" style={{ background: done ? 'var(--chip-2)' : active ? 'var(--brand-color)' : 'var(--muted)', color: done || active ? 'white' : 'var(--muted-foreground)' }}>
+                  <div className="grid size-7 place-items-center rounded-full text-xs font-semibold" style={{ background: done ? 'var(--chip-2)' : active ? 'var(--brand-color)' : 'var(--muted)', color: done || active ? 'var(--primary-foreground)' : 'var(--muted-foreground)' }}>
                     {done ? <Icon name="check" /> : i + 1}
                   </div>
                   <span className="text-xs" style={{ fontWeight: active ? 700 : 500, color: active ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{STATES[st].label}</span>
@@ -196,7 +196,7 @@ function SectionSummary({ sections, readonly = true }: { sections: Section[]; re
                 <div className="truncate text-sm font-semibold">{s.name}</div>
                 <div className="text-xs text-muted-foreground">{(FACULTY[s.owner] || {}).name} · {s.questions.length} questions · {pts} pts</div>
               </div>
-              {readonly && <Badge variant="secondary" className="font-medium" style={HEALTHY_TINT}>Approved</Badge>}
+              {readonly && <StatusBadge label="Approved" icon="fa-circle-check" tint={STATUS_TINT_SUCCESS} />}
             </div>
           </Card>
         )
@@ -283,8 +283,8 @@ function ItemAnalysis({ allQ, onOpen }: { allQ: AnalyzedQ[]; onOpen?: (i: number
     {
       key: 'status', label: 'Status', width: 130, defaultPin: 'right', lockPin: true,
       cell: (row) => row.flagged
-        ? <Badge variant="destructive" className="font-medium"><Icon name="triangle-exclamation" aria-hidden="true" />Outlier</Badge>
-        : <Badge variant="secondary" className="font-medium" style={HEALTHY_TINT}>Healthy</Badge>,
+        ? <StatusBadge label="Outlier" icon="fa-triangle-exclamation" tint={STATUS_TINT_WARNING} />
+        : <StatusBadge label="Healthy" icon="fa-circle-check" tint={STATUS_TINT_SUCCESS} />,
     },
     {
       key: 'chevron', label: '', width: 44, defaultPin: 'right', lockPin: true,
@@ -302,7 +302,7 @@ function ItemAnalysis({ allQ, onOpen }: { allQ: AnalyzedQ[]; onOpen?: (i: number
         searchable={false}
         showQueryControls={false}
         onRowClick={onOpen ? (row) => onOpen(row.idx) : undefined}
-        emptyState={{ icon: 'list-check', heading: 'No items', description: 'No assessment items to display.' }}
+        emptyState={<EmptyState icon="fa-list-check" title="No items" description="No assessment items to display." />}
       />
     </div>
   )
@@ -331,17 +331,17 @@ export function AssessmentStatus({ meta, sections, persona, onBack, onList, onBu
     <div className="page-head" style={{ alignItems: 'flex-start' }}>
       <div>
         <div className="mb-1.5 flex items-center gap-2.5">
-          <Button variant="ghost" size="sm" onClick={onList}><Icon name="arrow-left" aria-hidden="true" />All assessments</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onList}><Icon name="arrow-left" aria-hidden="true" />All assessments</Button>
           <AssessmentStatusBadge state={state} />
         </div>
         <h1 className="page-title">{meta.name}</h1>
         <p className="page-sub">{meta.course} · {totalQuestions(sections)} questions · {totalPoints(sections)} points · {meta.security}</p>
       </div>
       <div className="actions">
-        <Button variant="outline" onClick={onBuilder}><Icon name="eye" aria-hidden="true" />View questions</Button>
-        {state === 'ready' && <Button onClick={onPreview}><Icon name="play" aria-hidden="true" />Preview as student</Button>}
-        {state === 'completed' && <Button onClick={() => { const n = exportItemAnalysisCsv(meta, sections.flatMap(s => s.questions.map(q => ({ ...q, sec: s.name }))) as AnalyzedQ[]); notify(`Downloaded results — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export results</Button>}
-        {state === 'archived' && <Button onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>}
+        <Button type="button" variant="outline" onClick={onBuilder}><Icon name="eye" aria-hidden="true" />View questions</Button>
+        {state === 'ready' && <Button type="button" variant="default" onClick={onPreview}><Icon name="play" aria-hidden="true" />Preview as student</Button>}
+        {state === 'completed' && <Button type="button" variant="default" onClick={() => { const n = exportItemAnalysisCsv(meta, sections.flatMap(s => s.questions.map(q => ({ ...q, sec: s.name }))) as AnalyzedQ[]); notify(`Downloaded results — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export results</Button>}
+        {state === 'archived' && <Button type="button" variant="outline" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>}
       </div>
     </div>
   )
@@ -398,8 +398,10 @@ function RescheduleDialog({ current, onClose, onConfirm }: {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button
+            type="button"
+            variant="default"
             disabled={!date}
             onClick={() => onConfirm(inputDateToDue(date), timeLabel)}
           ><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
@@ -448,7 +450,7 @@ function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPrev
                       <div className="text-xs text-muted-foreground">{r.note}</div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="secondary" className="font-medium" style={HEALTHY_TINT}>Approved</Badge>
+                      <StatusBadge label="Approved" icon="fa-circle-check" tint={STATUS_TINT_SUCCESS} />
                       <div className="mt-1 text-xs text-muted-foreground">{r.when}</div>
                     </div>
                   </div>
@@ -456,7 +458,7 @@ function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPrev
               ))}
             </div>
             <div className="divider" />
-            <Button variant="ghost" size="sm" onClick={onReview}><Icon name="clock-rotate-left" aria-hidden="true" />Open the full review timeline</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={onReview}><Icon name="clock-rotate-left" aria-hidden="true" />Open the full review timeline</Button>
           </CardContent>
         </Card>
 
@@ -484,8 +486,8 @@ function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPrev
           <CardContent>
             <div className="mb-2.5 text-sm font-semibold">Manage</div>
             <div className="flex flex-col gap-2">
-              <Button variant="outline" className="w-full justify-center" onClick={onUnpublish}><Icon name="lock-open" aria-hidden="true" />Unpublish to edit</Button>
-              <Button variant="ghost" className="w-full justify-center" onClick={() => setReschedule(true)}><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
+              <Button type="button" variant="outline" className="w-full justify-center" onClick={onUnpublish}><Icon name="lock-open" aria-hidden="true" />Unpublish to edit</Button>
+              <Button type="button" variant="ghost" className="w-full justify-center" onClick={() => setReschedule(true)}><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
             </div>
           </CardContent>
         </Card>
@@ -524,8 +526,8 @@ function CompletedView({ meta, sections, due, ownerName, notify, onReview, onRec
               <div className="text-base font-bold">Delivered &amp; graded</div>
               <div className="text-xs text-muted-foreground">Administered {due} · {r.students} students · grading complete. Results below are read-only.</div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setExplore(0)}><Icon name="chart-simple" aria-hidden="true" />Explore items</Button>
-            <Button variant="ghost" size="sm" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Use as blueprint</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setExplore(0)}><Icon name="chart-simple" aria-hidden="true" />Explore items</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Use as blueprint</Button>
           </div>
         </CardContent>
       </Card>
@@ -567,7 +569,7 @@ function CompletedView({ meta, sections, due, ownerName, notify, onReview, onRec
               <div className="text-base font-semibold">Item analysis</div>
               <div className="text-xs text-muted-foreground">Per-question difficulty, discrimination &amp; point-biserial from this administration. Outliers float to the top.</div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded item analysis — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded item analysis — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
           </div>
           <div className="mt-3"><ItemAnalysis allQ={r.allQ} onOpen={(i) => setExplore(i)} /></div>
         </CardContent>
@@ -627,9 +629,9 @@ function ArchivedView({ meta, sections, due, ownerName, notify, onBuilder, onRec
             <div className="mb-1 text-sm font-semibold">Reuse</div>
             <div className="mb-3.5 text-xs text-muted-foreground">Bring this exam&apos;s blueprint forward into a new assessment.</div>
             <div className="flex flex-col gap-2">
-              <Button className="w-full justify-center" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>
-              <Button variant="outline" className="w-full justify-center" onClick={onRestore}><Icon name="rotate-left" aria-hidden="true" />Restore to draft copy</Button>
-              <Button variant="ghost" className="w-full justify-center" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded archived record — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
+              <Button type="button" variant="default" className="w-full justify-center" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>
+              <Button type="button" variant="outline" className="w-full justify-center" onClick={onRestore}><Icon name="rotate-left" aria-hidden="true" />Restore to draft copy</Button>
+              <Button type="button" variant="ghost" className="w-full justify-center" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded archived record — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
             </div>
           </CardContent>
         </Card>
@@ -738,7 +740,7 @@ function questionResult(q: AnalyzedQ, students: number): QuestionResultModel {
 
 function fmtTime(s: number) { const m = Math.floor(s / 60), ss = s % 60; return m ? `${m}m ${ss}s` : `${ss}s` }
 
-const paneStyle: CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', minWidth: 0 }
+const paneStyle: CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--background)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', minWidth: 0 }
 const paneHeadStyle: CSSProperties = { padding: '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }
 
 function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
@@ -772,7 +774,7 @@ function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
           <span className="text-xs text-muted-foreground">Question {idx + 1} of {allQ.length}</span>
           <Badge variant="outline"><Icon name={qIcon(q.type)} aria-hidden="true" />{QTYPE[q.type]?.short}</Badge>
           <Badge variant="outline">{q.topic}</Badge>
-          {q.flagged && <Badge variant="destructive" className="font-medium"><Icon name="triangle-exclamation" aria-hidden="true" />Outlier</Badge>}
+          {q.flagged && <StatusBadge label="Outlier" icon="fa-triangle-exclamation" tint={STATUS_TINT_WARNING} />}
           <span className="ml-auto text-xs font-semibold">{q.points} pts</span>
         </div>
         <div className="mb-5 text-base" style={{ lineHeight: 1.5 }}>{q.stem}</div>
@@ -786,7 +788,7 @@ function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
                   <div className="mb-2 flex items-center gap-2.5">
                     <Icon name={o.correct ? 'circle-check' : (q.type === 'msq' ? 'square' : 'circle')} aria-hidden="true" style={{ color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', fontSize: 15, flexShrink: 0 }} />
                     <span className="flex-1 text-sm">{o.text}</span>
-                    {o.correct && <Badge variant="secondary" className="font-medium" style={{ backgroundColor: 'oklch(from var(--chip-2) l c h / 0.14)', color: 'var(--chip-2)' }}>Key</Badge>}
+                    {o.correct && <StatusBadge label="Key" icon="fa-circle-check" tint={STATUS_TINT_SUCCESS} />}
                     <span className="text-right text-xs font-bold" style={{ color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', width: 38 }}>{pct}%</span>
                   </div>
                   <Bar pct={o.pick * 100} color={o.correct ? 'var(--chip-2)' : (o.upper > o.lower ? 'var(--chart-4)' : 'var(--border-control-3)')} height={6} />
@@ -810,9 +812,9 @@ function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
         )}
       </div>
       <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Button variant="outline" size="sm" disabled={idx === 0} onClick={() => go(-1)}><Icon name="arrow-left" aria-hidden="true" />Previous</Button>
+        <Button type="button" variant="outline" size="sm" disabled={idx === 0} onClick={() => go(-1)}><Icon name="arrow-left" aria-hidden="true" />Previous</Button>
         <span className="text-xs text-muted-foreground" style={{ margin: '0 auto' }}>Question {idx + 1} / {allQ.length}</span>
-        <Button size="sm" disabled={idx === allQ.length - 1} onClick={() => go(1)}>Next<Icon name="arrow-right" aria-hidden="true" /></Button>
+        <Button type="button" variant="default" size="sm" disabled={idx === allQ.length - 1} onClick={() => go(1)}>Next<Icon name="arrow-right" aria-hidden="true" /></Button>
       </div>
     </div>
   )
@@ -870,7 +872,7 @@ function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
                         <Icon name={o.correct ? 'circle-check' : 'circle'} aria-hidden="true" style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : lure ? 'var(--chart-4)' : 'var(--muted-foreground)' }} />
                         <span className="flex-1 truncate text-xs">{o.text}</span>
                         {o.correct && <span className="text-xs text-muted-foreground">Key</span>}
-                        {lure && <Badge variant="secondary" className="font-medium" style={{ backgroundColor: 'oklch(from var(--chart-4) l c h / 0.14)', color: 'var(--chart-4)' }}>lures top</Badge>}
+                        {lure && <StatusBadge label="lures top" icon="fa-triangle-exclamation" tint={STATUS_TINT_WARNING} />}
                       </div>
                       <div className="flex gap-3" style={{ paddingLeft: 20 }}>
                         <GroupBar label="Top" value={o.upper} color="var(--chip-2)" />
@@ -894,17 +896,17 @@ function ResultsExplorer({ allQ, startIdx = 0, students, meta, onClose }: {
   )
 
   return (
-    <div className="exam-creation-overlay exam-creation" style={{ background: 'oklch(0.18 0.01 270 / 0.6)' }} onClick={onClose}>
+    <div className="exam-creation-overlay exam-creation" style={{ background: 'oklch(0.18 0.01 270 / 0.6)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Item performance">
       <div className="exam-creation-modal" onClick={e => e.stopPropagation()} style={{ margin: 'auto', width: 'min(1280px, 96vw)', height: '92vh', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: 'var(--background)', borderRadius: 18, padding: 18, boxShadow: 'var(--shadow-lg)' }}>
         <div className="mb-3.5 flex items-center gap-3">
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 22 }}>Item performance</div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 22 }}>Item performance</div>
           <span className="text-xs text-muted-foreground">{meta?.name} · question-by-question results</span>
           <div className="ml-auto flex items-center gap-1.5">
-            <Button variant={view === 'split' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'split'} onClick={() => setView('split')}>Split</Button>
-            <Button variant={view === 'question' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'question'} onClick={() => setView('question')}>Question</Button>
-            <Button variant={view === 'performance' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'performance'} onClick={() => setView('performance')}>Performance</Button>
+            <Button type="button" variant={view === 'split' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'split'} onClick={() => setView('split')}>Split</Button>
+            <Button type="button" variant={view === 'question' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'question'} onClick={() => setView('question')}>Question</Button>
+            <Button type="button" variant={view === 'performance' ? 'default' : 'outline'} size="sm" aria-pressed={view === 'performance'} onClick={() => setView('performance')}>Performance</Button>
           </div>
-          <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={onClose}><Icon name="xmark" aria-hidden="true" /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Close" onClick={onClose}><Icon name="xmark" aria-hidden="true" /></Button>
         </div>
 
         <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0 }}>

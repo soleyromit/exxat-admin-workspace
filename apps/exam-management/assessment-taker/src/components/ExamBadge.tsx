@@ -19,7 +19,7 @@ export interface ExamBadgeProps {
 
 export function ExamBadge({ children, title, className }: ExamBadgeProps) {
   return (
-    <Badge variant="secondary" className={`rounded-full text-xs font-semibold ${className ?? ''}`} title={title}>
+    <Badge variant="secondary" className={`text-xs font-semibold ${className ?? ''}`} title={title}>
       {children}
     </Badge>
   );

@@ -1,7 +1,12 @@
 ---
 description: No Salesforce SLDS leakage — never copy slds-* classes, lightning-* elements, SLDS token names, or synthetic-shadow assumptions into Exxat DS code.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - apps/web/**/*.{tsx,ts,css}
+  - packages/ui/**/*.{tsx,ts,css}
+tags: [tokens, anti-pattern]
+seeAlso:
+  - .cursor/rules/exxat-token-discipline.mdc
 ---
 
 # Exxat DS — no SLDS leakage

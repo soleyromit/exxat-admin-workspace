@@ -14,7 +14,8 @@ Primary and secondary sidebar / scope-panel rows **MUST** show the **full** nav 
 1. **Wrap, do not truncate** labels on the **expanded** primary sidebar and secondary panel scope rails.
 2. Use **`SidebarNavLabel`** from `@exxatdesignux/ui/components/sidebar` (or app shims) for every visible label inside **`SidebarMenuButton`**, **`SidebarMenuSubButton`**, and secondary-panel link rows (`library-secondary-nav`, `secondary-nav`).
 3. **Row chrome:** menu buttons use **`min-h-8 h-auto`** (sub-buttons **`min-h-7 h-auto`**); **`overflow-visible`** on the control — never **`truncate`** / **`text-ellipsis`** on nav copy.
-4. **Icon rail:** visible labels are hidden by DS chrome; the button **`tooltip`** carries the full string.
+4. **Badges** — primary rows: `ms-auto` inside the link; **child sub-menu rows:** flex sibling with `self-center` + `me-2` (`--exxat-spacing-2`); collapsed icon rail uses dot indicator only.
+5. **Icon rail:** visible labels are hidden by DS chrome; the button **`tooltip`** carries the full string.
 
 ## MUST NOT
 

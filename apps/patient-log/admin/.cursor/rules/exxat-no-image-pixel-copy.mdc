@@ -1,7 +1,10 @@
 ---
 description: Uploaded screenshots/mockups are IA reference only — map to Exxat DS patterns; never pixel-copy
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+tags: [ux, design]
+seeAlso:
+  - .cursor/rules/_constitution.exxat-ds.mdc
+  - .cursor/skills/exxat-senior-ux/SKILL.md
 ---
 
 # Exxat DS — uploaded images are not the implementation spec

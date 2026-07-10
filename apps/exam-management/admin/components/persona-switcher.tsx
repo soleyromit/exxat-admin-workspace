@@ -129,7 +129,7 @@ export function PersonaSwitcher() {
                   the trigger avatar (current user, line 71) keeps the
                   brand-tinted `--avatar-initials-bg`. */}
               <AvatarFallback
-                className="text-[10px] font-bold"
+                className="text-xs font-bold"
                 style={{
                   backgroundColor: 'var(--muted)',
                   color: 'var(--muted-foreground)',

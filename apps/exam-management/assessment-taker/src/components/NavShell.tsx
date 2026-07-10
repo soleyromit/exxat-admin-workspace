@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * NavShell — student portal shell, modeled on the Exxat Prism canonical sidebar.
  *
@@ -154,7 +152,9 @@ export function NavShell({ children, title }: NavShellProps) {
           {/* ─── Footer: Settings · Get Help · Profile ─────────────────── */}
           <SidebarFooter>
             <SidebarSeparator />
-            <FooterNav />
+            <nav aria-label="Account navigation">
+              <FooterNav />
+            </nav>
             <SidebarSeparator />
             <ProfileFooter entryPoint={entryPoint} />
           </SidebarFooter>

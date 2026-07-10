@@ -50,7 +50,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
             <Tooltip key={p.id}>
               <TooltipTrigger asChild>
                 <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-                  <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                     {p.initials}
                   </AvatarFallback>
                 </Avatar>
@@ -63,7 +63,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           {overflow > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px', cursor: 'pointer' }}>
+                <Badge variant="secondary" className="rounded-full text-xs" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px', cursor: 'pointer' }}>
                   +{overflow}
                 </Badge>
               </TooltipTrigger>
@@ -77,14 +77,14 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
-        <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 8 }}>
+        <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 8 }}>
           {personas.length} Collaborator{personas.length !== 1 ? 's' : ''}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {personas.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>
@@ -161,7 +161,7 @@ export function QBTitle() {
               style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', flex: 1, minWidth: 0 }}
             />
           ) : (
-            <h1 className="text-xl font-bold text-foreground" style={{
+            <h1 className="text-xl font-semibold text-foreground" style={{
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
               overflow: 'hidden',
@@ -174,7 +174,7 @@ export function QBTitle() {
             </h1>
           )}
 
-          {/* Context menu — always reserves its slot so h1 width never shifts */}
+          {/* Context menu — always reserves its slot so heading width never shifts */}
           <span style={{ visibility: (navView === 'folder' && selectedFolder) ? 'visible' : 'hidden', flexShrink: 0 }}>
             {navView === 'folder' && selectedFolder ? (
               <FolderContextMenu
@@ -199,7 +199,6 @@ export function QBTitle() {
         </div>
 
         <Button variant="default" size="default" onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')} style={{ flexShrink: 0 }}>
-          <i className="fa-light fa-plus" aria-hidden="true" />
           Add Question
         </Button>
       </div>

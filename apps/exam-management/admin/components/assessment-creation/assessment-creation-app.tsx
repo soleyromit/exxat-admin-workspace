@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Button, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui'
 import { AppCtx, NotifyBanner, type Note, type NoteTone, type LeoCtx } from './primitives'
 import {
   SECTIONS, ASSESSMENTS, sectionsForAssessment,
@@ -16,12 +17,13 @@ import {
 import { AssessmentBuilder } from './assessment-builder'
 import { AssessmentsLanding } from './screens/assessments-landing'
 import { BlueprintWizard } from './screens/wizard'
-import { ReviewPublish } from './screens/review-publish'
-import { AssessmentStatus } from './screens/status'
+import { DistributeTab } from './screens/distribute-tab'
+import { StatsTab } from './screens/stats-tab'
 import { LeoPanel } from './screens/leo-panel'
 import { PreviewSim } from './builder/preview-sim'
 
-type Screen = 'list' | 'wizard' | 'builder' | 'review' | 'status'
+type Screen = 'list' | 'wizard' | 'detail'
+type DetailTab = 'edit' | 'review' | 'distribute' | 'stats'
 
 const SEED_META: BuilderMeta = {
   id: 'a1', name: 'Cardiovascular Pharmacology — Midterm', course: 'MED-201', type: 'Exam', graded: true,
@@ -52,10 +54,12 @@ function defaultCount(type: string | null): number {
     default: return 28 // Exam / other
   }
 }
-function screenForState(state: LifecycleState): Screen {
-  if (state === 'review') return 'review'
-  if (state === 'ready' || state === 'completed' || state === 'archived') return 'status'
-  return 'builder' // draft / planned
+function screenForState(_state: LifecycleState): Screen {
+  return 'detail'
+}
+function tabForState(state: LifecycleState): DetailTab {
+  if (state === 'ready' || state === 'completed' || state === 'archived') return 'stats'
+  return 'edit'
 }
 
 export function AssessmentCreationApp() {
@@ -93,27 +97,33 @@ export function AssessmentCreationApp() {
       // Fallback: synthesize from params (e.g. action-items deep links with product ids).
       const title = params?.get('title') ?? 'Assessment'
       const type = (params?.get('type') as Assessment['type']) || 'Exam'
-      const status = params?.get('status')
+      const status = params?.get('status') ?? null
       const course = params?.get('course') || 'MED-201'
       const state = mapStatus(status)
+      const safeId = id ?? 'unknown'
       const synthetic: Assessment = {
-        id, name: title, course, type, state, questions: defaultCount(params?.get('type') ?? null),
+        id: safeId, name: title, course, type, state, questions: defaultCount(params?.get('type') ?? null),
         points: 100, owner: 'schen', collaborators: ['okafor', 'nair'], due: '10/24/2026 09:00 AM EST',
         updated: 'now', security: 'Secure', graded: true,
       }
       const m: BuilderMeta = {
-        id, name: title, course, type, graded: true, owner: 'schen', collaborators: ['okafor', 'nair'],
+        id: safeId, name: title, course, type, graded: true, owner: 'schen', collaborators: ['okafor', 'nair'],
         security: 'Secure', state, intent: '', audience: 'Year 2 · Doctor of Medicine',
       }
       const secs = sectionsForAssessment(synthetic)
-      return { screen: screenForState(state), meta: m, sections: secs.length ? secs : cloneSections() }
+      return { screen: 'detail' as Screen, meta: m, sections: secs.length ? secs : cloneSections() }
     }
-    if (view === 'review') return { screen: 'review' as Screen, meta: SEED_META, sections: cloneSections() }
-    if (view) return { screen: 'status' as Screen, meta: { ...SEED_META, state: 'completed' as LifecycleState }, sections: cloneSections() }
+    if (view === 'review') return { screen: 'detail' as Screen, meta: SEED_META, sections: cloneSections() }
+    if (view) return { screen: 'detail' as Screen, meta: { ...SEED_META, state: 'completed' as LifecycleState }, sections: cloneSections() }
     return { screen: 'list' as Screen, meta: SEED_META, sections: cloneSections() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [screen, setScreen] = useState<Screen>(initial.screen)
+  const [assessmentTab, setAssessmentTab] = useState<DetailTab>(() => {
+    const view = params?.get('view')
+    if (view === 'monitor' || view === 'analytics') return 'stats'
+    return tabForState(initial.meta.state)
+  })
   const [persona] = useState('coordinator')
   const [meta, setMeta] = useState<BuilderMeta>(initial.meta)
   const [sections, setSections] = useState<Section[]>(initial.sections)
@@ -132,20 +142,19 @@ export function AssessmentCreationApp() {
     setMeta({ id: a.id, name: a.name, course: a.course, type: a.type, graded: a.graded, owner: a.owner, collaborators: a.collaborators || [], security: a.security, state: a.state, intent: '', audience: 'Year 2 · Doctor of Medicine' })
     setSections(sectionsForAssessment(a))
     setAutoAI(false)
-    if (a.state === 'review') setScreen('review')
-    else if (a.state === 'ready' || a.state === 'completed' || a.state === 'archived') setScreen('status')
-    else setScreen('builder')
+    setAssessmentTab(tabForState(a.state))
+    setScreen('detail')
   }
 
   function statusAction(kind: 'preview' | 'unpublish' | 'restore' | 'recycle') {
     if (kind === 'preview') { setPreview({ sections, meta }); return }
-    if (kind === 'unpublish') { setMeta(m => ({ ...m, state: 'draft' })); setScreen('builder'); notify('Unpublished — now editable as a Draft', 'warn'); return }
-    if (kind === 'restore') { setMeta(m => ({ ...m, state: 'draft' })); setScreen('builder'); notify('Restored to an editable Draft copy', 'info'); return }
+    if (kind === 'unpublish') { setMeta(m => ({ ...m, state: 'draft' })); setAssessmentTab('edit'); notify('Unpublished — now editable as a Draft', 'warn'); return }
+    if (kind === 'restore') { setMeta(m => ({ ...m, state: 'draft' })); setAssessmentTab('edit'); notify('Restored to an editable Draft copy', 'info'); return }
     if (kind === 'recycle') {
       const newId = 'new' + Date.now()
       setMeta(m => ({ ...m, id: newId, name: m.name.replace(/\s*\((Fall|Spring|Summer).*?\)\s*$/, '') + ' — new draft', state: 'draft' }))
       setSections(prev => prev.map(s => ({ ...s, reviewStatus: 'in-progress', questions: s.questions.map(q => ({ ...q, flagged: null })) })))
-      setScreen('builder'); notify('Blueprint ingested — every section is now an editable draft')
+      setAssessmentTab('edit'); notify('Blueprint ingested — every section is now an editable draft')
     }
   }
 
@@ -155,7 +164,8 @@ export function AssessmentCreationApp() {
     if (pathway === 'scratch') setSections(() => [{ id: 's' + Date.now(), name: 'Section A', owner: data.owner || 'schen', reviewStatus: 'in-progress', timeLimit: 30, preRead: false, questions: [] }])
     else if (pathway === 'ai') { setSections(() => [{ id: 's' + Date.now(), name: 'Section A — AI drafted', owner: data.owner || 'schen', reviewStatus: 'in-progress', timeLimit: 30, preRead: false, questions: [] }]); setAutoAI(true) }
     else setSections(() => JSON.parse(JSON.stringify(SECTIONS)) as Section[])
-    setScreen('builder')
+    setAssessmentTab('edit')
+    setScreen('detail')
     notify(pathway === 'recycle' ? 'Blueprint ingested — customize freely' : 'Assessment created')
   }
 
@@ -167,24 +177,72 @@ export function AssessmentCreationApp() {
         <h1 className="sr-only">Assessment Builder</h1>
         {screen === 'list' && <div className="p-6"><AssessmentsLanding onCreate={() => setScreen('wizard')} onOpen={openAssessment} /></div>}
         {screen === 'wizard' && <BlueprintWizard onCancel={backToList} onFinish={finishWizard} />}
-        {screen === 'builder' && (
-          <AssessmentBuilder
-            meta={meta} setMeta={setMeta} sections={sections} setSections={setSections}
-            persona={persona} autoAI={autoAI} clearAutoAI={() => setAutoAI(false)}
-            smartTarget={smartTarget} clearSmartTarget={() => setSmartTarget(null)}
-            onBack={backToList} onReview={() => setScreen('review')}
-          />
-        )}
-        {screen === 'review' && (
-          <ReviewPublish meta={meta} setMeta={setMeta} sections={sections} persona={persona}
-            onBack={() => setScreen('builder')} onList={backToList} />
-        )}
-        {screen === 'status' && (
-          <AssessmentStatus meta={meta} sections={sections} persona={persona}
-            onBack={backToList} onList={backToList}
-            onBuilder={() => setScreen('builder')} onReview={() => setScreen('review')}
-            onPreview={() => statusAction('preview')} onUnpublish={() => statusAction('unpublish')}
-            onRestore={() => statusAction('restore')} onRecycle={() => statusAction('recycle')} />
+        {screen === 'detail' && (
+          <Tabs
+            value={assessmentTab}
+            onValueChange={v => setAssessmentTab(v as DetailTab)}
+            className="flex flex-col"
+          >
+            {/* outer lifecycle tab bar */}
+            <div className="flex items-center border-b px-4 h-12 shrink-0">
+              <Button type="button" variant="ghost" size="sm" onClick={backToList} className="mr-3 shrink-0 text-muted-foreground">
+                <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+                All assessments
+              </Button>
+              <div className="h-4 w-px bg-border mx-1 shrink-0" aria-hidden="true" />
+              <TabsList aria-label="Assessment lifecycle" className="bg-transparent border-0 h-12 gap-0 rounded-none p-0 ml-1">
+                <TabsTrigger value="edit" className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent px-4">
+                  Edit
+                </TabsTrigger>
+                <TabsTrigger value="review" disabled className="h-12 rounded-none px-4 opacity-50 cursor-not-allowed">
+                  Review
+                  <Badge variant="secondary" className="ml-1.5 py-0 px-1.5">Phase 2</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="distribute" className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent px-4">
+                  Distribute
+                </TabsTrigger>
+                <TabsTrigger value="stats" className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent px-4">
+                  Stats
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="edit" className="mt-0 flex-1 min-h-0">
+              <AssessmentBuilder
+                meta={meta} setMeta={setMeta} sections={sections} setSections={setSections}
+                persona={persona} autoAI={autoAI} clearAutoAI={() => setAutoAI(false)}
+                smartTarget={smartTarget} clearSmartTarget={() => setSmartTarget(null)}
+                embedded
+                onBack={backToList}
+                onReview={() => setAssessmentTab('distribute')}
+              />
+            </TabsContent>
+
+            <TabsContent value="review" className="mt-0 p-8">
+              <div className="max-w-md">
+                <p className="text-sm font-semibold text-foreground mb-1">Review &amp; approval — Phase 2</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Formal review workflows, multi-reviewer sign-off, and section-level delegation are planned for Phase 2.
+                  You can publish directly from the Distribute tab.
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAssessmentTab('distribute')}>
+                  <i className="fa-light fa-share" aria-hidden="true" />
+                  Go to Distribute
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="distribute" className="mt-0 flex-1 min-h-0">
+              <DistributeTab meta={meta} setMeta={setMeta} sections={sections} persona={persona}
+                onBack={() => setAssessmentTab('edit')} onList={backToList} />
+            </TabsContent>
+
+            <TabsContent value="stats" className="mt-0 flex-1 min-h-0">
+              <StatsTab meta={meta} sections={sections} persona={persona}
+                onBack={backToList} onList={backToList}
+                onBuilder={() => setAssessmentTab('edit')} />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
@@ -195,7 +253,7 @@ export function AssessmentCreationApp() {
         ctx={leo.ctx}
         sections={sections}
         onClose={closeLeo}
-        onReplace={(q: Question) => { closeLeo(); if (screen === 'builder') setSmartTarget({ q }); else notify('Open the builder to apply replacements', 'info') }}
+        onReplace={(q: Question) => { closeLeo(); if (screen === 'detail' && assessmentTab === 'edit') setSmartTarget({ q }); else notify('Switch to Edit to apply replacements', 'info') }}
       />
     </AppCtx.Provider>
   )

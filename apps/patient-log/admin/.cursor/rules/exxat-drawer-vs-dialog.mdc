@@ -1,7 +1,15 @@
 ---
 description: Exxat DS — drawer/sheet vs modal dialog vs route for flows and confirmations.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*drawer*
+  - components/**/*Drawer*
+  - components/ui/sheet.tsx
+  - components/ui/dialog.tsx
+tags: [overlay]
+seeAlso:
+  - docs/exxat-ds/drawer-vs-dialog-pattern.md
+  - .cursor/skills/exxat-overlays/SKILL.md
 ---
 
 # Exxat DS — drawer vs dialog

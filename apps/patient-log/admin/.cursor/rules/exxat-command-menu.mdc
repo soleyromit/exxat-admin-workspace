@@ -1,7 +1,13 @@
 ---
 description: Exxat DS — global command palette (⌘K) as search + quick AI vs Ask Leo for long answers.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/command-menu.tsx
+  - lib/command-menu-config.ts
+  - lib/command-menu-search-data.ts
+tags: [shell, search]
+seeAlso:
+  - docs/exxat-ds/command-menu-pattern.md
 ---
 
 # Exxat DS — global command palette (`CommandMenu`)

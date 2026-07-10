@@ -1,7 +1,13 @@
 ---
 description: Exxat DS — no Vaul Drawer primitive; side panels use Sheet only
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*drawer*
+  - components/ui/sheet.tsx
+  - packages/ui/src/components/ui/sheet.tsx
+tags: [overlay]
+seeAlso:
+  - .cursor/skills/exxat-overlays/SKILL.md
 ---
 
 # Exxat DS — no Vaul

@@ -100,7 +100,7 @@ export function PreviewSim({ sections, meta, onClose }: { sections: Section[]; m
         {([['Cached', 24, 'var(--chip-1)'], ['Started', 21, 'var(--chip-2)'], ['Issues', 2, 'var(--chart-4)']] as Array<[string, number, string]>).map(([l, v, c]) => (
           <div key={l} style={{ background: 'var(--muted)', borderRadius: 12, padding: '9px 11px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{l}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 20, color: c }}>{v}</div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 20, color: c }}>{v}</div>
           </div>
         ))}
       </div>
@@ -137,7 +137,7 @@ export function PreviewSim({ sections, meta, onClose }: { sections: Section[]; m
     <div className="exam-creation-overlay exam-creation" style={{ background: 'oklch(0.18 0.01 270 / 0.6)' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ margin: 'auto', width: 'min(1280px, 96vw)', height: '92vh', display: 'flex', flexDirection: 'column', background: 'var(--background)', borderRadius: 18, padding: 18, boxShadow: 'var(--shadow-lg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 22 }}>Preview & simulation</div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 300, fontSize: 22 }}>Preview & simulation</div>
           <span className="hint">Validates navigation rules, tools & proctor controls before publishing</span>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             <Button variant={view === 'split' ? 'secondary' : 'ghost'} size="sm" aria-pressed={view === 'split'} onClick={() => setView('split')}>Split</Button>

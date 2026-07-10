@@ -1,5 +1,6 @@
 ---
 name: ds-updates-watcher
+model: claude-sonnet-4-6
 description: Use when `docs/governance/ds-updates/pending-review.md` is non-empty (or Romit invokes `/check-ds-updates`). Reads DS submodule deltas (Admin exxat-ds or Student studentUX), maps each delta to product code (greps for removed token names / component imports + finds use cases for added ones), writes a proposal MD to `docs/governance/ds-updates/YYYY-MM-DD-<slug>.md`. The proposal flags each delta as ADOPT / MIGRATE / DROP / WATCH with cited file:line evidence. The watcher never commits — Romit + parent review and apply.
 tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit
@@ -33,7 +34,7 @@ You PROPOSE. You never COMMIT. Romit + the parent review.
 2. **Product code** — verify consumer-side impact before proposing:
    - Admin consumers: `apps/*/admin/**/*.{tsx,ts,css}`
    - Student consumers: `apps/*/student/**/*.{tsx,ts,css}`
-   - Cross-cutting: workspace `CLAUDE.md`, per-product `apps/*/CLAUDE.md`, `docs/CLAUDE-DS-REFERENCE.md`
+   - Cross-cutting: workspace `CLAUDE.md`, per-product `apps/*/CLAUDE.md`, `node tools/ds/source.mjs` (+ globals.css)
 
 3. **Past watcher runs** — `docs/governance/ds-updates/*.md` MDs. Read the most recent 2 to:
    - Avoid re-proposing previously REJECTED items
@@ -117,7 +118,7 @@ Restraint:
 
 If the evidence is ambiguous, ASK:
 1. Is the renamed component a true rename (same API) or a replacement (new API)? Without source-side context, the watcher can't tell.
-2. Should we update `docs/CLAUDE-DS-REFERENCE.md` immediately or batch with next consumer-code migration?
+2. Should we update `node tools/ds/source.mjs` (+ globals.css) immediately or batch with next consumer-code migration?
 
 ## Self-retiring queue
 

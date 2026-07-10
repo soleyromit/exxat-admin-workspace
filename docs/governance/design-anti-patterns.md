@@ -2,7 +2,7 @@
 
 > Enforced for every UI session. Read before writing any component.  
 > **Source:** Romit's explicit rejection (2026-05-21) of "basic Claude design."  
-> **Pairs with:** `docs/CLAUDE-DS-REFERENCE.md`, `docs/watch/ds-snapshot.json`, Mobbin MCP
+> **Pairs with:** `node tools/ds/source.mjs` (+ globals.css), `node tools/ds/source.mjs --list`, Mobbin MCP
 
 ---
 

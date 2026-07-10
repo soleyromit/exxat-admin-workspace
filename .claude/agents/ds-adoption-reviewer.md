@@ -1,6 +1,7 @@
 ---
 name: ds-adoption-reviewer
-description: Use BEFORE writing any new component file under apps/<product>/<role>/components/, and before building any feature that renders tabular data, KPI cards, charts, drawers, command palettes, or other organism-level UI. The agent reads the canonical DS library (docs/governance/ds-adoption.md + @exxatdesignux/ui dist types + docs/governance/ds-component-examples.md + the localhost:4000 library viewer if a URL is supplied) and the proposed spec, then returns one of three verdicts — IMPORT / VENDOR / HAND-ROLL with justification. Reserve for component-introduction decisions; not for prop tweaks or styling-only changes.
+model: claude-sonnet-4-6
+description: Use BEFORE writing any new component file under apps/<product>/<role>/components/, and before building any feature that renders tabular data, KPI cards, charts, drawers, command palettes, or other organism-level UI. The agent reads the canonical DS library (docs/governance/ds-adoption.md + @exxatdesignux/ui dist types + the real `.d.ts` (via `node tools/ds/source.mjs`) + the localhost:4000 library viewer if a URL is supplied) and the proposed spec, then returns one of three verdicts — IMPORT / VENDOR / HAND-ROLL with justification. Reserve for component-introduction decisions; not for prop tweaks or styling-only changes.
 tools: Read, Bash, Grep, Glob, WebFetch
 disallowedTools: Edit, Write, NotebookEdit
 isolation: worktree
@@ -18,7 +19,7 @@ For a proposed component or feature:
 
 1. **Parse the parent's request** to identify the intent (what UI does this build? table, drawer, KPI strip, chart, navigation, etc.).
 2. **Read the registry** at `docs/governance/ds-adoption.md` — the canonical mapping of intent → DS organism → adoption strategy.
-3. **Cross-check the DS package** — read `docs/governance/ds-component-examples.md` first for canonical usage + NEVER rules, then the `.d.ts` type definition at `apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts` for the full prop API.
+3. **Cross-check the DS package** — read the real `.d.ts` (via `node tools/ds/source.mjs`) first for canonical usage + NEVER rules, then the `.d.ts` type definition at `apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts` for the full prop API.
 4. **Cross-check sister products** (`apps/exam-management/admin/`, `apps/pce/admin/`, etc.) for prior adoption patterns. If a sister product already uses the organism (or already hand-rolled it), surface that — the parent should align.
 5. **Return one verdict**:
    - `IMPORT` — the DS exports this from `@exxatdesignux/ui`; the parent imports and uses, no copy.
@@ -40,7 +41,7 @@ If any of these are missing, ask the parent for the one missing fact ONLY (don't
 
 ### 1. Plan (one line, do not skip)
 
-Echo back: "Reviewing adoption for: <intent>. Target: <product/role>. Will check registry → ds-component-examples → @exxatdesignux/ui type defs → sister-product adoption."
+Echo back: "Reviewing adoption for: <intent>. Target: <product/role>. Will check registry → .d.ts (node tools/ds/source.mjs) → @exxatdesignux/ui type defs → sister-product adoption."
 
 ### 2. Read the registry
 
@@ -56,7 +57,7 @@ The canonical DS is now **`@exxatdesignux/ui`** (npm package, v0.6.17+). Do NOT 
 
 **Step 3a — Canonical examples (highest fidelity, read first):**
 ```
-Read: docs/governance/ds-component-examples.md
+Read: the real `.d.ts` (via `node tools/ds/source.mjs`)
 ```
 This is the source-of-truth for correct JSX usage: required props, variants, common mistakes, and NEVER rules for each organism. Always cite the relevant section in your verdict.
 
@@ -103,14 +104,14 @@ Return ONE of these structured responses:
 **Use:** `import { <Name> } from '@exxatdesignux/ui'`
 **CSS:** Confirm root layout imports `@import '@exxatdesignux/ui/globals.css'` (only needs to be once per product)
 **Library demo:** `http://localhost:4000/library/<id>` (or n/a if server not running)
-**Canonical example:** `docs/governance/ds-component-examples.md § <ComponentName>` — cite the exact usage pattern
+**Canonical example:** the real `.d.ts` (via `node tools/ds/source.mjs`) § <ComponentName>` — cite the exact usage pattern
 **Reference implementation in workspace:** `<file:line>` (or "no prior use yet")
 
 **What to use:** <list of variants/slots/props that match the intent — derived from .d.ts type defs>
-**What NOT to do:** <common failure mode — cite the NEVER section from ds-component-examples.md>
+**What NOT to do:** <common failure mode — cite the NEVER section from the real `.d.ts` (`node tools/ds/source.mjs`)>
 
 **Verification:**
-- canonical examples: docs/governance/ds-component-examples.md § <Name>  ✓
+- canonical examples: the real `.d.ts` (via `node tools/ds/source.mjs`) § <Name>  ✓
 - type def: apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts  ✓
 - sister products: <list of existing correct imports>
 ```
@@ -135,10 +136,10 @@ Return ONE of these structured responses:
 **Reference vendor in workspace:** `apps/pce/admin/components/data-table/` (includes defaultGroupBy, groupLabels, groupOrder extensions)
 
 **After vendor: usage pattern**
-<short JSX example matching docs/governance/ds-component-examples.md pattern>
+<short JSX example matching the real `.d.ts` (via `node tools/ds/source.mjs`) pattern>
 
 **Verification:**
-- canonical base: docs/governance/ds-component-examples.md § <Name>  ✓
+- canonical base: the real `.d.ts` (via `node tools/ds/source.mjs`) § <Name>  ✓
 - source vendor: <file>  ✓
 - sister products: <list>
 ```

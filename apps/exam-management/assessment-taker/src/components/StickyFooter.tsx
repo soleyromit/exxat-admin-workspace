@@ -41,7 +41,7 @@ export function StickyFooter({
       )}
 
       <span className="text-sm font-medium text-muted-foreground">
-        Q {currentIndex + 1} <span>of {totalQuestions}</span>
+        Q {currentIndex + 1} of {totalQuestions}
       </span>
 
       <DSButton

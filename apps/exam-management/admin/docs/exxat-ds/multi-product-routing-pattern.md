@@ -11,7 +11,7 @@
 >
 > `apps/web/stores/app-store.ts` and `apps/web/contexts/product-context.tsx`
 > are now thin **re-export shims** of those package entries; the same is true
-> in `packages/ui/template-vite` so new scaffolds get the canonical store the
+> in `packages/ui/generated-starter` so new scaffolds get the canonical store the
 > moment they land. Customer apps register their own products via
 > [`registering-a-product.md`](./registering-a-product.md).
 

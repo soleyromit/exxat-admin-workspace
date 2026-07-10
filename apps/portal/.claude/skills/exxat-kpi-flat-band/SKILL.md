@@ -6,6 +6,8 @@ user-invocable: true
 
 # Exxat DS — KPI flat band
 
+> **Consolidated skill:** prefer [`.cursor/skills/exxat-kpi/SKILL.md`](../exxat-kpi/SKILL.md) for new work.
+
 **Rule:** `.cursor/rules/exxat-kpi-flat-band.mdc`  
 **Doc:** `apps/web/docs/kpi-flat-band-pattern.md`
 

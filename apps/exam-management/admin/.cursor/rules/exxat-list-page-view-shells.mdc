@@ -22,6 +22,7 @@ Domain logic (columns, tiles, folder trees) stays in **`*-table.tsx` / `*-client
 ## MUST NOT
 
 - Wrap **`DataTable`** (or its outer toolbar shell) in **`ListPageViewFrame`** if that **duplicates** horizontal inset already applied by **`DataTable`** / **`DataTableToolbar`** — see **`AGENTS.md` §5** (double indent).
+- Wrap **`HubTable`** in a parent **`px-*` / `mx-*`** section that also contains the table body — pad **section intro only**; table stays full-bleed (**`exxat-data-tables.mdc`** → Table edge inset).
 - Ship **view-only** layout classes only inside **`src/views/<route>.tsx`** (or any route entry) for a hub that other entities will mirror — belong in **`data-views/`** or **`templates/`**.
 
 ## See also

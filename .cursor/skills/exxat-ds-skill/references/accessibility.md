@@ -93,14 +93,22 @@ This is the single source of truth for all accessibility requirements in Exxat D
 - Do NOT misuse `tablist`/`tab` for mixed-control toolbars
 
 ### Touch Targets (WCAG 2.2 — 2.5.8)
-- Interactive controls: minimum **24×24 CSS pixels**, OR 24px spacing so hit areas don't overlap
-- Icon-only buttons: `size-6` or `min-h-6 min-w-6` — **never** `size-4` as the sole target
+- Interactive controls: minimum **24×24 CSS pixels** in **computed** layout (DevTools), OR 24px spacing so hit areas don't overlap
+- Prefer **`size-8`** for tree expand chevrons, folder rail icon buttons, view-settings triggers — **`size-6`** can compute ~22.5px at scaled root font
+- **Never** `size-4` as the sole target
+
+### Sidebar icon rail (SC 2.4.4)
+- Collapsed primary sidebar hides labels via CSS — **`SidebarMenuButton asChild` → `Link`** needs **`aria-label`** when collapsed
+- **Never** `aria-label={undefined}` on the child (use conditional spread) — it overrides the button's collapsed tooltip label
+
+### Vertical resize handles (SC 4.1.2)
+- Panel/column drag edges: **`verticalResizeSeparatorAria()`** from `packages/ui/src/lib/edge-resize-handle.ts`
 
 ## 10. Component-Specific Requirements
 
 | Component | Requirements |
 |-----------|-------------|
-| Sidebar nav | `aria-current="page"` on active link; badges include value in `aria-label`; collapsed state → tooltip shows label |
+| Sidebar nav | `aria-current="page"` on active link; badges include value in `aria-label`; **icon rail** → `aria-label` on every `Link` (`{...(collapsed ? { "aria-label": title } : {})}`); never `aria-label={undefined}` on child links |
 | DataTable header column menu | `group-focus-within/th:opacity-100`; wrap trigger with `<Tip label="Column options">` |
 | Sort button | `<Tip label="Sort by {col}">` + `aria-sort` attribute on `<th>` |
 | Selection checkbox | `aria-label="Select {row name}"` |

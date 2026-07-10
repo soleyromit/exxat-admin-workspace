@@ -18,7 +18,7 @@ Today products import from `@exxat/ds/packages/ui/src` and `@exxat/student/...` 
 |---|---|---|
 | **1. DS contract** | Planned | An `@active-ds` indirection alias + contract doc describing required tokens / required component slots. Discovered empirically from Tier 2's diffs. |
 | **2. DS-update watcher (this)** | **Shipped 2026-05-12** | Continuous sync — every submodule update produces a proposal MD. The diffs feed Tier 1's contract surface. |
-| **3. Per-theme verification** | Planned | Extends `visual-review` to capture every route × every active theme × interaction states. Static audits run per-theme. Before-and-after gating around DS swaps. |
+| **3. Per-theme verification** | Planned | Extends `ds-conformance-reviewer` to capture every route × every active theme × interaction states. Static audits run per-theme. Before-and-after gating around DS swaps. |
 
 Tier 2 first because the diffs *show* what the contract needs to be.
 
@@ -43,7 +43,7 @@ Tier 2 first because the diffs *show* what the contract needs to be.
 
 | Date | Slug | Status | Summary |
 |---|---|---|---|
-| _(none yet — first run is pending)_ | | | |
+| 2026-07-07 | chart-shell-primitives-upstream | PROPOSED | ADOPT ChartCard/ChartFigure/ChartDataTable/CHART_AXIS_TICK from DS workspace app; ADOPT MicroTrend from PCE (follow-up); 2 product copies to delete when shipped |
 
 ## How to invoke
 

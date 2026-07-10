@@ -1,6 +1,7 @@
 ---
 name: state-review
-description: Use BEFORE claiming any page that fetches async data, accepts form input, or renders a list/grid is "done." Reads `docs/governance/component-state-catalog.md` and the file(s) the parent is about to claim done, then verifies every required state (loading / empty / error / validation / submission / disabled / focus) is handled per DS component. Returns GREENLIGHT or NEEDS-MORE per file with cited gaps. Pairs with `verification-reviewer` and `visual-review` — this agent is the state-coverage slice of Pattern A.
+model: claude-sonnet-4-6
+description: Use BEFORE claiming any page that fetches async data, accepts form input, or renders a list/grid is "done." Reads `docs/governance/component-state-catalog.md` and the file(s) the parent is about to claim done, then verifies every required state (loading / empty / error / validation / submission / disabled / focus) is handled per DS component. Returns GREENLIGHT or NEEDS-MORE per file with cited gaps. Pairs with `verification-reviewer` and `ds-conformance-reviewer` — this agent is the state-coverage slice of Pattern A.
 tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit
 isolation: worktree
@@ -131,7 +132,7 @@ N files reviewed · M GREENLIGHT · K NEEDS-MORE · J audit hits in scope
 
 - **Static audit** (`scripts/ds-adoption-audit.py`) flags state-coverage gaps as warnings — phase-0 catches the easy ones.
 - **State-review subagent** (you) goes deeper — reads the catalog, applies per-component required-states, flags the harder ones the regex can't see (e.g., "Skeleton is imported but only rendered in one of three loading branches").
-- **Visual review** (`.claude/agents/visual-review`) closes the loop by actually running the page in headless chrome and screenshotting the empty / loading / error routes.
+- **Visual review** (`.claude/agents/ds-conformance-reviewer`) closes the loop by actually running the page in headless chrome and screenshotting the empty / loading / error routes.
 
 The three together = Pattern A (clean ≠ fine) at full depth.
 

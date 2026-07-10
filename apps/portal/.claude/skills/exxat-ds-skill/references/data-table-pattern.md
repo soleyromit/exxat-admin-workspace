@@ -16,12 +16,48 @@
 
 ```
 HubTable (inside ListPageTemplate)  ← canonical hub wrapper
-  └── DataTable                     ← base table component
+  └── DataTable                     ← base table component (owns toolbar px-4 + grid mx-4 inset)
   └── useTableState                 ← sort/filter/column/group state
   └── toolbarSlot                   ← properties button + filter chips + search
         └── TablePropertiesDrawer
   └── renderListRow / renderers     ← list, board, dashboard, folder, panel, tree
 ```
+
+### Pagination (HubTable)
+
+**User path:** Table view → **Properties** (sliders) → **Appearance → Pagination**. The toggle is **table-view only** — it does not appear on board, list, dashboard, folder, or panel views.
+
+**When enabled**, `HubTable` mounts **`CountSyncer`** + **`PaginationBar`** on **table** and **list** views and slices rows through **`useTableState.pagedRows`**. Board / dashboard / folder views are unaffected.
+
+| Mode | Hub client wiring | Use when |
+|------|-------------------|----------|
+| **Uncontrolled (default)** | Omit `pagination` and `onPaginationChange` | Library, Team, Placements — user toggles in Properties; `HubTable` owns `internalPaginationEnabled` |
+| **Controlled** | Pass **both** `pagination={bool}` and `onPaginationChange={setter}` | Page-level state (e.g. `columns-showcase.tsx` demo with `paginationInitialPageSize={5}`) |
+| **Server / external paging** | Pass `paginationOverride={{ page, pageSize }}` from the parent | Fetch one page at a time; parent owns page state — see **`docs/large-dataset-strategy.md`** |
+
+**MUST NOT**
+
+- Wire `onPaginationChange={() => {}}` — the drawer default is a **no-op**; the toggle will not activate pagination.
+- Pass only `pagination={true}` without a real `onPaginationChange` when you need **page-level** controlled state — without the handler, `HubTable` stays in uncontrolled mode.
+- Hand-roll `PaginationBar` on hubs that use `HubTable` unless you override via `tableRenderer` or `paginationOverride` (server mode).
+
+**Persistence:** With `<HubTable persistKey="…">`, the pagination on/off flag, current page, and page size save in lifecycle **`extras`** and restore on reload (per `persistTabId`).
+
+**References:** `packages/ui/src/components/data-views/hub-table.tsx` (`effectivePagination`, `chromeOwnedPagination`); `components/library-table.tsx` (uncontrolled); `components/columns-showcase.tsx` (controlled + small page size).
+
+**Monorepo dev:** `@exxatdesignux/ui` loads from **`dist/`**. After editing `hub-table.tsx`, run `pnpm --filter @exxatdesignux/ui build` and restart Vite.
+
+### Table edge inset (no double gutter)
+
+**`DataTable` owns horizontal rhythm** via **`DATA_TABLE_TOOLBAR_INSET_CLASS`** (`px-4 lg:px-6`) and **`DATA_TABLE_GRID_INSET_CLASS`** (`mx-4 lg:mx-6`) in **`packages/ui/src/lib/table-edge-inset.ts`**.
+
+| Context | Pattern |
+|---------|---------|
+| **`ListPageTemplate` hub** | `HubTable` full-bleed in `renderContent` — no parent `px-*` |
+| **Dashboard / report section** | `px-4 lg:px-6` on intro only; `HubTable` sibling without wrapper padding |
+| **Folder / board / panel views** | `ListPageViewFrame` gutter — **not** on the table branch |
+
+**MUST NOT** wrap intro + table in one padded `<section>`. **Dev:** parent stacked inset → console **`[Exxat DS][DataTable]`**. Rule: **`.cursor/rules/exxat-data-tables.mdc`**.
 
 All imports:
 ```ts
@@ -187,6 +223,7 @@ function FooDrawerToolbar({ state, totalRows, filterFields, fieldDefinitionsForD
     rows, sortRules, setSortRules, addSortRule, removeSortRule, toggleSortDir,
     colOrder, setColOrder, hiddenCols, toggleColVisibility, moveCol, groupBy, setGroupBy, sortKey,
   } = state
+  const [paginationEnabled, setPaginationEnabled] = React.useState(false)
 
   return (
     <>
@@ -209,7 +246,7 @@ function FooDrawerToolbar({ state, totalRows, filterFields, fieldDefinitionsForD
         open={sheetOpen} onOpenChange={setSheetOpen}
         showGridlines={showGridlines} onShowGridlinesChange={setShowGridlines}
         rowHeight={rowHeight} onRowHeightChange={setRowHeight}
-        pagination={false} onPaginationChange={() => {}}
+        pagination={paginationEnabled} onPaginationChange={setPaginationEnabled}
         activeFilters={activeFilters} onAddFilter={k => addFilter(k, true)}
         onUpdateFilter={updateFilter} onRemoveFilter={removeFilter}
         getFilterConnector={getConnector} onToggleFilterConnector={toggleConnector}

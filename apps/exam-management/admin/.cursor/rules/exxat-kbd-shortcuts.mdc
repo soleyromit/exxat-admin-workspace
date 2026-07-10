@@ -1,7 +1,11 @@
 ---
 description: Exxat DS — show Kbd hints on primary/secondary actions, search, Ask Leo; avoid browser-reserved chords.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*.tsx
+tags: [keyboard, a11y]
+seeAlso:
+  - ./AGENTS.md
 ---
 
 # Exxat DS — keyboard shortcuts (`Kbd`)

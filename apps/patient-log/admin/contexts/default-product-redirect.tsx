@@ -5,7 +5,7 @@ import { DashboardLoadingFallback } from "@/src/pages/_dashboard-loading"
 
 /**
  * Cold-start `/` → tenant default product dashboard. Wraps the framework's
- * redirect with the template's default loading fallback.
+ * redirect with apps/web's default loading fallback.
  */
 export function DefaultProductRedirect() {
   return <PackageDefaultProductRedirect loadingFallback={<DashboardLoadingFallback />} />

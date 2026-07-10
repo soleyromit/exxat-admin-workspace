@@ -21,6 +21,32 @@ Decision files live at: `admin/docs/decisions/` — one per meeting, template at
 
 ---
 
+## MANDATORY: Documentation-first gate (assessment creation)
+
+**A master spec file gates ALL assessment creation implementation.**
+
+Check: `admin/docs/superpowers/specs/2026-06-13-assessment-creation-master-spec.md`
+
+- **File exists** → documentation pass is complete. Implement against it. Any new Aarti/Vishaka meeting = update the master spec BEFORE resuming implementation.
+- **File does not exist** → you are in a documentation pass. Complete every step below before writing a single word of architecture, refactors, or implementation.
+
+**Documentation pass — mandatory steps in order:**
+
+1. `get_meeting_transcript` for every meeting ID listed in this file (not summaries — raw transcripts)
+2. Read PRD: `/Users/romitsoley/Downloads/Assessments PRD.docx`
+3. Read all existing specs: `admin/docs/superpowers/specs/*.md`
+4. Read gap analyses: `admin/docs/creation-flow-gap-analysis.md` + `admin/docs/assessment-creation-v0-requirements.md`
+5. Create `admin/docs/decisions/<meeting-id>.md` for any meeting that has no decision file yet
+6. Update `admin/docs/decisions/feature-registry.md` with every gap found
+7. Write out every conflict between sources explicitly — which source wins and why (one line each)
+8. Write the master spec to `admin/docs/superpowers/specs/YYYY-MM-DD-<feature>-master-spec.md`
+
+**Allowed outputs during a documentation pass:** reading files, creating decision files, updating `feature-registry.md`, writing the master spec.
+
+**Banned during a documentation pass:** architecture proposals, refactor suggestions, implementation questions, component naming, file path decisions. Any one of these before step 8 is a violation — even if it "feels like just a quick clarification."
+
+---
+
 ## MANDATORY: After any new Granola meeting
 
 When a new exam-management Granola meeting happens:
@@ -44,6 +70,8 @@ Full decision files at `admin/docs/decisions/`:
 - `f274ade0-f47a-4d61-bbdc-1eeee5e08ca0` — Curriculum mapping, base entities, product alignment (May 8)
 - `f274ade0` — Curriculum mapping, base entities, product alignment: Vishaka + Aarti (May 8)
 
+- `2026-06-04-aarti-teams` — Assessment lifecycle (4-step: Create→Review→Distribute→Stats), distribution UI, monitoring, Prism coexistence (Jun 4) ← **SCOPE OVERRIDE: Review = Phase 2; file at admin/docs/decisions/2026-06-04-aarti-teams.md**
+
 Add new meeting IDs here as they happen.
 
 ---
@@ -60,9 +88,11 @@ Add new meeting IDs here as they happen.
 2. Transcript alignment: implementation vs Gate 1 transcript decisions (✅ match / ⚠ assumption / ❌ contradiction)
 3. Spawn `compliance-reviewer` — WCAG 2.1 AA + FERPA. **NEEDS-MORE blocks done claim.**
 4. Spawn `state-review` for list/form/async pages. **NEEDS-MORE blocks done claim.**
-5. Spawn `verification-reviewer` — Patterns A-F. **NEEDS-MORE blocks done claim.**
+5. Spawn `verification-reviewer` — all current patterns in `docs/governance/verification-discipline.md`. **NEEDS-MORE blocks done claim.**
 6. Grep: `uppercase tracking-wide` · `py-20 text-center` · `color-mix(in oklch` — any hit = violation
-7. Self-reflection: 3-5 bullets (what went well / mistakes / what to check next time)
+7. Spawn `Explore` to grep-verify every claimed change exists — never claim done from session memory (Pattern G).
+8. **Evidence block on every done claim** — axe-core path or "not run", DS import file:line per new component, grep result (Pattern I).
+9. **Two-tier verdict (Pattern L):** `GREENLIGHT (static)` — code analysis only / `GREENLIGHT (runtime)` — interactions.mjs ran. List what was NOT verified.
 
 **If a P1 flag or PRD change is mentioned:** read `docs/watch/digest-latest.md`
 
@@ -135,7 +165,7 @@ app/(app)/students/               — student list + detail (4 tabs)
 | `apps/exam-management/docs/patterns/ui-patterns.md` | Before writing any UI component — contains full canonical component map |
 | `docs/governance/design-anti-patterns.md` | Before any UI component — banned pattern blacklist |
 | `docs/governance/component-consistency.md` | DataTable, header, sheet, dialog governance |
-| `docs/CLAUDE-DS-REFERENCE.md` | Need DS component list, tokens, theme system |
+| `node tools/ds/source.mjs` (+ globals.css) | Need DS component list, tokens, theme system |
 | `docs/BASE-ENTITIES.md` | Building Student / Faculty / Course / Term pages |
 | `docs/CLAUDE-RULES.md` | Need full always/never rules, font loading, workspace config |
 | `docs/watch/digest-latest.md` | P1 flag or PRD change mentioned |

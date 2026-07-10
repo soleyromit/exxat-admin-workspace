@@ -42,6 +42,8 @@ emit({
     `wizard / settings card / store / nav config / mock data: load the ` +
     `exxat-senior-ux skill and post a design brief, then END THE TURN with ` +
     `"Ready to build — confirm or edit." and wait for the user.\n` +
+    `If the user attached a screenshot/mockup: IA only (labels, fields, nav) — ` +
+    `map to DS reference hubs; MUST NOT pixel-copy or "match the screenshot".\n` +
     `Editing framework SHIM files (one-line re-exports from ` +
     `@exxatdesignux/ui/...) is almost always wrong — register new products ` +
     `with defineProduct() instead. See docs/exxat-ds/registering-a-product.md.`,

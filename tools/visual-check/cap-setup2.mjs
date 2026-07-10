@@ -1,0 +1,10 @@
+import { chromium } from 'playwright'
+const b=await chromium.launch(); const p=await (await b.newContext({viewport:{width:1440,height:1000}})).newPage()
+const errs=[]; p.on('pageerror',e=>errs.push('PAGEERR: '+e.message))
+await p.goto('http://localhost:3005/surveys/setup',{waitUntil:'domcontentloaded',timeout:60000}); await p.waitForTimeout(4000)
+await p.locator('#term-season').click(); await p.waitForTimeout(400); await p.getByRole('option',{name:'Fall'}).click(); await p.waitForTimeout(400)
+await p.locator('#academic-year').click(); await p.waitForTimeout(400); await p.getByRole('option',{name:/2026/}).first().click(); await p.waitForTimeout(800)
+await p.getByRole('checkbox').first().click(); await p.waitForTimeout(700)
+await p.screenshot({path:'/tmp/visual-check/p1/05-fixed.png',fullPage:true})
+console.log('pageerrors:', errs.length?errs:'none')
+await b.close()

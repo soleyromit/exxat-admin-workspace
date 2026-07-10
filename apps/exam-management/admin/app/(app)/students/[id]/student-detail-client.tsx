@@ -539,7 +539,7 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
 
   const enrolledIds = new Set(student.courseEnrollments.map(e => e.offeringId))
   const availableOfferings = courseOfferingRows.filter(
-    o => (o.status === 'ongoing' || o.status === 'upcoming') && !enrolledIds.has(o.id)
+    o => (o.status === 'active' || o.status === 'upcoming') && !enrolledIds.has(o.id)
   )
 
   function handleEnroll() {

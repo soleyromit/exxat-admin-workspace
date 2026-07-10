@@ -20,6 +20,10 @@ def emit(event: str, **fields) -> None:
             "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "event": event,
             "session": os.environ.get("CLAUDE_SESSION_ID", ""),
+            # prompt_id (CC 2.1.196 / TS SDK 0.3.196): join key for correlating
+            # telemetry events to OTEL prompt-level spans. Empty on older builds
+            # (near-zero risk). A caller may override it via **fields.
+            "prompt_id": os.environ.get("CLAUDE_PROMPT_ID", ""),
             **fields,
         }
         with _EVENTS_PATH.open("a") as f:

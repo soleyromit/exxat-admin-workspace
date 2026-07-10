@@ -36,8 +36,10 @@ const ALLOWED_FONTS = ['ivypresto', 'inter', 'mono', 'sfmono', 'menlo', 'monospa
 
 const b = await chromium.launch({ headless: true })
 const pg = await (await b.newContext({ viewport: { width: 1440, height: 1000 } })).newPage()
-await pg.goto(BASE + route, { waitUntil: 'networkidle' })
-await pg.waitForTimeout(1500)
+// `networkidle` never fires in Next.js dev (HMR WebSocket stays open).
+// `domcontentloaded` + settle delay works for both dev and prod.
+await pg.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 30000 })
+await pg.waitForTimeout(3000)
 
 const data = await pg.evaluate(() => {
   const out = { headings: [], minFont: 99, fonts: new Set(), radii: new Set(), belowFloor: [] }

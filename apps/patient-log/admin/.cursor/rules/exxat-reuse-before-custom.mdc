@@ -1,7 +1,12 @@
 ---
 description: Exxat DS — prefer centralized reusable components; ask the user before new bespoke primitives.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*.tsx
+  - packages/ui/src/components/**/*.tsx
+tags: [composition]
+seeAlso:
+  - .cursor/rules/_constitution.exxat-ds.mdc
 ---
 
 # Exxat DS — reuse before custom
@@ -29,6 +34,7 @@ If the **user or task already explicitly** approved a greenfield component (“b
 
 - Add **route-only copies** of patterns that already live in **`components/`** or **`packages/ui`** without product reason.
 - Introduce **parallel primitives** (second button row, second card shell, second command surface) when an existing one can be parameterized.
+- Wrap charts in a **new card shell** — use **`ChartCard`** from `charts-overview.tsx` ([`exxat-chart-cards.mdc`](./exxat-chart-cards.mdc)).
 
 ## See also
 

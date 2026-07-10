@@ -2,10 +2,10 @@
 name: exxat-package-upgrade
 description: >
   Install or upgrade @exxatdesignux/ui in consumer apps — read release notes,
-  sync Cursor extras, diff template-vite for shell/UI fixes, port only chrome
+  sync Cursor extras, diff generated-starter for shell/UI fixes, port only chrome
   and composition files. Never change product content, mock data, API wiring,
   or tenant copy. Use when the user asks to install, update, upgrade, bump,
-  or sync the Exxat DS package, exxat-ui CLI, template-vite, or fix a bug after
+  or sync the Exxat DS package, exxat-ui CLI, generated-starter, or fix a bug after
   a package release (e.g. custom product theme, store migration).
 ---
 
@@ -15,7 +15,7 @@ Use this skill for **consumer repos** (Assessment_V1, customer scaffolds) — no
 the DS monorepo (`apps/web` uses `workspace:*`).
 
 **Goal:** Ship the new package version + any required **shell/UI port** from
-`template-vite`. **Do not** rewrite product content, data, or business logic.
+`generated-starter`. **Do not** rewrite product content, data, or business logic.
 
 ---
 
@@ -143,9 +143,10 @@ Preferred next step:
 npx --package=@exxatdesignux/ui@latest exxat-ui upgrade
 ```
 
-`upgrade` runs `sync-extras`, ports low-risk package-owned shell files from
-`template-vite`, and reports app-owned files that still need a manual merge
-(`src/routes.tsx`, `lib/mock/navigation.tsx`, `components/sidebar/app-sidebar.tsx`, …).
+`upgrade` runs `sync-extras`, ports package-owned shell files from the generated
+starter, and refreshes predefined Prism / One / Design OS routes, sidebar chrome,
+and navigation. Builder-owned tenant catalog, data modules, mock/API wiring, and
+custom pages are preserved.
 
 ---
 
@@ -166,7 +167,7 @@ Re-open the agent chat after sync so rules reload.
 
 Reference tree:
 
-`node_modules/@exxatdesignux/ui/template-vite/`
+`node_modules/@exxatdesignux/ui/generated-starter/`
 
 Fast path:
 
@@ -174,9 +175,9 @@ Fast path:
 npx --package=@exxatdesignux/ui@latest exxat-ui upgrade
 ```
 
-If `upgrade` reports manual merges, compare **your app** against template for
-those files in [port-map.md](./port-map.md). Use `diff -ru` or the IDE diff —
-**do not** blind-copy the whole template.
+If `upgrade` reports manual merges, compare **your app** against the generated
+starter for those files in [port-map.md](./port-map.md). Use `diff -ru` or the
+IDE diff — **do not** blind-copy the whole generated starter.
 
 ### Port decision tree
 
@@ -245,10 +246,10 @@ Use this handoff block:
 
 ## Common release-triggered ports
 
-| Symptom after upgrade | Port from template-vite |
+| Symptom after upgrade | Port from generated starter |
 |-----------------------|-------------------------|
 | Custom product color stuck / pink sidebar | `lib/product-brand.ts`, `stores/app-store.ts`, `contexts/product-context.tsx`, `components/settings-appearance-card.tsx` |
-| `/custom/*` vs suffix slug (`/assessment/*`) | `lib/product-routing.ts`, `contexts/product-route-sync.tsx`, `contexts/product-root-gate.tsx`, `src/routes.tsx` |
+| `/custom/*` vs suffix slug (`/assessment/*`) | `exxat-ui upgrade` should auto-port `lib/product-routing.ts`, route sync/gates, and `src/routes.tsx`; if still stale, verify package version and rerun upgrade |
 | Multi-custom products collide on hide | `stores/app-store.ts`, `lib/product-ref.ts`, settings + switcher |
 | Add product UI overlap | `components/settings-appearance-card.tsx`, `components/brand-color-picker.tsx` |
 
@@ -274,6 +275,36 @@ Full file list: [port-map.md](./port-map.md).
 ## Phase 7 — Publish (maintainers, monorepo only)
 
 Run from `apps/web` root or repo root. **Use the wrappers — never `pnpm changeset publish` or `npm publish` directly.** The wrappers strip pnpm-injected `NPM_CONFIG_*` env vars before they reach the npm child process, eliminating the `npm warn Unknown env config "<key>"` noise that pnpm/npm interop produces by default.
+
+### MUST — sync builder + consumer simulation before upload (agents)
+
+**Do not publish after a version bump only.**
+
+Two surfaces must match before npm:
+
+1. **Builder dogfood** — `apps/web` (`pnpm dev`, port 4000). Edit shell here.
+2. **Generated starter payload** — `packages/ui/generated-starter/`. Updated only via sync; not a second app.
+
+```bash
+# After any apps/web shell change:
+pnpm builder:contract
+pnpm sync-ui-template
+pnpm sync-ui-template:check
+
+# Full pre-publish proof:
+pnpm release:gates
+# or: pnpm --filter @exxatdesignux/ui smoke-test:publish
+```
+
+Gates run **sync (apply) + check**, then publish smoke: tarballs in **`../123_Testing/tarballs/`** (canonical `/Users/himanshusuthar/Exxat Projects/Design System/123_Testing`), scaffolds in **`123_Testing/apps/`**, `exxat-ui upgrade`, dev boot.
+
+Agents **MUST** confirm logs:
+
+- `builder shell synced: apps/web → generated starter payload`
+- `builder-owned data/content survived package upgrade`
+- `external workspace (outside monorepo):` → `123_Testing`
+
+Rule: **`.cursor/rules/exxat-package-publish-validation.mdc`**
 
 ```bash
 # 1. Diagnose before release (auth, version, working tree, dist/, polluted env)
@@ -306,7 +337,7 @@ gh release create ui-v<new> --notes-from-tag
 - Pins `NPM_CONFIG_LOGLEVEL=error` + disables fund/audit/update-notice chatter for the npm child only.
 - Belt-and-suspenders stderr filter that drops any residual `npm warn Unknown (env|project) config "…"` lines and the "New minor version of npm available" notice.
 - Refuses to re-publish a version that already exists on npm (clear error → `pnpm changeset:version` first).
-- Runs `tokens:check` → `build` → `publish` in that order; aborts on any non-zero exit.
+- Runs `release:gates` (includes `smoke-test:publish`) → `tokens:check` → `build` → `publish`; aborts on any non-zero exit.
 
 ### What `pnpm preflight` checks
 

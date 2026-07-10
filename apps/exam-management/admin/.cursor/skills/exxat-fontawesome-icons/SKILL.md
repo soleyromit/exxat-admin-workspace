@@ -1,10 +1,10 @@
 ---
 name: exxat-fontawesome-icons
-description: Font Awesome Pro in Exxat DS — Kit script, fa-light/fa-solid, subset audit (fa:subset-audit), aria-hidden on decorative icons, no parallel icon libraries for product chrome. Use when adding or changing icons, nav glyphs, table toolbar icons, or debugging missing kit glyphs.
+description: Font Awesome Pro only — no Lucide; Kit script, fa-light/fa-solid, subset audit (fa:subset-audit), aria-hidden on decorative icons. Use when adding or changing icons, nav glyphs, table toolbar icons, or debugging missing kit glyphs.
 user-invocable: true
 ---
 
-# Exxat DS — Font Awesome icons
+# Exxat DS — Font Awesome icons (no Lucide)
 
 **Cursor rule:** `.cursor/rules/exxat-fontawesome-icons.mdc`  
 **Handbook:** `apps/web/AGENTS.md` §1 (item 8), §8 accessibility for icon-only / informational cases.
@@ -22,8 +22,12 @@ user-invocable: true
 
 ## MUST NOT
 
-- Introduce a **second** icon library for the same surfaces (duplicate Lucide/Heroicons for nav, hubs, toolbars).
+- **Import `lucide-react`** or add Lucide/Heroicons/Phosphor for product chrome.
 - Put the **only** accessible name on `<i>` without parent labelling — see **exxat-accessibility** Case B/C.
+
+## shadcn blocks
+
+Registry items ship Lucide by default. After `npx shadcn add`, **replace every Lucide import** with Font Awesome `<i>` markup before merging.
 
 ## See also
 

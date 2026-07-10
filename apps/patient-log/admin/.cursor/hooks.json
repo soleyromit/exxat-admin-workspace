@@ -12,6 +12,11 @@
         "command": ".cursor/hooks/exxat-brief-gate.mjs",
         "matcher": "^(Write|write|StrReplace|Edit|EditNotebook|MultiEdit|write_file|edit_file|search_replace|create_file|multi_edit|multi_edit_file)$"
       }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/exxat-image-ia-gate.mjs"
+      }
     ]
   }
 }

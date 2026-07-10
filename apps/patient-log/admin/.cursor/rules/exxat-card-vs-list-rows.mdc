@@ -1,7 +1,13 @@
 ---
 description: Exxat DS — when to use cards vs DataTable rows vs simple list rows.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/**/*-table.tsx
+  - components/**/*-client.tsx
+  - components/data-views/**/*
+tags: [hub, data-views]
+seeAlso:
+  - docs/exxat-ds/card-vs-rows-pattern.md
 ---
 
 # Exxat DS — cards vs rows vs lists

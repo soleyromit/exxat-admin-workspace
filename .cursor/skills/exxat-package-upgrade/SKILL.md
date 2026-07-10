@@ -2,10 +2,10 @@
 name: exxat-package-upgrade
 description: >
   Install or upgrade @exxatdesignux/ui in consumer apps — read release notes,
-  sync Cursor extras, diff template-vite for shell/UI fixes, port only chrome
+  sync Cursor extras, diff generated-starter for shell/UI fixes, port only chrome
   and composition files. Never change product content, mock data, API wiring,
   or tenant copy. Use when the user asks to install, update, upgrade, bump,
-  or sync the Exxat DS package, exxat-ui CLI, template-vite, or fix a bug after
+  or sync the Exxat DS package, exxat-ui CLI, generated-starter, or fix a bug after
   a package release (e.g. custom product theme, store migration).
 ---
 
@@ -15,7 +15,7 @@ Use this skill for **consumer repos** (Assessment_V1, customer scaffolds) — no
 the DS monorepo (`apps/web` uses `workspace:*`).
 
 **Goal:** Ship the new package version + any required **shell/UI port** from
-`template-vite`. **Do not** rewrite product content, data, or business logic.
+`generated-starter`. **Do not** rewrite product content, data, or business logic.
 
 ---
 
@@ -167,7 +167,7 @@ Re-open the agent chat after sync so rules reload.
 
 Reference tree:
 
-`node_modules/@exxatdesignux/ui/template-vite/`
+`node_modules/@exxatdesignux/ui/generated-starter/`
 
 Fast path:
 
@@ -283,7 +283,7 @@ Run from `apps/web` root or repo root. **Use the wrappers — never `pnpm change
 Two surfaces must match before npm:
 
 1. **Builder dogfood** — `apps/web` (`pnpm dev`, port 4000). Edit shell here.
-2. **Generated starter payload** — `packages/ui/template-vite/`. Updated only via sync; not a second app.
+2. **Generated starter payload** — `packages/ui/generated-starter/`. Updated only via sync; not a second app.
 
 ```bash
 # After any apps/web shell change:

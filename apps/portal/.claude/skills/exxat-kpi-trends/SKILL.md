@@ -1,5 +1,7 @@
 # Exxat DS — KPI trend arrows and polarity
 
+> **Consolidated skill:** prefer [`.cursor/skills/exxat-kpi/SKILL.md`](../exxat-kpi/SKILL.md) for new work.
+
 Use when adding or reviewing **`KeyMetrics`**, **`lib/mock/*-kpi.ts`** helpers, or **`ChartCard`** **`miniMetrics`** / **`kpi-chart`** trends.
 
 ## Authoritative references

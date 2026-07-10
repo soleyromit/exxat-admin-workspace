@@ -89,7 +89,7 @@ function ReleaseNoteSection({ release }: { release: ReleaseNote }) {
       <div className="flex-1 flex flex-col gap-1.5 pb-6 border-l border-border pl-4">
         {release.notes.map((note, i) => (
           <div key={i} className="flex items-start gap-2 text-sm">
-            <i className="fa-light fa-circle-dot text-muted-foreground mt-[3px] shrink-0" style={{ fontSize: 9 }} aria-hidden="true" />
+            <i className="fa-light fa-circle-dot text-xs text-muted-foreground mt-[3px] shrink-0" aria-hidden="true" />
             <span>{note}</span>
           </div>
         ))}
@@ -240,7 +240,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {/* Features */}
                   {product.features.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Features</h2>
+                      <h2 className="text-sm font-medium text-foreground">Key Features</h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-8">
                         {product.features.map((feature, i) => (
                           <div key={i} className="flex items-start gap-2.5">
@@ -261,7 +261,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                     <>
                       <Separator />
                       <div className="flex flex-col gap-2">
-                        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Open In</h2>
+                        <h2 className="text-sm font-medium text-foreground">Open In</h2>
                         <div className="flex flex-wrap gap-2">
                           {surfaces.map((s) => (
                             <Button key={s.label} asChild variant="outline" size="sm">
@@ -283,7 +283,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                       <Separator />
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
-                          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Institutions Using This</h2>
+                          <h2 className="text-sm font-medium text-foreground">Institutions Using This</h2>
                           <span className="text-xs tabular-nums text-muted-foreground">{product.universities.length}</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
@@ -332,7 +332,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {/* Roadmap — upcoming */}
                   {product.roadmap.length > 0 && (
                     <div className="flex flex-col gap-1 mb-2">
-                      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Upcoming</h2>
+                      <h2 className="text-sm font-medium text-foreground mb-3">Upcoming</h2>
                       {product.roadmap.map((item, i) => (
                         <RoadmapRow key={i} item={item} />
                       ))}
@@ -343,7 +343,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {product.releaseNotes.length > 0 && (
                     <>
                       {product.roadmap.length > 0 && <Separator className="mb-5" />}
-                      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Release History</h2>
+                      <h2 className="text-sm font-medium text-foreground mb-3">Release History</h2>
                       <div className="flex flex-col">
                         {product.releaseNotes.map((release, i) => (
                           <ReleaseNoteSection key={i} release={release} />

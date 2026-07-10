@@ -102,18 +102,16 @@ export function ExamToolbar({
   const currentSection = sections?.length ? getCurrentSection(sections, currentIndex) : null;
   return (
     <header
-      className="border-b flex flex-col shrink-0 z-40 relative transition-colors"
-      style={{
-        backgroundColor: 'var(--card)',
-        borderColor: 'var(--border)'
-      }}>
-      
+      aria-label="Exam toolbar"
+      className="border-b border-border bg-card flex flex-col shrink-0 z-40 relative transition-colors"
+    >
       <div className="h-14 flex items-center justify-between px-4">
         {/* Left: Logo, separator, Questions toggle, Title */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <img
             src="/exxat-logo.svg"
-            alt="Exxat"
+            alt=""
+            aria-hidden="true"
             className="hidden sm:block shrink-0"
             style={{ height: '1.5em' }} />
 
@@ -123,13 +121,13 @@ export function ExamToolbar({
             className="h-5 hidden sm:block shrink-0" />
 
           <div className="flex flex-col min-w-0">
-            <Tooltip content={assessmentTitle ?? 'Assessment'} position="bottom">
-              <span
-                className="font-bold text-sm truncate"
-                style={{ color: 'var(--foreground)', lineHeight: 1.3 }}>
-                {assessmentTitle ?? 'Assessment'}
-              </span>
-            </Tooltip>
+            <span
+              className="font-bold text-sm truncate text-foreground"
+              style={{ lineHeight: 1.3 }}
+              title={assessmentTitle ?? 'Assessment'}
+            >
+              {assessmentTitle ?? 'Assessment'}
+            </span>
             {/* Aarti May 14: course name is mandatory in the header. Combined
                 with the current-section indicator on one secondary line so the
                 fixed-height header stays a clean two-row block. */}
@@ -139,15 +137,13 @@ export function ExamToolbar({
                 currentSection ? `Section ${currentSection.number} · ${currentSection.title}` : null,
               ].filter(Boolean).join('  ·  ');
               return (
-                <Tooltip content={subtitle} position="bottom">
-                  <span
-                    className="text-[12px] truncate"
-                    style={{ color: 'var(--muted-foreground)', lineHeight: 1.2 }}
-                    tabIndex={0}
-                  >
-                    {subtitle}
-                  </span>
-                </Tooltip>
+                <span
+                  className="text-xs truncate text-muted-foreground"
+                  style={{ lineHeight: 1.2 }}
+                  title={subtitle}
+                >
+                  {subtitle}
+                </span>
               );
             })()}
           </div>
@@ -158,27 +154,19 @@ export function ExamToolbar({
         <span role="status" aria-live="polite" className="sr-only">
           {isLastFiveMinutes ? 'Warning: less than 5 minutes remaining.' : ''}
         </span>
-        <Tooltip content="Time remaining in this exam" position="bottom">
-          <div className="flex items-center justify-center">
-            <Badge
-              role="timer"
-              aria-live="off"
-              variant={isLastFiveMinutes ? 'destructive' : 'outline'}
-              className={`font-mono font-bold text-sm tabular-nums${isLastFiveMinutes ? ' animate-pulse' : ' bg-muted text-foreground'}`}
-              style={isLastFiveMinutes ? {
-                backgroundColor: 'var(--state-error-bg-soft)',
-                borderColor: 'var(--state-error-border-soft)',
-                color: 'var(--state-error-text-dark)',
-              } : undefined}
-              aria-label={`Time remaining: ${timerFormatted}`}
-            >
-              {timerFormatted}
-            </Badge>
-          </div>
-        </Tooltip>
+        <Badge
+          role="timer"
+          aria-live="off"
+          variant="outline"
+          className={`font-mono font-bold text-sm tabular-nums${isLastFiveMinutes ? ' animate-pulse' : ''}`}
+          aria-label={`Time remaining: ${timerFormatted}`}
+          style={isLastFiveMinutes ? { color: 'var(--chart-4)', borderColor: 'var(--chart-4)' } : undefined}
+        >
+          {timerFormatted}
+        </Badge>
 
         {/* Right: Narrator chip, Previous, Flag, Next, Settings, Submit */}
-        <div className="flex items-center justify-end gap-2 flex-1">
+        <div role="toolbar" aria-label="Exam tools" className="flex items-center justify-end gap-2 flex-1">
           {/* Quick narrator toggle — visible only when narrator is ON */}
           {voiceNarrator &&
           <Tooltip content="Turn off voice narrator" position="bottom">
@@ -211,7 +199,7 @@ export function ExamToolbar({
                 aria-expanded={isGlobalRefOpen}
                 className="shrink-0"
               >
-                <i className="fa-light fa-file-lines text-sm" aria-hidden="true" />
+                <i className="fa-light fa-file-lines fa-fw" aria-hidden="true" />
                 <span className="hidden sm:inline">Reference</span>
               </DSButton>
             </Tooltip>
@@ -228,7 +216,7 @@ export function ExamToolbar({
                 aria-expanded={isNavOpen}
                 className="shrink-0"
               >
-                <i className="fa-light fa-list-ul" aria-hidden="true" />
+                <i className="fa-light fa-list-ul fa-fw" aria-hidden="true" />
                 <span className="hidden sm:inline">Questions</span>
               </DSButton>
             </Tooltip>
@@ -236,20 +224,19 @@ export function ExamToolbar({
 
           {/* Settings — last in order */}
           <Popover open={showSettings} onOpenChange={setShowSettings}>
-            <Tooltip content="Open exam settings" position="bottom">
+            <Tooltip content="Open exam settings" position="bottom" disabled={showSettings}>
               <PopoverTrigger asChild>
                 <DSButton
-                  variant="ghost"
+                  variant={showSettings ? 'secondary' : 'ghost'}
                   size="icon-sm"
                   aria-label="Settings"
-                  className="shrink-0 text-lg"
-                  style={showSettings ? { color: 'var(--foreground)', backgroundColor: 'var(--muted)' } : { color: 'var(--muted-foreground)' }}
+                  className={`shrink-0 text-lg${showSettings ? '' : ' text-muted-foreground'}`}
                 >
                   <i className="fa-light fa-gear" aria-hidden="true" />
                 </DSButton>
               </PopoverTrigger>
             </Tooltip>
-            <PopoverContent side="bottom" align="end" className="w-[300px] p-0">
+            <PopoverContent side="bottom" align="end" className="w-[300px] p-0" aria-label="Exam settings">
               <SettingsPanel
                 onClose={() => setShowSettings(false)}
                 theme={theme}
@@ -280,7 +267,7 @@ export function ExamToolbar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`Exam progress: question ${currentIndex + 1} of ${sectionTotal}`}
-        style={{ width: '100%', height: '4px', backgroundColor: 'var(--border)', position: 'relative' }}
+        style={{ width: '100%', height: '4px', backgroundColor: 'var(--muted)', position: 'relative' }}
       >
         {/* Filled progress */}
         <div
@@ -289,7 +276,7 @@ export function ExamToolbar({
             position: 'absolute', top: 0, left: 0,
             height: '100%',
             width: `${progressPercent}%`,
-            backgroundColor: 'var(--brand-color)',
+            backgroundColor: 'var(--primary)',
             borderRadius: '0 2px 2px 0',
           }}
         />
@@ -309,7 +296,7 @@ export function ExamToolbar({
                 style={{
                   position: 'absolute', top: 0, bottom: 0,
                   width: 2, left: `${pct}%`,
-                  backgroundColor: 'var(--card)',
+                  backgroundColor: 'var(--background)',
                   transform: 'translateX(-50%)',
                   zIndex: 1,
                 }}

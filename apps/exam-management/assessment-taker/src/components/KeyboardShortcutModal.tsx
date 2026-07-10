@@ -1,4 +1,3 @@
-'use client';
 import React from 'react';
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Kbd, KbdGroup } from '@exxatdesignux/ui';
 
@@ -88,8 +87,8 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
           className="grid border-b flex-shrink-0"
           style={{ gridTemplateColumns: '1fr 110px', padding: '8px 20px 6px' }}
         >
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.05em]">Action</span>
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.05em] text-right">Shortcut</span>
+          <span className="text-xs font-semibold text-muted-foreground">Action</span>
+          <span className="text-xs font-semibold text-muted-foreground text-right">Shortcut</span>
         </div>
 
         {/* Groups */}

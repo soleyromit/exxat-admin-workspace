@@ -32,16 +32,24 @@ export interface Question {
   psy?: Psy; flagged?: { reason: string } | null
   grading?: Grading
 }
+export interface FillTarget { type: 'count' | 'points'; value: number }
 export interface Section {
   id: string; name: string; owner: FacultyId
   reviewStatus: ReviewStatus; timeLimit: number; preRead: boolean
   questions: Question[]
+  fillTarget?: FillTarget | null
+  dueDate?: string | null
+  sectionInstructions?: string | null
 }
 export interface Assessment {
   id: string; name: string; course: string; type: 'Exam' | 'Quiz' | 'Assignment'
   state: LifecycleState; questions: number; points: number
   owner: FacultyId; collaborators: FacultyId[]; due: string; updated: string
   security: 'Secure' | 'Unsecure'; graded: boolean
+  publishedAt?: string | null      // ISO date string → drives status column
+  timedMinutes?: number | null     // null = untimed
+  applicableStudents?: number      // enrolled count
+  completedStudents?: number       // submission count
 }
 export interface PastAssessment {
   id: string; name: string; course: string; sections: number; questions: number
@@ -56,6 +64,14 @@ export interface BuilderMeta {
   id: string; name: string; course: string; type: 'Exam' | 'Quiz' | 'Assignment'; graded: boolean
   intent?: string; audience?: string; owner: FacultyId; collaborators: FacultyId[]
   security: 'Secure' | 'Unsecure'; state: LifecycleState
+  // Settings panel fields (Wave 6)
+  isHighStakes?: boolean
+  passingScore?: number | null
+  allowComments?: boolean
+  referenceMaterials?: string[]
+  warnMinutes?: number
+  scoreDisplay?: 'raw' | 'raw+pct' | 'none'
+  submitVisible?: boolean
 }
 export interface GeneratedQuestion {
   id: string; type: QTypeKey; points: number; difficulty: Difficulty
@@ -97,13 +113,13 @@ export function qIcon(type: QTypeKey | string): string {
 
 // ───────────────────────── assessment list ─────────────────────────
 export const ASSESSMENTS: Assessment[] = [
-  { id: 'a1', name: 'Cardiovascular Pharmacology — Midterm', course: 'MED-201', type: 'Exam', state: 'draft', questions: 24, points: 100, owner: 'schen', collaborators: ['okafor', 'nair', 'ta'], due: '10/24/2026 09:00 AM EST', updated: 'now', security: 'Secure', graded: true },
-  { id: 'a2', name: 'Antihypertensives — Weekly Quiz 4', course: 'MED-201', type: 'Quiz', state: 'ready', questions: 10, points: 20, owner: 'okafor', collaborators: [], due: '10/15/2026 11:59 PM EST', updated: '10/12/2026 03:21 PM EST', security: 'Unsecure', graded: false },
-  { id: 'a3', name: 'Heart Failure Management — Remedial', course: 'MED-201', type: 'Quiz', state: 'planned', questions: 0, points: 0, owner: 'nair', collaborators: [], due: '11/02/2026 09:00 AM EST', updated: '10/10/2026 10:00 AM EST', security: 'Secure', graded: true },
-  { id: 'a4', name: 'ECG Interpretation — Unit Exam', course: 'MED-201', type: 'Exam', state: 'review', questions: 30, points: 120, owner: 'okafor', collaborators: ['schen'], due: '10/28/2026 09:00 AM EST', updated: '10/13/2026 08:45 AM EST', security: 'Secure', graded: true },
-  { id: 'a5', name: 'Anticoagulation Therapy — Final', course: 'MED-301', type: 'Exam', state: 'completed', questions: 40, points: 150, owner: 'schen', collaborators: ['nair', 'okafor'], due: '05/12/2026 09:00 AM EST', updated: '05/14/2026 02:00 PM EST', security: 'Secure', graded: true },
-  { id: 'a6', name: 'Diuretics & Electrolytes — Midterm', course: 'MED-201', type: 'Exam', state: 'completed', questions: 28, points: 100, owner: 'schen', collaborators: ['nair'], due: '03/03/2026 09:00 AM EST', updated: '03/05/2026 11:00 AM EST', security: 'Secure', graded: true },
-  { id: 'a7', name: 'Lipid-Lowering Agents — Spring Final', course: 'MED-201', type: 'Exam', state: 'archived', questions: 35, points: 120, owner: 'okafor', collaborators: ['schen', 'nair'], due: '05/20/2025 09:00 AM EST', updated: '06/01/2025 09:00 AM EST', security: 'Secure', graded: true },
+  { id: 'a1', name: 'Cardiovascular Pharmacology — Midterm', course: 'MED-201', type: 'Exam', state: 'draft', questions: 24, points: 100, owner: 'schen', collaborators: ['okafor', 'nair', 'ta'], due: '10/24/2026 09:00 AM EST', updated: 'now', security: 'Secure', graded: true, publishedAt: null, timedMinutes: 90, applicableStudents: 0, completedStudents: 0 },
+  { id: 'a2', name: 'Antihypertensives — Weekly Quiz 4', course: 'MED-201', type: 'Quiz', state: 'ready', questions: 10, points: 20, owner: 'okafor', collaborators: [], due: '10/15/2026 11:59 PM EST', updated: '10/12/2026 03:21 PM EST', security: 'Unsecure', graded: false, publishedAt: '2026-10-15', timedMinutes: 45, applicableStudents: 32, completedStudents: 0 },
+  { id: 'a3', name: 'Heart Failure Management — Remedial', course: 'MED-201', type: 'Quiz', state: 'planned', questions: 0, points: 0, owner: 'nair', collaborators: [], due: '11/02/2026 09:00 AM EST', updated: '10/10/2026 10:00 AM EST', security: 'Secure', graded: true, publishedAt: null, timedMinutes: null, applicableStudents: 0, completedStudents: 0 },
+  { id: 'a4', name: 'ECG Interpretation — Unit Exam', course: 'MED-201', type: 'Exam', state: 'review', questions: 30, points: 120, owner: 'okafor', collaborators: ['schen'], due: '10/28/2026 09:00 AM EST', updated: '10/13/2026 08:45 AM EST', security: 'Secure', graded: true, publishedAt: null, timedMinutes: 90, applicableStudents: 0, completedStudents: 0 },
+  { id: 'a5', name: 'Anticoagulation Therapy — Final', course: 'MED-301', type: 'Exam', state: 'completed', questions: 40, points: 150, owner: 'schen', collaborators: ['nair', 'okafor'], due: '05/12/2026 09:00 AM EST', updated: '05/14/2026 02:00 PM EST', security: 'Secure', graded: true, publishedAt: '2026-05-12', timedMinutes: 120, applicableStudents: 29, completedStudents: 28 },
+  { id: 'a6', name: 'Diuretics & Electrolytes — Midterm', course: 'MED-201', type: 'Exam', state: 'completed', questions: 28, points: 100, owner: 'schen', collaborators: ['nair'], due: '03/03/2026 09:00 AM EST', updated: '03/05/2026 11:00 AM EST', security: 'Secure', graded: true, publishedAt: '2026-03-03', timedMinutes: 90, applicableStudents: 31, completedStudents: 30 },
+  { id: 'a7', name: 'Lipid-Lowering Agents — Spring Final', course: 'MED-201', type: 'Exam', state: 'archived', questions: 35, points: 120, owner: 'okafor', collaborators: ['schen', 'nair'], due: '05/20/2025 09:00 AM EST', updated: '06/01/2025 09:00 AM EST', security: 'Secure', graded: true, publishedAt: '2025-05-20', timedMinutes: 105, applicableStudents: 28, completedStudents: 27 },
 ]
 
 // ───────────────────────── recyclable past assessments ─────────────────────────

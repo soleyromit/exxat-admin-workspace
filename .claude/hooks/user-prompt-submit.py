@@ -190,6 +190,141 @@ DS_ENVIRONMENT: dict[str, dict] = {
 }
 
 
+# ── Obsidian vault retrieval (surfacing only — NEVER reads note bodies) ──
+# On design-intent prompts, grep the vault frontmatter for notes whose
+# title/tags/theme/product overlap the prompt's salient nouns, and inject
+# their PATHS + TITLES as additionalContext so the assistant consults prior
+# decisions before writing JSX. Paths/titles only — bodies are never read
+# (token safety). Entirely wrapped in try/except; silently no-ops on any error.
+VAULT_ROOT = Path("/Users/romitsoley/Documents/research-repos")
+# Folders holding schema'd, citeable notes. `projects/` (active WIP) is the
+# read-first live-context stage per the vault CLAUDE.md, so it's surfaced first.
+_VAULT_FOLDERS = ("projects", "Decisions", "Research", "Meetings")
+# Short token that signals a product inside a title/tags/theme line
+# (e.g. theme "PCE-CourseEval" for pce, "Exam-…" for exam-management).
+_VAULT_PRODUCT_TOKEN: dict[str, str] = {
+    "pce": "pce",
+    "exam-management": "exam",
+    "portal": "portal",
+    "patient-log": "patient",
+    "learning-contracts": "contract",
+    "skills-checklist": "skill",
+}
+# Stopwords for salient-noun extraction: design verbs, articles, prepositions,
+# pronouns, and generic filler. Domain nouns (survey, reminder, card…) are kept
+# — they're exactly what should match a note's title/tags/theme.
+_VAULT_STOPWORDS: set[str] = {
+    "the", "a", "an", "this", "that", "these", "those", "it", "its",
+    "and", "or", "but", "for", "with", "without", "to", "of", "in", "on",
+    "at", "by", "from", "into", "onto", "up", "out", "as", "is", "are",
+    "be", "was", "were", "our", "my", "your", "their", "we", "you", "i",
+    "design", "redesign", "build", "create", "make", "add", "wire", "wireup",
+    "implement", "refactor", "rework", "polish", "tighten", "improve",
+    "update", "edit", "change", "tweak", "fix", "new", "please", "can",
+    "should", "would", "need", "want", "let", "lets", "then", "so",
+}
+
+
+def _vault_salient_nouns(prompt: str) -> list[str]:
+    """Extract 3–6 salient lowercase nouns from the prompt (verbs/stopwords
+    stripped). Returns [] if nothing usable."""
+    words = re.findall(r"[A-Za-z][A-Za-z\-]{2,}", prompt.lower())
+    out: list[str] = []
+    for w in words:
+        w = w.strip("-")
+        if len(w) < 3 or w in _VAULT_STOPWORDS or w in out:
+            continue
+        out.append(w)
+        if len(out) >= 6:
+            break
+    return out
+
+
+def _vault_notes_block(prompt: str) -> list[str]:
+    """Grep the vault frontmatter for notes matching the prompt's product +
+    salient nouns; return an additionalContext block listing up to 5
+    `relative/path.md — Title` lines. PATHS + TITLES ONLY — never note bodies.
+    Silent ([]) on no match or any error. Bounded so worst case is <~200ms."""
+    try:
+        if not VAULT_ROOT.is_dir():
+            return []
+        keywords = _vault_salient_nouns(prompt)
+        if not keywords:
+            return []
+        product = _detect_product(prompt)
+
+        import subprocess
+
+        # SINGLE bounded grep pass over frontmatter lines only (not a python
+        # loop opening hundreds of files). -I skip binary, -H force filename.
+        folders = [f for f in _VAULT_FOLDERS if (VAULT_ROOT / f).is_dir()]
+        if not folders:
+            return []
+        try:
+            out = subprocess.run(
+                ["grep", "-rIH", "-E", r"^(title|tags|theme|product|status):",
+                 "--include=*.md", *folders],
+                capture_output=True, text=True, timeout=2, cwd=str(VAULT_ROOT),
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return []
+        if not out.stdout.strip():
+            return []
+
+        # Parse grepped frontmatter lines into per-file field dicts (raw values).
+        per_file: dict[str, dict[str, str]] = {}
+        for line in out.stdout.splitlines():
+            path, sep, rest = line.partition(":")
+            if not sep:
+                continue
+            base = path.rsplit("/", 1)[-1]
+            if base.startswith("_"):  # skip _index / _template scaffolding
+                continue
+            field, fsep, val = rest.partition(":")
+            if not fsep:
+                continue
+            per_file.setdefault(path, {})[field.strip().lower()] = val.strip()
+
+        ptok = _VAULT_PRODUCT_TOKEN.get(product or "", "")
+        scored: list[tuple[int, bool, str, str]] = []  # (score, is_project, path, title)
+        for path, d in per_file.items():
+            hay = " ".join(
+                d.get(k, "") for k in ("title", "tags", "theme", "product")
+            ).lower()
+            kw_overlap = sum(1 for kw in keywords if kw in hay)
+            product_match = bool(product) and (
+                d.get("product", "").lower() == product
+                or (ptok and ptok in hay)
+            )
+            is_active_project = (
+                path.startswith("projects/") and "active" in d.get("status", "").lower()
+            )
+            # Wiki notes need real keyword overlap; active projects may qualify
+            # on product alone (they're the read-first live-context stage).
+            if kw_overlap < 1 and not (is_active_project and product_match):
+                continue
+            score = kw_overlap * 10 + (2 if product_match else 0)
+            title = d.get("title", "").strip().strip('"').strip("'") or path
+            scored.append((score, is_active_project, path, title))
+
+        if not scored:
+            return []
+
+        # Active projects first (live context), then wiki — each by score desc.
+        scored.sort(key=lambda t: (t[1], t[0]), reverse=True)
+        top = scored[:5]
+
+        block = ["🧠 Vault (~/Documents/research-repos) — consult before JSX (paths only; open the relevant ones):", ""]
+        for _score, is_proj, path, title in top:
+            tag = " [active project]" if is_proj else ""
+            block.append(f"  - {path} — {title}{tag}")
+        block.append("")
+        return block
+    except Exception:
+        # Surfacing helper must NEVER break or slow the hook.
+        return []
+
+
 def _ds_environment_block(prompt: str) -> list[str]:
     """Inject DS environment status when design intent + product detected.
     Replaces the manual Gate 1 ds-product-compatibility.md check with auto-injection.
@@ -628,6 +763,14 @@ def main() -> None:
     if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:
         ds_env = _ds_environment_block(prompt)
 
+    # Vault retrieval — fires ONLY on design intent (intent:design/redesign).
+    # Surfaces matching prior decisions/research/meetings (paths + titles only)
+    # so the assistant reads the right context before writing JSX. Additive;
+    # silently no-ops on any error and never reads note bodies.
+    vault: list[str] = []
+    if "intent:design" in seen or "intent:redesign" in seen:
+        vault = _vault_notes_block(prompt)
+
     # Opus model hint — injected as a top-level block for all design tasks.
     # Cannot force the switch programmatically; this is the strongest available nudge.
     _opus_hint: list[str] = []
@@ -652,7 +795,7 @@ def main() -> None:
     show_answer_first = had_heavy_match
 
     if (not matches and not freshness and not cascade and not ds_env
-            and not _opus_hint and not show_answer_first):
+            and not vault and not _opus_hint and not show_answer_first):
         print(json.dumps({}))
         return
 
@@ -698,6 +841,11 @@ def main() -> None:
     # before any component code is written. Auto-injects from DS_ENVIRONMENT dict.
     if ds_env:
         lines.extend(ds_env)
+
+    # Vault notes — persistent design memory (paths + titles only). Placed
+    # before the trigger list so prior decisions are seen before the pipeline.
+    if vault:
+        lines.extend(vault)
 
     if matches:
         lines.append("[Design Intelligence Harness — UserPromptSubmit triggers matched]")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate docs/watch/ds-snapshot.json from the installed @exxatdesignux/ui package.
+"""Regenerate `node tools/ds/source.mjs --list` from the installed @exxatdesignux/ui package.
 
 Reads dist/index.d.ts from the first app that has the package installed, extracts
 all exported component/hook names, categorises them, then merges with any existing
