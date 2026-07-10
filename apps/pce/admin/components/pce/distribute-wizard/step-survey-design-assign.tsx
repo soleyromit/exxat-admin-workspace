@@ -6,7 +6,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
-import { NewTemplateFlow } from '@/components/pce/new-template-flow'
+import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
 import { DataTable } from '@/components/data-table'
 import { useTableState } from '@/components/data-table/use-table-state'
@@ -116,7 +116,7 @@ export function StepSurveyDesignAssign({
           </Button>
         </div>
         {subView === 'create' ? (
-          <NewTemplateFlow embedded onCreated={id => setSubView({ buildId: id })} />
+          <CreateBlankTemplate onCreated={id => setSubView({ buildId: id })} />
         ) : (
           <TemplateEditor
             templateId={subView.buildId}

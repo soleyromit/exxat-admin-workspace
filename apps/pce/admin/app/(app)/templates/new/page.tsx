@@ -1,12 +1,12 @@
 'use client'
 
 import { Suspense } from 'react'
-import { NewTemplateFlow } from '@/components/pce/new-template-flow'
+import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 
 export default function NewTemplatePage() {
   return (
     <Suspense>
-      <NewTemplateFlow />
+      <CreateBlankTemplate />
     </Suspense>
   )
 }
