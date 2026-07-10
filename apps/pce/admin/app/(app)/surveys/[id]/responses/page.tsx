@@ -80,7 +80,7 @@ export default function SurveyResponsesPage() {
       </header>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
-        <div className="max-w-2xl flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
 
           {/* Overall summary — DS Card slot composition */}
           <Card>

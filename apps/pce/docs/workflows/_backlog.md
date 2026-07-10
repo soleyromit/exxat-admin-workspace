@@ -31,7 +31,7 @@ Source: `docs/research/meetings/2026-05-14-course-eval-base-entities.md`
 | T27 | PCE base entity landing pages | Admin | Module | **P0 — due Tue May 19** | Terms landing, course offerings landing, faculty landing — one page per entity. Adi confirmed this is Aarti's ask. |
 | T28 | Create template UI | Admin | Survey creation | P1 | Manual zero-state → add questions → Likert or free text per question. No QB import. Start from approved PRD (create template + push survey doc). |
 | T29 | Push survey UI | Admin | Survey push | P1 | Select course offering / term, configure distribution window. |
-| T30 | PCE settings page — Likert scale config | Admin | Settings | P1 | Program director sets default Likert pointer (3/4/5/7/10). Warning: changing setting won't affect live surveys. |
+| T30 | PCE settings page — Likert scale config | Admin | Settings | **Phase 2** — deprioritized Jul 9 (D_PCE_0709_01) | Program director sets default Likert pointer (3/4/5/7/10). Warning: changing setting won't affect live surveys. |
 
 ## Phase 1 — killed (updated 2026-05-14)
 
@@ -288,6 +288,30 @@ Source: `docs/research/meetings/2026-07-02-template-upload-aspects-monil.md` (Gr
 | # | Task | Persona | Surface | Priority | Notes |
 |---|---|---|---|---|---|
 | T97 | ⚠️ Resolve T61 vs. Monil conflict — per-aspect upload capability | Admin | Template creation | P0 — BLOCKER | T61 (Jun 9, Vishaka): top-level import only, remove per-section PDF upload. Monil (Jul 2): per-aspect upload IS wanted because single-doc AI parsing fails to reliably separate content by aspect (course material / faculty / general). Cannot finalize upload UX for template creation until Aarti/Vishaka/Monil align. Add to next Aarti review. D_PCE_0702_01. |
+
+## Phase 1 design tasks — added 2026-07-09 (Monil course eval sync)
+
+Source: `docs/research/meetings/2026-07-09-course-eval-sync-monil.md` (Granola `497b1010`)
+
+> Monil sync Jul 9. Topics: layout width fix (rows 3–10 screens), settings deprioritized to Phase 2, single-survey analytics first (row 16), engineering QA deadline Aug 15, handoff gated on Yash review Jul 10.
+
+### Updates to existing tasks (Jul 9)
+
+| # | Update |
+|---|---|
+| T30 | **Deprioritized to Phase 2.** Monil: "most of the settings would go in phase two. So we can deprioritize that at least for the, from the design standpoint." D_PCE_0709_01. |
+| T81 | **Phase 2.** Part of settings — deferred. D_PCE_0709_01. |
+| T82 | **Phase 2.** Part of settings — deferred. D_PCE_0709_01. |
+| T83 | **Phase 2.** Part of settings — deferred. D_PCE_0709_01. |
+| T92 | **Phase 2.** Answer type labels = settings concern — deferred. D_PCE_0709_01. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T98 | Layout fix — survey screens must use full screen width | Admin | `surveys/[id]/page.tsx`, `surveys/[id]/responses/page.tsx`, `surveys/push/page.tsx` | P0 — ✅ APPLIED | Monil Jul 9: "we are only using 70 of the screens." Removed `max-w-2xl` from `surveys/[id]/page.tsx:75` and `surveys/[id]/responses/page.tsx:83`. Removed `maxWidth: 640` from `surveys/push/page.tsx:125`. Push survey Step 2 table specifically: Romit confirmed "we should stretch the table." Prerequisite for Yash review + engineering handoff. D_PCE_0709_04. |
+| T99 | Settings deprioritized — demote all settings tasks to Phase 2 | Admin | Settings | Phase 2 — logged | Monil Jul 9: "most of the settings would go in phase two." T30, T81, T82, T83, T92 all moved to Phase 2. No active design work on settings in Phase 1. D_PCE_0709_01. |
+| T100 | Single-survey analytics (row 16) — design and review | Admin | Survey analytics | P1 — IN PROGRESS | Monil Jul 9: focus on single-survey analytics only; multi-survey longitudinal is deferred. Row 16 UI partially built; Romit to share updated link for Monil review. Longitudinal analytics = Phase 2 or later. D_PCE_0709_02. |
 
 ---
 

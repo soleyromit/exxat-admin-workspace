@@ -72,7 +72,7 @@ export default function SurveyDetailPage() {
       )}
 
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-2xl flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
 
           {/* AI insights — surface BEFORE pulled metrics per Aarti D14 + ADR-005 + audit C3 */}
           {responses && responses.comments.length > 0 && (() => {

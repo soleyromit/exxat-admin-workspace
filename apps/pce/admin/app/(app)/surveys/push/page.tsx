@@ -122,7 +122,7 @@ export default function PushSurveyPage() {
       </header>
 
       <div className="flex-1 overflow-auto" style={{ padding: '32px 28px 48px' }}>
-        <div style={{ maxWidth: 640 }}>
+        <div>
           <StepIndicator step={step} />
 
           {step === 1 && (
