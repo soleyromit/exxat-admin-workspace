@@ -54,7 +54,7 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
-import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY } from '@/lib/pce-mock-data'
+import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY, COURSE_TYPE_FULL_LABEL, type DeliveryMode } from '@/lib/pce-mock-data'
 import { TemplateImportDialog } from '@/components/pce/template-import-dialog'
 
 // Faculty roles offered in the builder = the program roles configured in Central
@@ -919,6 +919,63 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           </Field>
         </SettingsSection>
 
+        {/* Course type — CE templates only (Monil 2026-07-10: restored; the
+            wizard auto-assigns templates to matching courses). Legacy
+            courseType mirrors the pick so bulk-assign matching keeps working. */}
+        {!isProgrammatic && (
+          <SettingsSection label="Course type"
+            hint="Optional — matches this template to courses of the same type.">
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Course type (optional)">
+              {(['classroom', 'practice', 'lab'] as DeliveryMode[]).map((m) => {
+                const active = t.deliveryMode === m
+                return (
+                  <Button
+                    key={m}
+                    type="button"
+                    variant="outline"
+                    size="default"
+                    aria-pressed={active}
+                    className={active ? 'border-foreground bg-muted' : ''}
+                    onClick={() => {
+                      if (active) {
+                        updateTemplate(t.id, { deliveryMode: undefined, courseType: undefined, isDefaultForType: false })
+                      } else {
+                        updateTemplate(t.id, {
+                          deliveryMode: m,
+                          courseType: m === 'practice' ? 'clinical' : 'didactic',
+                        })
+                      }
+                    }}
+                  >
+                    {COURSE_TYPE_FULL_LABEL[m]}
+                  </Button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t.deliveryMode
+                ? `Applies to ${COURSE_TYPE_FULL_LABEL[t.deliveryMode].toLowerCase()} courses.`
+                : 'No type selected — template will apply to all course types.'}
+            </p>
+            <div className="flex items-center gap-3">
+              <ToggleSwitch
+                id="tmpl-default-for-type"
+                checked={!!t.isDefaultForType}
+                onChange={(v) => {
+                  if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
+                }}
+              />
+              <label
+                htmlFor="tmpl-default-for-type"
+                className={`text-sm cursor-pointer ${!t.deliveryMode ? 'text-muted-foreground' : ''}`}
+              >
+                Mark as default for this course type
+              </label>
+            </div>
+          </SettingsSection>
+        )}
+
+        {isProgrammatic && (
         <SettingsSection label="Survey type"
           hint="What this survey is for — determines how it's used across the program.">
           <RadioGroup
@@ -943,7 +1000,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
             })}
           </RadioGroup>
         </SettingsSection>
+        )}
 
+        {isProgrammatic && (
         <SettingsSection label="Access"
           hint="Who in your program can find and reuse this template.">
           <RadioGroup
@@ -968,6 +1027,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
             </div>
           </RadioGroup>
         </SettingsSection>
+        )}
 
         <SettingsSection label="Branding"
           hint="Optional images students see on the evaluation and in invitation emails.">
@@ -1020,8 +1080,19 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
         <SummaryCard title="Template settings" onEdit={() => goToStep('settings')}>
           <ReviewRow label="Name">{t.name || <span className="text-muted-foreground">Untitled template</span>}</ReviewRow>
           <ReviewRow label="Description">{t.description || <span className="text-muted-foreground">—</span>}</ReviewRow>
-          <ReviewRow label="Survey type">{surveyTypeLabel ?? <span className="text-muted-foreground">Not set</span>}</ReviewRow>
-          <ReviewRow label="Access">{(t.access ?? 'program') === 'private' ? 'Private — only you' : 'Program — shared with admins & coordinators'}</ReviewRow>
+          {!isProgrammatic && (
+            <ReviewRow label="Course type">
+              {t.deliveryMode
+                ? `${COURSE_TYPE_FULL_LABEL[t.deliveryMode]}${t.isDefaultForType ? ' · default for this type' : ''}`
+                : <span className="text-muted-foreground">All course types</span>}
+            </ReviewRow>
+          )}
+          {isProgrammatic && (
+            <ReviewRow label="Survey type">{surveyTypeLabel ?? <span className="text-muted-foreground">Not set</span>}</ReviewRow>
+          )}
+          {isProgrammatic && (
+            <ReviewRow label="Access">{(t.access ?? 'program') === 'private' ? 'Private — only you' : 'Program — shared with admins & coordinators'}</ReviewRow>
+          )}
           <ReviewRow label="Cover image">{coverImage ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
           <ReviewRow label="University logo">{universityLogo ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
         </SummaryCard>

@@ -67,6 +67,12 @@ export interface PceTemplate {
   /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
   likertPointer: 3 | 4 | 5 | 7 | 10
   courseType?: CourseTypeFilter
+  /** CE templates — CB/PB/LB match target picked in Template settings (Monil
+   *  2026-07-10: Course type is back; Survey type/Access are programmatic-only).
+   *  Legacy `courseType` mirrors it so push-wizard auto-assign keeps matching. */
+  deliveryMode?: DeliveryMode
+  /** CE templates — preferred default when auto-assigning within its course type. */
+  isDefaultForType?: boolean
   /** Survey type — the purpose this template serves. Shown in the template settings step. */
   surveyPurpose?: 'student_pulse' | 'faculty_self_eval' | 'alumni' | 'preceptor_eval'
   /** Visibility — 'program' = any admin/coordinator in the program can find & use it;
