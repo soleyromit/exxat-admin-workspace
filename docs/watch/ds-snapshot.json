@@ -1,8 +1,8 @@
 {
   "generated": "2026-07-10",
   "source": "@exxatdesignux/ui",
-  "version": "0.6.55",
-  "componentCount": 584,
+  "version": "0.6.57",
+  "componentCount": 609,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -216,6 +216,22 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "Bubble": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "BubbleContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "BubbleGroup": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "BubbleReactions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "BulkAction": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
@@ -415,6 +431,10 @@
     "ColumnDef": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
+    },
+    "ColumnPinPolicy": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "ColumnRow": {
       "importPath": "@exxatdesignux/ui",
@@ -1352,6 +1372,18 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "Marker": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MarkerContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MarkerIcon": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "MarketingBanner": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1388,11 +1420,63 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "Message": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageAvatar": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageFooter": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageGroup": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageHeader": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScroller": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerButton": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerProvider": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerViewport": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "MetricInsight": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
     "MetricItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MetricProgressTone": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1868,6 +1952,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SidebarMenuSeparator": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "SidebarMenuSkeleton": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -2265,6 +2353,18 @@
       "category": "hooks"
     },
     "useMaskInput": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useMessageScroller": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useMessageScrollerScrollable": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useMessageScrollerVisibility": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
