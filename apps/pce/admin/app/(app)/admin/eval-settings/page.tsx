@@ -225,7 +225,7 @@ function SettingsInner() {
           )}
 
           <Tabs value={section} onValueChange={v => setSection(v as SectionId)} className="flex flex-col gap-6">
-            <TabsList variant="line" aria-label="Settings sections">
+            <TabsList variant="line" className="w-full justify-start" aria-label="Settings sections">
               {SECTIONS.map(s => <TabsTrigger key={s.id} value={s.id}>{s.label}</TabsTrigger>)}
             </TabsList>
 
