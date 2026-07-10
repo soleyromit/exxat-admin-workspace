@@ -26,9 +26,10 @@
 // Gorgias (comments + download).
 // ============================================================================
 
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useResultsOrigin, withFrom } from '@/lib/pce-nav-origin'
 import {
   PageHeader,
   Button,
@@ -128,12 +129,18 @@ function GateScreen({
           </p>
         ))}
       </div>
-      {children ?? (
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/results">Back to Results</Link>
-        </Button>
-      )}
+      {children ?? <GateBackButton />}
     </div>
+  )
+}
+
+/** Default gate CTA — returns to the list the user actually came from. */
+function GateBackButton() {
+  const origin = useResultsOrigin()
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link href={origin.href}>Back to {origin.label}</Link>
+    </Button>
   )
 }
 
@@ -158,6 +165,7 @@ function StatBlock({ value, caption, color }: { value: React.ReactNode; caption:
 /** Co-taught cross-links — quiet inline element in the identity strip: the
  *  current faculty stays the hero; colleagues are secondary jump links. */
 function FacultySwitcher({ siblings }: { siblings: EvalResult[] }) {
+  const origin = useResultsOrigin()
   if (siblings.length === 0) return null
   return (
     <span className="inline-flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground" role="group" aria-label="Co-taught faculty">
@@ -167,7 +175,7 @@ function FacultySwitcher({ siblings }: { siblings: EvalResult[] }) {
         <Fragment key={s.id}>
           {i > 0 && <span aria-hidden="true">,</span>}
           <Link
-            href={`/results/${encodeURIComponent(s.id)}`}
+            href={withFrom(`/results/${encodeURIComponent(s.id)}`, origin.from)}
             className="text-foreground underline-offset-2 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {s.facultyName}
@@ -200,6 +208,7 @@ function StatusResultScreen({
   facultyName?: string
   facultyInitials?: string
 }) {
+  const origin = useResultsOrigin()
   const [remindOpen, setRemindOpen] = useState(false)
   const [extendOpen, setExtendOpen] = useState(false)
   const [reminderSent, setReminderSent] = useState(false)
@@ -237,7 +246,7 @@ function StatusResultScreen({
   return (
     <>
       <SiteHeader
-        breadcrumbs={[{ label: 'Results', href: '/results' }]}
+        breadcrumbs={[{ label: origin.label, href: origin.href }]}
         title={survey.courseCode}
       />
       <PageHeader
@@ -1016,6 +1025,15 @@ function ShareSurveyCard({
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 export default function ResultDetailPage() {
+  return (
+    <Suspense>
+      <ResultDetailPageInner />
+    </Suspense>
+  )
+}
+
+function ResultDetailPageInner() {
+  const origin = useResultsOrigin()
   const params = useParams<{ id: string }>()
   const rawId = decodeURIComponent(params?.id ?? '')
   const { user, surveys, templates, hiddenComments, releaseSurvey } = usePce()
@@ -1076,7 +1094,7 @@ export default function ResultDetailPage() {
     }
     return (
       <>
-        <SiteHeader breadcrumbs={[{ label: 'Results', href: '/results' }]} title="Result" />
+        <SiteHeader breadcrumbs={[{ label: origin.label, href: origin.href }]} title="Result" />
         <PageHeader title="Results" />
         <div className="flex-1 px-7 py-4">
           <GateScreen
@@ -1093,7 +1111,7 @@ export default function ResultDetailPage() {
   if (!isPD && !isOwner) {
     return (
       <>
-        <SiteHeader breadcrumbs={[{ label: 'Results', href: '/results' }]} title="Access Restricted" />
+        <SiteHeader breadcrumbs={[{ label: origin.label, href: origin.href }]} title="Access Restricted" />
         <PageHeader title="Access Restricted" />
         <div className="flex-1 px-7 py-4">
           <GateScreen
@@ -1172,6 +1190,7 @@ function ResultDetail({
   exportKind: 'pdf' | 'csv'
   setExportKind: (k: 'pdf' | 'csv') => void
 }) {
+  const origin = useResultsOrigin()
   const { surveys } = usePce()
   const results = useMemo(() => deriveResults(surveys), [surveys])
   /* Live: one identity per instructor (name + email from the directory). */
@@ -1422,7 +1441,7 @@ function ResultDetail({
   return (
     <>
       <SiteHeader
-        breadcrumbs={[{ label: 'Results', href: '/results' }]}
+        breadcrumbs={[{ label: origin.label, href: origin.href }]}
         title={result.courseCode}
       />
       <PageHeader

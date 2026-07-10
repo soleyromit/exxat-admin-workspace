@@ -1,596 +1,432 @@
 'use client'
 
 // ============================================================================
-// Course Evaluation — Dashboard home, v3 (Jul 8 2026, multi-hat review fixes).
+// Course Evaluation — Dashboard home, v7 (Jul 10 2026).
 //
-// IA: VISIBLE MASTER → SCOPED DETAIL. Terms band cards use the Deel
-// Learning-Insights anatomy (hero number + labeled breakdown rows, EVERY count
-// a deep-link — no dead text) with stage badges sharing the survey vocabulary.
-// Selecting a card scopes the detail zone via ?term=.
+// IA: TERM LIFECYCLE MONITOR (Romit, from the live PCE dashboard — IA base per
+// pce-design-workflow; visuals mapped to DS, red → amber per aarti_no_red).
 //
-// Detail zone: the evaluations table IS the page (Romit 2026-07-09: all
-// visualizations, charts, and AI insights removed — analysis lives in
-// Analytics/Results). Interventions (Remind / Extend) sit inline on at-risk
-// rows — there is no separate Needs-attention queue.
+//   1. Terms triptych — Current / Last term / Upcoming slot. The current-term
+//      card carries the story at card scale (no_bare_count_action_surfaces):
+//      eval window, days-left urgency, avg rate + strip, an at-risk alert
+//      SENTENCE ("N of M live courses below X% · last reminder Nd ago") with
+//      a direct Send-reminders CTA, and live/pending/total footer counts.
+//   2. All terms — collapsed by default ("Show all terms (N)"); expands to a
+//      filter-tabbed DataTable (All/Current/Upcoming/Past) so any previous
+//      term is one gesture away. Rows navigate to the term workspace.
 //
-// ONE status vocabulary: Draft · Scheduled · Live · In review · Released
-// (terms add Upcoming/Complete for aggregate-only states). This page says
-// "evaluations", never "surveys" (Programmatic Surveys is a different module).
-// No red (aarti_no_red): teal --chart-2 good · amber --chart-4/--chip-4 risk.
+// REMOVED from the dashboard (Romit: "too crowded"): KPI band, charts, and
+// the cross-term action rail — per-course viz + the full work queue live in
+// the term workspace (/course-evaluation/term/[id]); cross-term viz lives in
+// Analytics. ONE status vocabulary; this page says "evaluations", never
+// "surveys".
 // ============================================================================
 
-import { Fragment, Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   Button,
   PageHeader,
   StatusBadge,
-  PersonIdentityCell,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  Card, CardContent, CardFooter, CardHeader, CardTitle,
+  Tabs, TabsList, TabsTrigger,
   LocalBanner,
 } from '@exxatdesignux/ui'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
-import { DataTablePaginated } from '@/components/data-table/pagination'
-import type { ColumnDef } from '@/components/data-table/types'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SetupTermSheet } from '@/components/pce/setup-term-sheet'
-import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
-import { rateColor } from '@/lib/pce-results'
+import { SendReminderDialog } from '@/components/pce/pce-modals'
+import { DataTablePaginated } from '@/components/data-table/pagination'
+import type { ColumnDef } from '@/components/data-table/types'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
 import {
-  MOCK_PROGRAM_TERMS,
-  MOCK_COURSE_OFFERINGS,
-  MOCK_MASTER_COURSES,
-  type PceSurvey,
-  type ProgramTerm,
-} from '@/lib/pce-mock-data'
+  RESPONSE_TARGET, LIVE,
+  termsOrdered, currentTermId, snapshot, evalWindow, completionColor,
+  type TermSnapshot,
+} from '@/lib/pce-term-metrics'
+import type { PceSurvey, ProgramTerm } from '@/lib/pce-mock-data'
 
-const RESPONSE_TARGET = 70
+/* ── shared bits ──────────────────────────────────────────────────────────── */
 
-type SurveyRow = PceSurvey & Record<string, unknown>
+type TermPosition = 'current' | 'past' | 'upcoming'
 
-/* Same vocabulary as the Evaluations hub (surveys-table.tsx). */
-const STATUS_FILTER_OPTIONS = [
-  { value: 'draft',          label: 'Draft' },
-  { value: 'scheduled',      label: 'Scheduled' },
-  { value: 'collecting',     label: 'Collecting Responses' },
-  { value: 'active',         label: 'Active' },
-  { value: 'pending_review', label: 'Pending Review' },
-  { value: 'released',       label: 'Results Released' },
-  { value: 'closed',         label: 'Closed' },
-]
-
-function primaryInstructorName(s: PceSurvey): string {
-  return (s.instructors.find((i) => i.role === 'primary') ?? s.instructors[0])?.name ?? ''
+const POSITION_BADGE: Record<TermPosition, { label: string; tone: StatusBadgeTone }> = {
+  current:  { label: 'Current',  tone: 'success' },
+  past:     { label: 'Past',     tone: 'neutral' },
+  upcoming: { label: 'Upcoming', tone: 'info' },
 }
 
-/* ── term helpers ─────────────────────────────────────────────────────────── */
-
-const termsOrdered: ProgramTerm[] = [...MOCK_PROGRAM_TERMS].sort(
-  (a, b) => a.startDate.localeCompare(b.startDate),
-)
-
-/** Latest term whose start date has passed = the current cycle. */
-function currentTermId(): string {
+function positionOf(term: ProgramTerm, curId: string): TermPosition {
+  if (term.id === curId) return 'current'
   const today = new Date().toISOString().slice(0, 10)
-  const started = termsOrdered.filter((t) => t.startDate <= today)
-  return (started.at(-1) ?? termsOrdered[0]).id
+  return term.startDate > today ? 'upcoming' : 'past'
 }
 
-function evalWindow(term: ProgramTerm): { open: string; close: string } {
-  const closeDate = new Date(term.endDate)
-  closeDate.setDate(closeDate.getDate() + 7)
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  return { open: fmt(new Date(term.startDate)), close: fmt(closeDate) }
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+function daysAgo(dateStr: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000))
 }
 
-function daysUntilClose(term: ProgramTerm): number | null {
-  const close = new Date(term.endDate)
-  close.setDate(close.getDate() + 7)
-  const diff = Math.ceil((close.getTime() - Date.now()) / 86_400_000)
-  return diff > 0 ? diff : null
-}
-
-function daysUntil(dateStr: string): number | null {
-  const t = new Date(dateStr).getTime()
-  return Number.isFinite(t) ? Math.ceil((t - Date.now()) / 86_400_000) : null
-}
-
-function weightedRate(surveys: PceSurvey[]): number | null {
-  const enrolled = surveys.reduce((s, x) => s + x.enrollmentCount, 0)
-  if (enrolled === 0) return null
-  return Math.round(surveys.reduce((s, x) => s + x.responseRate * x.enrollmentCount, 0) / enrolled)
-}
-
-/** Lifecycle sort for the table: needs-attention first. */
-const STATUS_ORDER: Record<string, number> = {
-  active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
-}
-
-const LIVE = (s: PceSurvey) => s.status === 'active' || s.status === 'collecting'
-const IN_REVIEW = (s: PceSurvey) => s.status === 'pending_review' || s.status === 'closed'
-const FINISHED = (s: PceSurvey) => IN_REVIEW(s) || s.status === 'released'
-
-/* ── term stage model (shares the survey vocabulary) ──────────────────────── */
-
-type TermStage = 'upcoming' | 'live' | 'review' | 'complete'
-
-const STAGE_BADGE: Record<TermStage, { label: string; tone: StatusBadgeTone }> = {
-  upcoming: { label: 'Upcoming',  tone: 'info' },
-  live:     { label: 'Live',      tone: 'success' },
-  review:   { label: 'In review', tone: 'warning' },
-  complete: { label: 'Complete',  tone: 'neutral' },
-}
-
-interface TermSnapshot {
-  term: ProgramTerm
-  stage: TermStage
-  rate: number | null
-  total: number
-  live: number
-  atRisk: number
-  pending: number
-  released: number
-  daysLeft: number | null
-  coverage: { surveyed: number; total: number } | null
-}
-
-function coverageFor(termId: string, termSurveys: PceSurvey[]) {
-  const offerings = MOCK_COURSE_OFFERINGS.filter((o) => o.termId === termId)
-  if (offerings.length === 0) return null
-  const surveyedCodes = new Set(
-    termSurveys.filter((s) => s.status !== 'draft').map((s) => s.courseCode),
-  )
-  const surveyed = offerings.filter((o) => {
-    const code = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)?.code
-    return code ? surveyedCodes.has(code) : false
-  }).length
-  return { surveyed, total: offerings.length }
-}
-
-function snapshot(term: ProgramTerm, ce: PceSurvey[]): TermSnapshot {
-  const list = ce.filter((s) => s.term === term.name)
-  const today = new Date().toISOString().slice(0, 10)
-  const live = list.filter(LIVE)
-  const pending = list.filter(IN_REVIEW).length
-  const released = list.filter((s) => s.status === 'released').length
-  const stage: TermStage =
-    term.startDate > today ? 'upcoming'
-    : live.length > 0 ? 'live'
-    : pending > 0 ? 'review'
-    : 'complete'
-  return {
-    term,
-    stage,
-    rate: weightedRate(list),
-    total: list.length,
-    live: live.length,
-    atRisk: live.filter((s) => s.responseRate < AT_RISK_THRESHOLD).length,
-    pending,
-    released,
-    daysLeft: stage === 'live' ? daysUntilClose(term) : null,
-    coverage: coverageFor(term.id, list),
-  }
-}
-
-/* ── term card (Deel Learning-Insights anatomy: hero + linked breakdown) ──── */
-
-function CardStatRow({
-  label,
-  value,
-  href,
-  emphasis,
-}: {
-  label: string
-  value: string
-  href?: string
-  emphasis?: boolean
-}) {
-  const inner = (
-    <>
-      <span className="text-xs text-muted-foreground">{label}</span>
+/** Filled to the current rate, tick at the response target. */
+function RateStrip({ rate }: { rate: number }) {
+  return (
+    <span
+      className="relative block h-1.5 w-full rounded-full bg-muted"
+      role="img"
+      aria-label={`${rate}% response · target ${RESPONSE_TARGET}%`}
+    >
       <span
-        className="ms-auto text-xs font-medium tabular-nums"
-        style={{ color: emphasis ? 'var(--chip-4)' : 'var(--foreground)' }}
-      >
-        {value}
-      </span>
-      {href && (
-        <i className="fa-light fa-chevron-right text-muted-foreground" style={{ fontSize: 10 }} aria-hidden="true" />
-      )}
-    </>
+        className="absolute inset-y-0 left-0 rounded-full"
+        style={{ width: `${Math.min(rate, 100)}%`, backgroundColor: completionColor(rate) }}
+      />
+      <span
+        className="absolute -top-0.5 h-2.5 w-px bg-foreground/40"
+        style={{ left: `${RESPONSE_TARGET}%` }}
+        aria-hidden="true"
+      />
+    </span>
   )
-  if (!href) {
-    return <div className="flex items-center gap-1.5 py-1 border-t border-border/60">{inner}</div>
-  }
+}
+
+function TermMetaLine({ term }: { term: ProgramTerm }) {
+  const win = evalWindow(term)
+  return (
+    <p className="text-xs text-muted-foreground">
+      AY {term.academicYear} · Eval window {win.open} – {win.close}
+    </p>
+  )
+}
+
+function ViewTermLink({ termId, name }: { termId: string; name: string }) {
   return (
     <Link
-      href={href}
-      className="flex items-center gap-1.5 py-1 border-t border-border/60 hover:bg-muted/40 -mx-1 px-1 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      href={`/course-evaluation/term/${termId}`}
+      aria-label={`Open ${name} workspace`}
+      className="ms-auto rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      {inner}
+      View term →
     </Link>
   )
 }
 
-function TermCard({
-  snap,
-  isSelected,
-  isCurrentTerm,
+/* ── current term (the hero card) ─────────────────────────────────────────── */
+
+function CurrentTermCard({
+  snap, atRisk, onRemind,
 }: {
   snap: TermSnapshot
-  isSelected: boolean
-  isCurrentTerm: boolean
+  atRisk: PceSurvey[]
+  onRemind: () => void
 }) {
-  const badge = STAGE_BADGE[snap.stage]
-  const rows: { label: string; value: string; href?: string; emphasis?: boolean }[] = []
-  if (snap.stage === 'upcoming') {
-    rows.push({
+  const { term } = snap
+  const urgent = snap.daysLeft != null && snap.daysLeft <= 7
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
+        <StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <TermMetaLine term={term} />
+        {snap.daysLeft != null && (
+          <p
+            className="text-xs font-medium"
+            style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
+          >
+            {snap.daysLeft}{snap.daysLeft === 1 ? ' day' : ' days'} left until evaluation closes
+          </p>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Avg response rate</span>
+            <span className="text-lg font-semibold tabular-nums leading-none text-foreground">
+              {snap.rate != null ? `${snap.rate}%` : '—'}
+            </span>
+          </div>
+          {snap.rate != null && <RateStrip rate={snap.rate} />}
+        </div>
+        {atRisk.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+            <p className="flex items-start gap-2 text-sm font-medium text-foreground">
+              <i className="fa-light fa-triangle-exclamation mt-0.5" aria-hidden="true" style={{ color: 'var(--chip-4)' }} />
+              {atRisk.length} of {snap.live} live {snap.live === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}% response
+            </p>
+            {term.lastReminderSentAt && (
+              <p className="text-xs text-muted-foreground">
+                Last reminder sent {daysAgo(term.lastReminderSentAt)} days ago
+              </p>
+            )}
+            <Button variant="outline" size="sm" className="self-start" onClick={onRemind}>
+              Send reminders to at-risk ({atRisk.length})
+            </Button>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="gap-2">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{snap.live}</span> live ·{' '}
+          <span className="font-medium text-foreground">{snap.pending}</span> pending ·{' '}
+          <span className="font-medium text-foreground">{snap.total}</span> total
+        </p>
+        <ViewTermLink termId={term.id} name={term.name} />
+      </CardFooter>
+    </Card>
+  )
+}
+
+/* ── last term ────────────────────────────────────────────────────────────── */
+
+function LastTermCard({ snap }: { snap: TermSnapshot }) {
+  const { term } = snap
+  const rows: { label: string; value: string; emphasis?: boolean }[] = [
+    { label: 'Evaluations', value: `${snap.total}` },
+    { label: 'Pending review', value: `${snap.pending}`, emphasis: snap.pending > 0 },
+    { label: 'Avg response', value: snap.rate != null ? `${snap.rate}%` : '—' },
+  ]
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
+        <StatusBadge label="Last term" tone={POSITION_BADGE.past.tone} />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <TermMetaLine term={term} />
+        <dl className="flex flex-col">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-center gap-1.5 border-t border-border/60 py-1.5">
+              <dt className="text-xs text-muted-foreground">{r.label}</dt>
+              <dd
+                className="ms-auto text-xs font-medium tabular-nums"
+                style={{ color: r.emphasis ? 'var(--chip-4)' : 'var(--foreground)' }}
+              >
+                {r.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+      <CardFooter className="mt-auto">
+        <ViewTermLink termId={term.id} name={term.name} />
+      </CardFooter>
+    </Card>
+  )
+}
+
+/* ── upcoming slot ────────────────────────────────────────────────────────── */
+
+function UpcomingCard({ snap }: { snap: TermSnapshot }) {
+  const { term } = snap
+  const rows: { label: string; value: string }[] = [
+    {
       label: 'Evaluations created',
       value: snap.coverage ? `${snap.coverage.surveyed} of ${snap.coverage.total}` : `${snap.total}`,
-      href: `/surveys/push?term=${snap.term.id}`,
-    })
-    rows.push({
-      label: 'Opens',
-      value: new Date(snap.term.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    })
-  }
-  if (snap.stage === 'live') {
-    rows.push({ label: 'Live', value: `${snap.live}`, href: '/surveys?status=active,collecting' })
-    if (snap.atRisk > 0) {
-      rows.push({ label: 'At risk', value: `${snap.atRisk}`, href: '/surveys?status=active,collecting', emphasis: true })
-    }
-    if (snap.coverage && snap.coverage.surveyed < snap.coverage.total) {
-      rows.push({
-        label: 'Courses covered',
-        value: `${snap.coverage.surveyed} of ${snap.coverage.total}`,
-        href: `/surveys/push?term=${snap.term.id}`,
-      })
-    }
-    if (snap.daysLeft != null) rows.push({ label: 'Window closes', value: `in ${snap.daysLeft}d` })
-  }
-  if (snap.stage === 'review') {
-    rows.push({ label: 'In review', value: `${snap.pending}`, href: '/surveys?status=pending_review,closed', emphasis: true })
-    rows.push({ label: 'Released', value: `${snap.released} of ${snap.total}`, href: '/results' })
-  }
-  if (snap.stage === 'complete') {
-    rows.push({ label: 'Released', value: `${snap.released} of ${snap.total}`, href: '/results' })
-  }
+    },
+    { label: 'Opens', value: fmtDate(term.startDate) },
+  ]
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
+        <StatusBadge label={POSITION_BADGE.upcoming.label} tone={POSITION_BADGE.upcoming.tone} />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <TermMetaLine term={term} />
+        <dl className="flex flex-col">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-center gap-1.5 border-t border-border/60 py-1.5">
+              <dt className="text-xs text-muted-foreground">{r.label}</dt>
+              <dd className="ms-auto text-xs font-medium tabular-nums text-foreground">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+      <CardFooter className="mt-auto">
+        <ViewTermLink termId={term.id} name={term.name} />
+      </CardFooter>
+    </Card>
+  )
+}
+
+function NoUpcomingSlot({ onConfigure }: { onConfigure: () => void }) {
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/25 px-6 py-8">
+      <i className="fa-light fa-calendar-plus text-2xl text-muted-foreground" aria-hidden="true" />
+      <p className="text-sm font-medium text-foreground">No upcoming term yet</p>
+      <Button variant="outline" size="sm" onClick={onConfigure}>
+        Configure Term Calendar
+      </Button>
+    </div>
+  )
+}
+
+/* ── all terms (collapsed history) ────────────────────────────────────────── */
+
+type TermRow = {
+  id: string
+  name: string
+  position: TermPosition
+  academicYear: string
+  startDate: string
+  endDate: string
+  total: number
+  rate: number | null
+} & Record<string, unknown>
+
+function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState<'all' | TermPosition>('all')
+
+  const allRows: TermRow[] = useMemo(
+    () =>
+      [...termsOrdered].reverse().map((t) => {
+        const snap = snapshot(t, ce)
+        return {
+          id: t.id,
+          name: t.name,
+          position: positionOf(t, curId),
+          academicYear: t.academicYear,
+          startDate: t.startDate,
+          endDate: t.endDate,
+          total: snap.total,
+          rate: snap.rate,
+        }
+      }),
+    [ce, curId],
+  )
+
+  const counts = useMemo(() => {
+    const c: Record<'all' | TermPosition, number> = { all: allRows.length, current: 0, upcoming: 0, past: 0 }
+    for (const r of allRows) c[r.position] += 1
+    return c
+  }, [allRows])
+
+  const rows = filter === 'all' ? allRows : allRows.filter((r) => r.position === filter)
+
+  const columns: ColumnDef<TermRow>[] = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Term',
+        cell: (row) => <span className="text-sm font-medium text-foreground">{row.name}</span>,
+      },
+      {
+        key: 'position',
+        label: 'Status',
+        width: 120,
+        cell: (row) => (
+          <StatusBadge label={POSITION_BADGE[row.position].label} tone={POSITION_BADGE[row.position].tone} />
+        ),
+      },
+      { key: 'academicYear', label: 'Academic year', width: 130 },
+      { key: 'startDate', label: 'Start date', width: 130, cell: (row) => fmtDate(row.startDate) },
+      { key: 'endDate', label: 'End date', width: 130, cell: (row) => fmtDate(row.endDate) },
+      {
+        key: 'total',
+        label: 'Evaluations',
+        width: 110,
+        cell: (row) => <span className="tabular-nums">{row.total}</span>,
+      },
+      {
+        key: 'rate',
+        label: 'Avg response rate',
+        width: 150,
+        cell: (row) => (
+          <span className="tabular-nums">{row.rate != null ? `${row.rate}%` : '—'}</span>
+        ),
+      },
+    ],
+    [],
+  )
 
   return (
-    <div
-      className={`relative rounded-lg border bg-card px-4 pb-2 pt-3 ${
-        isSelected ? 'border-ring' : 'border-border'
-      }`}
-    >
-      {/* selection accent — a structural cue no hover state uses */}
-      {isSelected && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-0.5 rounded-t-lg"
-          style={{ background: 'var(--brand-color)' }}
-        />
-      )}
-      <Link
-        href={`/course-evaluation/dashboard?term=${snap.term.id}`}
-        aria-current={isSelected ? 'true' : undefined}
-        aria-label={`View ${snap.term.name} on this dashboard`}
-        className="group block focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
+    <section className="flex flex-col gap-3" aria-label="All terms">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="self-start text-muted-foreground hover:text-foreground"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-foreground group-hover:underline underline-offset-2">
-            {snap.term.name}
-            {isCurrentTerm && (
-              <span className="text-xs text-muted-foreground font-normal"> · current</span>
-            )}
-          </span>
-          <StatusBadge label={badge.label} tone={badge.tone} />
+        <i className={`fa-light ${open ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs`} aria-hidden="true" />
+        {open ? 'Hide' : 'Show'} all terms ({counts.all})
+      </Button>
+      {open && (
+        <div className="flex flex-col gap-3">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList variant="line" className="w-full justify-start">
+              <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+              <TabsTrigger value="current">Current ({counts.current})</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming ({counts.upcoming})</TabsTrigger>
+              <TabsTrigger value="past">Past ({counts.past})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <DataTablePaginated<TermRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pagination={{ pageSize: 10 }}
+            edgeInset={false}
+            stickyHeader={false}
+            onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-8">
+                <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />
+                <p className="text-sm font-medium">No terms in this group</p>
+                <p className="text-xs text-muted-foreground">Switch the filter above to see other terms.</p>
+              </div>
+            }
+          />
         </div>
-        <div className="mt-1.5 mb-2 flex items-end gap-2">
-          <span className="text-xl font-semibold tabular-nums leading-none text-foreground">
-            {snap.rate != null ? `${snap.rate}%` : '—'}
-          </span>
-          <span className="text-xs text-muted-foreground pb-px">
-            response rate · target {RESPONSE_TARGET}%
-          </span>
-        </div>
-      </Link>
-      <div className="flex flex-col">
-        {rows.map((r) => (
-          <CardStatRow key={r.label} {...r} />
-        ))}
-      </div>
-    </div>
+      )}
+    </section>
   )
 }
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 function DashboardHomeInner() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { surveys, sendSurveyReminder } = usePce()
+  const { surveys } = usePce()
   const [setupOpen, setSetupOpen] = useState(false)
   const [remindTargets, setRemindTargets] = useState<PceSurvey[]>([])
-  const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
-  const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set())
-  const [reminderSentTo, setReminderSentTo] = useState<string | null>(null)
+  const [banner, setBanner] = useState<string | null>(null)
 
   const curId = currentTermId()
-  const requested = searchParams?.get('term')
-  const selectedTerm =
-    termsOrdered.find((t) => t.id === requested) ??
-    termsOrdered.find((t) => t.id === curId) ??
-    termsOrdered[0]
   const curIdx = termsOrdered.findIndex((t) => t.id === curId)
-
-  // A confirmation belongs to the term it happened in — never carry it across.
-  useEffect(() => {
-    setReminderSentTo(null)
-  }, [selectedTerm.id])
 
   const ce = useMemo(
     () => surveys.filter((s) => !s.surveyType || s.surveyType === 'course_evaluation'),
     [surveys],
   )
-  const termSurveys = useMemo(
-    () => ce.filter((s) => s.term === selectedTerm.name),
-    [ce, selectedTerm.name],
+
+  const curTerm = termsOrdered[curIdx]
+  const lastTerm = termsOrdered[curIdx - 1]
+  const upcomingTerm = termsOrdered[curIdx + 1]
+
+  const curSnap = useMemo(() => (curTerm ? snapshot(curTerm, ce) : null), [curTerm, ce])
+  const lastSnap = useMemo(() => (lastTerm ? snapshot(lastTerm, ce) : null), [lastTerm, ce])
+  const upcomingSnap = useMemo(
+    () => (upcomingTerm ? snapshot(upcomingTerm, ce) : null),
+    [upcomingTerm, ce],
   )
 
-  /* Terms band — last / current / upcoming trio (+ the selected past term) */
-  const bandTerms = useMemo(() => {
-    const trio = [termsOrdered[curIdx - 1], termsOrdered[curIdx], termsOrdered[curIdx + 1]]
-      .filter((t): t is ProgramTerm => !!t)
-    if (!trio.some((t) => t.id === selectedTerm.id)) trio.unshift(selectedTerm)
-    return trio.map((t) => snapshot(t, ce))
-  }, [ce, curIdx, selectedTerm])
-
-  const liveSurveys = termSurveys.filter(LIVE)
-  const responsesCollected = termSurveys.reduce((s, x) => s + x.responseCount, 0)
-  const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
-  const closingThisWeek = liveSurveys.filter((s) => {
-    const d = s.deadline ? daysUntil(s.deadline) : null
-    return d != null && d >= 0 && d <= 7
-  }).length
-
-  const tableRows: SurveyRow[] = useMemo(
+  const curAtRisk = useMemo(
     () =>
-      [...termSurveys]
-        .sort(
-          (a, b) =>
-            (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) ||
-            a.responseRate - b.responseRate,
-        )
-        // `faculty` scalar — filters/search/sort match on String(row[key]).
-        .map((s) => ({ ...s, faculty: primaryInstructorName(s) }) as SurveyRow),
-    [termSurveys],
+      curTerm
+        ? ce
+            .filter((s) => s.term === curTerm.name && LIVE(s) && s.responseRate < AT_RISK_THRESHOLD)
+            .sort((a, b) => a.responseRate - b.responseRate)
+        : [],
+    [ce, curTerm],
   )
-
-  const facultyOptions = useMemo(
-    () =>
-      [...new Set(termSurveys.map(primaryInstructorName).filter(Boolean))]
-        .sort()
-        .map((n) => ({ value: n, label: n })),
-    [termSurveys],
-  )
-
-  const columns: ColumnDef<SurveyRow>[] = useMemo(
-    () => [
-      {
-        key: 'courseCode',
-        label: 'Course',
-        sortable: true,
-        filter: { type: 'text', icon: 'fa-book' },
-        cell: (row) => (
-          <Link
-            href={`/results/${row.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
-          >
-            <p className="text-sm font-medium">{row.courseCode}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[220px]">{row.courseName}</p>
-          </Link>
-        ),
-      },
-      {
-        key: 'faculty',
-        label: 'Faculty',
-        width: 190,
-        sortable: true,
-        filter: { type: 'select', icon: 'fa-user', options: facultyOptions },
-        cell: (row) => {
-          const primary = row.instructors.find((i) => i.role === 'primary') ?? row.instructors[0]
-          if (!primary) return <span className="text-sm text-muted-foreground">—</span>
-          const extra = row.instructors.length - 1
-          return (
-            <div className="flex items-center gap-1.5 min-w-0">
-              <PersonIdentityCell name={primary.name} initials={primary.initials} />
-              {extra > 0 && (
-                <span className="text-xs text-muted-foreground shrink-0" title={row.instructors.slice(1).map((i) => i.name).join(', ')}>
-                  +{extra}
-                </span>
-              )}
-            </div>
-          )
-        },
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        sortable: true,
-        width: 140,
-        filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
-        cell: (row) => <SurveyStatusBadgeOS status={row.status} />,
-      },
-      {
-        key: 'responseRate',
-        label: 'Response rate',
-        sortable: true,
-        width: 120,
-        header: () => <span className="block text-right">Response rate</span>,
-        cell: (row) => (
-          <div className="text-right">
-            <p className="text-sm tabular-nums font-medium text-foreground flex items-center justify-end gap-1.5">
-              {row.responseCount > 0 && (
-                <span
-                  role="img"
-                  aria-label={row.responseRate >= RESPONSE_TARGET ? 'on target' : 'below target'}
-                  style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', backgroundColor: rateColor(row.responseRate), flexShrink: 0 }}
-                />
-              )}
-              {row.responseCount > 0 ? `${row.responseRate}%` : '—'}
-            </p>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {row.responseCount}/{row.enrollmentCount}
-            </p>
-          </div>
-        ),
-      },
-      {
-        key: 'deadline',
-        label: 'Closes',
-        sortable: true,
-        width: 130,
-        filter: { type: 'text', icon: 'fa-calendar-day' },
-        cell: (row) => {
-          const d = row.deadline ? daysUntil(row.deadline) : null
-          if (LIVE(row) && d != null) {
-            return (
-              <div>
-                <p className="text-sm tabular-nums">{row.deadline}</p>
-                <p
-                  className="text-xs tabular-nums"
-                  style={{ color: d <= 3 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
-                >
-                  {d <= 0 ? 'closes today' : `${d}d left`}
-                </p>
-              </div>
-            )
-          }
-          return <span className="text-xs text-muted-foreground">{row.deadline || '—'}</span>
-        },
-      },
-      {
-        key: 'actions',
-        label: '',
-        width: 220,
-        cell: (row) => {
-          const isAtRisk = LIVE(row) && row.responseRate < AT_RISK_THRESHOLD
-          const sentThisSession = remindedIds.has(row.id)
-          return (
-            <div className="flex items-center justify-end gap-1">
-              {isAtRisk && sentThisSession && (
-                <span className="text-xs text-muted-foreground pe-1">Sent today</span>
-              )}
-              {isAtRisk && !sentThisSession && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setRemindTargets([row])
-                  }}
-                  aria-label={`Send ad-hoc reminder for ${row.courseCode}`}
-                >
-                  Remind
-                </Button>
-              )}
-              {/* Low response rate → offer more collection time inline */}
-              {isAtRisk && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setExtendTargets([row])
-                  }}
-                  aria-label={`Extend the evaluation window for ${row.courseCode}`}
-                >
-                  Extend
-                </Button>
-              )}
-              {FINISHED(row) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className="px-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Link href={`/results/${row.id}`} onClick={(e) => e.stopPropagation()}>
-                    Results
-                    <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                  </Link>
-                </Button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`More actions for ${row.courseCode}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <i className="fa-light fa-ellipsis" aria-hidden="true" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  {/* "View evaluation" became "View results" (Romit 2026-07-09) —
-                      the results page is the viewing surface; /surveys/[id]
-                      stays the ops surface reached via row click. */}
-                  <DropdownMenuItem onSelect={() => router.push(`/results/${row.id}`)}>
-                    View results
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.id}/preview`)}>
-                    Preview form
-                  </DropdownMenuItem>
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => setRemindTargets([row])}>
-                      Send reminder
-                    </DropdownMenuItem>
-                  )}
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => setExtendTargets([row])}>
-                      Edit end date
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        },
-      },
-    ],
-    [router, remindedIds, facultyOptions],
-  )
-
-  /* All-terms menu — grouped by academic year (separate axes, never merged
-     into one label). Selecting a term scopes the page via ?term=. */
-  const termsByYear = useMemo(() => {
-    const m = new Map<string, ProgramTerm[]>()
-    for (const t of [...termsOrdered].reverse()) {
-      m.set(t.academicYear, [...(m.get(t.academicYear) ?? []), t])
-    }
-    return [...m.entries()]
-  }, [])
 
   const firstRun = ce.length === 0
-  const window = evalWindow(selectedTerm)
 
   return (
-    /* No overflow-hidden here: the page scrolls at the window level so the
-       sticky SiteHeader pins and the DS table's floating header can dock
-       under it ("window scroll breaks sticky under shell overflow" —
-       PrimaryPageTemplate). */
     <div className="flex flex-col flex-1">
       <SiteHeader title="Dashboard" />
       <PageHeader
@@ -613,175 +449,43 @@ function DashboardHomeInner() {
           <FirstRun onConfigure={() => setSetupOpen(true)} />
         ) : (
           <div className="flex flex-col gap-6">
-            {/* ── Terms band — the program overview (visible master) ── */}
-            <nav aria-label="Terms" className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-baseline gap-2">
-                  <h2 className="text-sm font-semibold text-foreground">Terms</h2>
-                  <span className="text-xs text-muted-foreground">
-                    Select a term to scope the page
-                  </span>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      All terms
-                      <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {termsByYear.map(([year, terms], i) => (
-                      <Fragment key={year}>
-                        {i > 0 && <DropdownMenuSeparator />}
-                        <DropdownMenuLabel>AY {year}</DropdownMenuLabel>
-                        {terms.map((t) => (
-                          <DropdownMenuItem
-                            key={t.id}
-                            onSelect={() => router.push(`/course-evaluation/dashboard?term=${t.id}`)}
-                          >
-                            <span className="flex-1">{t.name}</span>
-                            {t.id === curId && (
-                              <span className="text-xs text-muted-foreground">current</span>
-                            )}
-                            {t.id === selectedTerm.id && (
-                              <i className="fa-light fa-check" aria-hidden="true" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </Fragment>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className={`grid grid-cols-1 gap-3 ${bandTerms.length > 3 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                {bandTerms.map((snap) => (
-                  <TermCard
-                    key={snap.term.id}
-                    snap={snap}
-                    isSelected={snap.term.id === selectedTerm.id}
-                    isCurrentTerm={snap.term.id === curId}
-                  />
-                ))}
-              </div>
-            </nav>
-
-            {/* ── Detail zone — scoped to the selected term ── */}
-            <div className="flex flex-col gap-1">
-              <h2 className="font-heading text-2xl font-semibold text-foreground">
-                {selectedTerm.name}
-              </h2>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {enrolledTotal > 0 ? (
-                  <>
-                    <span className="font-medium text-foreground">
-                      {responsesCollected.toLocaleString()} of {enrolledTotal.toLocaleString()} students responded
-                    </span>
-                    {closingThisWeek > 0 ? (
-                      <> · <span className="font-medium text-foreground">{closingThisWeek} closing this week</span></>
-                    ) : null}
-                    {' · '}
-                  </>
-                ) : null}
-                {window.open} – {window.close} · AY {selectedTerm.academicYear}
-              </p>
-            </div>
-
-            {reminderSentTo && (
-              <LocalBanner
-                variant="success"
-                title="Reminder sent"
-                dismissible
-                onDismiss={() => setReminderSentTo(null)}
-              >
-                An ad-hoc reminder went out to non-responders in {reminderSentTo}.
+            {banner && (
+              <LocalBanner variant="success" title="Done" dismissible onDismiss={() => setBanner(null)}>
+                {banner}
               </LocalBanner>
             )}
 
-            {/* Evaluations — the worklist comes before the analysis. At-risk
-                rows carry Remind + Extend inline (the Needs-attention card was
-                removed; interventions live on the rows themselves). */}
-            <section className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Evaluations ({tableRows.length})
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className="px-0 text-muted-foreground hover:text-foreground"
-                >
-                  <Link href="/surveys">
-                    Open Evaluations hub
-                    <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </div>
-              <DataTablePaginated<SurveyRow>
-                data={tableRows}
-                columns={columns}
-                getRowId={(row) => row.id}
-                pagination={{ pageSize: 10 }}
-                edgeInset={false}
-                stickyHeader={false}
-                onRowClick={(row) => router.push(`/results/${row.id}`)}
-                emptyState={
-                  tableRows.length > 0 ? (
-                    /* Rows exist — this empty state means search/filters excluded them. */
-                    <div className="flex flex-col items-center gap-2 py-8">
-                      <i className="fa-light fa-filter-circle-xmark text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                      <p className="text-sm font-medium">No evaluations match</p>
-                      <p className="text-xs text-muted-foreground">
-                        Adjust or clear the search and filters above.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 py-8">
-                      <i className="fa-light fa-calendar-plus text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                      <p className="text-sm font-medium">No evaluations in {selectedTerm.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Send evaluations to populate this term.
-                      </p>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/surveys/push?term=${selectedTerm.id}`}>
-                          Set up {selectedTerm.name} evaluations
-                        </Link>
-                      </Button>
-                    </div>
-                  )
-                }
-              />
-            </section>
+            {/* ── Terms triptych — current / last / upcoming ── */}
+            <h2 className="sr-only">Terms</h2>
+            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
+              {curSnap && (
+                <CurrentTermCard
+                  snap={curSnap}
+                  atRisk={curAtRisk}
+                  onRemind={() => setRemindTargets(curAtRisk)}
+                />
+              )}
+              {lastSnap && <LastTermCard snap={lastSnap} />}
+              {upcomingSnap ? (
+                <UpcomingCard snap={upcomingSnap} />
+              ) : (
+                <NoUpcomingSlot onConfigure={() => setSetupOpen(true)} />
+              )}
+            </div>
 
+            {/* ── All terms — history one gesture away ── */}
+            <AllTermsSection ce={ce} curId={curId} />
           </div>
         )}
       </div>
 
       <SetupTermSheet open={setupOpen} onOpenChange={setSetupOpen} />
 
-      {/* Extend close date — same dialog the hub uses (PRD: single or bulk) */}
-      <EditEndDateDialog
-        open={extendTargets.length > 0}
-        onOpenChange={(v) => !v && setExtendTargets([])}
-        surveys={extendTargets}
-      />
-
       <SendReminderDialog
         open={remindTargets.length > 0}
         onOpenChange={(v) => !v && setRemindTargets([])}
         surveys={remindTargets}
-        onSent={(codes) => {
-          setReminderSentTo(codes)
-          setRemindedIds((prev) => {
-            const next = new Set(prev)
-            remindTargets.forEach((t) => next.add(t.id))
-            return next
-          })
-        }}
+        onSent={(codes) => setBanner(`An ad-hoc reminder went out to non-responders in ${codes}.`)}
       />
     </div>
   )
@@ -798,11 +502,7 @@ export function DashboardHome() {
 function FirstRun({ onConfigure }: { onConfigure: () => void }) {
   return (
     <div className="flex min-h-[min(420px,60vh)] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6">
-      <i
-        className="fa-light fa-calendar-plus text-muted-foreground"
-        aria-hidden="true"
-        style={{ fontSize: 32 }}
-      />
+      <i className="fa-light fa-calendar-plus text-3xl text-muted-foreground" aria-hidden="true" />
       <div className="flex flex-col items-center gap-1">
         <h2 className="text-sm font-medium text-foreground">No term set up yet</h2>
         <p className="text-sm text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>

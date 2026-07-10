@@ -114,7 +114,7 @@ export function TermThemesInsight({
                     <span key={code}>
                       {i > 0 && ', '}
                       <Link
-                        href={`/results/${encodeURIComponent(data.surveyIdByCode.get(code) ?? '')}`}
+                        href={`/results/${encodeURIComponent(data.surveyIdByCode.get(code) ?? '')}?from=analytics`}
                         className="hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
                       >
                         {code}

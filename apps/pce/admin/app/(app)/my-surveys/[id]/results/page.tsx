@@ -9,5 +9,5 @@ export default async function LegacyFacultyResultsRedirect({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  redirect(`/results/${encodeURIComponent(id)}`)
+  redirect(`/results/${encodeURIComponent(id)}?from=my-surveys`)
 }

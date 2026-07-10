@@ -75,7 +75,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
                 }}
               >
                 {isCompleted ? (
-                  <i className="fa-solid fa-check" style={{ fontSize: 10 }} aria-hidden="true" />
+                  <i className="fa-solid fa-check text-xs" aria-hidden="true" />
                 ) : (
                   displayNum
                 )}

@@ -115,7 +115,7 @@ function TeamSwitcher() {
             >
               <Avatar className="h-6 w-6 rounded shrink-0">
                 <AvatarImage src={school.logo} alt="" />
-                <AvatarFallback className="rounded text-[10px] font-bold">
+                <AvatarFallback className="rounded text-xs font-bold">
                   {school.initials}
                 </AvatarFallback>
               </Avatar>

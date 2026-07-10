@@ -1,5 +1,6 @@
 import type { CommandMenuGroup } from "@/lib/command-menu-config"
 import { MOCK_SURVEYS, MOCK_TEMPLATES } from "@/lib/pce-mock-data"
+import { termsOrdered } from "@/lib/pce-term-metrics"
 
 const ADMIN_ENTITY_ROUTES = [
   { id: "admin-students",         label: "Students",         href: "/admin/students",         icon: "fa-light fa-graduation-cap" },
@@ -15,6 +16,14 @@ const ADMIN_ENTITY_ROUTES = [
 ]
 
 const PAGE_ROUTES = [
+  { id: "page-ce-dashboard",      label: "Course Evaluation — Dashboard",        href: "/course-evaluation/dashboard", icon: "fa-light fa-grid-2" },
+  ...termsOrdered.map((t) => ({
+    id: `page-term-${t.id}`,
+    label: `${t.name} — Term Workspace`,
+    keywords: "term workspace evaluations response rate",
+    href: `/course-evaluation/term/${t.id}`,
+    icon: "fa-light fa-calendar-days",
+  })),
   { id: "page-surveys",           label: "Surveys",                              href: "/surveys",                   icon: "fa-light fa-paper-plane" },
   { id: "page-activate",          label: "Activate Term",                        href: "/surveys/activate",          icon: "fa-light fa-circle-play" },
   { id: "page-templates",         label: "Templates",                            href: "/admin/eval-settings?section=templates", icon: "fa-light fa-rectangle-list" },

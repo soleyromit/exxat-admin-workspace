@@ -43,7 +43,7 @@
 
 ## Already built
 
-- `components/command-palette.tsx` — ⌘K / Ctrl+K navigator. 4 groups: Surveys, Templates, Admin (11 entities), Pages. Mounted via `<CommandPaletteProvider>` in `app/(app)/layout.tsx`. **When adding a new navigable surface, register it here.**
+- `components/command-menu.tsx` — ⌘K / Ctrl+K navigator (renamed from command-palette in the Design OS migration). Registry lives in **`lib/pce-command-menu.ts`** (groups: Surveys, Templates, Admin, Pages) merged via `lib/command-menu-config.ts` in `app/(app)/layout.tsx`. **When adding a new navigable surface, register it in `lib/pce-command-menu.ts`.**
 - `components/app-sidebar.tsx` — main nav + Search ⌘K affordance
 
 ---
