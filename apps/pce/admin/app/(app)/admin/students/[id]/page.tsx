@@ -47,7 +47,7 @@ const columns: ColumnDef<EvalRow>[] = [
     cell: (row) => <span className="text-sm text-muted-foreground">{row.term}</span>,
   },
   {
-    key: 'status', label: 'Evaluation', width: 200,
+    key: 'status', label: 'Evaluation', width: 220,
     cell: (row) => row.status === 'not_scheduled'
       ? <span className="text-xs text-muted-foreground">Not scheduled</span>
       : <SurveyStatusBadge status={row.status} />,
@@ -140,17 +140,20 @@ export default function StudentProfile() {
               Individual responses are anonymous — participation status only.
             </p>
           </div>
-          <DataTable<EvalRow>
-            data={evalRows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            emptyState={
-              <div className="flex flex-col items-center gap-2 py-8">
-                <i className="fa-light fa-clipboard-list text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm text-muted-foreground">No course enrolments</p>
-              </div>
-            }
-          />
+          {/* -mx cancels the DataTable's own mx-4/6 so its border aligns flush with the heading */}
+          <div className="-mx-4 lg:-mx-6">
+            <DataTable<EvalRow>
+              data={evalRows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              emptyState={
+                <div className="flex flex-col items-center gap-2 py-8">
+                  <i className="fa-light fa-clipboard-list text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                  <p className="text-sm text-muted-foreground">No course enrolments</p>
+                </div>
+              }
+            />
+          </div>
         </div>
       </div>
     </>

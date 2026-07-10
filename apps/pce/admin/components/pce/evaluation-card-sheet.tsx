@@ -30,36 +30,33 @@ const SUBJECT_LABEL: Record<string, string> = {
 // 'faculty_performance', or 'course_instructor' (tmplrich) — all mean the same.
 const FACULTY_SUBJECTS = new Set(['course_instructor', 'faculty', 'faculty_performance'])
 
-/* ── Distribution strip + avg score (compact, sheet-scale) ── */
+/* ── Average-on-scale bar (compact, sheet-scale). Reads left→right as "where on
+   the 1–5 scale this question lands"; n = response count. The full per-rating
+   distribution lives on the survey detail page — this card is a quick scan. ── */
 function DistBar({ score }: { score: QuestionScore }) {
   const total = score.distribution.reduce((s, v) => s + v, 0)
+  const pct = Math.max(0, Math.min(100, (score.avg / 5) * 100))
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div
+      className="flex items-center gap-2 min-w-0"
+      role="img"
+      aria-label={`Average ${score.avg.toFixed(1)} out of 5 from ${total} response${total !== 1 ? 's' : ''}`}
+    >
       <span
         className="text-sm font-semibold tabular-nums w-7 text-right shrink-0"
         style={{ color: tierColor(score.avg) }}
       >
         {score.avg.toFixed(1)}
       </span>
-      <div className="flex-1 flex h-[6px] rounded-full overflow-hidden gap-px min-w-0">
-        {score.distribution.map((count, i) => (
-          <div
-            key={i}
-            className="h-full shrink-0"
-            style={{
-              width: `${total > 0 ? (count / total) * 100 : 0}%`,
-              backgroundColor:
-                i >= 3 ? 'var(--chart-2)' :
-                i === 2 ? 'var(--muted-foreground)' :
-                'var(--chart-4)',
-              opacity: i >= 3 ? 1 : i === 2 ? 0.4 : 0.55,
-            }}
-            aria-hidden="true"
-          />
-        ))}
+      <div className="flex-1 h-[6px] rounded-full overflow-hidden min-w-0" style={{ background: 'var(--muted)' }}>
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct}%`, backgroundColor: tierColor(score.avg) }}
+          aria-hidden="true"
+        />
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums w-5 text-right shrink-0">
-        {total}
+      <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+        n={total}
       </span>
     </div>
   )

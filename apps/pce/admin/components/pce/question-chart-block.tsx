@@ -8,7 +8,11 @@ import {
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
 import type { TemplateQuestion, QuestionScore } from '@/lib/pce-mock-data'
-import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'
+import {
+  MOCK_OPEN_TEXT_RESPONSES,
+  medianFromDistribution,
+  programAvgForQuestion,
+} from '@/lib/pce-mock-data'
 
 export function tierColor(avg: number): string {
   return avg >= 4.3 ? 'var(--chart-2)'
@@ -38,6 +42,7 @@ function DistributionBars({
   return (
     <ChartContainer config={config} className="h-[88px] w-full" role="img" aria-label="Rating distribution">
       <BarChart
+        accessibilityLayer
         layout="vertical"
         data={data}
         margin={{ top: 2, right: 32, bottom: 2, left: 0 }}
@@ -136,8 +141,14 @@ export function QuestionChartBlock({
         {!isFreeText && score ? (
           <>
             <DistributionBars distribution={score.distribution} avg={score.avg} />
-            <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            {/* Benchmarks — median + program avg, both derived from response data */}
+            <p className="text-xs mt-1 tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
               {score.count} responses
+              {' · '}Median {medianFromDistribution(score.distribution).toFixed(1)}
+              {(() => {
+                const programAvg = programAvgForQuestion(score.questionId)
+                return programAvg != null ? <>{' · '}Program avg {programAvg.toFixed(1)}</> : null
+              })()}
             </p>
           </>
         ) : !isFreeText ? (

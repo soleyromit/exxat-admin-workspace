@@ -9,14 +9,12 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Button,
   KeyMetrics,
-  ChartContainer, ChartTooltip, ChartTooltipContent,
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@exxatdesignux/ui'
 import type { ChartConfig, MetricItem } from '@exxatdesignux/ui'
-import { BarChart, Bar, XAxis, YAxis, Cell, PieChart, Pie } from 'recharts'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { DataTablePaginated } from '@/components/data-table/pagination'
@@ -621,7 +619,7 @@ export default function SetupOverviewPage() {
 
           {canActivate && (
             <Button variant="default" size="sm" asChild>
-              <Link href="/surveys/activate">
+              <Link href="/surveys/push">
                 Activate {selectedTermName}
                 <i className="fa-light fa-circle-play ms-1.5 text-xs" aria-hidden="true" />
               </Link>
@@ -673,7 +671,7 @@ export default function SetupOverviewPage() {
         <div className="flex flex-col items-center gap-1 shrink-0">
           {allReady ? (
             <Button variant="default" size="sm" className="h-6 text-[11px] px-2.5" asChild>
-              <Link href="/surveys/activate">Activate</Link>
+              <Link href="/surveys/push">Activate</Link>
             </Button>
           ) : (
             <div

@@ -18,7 +18,7 @@
 
 import * as React from "react"
 
-import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-sidebar"
+import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-context"
 import { KeyMetricsProvider } from "@exxatdesignux/ui/components/key-metrics"
 
 export function KeyMetricsAskLeoBridge({

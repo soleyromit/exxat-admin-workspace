@@ -68,10 +68,9 @@ export function SearchRecentsPopover({
         <ul className="max-h-64 overflow-y-auto py-1" aria-labelledby={headingId}>
           {items.map((query, index) => (
             <li key={`${query}-${index}`}>
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                className="flex h-auto w-full min-h-10 items-center justify-start gap-2.5 px-3 py-2 text-left text-sm font-normal"
+                className="flex w-full min-h-10 items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => {
                   onSelect(query)
@@ -80,7 +79,7 @@ export function SearchRecentsPopover({
               >
                 <i className="fa-light fa-clock-rotate-left size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate font-medium text-foreground">{query}</span>
-              </Button>
+              </button>
             </li>
           ))}
         </ul>

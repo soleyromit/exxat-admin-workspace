@@ -18,6 +18,10 @@ export const ASK_LEO_GENERIC_SUGGESTIONS = [
   "How should charts expose keyboard exploration?",
 ]
 
+function normalizeProductPath(pathname: string): string {
+  return pathname.replace(/^\/[^/]+\/(library|dashboard|settings|leo)(?=\/|$)/, "/$1")
+}
+
 export function getAskLeoRouteContext(pathname: string | null): AskLeoRouteContextPayload {
   if (!pathname || pathname === "/") {
     return {
@@ -31,7 +35,9 @@ export function getAskLeoRouteContext(pathname: string | null): AskLeoRouteConte
     }
   }
 
-  if (pathname.startsWith("/dashboard")) {
+  const normalizedPathname = normalizeProductPath(pathname)
+
+  if (normalizedPathname.startsWith("/dashboard")) {
     return {
       title: "Dashboard",
       description: "Overview of metrics, charts, and layout patterns.",
@@ -55,48 +61,39 @@ export function getAskLeoRouteContext(pathname: string | null): AskLeoRouteConte
     }
   }
 
-  if (pathname.startsWith("/examples")) {
+  if (normalizedPathname.endsWith("/settings") || normalizedPathname.startsWith("/settings/")) {
+    const organization =
+      normalizedPathname.endsWith("/settings") || normalizedPathname.includes("/settings/organization")
     return {
-      title: "Patterns",
-      description: "Entry points for reusable shells and demos.",
-      suggestions: [
-        "Where is the list hub implemented?",
-        "How is the command palette wired?",
-        "What is the sidebar + content layout pattern?",
-      ],
+      title: organization ? "Organization settings" : "Profile settings",
+      description: organization
+        ? "Workspace products and branding shared across products in this browser."
+        : "Your theme, banner, tours, and display preferences on this device.",
+      suggestions: organization
+        ? ["How do I add a custom product?", "Where is brand color configured?"]
+        : ["How do I reset onboarding tours?", "Where is high contrast configured?"],
     }
   }
 
-  if (pathname.startsWith("/settings")) {
-    return {
-      title: "Settings",
-      description: "Appearance, banner, and guided tours for this browser.",
-      suggestions: [
-        "How do I reset onboarding tours?",
-        "Where is high contrast configured?",
-      ],
-    }
-  }
-
-  if (pathname.startsWith("/question-bank/library") || pathname.startsWith("/question-bank/list") || pathname.startsWith("/question-bank/find")) {
+  if (normalizedPathname.startsWith("/library/all") || normalizedPathname.startsWith("/library/list") || normalizedPathname.startsWith("/library/find")) {
     return {
       title: "Question library",
       description: "Browse folders, views, and mock assessment items.",
       suggestions: [
-        "Summarize questions in the active folder scope",
-        "Suggest folders for a new pediatrics module",
+        "Summarize items in the active folder scope",
+        "Suggest folders for a new library section",
         "How do panel and tree views relate to the same dataset?",
       ],
     }
   }
 
-  if (pathname.startsWith("/question-bank")) {
+  if (normalizedPathname.startsWith("/library")) {
     return {
-      title: "Question bank",
+      title: "Library",
       description: "Search in plain language, draft items with AI, or open the full library.",
       suggestions: [
         "Draft a multiple-choice question on clinical reasoning",
-        "Outline a new question bank for a course module",
+        "Outline a new library for a course module",
         "Rewrite this stem for clarity and bias-free wording",
       ],
     }
@@ -109,6 +106,21 @@ export function getAskLeoRouteContext(pathname: string | null): AskLeoRouteConte
       suggestions: [
         "Where do I find training articles?",
         "How do I contact support?",
+      ],
+    }
+  }
+
+  // Product-scoped Leo landing — the Sheet opened on top of /leo is a
+  // quick-ask escape hatch. Keep suggestions short and action-oriented so
+  // the Sheet does not duplicate the landing's chip rail.
+  if (pathname.endsWith("/leo") || pathname.includes("/leo/")) {
+    return {
+      title: "Leo workspace",
+      description: "Quick-ask while you have the focused workspace open.",
+      suggestions: [
+        "What can you do with the data I see here?",
+        "Summarize the most urgent items across my hubs",
+        "Suggest a follow-up to my last question",
       ],
     }
   }

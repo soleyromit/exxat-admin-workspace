@@ -98,6 +98,9 @@ interface PceState {
   pushSurveyBatch: (config: PushWizardConfig) => void
   // Moderation action
   enableResults: (surveyId: string) => void
+  // Survey intervention actions (single or bulk — pass one id or many)
+  sendSurveyReminder: (surveyIds: string[]) => void
+  extendSurveyDeadline: (surveyIds: string[], newCloseDate: string) => void
 }
 
 const PceContext = createContext<PceState | null>(null)
@@ -483,6 +486,28 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
+  // ── Survey intervention actions ───────────────────────────────────────────
+
+  const sendSurveyReminder = useCallback((surveyIds: string[]) => {
+    const today = new Date().toISOString().split('T')[0]
+    setSurveys(ss => ss.map(s =>
+      surveyIds.includes(s.id) ? { ...s, lastReminderSentAt: today } : s
+    ))
+  }, [])
+
+  const extendSurveyDeadline = useCallback((surveyIds: string[], newCloseDate: string) => {
+    // newCloseDate arrives as YYYY-MM-DD; deadline is stored in display format.
+    const [y, m, d] = newCloseDate.split('-').map(Number)
+    const display = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    })
+    setSurveys(ss => ss.map(s =>
+      surveyIds.includes(s.id)
+        ? { ...s, deadline: display, originalDeadline: s.originalDeadline ?? s.deadline }
+        : s
+    ))
+  }, [])
+
   // ── Moderation action ─────────────────────────────────────────────────────
 
   const enableResults = useCallback((id: string) => {
@@ -506,6 +531,8 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       setupDefaults, saveSetupDefaults,
       pushSurveyBatch,
       enableResults,
+      sendSurveyReminder,
+      extendSurveyDeadline,
     }}>
       {children}
     </PceContext.Provider>

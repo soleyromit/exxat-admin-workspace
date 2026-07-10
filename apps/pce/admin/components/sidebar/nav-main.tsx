@@ -1,6 +1,6 @@
 "use client"
 
-import { usePathname } from "@/lib/next-compat"
+import { useLocation } from "react-router-dom"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -20,7 +20,7 @@ export function NavMain({
     iconActive?: React.ReactNode
   }[]
 }) {
-  const pathname = usePathname()
+  const pathname = useLocation().pathname
 
   return (
     <SidebarGroup>

@@ -11,15 +11,22 @@
 import { useMemo, type ReactNode } from 'react'
 import {
   Button, KeyMetrics, Avatar, AvatarFallback,
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   ChartLegend, ChartLegendContent,
+  chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
 import { BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell } from 'recharts'
+import {
+  ChartCard, ChartFigure, ChartDataTable,
+  ChartLeoPlotInsightOverlay,
+  type ChartLeoInsight,
+} from '@/components/charts-overview'
+import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
@@ -357,6 +364,83 @@ export function ByTermPanel({
       .sort((a, b) => b.avg - a.avg)
   }, [])
 
+  // ── Leo insights — DS OS chart signature, all values derived from chart data ──
+  const programTrendLeo: ChartLeoInsight | null = useMemo(() => {
+    if (programTrendData.length < 2) return null
+    const last = programTrendData[programTrendData.length - 1]
+    const prev = programTrendData[programTrendData.length - 2]
+    const delta = +(last.courseAvg - prev.courseAvg).toFixed(2)
+    const gap = last.facultyAvg != null ? +(last.facultyAvg - last.courseAvg).toFixed(2) : null
+    return {
+      headline:
+        delta < 0
+          ? `Course ratings dipped ${Math.abs(delta).toFixed(2)} in ${last.term}`
+          : delta > 0
+            ? `Course ratings improved ${delta.toFixed(2)} in ${last.term}`
+            : `Course ratings held steady in ${last.term}`,
+      explanation:
+        gap != null && gap > 0
+          ? `Faculty ratings run ${gap.toFixed(2)} above course ratings in the latest term — students consistently rate people higher than course structure. Course-content follow-ups usually close this gap.`
+          : 'Course and faculty ratings are moving together across terms.',
+      kind: delta < 0 ? 'dip' : 'trend',
+      delta: { value: `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`, label: `vs ${prev.term}` },
+      bullets: [
+        `${last.term}: course ${last.courseAvg.toFixed(2)}/5${last.facultyAvg != null ? ` · faculty ${last.facultyAvg.toFixed(2)}/5` : ''}.`,
+        `${programTrendData.length} terms of history in view.`,
+      ],
+      anchor: { xValue: last.term, yDataKeys: ['courseAvg', 'facultyAvg'], yCombine: 'max' },
+    }
+  }, [programTrendData])
+
+  const courseRankLeo: ChartLeoInsight | null = useMemo(() => {
+    if (courseAllTimeRanked.length < 2) return null
+    const top = courseAllTimeRanked[0]
+    const lowest = courseAllTimeRanked[courseAllTimeRanked.length - 1]
+    const belowTier = courseAllTimeRanked.filter(c => c.avg < 3.7).length
+    return {
+      headline:
+        lowest.avg < 3.7
+          ? `${lowest.code} is the lowest-rated course at ${lowest.avg.toFixed(2)}/5`
+          : `${top.code} leads course ratings at ${top.avg.toFixed(2)}/5`,
+      explanation:
+        belowTier > 0
+          ? `${belowTier} course${belowTier !== 1 ? 's sit' : ' sits'} below the 3.7 tier. Their open-text feedback is the first place to look for what to change next offering.`
+          : 'Every course is at or above the 3.7 tier — the spread below is a quality band, not a problem list.',
+      kind: lowest.avg < 3.7 ? 'anomaly' : 'trend',
+      delta: { value: (top.avg - lowest.avg).toFixed(2), label: 'spread, top to bottom' },
+      bullets: [
+        `${courseAllTimeRanked.filter(c => c.avg >= 4.3).length} course(s) in the green tier (≥4.3).`,
+        `${belowTier} course(s) below 3.7 (amber tier).`,
+        'Weighted by class size across all terms.',
+      ],
+      anchor: { xValue: lowest.avg < 3.7 ? lowest.code : top.code, yDataKeys: ['avg'] },
+    }
+  }, [courseAllTimeRanked])
+
+  const facultyRankLeo: ChartLeoInsight | null = useMemo(() => {
+    if (facultyAllTimeRanked.length < 2) return null
+    const top = facultyAllTimeRanked[0]
+    const lowest = facultyAllTimeRanked[facultyAllTimeRanked.length - 1]
+    const belowTier = facultyAllTimeRanked.filter(f => f.avg < 3.7).length
+    return {
+      headline:
+        belowTier > 0
+          ? `${lowest.name} is rated below the 3.7 tier at ${lowest.avg.toFixed(2)}/5`
+          : `${top.name} leads faculty ratings at ${top.avg.toFixed(2)}/5`,
+      explanation:
+        belowTier > 0
+          ? 'Below-tier faculty ratings usually track specific sections — check the per-section breakdown before drawing conclusions about the person.'
+          : 'All faculty rate at or above the 3.7 tier across their weighted offerings.',
+      kind: belowTier > 0 ? 'anomaly' : 'trend',
+      delta: { value: (top.avg - lowest.avg).toFixed(2), label: 'spread, top to bottom' },
+      bullets: [
+        `${facultyAllTimeRanked.length} faculty ranked, weighted by class size.`,
+        `${facultyAllTimeRanked.filter(f => f.avg >= 4.3).length} in the green tier (≥4.3).`,
+      ],
+      anchor: { xValue: belowTier > 0 ? lowest.name : top.name, yDataKeys: ['avg'] },
+    }
+  }, [facultyAllTimeRanked])
+
   // No early-return: the Program trend + Course/Faculty rankings are program-wide and
   // always have data, so every term profile shows rich viz even if its own courses
   // table is empty (the table renders its own inline empty state).
@@ -365,72 +449,121 @@ export function ByTermPanel({
     <>
       <KeyMetrics variant="compact" metricsSingleRow metrics={byTermKpis} />
 
-      {/* Program-level trend (full width) */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Program trend</CardTitle>
-          <CardDescription>Course rating vs. faculty rating across terms.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={programTrendConfig}
-            className="w-full"
-            style={{ height: 168 }}
-            role="img"
-            aria-label="Program trend: course avg vs faculty avg across historical terms"
-          >
-            <LineChart data={programTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-              <CartesianGrid vertical={false} stroke="var(--border)" />
-              <XAxis dataKey="term" tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
-              <YAxis domain={[3.4, 4.8]} tickFormatter={(v: number) => v.toFixed(1)} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={28} />
-              <ChartTooltip content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4 }} isAnimationActive={false} />
-              <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
-            </LineChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+      {/* AI themes — cross-course summary BEFORE the pulled metrics below
+          (Aarti 2026-05-08 D14: AI summaries first at every aggregation level) */}
+      <TermThemesInsight surveys={scopedSurveys} scopeLabel={value} />
 
-      {/* Leaderboards: course rankings + faculty rankings */}
+      {/* Program-level trend (full width) — DS OS ChartCard + Leo insight */}
+      <ChartCard
+        variant="normal"
+        title="Program trend"
+        description="Course rating vs. faculty rating across terms."
+        leoInsight={programTrendLeo}
+      >
+        <ChartFigure
+          label="Program trend"
+          summary="Line chart of course average versus faculty average rating across historical terms."
+          dataLength={programTrendData.length}
+        >
+          {(activeIndex) => (
+            <>
+              <div className="relative w-full">
+                <ChartContainer config={programTrendConfig} className="w-full" style={{ height: 168 }}>
+                  <LineChart accessibilityLayer data={programTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="term" tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                    <YAxis domain={[3.4, 4.8]} tickFormatter={(v: number) => v.toFixed(1)} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={28} />
+                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
+                  </LineChart>
+                </ChartContainer>
+                <ChartLeoPlotInsightOverlay data={programTrendData} xDataKey="term" />
+              </div>
+              <ChartDataTable
+                caption="Program trend"
+                headers={['Term', 'Course avg', 'Faculty avg']}
+                rows={programTrendData.map(d => [d.term, d.courseAvg.toFixed(2), d.facultyAvg != null ? d.facultyAvg.toFixed(2) : '—'])}
+              />
+            </>
+          )}
+        </ChartFigure>
+      </ChartCard>
+
+      {/* Leaderboards: course rankings + faculty rankings — DS OS ChartCard + Leo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Course rankings</CardTitle>
-            <CardDescription>Avg rating, weighted by class size · all terms. Color = tier.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={courseRankConfig} style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }} className="w-full" role="img" aria-label="Course rankings by enrollment-weighted average rating">
-              <BarChart layout="vertical" data={courseAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                <XAxis type="number" domain={[0, 5]} hide />
-                <YAxis type="category" dataKey="code" width={68} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
-                <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
-                  {courseAllTimeRanked.map((c) => <Cell key={c.code} fill={tierColor(c.avg)} />)}
-                </Bar>
-                <ChartTooltip cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <ChartCard
+          variant="normal"
+          title="Course rankings"
+          description="Avg rating, weighted by class size · all terms. Color = tier."
+          leoInsight={courseRankLeo}
+        >
+          <ChartFigure
+            label="Course rankings"
+            summary="Horizontal bar chart ranking courses by enrollment-weighted average rating; bar color marks the quality tier."
+            dataLength={courseAllTimeRanked.length}
+          >
+            {(activeIndex) => (
+              <>
+                <div className="relative w-full">
+                <ChartContainer config={courseRankConfig} style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }} className="w-full">
+                  <BarChart accessibilityLayer layout="vertical" data={courseAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
+                    <XAxis type="number" domain={[0, 5]} hide />
+                    <YAxis type="category" dataKey="code" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
+                      {courseAllTimeRanked.map((c) => <Cell key={c.code} fill={tierColor(c.avg)} />)}
+                    </Bar>
+                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
+                  </BarChart>
+                </ChartContainer>
+                <ChartLeoPlotInsightOverlay data={courseAllTimeRanked} xDataKey="code" chartFamily="bar" />
+                </div>
+                <ChartDataTable
+                  caption="Course rankings"
+                  headers={['Course', 'Avg rating']}
+                  rows={courseAllTimeRanked.map(c => [c.code, `${c.avg.toFixed(2)}/5`])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Faculty rankings</CardTitle>
-            <CardDescription>Avg rating, weighted by class size · all terms. Color = tier.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={facultyRankConfig} style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }} className="w-full" role="img" aria-label="Faculty rankings by enrollment-weighted average rating">
-              <BarChart layout="vertical" data={facultyAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                <XAxis type="number" domain={[0, 5]} hide />
-                <YAxis type="category" dataKey="name" width={68} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
-                <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
-                  {facultyAllTimeRanked.map((f) => <Cell key={f.name} fill={tierColor(f.avg)} />)}
-                </Bar>
-                <ChartTooltip cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <ChartCard
+          variant="normal"
+          title="Faculty rankings"
+          description="Avg rating, weighted by class size · all terms. Color = tier."
+          leoInsight={facultyRankLeo}
+        >
+          <ChartFigure
+            label="Faculty rankings"
+            summary="Horizontal bar chart ranking faculty by enrollment-weighted average rating; bar color marks the quality tier."
+            dataLength={facultyAllTimeRanked.length}
+          >
+            {(activeIndex) => (
+              <>
+                <div className="relative w-full">
+                <ChartContainer config={facultyRankConfig} style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }} className="w-full">
+                  <BarChart accessibilityLayer layout="vertical" data={facultyAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
+                    <XAxis type="number" domain={[0, 5]} hide />
+                    <YAxis type="category" dataKey="name" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
+                      {facultyAllTimeRanked.map((f) => <Cell key={f.name} fill={tierColor(f.avg)} />)}
+                    </Bar>
+                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
+                  </BarChart>
+                </ChartContainer>
+                <ChartLeoPlotInsightOverlay data={facultyAllTimeRanked} xDataKey="name" chartFamily="bar" />
+                </div>
+                <ChartDataTable
+                  caption="Faculty rankings"
+                  headers={['Faculty', 'Avg rating']}
+                  rows={facultyAllTimeRanked.map(f => [f.name, `${f.avg.toFixed(2)}/5`])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -448,6 +581,7 @@ export function ByTermPanel({
             searchable={false}
             bulkActionsSlot={(selected) => (
               <Button
+                variant="default"
                 size="sm"
                 onClick={() => { window.location.href = `/surveys/push?ids=${[...selected].join(',')}` }}
               >
@@ -459,7 +593,8 @@ export function ByTermPanel({
             emptyState={
               <div className="flex flex-col items-center gap-2 py-8">
                 <i className="fa-light fa-calendar-plus text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm text-muted-foreground">No courses scheduled for {value} yet</p>
+                <p className="text-sm font-medium">No courses scheduled for {value}</p>
+                <p className="text-xs text-muted-foreground">Push an evaluation to populate this term.</p>
               </div>
             }
           />
@@ -512,6 +647,34 @@ export function ByFacultyPanel({
     ]
   }, [faculty])
 
+  // Leo insight — own rating vs dept/school (derived from compareData).
+  const compareLeo: ChartLeoInsight | null = (() => {
+    if (!faculty || compareData.length < 3) return null
+    const own = compareData[2].rating
+    const dept = compareData[1].rating
+    const diff = +(own - dept).toFixed(2)
+    const lastName = faculty.name.split(' ').slice(-1)[0]
+    return {
+      headline:
+        diff < 0
+          ? `${lastName} rates ${Math.abs(diff).toFixed(2)} below the ${faculty.department} average`
+          : diff > 0
+            ? `${lastName} rates ${diff.toFixed(2)} above the ${faculty.department} average`
+            : `${lastName} matches the ${faculty.department} average`,
+      explanation:
+        diff < 0
+          ? 'A below-department average usually traces to one or two offerings, not the whole portfolio — check the offerings table below for the outlier terms.'
+          : 'Weighted by class size, so large sections move this number more than small ones.',
+      kind: diff < 0 ? 'dip' : 'trend',
+      delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs dept avg' },
+      bullets: [
+        `School avg ${compareData[0].rating.toFixed(2)}/5 · dept avg ${dept.toFixed(2)}/5 · own ${own.toFixed(2)}/5.`,
+        'Enrollment-weighted across all offerings.',
+      ],
+      anchor: { xValue: compareData[2].label, yDataKeys: ['rating'] },
+    }
+  })()
+
   if (!faculty) return null
 
   return (
@@ -521,38 +684,47 @@ export function ByFacultyPanel({
       {extraCharts}
 
       {compareData.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Comparative context</CardTitle>
-            <CardDescription>
-              Avg rating, weighted by class size, vs. {faculty.department} dept and program average.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={compareConfig}
-              style={{ height: `${compareData.length * 40 + 8}px` }}
-              className="w-full"
-              role="img"
-              aria-label={`Comparative context: ${compareData.map(d => `${d.label} ${d.rating}`).join(', ')}`}
-            >
-              <BarChart layout="vertical" data={compareData} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                <XAxis type="number" domain={[0, 5]} hide />
-                <YAxis type="category" dataKey="label" width={80} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
-                <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
-                  {compareData.map((d, i) => (
-                    <Cell
-                      key={d.label}
-                      fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
-                      fillOpacity={i === compareData.length - 1 ? 1 : 0.45}
-                    />
-                  ))}
-                </Bar>
-                <ChartTooltip cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(1)}/5`, 'Avg rating']} />} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <ChartCard
+          variant="normal"
+          title="Comparative context"
+          description={`Avg rating, weighted by class size, vs. ${faculty.department} dept and program average.`}
+          leoInsight={compareLeo}
+        >
+          <ChartFigure
+            label="Comparative context"
+            summary={`Horizontal bars comparing ${compareData.map(d => `${d.label} ${d.rating}`).join(', ')} out of 5.`}
+            dataLength={compareData.length}
+          >
+            {(activeIndex) => (
+              <>
+                <div className="relative w-full">
+                <ChartContainer config={compareConfig} style={{ height: `${compareData.length * 40 + 8}px` }} className="w-full">
+                  <BarChart accessibilityLayer layout="vertical" data={compareData} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
+                    <XAxis type="number" domain={[0, 5]} hide />
+                    <YAxis type="category" dataKey="label" width={80} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                    <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
+                      {compareData.map((d, i) => (
+                        <Cell
+                          key={d.label}
+                          fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
+                          fillOpacity={i === compareData.length - 1 ? 1 : 0.45}
+                        />
+                      ))}
+                    </Bar>
+                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(1)}/5`, 'Avg rating']} />} />
+                  </BarChart>
+                </ChartContainer>
+                <ChartLeoPlotInsightOverlay data={compareData} xDataKey="label" chartFamily="bar" />
+                </div>
+                <ChartDataTable
+                  caption="Comparative context"
+                  headers={['Scope', 'Avg rating']}
+                  rows={compareData.map(d => [d.label, `${d.rating.toFixed(2)}/5`])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
       )}
 
       <div className="flex flex-col gap-2">
@@ -634,9 +806,10 @@ export function ByCoursePanel({
 
   if (courseOfferings.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center text-muted-foreground">
-        <i className="fa-light fa-chart-line text-4xl" aria-hidden="true" />
-        <p className="text-sm">No cross-term history for this course yet.</p>
+      <div className="flex flex-col items-center justify-center gap-2 py-8">
+        <i className="fa-light fa-chart-line text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+        <p className="text-sm font-medium">No cross-term history for this course</p>
+        <p className="text-xs text-muted-foreground">Trends appear once this course has been offered in more than one term.</p>
       </div>
     )
   }
@@ -647,31 +820,67 @@ export function ByCoursePanel({
 
       {extraCharts}
 
-      {courseTrendData.length >= 2 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Rating trend — {courseCode}</CardTitle>
-            <CardDescription>Avg rating, weighted by class size, per term.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={courseRatingTrendConfig}
-              className="w-full"
-              style={{ height: 140 }}
-              role="img"
-              aria-label={`Rating trend for ${courseCode}: ${courseTrendData.map(d => `${d.term} ${d.rating}`).join(', ')}`}
+      {courseTrendData.length >= 2 && (() => {
+        // Leo insight — slope across offerings (derived from courseTrendData).
+        const first = courseTrendData[0]
+        const last = courseTrendData[courseTrendData.length - 1]
+        const slope = +(last.rating - first.rating).toFixed(2)
+        const courseTrendLeo: ChartLeoInsight = {
+          headline:
+            slope < 0
+              ? `${courseCode} has slipped ${Math.abs(slope).toFixed(2)} since ${first.term}`
+              : slope > 0
+                ? `${courseCode} has improved ${slope.toFixed(2)} since ${first.term}`
+                : `${courseCode} has held steady since ${first.term}`,
+          explanation:
+            slope < 0
+              ? 'A multi-term slide is a stronger signal than one bad offering — compare what changed in staffing or structure between the peak term and now.'
+              : 'Enrollment-weighted per term, so larger sections carry more weight in each point.',
+          kind: slope < 0 ? 'dip' : 'trend',
+          delta: { value: `${slope >= 0 ? '+' : ''}${slope.toFixed(2)}`, label: `since ${first.term}` },
+          bullets: [
+            `Latest: ${last.term} at ${last.rating.toFixed(2)}/5.`,
+            `${courseTrendData.length} offerings in view.`,
+          ],
+          anchor: { xValue: last.term, yDataKeys: ['rating'], yCombine: 'max' },
+        }
+        return (
+          <ChartCard
+            variant="normal"
+            title={`Rating trend — ${courseCode}`}
+            description="Avg rating, weighted by class size, per term."
+            leoInsight={courseTrendLeo}
+          >
+            <ChartFigure
+              label={`Rating trend for ${courseCode}`}
+              summary={`Line chart of average rating per term: ${courseTrendData.map(d => `${d.term} ${d.rating}`).join(', ')}.`}
+              dataLength={courseTrendData.length}
             >
-              <LineChart data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                <CartesianGrid vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="term" tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
-                <YAxis domain={[3, 5]} tickFormatter={(v: number) => v.toFixed(1)} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={28} />
-                <ChartTooltip content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
-                <Line type="monotone" dataKey="rating" stroke="var(--color-rating)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-rating)' }} activeDot={{ r: 4 }} isAnimationActive={false} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
+              {(activeIndex) => (
+                <>
+                  <div className="relative w-full">
+                    <ChartContainer config={courseRatingTrendConfig} className="w-full" style={{ height: 140 }}>
+                      <LineChart accessibilityLayer data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="term" tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                        <YAxis domain={[3, 5]} tickFormatter={(v: number) => v.toFixed(1)} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={28} />
+                        <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
+                        <Line type="monotone" dataKey="rating" stroke="var(--color-rating)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-rating)' }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} isAnimationActive={false} />
+                      </LineChart>
+                    </ChartContainer>
+                    <ChartLeoPlotInsightOverlay data={courseTrendData} xDataKey="term" />
+                  </div>
+                  <ChartDataTable
+                    caption={`Rating trend for ${courseCode}`}
+                    headers={['Term', 'Avg rating']}
+                    rows={courseTrendData.map(d => [d.term, `${d.rating.toFixed(2)}/5`])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+        )
+      })()}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">Offerings of {courseCode}</h2>

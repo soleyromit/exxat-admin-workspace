@@ -7,8 +7,7 @@
 
 import * as React from "react"
 
-import { Button } from "@exxatdesignux/ui"
-
+import { BadgeAi } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 export interface LibraryHubCreateTileButtonProps {
@@ -37,14 +36,18 @@ export function LibraryHubCreateTileButton({
   const displayLabel = ariaBusy && busyLabel ? busyLabel : label
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
-      size="sm"
       onClick={onClick}
       disabled={disabled}
       aria-busy={ariaBusy}
-      className={cn("gap-1.5 rounded-full px-3 text-xs font-medium", className)}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition",
+        "hover:border-interactive-hover hover:bg-interactive-hover/30 hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "disabled:pointer-events-none disabled:opacity-50",
+        className,
+      )}
     >
       <i
         className={cn(
@@ -56,11 +59,7 @@ export function LibraryHubCreateTileButton({
         aria-hidden="true"
       />
       {displayLabel}
-      {badge === "AI" ? (
-        <span className="rounded-full bg-brand/10 px-1.5 py-px text-xs font-semibold text-brand">
-          AI
-        </span>
-      ) : null}
-    </Button>
+      {badge === "AI" ? <BadgeAi /> : null}
+    </button>
   )
 }

@@ -5,12 +5,19 @@ import Link from 'next/link'
 import {
   Avatar, AvatarFallback, Button, Badge,
   ChartContainer, ChartTooltip, ChartTooltipContent,
+  chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
 } from 'recharts'
+import {
+  ChartCard, ChartFigure, ChartDataTable,
+  ChartLeoPlotInsightOverlay,
+  type ChartLeoInsight,
+} from '@/components/charts-overview'
+import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByFacultyPanel } from '@/components/pce/analytics-panels'
 import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
@@ -100,41 +107,118 @@ export function FacultyProfileDashboard({
     )
   }
 
-  // Radar + distribution band — profile-specific viz, rendered above the By Faculty panel.
+  // ── Leo insights — derived from the profile's own data ──────────────────────
+  const weakest = radarData.length ? radarData.reduce((a, b) => (b.score < a.score ? b : a)) : null
+  const strongest = radarData.length ? radarData.reduce((a, b) => (b.score > a.score ? b : a)) : null
+  const radarLeo: ChartLeoInsight | null = weakest && strongest
+    ? {
+        headline:
+          weakest.score < 3.7
+            ? `${weakest.name} is the weakest dimension at ${weakest.score.toFixed(1)}/5`
+            : `${strongest.name} is the strongest dimension at ${strongest.score.toFixed(1)}/5`,
+        explanation:
+          weakest.score < 3.7
+            ? `The other dimensions hold up — targeted feedback on ${weakest.name.toLowerCase()} would move the overall rating fastest.`
+            : 'All dimensions sit at or above the 3.7 tier — a balanced profile.',
+        kind: weakest.score < 3.7 ? 'anomaly' : 'trend',
+        delta: { value: (strongest.score - weakest.score).toFixed(1), label: 'spread across dimensions' },
+        bullets: radarData.map(d => `${d.name}: ${d.score.toFixed(1)}/5.`),
+      }
+    : null
+
+  const lastWithFaculty = [...trendData].reverse().find(d => d.faculty != null) ?? null
+  const bandLeo: ChartLeoInsight | null = lastWithFaculty
+    ? (() => {
+        const diff = +(lastWithFaculty.faculty! - lastWithFaculty.median).toFixed(2)
+        return {
+          headline:
+            diff < 0
+              ? `Rated ${Math.abs(diff).toFixed(2)} below the faculty median in ${lastWithFaculty.term}`
+              : diff > 0
+                ? `Rated ${diff.toFixed(2)} above the faculty median in ${lastWithFaculty.term}`
+                : `Right on the faculty median in ${lastWithFaculty.term}`,
+          explanation:
+            'The grey band is the full faculty distribution per term — position within the band matters more than the absolute number.',
+          kind: diff < 0 ? 'dip' : 'trend',
+          delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
+          bullets: [
+            `${lastWithFaculty.term}: own ${lastWithFaculty.faculty!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
+            `Band spans ${lastWithFaculty.min.toFixed(2)}–${(lastWithFaculty.min + lastWithFaculty.range).toFixed(2)} this term.`,
+          ],
+          anchor: { xValue: lastWithFaculty.term, yDataKeys: ['faculty'] },
+        }
+      })()
+    : null
+
+  // Radar + distribution band — DS OS ChartCards, rendered above the By Faculty panel.
   const extraCharts = (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Radar — score by section */}
-      <div className="rounded-xl border border-border" style={{ padding: '20px 24px', background: 'var(--card)' }}>
-        <p className="text-sm font-semibold mb-1">Score by section</p>
-        <p className="text-xs text-muted-foreground mb-4">Survey dimension breakdown</p>
-        <ChartContainer config={radarChartConfig} className="h-52 w-full text-xs">
-          <RadarChart data={radarData} outerRadius="75%">
-            <PolarGrid stroke="var(--border)" />
-            <PolarAngleAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)' }} />
-            <Radar dataKey="score" stroke="var(--brand-color)" fill="var(--brand-color)" fillOpacity={0.15} strokeWidth={2} dot={{ r: 3, fill: 'var(--brand-color)' }} />
-          </RadarChart>
-        </ChartContainer>
-      </div>
+      <ChartCard variant="normal" title="Score by section" description="Survey dimension breakdown" leoInsight={radarLeo}>
+        <ChartFigure
+          label="Score by section"
+          summary={`Radar chart of survey dimensions: ${radarData.map(d => `${d.name} ${d.score.toFixed(1)}`).join(', ')} out of 5.`}
+          dataLength={radarData.length}
+        >
+          {(activeIndex) => (
+            <>
+              <ChartContainer config={radarChartConfig} className="h-52 w-full text-xs">
+                <RadarChart data={radarData} outerRadius="75%">
+                  <PolarGrid stroke="var(--border)" />
+                  <PolarAngleAxis dataKey="name" tick={CHART_AXIS_TICK} />
+                  <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
+                  <Radar dataKey="score" stroke="var(--brand-color)" fill="var(--brand-color)" fillOpacity={0.15} strokeWidth={2} dot={{ r: 3, fill: 'var(--brand-color)' }} isAnimationActive={false} />
+                </RadarChart>
+              </ChartContainer>
+              <ChartDataTable
+                caption="Score by section"
+                headers={['Dimension', 'Score']}
+                rows={radarData.map(d => [d.name, `${d.score.toFixed(1)}/5`])}
+              />
+            </>
+          )}
+        </ChartFigure>
+      </ChartCard>
 
-      {/* Distribution band — rating over time */}
-      <div className="rounded-xl border border-border" style={{ padding: '20px 24px', background: 'var(--card)' }}>
-        <p className="text-sm font-semibold mb-1">Rating over time</p>
-        <p className="text-xs text-muted-foreground mb-4">
-          Within full faculty distribution &nbsp;·&nbsp; ● this faculty &nbsp;·&nbsp; ─ ─ median
-        </p>
-        <ChartContainer config={trendChartConfig} className="h-52 w-full text-xs">
-          <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="term" tick={{ fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-            <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={{ fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-            <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
-            <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-            <Line dataKey="faculty" stroke="var(--brand-color)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--brand-color)', strokeWidth: 0 }} connectNulls isAnimationActive={false} />
-          </ComposedChart>
-        </ChartContainer>
-      </div>
+      <ChartCard
+        variant="normal"
+        title="Rating over time"
+        description="Within full faculty distribution · ● this faculty · ─ ─ median"
+        leoInsight={bandLeo}
+      >
+        <ChartFigure
+          label="Rating over time"
+          summary="This faculty member's rating per term plotted inside the full faculty distribution band, with the median as a dashed line."
+          dataLength={trendData.length}
+        >
+          {(activeIndex) => (
+            <>
+              <div className="relative w-full">
+                <ChartContainer config={trendChartConfig} className="h-52 w-full text-xs">
+                  <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
+                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
+                    <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
+                    <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
+                    <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+                    <Line dataKey="faculty" stroke="var(--brand-color)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--brand-color)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false} />
+                  </ComposedChart>
+                </ChartContainer>
+                <ChartLeoPlotInsightOverlay
+                  data={trendData.map(({ term: t, faculty, median }) => ({ term: t, faculty, median }))}
+                  xDataKey="term"
+                />
+              </div>
+              <ChartDataTable
+                caption="Rating over time"
+                headers={['Term', 'This faculty', 'Median']}
+                rows={trendData.map(d => [d.term, d.faculty != null ? d.faculty.toFixed(2) : '—', d.median.toFixed(2)])}
+              />
+            </>
+          )}
+        </ChartFigure>
+      </ChartCard>
     </div>
   )
 

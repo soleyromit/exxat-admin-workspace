@@ -1,99 +1,46 @@
 'use client'
 
+// ============================================================================
+// Evaluations hub — CE mode renders status sections (Pending Review → Results
+// Available → Live → Scheduled) matching live pce-three IA (§12 supplemental
+// audit Jun 29 2026). General mode keeps the flat SurveysTable.
+// ============================================================================
+
 import React, { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import {
   Button,
   PageHeader,
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  Tooltip, TooltipTrigger, TooltipContent,
-  Avatar, AvatarFallback,
   LocalBanner,
   KeyMetrics,
   type MetricItem,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
-import { SURVEY_STATUS_BADGE } from '@/components/pce/pce-badges'
-import { BulletGauge } from '@/components/pce/bullet-gauge'
-import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
-import { ModerationSheet } from '@/components/pce/moderation-sheet'
+import { CreateSurveySheet } from '@/components/pce/pce-modals'
 import {
-  MOCK_TERMS,
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
 } from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
-import { DataTable } from '@/components/data-table'
-import type { ColumnDef } from '@/components/data-table/types'
-import Link from 'next/link'
+import { SurveysTable } from '@/components/pce/surveys-table'
+import { EmptyState as HubEmptyState } from '@/components/empty-state'
 
-function formatIsoDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const VALID_STATUSES: SurveyStatus[] = ['draft', 'active', 'collecting', 'scheduled', 'pending_review', 'released', 'closed']
+
+/** ?status=collecting,active → pre-filter for the table (dashboard ring deep-links). */
+function statusFilterFromParam(param: string | null): SurveyStatus[] | undefined {
+  if (!param) return undefined
+  const parsed = param.split(',').filter((s): s is SurveyStatus => VALID_STATUSES.includes(s as SurveyStatus))
+  return parsed.length > 0 ? parsed : undefined
 }
-
-
-function StatusContextCell({ survey, onReview }: { survey: PceSurvey; onReview?: () => void }) {
-  const muted: React.CSSProperties = { color: 'var(--muted-foreground)' }
-  if (survey.status === 'scheduled' && survey.openDate) {
-    return <span className="text-sm" style={muted}>Opens {formatIsoDate(survey.openDate)}</span>
-  }
-  if ((survey.status === 'collecting' || survey.status === 'active') && survey.deadline) {
-    return <span className="text-sm" style={muted}>Closes {survey.deadline}</span>
-  }
-  if (survey.status === 'pending_review') {
-    return (
-      <Button
-        variant="link"
-        className="h-auto p-0 text-sm font-normal hover:underline text-left"
-        style={muted}
-        onClick={(e) => { e.stopPropagation(); onReview?.() }}
-      >
-        Ready to release →
-      </Button>
-    )
-  }
-  if (survey.status === 'released') {
-    return (
-      <Link href={`/surveys/${survey.id}`} className="text-sm hover:underline" style={muted} onClick={(e) => e.stopPropagation()}>
-        Results shared →
-      </Link>
-    )
-  }
-  return null
-}
-
-
-interface SurveyRow extends Record<string, unknown> {
-  id: string
-  survey: PceSurvey
-  courseCode: string
-  status: SurveyStatus
-  term: string
-  primaryInstructorName: string
-  primaryInstructorInitials: string
-  extraInstructorCount: number
-  responseRate: number
-  deadline: string
-}
-
-const STATUS_FILTER_OPTIONS = [
-  { value: 'draft',          label: 'Draft' },
-  { value: 'scheduled',      label: 'Scheduled' },
-  { value: 'collecting',     label: 'Collecting Responses' },
-  { value: 'active',         label: 'Active' },
-  { value: 'pending_review', label: 'Pending Review' },
-  { value: 'released',       label: 'Results Released' },
-  { value: 'closed',         label: 'Closed' },
-]
 
 function PushedBanner() {
   const params = useSearchParams()
-  if (params.get('pushed') !== '1') return null
+  if (params?.get('pushed') !== '1') return null
   return (
-    <div style={{ paddingInline: 28, paddingTop: 12 }}>
+    <div className="px-7 pt-3">
       <LocalBanner variant="success">
         Survey pushed successfully. It is now collecting responses.
       </LocalBanner>
@@ -101,23 +48,40 @@ function PushedBanner() {
   )
 }
 
+// Group labels + urgency order for the single grouped DataTable (CE mode).
+// Keys are SurveyStatus values; DataTable renders a sticky divider per group.
+const CE_GROUP_LABELS: Record<string, string> = {
+  pending_review: 'Closed · Pending Review',
+  released:       'Results Available',
+  closed:         'Results Available',
+  collecting:     'Live',
+  active:         'Live',
+  scheduled:      'Scheduled',
+  draft:          'Draft',
+}
+
+// Urgency order: items needing action surface first.
+const CE_GROUP_ORDER = ['pending_review', 'released', 'closed', 'collecting', 'active', 'scheduled', 'draft']
+
 export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) {
   const { surveys } = usePce()
   const [createOpen, setCreateOpen] = useState(false)
-  const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
-  const [moderationSurveyId, setModerationSurveyId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const statusFilter = statusFilterFromParam(searchParams?.get('status') ?? null)
 
   const isGeneral = mode === 'general'
   const title = isGeneral ? 'Surveys' : 'Evaluations'
-  const pushHref = isGeneral ? '/surveys/programmatic/push' : '/surveys/push'
-  const pushLabel = isGeneral ? 'Push surveys' : 'Push Evaluations'
 
-  const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? null
+  const activeTerm = MOCK_PROGRAM_TERMS.find((t) => t.status === 'active') ?? null
   const activeTermOfferings = activeTerm
-    ? MOCK_COURSE_OFFERINGS.filter(o => o.termId === activeTerm.id)
+    ? MOCK_COURSE_OFFERINGS.filter((o) => o.termId === activeTerm.id)
     : []
   const activeTermSurveys = activeTerm
-    ? surveys.filter(s => s.term === activeTerm.name && (!s.surveyType || s.surveyType === 'course_evaluation'))
+    ? surveys.filter(
+        (s) =>
+          s.term === activeTerm.name &&
+          (!s.surveyType || s.surveyType === 'course_evaluation'),
+      )
     : []
   const showRunBanner =
     !isGeneral &&
@@ -125,220 +89,48 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
     activeTermOfferings.length > 0 &&
     activeTermSurveys.length === 0
 
-  const modeFiltered = surveys.filter(s =>
+  const modeFiltered = surveys.filter((s) =>
     isGeneral
       ? s.surveyType === 'programmatic'
-      : (!s.surveyType || s.surveyType === 'course_evaluation')
+      : !s.surveyType || s.surveyType === 'course_evaluation',
   )
 
-  const rows: SurveyRow[] = modeFiltered.map(survey => {
-    const primary = survey.instructors.find(i => i.role === 'primary')
-    return {
-      id: survey.id,
-      survey,
-      courseCode: survey.courseCode,
-      status: survey.status,
-      term: survey.term ?? '',
-      primaryInstructorName: primary?.name ?? '',
-      primaryInstructorInitials: primary?.initials ?? '',
-      extraInstructorCount: Math.max(0, survey.instructors.length - 1),
-      responseRate: survey.responseRate,
-      deadline: survey.deadline ?? '',
-    }
-  })
+  // CE KPI bar: 3 metrics matching live (Active / Pending Review / Released).
+  // General keeps the original 4-metric bar.
+  const ceMetrics: MetricItem[] = (() => {
+    const active       = modeFiltered.filter((s) => s.status === 'collecting' || s.status === 'active').length
+    const pendingReview = modeFiltered.filter((s) => s.status === 'pending_review').length
+    const released     = modeFiltered.filter((s) => s.status === 'released').length
+    return [
+      { id: 'active',  label: 'Active surveys',  value: active,        description: 'Currently open',             delta: '', trend: 'neutral' },
+      { id: 'review',  label: 'Pending review',  value: pendingReview, description: 'Awaiting your review & release', delta: pendingReview > 0 ? String(pendingReview) : '', trend: pendingReview > 0 ? 'up' : 'neutral', trendPolarity: 'lower_is_better' },
+      { id: 'released',label: 'Released',         value: released,      description: 'Faculty can view',           delta: '', trend: 'neutral' },
+    ]
+  })()
 
-  const responseRateCell = (row: SurveyRow) => (
-    <div className="flex flex-col gap-1" style={{ minWidth: 120 }}>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-sm font-semibold tabular-nums">{row.survey.responseRate}%</span>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {row.survey.responseCount}/{row.survey.enrollmentCount}
-        </span>
-      </div>
-      {row.survey.enrollmentCount > 0 && (
-        <BulletGauge
-          responseCount={row.survey.responseCount}
-          enrollmentCount={row.survey.enrollmentCount}
-          width={120}
-          height={4}
-          ariaLabel={null}
-        />
-      )}
-    </div>
-  )
+  const generalMetrics: MetricItem[] = (() => {
+    const total        = modeFiltered.length
+    const live         = modeFiltered.filter((s) => s.status === 'collecting' || s.status === 'active').length
+    const needsAction  = modeFiltered.filter((s) => s.status === 'pending_review').length
+    const withResponses = modeFiltered.filter((s) => s.responseCount > 0)
+    const avgRate = withResponses.length > 0
+      ? Math.round(withResponses.reduce((sum, s) => sum + s.responseRate, 0) / withResponses.length)
+      : null
+    return [
+      { id: 'total',  label: 'Total surveys',   value: total,       delta: '', trend: 'neutral' },
+      { id: 'live',   label: 'Live now',         value: live,        delta: '', trend: 'neutral' },
+      { id: 'review', label: 'Needs review',     value: needsAction, delta: needsAction > 0 ? String(needsAction) : '', trend: needsAction > 0 ? 'up' : 'neutral', trendPolarity: 'lower_is_better' },
+      { id: 'rate',   label: 'Avg response',     value: avgRate != null ? `${avgRate}%` : '—', delta: '', trend: 'neutral' },
+    ]
+  })()
 
-  const termFilterOptions = MOCK_TERMS.map(t => ({ value: t, label: t }))
-  const termColumn: ColumnDef<SurveyRow> = {
-    key: 'term',
-    label: 'Term',
-    hidden: true,
-    filter: { type: 'select', icon: 'fa-calendar', options: termFilterOptions },
-  }
-
-  const columns: ColumnDef<SurveyRow>[] = isGeneral ? [
-    termColumn,
-    {
-      key: 'courseCode',
-      label: 'Survey title',
-      sortable: true,
-      width: 320,
-      filter: { type: 'text', icon: 'fa-paper-plane' },
-      cell: (row) => (
-        <Link
-          href={`/surveys/${row.survey.id}`}
-          className="font-medium hover:underline text-sm"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {row.survey.courseCode}
-        </Link>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      width: 150,
-      filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
-      cell: (row) => {
-        const s = SURVEY_STATUS_BADGE[row.status as SurveyStatus] ?? SURVEY_STATUS_BADGE.draft
-        return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
-      },
-    },
-    {
-      key: 'statusContext',
-      label: 'Details',
-      width: 200,
-      cell: (row) => <StatusContextCell survey={row.survey} onReview={() => setModerationSurveyId(row.survey.id)} />,
-    },
-    {
-      key: 'responseRate',
-      label: 'Response rate',
-      sortable: true,
-      width: 180,
-      cell: responseRateCell,
-    },
-    {
-      key: 'deadline',
-      label: 'Deadline',
-      sortable: true,
-      width: 140,
-      filter: { type: 'text', icon: 'fa-calendar-day' },
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">{row.deadline || '—'}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 44,
-      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} onReview={() => setModerationSurveyId(row.survey.id)} />,
-    },
-  ] : [
-    termColumn,
-    {
-      key: 'courseCode',
-      label: 'Course',
-      sortable: true,
-      width: 200,
-      filter: { type: 'text', icon: 'fa-book' },
-      cell: (row) => (
-        <Link
-          href={`/surveys/${row.survey.id}`}
-          className="flex flex-col gap-0.5 hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="text-sm font-semibold">{row.survey.courseCode}</span>
-          <span className="text-xs text-muted-foreground">{row.survey.courseName}</span>
-        </Link>
-      ),
-    },
-    {
-      key: 'primaryInstructorName',
-      label: 'Instructor(s)',
-      sortable: true,
-      width: 200,
-      filter: { type: 'text', icon: 'fa-user-tie' },
-      cell: (row) => row.primaryInstructorName ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 w-fit">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback
-                  className="text-xs"
-                  style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-                >
-                  {row.primaryInstructorInitials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium truncate max-w-32">{row.primaryInstructorName}</span>
-              {row.extraInstructorCount > 0 && (
-                <span className="text-xs text-muted-foreground">+{row.extraInstructorCount}</span>
-              )}
-            </div>
-          </TooltipTrigger>
-          {row.extraInstructorCount > 0 && (
-            <TooltipContent>
-              <div className="flex flex-col gap-0.5">
-                {row.survey.instructors.map(i => (
-                  <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
-                ))}
-              </div>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      ) : (
-        <span className="text-sm text-muted-foreground">—</span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      width: 150,
-      filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
-      cell: (row) => {
-        const s = SURVEY_STATUS_BADGE[row.status as SurveyStatus] ?? SURVEY_STATUS_BADGE.draft
-        return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
-      },
-    },
-    {
-      key: 'statusContext',
-      label: 'Details',
-      width: 200,
-      cell: (row) => <StatusContextCell survey={row.survey} onReview={() => setModerationSurveyId(row.survey.id)} />,
-    },
-    {
-      key: 'responseRate',
-      label: 'Response rate',
-      sortable: true,
-      width: 180,
-      cell: responseRateCell,
-    },
-    {
-      key: 'deadline',
-      label: 'Deadline',
-      sortable: true,
-      width: 140,
-      filter: { type: 'text', icon: 'fa-calendar-day' },
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">{row.deadline || '—'}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 44,
-      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} onReview={() => setModerationSurveyId(row.survey.id)} />,
-    },
-  ]
-
+  const metrics = isGeneral ? generalMetrics : ceMetrics
   const surveyCount = modeFiltered.length
   const subtitle = isGeneral
     ? `${surveyCount} ${surveyCount === 1 ? 'survey' : 'surveys'}`
     : `${surveyCount} ${surveyCount === 1 ? 'evaluation' : 'evaluations'}`
 
   return (
-    // overflow-hidden safe — floating uses Radix Portal
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader title={title} />
       <PageHeader
@@ -346,41 +138,32 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
         subtitle={subtitle}
         actions={
           <div className="flex items-center gap-2" role="group" aria-label="Survey actions">
-            <Button size="lg" asChild>
-              <Link href={pushHref}>
-                <i className="fa-light fa-paper-plane" aria-hidden="true" />
-                {pushLabel}
-              </Link>
-            </Button>
+            {isGeneral && (
+              <Button size="lg" asChild>
+                <Link href="/surveys/programmatic/push">
+                  <i className="fa-light fa-paper-plane" aria-hidden="true" />
+                  Send surveys
+                </Link>
+              </Button>
+            )}
+            {!isGeneral && (
+              <Button size="lg" asChild>
+                <Link href="/surveys/push">Set Up Surveys</Link>
+              </Button>
+            )}
           </div>
         }
       />
 
       {showRunBanner && activeTerm && (
-        <div style={{ paddingInline: 28, paddingTop: 12, paddingBottom: 4 }}>
-          <div
-            className="flex items-center gap-3 rounded-xl border border-border"
-            style={{ padding: '14px 18px', background: 'var(--brand-tint)' }}
+        <div className="px-7 pt-3 pb-1">
+          <LocalBanner
+            variant="info"
+            title={`${activeTerm.name} evaluation cycle is ready to launch`}
+            action={{ label: 'Run evaluation', href: '/surveys/push' }}
           >
-            <div
-              className="shrink-0 rounded-full animate-pulse"
-              style={{ width: 8, height: 8, background: 'var(--brand-color)' }}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                {activeTerm.name} evaluation cycle is ready to launch
-              </p>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                {activeTermOfferings.length} courses found · all with enrolled students
-              </p>
-            </div>
-            <Button variant="default" size="sm" asChild>
-              <Link href="/surveys/run-evaluation">
-                Run evaluation
-                <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
-              </Link>
-            </Button>
-          </div>
+            {activeTermOfferings.length} courses found · all with enrolled students
+          </LocalBanner>
         </div>
       )}
 
@@ -388,159 +171,59 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
         <PushedBanner />
       </Suspense>
 
-      {modeFiltered.length > 0 && (() => {
-        const live = modeFiltered.filter(s => s.status === 'collecting' || s.status === 'active').length
-        const needsAction = modeFiltered.filter(s => s.status === 'pending_review').length
-        const belowThreshold = modeFiltered.filter(s =>
-          (s.status === 'collecting' || s.status === 'active') && s.responseCount < 5
-        ).length
-        const withResponses = modeFiltered.filter(s => s.responseCount > 0)
-        const avgRate = withResponses.length > 0
-          ? Math.round(withResponses.reduce((sum, s) => sum + s.responseRate, 0) / withResponses.length)
-          : null
-        const metrics: MetricItem[] = [
-          { id: 'total',     label: isGeneral ? 'Total surveys' : 'Total evaluations', value: modeFiltered.length, delta: '', trend: 'neutral' },
-          { id: 'live',      label: 'Live now',         value: live,               delta: '', trend: 'neutral' },
-          { id: 'review',    label: 'Needs review',     value: needsAction,        delta: needsAction > 0 ? String(needsAction) : '', trend: needsAction > 0 ? 'up' : 'neutral', trendPolarity: 'lower_is_better' },
-          { id: 'threshold', label: 'Below threshold',  value: belowThreshold,     delta: '', trend: 'neutral' },
-          { id: 'rate',      label: 'Avg response rate', value: avgRate !== null ? `${avgRate}%` : '—', delta: '', trend: 'neutral' },
-        ]
-        return (
-          <div className="shrink-0 [&_*]:!border-e-0" style={{ paddingInline: 28, paddingBlock: 4 }}>
-            <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={metrics} />
-          </div>
-        )
-      })()}
+      {modeFiltered.length > 0 && (
+        <div className="shrink-0 px-7 py-1">
+          <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={metrics} title={isGeneral ? 'Surveys overview' : 'Evaluations overview'} />
+        </div>
+      )}
 
-      <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
-        {rows.length === 0 ? (
-          <EmptySurveys
-            onCreate={() => setCreateOpen(true)}
-            hasFilters={false}
-            isGeneral={isGeneral}
-          />
+      <div className="flex-1 overflow-auto py-4">
+        {modeFiltered.length === 0 ? (
+          <EmptySurveys onCreate={() => setCreateOpen(true)} isGeneral={isGeneral} />
+        ) : isGeneral ? (
+          <SurveysTable mode="general" pageSize={25} statusFilter={statusFilter} />
         ) : (
-          <DataTable<SurveyRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            selectable
-            searchable
-            onRowClick={(row) => {
-              window.location.href = `/surveys/${row.survey.id}`
-            }}
+          <SurveysTable
+            mode="course_evaluation"
+            pageSize={50}
+            statusFilter={statusFilter}
+            defaultGroupBy="status"
+            groupLabels={CE_GROUP_LABELS}
+            groupOrder={CE_GROUP_ORDER}
           />
         )}
       </div>
 
       <CreateSurveySheet open={createOpen} onOpenChange={setCreateOpen} />
-      <CloseSurveyDialog
-        open={!!closeSurvey}
-        onOpenChange={v => { if (!v) setCloseSurvey(null) }}
-        survey={closeSurvey}
-      />
-      {!isGeneral && (
-        <ModerationSheet
-          surveyId={moderationSurveyId}
-          onClose={() => setModerationSurveyId(null)}
-        />
-      )}
     </div>
-  )
-}
-
-function RowActions({ survey, onClose, onReview }: { survey: PceSurvey; onClose: () => void; onReview?: () => void }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  return (
-    <DropdownMenu modal={false} onOpenChange={setMenuOpen} open={menuOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Survey actions"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
-        {survey.status === 'pending_review' ? (
-          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onReview?.() }}>
-            <i className="fa-light fa-shield-check" aria-hidden="true" />
-            Review &amp; Release
-          </DropdownMenuItem>
-        ) : survey.status === 'draft' ? (
-          <DropdownMenuItem asChild>
-            <Link href={`/surveys/${survey.id}`}>
-              <i className="fa-light fa-pen" aria-hidden="true" />
-              Edit
-            </Link>
-          </DropdownMenuItem>
-        ) : survey.status === 'released' ? (
-          <DropdownMenuItem asChild>
-            <Link href={`/surveys/${survey.id}`}>
-              <i className="fa-light fa-chart-mixed" aria-hidden="true" />
-              View Results
-            </Link>
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem asChild>
-            <Link href={`/surveys/${survey.id}`}>
-              <i className="fa-light fa-eye" aria-hidden="true" />
-              View
-            </Link>
-          </DropdownMenuItem>
-        )}
-        {(survey.status === 'collecting' || survey.status === 'active') && (
-          <DropdownMenuItem>
-            <i className="fa-light fa-bell" aria-hidden="true" />
-            Send Reminder
-          </DropdownMenuItem>
-        )}
-        {(survey.status === 'collecting' || survey.status === 'active') && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={onClose}>
-              <i className="fa-light fa-xmark" aria-hidden="true" />
-              Close Survey
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 
 function EmptySurveys({
   onCreate,
-  hasFilters,
   isGeneral,
 }: {
   onCreate: () => void
-  hasFilters: boolean
   isGeneral: boolean
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <i className="fa-light fa-paper-plane text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">
-          {hasFilters ? (isGeneral ? 'No surveys match these filters' : 'No evaluations match these filters') : isGeneral ? 'No programmatic surveys yet' : 'No evaluations yet'}
-        </p>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-          {hasFilters
-            ? 'Try adjusting your filters.'
-            : isGeneral
+    <div className="flex items-center justify-center py-12">
+      <HubEmptyState
+        align="center"
+        icon="fa-paper-plane"
+        title={isGeneral ? 'No programmatic surveys yet' : 'No evaluations yet'}
+        description={
+          isGeneral
             ? 'Push a programmatic survey to alumni, preceptors, or external reviewers.'
-            : 'Create an evaluation from a template to start collecting responses.'}
-        </p>
-      </div>
-      {!hasFilters && (
-        <Button variant="default" size="sm" onClick={onCreate}>
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          Create Survey
-        </Button>
-      )}
+            : 'Create an evaluation from a template to start collecting responses.'
+        }
+        footer={
+          <Button variant="default" size="sm" onClick={onCreate}>
+            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+            Create Survey
+          </Button>
+        }
+      />
     </div>
   )
 }

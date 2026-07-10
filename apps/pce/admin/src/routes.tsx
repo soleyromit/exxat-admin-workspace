@@ -1,10 +1,10 @@
 import { Suspense, lazy } from "react"
 import { Navigate, useLocation, type RouteObject } from "react-router-dom"
 
-import { LoadingFallback } from "./views/_loading"
-import { RouteError } from "./views/_error"
-import { LibraryLayout } from "./views/library/_layout"
-import ProductDashboard from "./views/_product-dashboard"
+import { LoadingFallback } from "./pages/_loading"
+import { RouteError } from "./pages/_error"
+import { LibraryLayout } from "./pages/library/_layout"
+import ProductDashboard from "./pages/_product-dashboard"
 import { ProductRootGate } from "@/contexts/product-root-gate"
 import { DefaultProductRedirect } from "@/contexts/default-product-redirect"
 import { TENANT_PRODUCT_SHELL_HUB_SEGMENTS } from "@exxatdesignux/product-framework"
@@ -108,11 +108,11 @@ const PRODUCT_SHELL_HUB_SEGMENTS = [
 
 function libraryChildren(): RouteObject[] {
   return [
-    { index: true, element: lazyPage(() => import("./views/library/index")) },
-    { path: "all", element: lazyPage(() => import("./views/library/all")) },
-    { path: "find", element: lazyPage(() => import("./views/library/find")) },
-    { path: "list", element: lazyPage(() => import("./views/library/list")) },
-    { path: "new", element: lazyPage(() => import("./views/library/new")) },
+    { index: true, element: lazyPage(() => import("./pages/library/index")) },
+    { path: "all", element: lazyPage(() => import("./pages/library/all")) },
+    { path: "find", element: lazyPage(() => import("./pages/library/find")) },
+    { path: "list", element: lazyPage(() => import("./pages/library/list")) },
+    { path: "new", element: lazyPage(() => import("./pages/library/new")) },
   ]
 }
 
@@ -132,27 +132,27 @@ function productChildren(): RouteObject[] {
     },
     {
       path: "leo",
-      element: lazyPage(() => import("./views/leo")),
+      element: lazyPage(() => import("./pages/leo")),
       errorElement: <RouteError />,
     },
     {
       path: "columns",
-      element: lazyPage(() => import("./views/columns")),
+      element: lazyPage(() => import("./pages/columns")),
       errorElement: <RouteError />,
     },
     {
       path: "tokens-themes",
-      element: lazyPage(() => import("./views/tokens-themes")),
+      element: lazyPage(() => import("./pages/tokens-themes")),
       errorElement: <RouteError />,
     },
     ...PRODUCT_SHELL_HUB_SEGMENTS.map(segment => ({
       path: `${segment}/*`,
-      element: lazyPage(() => import("./views/_product-shell-placeholder")),
+      element: lazyPage(() => import("./pages/_product-shell-placeholder")),
       errorElement: <RouteError />,
     })),
     {
       path: "settings",
-      element: lazyPage(() => import("./views/settings-organization")),
+      element: lazyPage(() => import("./pages/settings-organization")),
       errorElement: <RouteError />,
     },
   ]
@@ -177,26 +177,26 @@ export const routes: RouteObject[] = [
   },
   {
     path: "settings",
-    element: lazyPage(() => import("./views/settings-layout")),
+    element: lazyPage(() => import("./pages/settings-layout")),
     errorElement: <RouteError />,
     children: [
       {
         index: true,
-        element: lazyPage(() => import("./views/settings-legacy-redirect")),
+        element: lazyPage(() => import("./pages/settings-legacy-redirect")),
       },
       {
         path: "profile",
-        element: lazyPage(() => import("./views/settings-profile")),
+        element: lazyPage(() => import("./pages/settings-profile")),
       },
       {
         path: "organization",
-        element: lazyPage(() => import("./views/settings-organization")),
+        element: lazyPage(() => import("./pages/settings-organization")),
       },
     ],
   },
   {
     path: "builder/onboarding",
-    element: lazyPage(() => import("./views/builder-onboarding")),
+    element: lazyPage(() => import("./pages/builder-onboarding")),
     errorElement: <RouteError />,
   },
   {
@@ -205,7 +205,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: "help",
-    element: lazyPage(() => import("./views/help")),
+    element: lazyPage(() => import("./pages/help")),
     errorElement: <RouteError />,
   },
 
@@ -241,6 +241,6 @@ export const routes: RouteObject[] = [
 
   {
     path: "*",
-    element: lazyPage(() => import("./views/_not-found")),
+    element: lazyPage(() => import("./pages/_not-found")),
   },
 ]

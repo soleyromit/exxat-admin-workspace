@@ -1,4 +1,7 @@
-/** Shim — re-exports product-routing helpers from `@exxatdesignux/product-framework`. */
+/**
+ * Shim — re-exports product-routing helpers from `@exxatdesignux/product-framework`.
+ * New code SHOULD import directly from the package.
+ */
 
 export {
   RESERVED_PRODUCT_ROOT_SEGMENTS,

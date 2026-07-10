@@ -12,7 +12,7 @@ interface WizardNavProps {
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   course_evaluation: [
-    { n: 1, label: 'Courses' },
+    { n: 1, label: 'Courses & Evaluatees' },
     { n: 2, label: 'Survey Design' },
     { n: 3, label: 'Communication' },
     { n: 4, label: 'Review' },

@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/kbd"
+export { Kbd, KbdGroup } from "@exxatdesignux/ui"

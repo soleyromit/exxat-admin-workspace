@@ -70,7 +70,7 @@ export function ProductSwitcher() {
                   "h-auto min-h-12 overflow-x-clip overflow-y-visible",
                 "group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center",
                 iconRail &&
-                  "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!min-h-9 group-data-[collapsible=icon]:!max-h-9 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:overflow-visible",
+                  "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!min-h-8 group-data-[collapsible=icon]:!max-h-8 group-data-[collapsible=icon]:!w-8 group-data-[collapsible=icon]:!min-w-8 group-data-[collapsible=icon]:!max-w-8 group-data-[collapsible=icon]:aspect-square group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:overflow-visible",
               )}
               aria-label={`Current product: ${current.label}. Switch product`}
               suppressHydrationWarning

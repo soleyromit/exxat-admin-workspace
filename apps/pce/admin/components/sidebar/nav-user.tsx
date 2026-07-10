@@ -13,10 +13,8 @@
  *  ✓ Active theme shown via aria-checked (RadioItem) (4.1.3)
  */
 
-import type * as React from "react"
-import { useTheme } from "next-themes"
-import { Link } from "@/lib/next-compat"
-
+import { useTheme } from "@exxatdesignux/ui/hooks/use-color-scheme"
+import { Link } from "react-router-dom"
 import {
   Avatar,
   AvatarFallback,
@@ -47,38 +45,37 @@ import { cn } from "@/lib/utils"
 
 export function NavUser({
   user,
-  extraMenuItems,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
-  extraMenuItems?: React.ReactNode
 }) {
-  const { isMobile, state }               = useSidebar()
+  const { isMobile, state } = useSidebar()
+  const iconRailCollapsed = state === "collapsed" && !isMobile
   const { theme }                 = useTheme()
   const { mounted } = useAppTheme()
 
   const safeTheme    = mounted ? (theme ?? "system") : "system"
-  const showCollapsedTooltip = state === "collapsed" && !isMobile
 
   const profileTrigger = (
     <SidebarMenuButton
       size="lg"
-      aria-label={`${user.name} — open profile and settings menu`}
+      {...(iconRailCollapsed
+        ? { "aria-label": `${user.name} — open profile and settings menu` }
+        : {})}
       className={cn(
         "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
         "h-auto min-h-12 items-center py-2 !overflow-visible",
-        "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!h-9 group-data-[collapsible=icon]:!min-h-0 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg",
-        /* overflow-hidden safe — floating uses Radix Portal */
+        "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!h-8 group-data-[collapsible=icon]:!min-h-8 group-data-[collapsible=icon]:!max-h-8 group-data-[collapsible=icon]:!w-8 group-data-[collapsible=icon]:!min-w-8 group-data-[collapsible=icon]:!max-w-8 group-data-[collapsible=icon]:aspect-square group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg",
         /* Icon rail: clip overflow and hide chrome that sat in the gutter (ellipsis was bleeding past the rail). */
         "group-data-[collapsible=icon]:!overflow-hidden",
         "[&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:text-clip",
         "group-data-[collapsible=icon]:[&>span:last-child]:hidden",
       )}
     >
-      <Avatar className="h-8 w-8 shrink-0">
+      <Avatar className="size-8 shrink-0">
         <AvatarImage
           src={user.avatar}
           alt=""
@@ -96,7 +93,7 @@ export function NavUser({
         </span>
       </div>
       <span
-        className="ms-auto flex w-6 shrink-0 self-stretch items-center justify-center text-muted-foreground group-data-[collapsible=icon]:hidden"
+        className="icon-button-chrome ms-auto flex w-6 shrink-0 self-stretch items-center justify-center group-data-[collapsible=icon]:hidden"
         aria-hidden="true"
       >
         <i className="fa-light fa-ellipsis-vertical block text-xs leading-none" aria-hidden="true" />
@@ -108,22 +105,16 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          {showCollapsedTooltip ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  {profileTrigger}
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="right" align="center">
-                {user.name}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <DropdownMenuTrigger asChild>
-              {profileTrigger}
-            </DropdownMenuTrigger>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                {profileTrigger}
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center">
+              {user.name}
+            </TooltipContent>
+          </Tooltip>
 
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-60 rounded-lg"
@@ -133,8 +124,8 @@ export function NavUser({
           >
             {/* ── User identity ──────────────────────────────── */}
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                <Avatar className="h-8 w-8">
+              <div className="flex items-center gap-2 p-1.5 text-start text-sm">
+                <Avatar className="size-8">
                   <AvatarImage
                     src={user.avatar}
                     alt=""
@@ -171,15 +162,13 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings#appearance" className="cursor-pointer">
+                <Link to="/settings/profile" className="cursor-pointer">
                   <i className="fa-light fa-sliders" aria-hidden="true" />
-                  App preferences
+                  Profile settings
                   <span className="ms-auto text-xs text-muted-foreground capitalize">{safeTheme}</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-
-            {extraMenuItems}
 
             <DropdownMenuSeparator />
 

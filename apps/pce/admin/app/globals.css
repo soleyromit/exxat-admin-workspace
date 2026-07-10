@@ -226,3 +226,14 @@
   box-shadow: none;
   cursor: default;
 }
+
+/* Recharts injects this span for internal text measurement; clamp to DS 12px floor */
+#recharts_measurement_span {
+  font-size: 12px !important;
+}
+
+/* Next.js built-in 404 page hardcodes background:#000 but inherits our near-black
+   DS --foreground token (#0a0a0a), producing 1.06:1 contrast. Force white. */
+.next-error-h1 {
+  color: #fff;
+}

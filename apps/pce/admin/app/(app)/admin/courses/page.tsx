@@ -169,7 +169,7 @@ export default function MasterCoursesPage() {
 
   return (
     <>
-      <SiteHeader title="Courses" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <SiteHeader title="Courses" breadcrumbs={[{ label: 'Directory' }]} />
       <PageHeader
         title="Courses"
         subtitle={`${activeCount} active · ${MOCK_MASTER_COURSES.length} total`}

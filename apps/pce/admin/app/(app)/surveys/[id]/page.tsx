@@ -7,8 +7,9 @@ import {
   Button,
   Avatar, AvatarFallback,
   Badge,
-  Card, CardHeader, CardTitle,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
   KeyMetrics,
+  LocalBanner,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -23,41 +24,15 @@ import {
   SendReminderPopover,
   ReleaseSheet,
 } from '@/components/pce/pce-modals'
+import { EmptyState } from '@/components/empty-state'
 import {
   MOCK_RESPONSES,
   MOCK_OPEN_TEXT_RESPONSES,
   MOCK_SURVEY_QUESTION_DATA,
-  type ResponseComment,
   type SubjectKey,
+  type PceOpenTextResponse,
 } from '@/lib/pce-mock-data'
-
-// ── Theme derivation (AI layer — no NLP in mock, keyword-based proxy) ─────────
-interface ThemeRow {
-  label: string
-  sentiment: 'positive' | 'neutral' | 'concern'
-  occurrences: number
-}
-
-const THEME_PATTERNS: { label: string; keywords: string[] }[] = [
-  { label: 'Pacing',             keywords: ['pacing', 'pace', 'fast', 'rushed', 'slow'] },
-  { label: 'Faculty engagement', keywords: ['engaging', 'communicat', 'helpful', 'responsive', 'organized', 'approachable'] },
-  { label: 'Course materials',   keywords: ['material', 'resource', 'lab', 'structure', 'reading'] },
-  { label: 'Assessment quality', keywords: ['assessment', 'exam', 'quiz', 'example', 'worked', 'difficulty'] },
-  { label: 'Office hours',       keywords: ['office hours', 'available', 'accessible'] },
-]
-
-function deriveThemes(comments: ResponseComment[]): ThemeRow[] {
-  return THEME_PATTERNS.flatMap(theme => {
-    const matched = comments.filter(c =>
-      theme.keywords.some(kw => c.text.toLowerCase().includes(kw))
-    )
-    if (matched.length === 0) return []
-    const hasConcern = matched.some(c => c.sentiment === 'concern')
-    const hasPositive = matched.some(c => c.sentiment === 'positive')
-    const dominant: ThemeRow['sentiment'] = hasConcern ? 'concern' : hasPositive ? 'positive' : 'neutral'
-    return [{ label: theme.label, sentiment: dominant, occurrences: matched.length }]
-  })
-}
+import { deriveThemes } from '@/lib/pce-themes'
 
 // ── Response trajectory ───────────────────────────────────────────────────────
 function trajectoryText(responseCount: number, openDate?: string, deadline?: string): string | null {
@@ -86,6 +61,131 @@ function trajectoryText(responseCount: number, openDate?: string, deadline?: str
 // ── Days remaining ────────────────────────────────────────────────────────────
 function daysUntil(deadline: string): number {
   return Math.max(0, Math.round((new Date(deadline).getTime() - Date.now()) / 86_400_000))
+}
+
+// ── Qualitative feedback (released/closed reading view) ──────────────────────
+// Comments grouped Course vs Faculty, each with sentiment filter chips.
+// 'concern' displays as "Constructive" (amber family, never red).
+
+type SentimentFilter = 'all' | 'positive' | 'concern' | 'neutral'
+
+const SENTIMENT_LABEL: Record<Exclude<SentimentFilter, 'all'>, string> = {
+  positive: 'Positive',
+  concern: 'Constructive',
+  neutral: 'Neutral',
+}
+
+function CommentGroup({
+  title,
+  icon,
+  comments,
+}: {
+  title: string
+  icon: string
+  comments: PceOpenTextResponse[]
+}) {
+  const [filter, setFilter] = useState<SentimentFilter>('all')
+  if (comments.length === 0) return null
+
+  const countFor = (f: SentimentFilter) =>
+    f === 'all' ? comments.length : comments.filter(c => (c.sentiment ?? 'neutral') === f).length
+  const visible = filter === 'all' ? comments : comments.filter(c => (c.sentiment ?? 'neutral') === filter)
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sm font-semibold flex items-center gap-2">
+          <i className={`fa-light ${icon} text-muted-foreground`} aria-hidden="true" />
+          {title}
+          <span className="text-xs font-normal text-muted-foreground">
+            {comments.length} response{comments.length !== 1 ? 's' : ''}
+          </span>
+        </p>
+        <div className="flex items-center gap-1" role="group" aria-label={`Filter ${title} by sentiment`}>
+          {(['all', 'positive', 'concern', 'neutral'] as const).map(f => (
+            <Button
+              key={f}
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
+              className="h-7 px-2.5 text-xs"
+              style={filter === f ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : undefined}
+            >
+              {f === 'all' ? 'All' : SENTIMENT_LABEL[f]}
+              <span className="tabular-nums text-muted-foreground">{countFor(f)}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2">
+          No {filter === 'concern' ? 'constructive' : filter} responses in this group.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {visible.map(c => (
+            <div key={c.id} className="flex items-start gap-3">
+              <div
+                className="flex-1 min-w-0 border-l-2 pl-3"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <p className="text-sm italic">&ldquo;{c.text}&rdquo;</p>
+              </div>
+              {c.sentiment && (
+                <Badge variant="secondary" className="font-normal shrink-0">
+                  <SentimentDot sentiment={c.sentiment} />
+                  {SENTIMENT_LABEL[c.sentiment]}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function QualitativeFeedback({ responses }: { responses: PceOpenTextResponse[] }) {
+  // Flagged responses were hidden during moderation — never shown post-release.
+  const shown = responses.filter(r => !r.flagged)
+  const hiddenCount = responses.length - shown.length
+  const courseComments  = shown.filter(r => r.sectionSubject === 'course_content')
+  const facultyComments = shown.filter(r => r.sectionSubject !== 'course_content')
+
+  // All responses moderated away — say so instead of vanishing (the admin must
+  // be able to tell "none written" apart from "all hidden").
+  if (shown.length === 0) {
+    return (
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold">Student comments</h2>
+        <p className="text-xs text-muted-foreground">
+          {hiddenCount} response{hiddenCount !== 1 ? 's were' : ' was'} hidden during moderation —
+          none are available for display.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-sm font-semibold">Student comments</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Anonymized responses — individual authorship cannot be identified.
+          {hiddenCount > 0 && ` ${hiddenCount} response${hiddenCount !== 1 ? 's' : ''} hidden during moderation.`}
+        </p>
+      </div>
+      <Card className="flex flex-col gap-6 p-5">
+        <CommentGroup title="Course related comments" icon="fa-book-open" comments={courseComments} />
+        {courseComments.length > 0 && facultyComments.length > 0 && (
+          <div className="border-t border-border" aria-hidden="true" />
+        )}
+        <CommentGroup title="Faculty related comments" icon="fa-user-tie" comments={facultyComments} />
+      </Card>
+    </div>
+  )
 }
 
 // ── Sentiment dot ─────────────────────────────────────────────────────────────
@@ -137,6 +237,7 @@ export default function SurveyDetailPage() {
   const [releaseOpen,  setReleaseOpen]  = useState(false)
   const [localFlagged, setLocalFlagged] = useState<Set<string>>(new Set())
   const [linkCopied,   setLinkCopied]   = useState(false)
+  const [reportReady,  setReportReady]  = useState<'pdf' | 'csv' | null>(null)
 
   const survey        = surveys.find(s => s.id === id)
   const template      = survey ? templates.find(t => t.id === survey.templateId) : null
@@ -202,13 +303,19 @@ export default function SurveyDetailPage() {
 
   if (!survey) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
+      <div className="flex items-center justify-center flex-1 px-7 py-12">
         <h1 className="sr-only">Survey not found</h1>
-        <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
-        <p className="text-sm font-medium">Survey not found</p>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/surveys">Back to Surveys</Link>
-        </Button>
+        <EmptyState
+          align="center"
+          icon="fa-circle-exclamation"
+          title="Survey not found"
+          description="This survey doesn't exist or may have been removed."
+          footer={
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/surveys">Back to Surveys</Link>
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -254,12 +361,53 @@ export default function SurveyDetailPage() {
       }
     : {
         id: 'closed',
-        label: 'Survey closed',
-        value: survey.responseCount,
+        label: 'Status',
+        value: 'Closed',
         delta: '',
-        description: `Final responses · ${survey.deadline}`,
+        description: `Closed ${survey.deadline}`,
         trend: 'neutral',
       }
+
+  // ── Section scorecards — own score + program avg + prior-term reference ─────
+  // Trend arrows stay neutral: score deltas render as text, never red (Aarti).
+  const courseScore  = responses?.sectionScores.find(s => s.section === 'course_content')?.avg
+  const facultyScore = responses?.sectionScores.find(s => s.section === 'faculty_performance')?.avg
+  const priorOffering = survey.priorOfferings?.[survey.priorOfferings.length - 1]
+
+  function programSectionAvg(section: 'course_content' | 'faculty_performance'): number | null {
+    const scores = MOCK_RESPONSES
+      .map(r => r.sectionScores.find(s => s.section === section))
+      .filter((s): s is NonNullable<typeof s> => s != null)
+    if (scores.length === 0) return null
+    const totalCount = scores.reduce((n, s) => n + s.count, 0)
+    return Math.round((scores.reduce((n, s) => n + s.avg * s.count, 0) / totalCount) * 10) / 10
+  }
+
+  const scoreMetrics: MetricItem[] = []
+  if (courseScore != null) {
+    const parts = [`Program avg ${programSectionAvg('course_content')?.toFixed(1) ?? '—'}`]
+    if (priorOffering) parts.push(`${priorOffering.term}: ${priorOffering.courseAvg.toFixed(1)}`)
+    scoreMetrics.push({
+      id: 'course-score',
+      label: 'Course score',
+      value: `${courseScore.toFixed(1)}/5`,
+      delta: '',
+      description: parts.join(' · '),
+      trend: 'neutral',
+    })
+  }
+  if (facultyScore != null) {
+    const parts = [`Program avg ${programSectionAvg('faculty_performance')?.toFixed(1) ?? '—'}`]
+    if (priorOffering) parts.push(`${priorOffering.term}: ${priorOffering.facultyAvg.toFixed(1)}`)
+    scoreMetrics.push({
+      id: 'faculty-score',
+      label: 'Faculty score',
+      value: `${facultyScore.toFixed(1)}/5`,
+      delta: '',
+      description: parts.join(' · '),
+      trend: 'neutral',
+    })
+  }
 
   const kpiMetrics: MetricItem[] = [
     {
@@ -271,17 +419,14 @@ export default function SurveyDetailPage() {
       trend: 'neutral',
       metricVariant: 'hero',
     },
-    {
-      id: 'sections',
-      label: 'Template sections',
-      value: templateSections.length,
-      delta: '',
-      description: template?.name ?? 'No template assigned',
-      trend: 'neutral',
-      href: template ? `/templates/${template.id}` : undefined,
-    },
+    ...scoreMetrics,
     thirdMetric,
   ]
+
+  // Downloadable reports exist once responses are in and collection has ended.
+  const hasReports =
+    survey.responseCount > 0 &&
+    (survey.status === 'pending_review' || survey.status === 'released' || survey.status === 'closed')
 
   return (
     <>
@@ -312,6 +457,11 @@ export default function SurveyDetailPage() {
           </h1>
           <SurveyStatusBadge status={survey.status} />
           <div className="flex items-center gap-2 ml-auto shrink-0">
+            {template && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+              </Button>
+            )}
             {isActive && (
               <Button
                 variant="outline"
@@ -338,7 +488,12 @@ export default function SurveyDetailPage() {
             {isPendingReview && (
               <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
                 <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-                Share Results with Faculty
+                Release responses
+              </Button>
+            )}
+            {canClose && (
+              <Button variant="outline" size="sm" onClick={() => setCloseOpen(true)}>
+                Close Survey
               </Button>
             )}
           </div>
@@ -457,7 +612,14 @@ export default function SurveyDetailPage() {
               <p className="text-sm text-muted-foreground">Assign a template with sections to see scores here.</p>
             </Card>
           ) : (
-            templateSections.flatMap(section => {
+            <>
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="text-sm font-semibold">Questions</h2>
+              <span className="text-xs text-muted-foreground">
+                {templateSections.reduce((n, s) => n + s.questions.length, 0)} questions · {templateSections.length} section{templateSections.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {templateSections.flatMap(section => {
               const isFacultySection = isFacultySubject(section.subjectKey)
               const blocks = questionData?.instructorBlocks
 
@@ -535,7 +697,8 @@ export default function SurveyDetailPage() {
                   )}
                 </Card>,
               ]
-            })
+            })}
+            </>
           )}
 
           {/* ── Moderation section (pending_review only) ── */}
@@ -550,7 +713,7 @@ export default function SurveyDetailPage() {
                 </div>
                 <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
                   <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-                  Share Results with Faculty
+                  Release responses
                 </Button>
               </div>
 
@@ -581,6 +744,13 @@ export default function SurveyDetailPage() {
                           <p className="text-sm">{resp.text}</p>
                         </div>
                         <div className="flex-shrink-0 flex items-center gap-2">
+                          {/* AI sentiment pre-tag — 'concern' reads as Constructive (amber, no red) */}
+                          {resp.sentiment && (
+                            <Badge variant="secondary" className="font-normal">
+                              <SentimentDot sentiment={resp.sentiment} />
+                              {resp.sentiment === 'positive' ? 'Positive' : resp.sentiment === 'concern' ? 'Constructive' : 'Neutral'}
+                            </Badge>
+                          )}
                           {isFlagged && (
                             <Badge variant="outline" className="rounded">
                               <i className="fa-light fa-flag" aria-hidden="true" />
@@ -607,6 +777,60 @@ export default function SurveyDetailPage() {
                   })}
                 </Card>
               )}
+            </div>
+          )}
+
+          {/* ── Qualitative feedback (post-close reading view) ──
+              Moderation (pending_review) has its own flag/unflag section above;
+              this is the RELEASED/CLOSED reading surface — comments grouped
+              Course vs Faculty with sentiment filters (Hotjar/live pattern). */}
+          {(survey.status === 'released' || survey.status === 'closed') && openTextResps.length > 0 && (
+            <QualitativeFeedback responses={openTextResps} />
+          )}
+
+          {/* ── Download reports (post-collection only) ── */}
+          {hasReports && (
+            <div className="flex flex-col gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Download reports</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Exports are anonymized — student names are never attached to responses.
+                </p>
+              </div>
+              {reportReady && (
+                <LocalBanner variant="success">
+                  {reportReady === 'pdf' ? 'Full survey report' : 'Raw responses export'} for{' '}
+                  {survey.courseCode} is being prepared — it will download shortly.
+                </LocalBanner>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Full survey report</CardTitle>
+                    <CardDescription className="text-xs">
+                      Scores, question breakdown, and student comments in a single PDF.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" size="sm" onClick={() => setReportReady('pdf')}>
+                      Download PDF
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Raw responses</CardTitle>
+                    <CardDescription className="text-xs">
+                      Every anonymized response as a spreadsheet for further analysis.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" size="sm" onClick={() => setReportReady('csv')}>
+                      Download CSV
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 

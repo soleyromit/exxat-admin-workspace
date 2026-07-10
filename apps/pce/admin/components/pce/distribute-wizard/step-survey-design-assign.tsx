@@ -184,6 +184,7 @@ export function StepSurveyDesignAssign({
           selectable
           searchable
           edgeInset={false}
+          stickyHeader={false}
           emptyState={
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <i className="fa-light fa-book-open text-lg" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />

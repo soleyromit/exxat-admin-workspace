@@ -139,7 +139,7 @@ export function RetrospectiveView({
             <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>All configuration is ready — activate when your scheduling is confirmed.</p>
           </div>
           <Button variant="outline" size="sm" className="shrink-0" asChild>
-            <Link href="/surveys/activate">Set up next term</Link>
+            <Link href="/surveys/push">Set up next term</Link>
           </Button>
         </CardContent>
       </Card>

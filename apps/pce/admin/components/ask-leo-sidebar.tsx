@@ -7,13 +7,22 @@
  */
 
 import * as React from "react"
-import { usePathname } from "@/lib/next-compat"
-import { AnimatePresence, motion } from "motion/react"
+import { useLocation } from "react-router-dom"
+import { useProduct } from "@/contexts/product-context"
+import { productSlug } from "@/stores/app-store"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage, AvatarLeoAssistant } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AskLeoComposer } from "@/components/ask-leo-composer"
-import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Tooltip,
   TooltipContent,
@@ -21,173 +30,63 @@ import {
 } from "@/components/ui/tooltip"
 import { useSidebar } from "@/components/ui/sidebar"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { AiThinkingOverlay } from "@/components/ui/ai-thinking-surface"
-import { LeoTypingDots } from "@/components/leo-typing-dots"
+import {
+  ASK_LEO_PANEL_WIDTH_DEFAULT,
+  ASK_LEO_PANEL_WIDTH_KEY,
+  NestedSecondaryPanelShell,
+} from "@/components/templates/nested-secondary-panel-shell"
+import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
 
+// React.lazy + Suspense for the chart bundle.
+// PR-6. Same call-site shape (`<LeoIcon />`) — Suspense boundary is internal.
 const LeoIconLazy = React.lazy(() =>
   import("@/components/ui/leo-icon").then(m => ({ default: m.LeoIcon })),
 )
+
 function LeoIcon(props: React.ComponentProps<typeof LeoIconLazy>) {
   return (
-    <React.Suspense fallback={<div className="size-20" aria-hidden="true" />}>
+    <React.Suspense
+      fallback={<div className="size-20" aria-hidden="true" />}
+    >
       <LeoIconLazy {...props} />
     </React.Suspense>
   )
 }
-import { useAltKeyLabel, useModKeyLabel } from "@/hooks/use-mod-key-label"
 import { ASK_LEO_GENERIC_SUGGESTIONS, getAskLeoRouteContext } from "@/lib/ask-leo-route-context"
-import { isEditableTarget } from "@/lib/editable-target"
 import { NAV_USER } from "@/lib/mock/navigation"
+import { useLeoThread } from "@/lib/use-leo-thread"
+import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-context"
+import { AskLeoViewToggle } from "@/components/ask-leo-view-toggle"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Context — share open state with any page (e.g. "Ask Leo" buttons on cards)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Page context that pages register with `useAskLeoPageContext` so Leo knows
- * what the user is currently looking at. Title is shown in the welcome
- * bubble; `suggestions` replace the generic prompt list when present; and
- * `data` is an opaque payload the downstream API call can echo back.
- */
-export interface AskLeoPageContext {
-  /** Human-readable page name, e.g. "Placements" or "Compliance dashboard". */
-  title: string
-  /** Optional one-line description ("42 active placements, 3 pending review"). */
-  description?: string
-  /** Page-specific starter prompts — replace the generic 4 when provided. */
-  suggestions?: string[]
-  /** Arbitrary payload handed to the assistant API at send time. */
-  data?: Record<string, unknown>
-}
-
-interface AskLeoContextValue {
-  open: boolean
-  setOpen: (open: boolean) => void
-  toggle: () => void
-  /** Open the sidebar and prefill the composer (e.g. command palette AI suggestions). */
-  openWithPrompt: (prompt: string) => void
-  /** Internal — AskLeoSidebar consumes pending text when opening. */
-  consumePendingComposerPrompt: () => string | null
-  /** Current page context (or null if no page has registered one). */
-  pageContext: AskLeoPageContext | null
-  /** Register/replace the current page's context. */
-  setPageContext: (ctx: AskLeoPageContext | null) => void
-}
-
-const AskLeoContext = React.createContext<AskLeoContextValue>({
-  open: false,
-  setOpen: () => {},
-  toggle: () => {},
-  openWithPrompt: () => {},
-  consumePendingComposerPrompt: () => null,
-  pageContext: null,
-  setPageContext: () => {},
-})
-
-export function useAskLeo() {
-  return React.useContext(AskLeoContext)
+function isLeoLandingPath(pathname: string, leoHref: string) {
+  return pathname === leoHref || pathname.startsWith(`${leoHref}/`)
 }
 
 /**
- * Pages call this at the top of their client component to tell Leo what
- * surface the user is on. Unregisters on unmount (so route changes clear
- * stale context). Memoize `ctx` to avoid update loops — use `React.useMemo`.
- *
- * @example
- *   useAskLeoPageContext(React.useMemo(() => ({
- *     title: "Placements",
- *     description: `${rows.length} rows, ${filters.active} filters active`,
- *     suggestions: [
- *       "Summarize placements ending this month",
- *       "Which sites are at capacity?",
- *     ],
- *   }), [rows.length, filters.active]))
+ * Right-rail Ask Leo — same shell as {@link NestedSecondaryPanelShell} / library secondary nav.
+ * Sits beside `SidebarInset` in the app row (not inside the main inset card).
  */
-export function useAskLeoPageContext(ctx: AskLeoPageContext | null) {
-  const { setPageContext } = React.useContext(AskLeoContext)
-  React.useEffect(() => {
-    setPageContext(ctx)
-    return () => setPageContext(null)
-  }, [ctx, setPageContext])
-}
-
-export function AskLeoProvider({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false)
-  const [pageContext, setPageContext] = React.useState<AskLeoPageContext | null>(null)
-  const toggle = React.useCallback(() => setOpen(v => !v), [])
-  const pendingComposerPromptRef = React.useRef<string | null>(null)
-
-  const openWithPrompt = React.useCallback((prompt: string) => {
-    pendingComposerPromptRef.current = prompt
-    setOpen(true)
-  }, [])
-
-  const consumePendingComposerPrompt = React.useCallback(() => {
-    const p = pendingComposerPromptRef.current
-    pendingComposerPromptRef.current = null
-    return p
-  }, [])
-
-  const value = React.useMemo(
-    () => ({ open, setOpen, toggle, openWithPrompt, consumePendingComposerPrompt, pageContext, setPageContext }),
-    [open, toggle, openWithPrompt, consumePendingComposerPrompt, pageContext],
-  )
-
-  /** ⌘⌥K / Ctrl+Alt+K — avoids browser ⌘⇧N (incognito), ⌘⇧O (bookmarks), and Ctrl+Alt+L (lock on some Linux). */
-  React.useEffect(() => {
-    function onGlobalKeyDown(e: KeyboardEvent) {
-      if (!e.altKey || (!e.metaKey && !e.ctrlKey)) return
-      if (e.key.toLowerCase() !== "k") return
-      if (isEditableTarget(e.target)) return
-      e.preventDefault()
-      toggle()
-    }
-    document.addEventListener("keydown", onGlobalKeyDown)
-    return () => document.removeEventListener("keydown", onGlobalKeyDown)
-  }, [toggle])
-
-  return (
-    <AskLeoContext.Provider value={value}>
-      {children}
-    </AskLeoContext.Provider>
-  )
-}
-
-type LeoThreadMessage = {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  /** Assistant-only: show thinking animation until the reply is applied. */
-  pending?: boolean
-}
-
-function mockAssistantReply(userText: string): string {
-  return `Thanks — I received: “${userText.slice(0, 120)}${userText.length > 120 ? "…" : ""}”. Wire your assistant API here to return a real answer.`
-}
-
-const LEO_REPLY_DELAY_MS = 3500
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sidebar component
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function AskLeoSidebar() {
   const { open, setOpen, consumePendingComposerPrompt, pageContext } = useAskLeo()
   const { setOpen: setSidebarOpen, isMobile } = useSidebar()
+  const reflowZoom = useSidebarReflowZoom()
+  const navFlyout = isMobile || reflowZoom
+  const { pathname } = useLocation()
+  const { product } = useProduct()
+  const leoHref = `/${productSlug(product)}/leo`
+  const isOnLeoLanding = isLeoLandingPath(pathname, leoHref)
   const [composerValue, setComposerValue] = React.useState("")
   const [composerExpanded, setComposerExpanded] = React.useState(false)
-  const [threadMessages, setThreadMessages] = React.useState<LeoThreadMessage[]>([])
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null)
-  const conversationScrollRef = React.useRef<HTMLDivElement>(null)
-  const pendingReplyTimeoutsRef = React.useRef<number[]>([])
-
-  const clearPendingReplyTimeouts = React.useCallback(() => {
-    pendingReplyTimeoutsRef.current.forEach(clearTimeout)
-    pendingReplyTimeoutsRef.current = []
-  }, [])
-  const pathname = usePathname()
+  const {
+    messages: threadMessages,
+    isThinking,
+    send,
+    stop,
+    reset,
+    scrollRef: conversationScrollRef,
+  } = useLeoThread()
   const routeContext = React.useMemo(() => getAskLeoRouteContext(pathname), [pathname])
-  const isThinking = threadMessages.some((m) => m.pending)
 
   const suggestions =
     pageContext?.suggestions && pageContext.suggestions.length > 0
@@ -197,42 +96,16 @@ export function AskLeoSidebar() {
   const suggestionChips =
     suggestions.length > 0 ? suggestions : ASK_LEO_GENERIC_SUGGESTIONS
 
-  const appendUserTurn = React.useCallback((text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    const userId = crypto.randomUUID()
-    const asstId = crypto.randomUUID()
-    setThreadMessages((prev) => [
-      ...prev,
-      { id: userId, role: "user", content: trimmed },
-      { id: asstId, role: "assistant", content: "", pending: true },
-    ])
-    const tid = window.setTimeout(() => {
-      setThreadMessages((prev) =>
-        prev.map((m) =>
-          m.id === asstId && m.role === "assistant"
-            ? { ...m, content: mockAssistantReply(trimmed), pending: false }
-            : m,
-        ),
-      )
-      pendingReplyTimeoutsRef.current = pendingReplyTimeoutsRef.current.filter((t) => t !== tid)
-    }, LEO_REPLY_DELAY_MS)
-    pendingReplyTimeoutsRef.current.push(tid)
-  }, [])
-
-  React.useEffect(() => {
-    if (!open) return
-    const el = conversationScrollRef.current
-    if (!el) return
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight
-    })
-  }, [threadMessages, open])
+  const appendUserTurn = React.useCallback(
+    (text: string) => {
+      send(text)
+    },
+    [send],
+  )
 
   React.useEffect(() => {
     if (!open) {
-      clearPendingReplyTimeouts()
-      setThreadMessages([])
+      reset()
       setComposerValue("")
       return
     }
@@ -243,9 +116,7 @@ export function AskLeoSidebar() {
     } else {
       setComposerValue("")
     }
-  }, [open, consumePendingComposerPrompt, clearPendingReplyTimeouts])
-
-  React.useEffect(() => () => clearPendingReplyTimeouts(), [clearPendingReplyTimeouts])
+  }, [open, consumePendingComposerPrompt, reset])
 
   // Collapse main sidebar when Ask Leo opens, expand when it closes
   const prevOpen = React.useRef(open)
@@ -255,88 +126,66 @@ export function AskLeoSidebar() {
     prevOpen.current = open
   }, [open, setSidebarOpen])
 
+  if (isOnLeoLanding) {
+    return null
+  }
+
   return (
     <>
-      {/* Mobile/zoomed-in: tap-outside scrim — WCAG aria-hidden, closes on click */}
-      {isMobile && open && (
+      {navFlyout && open ? (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-40 bg-background/60"
           onClick={() => setOpen(false)}
         />
-      )}
-    <aside
-      aria-label="Ask Leo — AI assistant"
-      data-state={open ? "open" : "closed"}
-      // Cursor IDE browser preview injects `data-cursor-ref` here before
-      // hydration — see commentary in NestedSecondaryPanelShell. Suppression
-      // is scoped to this element's own attributes only.
-      suppressHydrationWarning
-      // overflow-hidden safe — floating uses Radix Portal
-      className={cn(
-        "flex flex-col overflow-hidden",
-        isMobile
-          ? open
-            // Mobile/zoomed: fixed floating panel on the right, same inset style as left sidebar
-            ? "fixed z-50 right-2 top-2 h-[calc(100dvh-1rem)] w-[min(20rem,calc(100vw-1rem))] rounded-2xl border border-border/60 shadow-2xl ring-1 ring-border/20"
-            : "hidden"
-          : cn(
-              "transition-[width,margin,opacity] duration-200 ease-linear",
-              open
-                ? "relative w-64 md:w-80 shrink-0 self-start m-2 mx-2 min-h-0 h-[min(calc(100dvh-2rem),800px)] overflow-hidden rounded-xl border border-sidebar-border/80 shadow-[0_18px_48px_-16px_rgba(15,23,42,0.2),0_8px_20px_-10px_rgba(15,23,42,0.12)] ring-1 ring-sidebar-border dark:shadow-[0_22px_56px_-12px_rgba(0,0,0,0.5),0_10px_28px_-12px_rgba(0,0,0,0.35)] md:sticky md:top-2 md:ms-0 md:h-[calc(100dvh-1.25rem)]"
-                : "h-0 min-h-0 shrink overflow-hidden border-0 p-0 m-0 min-w-0 w-0 max-w-0 opacity-0 pointer-events-none",
-            )
-      )}
-      style={
-        open
-          ? {
-              background: "var(--leo-surface-gradient)",
-            }
-          : undefined
-      }
-    >
-      <AiThinkingOverlay active={open && isThinking} />
-      {/* min-w only when open — avoids flex min-width:auto stealing width / hit-testing when closed */}
-      <div
-        className={cn(
-          "relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col",
-          open ? "min-w-0" : "hidden min-w-0 w-0"
-        )}
+      ) : null}
+      <NestedSecondaryPanelShell
+        open={open}
+        compact={false}
+        overlay={navFlyout ? (isMobile ? "mobile" : "desktop") : false}
+        side="right"
+        dataSlot="ask-leo-panel"
+        widthPersistKey={ASK_LEO_PANEL_WIDTH_KEY}
+        widthDefault={ASK_LEO_PANEL_WIDTH_DEFAULT}
+        aria-label="Ask Leo — AI assistant"
+        contentClassName="min-h-0 overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 px-4 py-3 shrink-0">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <i className="fa-duotone fa-solid fa-star-christmas text-brand shrink-0" aria-hidden="true" />
-              <h1
-                className="m-0 text-lg font-semibold tracking-tight leading-tight text-sidebar-foreground truncate"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
-                Ask Leo
-              </h1>
-              <StatusBadge status="beta" size="xs" className="shrink-0" />
+        <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Header — title row + view menu + close */}
+        <div className="flex shrink-0 flex-col gap-2 border-b border-sidebar-border/50 px-3 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <i className="fa-duotone fa-solid fa-star-christmas text-brand shrink-0" aria-hidden="true" />
+                <h2 className="font-heading m-0 truncate text-lg font-semibold tracking-tight leading-tight text-sidebar-foreground">
+                  Ask Leo
+                </h2>
+                <StatusBadge status="beta" size="xs" className="shrink-0" />
+              </div>
+              <p className="text-xs leading-snug text-sidebar-foreground/60">
+                Powered by AI · responses may vary
+              </p>
             </div>
-            <p className="text-[11px] leading-snug text-sidebar-foreground/60">
-              Powered by AI · responses may vary
-            </p>
+            <div className="flex shrink-0 items-center gap-1">
+              <AskLeoViewToggle />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="icon-button-chrome inline-flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Close Ask Leo"
+                  >
+                    <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="flex max-w-xs flex-wrap items-center gap-1.5 text-xs">
+                  <span>Close Ask Leo</span>
+                  <AskLeoShortcutKbds />
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Close Ask Leo"
-                onClick={() => setOpen(false)}
-                className="shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              >
-                <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="flex max-w-xs flex-wrap items-center gap-1.5 text-xs">
-              <span>Close Ask Leo</span>
-              <AskLeoShortcutKbds />
-            </TooltipContent>
-          </Tooltip>
         </div>
 
         {/* Conversation scrolls behind composer; composer is absolutely pinned to the bottom. */}
@@ -359,26 +208,26 @@ export function AskLeoSidebar() {
             >
               {threadMessages.length === 0 ? (
                 <>
-                  <LeoIcon
-                    variant="interactive"
-                    size="xl"
-                    className="[animation:leo-chip-in_520ms_cubic-bezier(0.22,1,0.36,1)_both]"
-                  />
+                  <LeoIcon variant="interactive" size="xl" />
                   <ul className="m-0 flex list-none flex-wrap justify-center gap-2 p-0" aria-label="Suggested prompts">
                   {suggestionChips.map((q, i) => (
                     <li
                       key={`${i}-${q.slice(0, 24)}`}
-                      className="max-w-full list-none [animation:leo-chip-in_420ms_cubic-bezier(0.22,1,0.36,1)_both]"
-                      style={{ animationDelay: `${i * 70}ms` }}
+                      className="max-w-full list-none"
                     >
-                      <Button
-                        type="button"
+                      <Badge
+                        asChild
                         variant="outline"
-                        onClick={() => appendUserTurn(q)}
-                        className="h-auto min-h-8 w-full max-w-full whitespace-normal rounded-4xl border-border/90 bg-card px-3 py-2 text-start text-xs font-normal leading-snug text-card-foreground shadow-sm transition-colors transition-transform duration-150 hover:-translate-y-0.5 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground dark:border-border dark:bg-card dark:hover:bg-sidebar-accent/40"
+                        className="h-auto min-h-8 max-w-full items-stretch whitespace-normal rounded-4xl border-border/90 bg-card p-0 font-normal text-card-foreground shadow-sm transition-transform duration-150 hover:-translate-y-0.5 dark:border-border dark:bg-card"
                       >
-                        <span className="line-clamp-4">{q}</span>
-                      </Button>
+                        <button
+                          type="button"
+                          onClick={() => appendUserTurn(q)}
+                          className="inline-flex min-h-8 w-full max-w-full cursor-pointer text-start text-xs leading-snug transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground dark:hover:bg-sidebar-accent/40"
+                        >
+                          <span className="line-clamp-4 px-3 py-2">{q}</span>
+                        </button>
+                      </Badge>
                     </li>
                   ))}
                 </ul>
@@ -402,21 +251,11 @@ export function AskLeoSidebar() {
                     <div key={m.id} className="flex w-full min-w-0 gap-3">
                       <AvatarLeoAssistant className="mt-0.5 shrink-0" />
                       <div className="min-w-0 flex-1 pt-0.5 text-start text-sm leading-relaxed text-sidebar-foreground">
-                        <AnimatePresence mode="wait" initial={false}>
-                          {m.pending ? (
-                            <LeoTypingDots key="thinking" />
-                          ) : (
-                            <motion.p
-                              key="content"
-                              className="m-0 break-words"
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                            >
-                              {m.content}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
+                        {m.pending ? (
+                          <p className="m-0 text-muted-foreground">Thinking…</p>
+                        ) : (
+                          <p className="m-0 break-words">{m.content}</p>
+                        )}
                       </div>
                     </div>
                   ),
@@ -425,29 +264,23 @@ export function AskLeoSidebar() {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-sidebar/90 px-3 pb-4 pt-10 sm:pb-5">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-[var(--secondary-panel-bg)] px-3 pb-4 pt-10 sm:pb-5">
             <div className="pointer-events-auto">
-            <div
-              className={cn(
-                "mx-1 min-w-0 max-w-full border border-border/80 bg-card/95 shadow-[0_22px_56px_-14px_rgba(15,23,42,0.28),0_10px_28px_-10px_rgba(15,23,42,0.18),0_2px_8px_-2px_rgba(15,23,42,0.08)] backdrop-blur-md supports-[backdrop-filter]:bg-card/92 dark:border-border/55 dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.62),0_12px_32px_-12px_rgba(0,0,0,0.42),0_4px_12px_-4px_rgba(0,0,0,0.35)]",
-                composerExpanded ? "rounded-2xl p-1.5" : "rounded-full px-1 py-1",
-              )}
-            >
               <AskLeoComposer
                 ref={composerTextareaRef}
                 value={composerValue}
                 onChange={setComposerValue}
                 onSubmit={appendUserTurn}
                 onExpandedChange={setComposerExpanded}
+                isAnalyzing={isThinking}
+                onStop={stop}
                 placeholder="Ask Leo anything…"
-                className="[&_form>div]:rounded-none [&_form>div]:border-0 [&_form>div]:bg-transparent [&_form>div]:shadow-none"
               />
-            </div>
             </div>
           </div>
         </div>
-      </div>
-    </aside>
+        </div>
+      </NestedSecondaryPanelShell>
     </>
   )
 }
@@ -455,42 +288,6 @@ export function AskLeoSidebar() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Toggle button — can be placed anywhere (e.g. in SiteHeader or floating)
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Keyboard shortcut hint for Ask Leo (⌘⌥K / Ctrl+Alt+K).
- *
- * • `variant="tile"` (default) — three separate tile kbds, for use in tooltip
- *   content / standalone surfaces where the tile chrome is welcome.
- * • `variant="bare"` — single inline kbd with no background/border that
- *   inherits the parent's currentColor (see Kbd "bare" variant). Use this
- *   whenever the kbds are rendered INSIDE a button (e.g. primary Ask Leo
- *   button in a popover footer). Matches the `<Kbd variant="bare">` pattern
- *   used by the Next / Back buttons in the new placement flow.
- */
-export function AskLeoShortcutKbds({
-  className,
-  variant = "tile",
-}: {
-  className?: string
-  variant?: "tile" | "bare"
-}) {
-  const mod = useModKeyLabel()
-  const alt = useAltKeyLabel()
-  if (variant === "bare") {
-    return (
-      <KbdGroup className={className}>
-        <Kbd variant="bare">{mod}{alt}K</Kbd>
-      </KbdGroup>
-    )
-  }
-  return (
-    <KbdGroup className={className}>
-      <Kbd>{mod}</Kbd>
-      <Kbd>{alt}</Kbd>
-      <Kbd>K</Kbd>
-    </KbdGroup>
-  )
-}
 
 export function AskLeoToggle({ className }: { className?: string }) {
   const { toggle, open } = useAskLeo()

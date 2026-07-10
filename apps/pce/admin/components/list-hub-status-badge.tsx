@@ -15,10 +15,10 @@ export function ListHubStatusBadge({ label, tint, icon, className }: ListHubStat
   return (
     <Badge
       variant="secondary"
-      className={`rounded-full gap-1.5 px-3 py-1 text-xs font-semibold whitespace-nowrap border ${className ?? ''}`}
+      className={`rounded-full gap-1.5 px-3 py-1 text-xs font-semibold whitespace-nowrap border normal-case tracking-normal ${className ?? ''}`}
       style={{ backgroundColor: tint.bg, color: tint.fg, borderColor: tint.border }}
     >
-      <i className={`fa-regular ${icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
+      <i className={`fa-light ${icon}`} aria-hidden="true" />
       {label}
     </Badge>
   )

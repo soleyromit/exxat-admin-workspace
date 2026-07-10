@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 /**
  * BrandColorPicker — single-anchor palette popover.
@@ -117,6 +117,7 @@ function BrandHueSlider({
         value={hue}
         onChange={event => onHueChange(Number(event.target.value))}
         aria-valuetext={`${hue} degrees`}
+        aria-label="Brand color hue"
         className={cn(
           "brand-hue-range relative z-10 h-6 w-full cursor-pointer appearance-none bg-transparent",
           "[&::-webkit-slider-runnable-track]:h-3 [&::-webkit-slider-runnable-track]:rounded-full",
@@ -274,7 +275,7 @@ export function BrandColorPicker({
               <p className="truncate text-xs font-medium text-foreground">
                 {matchedAnchor?.familyLabel ?? "Custom hue"}
               </p>
-              <p className="truncate font-mono text-[11px] uppercase text-muted-foreground">
+              <p className="truncate font-mono text-xs uppercase text-muted-foreground">
                 {matchedAnchor?.hex ?? (isPaletteAnchorColor(value) ? value.trim() : `${hueValue}°`)}
               </p>
             </div>
@@ -307,9 +308,9 @@ export function BrandColorPicker({
             const tipBody = (
               <span className="flex flex-col">
                 <span>{swatch.familyLabel}</span>
-                <span className="text-[11px] text-muted-foreground">{swatch.hex}</span>
+                <span className="text-xs text-muted-foreground">{swatch.hex}</span>
                 {claim ? (
-                  <span className="mt-0.5 text-[11px] text-foreground">
+                  <span className="mt-0.5 text-xs text-foreground">
                     Used by {claim}
                   </span>
                 ) : null}
@@ -317,9 +318,7 @@ export function BrandColorPicker({
             )
             return (
               <Tip key={`${swatch.family}-${swatch.shade}`} label={tipBody}>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
+                <button
                   type="button"
                   role="option"
                   aria-selected={selected}
@@ -330,7 +329,7 @@ export function BrandColorPicker({
                   }
                   onClick={() => handleSelectSwatch(swatch)}
                   className={cn(
-                    "group relative flex flex-col items-center gap-1 rounded-md px-1 py-1.5",
+                    "group relative flex flex-col items-center gap-1 rounded-md p-1.5",
                     "transition-transform hover:scale-[1.03]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
                     selected && "bg-accent/40",
@@ -347,7 +346,7 @@ export function BrandColorPicker({
                   >
                     {selected ? (
                       <i
-                        className="fa-solid fa-check absolute inset-0 m-auto text-[10px] text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.6)]"
+                        className="fa-solid fa-check absolute inset-0 m-auto text-xs text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.6)]"
                         aria-hidden="true"
                       />
                     ) : null}
@@ -369,35 +368,35 @@ export function BrandColorPicker({
                   </span>
                   <span
                     className={cn(
-                      "max-w-full truncate text-[11px] leading-none text-muted-foreground",
+                      "max-w-full truncate text-xs leading-none text-muted-foreground",
                       selected && "text-foreground",
                     )}
                   >
                     {swatch.familyLabel}
                   </span>
-                </Button>
+                </button>
               </Tip>
             )
           })}
         </div>
 
         {/* Footer — single hue slider on a full-spectrum track */}
-        <div className="space-y-2 border-t border-border px-3 py-3">
+        <div className="space-y-2 border-t border-border p-3">
           <div className="flex items-center justify-between gap-2">
             <label
               htmlFor={`${id ?? "brand-color"}-hue`}
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-xs font-medium text-muted-foreground"
             >
               Custom hue
             </label>
-            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">{hueValue}°</span>
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">{hueValue}°</span>
           </div>
           <BrandHueSlider
             id={`${id ?? "brand-color"}-hue`}
             hue={hueValue}
             onHueChange={handleHueChange}
           />
-          <p className="text-[11px] leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             Saturation and lightness stay fixed — only hue changes, so panel tints and product
             chrome stay consistent.
           </p>

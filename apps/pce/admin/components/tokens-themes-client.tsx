@@ -10,11 +10,11 @@
  *     also collapses the main sidebar via `secondary-panel.tsx#openPanel`.
  *   - `PrimaryPageTemplate` + `ListPageTemplate` — same hub frame as
  *     Placements / Library.
- *   - **`HubTable`** (NOT the raw DataTable primitive) — the canonical hub
- *     wrapper that wires `useTableState`, the toolbar (search + filter chips
- *     + filter dropdown + sort), `TablePropertiesDrawerButton`, view-type
- *     tiles, bulk-actions, and conditional rules. Hubs that drop to the raw
- *     primitive silently lose filters and Properties; do not do that.
+ *   - **`HubTable`** (NOT raw `<DataTable>`) — the canonical primitive that
+ *     wires `useTableState`, the toolbar (search + filter chips + filter
+ *     dropdown + sort), `TablePropertiesDrawerButton`, view-type tiles,
+ *     bulk-actions, and conditional rules. Hubs that drop down to raw
+ *     `<DataTable>` silently lose filters and Properties; do not do that.
  *   - One view tab (`viewType: "table"`) — category scope is the panel's
  *     job, not the view tabs'.
  *
@@ -23,9 +23,14 @@
  */
 
 import * as React from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { PrimaryPageTemplate } from "@/components/templates/primary-page-template"
 import { PageHeader } from "@/components/page-header"
+import { Button } from "@/components/ui/button"
+import { Tip } from "@/components/ui/tip"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { Shortcut } from "@/components/ui/dropdown-menu"
+import { useModKeyLabel, useAltKeyLabel } from "@/hooks/use-mod-key-label"
 import { useProductDashboardHref } from "@/contexts/product-route-sync"
 import { useProduct } from "@/contexts/product-context"
 import { productPersistKey } from "@/stores/app-store"
@@ -48,8 +53,6 @@ import {
   renderTokenListRow,
   type TokenHubRow,
 } from "@/components/tokens-hub-auxiliary-views"
-import { Button } from "@/components/ui/button"
-import { Tip } from "@/components/ui/tip"
 import { Badge } from "@/components/ui/badge"
 import {
   CATEGORY_COUNTS,
@@ -135,7 +138,7 @@ const TOKENS_SUPPORTED_VIEWS = FULL_HUB_SUPPORTED_VIEWS
 function buildMetrics(
   navigate: (category: TokensCategoryParam) => void,
 ): MetricItem[] {
-  return [
+  const items: MetricItem[] = [
     {
       id: "total",
       label: "Total tokens",
@@ -147,40 +150,37 @@ function buildMetrics(
       description: `${TOKENS_INDEX.namespaces.length} namespaces`,
       onClick: () => navigate(TOKENS_ALL_CATEGORY),
     },
-    {
-      id: "color",
-      label: "Color tokens",
-      value: CATEGORY_COUNTS.color ?? 0,
+  ]
+
+  for (const tab of CATEGORY_TABS) {
+    const count = CATEGORY_COUNTS[tab.id] ?? 0
+    if (count === 0) continue
+    items.push({
+      id: tab.id,
+      label: tab.label,
+      value: count,
       delta: "",
       trend: "neutral",
       trendPolarity: "informational",
-      description: "semantic + alias",
-      onClick: () => navigate("color" as TokensCategoryParam),
-    },
-    {
-      id: "motion",
-      label: "Motion tokens",
-      value: CATEGORY_COUNTS.transition ?? 0,
-      delta: "",
-      trend: "neutral",
-      trendPolarity: "informational",
-      description: "easings + durations",
-      onClick: () => navigate("motion" as TokensCategoryParam),
-    },
-    {
+      description: tab.id === "color" ? "semantic + alias" : undefined,
+      onClick: () => navigate(tab.id as TokensCategoryParam),
+    })
+  }
+
+  if (DEPRECATED_COUNT > 0) {
+    items.push({
       id: "deprecated",
       label: "Deprecated",
       value: DEPRECATED_COUNT,
       delta: "",
       trend: "neutral",
       trendPolarity: "lower_is_better",
-      description:
-        DEPRECATED_COUNT > 0
-          ? "scheduled for removal"
-          : "none scheduled for removal",
+      description: "scheduled for removal",
       onClick: () => navigate("deprecated" as TokensCategoryParam),
-    },
-  ]
+    })
+  }
+
+  return items
 }
 
 function buildInsight(activeCategory: TokensCategoryParam, rowCount: number): MetricInsight {
@@ -284,6 +284,8 @@ function StatusCell({ row }: { row: TokenRow }) {
 
 export function TokensThemesClient() {
   const dashboardHref = useProductDashboardHref()
+  const focusWorkflowHref = dashboardHref.replace(/\/dashboard$/, "/focus-workflow")
+  const examLockHref = dashboardHref.replace(/\/dashboard$/, "/exam-lock")
   const { product, customProducts, activeCustomIndex } = useProduct()
   const tokensPersistKey = productPersistKey(product, "tokens", customProducts, activeCustomIndex)
   // Tokens now uses the `SidebarDrillIn` pattern (see
@@ -293,6 +295,10 @@ export function TokensThemesClient() {
   // `TokensPanel` component were removed when the row was rewired.
 
   const navigate = useNavigate()
+  const mod = useModKeyLabel()
+  const alt = useAltKeyLabel()
+  const focusWorkflowShortcut = `${mod}${alt}N`
+  const examLockShortcut = `${mod}${alt}E`
   const [searchParams] = useSearchParams()
   const searchParamsKey = searchParams.toString()
   const activeCategory = React.useMemo(
@@ -316,6 +322,14 @@ export function TokensThemesClient() {
     },
     [navigate, searchParamsKey],
   )
+
+  const openFocusWorkflow = React.useCallback(() => {
+    navigate(focusWorkflowHref)
+  }, [navigate, focusWorkflowHref])
+
+  const openExamLock = React.useCallback(() => {
+    navigate(examLockHref)
+  }, [navigate, examLockHref])
 
   const metrics = React.useMemo(
     () => buildMetrics(navigateToCategory),
@@ -367,6 +381,7 @@ export function TokensThemesClient() {
       defaultPin: "left",
       sortable: true,
       sortKey: "name",
+      cellKind: "text",
       filter: { type: "text", icon: "fa-font" },
       cell: (row) => (
         <TokenNameCell
@@ -383,13 +398,14 @@ export function TokensThemesClient() {
       minWidth: 140,
       sortable: true,
       sortKey: "namespace",
+      cellKind: "pill",
       filter: {
         type: "select",
         icon: "fa-tag",
         options: NAMESPACE_OPTIONS,
       },
       cell: (row) => (
-        <span className="rounded-sm bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+        <span className="rounded-sm bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
           {row.namespace}
         </span>
       ),
@@ -401,10 +417,11 @@ export function TokensThemesClient() {
       minWidth: 200,
       sortable: true,
       sortKey: "value",
+      cellKind: "text",
       filter: { type: "text", icon: "fa-magnifying-glass" },
       cell: (row) => (
         <code
-          className="block truncate font-mono text-[11px] text-muted-foreground"
+          className="block truncate font-mono text-xs text-muted-foreground"
           title={row.value}
         >
           {row.value || "—"}
@@ -418,6 +435,7 @@ export function TokensThemesClient() {
       minWidth: 100,
       sortable: true,
       sortKey: "deprecated",
+      cellKind: "status",
       filter: {
         type: "select",
         icon: "fa-circle-check",
@@ -433,7 +451,10 @@ export function TokensThemesClient() {
       : `${categoryDisplayLabel(activeCategory)} tokens`
 
   return (
-    <PrimaryPageTemplate
+    <>
+      <Shortcut keys={focusWorkflowShortcut} onInvoke={openFocusWorkflow} />
+      <Shortcut keys={examLockShortcut} onInvoke={openExamLock} />
+      <PrimaryPageTemplate
       siteHeader={{
         breadcrumbs: [
           { label: "Dashboard", href: dashboardHref },
@@ -451,6 +472,56 @@ export function TokensThemesClient() {
           <PageHeader
             title={headerTitle}
             subtitle={TOKENS_HEADER_SUBTITLE}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Tip
+                  side="bottom"
+                  label={
+                    <>
+                      Open the exam lock template showcase
+                      <KbdGroup className="ms-1.5">
+                        <Kbd>{mod}</Kbd>
+                        <Kbd>{alt}</Kbd>
+                        <Kbd>E</Kbd>
+                      </KbdGroup>
+                    </>
+                  }
+                >
+                  <Button type="button" variant="outline" size="lg" asChild>
+                    <Link to={examLockHref}>
+                      <i className="fa-light fa-lock" aria-hidden="true" />
+                      Exam lock
+                      <KbdGroup className="ms-1.5">
+                        <Kbd variant="bare">{examLockShortcut}</Kbd>
+                      </KbdGroup>
+                    </Link>
+                  </Button>
+                </Tip>
+                <Tip
+                  side="bottom"
+                  label={
+                    <>
+                      Open the focus workflow template showcase
+                      <KbdGroup className="ms-1.5">
+                        <Kbd>{mod}</Kbd>
+                        <Kbd>{alt}</Kbd>
+                        <Kbd>N</Kbd>
+                      </KbdGroup>
+                    </>
+                  }
+                >
+                  <Button type="button" size="lg" asChild>
+                    <Link to={focusWorkflowHref}>
+                      <i className="fa-light fa-bullseye-pointer" aria-hidden="true" />
+                      Focus workflow
+                      <KbdGroup className="ms-1.5">
+                        <Kbd variant="bare">{focusWorkflowShortcut}</Kbd>
+                      </KbdGroup>
+                    </Link>
+                  </Button>
+                </Tip>
+              </div>
+            }
           />
         }
         metrics={
@@ -460,6 +531,7 @@ export function TokensThemesClient() {
             insight={insight}
             showHeader={false}
             metricsSingleRow
+            metricsStripScroll
           />
         }
         renderContent={(tab, updateTab) => (
@@ -512,5 +584,6 @@ export function TokensThemesClient() {
         )}
       />
     </PrimaryPageTemplate>
+    </>
   )
 }

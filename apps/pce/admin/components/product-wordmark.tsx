@@ -81,7 +81,7 @@ export function ProductWordmark({
         className={cn(
           "font-sans font-extrabold",
           // Neutral wordmark prefix: deep slate on light, soft cool grey on dark.
-          "text-[#273441] dark:text-[#A8B2BA]",
+          "text-foreground",
         )}
       >
         {prefix}

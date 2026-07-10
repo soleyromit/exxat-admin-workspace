@@ -26,6 +26,7 @@ import {
 import { Tip } from "@exxatdesignux/ui"
 // TooltipProvider lives at app root (layout.tsx) — no inner Provider needed.
 // Per actions-overlays.md depth audit.
+import { cn } from "@exxatdesignux/ui"
 import { DataTable, type DataTableExtendedProps } from "./index"
 import type { PaginationConfig } from "./types"
 import type { useTableState } from "./use-table-state"
@@ -189,7 +190,13 @@ export function DataTablePaginated<TData extends Record<string, unknown>>({
         paginationOverride={{ page: safePage, pageSize }}
         hasFooter
       />
-      <div className="mx-4 lg:mx-6 border-x border-b border-border rounded-b-lg overflow-hidden">
+      {/* Bar inset must track the table's edgeInset or the borders misalign. */}
+      <div
+        className={cn(
+          "border-x border-b border-border rounded-b-lg overflow-hidden",
+          rest.edgeInset !== false && "mx-4 lg:mx-6",
+        )}
+      >
         <PaginationBar
           page={safePage}
           pageSize={pageSize}

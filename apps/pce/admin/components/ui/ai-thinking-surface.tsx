@@ -75,7 +75,7 @@ export function AiThinkingOverlay({
         width={gridSize}
         height={gridSize}
         cr={dotRadius}
-        className={cn("absolute inset-0 h-full w-full", fillClassName)}
+        className={cn("absolute inset-0 size-full", fillClassName)}
       />
     </div>
   )

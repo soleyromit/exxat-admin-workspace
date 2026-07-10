@@ -36,20 +36,44 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Glow color for atmospheric layers — same brand color as the star body,
-// kept at very low opacities so it reads as a subtle halo, not a blob.
-const GLOW = "var(--brand-color)"
+// Readable on light + dark chrome when parent sets --leo-icon-fill (see AskLeoButton).
+const LEO_FILL = "var(--leo-icon-fill, var(--brand-color))"
+
+// Glow color for atmospheric layers — follows --leo-icon-fill when set on a parent.
+const GLOW = "var(--leo-icon-fill, var(--brand-color))"
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export type LeoIconVariant = "ambient" | "interactive"
 export type LeoIconSize = "sm" | "md" | "lg" | "xl"
 
+export type LeoIconSparkleCadence = "default" | "prominent"
+
 export interface LeoIconProps {
   variant?: LeoIconVariant
   size?: LeoIconSize
+  /**
+   * Orbiting star sparkles around the glyph. `prominent` — faster cadence for
+   * compact CTAs (e.g. Ask Leo / Draft with Leo buttons).
+   */
+  sparkleCadence?: LeoIconSparkleCadence
+  /**
+   * Small orbiting sparkle particles around the glyph. Off for dense toolbars
+   * (they read as stray stars beside nearby controls).
+   */
+  orbitingSparkles?: boolean
+  /** Required for `variant="interactive"` — exposed to AT as the control name (WCAG 4.1.2). */
+  ariaLabel?: string
   className?: string
   style?: React.CSSProperties
+}
+
+const TWINKLE_CADENCE_MS: Record<
+  LeoIconSparkleCadence,
+  { idleMin: number; idleMax: number; hoverMin: number; hoverMax: number; initialSpread: number }
+> = {
+  default: { idleMin: 2800, idleMax: 5800, hoverMin: 280, hoverMax: 680, initialSpread: 700 },
+  prominent: { idleMin: 380, idleMax: 950, hoverMin: 180, hoverMax: 420, initialSpread: 200 },
 }
 
 type SZ = { root: string; px: number }
@@ -214,7 +238,7 @@ function CornerSparkle({
     >
       <motion.path
         d={c.path}
-        fill="var(--brand-color)"
+        fill={LEO_FILL}
         style={{ transformBox: "fill-box", transformOrigin: "center" }}
         variants={SPARKLE_VARIANTS_BY_ID[c.id]}
         animate={reduced ? undefined : cast ? "scatter" : "idle"}
@@ -247,6 +271,8 @@ const birthVariants: Variants = {
 
 // ─── Core SVG — 2D only. Cursor reactions on the inner wrapper. ──────────────
 
+const LEO_STAR_TILT_CFG = { stiffness: 200, damping: 22, mass: 0.55 }
+
 function LeoStarSVG({
   px, reduced, pressed, cast, mx, my, engage,
 }: {
@@ -259,10 +285,9 @@ function LeoStarSVG({
   engage: MotionValue<number>
 }) {
   // 2D reactions — tight but subtle. No 3D space at all.
-  const tiltCfg = { stiffness: 200, damping: 22, mass: 0.55 }
-  const rotZ = useSpring(useTransform(mx, [-0.5, 0.5], [-10, 10]), tiltCfg)
-  const shiftX = useSpring(useTransform(mx, [-0.5, 0.5], [-6, 6]), tiltCfg)
-  const shiftY = useSpring(useTransform(my, [-0.5, 0.5], [-6, 6]), tiltCfg)
+  const rotZ = useSpring(useTransform(mx, [-0.5, 0.5], [-10, 10]), LEO_STAR_TILT_CFG)
+  const shiftX = useSpring(useTransform(mx, [-0.5, 0.5], [-6, 6]), LEO_STAR_TILT_CFG)
+  const shiftY = useSpring(useTransform(my, [-0.5, 0.5], [-6, 6]), LEO_STAR_TILT_CFG)
 
   // Proximity scale driven by `engage` spring (0 → 1 on hover in, decays on out).
   const proxScale = useTransform(engage, [0, 1], [1, 1.1])
@@ -331,7 +356,7 @@ function LeoStarSVG({
           >
             <motion.path
               d={STAR_BODY_PATH}
-              fill="var(--brand-color)"
+              fill={LEO_FILL}
               style={{ transformBox: "fill-box", transformOrigin: "center" }}
               variants={starBodyVariants}
               animate={reduced ? undefined : "idle"}
@@ -365,7 +390,7 @@ function TwinkleShape({ size }: { size: number }) {
     >
       <path
         d="M8 0 L9.5 6.5 L16 8 L9.5 9.5 L8 16 L6.5 9.5 L0 8 L6.5 6.5 Z"
-        fill="var(--brand-color)"
+        fill={LEO_FILL}
       />
     </svg>
   )
@@ -377,11 +402,11 @@ function TwinkleDot({ t, onDone }: { t: Twinkle; onDone: (id: number) => void })
       aria-hidden
       className="pointer-events-none absolute"
       style={{ top: "50%", left: "50%", rotate: t.rot }}
-      initial={{ x: t.x, y: t.y, scale: 0, opacity: 0 }}
+      initial={{ x: t.x, y: t.y, scale: 0.01, opacity: 0 }}
       animate={{
         x: t.x + t.dx,
         y: t.y + t.dy,
-        scale:   [0, 1, 0.85, 0],
+        scale:   [0.01, 1, 0.85, 0],
         opacity: [0, 1, 0.9, 0],
       }}
       transition={{
@@ -401,11 +426,13 @@ function TwinkleDot({ t, onDone }: { t: Twinkle; onDone: (id: number) => void })
 function useTwinkles(
   enabled: boolean,
   size: number,
+  cadence: LeoIconSparkleCadence = "default",
   opts: {
     hoverRef?: React.MutableRefObject<boolean>
     cursorRef?: React.MutableRefObject<{ x: number; y: number } | null>
   } = {},
 ) {
+  const timing = TWINKLE_CADENCE_MS[cadence]
   const [twinkles, setTwinkles] = React.useState<Twinkle[]>([])
   const idRef = React.useRef(0)
   const { hoverRef, cursorRef } = opts
@@ -446,8 +473,8 @@ function useTwinkles(
 
     const schedule = () => {
       const hovered = hoverRef?.current ?? false
-      const min = hovered ? 280 : 2800
-      const max = hovered ? 680 : 5800
+      const min = hovered ? timing.hoverMin : timing.idleMin
+      const max = hovered ? timing.hoverMax : timing.idleMax
       const delay = min + Math.random() * (max - min)
       timeoutId = setTimeout(() => {
         if (cancelled) return
@@ -459,11 +486,12 @@ function useTwinkles(
     timeoutId = setTimeout(() => {
       if (cancelled) return
       spawnOne()
+      if (cadence === "prominent") spawnOne()
       schedule()
-    }, 500 + Math.random() * 900)
+    }, 120 + Math.random() * timing.initialSpread)
 
     return () => { cancelled = true; clearTimeout(timeoutId) }
-  }, [enabled, spawnOne, hoverRef])
+  }, [cadence, enabled, spawnOne, hoverRef, timing.hoverMax, timing.hoverMin, timing.idleMax, timing.idleMin, timing.initialSpread])
 
   const removeTwinkle = React.useCallback((id: number) => {
     setTwinkles(prev => prev.filter(t => t.id !== id))
@@ -492,15 +520,34 @@ function useTwinkles(
 
 // ─── Ambient variant ─────────────────────────────────────────────────────────
 
-function AmbientIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
+function AmbientIcon({
+  sz,
+  reduced,
+  sparkleCadence = "default",
+  orbitingSparkles = true,
+}: {
+  sz: SZ
+  reduced: boolean
+  sparkleCadence?: LeoIconSparkleCadence
+  orbitingSparkles?: boolean
+}) {
   // Dummy motion values so LeoStarSVG always runs its hooks.
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
   const engage = useMotionValue(0)
-  const { twinkles, removeTwinkle } = useTwinkles(!reduced, sz.px)
+  const { twinkles, removeTwinkle } = useTwinkles(
+    !reduced && orbitingSparkles,
+    sz.px,
+    sparkleCadence,
+  )
 
   return (
-    <span className={cn("relative inline-flex items-center justify-center shrink-0", sz.root)}>
+    <span
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center overflow-visible",
+        sz.root,
+      )}
+    >
       {/* Breathing aura — complementary gold, very subtle */}
       <motion.span
         aria-hidden
@@ -538,7 +585,15 @@ function AmbientIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
 
 // ─── Interactive variant ─────────────────────────────────────────────────────
 
-function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
+function InteractiveIcon({
+  sz,
+  reduced,
+  ariaLabel = "Ask Leo",
+}: {
+  sz: SZ
+  reduced: boolean
+  ariaLabel: string
+}) {
   const rootRef = React.useRef<HTMLSpanElement>(null)
   const hoverRef = React.useRef(false)
   const cursorRef = React.useRef<{ x: number; y: number } | null>(null)
@@ -547,7 +602,10 @@ function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
   const [rings, setRings] = React.useState<number[]>([])
 
   const { twinkles, removeTwinkle, spawnBurst } = useTwinkles(
-    !reduced, sz.px, { hoverRef, cursorRef },
+    !reduced,
+    sz.px,
+    "default",
+    { hoverRef, cursorRef },
   )
 
   const mx = useMotionValue(0)
@@ -620,9 +678,15 @@ function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
 
   // Track click-effect timers so unmounting (Ask Leo sidebar close) doesn't
   // leave timers running that then call setState on an unmounted component.
-  const clickTimersRef = React.useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const clickTimersRef = React.useRef<Set<ReturnType<typeof setTimeout>>>(undefined)
+
+  const clickTimers = () => {
+    if (!clickTimersRef.current) clickTimersRef.current = new Set()
+    return clickTimersRef.current
+  }
+
   React.useEffect(() => {
-    const set = clickTimersRef.current
+    const set = clickTimers()
     return () => {
       for (const t of set) clearTimeout(t)
       set.clear()
@@ -633,38 +697,44 @@ function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
   const onClick = React.useCallback(() => {
     if (reduced) return
     setCast(true)
+    const timers = clickTimers()
     const tCast = setTimeout(() => {
-      clickTimersRef.current.delete(tCast)
+      timers.delete(tCast)
       setCast(false)
     }, 720)
-    clickTimersRef.current.add(tCast)
+    timers.add(tCast)
 
     const id = ++ringIdRef.current
     setRings(prev => [...prev, id])
     const tRing = setTimeout(() => {
-      clickTimersRef.current.delete(tRing)
+      timers.delete(tRing)
       setRings(prev => prev.filter(r => r !== id))
     }, 800)
-    clickTimersRef.current.add(tRing)
+    timers.add(tRing)
 
     spawnBurst(6)
   }, [reduced, spawnBurst])
+
+  const onIconKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return
+    e.preventDefault()
+    onClick()
+  }, [onClick])
 
   return (
     <span
       ref={rootRef}
       role="button"
       tabIndex={0}
-      aria-label="Ask Leo"
+      aria-label={ariaLabel}
       className={cn(
         "relative inline-flex items-center justify-center shrink-0 cursor-pointer select-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full",
         sz.root,
       )}
       onMouseDown={onDown}
       onMouseUp={onUp}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      onKeyDown={onIconKeyDown}
     >
       {/* Breathing aura — subtle background presence */}
       <motion.span
@@ -732,6 +802,9 @@ function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
 export function LeoIcon({
   variant = "ambient",
   size = "md",
+  sparkleCadence = "default",
+  orbitingSparkles = true,
+  ariaLabel = "Ask Leo",
   className,
   style,
 }: LeoIconProps) {
@@ -744,8 +817,15 @@ export function LeoIcon({
       style={style}
     >
       {variant === "interactive"
-        ? <InteractiveIcon sz={sz} reduced={reduced} />
-        : <AmbientIcon sz={sz} reduced={reduced} />}
+        ? <InteractiveIcon sz={sz} reduced={reduced} ariaLabel={ariaLabel} />
+        : (
+          <AmbientIcon
+            sz={sz}
+            reduced={reduced}
+            sparkleCadence={sparkleCadence}
+            orbitingSparkles={orbitingSparkles}
+          />
+        )}
     </span>
   )
 }

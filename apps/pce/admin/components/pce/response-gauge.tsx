@@ -1,5 +1,17 @@
 'use client'
 
+/**
+ * ResponseGauge — response-rate readout: rate % + count text with an optional
+ * fill bar above. The text carries the accessible value; the bar is decorative.
+ *
+ * Converted to the DS chart system (ChartContainer + recharts) — Romit
+ * directive Jul 7 2026: no hand-rolled `<svg>`/`<div>` viz.
+ */
+
+import { ChartContainer } from '@exxatdesignux/ui'
+import type { ChartConfig } from '@exxatdesignux/ui'
+import { BarChart, Bar, XAxis, YAxis } from 'recharts'
+
 interface ResponseGaugeProps {
   rate: number
   responseCount: number
@@ -8,6 +20,8 @@ interface ResponseGaugeProps {
   size?: 'sm' | 'md'
 }
 
+const gaugeConfig: ChartConfig = { v: { label: 'Response rate', color: 'var(--brand-color)' } }
+
 export function ResponseGauge({
   rate,
   responseCount,
@@ -15,28 +29,35 @@ export function ResponseGauge({
   showBar = true,
   size = 'sm',
 }: ResponseGaugeProps) {
+  const barHeight = size === 'md' ? 6 : 4
+
   return (
     <div className="flex flex-col gap-1 min-w-0">
       {showBar && (
-        <div
-          style={{
-            height: size === 'md' ? 6 : 4,
-            borderRadius: 3,
-            backgroundColor: 'var(--muted)',
-            overflow: 'hidden',
-            minWidth: 80,
-          }}
+        <ChartContainer
+          config={gaugeConfig}
+          className="aspect-auto w-full"
+          style={{ height: barHeight, minWidth: 80 }}
+          aria-hidden="true"
         >
-          <div
-            style={{
-              height: '100%',
-              width: `${rate}%`,
-              borderRadius: 3,
-              backgroundColor: 'var(--brand-color)',
-              transition: 'width 400ms ease',
-            }}
-          />
-        </div>
+          <BarChart
+            accessibilityLayer={false}
+            layout="vertical"
+            data={[{ name: 'rate', v: Math.min(Math.max(rate, 0), 100) }]}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+          >
+            <XAxis type="number" domain={[0, 100]} hide />
+            <YAxis type="category" dataKey="name" hide />
+            <Bar
+              dataKey="v"
+              fill="var(--color-v)"
+              background={{ fill: 'var(--muted)', radius: 3 }}
+              radius={3}
+              barSize={barHeight}
+              isAnimationActive={false}
+            />
+          </BarChart>
+        </ChartContainer>
       )}
       <div className="flex items-baseline gap-1.5">
         <span

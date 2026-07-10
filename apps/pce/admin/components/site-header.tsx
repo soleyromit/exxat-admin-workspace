@@ -4,7 +4,8 @@
  * SiteHeader — breadcrumb / top bar — WCAG 2.1 AA
  *
  *  ✓ SidebarTrigger wrapped in Tooltip — icon-only button (WCAG 4.1.2, 1.1.1)
- *  ✓ <header role="banner"> landmark for AT navigation (WCAG 1.3.6)
+ *  ✓ <header> landmark for AT navigation (WCAG 1.3.1)
+ *  ✓ `useDocumentTitle` — browser tab title matches breadcrumb (WCAG 2.4.2)
  *  ✓ Sticky at top — when stuck, the rounded breadcrumb sits on the app bg and a
  *    bottom separator appears to anchor it; transparent at rest so the rounded
  *    corners blend into the inset card.
@@ -27,8 +28,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
-import { AskLeoToggle } from "@/components/ask-leo-sidebar"
+import { useDocumentTitle } from "@/hooks/use-document-title"
+import { useScrollStuck } from "@/hooks/use-scroll-stuck"
 import { cn } from "@/lib/utils"
+import { useSecondaryPanel } from "@/components/sidebar/secondary-panel"
 
 export type BreadcrumbItem = PageBreadcrumbTrailItem
 export type SiteHeaderBackLink = Pick<PageBreadcrumbBackProps, "label" | "href">
@@ -43,28 +46,29 @@ export interface SiteHeaderProps {
    * Prefer when the page `<h1>` carries the current title (e.g. New question composer).
    */
   back?: SiteHeaderBackLink
-  /** Optional content rendered to the right of the breadcrumb/back link — e.g. document-level action controls. */
-  actions?: React.ReactNode
+  /** Override for `<title>` when `back` is set and the visible H1 lives in page body. */
+  documentTitle?: string
+  /** Right-aligned chrome (e.g. design-system preview mode menu). */
+  trailing?: React.ReactNode
 }
 
 export function SiteHeader({
   title = "Dashboard",
   breadcrumbs,
   back,
-  actions,
+  documentTitle,
+  trailing,
 }: SiteHeaderProps) {
   const mod = useModKeyLabel()
-  const [isStuck, setIsStuck] = React.useState(false)
-
-  React.useEffect(() => {
-    const onScroll = () => setIsStuck(window.scrollY > 0)
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
+  const { focusShellSupersedesPrimarySidebar } = useSecondaryPanel()
+  const isStuck = useScrollStuck()
+  const resolvedDocumentTitle =
+    documentTitle ?? (back ? undefined : title)
+  useDocumentTitle(resolvedDocumentTitle)
 
   return (
     <div
+      data-site-header=""
       className={cn(
         // Sticky page chrome sits BELOW every Radix overlay (DropdownMenu /
         // Popover / Select / Dialog / Sheet / Tooltip all render at
@@ -90,42 +94,44 @@ export function SiteHeader({
       )}
     >
     <header
-      role="banner"
       className="flex h-(--header-height) shrink-0 items-center gap-2 bg-background rounded-t-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)"
     >
-      <div className="flex w-full items-center gap-1 ps-4 pe-2 lg:gap-2 lg:ps-6 lg:pe-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarTrigger className="-ms-1" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="flex flex-wrap items-center gap-1.5">
-            <span>Toggle sidebar</span>
-            <KbdGroup>
-              <Kbd>{mod}</Kbd>
-              <Kbd>B</Kbd>
-            </KbdGroup>
-          </TooltipContent>
-        </Tooltip>
+      <div className="flex w-full min-w-0 items-center gap-1 ps-2 pe-1.5 lg:gap-2 lg:pe-2">
+        {!focusShellSupersedesPrimarySidebar ? (
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarTrigger className="ms-px" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="flex flex-wrap items-center gap-1.5">
+                <span>Toggle sidebar</span>
+                <KbdGroup>
+                  <Kbd>{mod}</Kbd>
+                  <Kbd>B</Kbd>
+                </KbdGroup>
+              </TooltipContent>
+            </Tooltip>
 
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-auto"
-        />
+            <Separator
+              orientation="vertical"
+              className="ms-0 me-1.5 shrink-0 lg:ms-0 lg:me-2"
+            />
+          </>
+        ) : null}
 
         {back ? (
-          <PageBreadcrumbBack {...back} className={actions ? "shrink-0" : "min-w-0 flex-1"} />
+          <PageBreadcrumbBack {...back} className="min-w-0 flex-1" />
         ) : (
           <PageBreadcrumbTrail
             variant="header"
             items={breadcrumbs}
             currentPage={title}
-            className={actions ? undefined : "flex-1"}
+            className="min-w-0 flex-1"
           />
         )}
-        <div className="flex flex-1 items-center justify-end gap-2 min-w-0 pe-2">
-          {actions}
-          <AskLeoToggle />
-        </div>
+        {trailing ? (
+          <div className="flex shrink-0 items-center gap-1.5 ps-1">{trailing}</div>
+        ) : null}
       </div>
     </header>
     </div>

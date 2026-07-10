@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import {
   Button, LocalBanner,
-  SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+  SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { EmptyState } from '@/components/empty-state'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'
@@ -89,7 +90,7 @@ export default function ModerationPage() {
           style={{ width: 264, background: 'var(--background)' }}
         >
           <SidebarGroup>
-            <SidebarGroupLabel>
+            <div className="flex items-center px-2 py-1.5 text-xs font-medium text-muted-foreground">
               Needs Review
               {pending.length > 0 && (
                 <Badge
@@ -99,7 +100,7 @@ export default function ModerationPage() {
                   {pending.length}
                 </Badge>
               )}
-            </SidebarGroupLabel>
+            </div>
 
             <SidebarMenu>
               {pending.length === 0 ? (
@@ -275,18 +276,19 @@ export default function ModerationPage() {
                     onClick={() => setShareConfirmOpen(true)}
                   >
                     <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-                    Share Results with Faculty
+                    Release responses
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
-              <i className="fa-light fa-inbox text-3xl text-muted-foreground" aria-hidden="true" />
-              <p className="text-sm font-medium">Select a survey to review</p>
-              <p className="text-sm text-muted-foreground" style={{ maxWidth: 280 }}>
-                Choose a pending survey from the left to review and moderate its responses before sharing with faculty.
-              </p>
+            <div className="flex flex-col items-center justify-center flex-1 p-8">
+              <EmptyState
+                icon="fa-inbox"
+                title="Select a survey to review"
+                description="Choose a pending survey from the left to review and moderate its responses before sharing with faculty."
+                align="center"
+              />
             </div>
           )}
         </div>

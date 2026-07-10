@@ -8,7 +8,7 @@
  */
 
 import * as React from "react"
-import { SidebarProvider } from "@exxatdesignux/ui"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 export function SidebarShell({
   children,

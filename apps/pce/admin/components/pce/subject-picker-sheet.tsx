@@ -19,6 +19,9 @@ interface SubjectPickerSheetProps {
   onOpenChange: (v: boolean) => void
   existingSubjectKeys: SubjectKey[]
   onConfirm: (subjectKey: SubjectKey, title: string) => void
+  mode?: 'add' | 'edit'
+  initialSubjectKey?: SubjectKey
+  initialTitle?: string
 }
 
 export function SubjectPickerSheet({
@@ -26,6 +29,9 @@ export function SubjectPickerSheet({
   onOpenChange,
   existingSubjectKeys,
   onConfirm,
+  mode = 'add',
+  initialSubjectKey,
+  initialTitle,
 }: SubjectPickerSheetProps) {
   const [selected, setSelected] = useState<SubjectKey | null>(null)
   const [titleInput, setTitleInput] = useState('')
@@ -33,11 +39,11 @@ export function SubjectPickerSheet({
 
   useEffect(() => {
     if (open) {
-      setSelected(null)
-      setTitleInput('')
+      setSelected(initialSubjectKey ?? null)
+      setTitleInput(initialTitle ?? '')
       setSearch('')
     }
-  }, [open])
+  }, [open, initialSubjectKey, initialTitle])
 
   function handleSelect(subject: PceSubject) {
     setSelected(subject.key)
@@ -72,9 +78,9 @@ export function SubjectPickerSheet({
       >
         {/* ── Fixed header ── */}
         <DialogHeader className="shrink-0 px-5 pt-5 pb-3">
-          <DialogTitle>Add section</DialogTitle>
+          <DialogTitle>{mode === 'edit' ? 'Edit section' : 'Add section'}</DialogTitle>
           <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-            Choose what this section will evaluate.
+            {mode === 'edit' ? 'Change the subject or rename this section.' : 'Choose what this section will evaluate.'}
           </p>
           <Input
             autoFocus
@@ -152,7 +158,7 @@ export function SubjectPickerSheet({
               Cancel
             </Button>
             <Button variant="default" size="sm" disabled={!selected} onClick={handleConfirm}>
-              Add section
+              {mode === 'edit' ? 'Save changes' : 'Add section'}
             </Button>
           </DialogFooter>
         </div>

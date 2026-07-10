@@ -9,15 +9,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
-import { DashboardMonitor, type MonitorNudgeTarget } from '@/components/pce/dashboard-monitor'
-import { DataTable } from '@/components/data-table'
-import type { ColumnDef } from '@/components/data-table/types'
-import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
+import { ByTermPanel, type NudgeTarget } from '@/components/pce/analytics-panels'
 import { MOCK_SURVEYS, MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
-import type { SurveyStatus } from '@/lib/pce-mock-data'
-
-const completionColor = (pct: number) =>
-  pct >= 70 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chip-4)'
 
 function fmt(ymd: string) {
   const d = new Date(ymd + 'T00:00:00')
@@ -26,67 +20,18 @@ function fmt(ymd: string) {
     : ymd
 }
 
-type CourseRow = {
-  id: string; courseCode: string; courseName: string; faculty: string
-  enrolled: number; completion: number; status: SurveyStatus
-} & Record<string, unknown>
-
-const columns: ColumnDef<CourseRow>[] = [
-  {
-    key: 'courseCode', label: 'Course', sortable: true,
-    cell: (row) => (
-      <div>
-        <p className="text-sm font-medium">{row.courseCode}</p>
-        <p className="text-xs text-muted-foreground truncate max-w-[200px]">{row.courseName}</p>
-      </div>
-    ),
-  },
-  {
-    key: 'faculty', label: 'Faculty', sortable: true,
-    cell: (row) => <span className="text-sm">{row.faculty}</span>,
-  },
-  {
-    key: 'enrolled', label: 'Students', sortable: true, width: 90,
-    header: () => <span className="block text-right">Students</span>,
-    cell: (row) => <div className="text-right text-sm tabular-nums">{row.enrolled}</div>,
-  },
-  {
-    key: 'completion', label: 'Completion', sortable: true, width: 110,
-    header: () => <span className="block text-right">Completion</span>,
-    cell: (row) => (
-      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: completionColor(row.completion) }}>
-        {row.completion}%
-      </div>
-    ),
-  },
-  {
-    key: 'status', label: 'Status', width: 200,
-    cell: (row) => <SurveyStatusBadge status={row.status} />,
-  },
-]
-
 export default function TermProfile() {
   const params  = useParams<{ id: string }>()
   const termId  = params?.id ?? ''
 
   const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
-  const [nudgeTarget, setNudgeTarget] = useState<MonitorNudgeTarget | null>(null)
+  const [nudgeTarget, setNudgeTarget]           = useState<NudgeTarget | null>(null)
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
 
-  const ceSurveys = useMemo(() => MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic'), [])
   const termSurveys = useMemo(
-    () => term ? ceSurveys.filter(s => s.term === term.name) : [],
-    [ceSurveys, term],
+    () => term ? MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic' && s.term === term.name) : [],
+    [term],
   )
-
-  const courseRows: CourseRow[] = termSurveys.map(s => ({
-    id: s.id,
-    courseCode: s.courseCode,
-    courseName: s.courseName,
-    faculty: s.instructors.find(i => i.role === 'primary')?.name ?? s.instructors[0]?.name ?? '—',
-    enrolled: s.enrollmentCount,
-    completion: s.responseRate,
-    status: s.status,
-  }))
 
   if (!term) {
     return (
@@ -102,7 +47,8 @@ export default function TermProfile() {
 
   // Term lifecycle facts (profile details).
   const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
-  const facultyCount = new Set(termSurveys.flatMap(s => s.instructors.map(i => i.id))).size
+  const courseCount   = termSurveys.length
+  const facultyCount  = new Set(termSurveys.flatMap(s => s.instructors.map(i => i.id))).size
 
   return (
     <>
@@ -110,17 +56,14 @@ export default function TermProfile() {
 
       {/* Term header — profile details */}
       <div className="shrink-0 flex items-center gap-4" style={{ padding: '20px 28px 8px' }}>
-        <div
-          className="flex items-center justify-center rounded-xl shrink-0"
-          style={{ width: 48, height: 48, background: 'var(--brand-tint)' }}
-        >
+        <div className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 48, height: 48, background: 'var(--brand-tint)' }}>
           <i className="fa-light fa-calendar text-base" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold leading-tight">{term.name}</h1>
           <p className="text-sm text-muted-foreground">
             {term.academicYear} &nbsp;·&nbsp; {fmt(term.startDate)} – {fmt(term.endDate)}
-            &nbsp;·&nbsp; {courseRows.length} course{courseRows.length !== 1 ? 's' : ''} · {enrolledTotal.toLocaleString()} students · {facultyCount} faculty
+            &nbsp;·&nbsp; {courseCount} course{courseCount !== 1 ? 's' : ''} · {enrolledTotal.toLocaleString()} students · {facultyCount} faculty
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -131,37 +74,14 @@ export default function TermProfile() {
         </div>
       </div>
 
-      {/* Analytics (term-scoped) + courses table */}
+      {/* Analytics — same design as Dashboard › By Term, scoped to this term */}
       <div className="flex-1 overflow-auto" style={{ padding: '8px 28px 28px' }}>
-        {termSurveys.length === 0 ? (
-          <div className="flex flex-col items-center gap-2" style={{ padding: '48px 0' }}>
-            <i className="fa-light fa-chart-mixed text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />
-            <p className="text-sm font-medium">No evaluations this term</p>
-            <p className="text-sm text-muted-foreground">Activate this term to schedule course evaluations.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6 max-w-5xl">
-            <DashboardMonitor surveys={ceSurveys} term={term.name} onNudge={setNudgeTarget} />
-
-            <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold">
-                Courses this term &nbsp;<span className="text-muted-foreground font-normal">({courseRows.length})</span>
-              </p>
-              <DataTable<CourseRow>
-                data={courseRows}
-                columns={columns}
-                getRowId={(row) => row.id}
-                emptyState={
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <i className="fa-light fa-book text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                    <p className="text-sm text-muted-foreground">No courses found</p>
-                  </div>
-                }
-              />
-            </div>
-          </div>
-        )}
+        <div className="flex flex-col gap-6 max-w-4xl">
+          <ByTermPanel axis="term" value={term.name} onOpenSurvey={setSelectedSurveyId} onNudge={setNudgeTarget} />
+        </div>
       </div>
+
+      <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />
 
       <AlertDialog open={!!nudgeTarget} onOpenChange={(open) => !open && setNudgeTarget(null)}>
         <AlertDialogContent>

@@ -632,6 +632,12 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
    * horizontally (e.g. wizard steps). Mirrors the DS DataTable API (v0.6.55).
    */
   edgeInset?: boolean
+  /**
+   * When false, header cells drop `position: sticky; top: 0`. Use when the
+   * table scrolls with the page (no owned scroll region) — a sticky header
+   * there detaches and floats over rows. Pinned-column stickiness is kept.
+   */
+  stickyHeader?: boolean
 }
 
 type DataTableInnerProps<TData extends Record<string, unknown>> = DataTableExtendedProps<TData> & {
@@ -659,6 +665,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   state,
   groupIcons,
   edgeInset = true,
+  stickyHeader = true,
 }: DataTableInnerProps<TData>) {
   const {
     sortRules, setSortRules,
@@ -799,7 +806,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
                     onDragOver={isFree  ? e => handleDragOver(col.key, e)  : undefined}
                     onDrop={isFree      ? () => handleDrop(col.key)        : undefined}
                     onDragEnd={isFree   ? handleDragEnd                    : undefined}
-                    style={stickyStyle(col.key, true)}
+                    style={stickyStyle(col.key, stickyHeader)}
                     className={cn(
                       "group/th relative h-9 px-3 text-left align-middle select-none",
                       "text-xs font-medium text-muted-foreground",

@@ -352,6 +352,7 @@ export function StepCoursesEvaluatees({
           hideBulkActions
           hasFooter
           edgeInset={false}
+          stickyHeader={false}
           groupIcons={{
             gap: (
               <i

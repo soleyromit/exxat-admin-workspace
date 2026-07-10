@@ -73,7 +73,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
         >
           <SheetHeader className="shrink-0 px-6 py-4 border-b border-border">
             <SheetTitle className="text-base font-semibold">
-              Review &amp; Release — {survey?.courseCode}
+              Review responses — {survey?.courseCode}
             </SheetTitle>
             {survey && (
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -176,7 +176,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
                 disabled={!survey}
               >
                 <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-                Share with Faculty
+                Release responses
               </Button>
             </div>
           </div>
@@ -186,7 +186,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent style={{ maxWidth: 440 }}>
           <DialogHeader>
-            <DialogTitle>Share results with faculty?</DialogTitle>
+            <DialogTitle>Release results to faculty?</DialogTitle>
             <DialogDescription>
               {survey && responses.length < 5 ? (
                 <>
@@ -209,7 +209,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
             </Button>
             <Button variant="default" size="sm" onClick={handleRelease}>
               <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-              Share Results
+              Release results
             </Button>
           </DialogFooter>
         </DialogContent>

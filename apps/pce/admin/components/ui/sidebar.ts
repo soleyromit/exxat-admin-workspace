@@ -28,4 +28,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useRegisterNavFlyoutToggle,
 } from "@exxatdesignux/ui"

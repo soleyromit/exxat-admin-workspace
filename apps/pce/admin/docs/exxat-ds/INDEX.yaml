@@ -1,0 +1,154 @@
+# Exxat DS — canonical link index for agents and humans
+# Source of truth: apps/web/docs/ (builder app). Mirror subset → docs/exxat-ds/ on publish.
+
+version: 1
+
+constitution:
+  rule: .cursor/rules/_constitution.exxat-ds.mdc
+  router: apps/web/docs/component-selection-guide.md
+  skill: .cursor/skills/exxat-token-economy/SKILL.md
+  handbook: apps/web/docs/HANDBOOK.md
+  agents: apps/web/AGENTS.md
+
+jobs:
+  list-hub: apps/web/docs/jobs/list-hub.md
+  focus-workflow: apps/web/docs/jobs/focus-workflow.md
+  catalog-browse: apps/web/docs/jobs/catalog-browse.md
+  design-system-registry: apps/web/lib/design-system/registry.ts
+  record-detail: apps/web/docs/jobs/record-detail.md
+  settings-preferences: apps/web/docs/jobs/settings-preferences.md
+  dedicated-search: apps/web/docs/jobs/dedicated-search.md
+  ds-doc-author: apps/web/docs/agents/ds-doc-author.md
+
+antigravity:
+  readme: .agents/README.md
+  index: .agents/INDEX.yaml
+  parity: apps/web/docs/agents/antigravity-parity.md
+  sync: pnpm sync-antigravity
+  entry_skill: .agents/skills/exxat-ds-router/SKILL.md
+  workflows:
+    surface-router: .agents/workflows/surface-router.md
+    design-brief: .agents/workflows/design-brief.md
+    build-hub: .agents/workflows/build-hub.md
+    a11y-ship: .agents/workflows/a11y-ship.md
+    ux-audit: .agents/workflows/ux-audit.md
+    react-doctor: .agents/workflows/react-doctor.md
+
+agents:
+  readme: apps/web/docs/agents/README.md
+  hub-builder: apps/web/docs/agents/hub-builder.md
+  a11y-guardian: apps/web/docs/agents/a11y-guardian.md
+  senior-ux: apps/web/docs/agents/senior-ux.md
+  ds-doc-author: apps/web/docs/agents/ds-doc-author.md
+
+patterns:
+  agent-context: apps/web/docs/agent-context-architecture.md
+  component-selection: apps/web/docs/component-selection-guide.md
+  design-system-docs: apps/web/docs/design-system-doc-framework.md
+  data-views: apps/web/docs/data-views-pattern.md
+  dashboard-chart-layout: apps/web/docs/dashboard-chart-layout-pattern.md
+  focus-workflow: apps/web/docs/focus-workflow-pattern.md
+  drawer-vs-dialog: apps/web/docs/drawer-vs-dialog-pattern.md
+  command-menu: apps/web/docs/command-menu-pattern.md
+  kpi-trend: apps/web/docs/kpi-trend-pattern.md
+  kpi-flat-band: apps/web/docs/kpi-flat-band-pattern.md
+  kpi-max-four: apps/web/docs/kpi-strip-max-four-pattern.md
+  card-vs-rows: apps/web/docs/card-vs-rows-pattern.md
+  horizontal-scroll: apps/web/docs/horizontal-scroll-pattern.md
+  wizard: apps/web/docs/wizard-pattern.md
+  tabs: apps/web/docs/tabs-pattern.md
+  dialog: apps/web/docs/dialog-pattern.md
+  button: apps/web/docs/button-pattern.md
+  toggle-switch: apps/web/docs/toggle-switch-pattern.md
+  avatar: apps/web/docs/avatar-pattern.md
+  multi-product-routing: apps/web/docs/multi-product-routing-pattern.md
+
+blueprints:
+  page-header: apps/web/docs/blueprints/page-header.md
+  data-table: apps/web/docs/blueprints/data-table.md
+  list-page-template: apps/web/docs/blueprints/list-page-template.md
+  board-card: apps/web/docs/blueprints/board-card.md
+  key-metrics: apps/web/docs/blueprints/key-metrics.md
+
+checklists:
+  accessibility-ship: apps/web/docs/accessibility-ship-checklist.md
+  handoff-template: apps/web/docs/templates/handoff.md
+  consumer-upgrade: apps/web/docs/consumer-upgrade-checklist.md
+
+skills:
+  surface-router: .cursor/skills/exxat-surface-router/SKILL.md
+  token-economy: .cursor/skills/exxat-token-economy/SKILL.md
+  senior-ux: .cursor/skills/exxat-senior-ux/SKILL.md
+  ux-audit: .cursor/skills/exxat-ux-audit/SKILL.md
+  domain-context: .cursor/skills/exxat-domain-context/SKILL.md
+  accessibility: .cursor/skills/exxat-accessibility/SKILL.md
+  kpi: .cursor/skills/exxat-kpi/SKILL.md
+  overlays: .cursor/skills/exxat-overlays/SKILL.md
+  sidebar-nav: .cursor/skills/exxat-sidebar-nav/SKILL.md
+
+rules:
+  always_on:
+    - .cursor/rules/_constitution.exxat-ds.mdc
+    - .cursor/rules/exxat-product-context.mdc
+    - .cursor/rules/exxat-product-routing.mdc
+    - .cursor/rules/exxat-ux-discovery-protocol.mdc
+  scoped_constitution_detail:
+    - .cursor/rules/exxat-reuse-before-custom.mdc
+    - .cursor/rules/exxat-no-toast.mdc
+    - .cursor/rules/exxat-token-discipline.mdc
+    - .cursor/rules/exxat-no-image-pixel-copy.mdc
+  scoped:
+    data-tables: .cursor/rules/exxat-data-tables.mdc
+    table-column-cells: .cursor/rules/exxat-table-column-cells.mdc
+    hub-views: .cursor/rules/exxat-hub-supported-views.mdc
+    focus-workflow: .cursor/rules/exxat-focus-workflow.mdc
+    dashboard-charts: .cursor/rules/exxat-dashboard-view-charts.mdc
+    chart-cards: .cursor/rules/exxat-chart-cards.mdc
+    kpi-trends: .cursor/rules/exxat-kpi-trends.mdc
+    kpi-max-four: .cursor/rules/exxat-kpi-max-four.mdc
+    kpi-flat-band: .cursor/rules/exxat-kpi-flat-band.mdc
+    accessibility: .cursor/rules/exxat-accessibility.mdc
+    kbd-shortcuts: .cursor/rules/exxat-kbd-shortcuts.mdc
+    overlays: .cursor/rules/exxat-drawer-vs-dialog.mdc
+    sidebar-nav: .cursor/rules/exxat-secondary-panel-vs-drill-in.mdc
+    page-scroll: .cursor/rules/exxat-page-scroll-ownership.mdc
+    design-reference-hub: .cursor/rules/exxat-design-reference-hub.mdc
+    tabs-chrome: .cursor/rules/exxat-tabs-chrome.mdc
+    wizard: .cursor/rules/exxat-wizard.mdc
+    horizontal-scroll: .cursor/rules/exxat-horizontal-scroll.mdc
+
+references:
+  library-hub: apps/web/components/library-table.tsx
+  placements-hub: apps/web/components/placements-client.tsx
+  exam-lock: apps/web/components/exam-lock-showcase-client.tsx
+  focus-workflow: apps/web/components/focus-workflow-showcase-client.tsx
+  catalog: apps/web/components/catalog-client.tsx
+
+task_router:
+  build_hub:
+    read:
+      - apps/web/docs/jobs/list-hub.md
+      - apps/web/docs/table-column-cells-pattern.md
+      - apps/web/components/library-table.tsx
+      - apps/web/components/library-client.tsx
+    rules:
+      - exxat-data-tables
+      - exxat-table-column-cells
+      - exxat-hub-supported-views
+      - exxat-centralized-list-dataset
+    skills:
+      - exxat-table-column-cells
+  focus_shell:
+    read:
+      - apps/web/docs/jobs/focus-workflow.md
+      - apps/web/docs/focus-workflow-pattern.md
+      - apps/web/docs/wizard-pattern.md
+    rules:
+      - exxat-focus-workflow
+      - exxat-wizard
+  catalog_browse:
+    read:
+      - apps/web/docs/jobs/catalog-browse.md
+      - apps/web/components/catalog-client.tsx
+  audit_surface:
+    skill: exxat-ux-audit

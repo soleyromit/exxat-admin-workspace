@@ -122,6 +122,10 @@ export const NAV_ADMIN: NavLinkItem[] = [
         icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
       },
+      // Results has NO admin left-nav row (Romit 2026-07-09) — admins reach
+      // /results through the dashboard's Results row buttons, the term cards'
+      // Released links, and the ⌘K palette. Faculty keep their "My Results"
+      // nav entry below (their only entry point per ST-14).
       {
         key: "ce-settings",
         title: "Settings",
@@ -174,6 +178,13 @@ export const NAV_FACULTY: NavLinkItem[] = [
     url: "/my-dashboard",
     icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+  },
+  {
+    key: "my-results",
+    title: "My Results",
+    url: "/results",
+    icon:       <i className="fa-light fa-square-poll-vertical" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-square-poll-vertical" aria-hidden="true" />,
   },
 ]
 

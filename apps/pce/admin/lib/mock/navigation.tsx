@@ -18,6 +18,55 @@ import { primaryNavLinksForSlug } from "@exxatdesignux/product-framework"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Drill-in slot for sidebar rows that lead into deep, focused sections
+ * (e.g. Settings → Profile / Organization / Billing). When a row carries
+ * `drillIn` and the URL matches `sectionRouteRoot`, the primary sidebar
+ * content area swaps to a stacked view rendered by `SidebarDrillIn` —
+ * `[← Back] · <sectionTitle>` followed by the section's nav list.
+ *
+ * Mutually exclusive with `secondaryPanel` — a row opts into EITHER the
+ * drill-in pattern (deep section, user "going into" it) OR the secondary-
+ * panel pattern (hub-scoped catalog, user "scoping" it). See
+ * `apps/web/components/sidebar/sidebar-drill-in.tsx` and the
+ * SidebarDrillIn primitive doc for the decision criteria.
+ */
+export interface NavDrillInConfig {
+  /** Heading rendered above the drilled-in nav list. */
+  sectionTitle: string
+  /** Pathname prefix that activates the drilled-in view (e.g. `"/settings"`). */
+  sectionRouteRoot: string
+  /**
+   * Custom matcher for routes whose product slug is part of the URL —
+   * e.g. Leo lives at `/<product>/leo`, which `sectionRouteRoot` alone
+   * can't express. When set, OVERRIDES the default
+   * `pathname.startsWith(sectionRouteRoot)` check.
+   */
+  sectionRouteMatch?: (pathname: string) => boolean
+  /**
+   * Nav rows shown inside the drilled-in pane. Ignored when the consumer
+   * renders custom drill-in content (see Leo — `app-sidebar.tsx` switches
+   * on the row key to render `<LeoSidebarDrillInPanel>` instead).
+   */
+  items: NavLinkItem[]
+}
+
+/** Labelled primary-nav group (Prism Program / Curriculum / Placement blocks). */
+export interface NavSection {
+  key: string
+  /** Section heading — omit or leave empty to render items without a label row. */
+  label: string
+  items: NavLinkItem[]
+}
+
+/** Primary nav layout — preamble rows, labelled sections, optional trailing rows. */
+export interface NavPrimaryLayout {
+  preamble: NavLinkItem[]
+  sections: NavSection[]
+  /** Primary rows after all sections — not grouped under a section label. */
+  epilogue?: NavLinkItem[]
+}
+
 /** Flat sidebar link — primary + Documents + utilities groups (DS shell; not legacy screenshot styling) */
 export interface NavLinkItem {
   key: string
@@ -34,9 +83,16 @@ export interface NavLinkItem {
   /**
    * When this collapsible section uses `SecondaryPanel`, set the panel id so
    * child links can reopen the panel on click while already on the same route
-   * (react-router-dom Link does not navigate on same href).
+   * (react-router-dom `Link` does not navigate on same href).
    */
   secondaryPanel?: string
+  /**
+   * When set, clicking this row leads INTO a deep section that swaps the
+   * sidebar content area to a `SidebarDrillIn` stack. The row's own URL
+   * MUST land inside `drillIn.sectionRouteRoot` so the drilled-in pane
+   * shows on first navigation. Mutually exclusive with `secondaryPanel`.
+   */
+  drillIn?: NavDrillInConfig
   /**
    * When several children share the same `url` (hub route), only this child’s
    * key receives `data-active` for that pathname — otherwise every sub-row
@@ -155,14 +211,23 @@ const dashboardItem = (slug: string): NavLinkItem => ({
   iconActive: <i className="fa-solid fa-grid-2" aria-hidden="true" />,
 })
 
+const homeItem = (slug: string): NavLinkItem => ({
+  key: "home",
+  title: "Home",
+  url: `/${slug}/dashboard`,
+  icon:       <i className="fa-light fa-house" aria-hidden="true" />,
+  iconActive: <i className="fa-solid fa-house" aria-hidden="true" />,
+})
+
 const libraryItem = (slug: string): NavLinkItem => ({
   key: "library",
-  title: "Library",
+  title: "Question bank",
   url: `/${slug}${LIBRARY_ENTRY_PATH}`,
   icon:       <i className="fa-light fa-books" aria-hidden="true" />,
   iconActive: <i className="fa-solid fa-books" aria-hidden="true" />,
   secondaryPanel: "library",
-  primaryHubChildKey: "library-hub",
+  /** List hub (`/library/all`) — not discovery home (`/library`). */
+  primaryHubChildKey: "library-all",
   children: [
     {
       key: "library-hub",
@@ -180,7 +245,7 @@ const libraryItem = (slug: string): NavLinkItem => ({
     },
     {
       key: "library-all",
-      title: "All items",
+      title: "Library",
       url: `/${slug}${LIBRARY_ALL_PATH}`,
       icon:       <i className="fa-light fa-table-list" aria-hidden="true" />,
       iconActive: <i className="fa-solid fa-table-list" aria-hidden="true" />,
@@ -188,45 +253,444 @@ const libraryItem = (slug: string): NavLinkItem => ({
   ],
 })
 
+function hubItem(
+  slug: string,
+  key: string,
+  title: string,
+  segment: string,
+  iconClass: string,
+  iconActiveClass: string,
+  opts?: { badge?: number | string },
+): NavLinkItem {
+  return {
+    key,
+    title,
+    url: `/${slug}/${segment}`,
+    icon:       <i className={iconClass} aria-hidden="true" />,
+    iconActive: <i className={iconActiveClass} aria-hidden="true" />,
+    ...opts,
+  }
+}
+
+function complianceItem(slug: string): NavLinkItem {
+  return {
+    key: "compliance",
+    title: "Compliance",
+    url: `/${slug}/student-compliance`,
+    icon:       <i className="fa-light fa-shield-check" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-shield-check" aria-hidden="true" />,
+    primaryHubChildKey: "student-compliance",
+    children: [
+      hubItem(
+        slug,
+        "student-compliance",
+        "Student Compliance",
+        "student-compliance",
+        "fa-light fa-file-circle-check",
+        "fa-solid fa-file-circle-check",
+      ),
+      hubItem(
+        slug,
+        "faculty-compliance",
+        "Faculty Compliance",
+        "faculty-compliance",
+        "fa-light fa-file-circle-check",
+        "fa-solid fa-file-circle-check",
+      ),
+    ],
+  }
+}
+
+function navGroupParent(
+  slug: string,
+  key: string,
+  title: string,
+  firstSegment: string,
+  iconLight: string,
+  iconSolid: string,
+  children: NavLinkItem[],
+): NavLinkItem {
+  return {
+    key,
+    title,
+    url: `/${slug}/${firstSegment}`,
+    icon: <i className={iconLight} aria-hidden="true" />,
+    iconActive: <i className={iconSolid} aria-hidden="true" />,
+    children,
+  }
+}
+
+function flattenNavItems(items: NavLinkItem[]): NavLinkItem[] {
+  const flat: NavLinkItem[] = []
+  for (const item of items) {
+    flat.push(item)
+    if (item.children?.length) flat.push(...flattenNavItems(item.children))
+  }
+  return flat
+}
+
 /**
- * Prism + Custom (which inherits Prism's IA structurally per
- * `exxat-product-routing.mdc` Rule 5) get the full school-side primary nav:
- * Dashboard + Library. Other products are placeholders today and only show
- * Dashboard until their own IA ships.
+ * Prism + Custom primary nav — section labels become collapsible parents
+ * (Program / Curriculum / Placement). Reports is a primary row.
+ * Question bank + DS pattern hubs live on Design OS (`buildDesignOsNavLayout`).
  */
-function buildSchoolFamilyPrimary(slug: string): NavLinkItem[] {
-  return [dashboardItem(slug), libraryItem(slug)]
+function buildPrismNavLayout(slug: string): NavPrimaryLayout {
+  return {
+    preamble: [
+      dashboardItem(slug),
+      navGroupParent(
+        slug,
+        "program",
+        "Program",
+        "program-details",
+        "fa-light fa-layer-group",
+        "fa-solid fa-layer-group",
+        [
+          hubItem(slug, "program-details", "Program Details", "program-details", "fa-light fa-landmark", "fa-solid fa-landmark"),
+          hubItem(slug, "students", "Students", "students", "fa-light fa-graduation-cap", "fa-solid fa-graduation-cap"),
+          hubItem(slug, "faculty-staff", "Faculty and Staff", "faculty-staff", "fa-light fa-user-group", "fa-solid fa-user-group"),
+          complianceItem(slug),
+        ],
+      ),
+      navGroupParent(
+        slug,
+        "curriculum",
+        "Curriculum Management",
+        "courses",
+        "fa-light fa-book-open",
+        "fa-solid fa-book-open",
+        [
+          hubItem(slug, "courses", "Courses", "courses", "fa-light fa-books", "fa-solid fa-books"),
+          hubItem(slug, "curriculum-mapping", "Curriculum Mapping", "curriculum-mapping", "fa-light fa-grid-2-plus", "fa-solid fa-grid-2-plus", { badge: "Leo" }),
+          hubItem(slug, "competency-management", "Competency", "competency-management", "fa-light fa-stars", "fa-solid fa-stars", { badge: "Beta" }),
+        ],
+      ),
+      navGroupParent(
+        slug,
+        "placement",
+        "Placement Management",
+        "sites",
+        "fa-light fa-route",
+        "fa-solid fa-route",
+        [
+          hubItem(slug, "sites", "Sites", "sites", "fa-light fa-building", "fa-solid fa-building"),
+          hubItem(slug, "process-my-requests", "Process My Requests", "process-my-requests", "fa-light fa-file-magnifying-glass", "fa-solid fa-file-magnifying-glass"),
+          hubItem(slug, "placements", "Placements", "placements", "fa-light fa-user-plus", "fa-solid fa-user-plus"),
+          hubItem(slug, "learning-activities", "Learning Activities", "learning-activities", "fa-light fa-clipboard-list", "fa-solid fa-clipboard-list"),
+        ],
+      ),
+      hubItem(slug, "reports", "Reports", "reports", "fa-light fa-chart-line", "fa-solid fa-chart-line"),
+    ],
+    sections: [],
+  }
+}
+
+function columnsItem(slug: string): NavLinkItem {
+  return {
+    key: "columns",
+    title: "Column types",
+    url: `/${slug}/columns`,
+    icon:       <i className="fa-light fa-table-columns" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-table-columns" aria-hidden="true" />,
+  }
+}
+
+/** Token category drill-in rows — scoped under `/${productSlug}/tokens-themes`. */
+function buildTokensDrillInItems(basePath: string): NavLinkItem[] {
+  const root = basePath.replace(/\/$/, "")
+  const tokensBase = root ? `${root}/tokens-themes` : "/tokens-themes"
+  return [
+    {
+      key: "tokens-all",
+      title: "All tokens",
+      url: tokensBase,
+      icon:       <i className="fa-light fa-grid-2" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-grid-2" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-color",
+      title: "Colors",
+      url: `${tokensBase}?category=color`,
+      icon:       <i className="fa-light fa-palette" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-palette" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-gradient",
+      title: "Gradients",
+      url: `${tokensBase}?category=gradient`,
+      icon:       <i className="fa-light fa-circle-half-stroke" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-circle-half-stroke" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-radius",
+      title: "Radius",
+      url: `${tokensBase}?category=radius`,
+      icon:       <i className="fa-light fa-rectangle-vertical" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-rectangle-vertical" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-size",
+      title: "Size",
+      url: `${tokensBase}?category=size`,
+      icon:       <i className="fa-light fa-ruler-horizontal" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-ruler-horizontal" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-shadow",
+      title: "Shadow",
+      url: `${tokensBase}?category=shadow`,
+      icon:       <i className="fa-light fa-clone" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-clone" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-typography",
+      title: "Typography",
+      url: `${tokensBase}?category=typography`,
+      icon:       <i className="fa-light fa-text-size" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-text-size" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-transition",
+      title: "Motion",
+      url: `${tokensBase}?category=transition`,
+      icon:       <i className="fa-light fa-wave-sine" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-wave-sine" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-alias",
+      title: "Aliases",
+      url: `${tokensBase}?category=alias`,
+      icon:       <i className="fa-light fa-link" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-link" aria-hidden="true" />,
+    },
+    {
+      key: "tokens-other",
+      title: "Other",
+      url: `${tokensBase}?category=other`,
+      icon:       <i className="fa-light fa-hashtag" aria-hidden="true" />,
+      iconActive: <i className="fa-solid fa-hashtag" aria-hidden="true" />,
+    },
+  ]
+}
+
+/** Design OS — internal DS workspace: library reference hub + tokens + column catalog. */
+function buildDesignOsNavLayout(slug: string): NavPrimaryLayout {
+  const tokensRoot = `/${slug}/tokens-themes`
+  return {
+    preamble: [
+      dashboardItem(slug),
+      libraryItem(slug),
+      {
+        key: "tokens",
+        title: "Tokens & themes",
+        url: tokensRoot,
+        icon:       <i className="fa-light fa-palette" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-palette" aria-hidden="true" />,
+        drillIn: {
+          sectionTitle: "Tokens & themes",
+          sectionRouteRoot: tokensRoot,
+          items: buildTokensDrillInItems(`/${slug}`),
+        },
+      },
+      columnsItem(slug),
+    ],
+    sections: [],
+  }
+}
+
+/**
+ * Exxat One — Schools primary nav — school-side coordinator IA (Home,
+ * availability explore/wishlist; Activities section; Reports).
+ */
+function buildOneSchoolsNavLayout(slug: string): NavPrimaryLayout {
+  return {
+    preamble: [
+      homeItem(slug),
+      hubItem(
+        slug,
+        "explore-availability",
+        "Explore & apply",
+        "explore-availability",
+        "fa-light fa-magnifying-glass-location",
+        "fa-solid fa-magnifying-glass-location",
+      ),
+      hubItem(
+        slug,
+        "wishlist-responses",
+        "Wishlist Responses",
+        "wishlist-responses",
+        "fa-light fa-heart",
+        "fa-solid fa-heart",
+      ),
+    ],
+    sections: [
+      {
+        key: "activities",
+        label: "Activities",
+        items: [
+          hubItem(
+            slug,
+            "activities-dashboard",
+            "Dashboard",
+            "activities-dashboard",
+            "fa-light fa-gauge-high",
+            "fa-solid fa-gauge-high",
+          ),
+          hubItem(
+            slug,
+            "activities-requests",
+            "Requests",
+            "activities-requests",
+            "fa-light fa-inbox",
+            "fa-solid fa-inbox",
+          ),
+          hubItem(
+            slug,
+            "activities-schedules",
+            "Schedules",
+            "activities-schedules",
+            "fa-light fa-calendar-days",
+            "fa-solid fa-calendar-days",
+          ),
+        ],
+      },
+    ],
+    epilogue: [
+      hubItem(slug, "reports", "Reports", "reports", "fa-light fa-chart-line-up", "fa-solid fa-chart-line-up"),
+    ],
+  }
+}
+
+/** Route segments for One — Schools hub shells (excludes dashboard). */
+export const ONE_SCHOOLS_HUB_SEGMENTS = [
+  "explore-availability",
+  "wishlist-responses",
+  "activities-dashboard",
+  "activities-requests",
+  "activities-schedules",
+] as const
+
+/**
+ * Exxat One — Sites primary nav — Home; Availability / Jobs / Site directory sections.
+ */
+function buildOneSitesNavLayout(slug: string): NavPrimaryLayout {
+  return {
+    preamble: [homeItem(slug)],
+    sections: [
+      {
+        key: "availability-management",
+        label: "Availability Management",
+        items: [
+          hubItem(slug, "availability", "Availability", "availability", "fa-light fa-calendar", "fa-solid fa-calendar"),
+          hubItem(
+            slug,
+            "slot-requests",
+            "Slot Requests",
+            "slot-requests",
+            "fa-light fa-inbox",
+            "fa-solid fa-inbox",
+          ),
+          hubItem(slug, "schedules", "Schedules", "schedules", "fa-light fa-calendar-lines", "fa-solid fa-calendar-lines"),
+          hubItem(slug, "reports", "Reports", "reports", "fa-light fa-chart-line", "fa-solid fa-chart-line"),
+        ],
+      },
+      {
+        key: "jobs-management",
+        label: "Jobs Management",
+        items: [
+          hubItem(slug, "jobs", "Jobs", "jobs", "fa-light fa-briefcase", "fa-solid fa-briefcase", { badge: "New" }),
+        ],
+      },
+      {
+        key: "site-directory",
+        label: "Site directory",
+        items: [
+          hubItem(slug, "locations", "Locations", "locations", "fa-light fa-location-dot", "fa-solid fa-location-dot"),
+          hubItem(slug, "personnel", "Personnel", "personnel", "fa-light fa-users", "fa-solid fa-users"),
+          hubItem(
+            slug,
+            "school-partners",
+            "School Partners",
+            "school-partners",
+            "fa-light fa-handshake",
+            "fa-solid fa-handshake",
+          ),
+        ],
+      },
+    ],
+  }
+}
+
+/** Route segments for One — Sites hub shells (excludes dashboard). */
+export const ONE_SITES_HUB_SEGMENTS = [
+  "locations",
+  "personnel",
+  "school-partners",
+  "availability",
+  "slot-requests",
+  "schedules",
+  "jobs",
+] as const
+
+/** Route segments for generic Prism hub shells (excludes dashboard + library). */
+export const PRISM_HUB_SEGMENTS = [
+  "program-details",
+  "students",
+  "faculty-staff",
+  "student-compliance",
+  "faculty-compliance",
+  "reports",
+  "courses",
+  "curriculum-mapping",
+  "competency-management",
+  "sites",
+  "process-my-requests",
+  "placements",
+  "learning-activities",
+] as const
+
+export function flattenNavLayout(layout: NavPrimaryLayout): NavLinkItem[] {
+  const top = [
+    ...layout.preamble,
+    ...layout.sections.flatMap((section) => section.items),
+    ...(layout.epilogue ?? []),
+  ]
+  return flattenNavItems(top)
 }
 
 function buildPlaceholderPrimary(slug: string): NavLinkItem[] {
   return [dashboardItem(slug)]
 }
 
+function buildPlaceholderLayout(slug: string): NavPrimaryLayout {
+  return { preamble: buildPlaceholderPrimary(slug), sections: [] }
+}
+
+export const NAV_LAYOUT_BY_PRODUCT: Record<Product, NavPrimaryLayout> = {
+  "exxat-prism": buildPrismNavLayout(productSlug("exxat-prism")),
+  "exxat-design-os": buildDesignOsNavLayout(productSlug("exxat-design-os")),
+  "exxat-one-schools": buildOneSchoolsNavLayout(productSlug("exxat-one-schools")),
+  "exxat-one-sites": buildOneSitesNavLayout(productSlug("exxat-one-sites")),
+  "exxat-custom": buildPrismNavLayout("custom"),
+}
+
 export const NAV_BY_PRODUCT: Record<Product, NavLinkItem[]> = {
-  "exxat-prism":       buildSchoolFamilyPrimary(productSlug("exxat-prism")),
-  // One — Schools is school-side too (same scope hierarchy as Prism), but
-  // its IA is a separate design effort. Until then it's Dashboard-only so
-  // we don't promise hubs that aren't there yet.
-  "exxat-one-schools": buildPlaceholderPrimary(productSlug("exxat-one-schools")),
-  // One — Sites lives in a different scope hierarchy (Brand > Site >
-  // Location). Its IA + `SiteSwitcher` ship together in a future PR.
-  "exxat-one-sites":   buildPlaceholderPrimary(productSlug("exxat-one-sites")),
-  // Custom is "Prism with rebranding": same hubs, different brand chrome.
-  // It owns its own URL root (`/custom`) so the sidebar links don't flicker
-  // across products mid-flight — calls the same factory as Prism with its
-  // own slug instead of sharing the array reference.
-  "exxat-custom":      buildSchoolFamilyPrimary("custom"),
+  "exxat-prism": flattenNavLayout(NAV_LAYOUT_BY_PRODUCT["exxat-prism"]),
+  "exxat-design-os": flattenNavLayout(NAV_LAYOUT_BY_PRODUCT["exxat-design-os"]),
+  "exxat-one-schools": flattenNavLayout(NAV_LAYOUT_BY_PRODUCT["exxat-one-schools"]),
+  "exxat-one-sites": flattenNavLayout(NAV_LAYOUT_BY_PRODUCT["exxat-one-sites"]),
+  "exxat-custom": flattenNavLayout(NAV_LAYOUT_BY_PRODUCT["exxat-custom"]),
 }
 
 /**
  * Primary nav for the active product — custom slots use their suffix slug
  * (`/assessment/dashboard`, not `/custom/dashboard`).
  */
-export function getPrimaryNavForProduct(
+export function getPrimaryNavLayoutForProduct(
   product: Product,
   customProducts: { suffix: string }[],
   activeCustomIndex: number,
-): NavLinkItem[] {
+): NavPrimaryLayout {
   if (product === "exxat-custom") {
     const brand = customProducts[activeCustomIndex] ?? customProducts[0]
     const slug = brand?.suffix?.trim()
@@ -234,11 +698,24 @@ export function getPrimaryNavForProduct(
       : "custom"
     const registeredNav = primaryNavLinksForSlug(slug)
     if (registeredNav?.length) {
-      return registeredNav as NavLinkItem[]
+      return { preamble: registeredNav as NavLinkItem[], sections: [] }
     }
-    return buildSchoolFamilyPrimary(slug)
+    return buildPrismNavLayout(slug)
   }
-  return NAV_BY_PRODUCT[product]
+  if (product === "exxat-design-os") {
+    return buildDesignOsNavLayout(productSlug("exxat-design-os"))
+  }
+  return NAV_LAYOUT_BY_PRODUCT[product]
+}
+
+export function getPrimaryNavForProduct(
+  product: Product,
+  customProducts: { suffix: string }[],
+  activeCustomIndex: number,
+): NavLinkItem[] {
+  return flattenNavLayout(
+    getPrimaryNavLayoutForProduct(product, customProducts, activeCustomIndex),
+  )
 }
 
 /**
@@ -254,37 +731,11 @@ export const NAV_PRIMARY: NavLinkItem[] = NAV_BY_PRODUCT["exxat-prism"]
 
 export const NAV_DOCUMENTS_LABEL = "Resources"
 
-export const NAV_DOCUMENTS: NavLinkItem[] = [
-  {
-    key: "tokens",
-    title: "Tokens & themes",
-    /** Dedicated route (was previously /settings#appearance — split out so the nav target
-     *  is bookmarkable and there's no active-state collision with Settings). */
-    url: "/tokens-themes",
-    icon:       <i className="fa-light fa-palette" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-palette" aria-hidden="true" />,
-    /** Opens the `tokens` secondary panel — categories live in the rail, not in view tabs.
-     *  `useAutoPanel("tokens")` inside the hub also collapses the main sidebar
-     *  (`secondary-panel.tsx#openPanel`) per the Library library pattern. */
-    secondaryPanel: "tokens",
-  },
-  {
-    key: "columns",
-    title: "Column types",
-    /** DataTable column-pattern showcase — every cell renderer the DS supports. */
-    url: "/columns",
-    icon:       <i className="fa-light fa-table-columns" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-table-columns" aria-hidden="true" />,
-  },
-  {
-    key: "more",
-    title: "More",
-    /** Same page as Get Help — disambiguate via `#more`. */
-    url: "/help#more",
-    icon:       <i className="fa-light fa-ellipsis" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-ellipsis" aria-hidden="true" />,
-  },
-]
+/**
+ * DS pattern hubs (Library, tokens, columns) live on the internal
+ * `exxat-design-os` product primary nav — not in the shared Resources strip.
+ */
+export const NAV_DOCUMENTS: NavLinkItem[] = []
 
 // ── Quick actions (above primary nav) + bottom utilities ───────────────────────
 
@@ -300,9 +751,16 @@ export interface NavSecondaryItem {
   opensCommandMenu?: boolean
   /** Item toggles the Ask Leo sidebar (⌘⌥K) instead of navigating. */
   opensAskLeo?: boolean
+  /**
+   * When set, the sidebar content area swaps to a `SidebarDrillIn` stack
+   * whenever the URL matches `drillIn.sectionRouteRoot`. Settings is the
+   * canonical consumer — see `NavDrillInConfig` and
+   * `apps/web/components/sidebar/sidebar-drill-in.tsx`.
+   */
+  drillIn?: NavDrillInConfig
 }
 
-/** Search + Notifications — rendered above Dashboard in the sidebar. */
+/** Ask Leo + Search + Notifications — one row when expanded; icon stack when collapsed. */
 export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
   {
     key: "ask-leo",
@@ -310,6 +768,20 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
     url: "#",
     icon: <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />,
     opensAskLeo: true,
+    /**
+     * On `/<product>/leo` the sidebar swaps into a Leo-specific drill-in
+     * (search recents + New chat + recents list). `items` is empty
+     * because `app-sidebar.tsx` switches on the row key and renders
+     * `<LeoSidebarDrillInPanel>` for this section. The per-product URL
+     * is matched via `sectionRouteMatch` since the slug is dynamic.
+     */
+    drillIn: {
+      sectionTitle: "Ask Leo",
+      sectionRouteRoot: "/leo",
+      sectionRouteMatch: (pathname: string) =>
+        pathname.endsWith("/leo") || pathname.includes("/leo/"),
+      items: [],
+    },
   },
   {
     key: "command-menu",
@@ -326,14 +798,13 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
   },
 ]
 
+/**
+ * Footer utilities. Settings is a regular nav row that points directly
+ * at `/settings/organization` — Profile lives in the user dropdown
+ * (`NavUser` → "App preferences"), not in the sidebar. Design OS owns
+ * tokens drill-in on its primary nav; Settings stays flat here.
+ */
 export const NAV_SECONDARY: NavSecondaryItem[] = [
-  {
-    key: "product-studio",
-    title: "Product Studio",
-    url: "/builder/products",
-    icon:       <i className="fa-light fa-screwdriver-wrench" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-screwdriver-wrench" aria-hidden="true" />,
-  },
   {
     key: "settings",
     title: "Settings",
@@ -349,6 +820,23 @@ export const NAV_SECONDARY: NavSecondaryItem[] = [
     iconActive: <i className="fa-solid fa-circle-question" aria-hidden="true" />,
   },
 ]
+
+/** Footer utilities — One — Sites uses product-scoped site configuration. */
+export function getSecondaryNavForProduct(product: Product): NavSecondaryItem[] {
+  if (product === "exxat-one-sites") {
+    const slug = productSlug("exxat-one-sites")
+    return [
+      {
+        key: "site-configuration",
+        title: "Site Configuration",
+        url: `/${slug}/settings`,
+        icon:       <i className="fa-light fa-gear" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-gear" aria-hidden="true" />,
+      },
+    ]
+  }
+  return NAV_SECONDARY
+}
 
 // ── User ──────────────────────────────────────────────────────────────────────
 

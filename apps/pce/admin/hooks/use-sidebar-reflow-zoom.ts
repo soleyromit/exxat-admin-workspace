@@ -6,45 +6,60 @@ import { rafThrottle } from "@/lib/raf-throttle"
 /**
  * When true, the sidebar should **not** pin utilities + profile to the bottom — the whole
  * rail becomes one scroll surface (WCAG 1.4.10 reflow at high zoom / very short viewports).
- *
- * Uses `visualViewport.scale` where available (pinch / some browser zoom) and falls back to
- * short viewport height.
  */
+
+type Listener = () => void
+
+let listeners: Set<Listener> | null = null
+let cachedValue = false
+let mql: MediaQueryList | null = null
+let scheduled: ReturnType<typeof rafThrottle> | null = null
+
+function compute(): boolean {
+  if (typeof window === "undefined") return false
+  const vv = window.visualViewport
+  const scale = vv?.scale ?? 1
+  if (!mql) mql = window.matchMedia("(max-height: 640px)")
+  const short = mql.matches
+  const veryShort = window.innerHeight <= 420
+  return scale >= 1.99 || short || veryShort
+}
+
+function ensureInitialized() {
+  if (listeners) return
+  listeners = new Set()
+  if (typeof window === "undefined") return
+  cachedValue = compute()
+  scheduled = rafThrottle(() => {
+    const next = compute()
+    if (next === cachedValue) return
+    cachedValue = next
+    listeners?.forEach((cb) => cb())
+  })
+  const vv = window.visualViewport
+  vv?.addEventListener("resize", scheduled, { passive: true })
+  vv?.addEventListener("scroll", scheduled, { passive: true })
+  window.addEventListener("resize", scheduled, { passive: true })
+  mql?.addEventListener("change", scheduled)
+}
+
+function subscribe(callback: Listener): () => void {
+  ensureInitialized()
+  listeners!.add(callback)
+  return () => {
+    listeners!.delete(callback)
+  }
+}
+
+function getSnapshot(): boolean {
+  ensureInitialized()
+  return cachedValue
+}
+
+function getServerSnapshot(): boolean {
+  return false
+}
+
 export function useSidebarReflowZoom(): boolean {
-  const [reflow, setReflow] = React.useState(false)
-
-  React.useEffect(() => {
-    const vv = window.visualViewport
-    // Cache the MediaQueryList — calling `matchMedia` on every compute() is
-    // measurable on pinch/zoom where visualViewport scroll fires per frame.
-    const mql = window.matchMedia("(max-height: 640px)")
-
-    function compute() {
-      const scale = vv?.scale ?? 1
-      const short = mql.matches
-      const veryShort = window.innerHeight <= 420
-      const next = scale >= 1.99 || short || veryShort
-      // Avoid unnecessary React re-renders when nothing changed.
-      setReflow(prev => (prev === next ? prev : next))
-    }
-
-    compute()
-    // rAF-coalesce: visualViewport.scroll can fire hundreds of times per second
-    // during pinch-zoom — without throttling we trigger setReflow + matchMedia
-    // per event. One sample per frame is enough for a layout breakpoint flag.
-    const scheduled = rafThrottle(compute)
-    vv?.addEventListener("resize", scheduled, { passive: true })
-    vv?.addEventListener("scroll", scheduled, { passive: true })
-    window.addEventListener("resize", scheduled, { passive: true })
-    mql.addEventListener("change", scheduled)
-    return () => {
-      scheduled.cancel()
-      vv?.removeEventListener("resize", scheduled)
-      vv?.removeEventListener("scroll", scheduled)
-      window.removeEventListener("resize", scheduled)
-      mql.removeEventListener("change", scheduled)
-    }
-  }, [])
-
-  return reflow
+  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }

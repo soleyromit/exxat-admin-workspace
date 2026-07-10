@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
-import { useAskLeo } from "@/components/ask-leo-sidebar"
+import { useAskLeo } from "@/components/ask-leo-context"
 import { useCommandMenuConfig } from "@/contexts/command-menu-context"
 import type { CommandMenuItem } from "@/lib/command-menu-config"
 

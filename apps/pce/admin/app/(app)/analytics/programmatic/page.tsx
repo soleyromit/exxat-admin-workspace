@@ -1,23 +1,25 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Button, KeyMetrics,
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   ChartLegend, ChartLegendContent,
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+  chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
-import { LiveCollectionCard } from '@/components/pce/live-collection-card'
-import type { MonitorNudgeTarget } from '@/components/pce/dashboard-monitor'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
 import {
-  XAxis, YAxis, LineChart, Line, CartesianGrid, ReferenceLine,
+  XAxis, YAxis, LineChart, Line, CartesianGrid, ReferenceLine, BarChart, Bar,
 } from 'recharts'
+import {
+  ChartCard, ChartFigure, ChartDataTable,
+  ChartLeoPlotInsightOverlay,
+  type ChartLeoInsight,
+} from '@/components/charts-overview'
+import { CHART_AXIS_TICK } from '@/lib/chart-typography'
+import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
-import { DataTable } from '@/components/data-table'
-import type { ColumnDef } from '@/components/data-table/types'
+import { SurveysTable } from '@/components/pce/surveys-table'
 import { MOCK_SURVEYS, MOCK_PROG_QUESTION_SCORES } from '@/lib/pce-mock-data'
 
 function surveyTypeName(name: string): string {
@@ -25,14 +27,6 @@ function surveyTypeName(name: string): string {
   if (name.includes('Preceptor')) return 'Preceptor Satisfaction'
   if (name.includes('Exit'))      return 'Program Exit'
   return 'General'
-}
-
-function StatusLabel({ status }: { status: string }) {
-  if (status === 'collecting') return <span className="text-xs font-medium" style={{ color: 'var(--brand-color)' }}>Collecting</span>
-  if (status === 'released')   return <span className="text-xs font-medium" style={{ color: 'var(--chart-2)' }}>Released</span>
-  if (status === 'scheduled')  return <span className="text-xs text-muted-foreground">Scheduled</span>
-  if (status === 'draft')      return <span className="text-xs text-muted-foreground">Draft</span>
-  return <span className="text-xs text-muted-foreground capitalize">{status.replace('_', ' ')}</span>
 }
 
 /* Historical response rate trend — last 4 terms per survey type. null = not yet collected. */
@@ -51,83 +45,40 @@ const trendConfig: ChartConfig = {
 
 const RESPONSE_TARGET = 70
 
-type ProgSurveyRow = {
-  id: string; name: string; type: string; target: string; status: string
-  sent: number; responses: number; rate: number; deadline: string
-} & Record<string, unknown>
+/* Sentiment-band distribution config (1–2 / 3 / 4–5 buckets). */
+const progDistConfig: ChartConfig = {
+  neg: { label: 'Needs improvement', color: 'var(--chart-4)' },
+  neu: { label: 'Neutral',           color: 'var(--muted-foreground)' },
+  pos: { label: 'Positive',          color: 'var(--chart-2)' },
+}
 
-const surveyColumns: ColumnDef<ProgSurveyRow>[] = [
-  {
-    key: 'name', label: 'Survey', sortable: true,
-    cell: (row) => (
-      <div className="min-w-0">
-        <p className="text-sm font-medium truncate max-w-[220px]">{row.name.split('—')[0].trim()}</p>
-        <p className="text-xs text-muted-foreground">{row.type}</p>
-      </div>
-    ),
-  },
-  {
-    key: 'target', label: 'Target', sortable: true, width: 160,
-    cell: (row) => (
-      <span className="text-sm text-muted-foreground inline-flex items-center gap-1.5">
-        <i className="fa-light fa-users-viewfinder text-xs" aria-hidden="true" />
-        {row.target}
-      </span>
-    ),
-  },
-  {
-    key: 'status', label: 'Status', sortable: true,
-    cell: (row) => <StatusLabel status={row.status} />,
-  },
-  {
-    key: 'sent', label: 'Sent', sortable: true,
-    header: () => <span className="block text-right">Sent</span>,
-    cell: (row) => <div className="text-right tabular-nums text-sm">{row.sent}</div>,
-  },
-  {
-    key: 'responses', label: 'Responses', sortable: true,
-    header: () => <span className="block text-right">Responses</span>,
-    cell: (row) => (
-      <div className="text-right tabular-nums text-sm">
-        {row.responses > 0 ? row.responses : '—'}
-      </div>
-    ),
-  },
-  {
-    key: 'rate', label: 'Rate', sortable: true,
-    header: () => <span className="block text-right">Rate</span>,
-    cell: (row) => (
-      <div className="text-right tabular-nums text-sm font-semibold">
-        {row.rate > 0 ? `${row.rate}%` : '—'}
-      </div>
-    ),
-  },
-  {
-    key: 'deadline', label: 'Deadline', sortable: true,
-    cell: (row) => <span className="text-sm text-muted-foreground">{row.deadline}</span>,
-  },
-]
+// Leo insight — derived from PROG_TREND: the in-flight series vs target.
+const PROG_TREND_LEO: ChartLeoInsight = (() => {
+  const last = PROG_TREND[PROG_TREND.length - 1]
+  const prev = PROG_TREND[PROG_TREND.length - 2]
+  const collected = last.alumni != null ? last.alumni : null
+  const delta = collected != null && prev.alumni != null ? collected - prev.alumni : null
+  return {
+    headline:
+      collected != null && collected < RESPONSE_TARGET
+        ? `Alumni Outcomes is at ${collected}% in ${last.term} — ${RESPONSE_TARGET - collected}% under target`
+        : `Programmatic response rates are at or above the ${RESPONSE_TARGET}% target`,
+    explanation:
+      'Preceptor Satisfaction and Program Exit haven\'t started collecting this term — the alumni series is the only live signal, and it is still mid-collection.',
+    kind: collected != null && collected < RESPONSE_TARGET ? 'dip' : 'trend',
+    delta: delta != null ? { value: `${delta >= 0 ? '+' : ''}${delta}%`, label: `vs ${prev.term}` } : undefined,
+    bullets: [
+      `${last.term}: alumni ${last.alumni ?? '—'}% · preceptor ${last.preceptor ?? 'not started'} · exit ${last.exit ?? 'not started'}.`,
+      `Prior term (${prev.term}): alumni ${prev.alumni}% · preceptor ${prev.preceptor}% · exit ${prev.exit}%.`,
+    ],
+    anchor: { xValue: last.term, yDataKeys: ['alumni', 'preceptor', 'exit'], yCombine: 'max' },
+  }
+})()
 
 export default function ProgrammaticAnalyticsPage() {
-  const [nudgeTarget, setNudgeTarget] = useState<MonitorNudgeTarget | null>(null)
   const progSurveys = useMemo(
     () => MOCK_SURVEYS.filter(s => s.surveyType === 'programmatic'),
     [],
-  )
-
-  const surveyRows = useMemo((): ProgSurveyRow[] =>
-    progSurveys.map(s => ({
-      id:        s.id,
-      name:      s.courseCode,
-      type:      surveyTypeName(s.courseCode),
-      target:    s.courseCode.split('—')[1]?.trim() ?? 'All participants',
-      status:    s.status,
-      sent:      s.enrollmentCount,
-      responses: s.responseCount,
-      rate:      s.responseRate,
-      deadline:  s.deadline,
-    })),
-    [progSurveys],
   )
 
   const kpis: MetricItem[] = useMemo(() => {
@@ -154,13 +105,19 @@ export default function ProgrammaticAnalyticsPage() {
     <>
       <SiteHeader title="Dashboard" />
 
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 0' }}>
+      <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           Dashboard
         </h1>
         <Button variant="outline" size="sm">
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
           Export
+        </Button>
+        <Button size="sm" asChild>
+          <Link href="/surveys/programmatic/push">
+            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+            Push surveys
+          </Link>
         </Button>
       </div>
 
@@ -170,72 +127,80 @@ export default function ProgrammaticAnalyticsPage() {
           {/* KPI strip */}
           <KeyMetrics variant="compact" metricsSingleRow metrics={kpis} />
 
-          {/* Live collection — filled vs yet-to-fill for collecting surveys */}
-          <LiveCollectionCard surveys={progSurveys} onNudge={setNudgeTarget} noun="survey" />
+          {/* sr-only h2 bridges h1→h3 heading order (WCAG 2.4.6) */}
+          <h2 className="sr-only">Overview</h2>
 
-          {/* Response rate trend — last 4 terms */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Response rate trend</CardTitle>
-                <CardDescription>Last 4 terms by survey type. Gap = not yet collected.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={trendConfig}
-                  className="w-full"
-                  style={{ height: 176 }}
-                  role="img"
-                  aria-label="Response rate trend across last 4 terms"
-                >
-                  <LineChart
-                    data={PROG_TREND}
-                    margin={{ top: 8, right: 12, bottom: 0, left: 0 }}
-                  >
-                    <CartesianGrid vertical={false} stroke="var(--border)" />
-                    <XAxis
-                      dataKey="term"
-                      tick={{ fill: 'var(--muted-foreground)' }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      domain={[0, 100]}
-                      tickFormatter={(v: number) => `${v}%`}
-                      tick={{ fill: 'var(--muted-foreground)' }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={36}
-                    />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          formatter={(value) => [`${value}%`, '']}
+          {/* Response rate trend — DS OS ChartCard + Leo insight */}
+          <ChartCard
+            variant="normal"
+            title="Response rate trend"
+            description="Last 4 terms by survey type. Gap = not yet collected."
+            leoInsight={PROG_TREND_LEO}
+          >
+            <ChartFigure
+              label="Response rate trend"
+              summary={`Line chart of response rates for alumni, preceptor, and exit surveys across the last ${PROG_TREND.length} terms against a ${RESPONSE_TARGET} percent target.`}
+              dataLength={PROG_TREND.length}
+            >
+              {(activeIndex) => (
+                <>
+                  <div className="relative w-full">
+                    <ChartContainer config={trendConfig} className="w-full" style={{ height: 176 }}>
+                      <LineChart data={PROG_TREND} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="term" tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+                        <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={36} />
+                        <ChartTooltip
+                          key={chartTooltipKeyboardSyncProps(activeIndex).key}
+                          {...chartTooltipKeyboardSyncProps(activeIndex).props}
+                          content={<ChartTooltipContent formatter={(value) => [`${value}%`, '']} />}
                         />
-                      }
-                    />
-                    <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" label={{ value: `${RESPONSE_TARGET}% target`, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="alumni"    stroke="var(--color-alumni)"    strokeWidth={2} dot={{ r: 3, fill: 'var(--color-alumni)'    }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="preceptor" stroke="var(--color-preceptor)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-preceptor)' }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="exit"      stroke="var(--color-exit)"      strokeWidth={2} dot={{ r: 3, fill: 'var(--color-exit)'      }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
+                        <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" label={{ value: `${RESPONSE_TARGET}% target`, position: 'insideTopRight', fontSize: 12, fill: 'var(--muted-foreground)' }} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Line type="monotone" dataKey="alumni"    stroke="var(--color-alumni)"    strokeWidth={2} dot={{ r: 3, fill: 'var(--color-alumni)'    }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="preceptor" stroke="var(--color-preceptor)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-preceptor)' }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="exit"      stroke="var(--color-exit)"      strokeWidth={2} dot={{ r: 3, fill: 'var(--color-exit)'      }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
+                      </LineChart>
+                    </ChartContainer>
+                    <ChartLeoPlotInsightOverlay data={PROG_TREND} xDataKey="term" />
+                  </div>
+                  <ChartDataTable
+                    caption="Response rate trend"
+                    headers={['Term', 'Alumni', 'Preceptor', 'Exit']}
+                    rows={PROG_TREND.map(d => [d.term, d.alumni != null ? `${d.alumni}%` : '—', d.preceptor != null ? `${d.preceptor}%` : '—', d.exit != null ? `${d.exit}%` : '—'])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
 
-          {/* Question-level scores for collecting surveys */}
+          {/* Question-level scores for collecting surveys — DS OS ChartCard + Leo */}
           {collectingSurveys.map(survey => {
             const scores = MOCK_PROG_QUESTION_SCORES[survey.id] ?? []
             if (scores.length === 0) return null
+            const lowest = scores.reduce((a, b) => (b.avg < a.avg ? b : a))
+            const highest = scores.reduce((a, b) => (b.avg > a.avg ? b : a))
+            const questionLeo: ChartLeoInsight = {
+              headline:
+                lowest.avg < 3.7
+                  ? `The lowest-scoring question sits at ${lowest.avg.toFixed(1)}/5`
+                  : `Every question scores at or above the 3.7 tier`,
+              explanation:
+                lowest.avg < 3.7
+                  ? `"${lowest.text}" is dragging the survey average — its distribution shows where the dissatisfaction concentrates.`
+                  : `"${highest.text}" leads at ${highest.avg.toFixed(1)}/5.`,
+              kind: lowest.avg < 3.7 ? 'anomaly' : 'trend',
+              delta: { value: (highest.avg - lowest.avg).toFixed(1), label: 'spread across questions' },
+              bullets: scores.map(q => `${q.avg.toFixed(1)}/5 — ${q.text}`),
+            }
             return (
-              <Card key={survey.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Question scores — {surveyTypeName(survey.courseCode)}</CardTitle>
-                  <CardDescription>
-                    Avg score (1–5 scale) from {survey.responseCount} responses. {survey.enrollmentCount - survey.responseCount} not yet responded.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+              <ChartCard
+                key={survey.id}
+                variant="normal"
+                title={`Question scores — ${surveyTypeName(survey.courseCode)}`}
+                description={`Avg score (1–5 scale) from ${survey.responseCount} responses. ${survey.enrollmentCount - survey.responseCount} not yet responded.`}
+                leoInsight={questionLeo}
+              >
                   {/* Legend — explains the distribution bar + scale */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />Needs improvement (1–2)</span>
@@ -261,13 +226,27 @@ export default function ProgrammaticAnalyticsPage() {
                               <span className="text-muted-foreground"> / 5 avg</span>
                             </span>
                           </div>
-                          {/* distribution bar (1→5 left to right) + labelled n */}
+                          {/* distribution — DS stacked bar (decorative; the text row below carries values) */}
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 flex h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }} role="img" aria-label={`${Math.round(pct(pos))}% positive, ${Math.round(pct(neu))}% neutral, ${Math.round(pct(neg))}% needs improvement`}>
-                              {neg > 0 && <div style={{ width: `${pct(neg)}%`, background: 'var(--chart-4)' }} />}
-                              {neu > 0 && <div style={{ width: `${pct(neu)}%`, background: 'var(--muted-foreground)', opacity: 0.45 }} />}
-                              {pos > 0 && <div style={{ width: `${pct(pos)}%`, background: 'var(--chart-2)' }} />}
-                            </div>
+                            <ChartContainer
+                              config={progDistConfig}
+                              className="aspect-auto flex-1"
+                              style={{ height: 10 }}
+                              aria-hidden="true"
+                            >
+                              <BarChart
+                                accessibilityLayer={false}
+                                layout="vertical"
+                                data={[{ name: q.questionId, neg: pct(neg), neu: pct(neu), pos: pct(pos) }]}
+                                margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                              >
+                                <XAxis type="number" domain={[0, 100]} hide />
+                                <YAxis type="category" dataKey="name" hide />
+                                <Bar dataKey="neg" stackId="d" fill="var(--color-neg)" radius={[5, 0, 0, 5]} barSize={10} isAnimationActive={false} />
+                                <Bar dataKey="neu" stackId="d" fill="var(--color-neu)" fillOpacity={0.45} barSize={10} isAnimationActive={false} />
+                                <Bar dataKey="pos" stackId="d" fill="var(--color-pos)" radius={[0, 5, 5, 0]} barSize={10} isAnimationActive={false} />
+                              </BarChart>
+                            </ChartContainer>
                             <span className="shrink-0 w-20 text-right text-xs text-muted-foreground tabular-nums">n = {q.count}</span>
                           </div>
                           {/* quantified breakdown */}
@@ -278,59 +257,21 @@ export default function ProgrammaticAnalyticsPage() {
                       )
                     })}
                   </div>
-                </CardContent>
-              </Card>
+              </ChartCard>
             )
           })}
 
-          {/* Survey list */}
+          {/* Survey list — canonical surveys table (same as the Surveys nav), paginated */}
           <div className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Surveys this period</h2>
+            <h2 className="text-sm font-semibold">Surveys</h2>
             <p className="text-xs text-muted-foreground">
               All programmatic surveys. Scheduled and draft surveys show no responses yet.
             </p>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <DataTable<ProgSurveyRow>
-                data={surveyRows}
-                columns={surveyColumns}
-                getRowId={(row) => row.id}
-                selectable={false}
-                searchable={false}
-                toolbarSlot={() => null}
-                emptyState={
-                  <div className="flex flex-col items-center gap-2 py-6">
-                    <i className="fa-light fa-clipboard-list text-2xl text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm font-medium">No surveys this period</p>
-                    <p className="text-xs text-muted-foreground">Programmatic surveys appear here once scheduled or sent.</p>
-                  </div>
-                }
-              />
-            </div>
+            <SurveysTable mode="general" pageSize={10} />
           </div>
 
         </div>
       </div>
-
-      <AlertDialog open={!!nudgeTarget} onOpenChange={(open) => !open && setNudgeTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send ad-hoc reminder</AlertDialogTitle>
-            <AlertDialogDescription>
-              {nudgeTarget && (
-                <>
-                  Send an immediate reminder to{' '}
-                  <strong>{nudgeTarget.nonResponders} non-responder{nudgeTarget.nonResponders !== 1 ? 's' : ''}</strong>{' '}
-                  in <strong>{nudgeTarget.courseCode.split('—')[0].trim()}</strong>. This is an out-of-schedule nudge.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction>Send reminder</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   )
 }

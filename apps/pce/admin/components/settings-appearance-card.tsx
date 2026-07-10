@@ -47,12 +47,13 @@ import {
   type ProductRef,
 } from "@/lib/product-ref"
 import { Tip } from "@/components/ui/tip"
-import { useProductAuthoringEnabled } from "@/lib/product-authoring"
 import {
+  downloadProductScaffold,
   downloadShippedTenantCatalog,
+  isBuilderDevSyncEnvironment,
   tenantRecordFromCustomBrand,
-} from "@/lib/shipped-catalog"
-import { downloadProductScaffold } from "@/lib/product-codegen"
+} from "@exxatdesignux/product-framework"
+import { useProductAuthoringEnabled } from "@exxatdesignux/ui/components/shell"
 import { cn } from "@/lib/utils"
 
 export type SettingsAppearanceMode = "products-only" | "display-only" | "all"
@@ -70,7 +71,7 @@ function RadioRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <RadioGroupItem value={value} id={id} className="shrink-0" />
+      <RadioGroupItem value={value} id={id} className="shrink-0" aria-label={label} />
       <RadioGroupLabel htmlFor={id} className="flex min-h-0 flex-1 items-center gap-2 py-0 text-sm font-normal">
         {iconClass ? (
           <i className={cn("fa-light w-4 shrink-0 text-center text-muted-foreground", iconClass)} aria-hidden="true" />
@@ -333,6 +334,26 @@ function ThemeModeSvg({ mode, brand }: { mode: "system" | "light" | "dark"; bran
 
 const HC_STROKE = "oklch(0.18 0.02 270)"
 
+const HC_LIGHT_TOKENS: ChromeTokens = {
+  ...CHROME_LIGHT,
+  shellStroke: HC_STROKE,
+  headerStroke: HC_STROKE,
+  cardStroke: HC_STROKE,
+}
+
+const HC_WINDOWS_TOKENS: ChromeTokens = {
+  ...CHROME_DARK,
+  shell: "#000000",
+  shellStroke: "#FFFFFF",
+  headerBar: "#FFFF00",
+  headerStroke: "#FFFF00",
+  content: "#000000",
+  card: "#000000",
+  cardStroke: "#FFFFFF",
+  navRow: "#FFFFFF",
+  pill: "#000000",
+}
+
 /** Illustrative light chrome; stroke weight shows contrast (not tied to active color theme). */
 function ContrastPrefSvg({
   pref,
@@ -352,16 +373,10 @@ function ContrastPrefSvg({
   }
 
   if (pref === "high") {
-    const tokens: ChromeTokens = {
-      ...CHROME_LIGHT,
-      shellStroke: HC_STROKE,
-      headerStroke: HC_STROKE,
-      cardStroke: HC_STROKE,
-    }
     return (
       <svg className={APPEARANCE_TILE_SVG} viewBox="0 0 96 56" fill="none" aria-hidden="true">
         <ChromeIllustration
-          tokens={tokens}
+          tokens={HC_LIGHT_TOKENS}
           sidebar={split.light}
           sidebarMark={split.markLight}
           strokeBoost={1.8}
@@ -371,23 +386,10 @@ function ContrastPrefSvg({
   }
 
   if (pref === "windows") {
-    // Classic Windows HC cue: black canvas, white border, yellow header, cyan focus.
-    const tokens: ChromeTokens = {
-      ...CHROME_DARK,
-      shell: "#000000",
-      shellStroke: "#FFFFFF",
-      headerBar: "#FFFF00",
-      headerStroke: "#FFFF00",
-      content: "#000000",
-      card: "#000000",
-      cardStroke: "#FFFFFF",
-      navRow: "#FFFFFF",
-      pill: "#000000",
-    }
     return (
       <svg className={APPEARANCE_TILE_SVG} viewBox="0 0 96 56" fill="none" aria-hidden="true">
         <ChromeIllustration
-          tokens={tokens}
+          tokens={HC_WINDOWS_TOKENS}
           sidebar="#000000"
           sidebarMark="#00FFFF"
           contentAccent="#FFFF00"
@@ -398,16 +400,10 @@ function ContrastPrefSvg({
   }
 
   // System: one window with a diagonal Normal↔High split inside.
-  const highTokens: ChromeTokens = {
-    ...CHROME_LIGHT,
-    shellStroke: HC_STROKE,
-    headerStroke: HC_STROKE,
-    cardStroke: HC_STROKE,
-  }
   return (
     <SplitSystemSvg
       light={{ tokens: CHROME_LIGHT, sidebar: split.light, sidebarMark: split.markLight }}
-      dark={{ tokens: highTokens, sidebar: split.light, sidebarMark: split.markLight, strokeBoost: 1.8 }}
+      dark={{ tokens: HC_LIGHT_TOKENS, sidebar: split.light, sidebarMark: split.markLight, strokeBoost: 1.8 }}
     />
   )
 }
@@ -527,9 +523,7 @@ export function SettingsAppearanceCard({
   const productNameId = React.useId()
   const productColorId = React.useId()
   const [deleteProductOpen, setDeleteProductOpen] = React.useState(false)
-  const [deleteProductTarget, setDeleteProductTarget] = React.useState<DeleteProductTarget | null>(
-    null,
-  )
+  const deleteProductTargetRef = React.useRef<DeleteProductTarget | null>(null)
   const [productEditorOpen, setProductEditorOpen] = React.useState(false)
   const [productNameDraft, setProductNameDraft] = React.useState("")
   const [productColorDraft, setProductColorDraft] = React.useState(
@@ -605,8 +599,8 @@ export function SettingsAppearanceCard({
             className={cn(
               "font-semibold leading-none tracking-tight text-foreground",
               v === "compact" && "text-sm",
-              v === "default" && "text-xl",
-              v === "large" && "text-3xl",
+              v === "default" && "text-lg",
+              v === "large" && "text-2xl",
             )}
             aria-hidden
           >
@@ -778,11 +772,11 @@ export function SettingsAppearanceCard({
                               side="top"
                             >
                               <span
-                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-foreground"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-foreground"
                                 aria-label="Active product"
                               >
                                 <i
-                                  className="fa-solid fa-circle text-[6px] text-emerald-500"
+                                  className="fa-solid fa-circle size-1.5 text-emerald-500"
                                   aria-hidden="true"
                                 />
                                 Active
@@ -795,10 +789,10 @@ export function SettingsAppearanceCard({
                               side="top"
                             >
                               <span
-                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-foreground"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-foreground"
                                 aria-label="Default startup product"
                               >
-                                <i className="fa-solid fa-house text-[9px]" aria-hidden="true" />
+                                <i className="fa-solid fa-house text-xs" aria-hidden="true" />
                                 Default
                               </span>
                             </Tip>
@@ -807,7 +801,7 @@ export function SettingsAppearanceCard({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 shrink-0 px-2 text-[11px] text-muted-foreground"
+                              className="h-6 shrink-0 px-2 text-xs text-muted-foreground"
                               onClick={() => handleSetDefaultStartup(rowRef)}
                             >
                               Set as default
@@ -851,10 +845,10 @@ export function SettingsAppearanceCard({
                             className="size-7 shrink-0 text-muted-foreground"
                             aria-label={`Remove ${option.label}`}
                             onClick={() => {
-                              setDeleteProductTarget({
+                              deleteProductTargetRef.current = {
                                 product: option.value,
                                 customIndex: option.customIndex,
-                              })
+                              }
                               setDeleteProductOpen(true)
                             }}
                           >
@@ -933,7 +927,7 @@ export function SettingsAppearanceCard({
                                 previewCustomBrand={addProductPreviewBrand}
                                 suffixValue={productNameDraft}
                                 onSuffixChange={setProductNameDraft}
-                                suffixPlaceholder="Assessment"
+                                suffixPlaceholder="Enter name"
                                 className="w-auto max-w-[min(100%,18rem)]"
                               />
                             </span>
@@ -963,13 +957,33 @@ export function SettingsAppearanceCard({
                                 const nextIndex = addCustomProduct({ suffix, brandColor })
                                 switchProduct("exxat-custom", nextIndex)
                                 if (productAuthoringEnabled) {
-                                  downloadShippedTenantCatalog()
-                                  downloadProductScaffold(
-                                    tenantRecordFromCustomBrand(suffix, brandColor),
-                                  )
-                                  setPublishHint(
-                                    "Downloaded public/tenant-products.json and scaffold files — force-add the catalog only when you intend to ship it, then pnpm build and deploy.",
-                                  )
+                                  // In dev with the builder dev-sync Vite plugin
+                                  // active, the catalog is already being written
+                                  // to `public/tenant-products.json` on disk by
+                                  // the middleware (POST → /__exxat/builder-sync)
+                                  // every time the tenant store changes. Firing
+                                  // the browser-side `download*` helpers in that
+                                  // mode just produces redundant "Save As"
+                                  // dialogs for the same file (plus the four
+                                  // scaffold files), which is what users were
+                                  // hitting after adding a custom product.
+                                  // Skip the downloads when dev-sync is live;
+                                  // they remain wired for production builds
+                                  // (no Vite middleware → no other persistence
+                                  // path).
+                                  if (isBuilderDevSyncEnvironment()) {
+                                    setPublishHint(
+                                      "Saved to ignored public/tenant-products.json on the dev server — force-add it only when you intend to ship this product.",
+                                    )
+                                  } else {
+                                    downloadShippedTenantCatalog()
+                                    downloadProductScaffold(
+                                      tenantRecordFromCustomBrand(suffix, brandColor),
+                                    )
+                                    setPublishHint(
+                                      "Downloaded public/tenant-products.json and scaffold files — force-add the catalog only when you intend to ship it, then pnpm build and deploy.",
+                                    )
+                                  }
                                 }
                                 setProductEditorOpen(false)
                                 setProductNameDraft("")
@@ -1028,7 +1042,7 @@ export function SettingsAppearanceCard({
                 className="w-full"
                 labelPlacement="below"
                 options={themeTiles}
-                columns={3}
+                columns={4}
                 value={safeTheme}
                 onValueChange={(v) => setTheme(v)}
                 interaction="button"
@@ -1052,13 +1066,13 @@ export function SettingsAppearanceCard({
 
             <SettingsFormRow
               label="Text size"
-              description="Scales UI text from the root (like iOS/Android accessibility size). Tiny still enforces an 11px floor for labels."
+              description="Scales UI text from the root (like iOS/Android accessibility size). Compact/large adjust rem scale; `--text-xs` stays at the 12px floor."
             >
               <SelectionTileGrid<TextSizePreference>
                 className="w-full"
                 labelPlacement="below"
                 options={textSizeTiles}
-                columns={3}
+                columns={4}
                 value={safeTextSize}
                 onValueChange={(v) => setTextSize(v)}
                 interaction="button"
@@ -1128,7 +1142,7 @@ export function SettingsAppearanceCard({
               type="button"
               variant="destructive"
               onClick={() => {
-                const target = deleteProductTarget
+                const target = deleteProductTargetRef.current
                 if (target?.product === "exxat-custom" && target.customIndex !== undefined) {
                   removeCustomProduct(target.customIndex)
                   if (
@@ -1139,7 +1153,7 @@ export function SettingsAppearanceCard({
                   }
                 }
                 setDeleteProductOpen(false)
-                setDeleteProductTarget(null)
+                deleteProductTargetRef.current = null
               }}
             >
               Remove
