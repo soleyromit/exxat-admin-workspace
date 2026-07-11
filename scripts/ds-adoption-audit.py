@@ -245,6 +245,10 @@ DOCUMENTED_HAND_ROLLS = {
     # attributes in an aria-hidden decorative icon (PrismIconMark). Cannot be
     # replaced with var(--token); SVG gradients require literal color values.
     "components/pce/distribute-wizard/step-communication.tsx",
+    # Design OS shell (all apps): data-display-previews.tsx is the in-app DS
+    # documentation page that intentionally renders the raw Table primitive to
+    # demonstrate it — it documents the component, it isn't product list UI.
+    "components/design-system/data-display-previews.tsx",
     # pce: settings-appearance-card.tsx — hex values are CHROME_LIGHT/CHROME_DARK
     # object literals used as theme-preview swatch data (macOS traffic-light dot
     # colors rendered inside a static browser-chrome illustration). Not applied
@@ -295,8 +299,19 @@ LEGITIMATE_NON_CARD_DIVS = {
     "components/assessment-builder/qb-result-detail-panel.tsx",
 }
 
-GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = set()
-# (empty as of 2026-05-11)
+GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = {
+    # Design OS shell files stamped into exam-management, patient-log, and pce
+    # by the Design OS migration (paths are app-relative, so each entry covers
+    # all apps). command-menu.tsx was previously vendored at
+    # components/command-menu/index.tsx precisely to avoid this rule; the
+    # migration flattened it back. Migration plan: move each back into a
+    # components/<organism>/ subdirectory (or rename) in the shell template,
+    # then re-stamp. Tracked in docs/governance/ds-adoption.md →
+    # "Grandfathered hand-rolls" (2026-07-11).
+    "components/command-menu.tsx",
+    "components/ui/coach-mark.tsx",
+    "lib/design-system/component-docs/coach-mark.tsx",
+}
 # Previously listed:
 #   "components/key-metrics.tsx" — MIGRATED 2026-05-11. File deleted;
 #     vendored canonical lives at components/key-metrics/index.tsx. The two

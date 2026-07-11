@@ -86,6 +86,7 @@ When a product genuinely needs a custom component that overlaps a DS organism, a
 ### Cross-product (vendored twice, identical implementation)
 | File | Lines | Mirrors DS organism | Justification |
 |---|---|---|---|
+| `components/design-system/data-display-previews.tsx` (exam-management, patient-log, pce — Design OS shell) | n/a | DataTable (raw `<Table>` rule) | In-app DS documentation page that intentionally renders the raw `Table` primitive to demonstrate it. It documents the component; it is not product list UI. Allowlisted 2026-07-11 in `DOCUMENTED_HAND_ROLLS`. |
 | `apps/pce/admin/components/pce/micro-trend.tsx` + `apps/exam-management/admin/components/micro-trend.tsx` | ~190 each (identical) | Chart sparkline | Shared inline-SVG sparkline primitive (line + optional area-fill + optional last-point dot + optional reference line). Extracted 2026-05-11 from PCE's `trend-sparkline.tsx` and exam-management's `TrendRow` per chart depth audit. Used by PCE's TrendSparkline wrapper (`trend-sparkline.tsx`, ~110 LoC) and exam-management's TrendRow (curricular-loop-diagram.tsx l.797, ~70 LoC). Both vendors are byte-identical (audit-verified). Upstream candidate: when DS publishes `<MicroTrend>` in `packages/ui/src`, both vendors should delete + import; flag Himanshu when ready. |
 
 ### PCE
@@ -155,7 +156,9 @@ Each entry is a real bug to fix. The audit downgrades them to `warn` (rule `orga
 
 | File | Mirrors DS organism | Migration plan | Estimated effort |
 |---|---|---|---|
-| _(none — all previously grandfathered files migrated 2026-05-11)_ | | | |
+| `components/command-menu.tsx` (exam-management, patient-log, pce — Design OS shell) | CommandMenu | Grandfathered 2026-07-11. The Design OS migration flattened the previously-vendored `components/command-menu/index.tsx` back to a flat file. Move back into `components/command-menu/` in the shell template, then re-stamp all apps. | ~1h (template + 3 re-stamps) |
+| `components/ui/coach-mark.tsx` (exam-management, patient-log, pce — Design OS shell) | CoachMark | Grandfathered 2026-07-11. Vendored shell copy; either import the DS `CoachMark` or move into a `components/coach-mark/` dir in the shell template. | ~1h |
+| `lib/design-system/component-docs/coach-mark.tsx` (exam-management, patient-log, pce — Design OS shell) | CoachMark | Grandfathered 2026-07-11. In-app DS documentation page for CoachMark — rename (e.g. `coach-mark-doc.tsx`) in the shell template. | ~30m |
 
 **Migrated 2026-05-11:**
 - `apps/exam-management/admin/components/data-table.tsx` → vendored canonical at `components/data-table/` (mirrors PCE recipe).
