@@ -1,0 +1,22 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 950 } })
+await page.goto('http://localhost:3005/course-evaluation/term-setup', { waitUntil: 'domcontentloaded' })
+await page.getByText('Term details').first().waitFor({ timeout: 30000 })
+await page.getByRole('combobox').nth(1).click()
+await page.waitForTimeout(300)
+console.log('year options:', (await page.getByRole('option').allTextContents()).join(', '))
+await page.getByRole('option', { name: '2027' }).click()
+await page.waitForTimeout(300)
+console.log('derived Fall 2027:', await page.getByText(/Fall 2027 — evaluation window/).count())
+// Spring AY math: switch season to Spring → AY should be 2026–2027
+await page.getByRole('combobox').first().click()
+await page.getByRole('option', { name: 'Spring' }).click()
+await page.waitForTimeout(300)
+console.log('derived Spring 2027:', await page.getByText(/Spring 2027 — evaluation window/).count())
+// step 2 locked line reflects AY range
+await page.getByRole('button', { name: 'Continue' }).click()
+await page.waitForTimeout(700)
+console.log('locked line:', await page.getByText(/Spring 2027 · AY 2026–2027/).count())
+await page.screenshot({ path: '/tmp/visual-check/ts-years.png' })
+await browser.close()

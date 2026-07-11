@@ -1,0 +1,16 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+const errors = []
+page.on('pageerror', e => errors.push(e.message))
+await page.goto('http://localhost:3005/course-evaluation/dashboard', { waitUntil: 'domcontentloaded' })
+await page.getByRole('button', { name: 'Configure Term Calendar' }).waitFor({ timeout: 30000 })
+await page.getByRole('button', { name: 'Configure Term Calendar' }).click()
+await page.waitForTimeout(1200)
+await page.screenshot({ path: '/tmp/visual-check/v6-setup-sheet.png' })
+console.log('dialogs:', await page.locator('[role="dialog"]').count())
+console.log('sheet title:', await page.getByText('Set up term').count())
+console.log('page errors:', errors.slice(0, 3))
+const box = await page.getByText('Set up term').first().locator('xpath=ancestor::*[contains(@class,"fixed")]').boundingBox().catch(() => null)
+console.log('sheet width:', box ? Math.round(box.width) : 'n/a')
+await browser.close()

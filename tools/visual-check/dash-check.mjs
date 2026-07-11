@@ -1,0 +1,13 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+await page.goto('http://localhost:3005/course-evaluation/dashboard', { waitUntil: 'domcontentloaded' })
+await page.getByText(/students still need to respond/).waitFor({ timeout: 30000 })
+console.log('student-first headline: present')
+console.log('past-terms toggle:', await page.getByText(/Show past terms/).count())
+console.log('old all-terms label:', await page.getByText(/Show all terms/).count())
+await page.screenshot({ path: '/tmp/visual-check/v5-dashboard.png' })
+await page.getByRole('button', { name: /Show past terms/ }).click()
+await page.waitForTimeout(500)
+await page.screenshot({ path: '/tmp/visual-check/v5-dashboard-past.png' })
+await browser.close()

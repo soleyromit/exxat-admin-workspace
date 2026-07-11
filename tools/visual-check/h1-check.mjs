@@ -1,0 +1,12 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 700 }, deviceScaleFactor: 2 })
+await page.goto('http://localhost:3005/results/s2?from=term:pt1', { waitUntil: 'domcontentloaded' })
+await page.waitForTimeout(1500)
+const h1 = await page.locator('h1').first()
+console.log('h1 count:', await page.locator('h1').count())
+console.log('h1 text:', (await h1.textContent())?.slice(0, 40))
+console.log('h1 font:', await h1.evaluate(el => getComputedStyle(el).fontFamily.split(',')[0] + ' @ ' + getComputedStyle(el).fontSize))
+console.log('badge beside h1:', await page.locator('h1 + *').textContent())
+await page.screenshot({ path: '/tmp/visual-check/h1-restored.png', clip: { x: 260, y: 60, width: 1330, height: 260 } })
+await browser.close()

@@ -1,0 +1,10 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+await page.goto('http://localhost:3005/course-evaluation/term/pt5', { waitUntil: 'domcontentloaded' })
+await page.waitForTimeout(1500)
+await page.screenshot({ path: '/tmp/visual-check/new-term-workspace.png' })
+console.log('firstRun state:', await page.getByText(/No evaluations in Fall 2026 yet/).count())
+console.log('setup CTA:', await page.getByRole('link', { name: /Set up Fall 2026 evaluations/ }).count())
+console.log('toggle visible:', await page.getByRole('radio', { name: 'Board view' }).count() + await page.getByRole('button', { name: 'Board view' }).count())
+await browser.close()

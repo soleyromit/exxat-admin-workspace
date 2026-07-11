@@ -1,0 +1,30 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 2 })
+
+// 1. Board keyboard operability (WCAG P0 fix)
+await page.goto('http://localhost:3005/course-evaluation/term/pt1', { waitUntil: 'domcontentloaded' })
+await page.getByText('4 of 40 responded').first().waitFor({ timeout: 30000 })
+await page.locator('button:has-text("Board"), [role="radio"]:has-text("Board")').first().click({ force: true })
+await page.waitForTimeout(600)
+const link = page.getByRole('link', { name: /Open results for DPT-611/ })
+console.log('board card link exists:', await link.count())
+await link.first().focus()
+await page.keyboard.press('Enter')
+await page.waitForTimeout(1000)
+console.log('Enter navigated to:', page.url().includes('/results/') ? 'results ✓' : page.url())
+
+// 2. Setup sheet canon
+await page.goto('http://localhost:3005/course-evaluation/dashboard', { waitUntil: 'domcontentloaded' })
+await page.getByRole('button', { name: 'Configure Term Calendar' }).click()
+await page.waitForTimeout(600)
+const sheet = await page.locator('[data-slot="sheet-content"], [role="dialog"]').last().boundingBox()
+console.log('sheet width:', sheet ? Math.round(sheet.width) : 'not found')
+await page.screenshot({ path: '/tmp/visual-check/v6-setup-sheet.png' })
+await page.keyboard.press('Escape')
+await page.waitForTimeout(400)
+
+// 3. Dashboard card vocabulary (no meta pills, text countdown)
+const grid = await page.locator('[class*="grid-cols-"]').first().boundingBox()
+await page.screenshot({ path: '/tmp/visual-check/v6-triptych.png', clip: grid })
+await browser.close()

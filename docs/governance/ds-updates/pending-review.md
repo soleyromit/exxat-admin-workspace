@@ -3,12 +3,14 @@
 > Auto-populated by `scripts/ds-update-watch.py` when either DS submodule changes its component exports or theme tokens.
 > Empty file = nothing to review. The `ds-updates-watcher` subagent reads this when invoked.
 
-_Last checked: 2026-06-30T12:15:21.288932+00:00 — no DS deltas detected._
+_Last checked: 2026-07-10 — manual upgrade to `0.6.57` across all consumer apps (Romit)._
 
 ## @exxatdesignux/ui — NPM package (the canonical DS)
 
-- **Installed `0.6.48` · Latest `0.6.52`** — consumer apps are behind.
-- Upgrade via the `exxat-package-upgrade` skill: `pnpm add @exxatdesignux/ui@latest` then `npx exxat-ui upgrade` per app.
+- **Installed `0.6.57` · Latest `0.6.57`** — all consumer apps current (pce/admin, exam-management/admin, exam-management/assessment-taker, patient-log/admin) as of 2026-07-10.
+- 0.6.55 → 0.6.57 substance: dark `--muted-foreground` re-derived from `--muted` (fixes app-wide `bg-muted` + text pairing AA); new `--product-wordmark-suffix` token; DataTable new-row highlight → blue wash + transparent border; `.theme-custom` (custom-product) brand-tints retuned paler ("Prism rose"); new messaging primitives (`bubble`/`message`/`message-scroller`/`marker`) + lib helpers (`column-pin-policy`, `nav-flyout-inset`, `table-state-lifecycle`). Export surface unchanged. PCE runs `theme-prism`, so the custom-tint retune does not affect it.
+- Upgrade via the `exxat-package-upgrade` skill. **Caveat (2026-07-10):** each consumer app's `postinstall` runs `exxat-ui upgrade`, which re-ports the *entire* Design OS shell + generated-starter demo files (`learning-activities-*`, `notification-bell`, etc.) into the app — a large, invasive port, not a version bump. For a minimal bump, install with `--ignore-scripts` (skips the port) and let token/CSS changes ride along via the imported package `globals.css`. Consider neutralizing the postinstall port if silent chrome re-ports are unwanted.
+- **Known drift:** `patient-log/admin` is a bare scaffold (no `app/**/page.tsx` routes) whose committed `src/pages/_error.tsx` imports `@/lib/chunk-load-error`, a file that only exists in the generated-starter and was never ported — so every route 500s, independent of DS version. Needs a proper `exxat-ui upgrade` shell sync (or the single `lib/chunk-load-error.ts` ported) before it can render.
 - Release notes: https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/packages/ui/RELEASES.md
 
 ## UPSTREAM REQUEST — publish the chart shell primitives (Romit, 2026-07-07)

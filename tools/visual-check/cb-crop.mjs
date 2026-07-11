@@ -1,0 +1,12 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 950 }, deviceScaleFactor: 2 })
+await page.goto('http://localhost:3005/course-evaluation/term-setup', { waitUntil: 'domcontentloaded' })
+await page.getByText('Term details').first().waitFor({ timeout: 30000 })
+await page.getByRole('button', { name: 'Continue' }).click()
+await page.waitForTimeout(700)
+await page.getByText('Instructor', { exact: true }).click()
+await page.waitForTimeout(900)
+const table = await page.locator('table').first().boundingBox()
+await page.screenshot({ path: '/tmp/visual-check/cb-fixed.png', clip: { x: table.x, y: table.y, width: 340, height: Math.min(500, table.height) } })
+await browser.close()

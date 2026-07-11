@@ -1,0 +1,10 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+await page.goto('http://localhost:3005/course-evaluation/dashboard', { waitUntil: 'domcontentloaded' })
+await page.getByRole('link', { name: 'Send reminders' }).waitFor({ timeout: 30000 })
+await page.getByRole('link', { name: 'Send reminders' }).click()
+await page.getByLabel('Select all courses').waitFor({ timeout: 15000 })
+console.log('URL:', page.url())
+console.log('wizard master row:', await page.locator('label[for="remind-all"]').textContent())
+await browser.close()
