@@ -136,6 +136,16 @@ The audit script's `LEGITIMATE_NON_CARD_DIVS` set skips card-shape-masquerade sc
 |---|---|
 | `apps/pce/admin/components/pce/pce-modals.tsx:71` | Wrapper for grouped Checkbox inputs (sections selector inside CreateTemplateSheet). It's a form control group, not a content panel. Card would over-engineer. |
 | `apps/exam-management/admin/components/app-sidebar.tsx:121` | FacultyModeChip — sidebar status indicator. Lives inside the Sidebar, not in main content. Card would visually compete with the sidebar's own chrome. |
+| `apps/pce/admin/app/(app)/course-evaluation/term-setup/page.tsx` | Dashed-border empty state (no Prism offerings yet) + derived-evaluation-window readout strip. Empty-state anatomy + form readout, not Card chrome. Added 2026-07-11. |
+| `apps/pce/admin/app/(app)/surveys/remind/page.tsx` | Two dashed-border zero states (all-on-target / no evaluations). Added 2026-07-11. |
+| `apps/pce/admin/app/(app)/results/[id]/page.tsx` | Centered pending/empty result panel (icon medallion + message). Empty-state anatomy. Added 2026-07-11. |
+| `apps/pce/admin/components/pce/term-workspace.tsx` | First-run dashed empty state. Added 2026-07-11. |
+| `apps/pce/admin/components/pce/dashboard-home.tsx` | Dashed empty states (NoUpcomingSlot, FirstRun) + two needs-attention strips (icon medallion + text — banner anatomy). Added 2026-07-11. |
+| `apps/pce/admin/app/(app)/admin/setup/_view-countdown.tsx` | Countdown hero — `border-l-4` accent status strip (banner anatomy), not Card. Added 2026-07-11. |
+| `apps/pce/admin/components/pce/distribute-wizard/step-review.tsx` | Acknowledgement-gates group container wrapping AckGroup checkbox rows (settled push-wizard design) — fieldset-style wrapper like pce-modals.tsx. Added 2026-07-11. |
+| `apps/pce/admin/components/pce/distribute-wizard/step-survey-design-assign.tsx` | Inline "no courses selected" zero-state strip inside a wizard step. Added 2026-07-11. |
+
+**Tracked follow-up (2026-07-11):** the dashed empty-state anatomy (icon + title + sub + CTA, `border-dashed bg-muted/25`) now repeats ~7× across PCE. Extract a shared PCE `EmptyState` molecule (mirroring `apps/exam-management/admin/components/empty-state.tsx`) and remove these whole-file skips once the sites migrate.
 
 ### exam-management
 | File | Lines | Mirrors DS organism | Justification |

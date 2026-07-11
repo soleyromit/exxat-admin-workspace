@@ -291,6 +291,27 @@ LEGITIMATE_NON_CARD_DIVS = {
     # placeholder visually representing a "Written response" answer blank inside
     # a preview dialog. `h-8` constrains height to 32px — not card content chrome.
     "components/pce/distribute-wizard/survey-preview-dialog.tsx",
+    # pce: dashed-border empty/zero states (icon + message + CTA, centered).
+    # Same category exam-management resolved with its EmptyState molecule —
+    # these are empty-state panels, not Card content chrome; Card slots
+    # (Header/Title/Content) don't map onto the centered anatomy. The anatomy
+    # repeats across these files — extracting a shared PCE EmptyState molecule
+    # is tracked in docs/governance/ds-adoption.md (2026-07-11).
+    "app/(app)/course-evaluation/term-setup/page.tsx",  # + derived-window readout strip (l.381)
+    "app/(app)/surveys/remind/page.tsx",           # two zero states (on-target / no evals)
+    "app/(app)/results/[id]/page.tsx",             # centered pending/empty result panel
+    "components/pce/term-workspace.tsx",           # first-run empty state
+    "components/pce/dashboard-home.tsx",           # empty states + needs-attention strips (l.214/370)
+    # pce: _view-countdown.tsx — countdown hero is a border-l-4 accent status
+    # strip (banner anatomy), not a Card.
+    "app/(app)/admin/setup/_view-countdown.tsx",
+    # pce: step-review.tsx — acknowledgement-gates group container wrapping
+    # AckGroup checkbox rows (settled push-wizard design); a fieldset-style
+    # wrapper like pce-modals.tsx above, not a content Card.
+    "components/pce/distribute-wizard/step-review.tsx",
+    # pce: step-survey-design-assign.tsx — inline zero-state strip ("no courses
+    # selected") inside a wizard step, not a content Card.
+    "components/pce/distribute-wizard/step-survey-design-assign.tsx",
     # exam-management: qb-result-detail-panel.tsx — read-only answer renderers.
     # The flagged divs are inline answer-display boxes (model answer highlight for
     # FillBlank; essay area placeholder), not card chrome. These are sub-sentence
