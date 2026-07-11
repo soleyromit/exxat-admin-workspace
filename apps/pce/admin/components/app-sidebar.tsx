@@ -215,7 +215,11 @@ function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
 
 function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem; pathname: string; allNavUrls?: string[] }) {
   const { state, isMobile } = useSidebar()
-  const isAnyChildActive = item.children?.some(c => isNavActive(pathname, c.url, allNavUrls)) ?? false
+  /* Children can carry activePrefixes too (e.g. Dashboard owns /course-evaluation/term/*). */
+  const childIsActive = (c: NavLinkItem) =>
+    isNavActive(pathname, c.url, allNavUrls) ||
+    (c.activePrefixes?.some(p => isNavActive(pathname, p, allNavUrls)) ?? false)
+  const isAnyChildActive = item.children?.some(childIsActive) ?? false
   const isPrefixActive = item.activePrefixes?.some(p => isNavActive(pathname, p, allNavUrls)) ?? false
   const parentActive = isAnyChildActive || isPrefixActive || isNavActive(pathname, item.url, allNavUrls)
 
@@ -268,7 +272,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
             <h2 id={flyoutTitleId} className="sr-only">{item.title}</h2>
             <ul className="flex flex-col gap-0.5" role="list">
               {item.children.map(child => {
-                const childActive = isNavActive(pathname, child.url, allNavUrls)
+                const childActive = childIsActive(child)
                 return (
                   <li key={child.key}>
                     <a
@@ -323,7 +327,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
         <CollapsibleContent className="overflow-hidden group-data-[collapsible=icon]:hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
           <SidebarMenuSub>
             {item.children.map(child => {
-              const childActive = isNavActive(pathname, child.url, allNavUrls)
+              const childActive = childIsActive(child)
               return (
                 <SidebarMenuSubItem key={child.key}>
                   <SidebarMenuSubButton asChild isActive={childActive}>
@@ -352,6 +356,7 @@ function PrimaryNavItems({ items }: { items: NavLinkItem[] }) {
     () => items.flatMap(item => [
       ...(item.children?.map(c => c.url.split("?")[0]) ?? [item.url.split("?")[0]]),
       ...(item.activePrefixes ?? []),
+      ...(item.children?.flatMap(c => c.activePrefixes ?? []) ?? []),
     ]),
     [items]
   )

@@ -28,7 +28,7 @@ const REMINDER_DAY_OPTIONS = [1, 2, 3, 5, 7, 14]
 // A stylised skeleton that reads unmistakably as "an email" (letterhead + body
 // lines + the student CTA button) so this card can't be mistaken for the
 // recipient rows above it. Tokenised only; no real copy is rendered here.
-function EmailThumbnail() {
+export function EmailThumbnail() {
   return (
     <div
       aria-hidden="true"
@@ -327,8 +327,9 @@ export function StepCommunication({
 
   return (
     /* Full-bleed step — content and footer both span the content area,
-       consistent with the table steps (1–2). */
-    <div className="flex flex-col gap-6">
+       consistent with the table steps (1–2).
+       flex-1 + mt-auto footer = footer anchored at a fixed bottom position. */
+    <div className="flex flex-col gap-6 flex-1">
       <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
@@ -394,14 +395,15 @@ export function StepCommunication({
           <CardContent className="flex items-center gap-4" style={{ padding: 16 }}>
             {/* Mini render — click to preview/edit. This is what makes the card
                 read as "the email", not another recipient row. */}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto p-1"
               onClick={() => setEmailTemplateOpen(true)}
-              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Preview and edit the invitation email"
             >
               <EmailThumbnail />
-            </button>
+            </Button>
 
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <p className="text-sm font-semibold">Send invitation</p>
@@ -490,14 +492,15 @@ export function StepCommunication({
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-1"
                   onClick={() => setReminderTemplateOpen(true)}
-                  className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Preview and edit the reminder email"
                 >
                   <ReminderThumbnail />
-                </button>
+                </Button>
 
                 <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -609,7 +612,7 @@ export function StepCommunication({
       </div>
 
       {/* Nav — full content width (DS WizardFooter anatomy: Back left, primary right) */}
-      <div className="border-t border-border pt-4 flex items-center justify-between">
+      <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={onBack}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Back

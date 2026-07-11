@@ -186,8 +186,9 @@ export function StepReview({
 
   return (
     /* Full-bleed step — the three summary sections sit side-by-side in a grid
-       so label/value rows keep a readable width without capping the page. */
-    <div className="flex flex-col gap-4">
+       so label/value rows keep a readable width without capping the page.
+       flex-1 + mt-auto footer = footer anchored at a fixed bottom position. */
+    <div className="flex flex-col gap-4 flex-1">
       {/* ── Headline ───────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -318,10 +319,10 @@ export function StepReview({
         </div>
       )}
 
-      {/* ── Footer — same single-row anatomy as every other step (Back left,
+      {/* ── Footer — anchored (mt-auto); same single-row anatomy as every other step (Back left,
              primary right); one contextual note rides inline beside the
              submit, warning taking priority over the anonymity note. ── */}
-      <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
+      <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
         <Button variant="outline" size="sm" onClick={onBack}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Back

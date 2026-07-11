@@ -820,8 +820,19 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       isEdgePinCol && stickyShadow(effectivePins[col.key])
                     )}
                   >
-                    <div className="flex items-center justify-between gap-1 min-w-0">
-                      <div className="flex items-center min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        "flex items-center min-w-0",
+                        /* Select column: center against the full cell so the
+                           header checkbox shares the body rows' exact x —
+                           the justify-between + gap scaffolding (for filter/
+                           menu slots) shifts it left otherwise. */
+                        col.key === "select"
+                          ? "justify-center"
+                          : "justify-between gap-1",
+                      )}
+                    >
+                      <div className={cn("flex items-center min-w-0", col.key !== "select" && "flex-1")}>
                         {col.header ? (
                           col.header()
                         ) : col.key === "select" ? (
@@ -1017,35 +1028,28 @@ function DataTableInner<TData extends Record<string, unknown>>({
               : groupedRows
             ).map(({ groupKey, groupLabel, rows: groupRows }) => (
               <React.Fragment key={groupKey ?? "__all__"}>
-                {groupLabel && (
-                  <tr>
-                    <td
-                      colSpan={displayCols.length}
-                      className={cn(
-                        "px-4 py-1.5 text-xs font-semibold text-muted-foreground bg-dt-group-bg select-none sticky left-0",
-                        "border-b border-border",
-                      )}
-                    >
-                      {selectable && (() => {
-                        /* Group select-all (PCE extension) — toggles every row in the section. */
-                        const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
-                        const all = ids.length > 0 && ids.every(id => selected.has(id))
-                        const some = ids.some(id => selected.has(id))
-                        return (
-                          <span className="mr-2 inline-flex align-middle" onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={all ? true : some ? "indeterminate" : false}
-                              onCheckedChange={() => {
-                                const n = new Set(selected)
-                                if (all) ids.forEach(id => n.delete(id))
-                                else ids.forEach(id => n.add(id))
-                                setSelected(n)
-                              }}
-                              aria-label={`Select all ${groupLabel ?? "group"} rows`}
-                            />
-                          </span>
-                        )
-                      })()}
+                {groupLabel && (() => {
+                  const groupCellBase =
+                    "py-1.5 text-xs font-semibold text-muted-foreground bg-dt-group-bg select-none border-b border-border"
+                  const hasSelectCell = selectable && displayCols[0]?.key === "select"
+                  /* Group select-all (PCE extension) — toggles every row in the section. */
+                  const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
+                  const all = ids.length > 0 && ids.every(id => selected.has(id))
+                  const some = ids.some(id => selected.has(id))
+                  const groupCheckbox = selectable && (
+                    <Checkbox
+                      checked={all ? true : some ? "indeterminate" : false}
+                      onCheckedChange={() => {
+                        const n = new Set(selected)
+                        if (all) ids.forEach(id => n.delete(id))
+                        else ids.forEach(id => n.add(id))
+                        setSelected(n)
+                      }}
+                      aria-label={`Select all ${groupLabel ?? "group"} rows`}
+                    />
+                  )
+                  const labelContent = (
+                    <>
                       {groupKey != null && groupIcons?.[groupKey] != null && (
                         <span className="mr-1.5 inline-flex">{groupIcons[groupKey]}</span>
                       )}
@@ -1056,9 +1060,41 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       <span className="ml-2 text-[12px] font-normal normal-case tracking-normal text-muted-foreground">
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
-                    </td>
-                  </tr>
-                )}
+                    </>
+                  )
+                  return (
+                    <tr>
+                      {hasSelectCell ? (
+                        <>
+                          {/* Own select cell (same px-3 + centered anatomy as the
+                             body select cells) so the checkbox shares their exact
+                             x — a colSpan label cell can never line up because
+                             fixed-layout stretching redistributes column widths. */}
+                          <td className={cn(groupCellBase, "px-3 sticky left-0 z-10")}>
+                            <div
+                              className="flex items-center justify-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {groupCheckbox}
+                            </div>
+                          </td>
+                          <td colSpan={displayCols.length - 1} className={cn(groupCellBase, "px-3")}>
+                            {labelContent}
+                          </td>
+                        </>
+                      ) : (
+                        <td colSpan={displayCols.length} className={cn(groupCellBase, "px-3 sticky left-0")}>
+                          {selectable && (
+                            <span className="mr-2 inline-flex align-middle" onClick={(e) => e.stopPropagation()}>
+                              {groupCheckbox}
+                            </span>
+                          )}
+                          {labelContent}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })()}
                 {groupRows.map((row, rowIndex) => {
                   const rowId = getRowId(row, rowIndex, getRowIdProp)
                   const isSelected = selected.has(rowId)

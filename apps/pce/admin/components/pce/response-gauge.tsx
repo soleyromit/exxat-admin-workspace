@@ -1,75 +1,68 @@
 'use client'
 
 /**
- * ResponseGauge — response-rate readout: rate % + count text with an optional
- * fill bar above. The text carries the accessible value; the bar is decorative.
+ * ResponseProgressCell — the canonical response-collection readout (Romit,
+ * Jul 10 2026, after full iteration: dot → bullet gauge → unit strip → text →
+ * "fix the progress bar UI by researching Mobbin + surrounding hierarchy").
  *
- * Converted to the DS chart system (ChartContainer + recharts) — Romit
- * directive Jul 7 2026: no hand-rolled `<svg>`/`<div>` viz.
+ * Anatomy = the DS ProgressCell (vendored data-views/table-cells.tsx), which
+ * matches the Mobbin canon (Deel Documents table; HubSpot goal rows/cards):
+ * a full-width thin track ON TOP, one consolidated fact line BENEATH —
+ * never a mini-bar squeezed beside competing numbers.
+ *
+ * Fill = product status tokens (amber --chip-4 below target · teal --chart-2
+ * on target — aarti_no_red); the label names the status in words so state is
+ * never color-alone.
  */
 
-import { ChartContainer } from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
-import { BarChart, Bar, XAxis, YAxis } from 'recharts'
+import { ProgressCell } from '@/components/data-views/table-cells'
 
-interface ResponseGaugeProps {
-  rate: number
-  responseCount: number
-  enrollmentCount: number
-  showBar?: boolean
-  size?: 'sm' | 'md'
-}
-
-const gaugeConfig: ChartConfig = { v: { label: 'Response rate', color: 'var(--brand-color)' } }
-
-export function ResponseGauge({
+export function ResponseProgressCell({
   rate,
   responseCount,
   enrollmentCount,
-  showBar = true,
-  size = 'sm',
-}: ResponseGaugeProps) {
-  const barHeight = size === 'md' ? 6 : 4
-
+  target,
+  detail = 'full',
+  className,
+}: {
+  rate: number
+  responseCount: number
+  enrollmentCount: number
+  /** Response-rate target (0–100) — drives fill + the status words. */
+  target: number
+  /**
+   * 'full'  — "23 of 60 responded · 38% (below target)" under the bar (tables, cards)
+   * 'pct'   — just "38%" under the bar (rows that carry counts elsewhere)
+   * 'none'  — bar only (heroes that already print the % large)
+   */
+  detail?: 'full' | 'pct' | 'none'
+  className?: string
+}) {
+  const below = rate < target
+  const fillColor = below ? 'var(--chip-4)' : 'var(--chart-2)'
+  /* Status words live sr-only — the fill color + % carry it visually
+   * (Romit: "below target label isn't needed"). */
+  const srStatus = (
+    <span className="sr-only">{below ? `below ${target}% target` : 'on target'}</span>
+  )
+  const label =
+    detail === 'none' ? (false as const) :
+    detail === 'pct' ? (
+      <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+        {rate}%{srStatus}
+      </span>
+    ) : (
+      <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+        {responseCount} of {enrollmentCount} responded · {rate}%{srStatus}
+      </span>
+    )
   return (
-    <div className="flex flex-col gap-1 min-w-0">
-      {showBar && (
-        <ChartContainer
-          config={gaugeConfig}
-          className="aspect-auto w-full"
-          style={{ height: barHeight, minWidth: 80 }}
-          aria-hidden="true"
-        >
-          <BarChart
-            accessibilityLayer={false}
-            layout="vertical"
-            data={[{ name: 'rate', v: Math.min(Math.max(rate, 0), 100) }]}
-            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-          >
-            <XAxis type="number" domain={[0, 100]} hide />
-            <YAxis type="category" dataKey="name" hide />
-            <Bar
-              dataKey="v"
-              fill="var(--color-v)"
-              background={{ fill: 'var(--muted)', radius: 3 }}
-              radius={3}
-              barSize={barHeight}
-              isAnimationActive={false}
-            />
-          </BarChart>
-        </ChartContainer>
-      )}
-      <div className="flex items-baseline gap-1.5">
-        <span
-          className="font-semibold tabular-nums text-foreground"
-          style={{ fontSize: size === 'md' ? 14 : 13 }}
-        >
-          {rate}%
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {responseCount} / {enrollmentCount}
-        </span>
-      </div>
-    </div>
+    <ProgressCell
+      value={rate}
+      tone={below ? 'warning' : 'success'}
+      fillColor={fillColor}
+      label={label}
+      className={className}
+    />
   )
 }

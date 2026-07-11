@@ -71,6 +71,9 @@ interface StepCoursesEvaluateesProps {
   cohortOptions: string[]
   scoped: CourseOffering[]
   isLoading?: boolean
+  /** True when a prior step already defined the term (term-setup wizard):
+   *  Term + Academic year render as a static line instead of selects. */
+  scopeLocked?: boolean
   onSeasonChange: (v: TermSeason) => void
   onAcademicYearChange: (v: string) => void
   onToggleCohort: (cohort: string) => void
@@ -82,6 +85,7 @@ interface StepCoursesEvaluateesProps {
 export function StepCoursesEvaluatees({
   season, academicYear, cohorts, criteria,
   cohortOptions: cohortOpts, scoped, isLoading = false,
+  scopeLocked = false,
   onSeasonChange, onAcademicYearChange, onToggleCohort,
   onCriteriaChange, onSelectionChange, onContinue,
 }: StepCoursesEvaluateesProps) {
@@ -231,38 +235,55 @@ export function StepCoursesEvaluatees({
 
   return (
     /* Full-bleed step: the wizard shell owns the horizontal padding, so the
-       readiness table spans 100% of the content area (edgeInset=false). */
-    <div className="flex flex-col gap-5">
+       readiness table spans 100% of the content area (edgeInset=false).
+       flex-1 + mt-auto footer = footer anchored at a fixed bottom position. */
+    <div className="flex flex-col gap-5 flex-1">
       {/* ── Scope band ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-          <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
-            <label className="text-sm font-semibold">
-              Term <span style={{ color: 'var(--destructive)' }}>*</span>
-            </label>
-            <Select value={season} onValueChange={v => onSeasonChange(v as TermSeason)}>
-              <SelectTrigger className="w-full" aria-label="Term" aria-required="true">
-                <SelectValue placeholder="Select term" />
-              </SelectTrigger>
-              <SelectContent>
-                {TERM_SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          {scopeLocked ? (
+            /* The prior step already defined the term — state it, don't re-ask. */
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold">Term</span>
+              <p
+                className="flex items-center text-sm text-muted-foreground"
+                style={{ minHeight: 'var(--control-height, 36px)' }}
+              >
+                {/* Spring sits in the AY's second calendar year, Fall/Summer in the first. */}
+                {season} {season === 'Spring' ? academicYear.split('–')[1] : academicYear.split('–')[0]} · AY {academicYear}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
+                <label className="text-sm font-semibold">
+                  Term <span style={{ color: 'var(--destructive)' }}>*</span>
+                </label>
+                <Select value={season} onValueChange={v => onSeasonChange(v as TermSeason)}>
+                  <SelectTrigger className="w-full" aria-label="Term" aria-required="true">
+                    <SelectValue placeholder="Select term" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TERM_SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
-            <label className="text-sm font-semibold">
-              Academic Year <span style={{ color: 'var(--destructive)' }}>*</span>
-            </label>
-            <Select value={academicYear} onValueChange={onAcademicYearChange}>
-              <SelectTrigger className="w-full" aria-label="Academic year" aria-required="true">
-                <SelectValue placeholder="Select academic year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
+                <label className="text-sm font-semibold">
+                  Academic Year <span style={{ color: 'var(--destructive)' }}>*</span>
+                </label>
+                <Select value={academicYear} onValueChange={onAcademicYearChange}>
+                  <SelectTrigger className="w-full" aria-label="Academic year" aria-required="true">
+                    <SelectValue placeholder="Select academic year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           {termChosen && cohortOpts.length > 0 && (
             <div className="flex flex-col gap-1.5">
@@ -384,7 +405,7 @@ export function StepCoursesEvaluatees({
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
+      <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
         <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
           {scopeReady && rows.length > 0
             ? <>{tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students</>

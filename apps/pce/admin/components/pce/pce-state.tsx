@@ -5,6 +5,7 @@ import type {
   PceUser,
   PceSurvey,
   PceTemplate,
+  ProgramTerm,
   SurveyStatus,
   TemplateSection,
   TemplateQuestion,
@@ -62,6 +63,9 @@ interface PceState {
   user: PceUser
   surveys: PceSurvey[]
   templates: PceTemplate[]
+  /** Program terms — seeded from mock, grows when term setup finishes. */
+  programTerms: ProgramTerm[]
+  addProgramTerm: (term: ProgramTerm) => void
   hiddenComments: Record<string, number[]>
   toggleRole: () => void
   releaseSurvey: (id: string) => void
@@ -109,6 +113,12 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PceUser>(MOCK_CURRENT_USER)
   const [surveys, setSurveys] = useState<PceSurvey[]>(MOCK_SURVEYS)
   const [templates, setTemplates] = useState<PceTemplate[]>(MOCK_TEMPLATES)
+  const [programTerms, setProgramTerms] = useState<ProgramTerm[]>(MOCK_PROGRAM_TERMS)
+  const addProgramTerm = useCallback((term: ProgramTerm) => {
+    setProgramTerms(ts =>
+      ts.some(t => t.id === term.id || t.name === term.name) ? ts : [...ts, term],
+    )
+  }, [])
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
@@ -529,6 +539,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       addFacultyRoleSet, removeFacultyRoleSet, updateFacultyRoleSetRoles,
       addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
       setupDefaults, saveSetupDefaults,
+      programTerms, addProgramTerm,
       pushSurveyBatch,
       enableResults,
       sendSurveyReminder,

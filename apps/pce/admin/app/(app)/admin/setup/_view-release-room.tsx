@@ -103,14 +103,11 @@ export function ReleaseRoomView({ selectedTermName, termSurveys, onOpenSurvey }:
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>{s.courseCode}</p>
                 <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.instructors?.[0]?.name ?? '—'}</p>
               </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: 'var(--muted)', overflow: 'hidden', maxWidth: 60 }}>
-                    <div style={{ height: '100%', width: `${s.responseRate ?? 0}%`, backgroundColor: s.isReady ? 'var(--chart-2)' : s.isLowN ? 'var(--chart-4)' : 'var(--border)', borderRadius: 3 }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{s.responseRate ?? 0}%</span>
-                </div>
-              </div>
+              {/* Numbers-first (Mobbin: Mailchimp/Customer.io) — the % is the
+                  cell; the reliability column beside it carries the judgment. */}
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }} className="tabular-nums">
+                {s.responseRate ?? 0}%
+              </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)' }}>{s.n}</span>
               <span style={{ fontSize: 12, color: s.isLowN ? 'var(--chart-4)' : 'var(--chart-2)' }}>
                 {s.isLowN ? `⚠ Low n=${s.n}` : `✓ Reliable (n=${s.n})`}

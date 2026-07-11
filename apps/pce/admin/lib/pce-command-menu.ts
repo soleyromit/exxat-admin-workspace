@@ -26,6 +26,8 @@ const PAGE_ROUTES = [
   })),
   { id: "page-surveys",           label: "Surveys",                              href: "/surveys",                   icon: "fa-light fa-paper-plane" },
   { id: "page-activate",          label: "Activate Term",                        href: "/surveys/activate",          icon: "fa-light fa-circle-play" },
+  { id: "page-remind",            label: "Send Reminders",                       keywords: "reminder nudge non-responders email", href: "/surveys/remind", icon: "fa-light fa-bell" },
+  { id: "page-term-setup",        label: "Set up Term",                          keywords: "term calendar configure setup readiness", href: "/course-evaluation/term-setup", icon: "fa-light fa-calendar-plus" },
   { id: "page-templates",         label: "Templates",                            href: "/admin/eval-settings?section=templates", icon: "fa-light fa-rectangle-list" },
   { id: "page-moderation",        label: "Moderation",                           href: "/moderation",                icon: "fa-light fa-shield-check" },
   { id: "page-results",           label: "Results",                              href: "/results",                   icon: "fa-light fa-square-poll-vertical" },

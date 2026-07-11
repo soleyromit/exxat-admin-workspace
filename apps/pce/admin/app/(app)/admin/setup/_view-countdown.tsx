@@ -171,15 +171,16 @@ export function CountdownView({ selectedTermName, termSurveys, facultyForTerm, a
             {collectingCE.map(s => {
               const dl = new Date(s.deadline ?? '2099-01-01')
               const days = Math.max(0, Math.ceil((dl.getTime() - MOCK_TODAY.getTime()) / 86_400_000))
-              const barColor = days <= 1 ? 'var(--chart-4)' : days <= 3 ? 'var(--brand-color)' : 'var(--muted-foreground)'
-              const barWidth = Math.min(100, (days / 5) * 100)
+              /* Urgency in words + amber, not a decorative countdown bar —
+                 the days-left number IS the datum. */
+              const urgencyColor = days <= 3 ? 'var(--chip-4)' : 'var(--muted-foreground)'
               return (
-                <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '160px 1fr 80px', alignItems: 'center', gap: 12 }}>
+                <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'baseline', gap: 12 }}>
                   <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.courseCode}</span>
-                  <div style={{ height: 8, borderRadius: 4, backgroundColor: 'var(--muted)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${barWidth}%`, backgroundColor: barColor, borderRadius: 4 }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: barColor, textAlign: 'right', whiteSpace: 'nowrap' }}>{days} {days === 1 ? 'day' : 'days'} left</span>
+                  <span style={{ fontSize: 12, textAlign: 'right', whiteSpace: 'nowrap' }} className="tabular-nums">
+                    <span style={{ color: 'var(--muted-foreground)' }}>closes {dl.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · </span>
+                    <span style={{ color: urgencyColor, fontWeight: 500 }}>{days} {days === 1 ? 'day' : 'days'} left</span>
+                  </span>
                 </div>
               )
             })}

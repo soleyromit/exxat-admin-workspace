@@ -110,6 +110,8 @@ export const NAV_ADMIN: NavLinkItem[] = [
         key: "ce-dashboard",
         title: "Dashboard",
         url: "/course-evaluation/dashboard",
+        // Term workspaces + term setup are Dashboard territory.
+        activePrefixes: ["/course-evaluation/term", "/course-evaluation/term-setup"],
         icon:       <i className="fa-light fa-gauge-high" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-gauge-high" aria-hidden="true" />,
       },

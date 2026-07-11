@@ -979,49 +979,6 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
   )
 }
 
-/* ── share card (live) — the link students respond at, with form thumbnail ── */
-
-function ShareSurveyCard({
-  survey,
-  linkCopied,
-  onCopy,
-}: {
-  survey: PceSurvey
-  linkCopied: boolean
-  onCopy: () => void
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm" aria-level={2}>Survey form</CardTitle>
-        <CardDescription>Students respond at this link.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {/* Form thumbnail placeholder — same hand-drawn anatomy as the wizard's
-            email-template thumbnails (image placeholder, no fabricated pixels) */}
-        <div aria-hidden="true" className="rounded-md border border-border bg-muted/40 px-4 py-3 flex flex-col gap-1.5">
-          <div className="h-2 w-20 rounded" style={{ background: 'var(--border)' }} />
-          <div className="h-1.5 w-full rounded" style={{ background: 'var(--border-control-35)' }} />
-          <div className="h-1.5 w-3/4 rounded" style={{ background: 'var(--border-control-35)' }} />
-          <div className="h-1.5 w-5/6 rounded" style={{ background: 'var(--border-control-35)' }} />
-          <div className="mt-1 h-2.5 w-14 rounded" style={{ background: 'var(--brand-color)', opacity: 0.55 }} />
-        </div>
-        <p className="text-xs text-muted-foreground font-mono tabular-nums truncate" title={`/s/${survey.id}`}>
-          /s/{survey.id}
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={onCopy}>
-            {linkCopied ? 'Link copied' : 'Copy link'}
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
-            <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 export default function ResultDetailPage() {
@@ -1199,6 +1156,10 @@ function ResultDetail({
     [inCollection, survey],
   )
 
+  /* Report scope — live overviews/reports can be per-faculty (Romit): 'all'
+   * or a single instructorId; the chips in the identity strip drive it. */
+  const [facultyScope, setFacultyScope] = useState<'all' | string>('all')
+
   /* Ops actions — the full set from the evaluations table (Romit 2026-07-09) */
   const [remindOpen, setRemindOpen] = useState(false)
   const [extendOpen, setExtendOpen] = useState(false)
@@ -1226,7 +1187,20 @@ function ResultDetail({
 
   /* Score cards — this course vs program, plus prior term */
   const courseAvg = responses?.sectionScores.find((s) => s.section === 'course_content')?.avg ?? null
-  const facultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
+  const sectionFacultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
+  /* Live: the Faculty Performance signal follows the faculty scope chips —
+   * averaged from the scoped instructor block(s); section avg is the fallback. */
+  const facultyAvg = useMemo(() => {
+    if (!inCollection || !qData) return sectionFacultyAvg
+    const blocks = (qData.instructorBlocks ?? []).filter(
+      (b) =>
+        survey.instructors.some((i) => i.id === b.instructorId) &&
+        (facultyScope === 'all' || b.instructorId === facultyScope),
+    )
+    const avgs = blocks.flatMap((b) => b.scores.map((q) => q.avg))
+    if (avgs.length === 0) return sectionFacultyAvg
+    return avgs.reduce((a, b) => a + b, 0) / avgs.length
+  }, [inCollection, qData, survey.instructors, facultyScope, sectionFacultyAvg])
   const programCourseAvg = useMemo(() => {
     const all = MOCK_RESPONSES.flatMap((r) =>
       r.sectionScores.filter((s) => s.section === 'course_content').map((s) => s.avg),
@@ -1245,55 +1219,60 @@ function ResultDetail({
      carrying the PROGRAM average for the same theme (benchmark on the viz) */
   const themes = useMemo((): ThemeRowDatum[] => {
     if (!qData) return []
-    const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
-    const programSection = (subjectKey: string) =>
-      mean(
-        MOCK_SURVEY_QUESTION_DATA.flatMap((d) => (d.sectionScores[subjectKey] ?? []).map((q) => q.avg)),
-      )
-    const sumDist = (scores: { distribution?: number[] }[]): [number, number, number, number, number] => {
-      const d: [number, number, number, number, number] = [0, 0, 0, 0, 0]
-      for (const s of scores) (s.distribution ?? []).forEach((n, i) => { if (i < 5) d[i] += n })
-      return d
+    /* Pedagogical theme taxonomy (Romit's reference): questions group into
+     * Teaching Effectiveness / Communication / Assessment Practices / Course
+     * Content — classified from the template question TEXT, with provenance
+     * as the fallback (faculty-block questions teach/communicate; course-
+     * section questions are content/assessment). */
+    const THEME_ORDER = ['Teaching Effectiveness', 'Communication', 'Assessment Practices', 'Course Content']
+    const textById = new Map<string, string>()
+    for (const sec of sections) for (const q of sec.questions) textById.set(q.id, q.text)
+    const classify = (questionId: string, fromFaculty: boolean): string => {
+      const t = (textById.get(questionId) ?? '').toLowerCase()
+      if (/assess|exam|grad|rubric|fair/.test(t)) return 'Assessment Practices'
+      if (/communicat|respond|accessib|approach|feedback|available/.test(t)) return 'Communication'
+      if (/teach|instruct|explain|clarit|clear|engag|effectiv|present/.test(t)) return 'Teaching Effectiveness'
+      if (t) return 'Course Content'
+      return fromFaculty ? 'Teaching Effectiveness' : 'Course Content'
     }
-    const rows: ThemeRowDatum[] = []
-    for (const [subjectKey, scores] of Object.entries(qData.sectionScores)) {
-      if (scores.length === 0) continue
-      const section = sections.find((s) => s.subjectKey === subjectKey)
-      rows.push({
-        theme: section?.title ?? subjectKey.replace(/_/g, ' '),
-        avg: scores.reduce((a, q) => a + q.avg, 0) / scores.length,
-        questions: scores.length,
-        programAvg: programSection(subjectKey),
-        dist: sumDist(scores),
-      })
+    type ThemedQ = { theme: string; avg: number; distribution?: number[] }
+    const collect = (
+      data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
+      allowInstructor: (id: string) => boolean,
+    ): ThemedQ[] => {
+      const qs: ThemedQ[] = []
+      for (const scores of Object.values(data.sectionScores))
+        for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
+      for (const b of data.instructorBlocks ?? []) {
+        if (!allowInstructor(b.instructorId)) continue
+        for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
+      }
+      return qs
     }
-    /* Faculty rows — live evaluations show EVERY instructor's block (the page
-       represents the whole evaluation); finished results stay per-faculty
-       (each faculty has their own result row + switcher). */
-    const blocks = (qData.instructorBlocks ?? []).filter((b) =>
+    /* Scope: live follows the faculty chips; finished results stay per-faculty. */
+    const mine = collect(qData, (id) =>
       inCollection
-        ? survey.instructors.some((i) => i.id === b.instructorId)
-        : b.instructorId === result.facultyId,
+        ? survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope)
+        : id === result.facultyId,
     )
-    const programFacultyBlockAvg = mean(
-      MOCK_SURVEY_QUESTION_DATA.flatMap((d) =>
-        (d.instructorBlocks ?? []).flatMap((b) => b.scores.map((q) => q.avg)),
-      ),
-    )
-    for (const block of blocks) {
-      if (block.scores.length === 0) continue
-      const name =
-        survey.instructors.find((i) => i.id === block.instructorId)?.name ?? result.facultyName
+    const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
+    const rows: ThemeRowDatum[] = []
+    for (const theme of THEME_ORDER) {
+      const qs = mine.filter((x) => x.theme === theme)
+      if (qs.length === 0) continue
+      const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
+      qs.forEach((x) => (x.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
+      const prog = program.filter((x) => x.theme === theme)
       rows.push({
-        theme: `Faculty — ${name}`,
-        avg: block.scores.reduce((a, q) => a + q.avg, 0) / block.scores.length,
-        questions: block.scores.length,
-        programAvg: programFacultyBlockAvg,
-        dist: sumDist(block.scores),
+        theme,
+        avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
+        questions: qs.length,
+        programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
+        dist,
       })
     }
     return rows
-  }, [qData, sections, result.facultyId, result.facultyName, inCollection, survey.instructors])
+  }, [qData, sections, inCollection, facultyScope, survey.instructors, result.facultyId])
 
   /* Collapsed-section previews — the closed shells still say something */
   const allQuestionScores = qData
@@ -1312,9 +1291,26 @@ function ResultDetail({
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
-      return qData.instructorBlocks
-        ?.find((b) => b.instructorId === result.facultyId)
-        ?.scores.find((q) => q.questionId === questionId)
+      /* Scope-aware (live): a picked faculty shows their block; 'all' averages
+       * every instructor's answer to this question. Finished stays per-owner. */
+      const allowed = (id: string) =>
+        inCollection
+          ? survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope)
+          : id === result.facultyId
+      const hits = (qData.instructorBlocks ?? [])
+        .filter((b) => allowed(b.instructorId))
+        .map((b) => b.scores.find((q) => q.questionId === questionId))
+        .filter((q): q is NonNullable<typeof q> => !!q)
+      if (hits.length === 0) return undefined
+      if (hits.length === 1) return hits[0]
+      const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
+      hits.forEach((h) => (h.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
+      return {
+        questionId,
+        avg: hits.reduce((a, h) => a + h.avg, 0) / hits.length,
+        count: hits.reduce((a, h) => a + (h.count ?? 0), 0),
+        distribution: dist,
+      }
     }
     return qData.sectionScores[subjectKey]?.find((q) => q.questionId === questionId)
   }
@@ -1414,7 +1410,7 @@ function ResultDetail({
     }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, courseSections, facultySections, result.facultyId])
+  }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, survey.instructors])
 
   /* Closed Loop Timeline — last term's logged concerns vs this term's themes.
      Spec gate: owner AND not a Faculty role; with E2 option B that resolves to
@@ -1445,7 +1441,25 @@ function ResultDetail({
         title={result.courseCode}
       />
       <PageHeader
-        title={`${result.courseCode} — ${result.courseName}`}
+        title={
+          /* Custom title node = PageHeader does NOT wrap it in its <h1> — so
+             this node must supply the h1 itself, with the DS's exact title
+             classes, or the page loses its heading and serif treatment. */
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="line-clamp-2 min-w-0 overflow-hidden break-words font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
+              {`${result.courseCode} — ${result.courseName}`}
+            </h1>
+            {inCollection ? (
+              <SurveyStatusBadgeOS status={survey.status} />
+            ) : (
+              <StatusBadge
+                label={RESULT_STATUS_BADGE.available.label}
+                tone={RESULT_STATUS_BADGE.available.tone}
+                icon={RESULT_STATUS_BADGE.available.icon}
+              />
+            )}
+          </span>
+        }
         subtitle={`${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}`}
         actions={
           /* Hierarchy: ONE primary per state. Live → Send reminder is the
@@ -1461,6 +1475,23 @@ function ResultDetail({
                 <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>
                   Extend close date
                 </Button>
+                {/* Secondary ops tucked into ⋯ (Romit) — copy link + preview
+                    moved here from the removed Share card. */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon-sm" aria-label="More actions">
+                      <i className="fa-light fa-ellipsis" aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={copySurveyLink}>
+                      {linkCopied ? 'Link copied' : 'Copy survey link'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
             {!inCollection && (
@@ -1501,38 +1532,51 @@ function ResultDetail({
 
       <div className="flex-1 px-7 py-4">
         <div className="flex flex-col gap-4">
-          {/* Identity strip — status chip + faculty + response rate (shared anatomy) */}
-          <div className="flex items-center gap-4 flex-wrap">
+          {/* Identity strip — the faculty SCOPE control (live) or the result
+              owner (finished). Status chip lives beside the title now. */}
+          <div className="flex items-center gap-3 flex-wrap">
             {inCollection ? (
-              <SurveyStatusBadgeOS status={survey.status} />
+              <>
+                <span className="text-xs font-medium text-muted-foreground">Faculty</span>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  size="sm"
+                  value={facultyScope}
+                  onValueChange={(v) => v && setFacultyScope(v)}
+                  aria-label="Scope overview and reports by faculty"
+                >
+                  <ToggleGroupItem value="all">All faculty</ToggleGroupItem>
+                  {liveFacultyRows.map((f) => (
+                    <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
+                        style={{
+                          background: 'var(--avatar-initials-bg)',
+                          color: 'var(--avatar-initials-fg)',
+                        }}
+                      >
+                        {f.facultyInitials}
+                      </span>
+                      {f.facultyName}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </>
             ) : (
-              <StatusBadge
-                label={RESULT_STATUS_BADGE.available.label}
-                tone={RESULT_STATUS_BADGE.available.tone}
-                icon={RESULT_STATUS_BADGE.available.icon}
-              />
+              <>
+                <PersonIdentityCell name={result.facultyName} initials={result.facultyInitials} email={result.facultyEmail} />
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  Response rate{' '}
+                  <span className="text-sm font-semibold" style={{ color: rateColor(result.responseRate) }}>
+                    {result.responseRate}%
+                  </span>{' '}
+                  · {result.responses} of {result.enrolled} students responded
+                </span>
+                {isPD && <FacultySwitcher siblings={siblings} />}
+              </>
             )}
-            {/* Live: the page covers the WHOLE evaluation — list every faculty */}
-            {inCollection ? (
-              liveFacultyRows.map((f) => (
-                <PersonIdentityCell
-                  key={f.facultyId}
-                  name={f.facultyName}
-                  initials={f.facultyInitials}
-                  email={f.facultyEmail}
-                />
-              ))
-            ) : (
-              <PersonIdentityCell name={result.facultyName} initials={result.facultyInitials} email={result.facultyEmail} />
-            )}
-            <span className="text-sm tabular-nums font-semibold" style={{ color: rateColor(result.responseRate) }}>
-              {result.responseRate}%
-            </span>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {result.responses} of {result.enrolled} students
-            </span>
-            {/* Co-taught cross-links — PD only (spec ST-15) */}
-            {isPD && !inCollection && <FacultySwitcher siblings={siblings} />}
           </div>
 
           {/* Coordinator banner — PD only (spec's toast replaced by banner flip) */}
@@ -1763,11 +1807,9 @@ function ResultDetail({
               )}
               </div>
 
-              {/* ── Side column — share card (live) + "On this page" anchors ── */}
+              {/* ── Side column — "On this page" anchors (the live Share card's
+                    copy-link/preview actions moved to the header ⋯ menu). ── */}
               <div className="hidden xl:flex flex-col gap-4 sticky top-16 self-start w-full">
-              {inCollection && isPD && (
-                <ShareSurveyCard survey={survey} linkCopied={linkCopied} onCopy={copySurveyLink} />
-              )}
               <nav aria-label="On this page" className="flex flex-col gap-0.5 w-full">
                 <p className="text-xs font-medium text-muted-foreground mb-1.5">On this page</p>
                 {inCollection && <AnchorLink label="Collection pace" onGo={() => goTo('pace')} />}

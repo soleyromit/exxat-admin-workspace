@@ -427,11 +427,12 @@ function PushSurveyInner() {
         />
       )}
 
-      {/* Full-width content */}
+      {/* Full-width content — flex column so steps can fill the height and
+          anchor their footers to a fixed bottom position (mt-auto). */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-auto" style={{ padding: '32px 40px 48px' }}>
+        <div className="flex-1 overflow-auto flex flex-col" style={{ padding: '32px 40px 0' }}>
           {step === 1 && (surveyMode === 'general' ? (
-            <div className="flex flex-col gap-6" style={{ maxWidth: 680 }}>
+            <div className="flex flex-col gap-6 flex-1" style={{ maxWidth: 680 }}>
               {/* Step header */}
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -472,7 +473,7 @@ function PushSurveyInner() {
               />
 
               {/* Footer */}
-              <div className="border-t border-border pt-4 flex items-center justify-end">
+              <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-end">
                 <Button
                   variant="default"
                   size="sm"
@@ -485,7 +486,7 @@ function PushSurveyInner() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 flex-1">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
                   Courses &amp; evaluatees

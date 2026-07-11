@@ -134,8 +134,9 @@ export function StepSurveyDesignAssign({
 
   return (
     /* Full-bleed step: the wizard shell owns the horizontal padding, so the
-       assignment table spans 100% of the content area (edgeInset=false). */
-    <div className="flex flex-col gap-4">
+       assignment table spans 100% of the content area (edgeInset=false).
+       flex-1 + mt-auto footer = footer anchored at a fixed bottom position. */
+    <div className="flex flex-col gap-4 flex-1">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -208,7 +209,7 @@ export function StepSurveyDesignAssign({
         />
       )}
 
-      <div className="border-t border-border pt-4 flex items-center justify-between">
+      <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={onBack}>
           <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
           Back

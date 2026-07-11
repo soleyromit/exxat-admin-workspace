@@ -136,6 +136,7 @@ export function ProgressCell({
   tone = "auto",
   label,
   className,
+  fillColor,
 }: {
   value: number | null | undefined
   max?: number
@@ -143,6 +144,8 @@ export function ProgressCell({
   /** Right-side label. Defaults to `${pct}%`. Pass `false` to hide. */
   label?: React.ReactNode | false
   className?: string
+  /** PCE extension: explicit fill (product status tokens) — overrides `tone`. */
+  fillColor?: string
 }) {
   if (value == null || Number.isNaN(value)) return <EmptyCell label="No progress" />
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)))
@@ -170,8 +173,8 @@ export function ProgressCell({
         className="h-1.5 overflow-hidden rounded-full bg-muted"
       >
         <div
-          className={cn("h-full rounded-full transition-[width]", toneClass)}
-          style={{ width: `${pct}%` }}
+          className={cn("h-full rounded-full transition-[width]", !fillColor && toneClass)}
+          style={{ width: `${pct}%`, ...(fillColor ? { backgroundColor: fillColor } : {}) }}
         />
       </div>
       {labelNode}

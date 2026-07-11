@@ -11,9 +11,10 @@
 //      eval window, days-left urgency, avg rate + strip, an at-risk alert
 //      SENTENCE ("N of M live courses below X% · last reminder Nd ago") with
 //      a direct Send-reminders CTA, and live/pending/total footer counts.
-//   2. All terms — collapsed by default ("Show all terms (N)"); expands to a
-//      filter-tabbed DataTable (All/Current/Upcoming/Past) so any previous
-//      term is one gesture away. Rows navigate to the term workspace.
+//   2. Past terms — collapsed by default ("Show past terms (N)"); expands to
+//      the HISTORY table (past terms only — the triptych already covers
+//      current/last/upcoming, so repeating them here would defeat the label).
+//      Rows navigate to the term workspace.
 //
 // REMOVED from the dashboard (Romit: "too crowded"): KPI band, charts, and
 // the cross-term action rail — per-course viz + the full work queue live in
@@ -30,20 +31,20 @@ import {
   PageHeader,
   StatusBadge,
   Card, CardContent, CardFooter, CardHeader, CardTitle,
-  Tabs, TabsList, TabsTrigger,
-  LocalBanner,
 } from '@exxatdesignux/ui'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { SetupTermSheet } from '@/components/pce/setup-term-sheet'
-import { SendReminderDialog } from '@/components/pce/pce-modals'
+
+import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
+import { LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
+import { auditTerm } from '@/lib/pce-term-readiness'
 import {
   RESPONSE_TARGET, LIVE,
-  termsOrdered, currentTermId, snapshot, evalWindow, completionColor,
+  currentTermId, snapshot, evalWindow,
   type TermSnapshot,
 } from '@/lib/pce-term-metrics'
 import type { PceSurvey, ProgramTerm } from '@/lib/pce-mock-data'
@@ -71,33 +72,66 @@ function daysAgo(dateStr: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000))
 }
 
-/** Filled to the current rate, tick at the response target. */
-function RateStrip({ rate }: { rate: number }) {
+/** Target status stays sr-only — the bar fill carries it visually. */
+function RateSrStatus({ rate }: { rate: number }) {
   return (
-    <span
-      className="relative block h-1.5 w-full rounded-full bg-muted"
-      role="img"
-      aria-label={`${rate}% response · target ${RESPONSE_TARGET}%`}
-    >
-      <span
-        className="absolute inset-y-0 left-0 rounded-full"
-        style={{ width: `${Math.min(rate, 100)}%`, backgroundColor: completionColor(rate) }}
-      />
-      <span
-        className="absolute -top-0.5 h-2.5 w-px bg-foreground/40"
-        style={{ left: `${RESPONSE_TARGET}%` }}
-        aria-hidden="true"
-      />
+    <span className="sr-only">
+      {rate < RESPONSE_TARGET ? `below ${RESPONSE_TARGET}% target` : 'on target'}
     </span>
   )
 }
 
-function TermMetaLine({ term }: { term: ProgramTerm }) {
+/** Term meta — ONE quiet text line under the title (CardHeader). Card
+ * vocabulary (Romit): the tinted StatusBadge is the only pill on a card;
+ * metadata is unbordered muted text; countdowns are text + icon. Pills for
+ * meta occupied space, wrapped on 1fr cards, and collided with the badge. */
+function TermMetaLine({
+  term, trailing, windowPending = false,
+}: {
+  term: ProgramTerm
+  trailing?: React.ReactNode
+  /** True before any evaluation exists — the derived window is a projection. */
+  windowPending?: boolean
+}) {
   const win = evalWindow(term)
+  const open = win.open.replace(/, \d{4}$/, '')
   return (
-    <p className="text-xs text-muted-foreground">
-      AY {term.academicYear} · Eval window {win.open} – {win.close}
+    <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+      AY {term.academicYear.replace(/–20(\d\d)$/, '–$1')}
+      {' · '}
+      {windowPending ? (
+        <>Eval window not set</>
+      ) : (
+        <>
+          <span className="sr-only">Evaluation window </span>
+          {open} – {win.close}
+        </>
+      )}
+      {trailing}
     </p>
+  )
+}
+
+/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status). */
+function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boolean }) {
+  return (
+    <span
+      className="flex shrink-0 items-center gap-1.5 text-xs font-medium tabular-nums"
+      style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
+    >
+      <i className="fa-light fa-clock" aria-hidden="true" />
+      {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+    </span>
+  )
+}
+
+/** Title row — term name left, status badge pinned to the right edge. */
+function TermTitleRow({ name, badge }: { name: string; badge: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-2">
+      <CardTitle className="truncate text-base font-semibold text-foreground">{name}</CardTitle>
+      {badge}
+    </div>
   )
 }
 
@@ -106,9 +140,10 @@ function ViewTermLink({ termId, name }: { termId: string; name: string }) {
     <Link
       href={`/course-evaluation/term/${termId}`}
       aria-label={`Open ${name} workspace`}
-      className="ms-auto rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="ms-auto flex items-center gap-1.5 rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      View term →
+      View term
+      <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
     </Link>
   )
 }
@@ -116,60 +151,112 @@ function ViewTermLink({ termId, name }: { termId: string; name: string }) {
 /* ── current term (the hero card) ─────────────────────────────────────────── */
 
 function CurrentTermCard({
-  snap, atRisk, onRemind,
+  snap, atRisk,
 }: {
   snap: TermSnapshot
   atRisk: PceSurvey[]
-  onRemind: () => void
 }) {
   const { term } = snap
   const urgent = snap.daysLeft != null && snap.daysLeft <= 7
+  /* The reminder audience — students in at-risk courses who haven't responded. */
+  const pendingAtRisk = atRisk.reduce(
+    (n, s) => n + Math.max(0, s.enrollmentCount - s.responseCount), 0,
+  )
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
-        <StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />
+        <TermTitleRow
+          name={term.name}
+          badge={<StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />}
+        />
+        <TermMetaLine
+          term={term}
+          /* Days-left rides in the reminder block when it exists; otherwise
+           * it joins the meta line so the countdown never disappears. */
+          trailing={
+            atRisk.length === 0 && snap.daysLeft != null ? (
+              /* Separator wraps WITH its unit — never a dangling dot. */
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                {'· '}
+                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
+              </span>
+            ) : undefined
+          }
+        />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <TermMetaLine term={term} />
-        {snap.daysLeft != null && (
-          <p
-            className="text-xs font-medium"
-            style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
-          >
-            {snap.daysLeft}{snap.daysLeft === 1 ? ' day' : ' days'} left until evaluation closes
-          </p>
-        )}
-        <div className="flex flex-col gap-1.5">
+        {/* HubSpot-goals anatomy: label/value row → full-width bar → status words. */}
+        <div className="flex flex-col gap-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-xs text-muted-foreground">Avg response rate</span>
             <span className="text-lg font-semibold tabular-nums leading-none text-foreground">
               {snap.rate != null ? `${snap.rate}%` : '—'}
             </span>
           </div>
-          {snap.rate != null && <RateStrip rate={snap.rate} />}
+          {snap.rate != null && (
+            <>
+              <ResponseProgressCell
+                rate={snap.rate}
+                responseCount={0}
+                enrollmentCount={0}
+                target={RESPONSE_TARGET}
+                detail="none"
+                className="w-full max-w-none"
+              />
+              <RateSrStatus rate={snap.rate} />
+            </>
+          )}
         </div>
         {atRisk.length > 0 && (
-          <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-            <p className="flex items-start gap-2 text-sm font-medium text-foreground">
-              <i className="fa-light fa-triangle-exclamation mt-0.5" aria-hidden="true" style={{ color: 'var(--chip-4)' }} />
-              {atRisk.length} of {snap.live} live {snap.live === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}% response
-            </p>
-            {term.lastReminderSentAt && (
-              <p className="text-xs text-muted-foreground">
-                Last reminder sent {daysAgo(term.lastReminderSentAt)} days ago
-              </p>
+          /* Student-first framing (Romit: the goal is students filling the
+           * evaluation — lead with who still needs to act, not course rates).
+           * The icon medallion is the visual anchor that says "act here". */
+          <div className="flex items-start gap-3 rounded-md border border-border p-3">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-full"
+              style={{ backgroundColor: LIST_HUB_STATUS_TINT_WARNING.bg }}
+              aria-hidden="true"
+            >
+              <i
+                className="fa-light fa-bell"
+                style={{ color: LIST_HUB_STATUS_TINT_WARNING.fg, fontSize: 16 }}
+              />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
+                  {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
+                </p>
+              </div>
+              {/* Batch action → the send-reminders WIZARD (cardinality rule:
+                  multi-course = wizard; the sheet is for single-row confirms). */}
+              <Button variant="outline" size="sm" className="self-start" asChild>
+                <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
+              </Button>
+            </div>
+            {/* Deadline rides with the action it pressures — text + icon, not
+                a badge (the tinted StatusBadge is reserved for term status). */}
+            {snap.daysLeft != null && (
+              <span className="ms-auto shrink-0">
+                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
+              </span>
             )}
-            <Button variant="outline" size="sm" className="self-start" onClick={onRemind}>
-              Send reminders to at-risk ({atRisk.length})
-            </Button>
           </div>
         )}
       </CardContent>
-      <CardFooter className="gap-2">
+      {/* mt-auto pins the footer to the card bottom like its siblings — the
+          grid stretches all cards to the tallest, and an unpinned footer
+          floats mid-card with a void beneath it. */}
+      <CardFooter className="mt-auto gap-2">
+        {/* "in review" not "pending" — the at-risk block above uses pending
+            for STUDENTS; one word must not mean two things on one card. */}
         <p className="text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{snap.live}</span> live ·{' '}
-          <span className="font-medium text-foreground">{snap.pending}</span> pending ·{' '}
+          <span className="font-medium text-foreground">{snap.pending}</span> in review ·{' '}
           <span className="font-medium text-foreground">{snap.total}</span> total
         </p>
         <ViewTermLink termId={term.id} name={term.name} />
@@ -182,23 +269,29 @@ function CurrentTermCard({
 
 function LastTermCard({ snap }: { snap: TermSnapshot }) {
   const { term } = snap
-  const rows: { label: string; value: string; emphasis?: boolean }[] = [
-    { label: 'Evaluations', value: `${snap.total}` },
-    { label: 'Pending review', value: `${snap.pending}`, emphasis: snap.pending > 0 },
-    { label: 'Avg response', value: snap.rate != null ? `${snap.rate}%` : '—' },
+  const rows: { label: string; value: string; icon: string; emphasis?: boolean }[] = [
+    { label: 'Evaluations', value: `${snap.total}`, icon: 'fa-square-poll-vertical' },
+    { label: 'Pending review', value: `${snap.pending}`, icon: 'fa-shield-check', emphasis: snap.pending > 0 },
+    { label: 'Released to faculty', value: `${snap.released} of ${snap.total}`, icon: 'fa-circle-check' },
+    { label: 'Avg response', value: snap.rate != null ? `${snap.rate}%` : '—', icon: 'fa-chart-mixed' },
   ]
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
-        <StatusBadge label="Last term" tone={POSITION_BADGE.past.tone} />
+        <TermTitleRow
+          name={term.name}
+          badge={<StatusBadge label="Last term" tone={POSITION_BADGE.past.tone} />}
+        />
+        <TermMetaLine term={term} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <TermMetaLine term={term} />
         <dl className="flex flex-col">
           {rows.map((r) => (
             <div key={r.label} className="flex items-center gap-1.5 border-t border-border/60 py-1.5">
-              <dt className="text-xs text-muted-foreground">{r.label}</dt>
+              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <i className={`fa-light ${r.icon}`} aria-hidden="true" />
+                {r.label}
+              </dt>
               <dd
                 className="ms-auto text-xs font-medium tabular-nums"
                 style={{ color: r.emphasis ? 'var(--chip-4)' : 'var(--foreground)' }}
@@ -220,29 +313,94 @@ function LastTermCard({ snap }: { snap: TermSnapshot }) {
 
 function UpcomingCard({ snap }: { snap: TermSnapshot }) {
   const { term } = snap
-  const rows: { label: string; value: string }[] = [
+  /* The card is an ACTION surface when setup is incomplete — the remaining
+   * offerings are work, not just a count (reference: live PCE upcoming card:
+   * offerings found · starts-in countdown · needs-attention → Fix Data). */
+  const remaining = snap.coverage ? snap.coverage.total - snap.coverage.surveyed : 0
+  const noSetup = (snap.coverage?.surveyed ?? snap.total) === 0
+  const readiness = auditTerm(term.id)
+  const startsIn = Math.max(
+    0,
+    Math.ceil((new Date(term.startDate).getTime() - Date.now()) / 86_400_000),
+  )
+  const rows: { label: string; value: string; icon: string }[] = [
+    {
+      label: 'Course offerings found',
+      value: `${snap.coverage?.total ?? readiness.total}`,
+      icon: 'fa-layer-group',
+    },
     {
       label: 'Evaluations created',
       value: snap.coverage ? `${snap.coverage.surveyed} of ${snap.coverage.total}` : `${snap.total}`,
+      icon: 'fa-square-poll-vertical',
     },
-    { label: 'Opens', value: fmtDate(term.startDate) },
+    { label: 'Opens', value: fmtDate(term.startDate), icon: 'fa-calendar-plus' },
   ]
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-foreground">{term.name}</CardTitle>
-        <StatusBadge label={POSITION_BADGE.upcoming.label} tone={POSITION_BADGE.upcoming.tone} />
+        <TermTitleRow
+          name={term.name}
+          badge={<StatusBadge label={POSITION_BADGE.upcoming.label} tone={POSITION_BADGE.upcoming.tone} />}
+        />
+        <TermMetaLine
+          term={term}
+          /* Before any evaluation exists the derived window is a projection —
+             the reference card says so instead of printing dates as facts. */
+          windowPending={noSetup}
+          trailing={
+            <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
+          }
+        />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <TermMetaLine term={term} />
         <dl className="flex flex-col">
           {rows.map((r) => (
             <div key={r.label} className="flex items-center gap-1.5 border-t border-border/60 py-1.5">
-              <dt className="text-xs text-muted-foreground">{r.label}</dt>
+              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <i className={`fa-light ${r.icon}`} aria-hidden="true" />
+                {r.label}
+              </dt>
               <dd className="ms-auto text-xs font-medium tabular-nums text-foreground">{r.value}</dd>
             </div>
           ))}
         </dl>
+        {readiness.needsData > 0 ? (
+          /* Same needs-attention anatomy as the current card's reminder block. */
+          <div className="flex items-start gap-3 rounded-md border border-border p-3">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-full"
+              style={{ backgroundColor: LIST_HUB_STATUS_TINT_WARNING.bg }}
+              aria-hidden="true"
+            >
+              <i
+                className="fa-light fa-triangle-exclamation"
+                style={{ color: LIST_HUB_STATUS_TINT_WARNING.fg, fontSize: 16 }}
+              />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  missing faculty or student rosters
+                </p>
+              </div>
+              <Button variant="outline" size="sm" className="self-start" asChild>
+                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          remaining > 0 && (
+            <Button variant="outline" size="sm" className="self-start" asChild>
+              <Link href={`/surveys/push?term=${term.id}`}>
+                Set up {remaining} evaluation{remaining !== 1 ? 's' : ''}
+              </Link>
+            </Button>
+          )
+        )}
       </CardContent>
       <CardFooter className="mt-auto">
         <ViewTermLink termId={term.id} name={term.name} />
@@ -251,13 +409,13 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
   )
 }
 
-function NoUpcomingSlot({ onConfigure }: { onConfigure: () => void }) {
+function NoUpcomingSlot() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/25 px-6 py-8">
       <i className="fa-light fa-calendar-plus text-2xl text-muted-foreground" aria-hidden="true" />
       <p className="text-sm font-medium text-foreground">No upcoming term yet</p>
-      <Button variant="outline" size="sm" onClick={onConfigure}>
-        Configure Term Calendar
+      <Button variant="outline" size="sm" asChild>
+        <Link href="/course-evaluation/term-setup">Set up term</Link>
       </Button>
     </div>
   )
@@ -276,36 +434,32 @@ type TermRow = {
   rate: number | null
 } & Record<string, unknown>
 
-function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
+/** Past terms only — the triptych above already shows current/last/upcoming,
+ * so this is the HISTORY archive, not a repeat of the same list (Romit). */
+function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string; terms: ProgramTerm[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [filter, setFilter] = useState<'all' | TermPosition>('all')
 
-  const allRows: TermRow[] = useMemo(
+  const rows: TermRow[] = useMemo(
     () =>
-      [...termsOrdered].reverse().map((t) => {
-        const snap = snapshot(t, ce)
-        return {
-          id: t.id,
-          name: t.name,
-          position: positionOf(t, curId),
-          academicYear: t.academicYear,
-          startDate: t.startDate,
-          endDate: t.endDate,
-          total: snap.total,
-          rate: snap.rate,
-        }
-      }),
-    [ce, curId],
+      [...terms]
+        .reverse()
+        .filter((t) => positionOf(t, curId) === 'past')
+        .map((t) => {
+          const snap = snapshot(t, ce)
+          return {
+            id: t.id,
+            name: t.name,
+            position: 'past' as TermPosition,
+            academicYear: t.academicYear,
+            startDate: t.startDate,
+            endDate: t.endDate,
+            total: snap.total,
+            rate: snap.rate,
+          }
+        }),
+    [ce, curId, terms],
   )
-
-  const counts = useMemo(() => {
-    const c: Record<'all' | TermPosition, number> = { all: allRows.length, current: 0, upcoming: 0, past: 0 }
-    for (const r of allRows) c[r.position] += 1
-    return c
-  }, [allRows])
-
-  const rows = filter === 'all' ? allRows : allRows.filter((r) => r.position === filter)
 
   const columns: ColumnDef<TermRow>[] = useMemo(
     () => [
@@ -313,14 +467,6 @@ function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
         key: 'name',
         label: 'Term',
         cell: (row) => <span className="text-sm font-medium text-foreground">{row.name}</span>,
-      },
-      {
-        key: 'position',
-        label: 'Status',
-        width: 120,
-        cell: (row) => (
-          <StatusBadge label={POSITION_BADGE[row.position].label} tone={POSITION_BADGE[row.position].tone} />
-        ),
       },
       { key: 'academicYear', label: 'Academic year', width: 130 },
       { key: 'startDate', label: 'Start date', width: 130, cell: (row) => fmtDate(row.startDate) },
@@ -343,8 +489,10 @@ function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
     [],
   )
 
+  if (rows.length === 0) return null
+
   return (
-    <section className="flex flex-col gap-3" aria-label="All terms">
+    <section className="flex flex-col gap-3" aria-label="Past terms">
       <Button
         variant="ghost"
         size="sm"
@@ -353,35 +501,25 @@ function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
         onClick={() => setOpen((v) => !v)}
       >
         <i className={`fa-light ${open ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs`} aria-hidden="true" />
-        {open ? 'Hide' : 'Show'} all terms ({counts.all})
+        {open ? 'Hide' : 'Show'} past terms ({rows.length})
       </Button>
       {open && (
-        <div className="flex flex-col gap-3">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList variant="line" className="w-full justify-start">
-              <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-              <TabsTrigger value="current">Current ({counts.current})</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming ({counts.upcoming})</TabsTrigger>
-              <TabsTrigger value="past">Past ({counts.past})</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <DataTablePaginated<TermRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            pagination={{ pageSize: 10 }}
-            edgeInset={false}
-            stickyHeader={false}
-            onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
-            emptyState={
-              <div className="flex flex-col items-center gap-2 py-8">
-                <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-                <p className="text-sm font-medium">No terms in this group</p>
-                <p className="text-xs text-muted-foreground">Switch the filter above to see other terms.</p>
-              </div>
-            }
-          />
-        </div>
+        <DataTablePaginated<TermRow>
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          pagination={{ pageSize: 10 }}
+          edgeInset={false}
+          stickyHeader={false}
+          onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
+          emptyState={
+            <div className="flex flex-col items-center gap-2 py-8">
+              <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm font-medium">No past terms yet</p>
+              <p className="text-xs text-muted-foreground">Completed terms will appear here as history.</p>
+            </div>
+          }
+        />
       )}
     </section>
   )
@@ -390,28 +528,34 @@ function AllTermsSection({ ce, curId }: { ce: PceSurvey[]; curId: string }) {
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 function DashboardHomeInner() {
-  const { surveys } = usePce()
-  const [setupOpen, setSetupOpen] = useState(false)
-  const [remindTargets, setRemindTargets] = useState<PceSurvey[]>([])
-  const [banner, setBanner] = useState<string | null>(null)
+  const { surveys, programTerms } = usePce()
 
+  /* Terms come from STATE (not the static mock) so a term finished in the
+   * setup wizard appears here as a card immediately. */
+  const ordered = useMemo(
+    () => [...programTerms].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    [programTerms],
+  )
   const curId = currentTermId()
-  const curIdx = termsOrdered.findIndex((t) => t.id === curId)
+  const curIdx = ordered.findIndex((t) => t.id === curId)
 
   const ce = useMemo(
     () => surveys.filter((s) => !s.surveyType || s.surveyType === 'course_evaluation'),
     [surveys],
   )
 
-  const curTerm = termsOrdered[curIdx]
-  const lastTerm = termsOrdered[curIdx - 1]
-  const upcomingTerm = termsOrdered[curIdx + 1]
+  const curTerm = ordered[curIdx]
+  const lastTerm = ordered[curIdx - 1]
+  /* ALL upcoming terms — a newly introduced term must appear here even when
+   * another already occupies the slot (the past-terms table is history-only,
+   * so this stack is an upcoming term's ONLY dashboard presence). */
+  const upcomingTerms = useMemo(() => ordered.slice(curIdx + 1), [ordered, curIdx])
 
   const curSnap = useMemo(() => (curTerm ? snapshot(curTerm, ce) : null), [curTerm, ce])
   const lastSnap = useMemo(() => (lastTerm ? snapshot(lastTerm, ce) : null), [lastTerm, ce])
-  const upcomingSnap = useMemo(
-    () => (upcomingTerm ? snapshot(upcomingTerm, ce) : null),
-    [upcomingTerm, ce],
+  const upcomingSnaps = useMemo(
+    () => upcomingTerms.map((t) => snapshot(t, ce)),
+    [upcomingTerms, ce],
   )
 
   const curAtRisk = useMemo(
@@ -431,11 +575,11 @@ function DashboardHomeInner() {
       <SiteHeader title="Dashboard" />
       <PageHeader
         title="Dashboard"
-        subtitle="Course evaluations by term — health, access, and interventions"
+        subtitle="Track response collection and act where students haven’t responded"
         actions={
           <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
-            <Button variant="outline" size="default" onClick={() => setSetupOpen(true)}>
-              Configure Term Calendar
+            <Button variant="outline" size="default" asChild>
+              <Link href="/course-evaluation/term-setup">Set up term</Link>
             </Button>
             <Button variant="default" size="default" asChild>
               <Link href="/surveys/push">Send Evaluations</Link>
@@ -446,47 +590,35 @@ function DashboardHomeInner() {
 
       <div className="flex-1 px-7 py-4">
         {firstRun ? (
-          <FirstRun onConfigure={() => setSetupOpen(true)} />
+          <FirstRun />
         ) : (
           <div className="flex flex-col gap-6">
-            {banner && (
-              <LocalBanner variant="success" title="Done" dismissible onDismiss={() => setBanner(null)}>
-                {banner}
-              </LocalBanner>
-            )}
-
-            {/* ── Terms triptych — current / last / upcoming ── */}
+            {/* ── Terms triptych — current / last / upcoming. The current term
+                 is the working surface, so it takes double width; the other
+                 two are reference cards (visual priority = usage priority). ── */}
             <h2 className="sr-only">Terms</h2>
-            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[2fr_1fr_1fr]">
               {curSnap && (
-                <CurrentTermCard
-                  snap={curSnap}
-                  atRisk={curAtRisk}
-                  onRemind={() => setRemindTargets(curAtRisk)}
-                />
+                <CurrentTermCard snap={curSnap} atRisk={curAtRisk} />
               )}
               {lastSnap && <LastTermCard snap={lastSnap} />}
-              {upcomingSnap ? (
-                <UpcomingCard snap={upcomingSnap} />
+              {upcomingSnaps.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {upcomingSnaps.map((s) => (
+                    <UpcomingCard key={s.term.id} snap={s} />
+                  ))}
+                </div>
               ) : (
-                <NoUpcomingSlot onConfigure={() => setSetupOpen(true)} />
+                <NoUpcomingSlot />
               )}
             </div>
 
             {/* ── All terms — history one gesture away ── */}
-            <AllTermsSection ce={ce} curId={curId} />
+            <PastTermsSection ce={ce} curId={curId} terms={ordered} />
           </div>
         )}
       </div>
 
-      <SetupTermSheet open={setupOpen} onOpenChange={setSetupOpen} />
-
-      <SendReminderDialog
-        open={remindTargets.length > 0}
-        onOpenChange={(v) => !v && setRemindTargets([])}
-        surveys={remindTargets}
-        onSent={(codes) => setBanner(`An ad-hoc reminder went out to non-responders in ${codes}.`)}
-      />
     </div>
   )
 }
@@ -499,7 +631,7 @@ export function DashboardHome() {
   )
 }
 
-function FirstRun({ onConfigure }: { onConfigure: () => void }) {
+function FirstRun() {
   return (
     <div className="flex min-h-[min(420px,60vh)] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6">
       <i className="fa-light fa-calendar-plus text-3xl text-muted-foreground" aria-hidden="true" />
@@ -510,8 +642,8 @@ function FirstRun({ onConfigure }: { onConfigure: () => void }) {
           driving evaluation response rates.
         </p>
       </div>
-      <Button variant="default" size="sm" onClick={onConfigure}>
-        Configure Term Calendar
+      <Button variant="default" size="sm" asChild>
+        <Link href="/course-evaluation/term-setup">Set up term</Link>
       </Button>
     </div>
   )

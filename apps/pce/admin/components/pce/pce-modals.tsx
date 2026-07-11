@@ -14,13 +14,16 @@ import {
   formatDateUS,
 } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
-import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { ResponseGauge } from '@/components/pce/response-gauge'
-import type { PceTemplate, PceSurvey, TemplateSection, Student } from '@/lib/pce-mock-data'
+import { SurveyStatusBadge, SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
+import { ResponseProgressCell } from '@/components/pce/response-gauge'
+import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
+import type { PceTemplate, PceSurvey, TemplateSection } from '@/lib/pce-mock-data'
 import {
   MOCK_COURSES, MOCK_FACULTY, MOCK_TERMS, SECTION_LABELS, MOCK_RESPONSES,
-  MOCK_STUDENTS, EVAL_EMAIL_TEMPLATES,
 } from '@/lib/pce-mock-data'
+import {
+  REMINDER_TEMPLATES, nonRespondersFor, reminderGuardrail, daysSinceIso, dayPhrase,
+} from '@/lib/pce-reminders'
 
 // ── CreateTemplateSheet ───────────────────────────────────────────────────────
 
@@ -473,49 +476,6 @@ export function CloseSurveyDialog({ open, onOpenChange, survey }: CloseSurveyDia
   )
 }
 
-// ── Reminder guard-rail helpers ───────────────────────────────────────────────
-// The confirm quotes when the last reminder went out and when the next scheduled
-// one fires, so the admin can self-govern against double-nudging students.
-
-function daysSinceIso(iso?: string): number | null {
-  if (!iso) return null
-  const [y, m, d] = iso.split('-').map(Number)
-  const diff = Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86_400_000)
-  return diff >= 0 ? diff : null
-}
-
-function daysUntilIso(iso?: string): number | null {
-  if (!iso) return null
-  const [y, m, d] = iso.split('-').map(Number)
-  const diff = Math.ceil((new Date(y, m - 1, d).getTime() - Date.now()) / 86_400_000)
-  return diff >= 0 ? diff : null
-}
-
-const dayPhrase = (n: number, future = false) =>
-  n === 0 ? (future ? 'later today' : 'today') : future ? `in ${n} day${n !== 1 ? 's' : ''}` : `${n} day${n !== 1 ? 's' : ''} ago`
-
-/** One-sentence guard rail for a selection of surveys. Null when nothing to say. */
-function reminderGuardrail(surveys: PceSurvey[]): string | null {
-  if (surveys.length === 1) {
-    const s = surveys[0]
-    const last = daysSinceIso(s.lastReminderSentAt)
-    const next = daysUntilIso(s.nextScheduledReminderAt)
-    if (last != null && next != null)
-      return `The last reminder went out ${dayPhrase(last)} and the next scheduled reminder goes out ${dayPhrase(next, true)}.`
-    if (last != null) return `The last reminder went out ${dayPhrase(last)}.`
-    if (next != null) return `The next scheduled reminder goes out ${dayPhrase(next, true)}.`
-    return 'No reminder has been sent for this survey yet.'
-  }
-  const lastDays = surveys
-    .map(s => daysSinceIso(s.lastReminderSentAt))
-    .filter((n): n is number => n != null)
-  const neverCount = surveys.length - lastDays.length
-  if (lastDays.length === 0) return 'None of the selected surveys have been reminded yet.'
-  const mostRecent = Math.min(...lastDays)
-  const neverPart = neverCount > 0 ? ` ${neverCount} of them ${neverCount === 1 ? 'has' : 'have'} never been reminded.` : ''
-  return `The most recent reminder across these courses went out ${dayPhrase(mostRecent)}.${neverPart}`
-}
-
 // ── SendReminderPopover ───────────────────────────────────────────────────────
 
 interface SendReminderPopoverProps {
@@ -578,36 +538,17 @@ interface SendReminderDialogProps {
   onSent?: (courseCodes: string) => void
 }
 
-/* Deterministic non-responder roster per survey (mock — responses stay
- * anonymous; completion status is tracked separately, which is what makes
- * targeted reminders possible without de-anonymizing answers). */
-function hashStr(str: string): number {
-  let h = 5381
-  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
-  return h
-}
-
-function nonRespondersFor(s: PceSurvey): { students: Student[]; count: number } {
-  const pool = MOCK_STUDENTS.filter(st => !s.cohort || st.cohort === s.cohort)
-  const list = pool.length > 0 ? pool : MOCK_STUDENTS
-  const count = Math.max(0, s.enrollmentCount - s.responseCount)
-  const start = list.length > 0 ? hashStr(s.id) % list.length : 0
-  const students = Array.from(
-    { length: Math.min(count, list.length) },
-    (_, i) => list[(start + i) % list.length],
-  )
-  return { students, count }
-}
-
-const REMINDER_TEMPLATES = EVAL_EMAIL_TEMPLATES.filter(t => t.type === 'reminder')
-
-/** Full reminder WORKFLOW (was a bare confirm): who receives it, per course ·
- *  which email template goes out (live preview + merge fields) · where it sits
- *  against the scheduled cadence. Same props as before, so the hub's single-row
- *  and bulk paths and the dashboard all share this one flow. */
+/** Full reminder WORKFLOW (was a bare confirm): who receives it, per course —
+ *  with the course's status badge, response bullet gauge, and last-reminded
+ *  context · which email template goes out (live preview + merge fields) ·
+ *  where it sits against the scheduled cadence, with an acknowledgement gate
+ *  when a selected course was already nudged in the last 3 days. Same props as
+ *  before, so the hub's single-row and bulk paths, the dashboard, and the term
+ *  workspace all share this one flow. */
 export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: SendReminderDialogProps) {
   const { sendSurveyReminder } = usePce()
   const [templateId, setTemplateId] = useState(REMINDER_TEMPLATES[0]?.id ?? '')
+  const [ackRecent, setAckRecent] = useState(false)
   if (surveys.length === 0) return null
 
   const bulk = surveys.length > 1
@@ -615,14 +556,27 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
   const guardrail = reminderGuardrail(surveys)
   const template = REMINDER_TEMPLATES.find(t => t.id === templateId) ?? REMINDER_TEMPLATES[0]
 
+  /* Double-nudge guard — anything in the selection reminded within 3 days
+   * must be consciously acknowledged (push-review ack-gate model). */
+  const recentlyReminded = surveys.filter(s => {
+    const d = daysSinceIso(s.lastReminderSentAt)
+    return d != null && d <= 3
+  })
+  const needsAck = recentlyReminded.length > 0
+
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v)
+    if (!v) setAckRecent(false)
+  }
+
   function handleSend() {
     sendSurveyReminder(surveys.map(s => s.id))
     onSent?.(surveys.map(s => s.courseCode).join(', '))
-    onOpenChange(false)
+    handleOpenChange(false)
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
         showOverlay={false}
@@ -653,16 +607,32 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
                 const { students, count } = nonRespondersFor(s)
                 const shown = students.slice(0, bulk ? 3 : 6)
                 const more = count - shown.length
+                const lastDays = daysSinceIso(s.lastReminderSentAt)
                 return (
                   <div key={s.id} className={si === surveys.length - 1 ? '' : 'border-b border-border'}>
-                    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/40">
-                      <p className="text-xs font-medium">
-                        {s.courseCode}
-                        <span className="text-muted-foreground font-normal"> — {s.courseName}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground tabular-nums shrink-0">
-                        {count} of {s.enrollmentCount} pending
-                      </p>
+                    {/* Course header — status badge + response gauge + reminder history */}
+                    <div className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/40">
+                      <div className="min-w-0 flex flex-col gap-0.5">
+                        <p className="text-xs font-medium truncate">
+                          {s.courseCode}
+                          <span className="text-muted-foreground font-normal"> — {s.courseName}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {count} of {s.enrollmentCount} pending
+                          {' · '}
+                          {lastDays != null ? `last reminder ${dayPhrase(lastDays)}` : 'no reminder sent yet'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <SurveyStatusBadgeOS status={s.status} />
+                        <ResponseProgressCell
+                          rate={s.responseRate}
+                          responseCount={s.responseCount}
+                          enrollmentCount={s.enrollmentCount}
+                          target={RESPONSE_TARGET}
+                          detail="pct"
+                        />
+                      </div>
                     </div>
                     {shown.map(st => (
                       <div key={st.id} className="flex items-baseline justify-between gap-3 px-3 py-1.5">
@@ -687,11 +657,9 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
               <Label htmlFor="reminder-template" className="text-sm font-medium">
                 Email template
               </Label>
-              <Button variant="ghost" size="sm" asChild className="px-0 text-muted-foreground hover:text-foreground">
-                <Link href="/admin/email-templates">
-                  Manage templates
-                  <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                </Link>
+              {/* Spec'd DS variant — no padding/color overrides (Romit flag). */}
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/admin/email-templates">Manage templates</Link>
               </Button>
             </div>
             <Select value={template?.id ?? ''} onValueChange={setTemplateId}>
@@ -721,13 +689,49 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
               <i className="fa-light fa-bell" aria-hidden="true" /> {guardrail}
             </p>
           )}
+
+          {/* ── Ack gate — double-nudge guard (push-review AckGroup anatomy) ── */}
+          {needsAck && (
+            <div className="flex items-start gap-2.5 border-t border-border pt-3">
+              <i
+                className="fa-regular fa-circle-exclamation text-xs"
+                aria-hidden="true"
+                style={{ color: 'var(--insight-severity-warning-fg)', marginTop: 4 }}
+              />
+              <div className="flex flex-col gap-2 flex-1 min-w-0">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium">Recently reminded</span>
+                  <span className="text-xs text-muted-foreground">
+                    {recentlyReminded.slice(0, 3).map(s => s.courseCode).join(', ')}
+                    {recentlyReminded.length > 3 ? ` +${recentlyReminded.length - 3} more` : ''}{' '}
+                    already got a reminder in the last 3 days.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t border-border">
+                  <Checkbox
+                    id="remind-ack"
+                    checked={ackRecent}
+                    onCheckedChange={v => setAckRecent(v === true)}
+                  />
+                  <Label htmlFor="remind-ack" className="text-xs font-normal cursor-pointer">
+                    Send another reminder anyway <span style={{ color: 'var(--destructive)' }}>*</span>
+                  </Label>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <SheetFooter className="flex-row justify-end gap-2">
-          <Button variant="outline" size="default" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="default" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="default" size="default" onClick={handleSend}>
+          <Button
+            variant="default"
+            size="default"
+            disabled={nonResponders === 0 || (needsAck && !ackRecent)}
+            onClick={handleSend}
+          >
             Send {nonResponders} email{nonResponders !== 1 ? 's' : ''}
           </Button>
         </SheetFooter>
@@ -756,6 +760,10 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
   const bulk = surveys.length > 1
   const codes = surveys.map(s => s.courseCode)
   const shownCodes = codes.slice(0, 4).join(', ') + (codes.length > 4 ? ` +${codes.length - 4} more` : '')
+  /* Single-course context: how much runway is left and where responses stand,
+   * so the admin can judge whether an extension will actually help. */
+  const single = bulk ? null : surveys[0]
+  const singlePending = single ? Math.max(0, single.enrollmentCount - single.responseCount) : 0
 
   function handleOpenChange(v: boolean) {
     onOpenChange(v)
@@ -784,12 +792,14 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
         <DialogHeader>
           <DialogTitle>Edit close date{bulk ? 's' : ''}</DialogTitle>
           <DialogDescription>
-            {bulk ? (
+            {bulk || !single ? (
               <>Set a new close date for <strong>{surveys.length} surveys</strong> ({shownCodes}).</>
             ) : (
               <>
-                <strong>{surveys[0].courseCode}</strong> currently closes{' '}
-                <strong>{surveys[0].deadline}</strong>. Students can keep responding until the new date.
+                <strong>{single.courseCode}</strong> currently closes{' '}
+                <strong>{single.deadline}</strong> — it&rsquo;s at{' '}
+                <strong>{single.responseRate}% response</strong> ({single.responseCount} of {single.enrollmentCount};{' '}
+                {singlePending} still pending). Students can keep responding until the new date.
               </>
             )}
           </DialogDescription>
@@ -865,14 +875,8 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {hasResponses && (
-                <ResponseGauge
-                  rate={survey.responseRate}
-                  responseCount={survey.responseCount}
-                  enrollmentCount={survey.enrollmentCount}
-                  showBar
-                />
-              )}
+              {/* The header already reads "N of M responded (X%)" — no bar
+               * (Mobbin: Mailchimp/Zoom show collection as labeled numbers). */}
               {hasSectionAvgs && (
                 <>
                   <Separator />
