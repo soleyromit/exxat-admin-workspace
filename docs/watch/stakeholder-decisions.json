@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-23",
+  "lastUpdated": "2026-07-13",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -544,6 +544,176 @@
       "date": "2026-06-23",
       "status": "confirmed",
       "supersedes": "pce-decision-008"
+    },
+    {
+      "id": "pce-decision-041",
+      "product": "pce",
+      "text": "Remove 'send evaluation' (or 'push survey') CTA from current term and last term dashboard cards. Those cards only support 'view term' and alert-based CTAs (e.g., 'send reminders now', 'add missing info'). The send/push CTA is not actionable on an already-running or completed term.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-042",
+      "product": "pce",
+      "text": "Rename all label instances of 'send evaluation' to 'setup evaluations' throughout the PCE dashboard and wizard. The action is not sending (that implies delivery) — it is configuring/setting up evaluations for a term. Yash flagged this terminology issue during review.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-043",
+      "product": "pce",
+      "text": "Upcoming term card: replace 'view term' CTA with 'setup survey' (or 'setup evaluations'). Clicking this CTA opens the setup survey wizard with term and academic year pre-filled from the card context. The 'view term' CTA does not apply to upcoming terms because there is no evaluation data yet to view.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-044",
+      "product": "pce",
+      "text": "The setup survey wizard starts directly from the 'course readiness' step — it does not include 'term details' as step 1. Term calendar configuration (academic year, term start/end dates) is a separate standalone process ('configure a term calendar'), not a step inside the setup survey wizard. When users click 'setup survey' from a term card, term context is already pre-filled.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-045",
+      "product": "pce",
+      "text": "Faculty column in the dashboard term table: show faculty count (e.g., '2') instead of full names, with a tooltip on hover showing the names. If profile images are mandated and available, 2 stacked avatars may be shown instead. Long faculty names would overflow the column width, so count + tooltip is the correct pattern.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-046",
+      "product": "pce",
+      "text": "Students column in the dashboard term table: omit it. The number of students a survey is going to is already communicated through per-row response stats (e.g., '4 out of 60'). A redundant students column adds clutter without new information.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-047",
+      "product": "pce",
+      "text": "Rename 'opens' label on the upcoming term card KPI to 'term starts' (not 'survey opens'). The PCE dashboard must always disambiguate between term start/end dates and survey start/end dates — never use 'start' or 'end' without qualifying which date type it refers to.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-048",
+      "product": "pce",
+      "text": "Single survey analytics (view results for an individual course-offering survey — the 'view results' page accessible from the dashboard) must be handed to engineering by end of week Jul 13, 2026. Multi-survey analytics (the Analytics tab — by term, by faculty, by course longitudinal views) does NOT need to be frozen this week.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-049",
+      "product": "pce",
+      "text": "PCE Analytics tab structure — each sub-tab (by term, by faculty, by course) follows exactly 3 layers: (1) Top-level KPIs, (2) Trend graphs (longitudinal view across all terms — collapses to a single data point when the user filters to one specific term), (3) Deep-dive table or navigation (actionable breakdown for the selected single term/faculty/course). Clicking a data point in the trend graph should filter the view to that entity. Do not share the analytics prototype URL with the AI agent — use it as a reference only to avoid biased solutions.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-050",
+      "product": "pce",
+      "text": "By-faculty analytics is the highest-priority sub-tab. It contains: (a) a leaderboard table of all faculty sorted by score (the program director's primary view), (b) clicking a faculty member opens a single-faculty detail view showing multi-survey longitudinal performance by term and by course, (c) clicking a course card in the faculty detail view navigates to that course-offering's single-survey analytics (the final data node). This drills from leaderboard → faculty → single survey result.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-051",
+      "product": "pce",
+      "text": "PCE analytics reporting is the final module leg: all on-screen analytics views must eventually support user-selectable filters and export to Excel or PDF. Whatever is shown on screen — faculty leaderboard, course scores, term trends — users can filter and produce a report. This is not phase 1 scope but must be designed with the reporting leg in mind.",
+      "stakeholder": "Monil Pokar",
+      "source": "Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-052",
+      "product": "pce",
+      "text": "PCE Settings/Setup section is deprioritized for design in phase 1 — most settings features are deferred to phase 2. Design attention should focus on Dashboard, Templates, Create Survey (push), View Survey/Results, and Analytics before Settings.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Jul 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-053",
+      "product": "pce",
+      "text": "PCE dashboard and all PCE admin tables must use the full available horizontal screen width where content density warrants it. Tables rendering at ~70% width when there is available space to use 100% are a layout defect. Overflow should scroll horizontally within the table container, not within the page body. Wide data tables (course list, term table) should use available space rather than forcing scroll where space exists.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Jul 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-015",
+      "product": "exam-management",
+      "text": "Accommodations feature is explicitly NOT in Exam Management phase 1 scope — do not design it. No point building any UI for accommodations in the first phase. Phase 1 scope is limited to: Question Creation (P0), Assessment Creation, In-Assessment Experience, Course Offering, and Base Entities.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course Eval sync up transcript — Jul 7, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-07",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-016",
+      "product": "exam-management",
+      "text": "Question creation is Romit's P0 for Exam Management design work — the next priority after PCE view survey is completed. Assessment creation already has working product team prototypes; design refinement is the task (not a rebuild from scratch). Question creation needs to be designed completely from scratch — there are no product team prototypes for it.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course Eval sync up transcript — Jul 7, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-07",
+      "status": "confirmed"
+    },
+    {
+      "id": "workspace-decision-001",
+      "product": "workspace",
+      "text": "Yash is the new leadership sponsor for design approvals on both Exam Management and PCE. Aarti reviews approximately once every 1.5 months — she is not a frequent day-to-day reviewer. The PM team (Monil for PCE, Nipun/Bhargav for Exam Management) are day-to-day reviewers, with Yash as final approver. Weekly call with Aarti is canceled indefinitely. This replaces the prior structure where Aarti and Vishaka were frequent stakeholder reviewers.",
+      "stakeholder": "Arun Soley",
+      "source": "1:1 meeting with Arun and Romit transcript — Jul 6, 2026; Course Eval sync up transcript — Jul 7, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "workspace-decision-002",
+      "product": "workspace",
+      "text": "Design priority order: Exam Management is #1, PCE/Course Evaluation is #2. When forced to choose between the two and there is an active Exam Management need, prioritize Exam Management. Both products must be the exclusive focus — no other work.",
+      "stakeholder": "Arun Soley",
+      "source": "1:1 meeting with Arun and Romit transcript — Jul 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-06",
+      "status": "confirmed"
     }
   ]
 }

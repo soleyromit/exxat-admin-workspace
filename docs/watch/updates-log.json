@@ -1324,6 +1324,15 @@
       "files": ["apps/pce/admin/components/key-metrics/index.tsx"]
     },
     {
+      "id": "2026-07-13-granola-intake-001",
+      "date": "2026-07-13",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "Granola intake — 15 new decisions from Jul 6–13 transcripts (13 PCE, 2 Exam, 2 Workspace)",
+      "what": "Extracted 17 confirmed design decisions from 4 meeting transcripts (1:1 meeting with Arun and Romit Jul 6; Course Eval sync up Jul 7 with Vishal; Course Eval sync up Jul 9 with Monil; Dashboard and analytics design — messaging, KPIs, and multi-survey structure Jul 13 with Monil). PCE decisions (pce-decision-041 to pce-decision-053): remove send evaluation CTA from current/last term cards; rename 'send evaluation' → 'setup evaluations' everywhere; upcoming term card CTA → 'setup survey'; setup wizard starts at course readiness (not term details); faculty column shows count+tooltip not full names; students column omitted; 'opens' KPI label → 'term starts'; single survey analytics due to engineering end of week Jul 13; multi-survey analytics not frozen this week; analytics sub-tab 3-layer structure (KPIs + trend graphs + deep-dive); by-faculty analytics is highest-priority sub-tab with leaderboard → faculty detail → single survey drill-down; analytics reporting (Excel/PDF export) is the final module leg; Settings deprioritized to phase 2; tables must use full horizontal width. Exam decisions (exam-decision-015 to exam-decision-016): accommodations not in phase 1; question creation is P0 after PCE view survey. Workspace decisions (workspace-decision-001 to workspace-decision-002): Yash is new leadership sponsor, weekly Aarti call canceled; Exam Management is priority #1 over PCE. 1 meeting skipped — 'The UX Chats: Team Meeting' and 'Portfolio review and job search strategy with mentor' not Exxat-product-relevant.",
+      "source": "1:1 meeting with Arun and Romit transcript — Jul 6, 2026; Course Eval sync up transcript — Jul 7, 2026; Course Eval sync up transcript — Jul 9, 2026; Dashboard and analytics design — messaging, KPIs, and multi-survey structure transcript — Jul 13, 2026"
+    },
+    {
       "id": "2026-07-13-compliance-violation-exam-033",
       "date": "2026-07-13",
       "product": "exam-management",
