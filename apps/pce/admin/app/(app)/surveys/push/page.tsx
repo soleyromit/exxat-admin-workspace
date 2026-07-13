@@ -167,7 +167,9 @@ function PushSurveyInner() {
     surveyMode === 'general' ? '' : initialTerm?.academicYear ?? ''
   )
   const [ceCohorts, setCeCohorts] = useState<string[]>([])
-  const [ceCriteria, setCeCriteria] = useState<Criterion[]>([])
+  // Course + Instructor are pre-selected — the common evaluation targets — so
+  // courses/readiness load as soon as a term is chosen (Coordinator opt-in).
+  const [ceCriteria, setCeCriteria] = useState<Criterion[]>(['students', 'instructor'])
 
   // Step 4 — Communication — defaults pre-filled from Central Settings
   const settingsWindow = useMemo(() => windowFromSettings(initialTermId), [initialTermId])

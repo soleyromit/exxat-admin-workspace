@@ -65,8 +65,22 @@ function positionOf(term: ProgramTerm, curId: string): TermPosition {
   return term.startDate > today ? 'upcoming' : 'past'
 }
 
+/** Parse a 'YYYY-MM-DD' string as a LOCAL date — plain `new Date(str)` reads
+ * it as UTC midnight, which renders as the day before in timezones behind UTC. */
+const parseDate = (d: string) => {
+  const [y, m, day] = d.split('-').map(Number)
+  return new Date(y, (m ?? 1) - 1, day ?? 1)
+}
+
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  parseDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+/** Date range — drops the redundant year on the start when both share one. */
+const fmtRange = (a: string, b: string) => {
+  const sameYear = parseDate(a).getFullYear() === parseDate(b).getFullYear()
+  const start = sameYear ? fmtDate(a).replace(/, \d{4}$/, '') : fmtDate(a)
+  return `${start} – ${fmtDate(b)}`
+}
 
 function daysAgo(dateStr: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000))
@@ -86,25 +100,31 @@ function RateSrStatus({ rate }: { rate: number }) {
  * metadata is unbordered muted text; countdowns are text + icon. Pills for
  * meta occupied space, wrapped on 1fr cards, and collided with the badge. */
 function TermMetaLine({
-  term, trailing, windowPending = false,
+  term, trailing, windowPending = false, hideWindow = false,
 }: {
   term: ProgramTerm
   trailing?: React.ReactNode
   /** True before any evaluation exists — the derived window is a projection. */
   windowPending?: boolean
+  /** Suppress the window entirely — used where the dates live in body rows. */
+  hideWindow?: boolean
 }) {
   const win = evalWindow(term)
   const open = win.open.replace(/, \d{4}$/, '')
   return (
     <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
       AY {term.academicYear.replace(/–20(\d\d)$/, '–$1')}
-      {' · '}
-      {windowPending ? (
-        <>Eval window not set</>
-      ) : (
+      {!hideWindow && (
         <>
-          <span className="sr-only">Evaluation window </span>
-          {open} – {win.close}
+          {' · '}
+          {windowPending ? (
+            <>Eval window not set</>
+          ) : (
+            <>
+              <span className="sr-only">Evaluation window </span>
+              {open} – {win.close}
+            </>
+          )}
         </>
       )}
       {trailing}
@@ -125,11 +145,20 @@ function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boo
   )
 }
 
-/** Title row — term name left, status badge pinned to the right edge. */
-function TermTitleRow({ name, badge }: { name: string; badge: React.ReactNode }) {
+/** Title row — term name left, status badge pinned to the right edge. The
+ * name links to the term workspace so the label itself is the affordance. */
+function TermTitleRow({ name, termId, badge }: { name: string; termId: string; badge: React.ReactNode }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-2">
-      <CardTitle className="truncate text-base font-semibold text-foreground">{name}</CardTitle>
+      <CardTitle className="min-w-0 truncate text-base font-semibold">
+        <Link
+          href={`/course-evaluation/term/${termId}`}
+          aria-label={`Open ${name} workspace`}
+          className="rounded-sm text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {name}
+        </Link>
+      </CardTitle>
       {badge}
     </div>
   )
@@ -167,6 +196,7 @@ function CurrentTermCard({
       <CardHeader>
         <TermTitleRow
           name={term.name}
+          termId={term.id}
           badge={<StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />}
         />
         <TermMetaLine
@@ -280,6 +310,7 @@ function LastTermCard({ snap }: { snap: TermSnapshot }) {
       <CardHeader>
         <TermTitleRow
           name={term.name}
+          termId={term.id}
           badge={<StatusBadge label="Last term" tone={POSITION_BADGE.past.tone} />}
         />
         <TermMetaLine term={term} />
@@ -323,6 +354,7 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
     0,
     Math.ceil((new Date(term.startDate).getTime() - Date.now()) / 86_400_000),
   )
+  const win = evalWindow(term)
   const rows: { label: string; value: string; icon: string }[] = [
     {
       label: 'Course offerings found',
@@ -334,20 +366,29 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
       value: snap.coverage ? `${snap.coverage.surveyed} of ${snap.coverage.total}` : `${snap.total}`,
       icon: 'fa-square-poll-vertical',
     },
-    { label: 'Opens', value: fmtDate(term.startDate), icon: 'fa-calendar-plus' },
+    { label: 'Term dates', value: fmtRange(term.startDate, term.endDate), icon: 'fa-calendar' },
+    {
+      /* Survey window is a projection until evaluations are set up — say so
+         rather than printing a derived range as a committed fact. */
+      label: 'Survey dates',
+      value: noSetup ? 'Not set yet' : `${win.open.replace(/, \d{4}$/, '')} – ${win.close}`,
+      icon: 'fa-calendar-check',
+    },
   ]
   return (
     <Card>
       <CardHeader>
         <TermTitleRow
           name={term.name}
+          termId={term.id}
           badge={<StatusBadge label={POSITION_BADGE.upcoming.label} tone={POSITION_BADGE.upcoming.tone} />}
         />
         <TermMetaLine
           term={term}
-          /* Before any evaluation exists the derived window is a projection —
-             the reference card says so instead of printing dates as facts. */
-          windowPending={noSetup}
+          /* Dates live in the body rows (Term dates / Survey dates); the meta
+             line stays to the AY + countdown so it never reads "window not
+             set · starts in Nd", which conflated two facts. */
+          hideWindow
           trailing={
             <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
           }
@@ -392,18 +433,24 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               </Button>
             </div>
           </div>
-        ) : (
-          remaining > 0 && (
-            <Button variant="outline" size="sm" className="self-start" asChild>
-              <Link href={`/surveys/push?term=${term.id}`}>
-                Set up {remaining} evaluation{remaining !== 1 ? 's' : ''}
-              </Link>
-            </Button>
-          )
-        )}
+        ) : null}
       </CardContent>
       <CardFooter className="mt-auto">
-        <ViewTermLink termId={term.id} name={term.name} />
+        {/* Upcoming term's job is setup — footer leads there; the clickable
+            title already opens the workspace. Falls back to View term once
+            every offering has an evaluation. */}
+        {remaining > 0 ? (
+          <Link
+            href={`/surveys/push?term=${term.id}`}
+            aria-label={`Set up evaluations for ${term.name}`}
+            className="ms-auto flex items-center gap-1.5 rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            Set up evaluations
+            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+          </Link>
+        ) : (
+          <ViewTermLink termId={term.id} name={term.name} />
+        )}
       </CardFooter>
     </Card>
   )
@@ -466,7 +513,15 @@ function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string
       {
         key: 'name',
         label: 'Term',
-        cell: (row) => <span className="text-sm font-medium text-foreground">{row.name}</span>,
+        cell: (row) => (
+          <Link
+            href={`/course-evaluation/term/${row.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {row.name}
+          </Link>
+        ),
       },
       { key: 'academicYear', label: 'Academic year', width: 130 },
       { key: 'startDate', label: 'Start date', width: 130, cell: (row) => fmtDate(row.startDate) },
@@ -582,7 +637,7 @@ function DashboardHomeInner() {
               <Link href="/course-evaluation/term-setup">Set up term</Link>
             </Button>
             <Button variant="default" size="default" asChild>
-              <Link href="/surveys/push">Send Evaluations</Link>
+              <Link href="/surveys/push">Set up Evaluations</Link>
             </Button>
           </div>
         }

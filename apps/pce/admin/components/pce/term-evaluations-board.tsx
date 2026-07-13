@@ -219,8 +219,14 @@ export function TermEvaluationsBoard({
   return (
     /* The template's "+ New card" placeholders don't apply here — cards derive
      * from offerings/surveys, not free-form adds — and the template exposes no
-     * prop for them, so hide the dashed placeholder buttons in this scope. */
-    <div className="[&_button.border-dashed]:hidden">
+     * prop for them, so hide the dashed placeholder buttons in this scope.
+     *
+     * The DS HorizontalScrollRegion centers its scroll arrows (`self-center`),
+     * which is right for a short KPI strip but floats them in the vertical
+     * middle of this tall board. Pin the control group to the top-right so it
+     * sits alongside the column headers. Scoped here (not the DS) so the KPI
+     * strip's centered arrows are unaffected. */
+    <div className="[&_button.border-dashed]:hidden [&_[data-slot=horizontal-scroll-controls]]:self-start">
       <ListPageBoardTemplate
         columns={columns}
         rows={rows}
