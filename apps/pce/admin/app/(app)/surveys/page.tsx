@@ -22,7 +22,7 @@ import Link from 'next/link'
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Closed, Pending Review',
-  collecting:     'Live',
+  collecting:     'Ongoing',
   active:         'Scheduled',
   draft:          'Draft',
   released:       'Results Released to Faculty',

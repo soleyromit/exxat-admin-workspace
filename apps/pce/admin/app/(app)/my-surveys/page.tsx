@@ -24,7 +24,7 @@ const FACULTY_ID = 'f1'
 const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Closed, Pending Review',
-  collecting:     'Live',
+  collecting:     'Ongoing',
   active:         'Scheduled',
   draft:          'Draft',
   released:       'Closed, Results Available',

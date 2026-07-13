@@ -315,6 +315,30 @@ Source: `docs/research/meetings/2026-07-09-course-eval-sync-monil.md` (Granola `
 
 ---
 
+## Phase 1 design tasks — added 2026-07-13 (Monil dashboard + analytics design review)
+
+Source: `docs/research/meetings/2026-07-13-dashboard-analytics-design-monil.md` (Granola `8330d724`)
+
+> Monil + Romit prototype review Jul 13. Topics: dashboard card CTAs, upcoming card layout, courses table columns, setup survey step count, single vs multi-survey analytics delivery split, multi-survey mental model walk-through. Next call Jul 14 with Vishaka and David — verbiage review.
+
+### Updates to existing tasks (Jul 13)
+
+| # | Update |
+|---|---|
+| T100 | **Monil to give single-survey analytics feedback by Jul 14 EOD.** Handoff to engineering by end of week (Jul 18). Monil: "by tomorrow end of the day, I will give you feedback only on single server analytics." D_PCE_0713_11. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T101 | Dashboard current + last term cards: remove "Send Evaluation" CTA; add "Total courses evaluated" KPI; rename any "send" language to "Setup Evaluations" | Admin | Dashboard prototype — current term + last term cards | P1 — DESIGN-REVIEW | Monil Jul 13: "we will not need send evaluation here. So you can remove that." / "We can also add in the first card. Things like. Total courses evaluated." / "wherever you are calling it as send evaluation. Instead of that rename it to setup." No code equivalent yet — apply in Figma/Lovable before Jul 14 call. D_PCE_0713_01, D_PCE_0713_02, D_PCE_0713_03, D_PCE_0713_09. |
+| T102 | Dashboard upcoming card: CTA → "Setup Evaluations"; date label "Open" → "term starts"; distinguish term vs survey dates wherever both appear; "add missing info" pre-selects courses + instructor | Admin | Dashboard prototype — upcoming card | P1 — DESIGN-REVIEW | Monil Jul 13: "instead of open we can write term starts because that's a term start date." / "there will be two type of dates... Wherever we use this start and end let's be clear also whether it's a term start or a survey start." Apply in prototype before Jul 14 call. D_PCE_0713_04, D_PCE_0713_05, D_PCE_0713_06. |
+| T103 | Dashboard courses table: remove student count column; faculty column shows avatar(s) or count — not full names | Admin | Dashboard prototype — courses table | P1 — DESIGN-REVIEW | Monil Jul 13: "we can skip students." / "we can show the count of faculty. Instead of the full names." Avatar approach preferred if images are available. Apply in prototype before Jul 14 call. D_PCE_0713_07, D_PCE_0713_08. |
+| T104 | Setup survey flow: remove "Term Details" as step 1; start from "Course Readiness"; term details becomes separate term calendar configuration | Admin | Dashboard prototype — setup survey flow | P1 — DESIGN-REVIEW | Monil Jul 13: "I don't want to call this as a five step process... Let's start from course readiness. Whatever term details that you have created, let's call that as a separate configuration process to configure a term calendar." Term pre-fills from the card clicked. Structural rearchitecture — needs Romit design direction before code. D_PCE_0713_10. |
+| T105 | NEW PAGE NEEDED — multi-survey analytics: 4 top tabs (Overview, by Faculty, by Course, by Term); tabs on top of page; 3-layer structure per tab (KPIs → trend graph → deep-dive table); by-Faculty = leaderboard → faculty detail → single-survey result drill | Admin | `/analytics` — multi-survey overlay or new route | P1 — DESIGN-REVIEW | Monil Jul 13: "Imagine these on the top of this screen." / "each tab here will have kpis, will have trend graphs and we'll have deep dive table or a navigation. Three things." By Faculty: "These are the five faculties who taught and this is the order of the score... I click on that view inside and then the entire view opens only for Dr. Sandra." Not due this week. Monil building PRD in parallel. Do NOT build until Romit designs and Monil reviews. D_PCE_0713_12, D_PCE_0713_13, D_PCE_0713_14. |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.

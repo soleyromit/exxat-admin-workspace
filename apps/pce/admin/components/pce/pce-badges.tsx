@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant
     dot: 'var(--brand-color)',
   },
   collecting: {
-    label: 'Live',
+    label: 'Ongoing',
     variant: 'default',
     bg: 'var(--pce-status-collecting-bg)',
     fg: 'var(--pce-status-collecting-fg)',
