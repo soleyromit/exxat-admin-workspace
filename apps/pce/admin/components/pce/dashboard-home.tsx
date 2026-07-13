@@ -145,6 +145,7 @@ function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boo
   )
 }
 
+
 /** Title row — term name left, status badge pinned to the right edge. The
  * name links to the term workspace so the label itself is the affordance. */
 function TermTitleRow({ name, termId, badge }: { name: string; termId: string; badge: React.ReactNode }) {
@@ -389,8 +390,13 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
              line stays to the AY + countdown so it never reads "window not
              set · starts in Nd", which conflated two facts. */
           hideWindow
+          /* The countdown rides inside the needs-info block (like the current
+             card's "N days left" rides its reminder block); only when there's
+             no such block does it fall back to the meta line. */
           trailing={
-            <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
+            readiness.needsData > 0
+              ? undefined
+              : <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
           }
         />
       </CardHeader>
@@ -432,6 +438,12 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                 <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
               </Button>
             </div>
+            {/* Countdown to term start rides with the block it pressures —
+                top-right, the SAME "N days left" indicator as the current
+                card, so both cards read identically. Urgent under a week out. */}
+            <span className="ms-auto shrink-0">
+              <DaysLeftIndicator daysLeft={startsIn} urgent={startsIn <= 7} />
+            </span>
           </div>
         ) : null}
       </CardContent>

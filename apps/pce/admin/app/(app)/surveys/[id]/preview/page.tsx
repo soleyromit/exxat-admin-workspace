@@ -100,7 +100,7 @@ export default function SurveyPreviewPage() {
   if (!survey || !template || sections.length === 0) {
     return (
       <>
-        <SiteHeader breadcrumbs={[{ label: 'Evaluations', href: '/surveys' }]} title="Preview" />
+        <SiteHeader breadcrumbs={[{ label: 'Dashboard', href: '/course-evaluation/dashboard' }]} title="Preview" />
         <div className="flex items-center justify-center flex-1 px-7 py-12">
           <EmptyState
             align="center"
@@ -131,7 +131,7 @@ export default function SurveyPreviewPage() {
     <>
       <SiteHeader
         breadcrumbs={[
-          { label: 'Evaluations', href: '/surveys' },
+          { label: 'Dashboard', href: '/course-evaluation/dashboard' },
           { label: `${survey.courseCode}`, href: `/surveys/${survey.id}` },
         ]}
         title="Student preview"

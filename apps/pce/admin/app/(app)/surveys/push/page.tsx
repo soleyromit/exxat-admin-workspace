@@ -412,12 +412,12 @@ function PushSurveyInner() {
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
         breadcrumbs={[{
-          label: surveyMode === 'general' ? 'Surveys' : 'Evaluations',
-          href:  surveyMode === 'general' ? '/surveys/programmatic' : '/surveys',
+          label: surveyMode === 'general' ? 'Surveys' : 'Dashboard',
+          href:  surveyMode === 'general' ? '/surveys/programmatic' : '/course-evaluation/dashboard',
         }]}
-        title={surveyMode === 'general' ? 'Push survey' : 'Push evaluation'}
+        title={surveyMode === 'general' ? 'Push survey' : 'Set up Evaluations'}
       />
-      <h1 className="sr-only">{surveyMode === 'general' ? 'Push survey' : 'Push evaluation'}</h1>
+      <h1 className="sr-only">{surveyMode === 'general' ? 'Push survey' : 'Set up Evaluations'}</h1>
 
       {/* Horizontal step bar — hidden on success step */}
       {step !== 'success' && (
@@ -626,7 +626,7 @@ function PushSurveyInner() {
 
 export default function PushSurveyPage() {
   return (
-    <Suspense fallback={<h1 className="sr-only">Push evaluation</h1>}>
+    <Suspense fallback={<h1 className="sr-only">Set up Evaluations</h1>}>
       <PushSurveyInner />
     </Suspense>
   )

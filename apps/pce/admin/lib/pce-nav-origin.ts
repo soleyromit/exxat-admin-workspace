@@ -20,22 +20,36 @@ import { termsOrdered } from '@/lib/pce-term-metrics'
 export interface ResultsOrigin {
   /** Breadcrumb label — the list the user came from. */
   label: string
-  /** Back target. */
+  /** Back target (immediate parent) — used by the back button + success CTA. */
   href: string
+  /** Full breadcrumb ancestors, rooted at the module home so every prior page
+   *  backtracks (Dashboard › … › result). */
+  trail: { label: string; href: string }[]
   /** Raw param to thread onto sibling/related result links (null = default). */
   from: string | null
 }
 
-const DEFAULT_ORIGIN: ResultsOrigin = { label: 'Results', href: '/results', from: null }
+const DASHBOARD = { label: 'Dashboard', href: '/course-evaluation/dashboard' }
 
-/** `term:<id>` → that term's workspace · `my-surveys` · `analytics` · else Results. */
+const DEFAULT_ORIGIN: ResultsOrigin = {
+  label: 'Dashboard', href: '/course-evaluation/dashboard', trail: [DASHBOARD], from: null,
+}
+
+/** `term:<id>` → that term's workspace · `my-surveys` · `analytics` · else Dashboard. */
 export function resolveResultsOrigin(from: string | null): ResultsOrigin {
   if (from?.startsWith('term:')) {
     const term = termsOrdered.find((t) => t.id === from.slice('term:'.length))
-    if (term) return { label: term.name, href: `/course-evaluation/term/${term.id}`, from }
+    if (term) {
+      const href = `/course-evaluation/term/${term.id}`
+      return { label: term.name, href, trail: [DASHBOARD, { label: term.name, href }], from }
+    }
   }
-  if (from === 'my-surveys') return { label: 'My surveys', href: '/my-surveys', from }
-  if (from === 'analytics') return { label: 'Analytics', href: '/analytics', from }
+  if (from === 'my-surveys') {
+    return { label: 'My surveys', href: '/my-surveys', trail: [{ label: 'My surveys', href: '/my-surveys' }], from }
+  }
+  if (from === 'analytics') {
+    return { label: 'Analytics', href: '/analytics', trail: [DASHBOARD, { label: 'Analytics', href: '/analytics' }], from }
+  }
   return DEFAULT_ORIGIN
 }
 

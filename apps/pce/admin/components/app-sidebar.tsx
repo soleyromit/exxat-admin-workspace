@@ -368,7 +368,9 @@ function PrimaryNavItems({ items }: { items: NavLinkItem[] }) {
           return <CollapsibleNavItem key={item.key} item={item} pathname={pathname} allNavUrls={allNavUrls} />
         }
 
-        const active = isNavActive(pathname, item.url)
+        const active =
+          isNavActive(pathname, item.url) ||
+          (item.activePrefixes?.some(p => isNavActive(pathname, p, allNavUrls)) ?? false)
         return (
           <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={active} tooltip={item.title}>

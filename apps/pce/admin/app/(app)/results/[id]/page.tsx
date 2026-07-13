@@ -246,7 +246,7 @@ function StatusResultScreen({
   return (
     <>
       <SiteHeader
-        breadcrumbs={[{ label: origin.label, href: origin.href }]}
+        breadcrumbs={origin.trail}
         title={survey.courseCode}
       />
       <PageHeader
@@ -1051,7 +1051,7 @@ function ResultDetailPageInner() {
     }
     return (
       <>
-        <SiteHeader breadcrumbs={[{ label: origin.label, href: origin.href }]} title="Result" />
+        <SiteHeader breadcrumbs={origin.trail} title="Result" />
         <PageHeader title="Results" />
         <div className="flex-1 px-7 py-4">
           <GateScreen
@@ -1068,7 +1068,7 @@ function ResultDetailPageInner() {
   if (!isPD && !isOwner) {
     return (
       <>
-        <SiteHeader breadcrumbs={[{ label: origin.label, href: origin.href }]} title="Access Restricted" />
+        <SiteHeader breadcrumbs={origin.trail} title="Access Restricted" />
         <PageHeader title="Access Restricted" />
         <div className="flex-1 px-7 py-4">
           <GateScreen
@@ -1437,7 +1437,7 @@ function ResultDetail({
   return (
     <>
       <SiteHeader
-        breadcrumbs={[{ label: origin.label, href: origin.href }]}
+        breadcrumbs={origin.trail}
         title={result.courseCode}
       />
       <PageHeader
