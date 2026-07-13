@@ -263,19 +263,19 @@ function CurrentTermCard({
                   {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
                 </p>
               </div>
-              {/* Batch action → the send-reminders WIZARD (cardinality rule:
-                  multi-course = wizard; the sheet is for single-row confirms). */}
-              <Button variant="outline" size="sm" className="self-start" asChild>
-                <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
-              </Button>
+              {/* Batch action + countdown share the bottom row — identical to
+                  the upcoming card's needs-info block so the two read the same;
+                  the countdown wraps below the button on the narrow card rather
+                  than squeezing the heading. (multi-course batch → wizard.) */}
+              <div className="flex flex-col items-start gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
+                </Button>
+                {snap.daysLeft != null && (
+                  <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
+                )}
+              </div>
             </div>
-            {/* Deadline rides with the action it pressures — text + icon, not
-                a badge (the tinted StatusBadge is reserved for term status). */}
-            {snap.daysLeft != null && (
-              <span className="ms-auto shrink-0">
-                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
-              </span>
-            )}
           </div>
         )}
       </CardContent>
@@ -431,19 +431,19 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                   {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  missing faculty or student rosters
+                  Missing faculty or student rosters
                 </p>
               </div>
-              <Button variant="outline" size="sm" className="self-start" asChild>
-                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
-              </Button>
+              {/* Action + countdown share the bottom row so neither squeezes
+                  the heading; on a narrow card the countdown wraps below the
+                  button instead of forcing the heading onto 3–4 lines. */}
+              <div className="flex flex-col items-start gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+                </Button>
+                <DaysLeftIndicator daysLeft={startsIn} urgent={startsIn <= 7} />
+              </div>
             </div>
-            {/* Countdown to term start rides with the block it pressures —
-                top-right, the SAME "N days left" indicator as the current
-                card, so both cards read identically. Urgent under a week out. */}
-            <span className="ms-auto shrink-0">
-              <DaysLeftIndicator daysLeft={startsIn} urgent={startsIn <= 7} />
-            </span>
           </div>
         ) : null}
       </CardContent>

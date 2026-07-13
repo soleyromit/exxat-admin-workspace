@@ -357,7 +357,10 @@ function AnchorLink({
         onGo()
       }}
       title={label}
-      className={`${small ? 'text-xs' : 'text-sm'} text-muted-foreground hover:text-foreground truncate rounded-sm py-0.5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50`}
+      /* block + min-w-0 so `truncate` shrinks to the 260px rail (ellipsis, not
+         a mid-word clip); shrink-0 so the flex column's max-height doesn't
+         compress each row below its line-height and clip the text vertically. */
+      className={`block min-w-0 shrink-0 truncate rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${small ? 'text-xs py-1' : 'text-sm py-0.5'}`}
     >
       {label}
     </a>
