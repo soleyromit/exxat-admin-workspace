@@ -313,29 +313,33 @@ Source: `docs/research/meetings/2026-07-09-course-eval-sync-monil.md` (Granola `
 | T99 | Settings deprioritized — demote all settings tasks to Phase 2 | Admin | Settings | Phase 2 — logged | Monil Jul 9: "most of the settings would go in phase two." T30, T81, T82, T83, T92 all moved to Phase 2. No active design work on settings in Phase 1. D_PCE_0709_01. |
 | T100 | Single-survey analytics (row 16) — design and review | Admin | Survey analytics | P1 — IN PROGRESS | Monil Jul 9: focus on single-survey analytics only; multi-survey longitudinal is deferred. Row 16 UI partially built; Romit to share updated link for Monil review. Longitudinal analytics = Phase 2 or later. D_PCE_0709_02. |
 
----
-
 ## Phase 1 design tasks — added 2026-07-13 (Monil dashboard + analytics design review)
 
 Source: `docs/research/meetings/2026-07-13-dashboard-analytics-design-monil.md` (Granola `8330d724`)
 
-> Monil + Romit prototype review Jul 13. Topics: dashboard card CTAs, upcoming card layout, courses table columns, setup survey step count, single vs multi-survey analytics delivery split, multi-survey mental model walk-through. Next call Jul 14 with Vishaka and David — verbiage review.
+> Monil design review Jul 13. Topics: dashboard term-card CTAs and verbiage, single-survey analytics deadline (end Jul 18 week), multi-survey analytics structure orientation (By Faculty / By Course / By Term), analytics tab placement (top not sidebar).
 
 ### Updates to existing tasks (Jul 13)
 
 | # | Update |
 |---|---|
-| T100 | **Monil to give single-survey analytics feedback by Jul 14 EOD.** Handoff to engineering by end of week (Jul 18). Monil: "by tomorrow end of the day, I will give you feedback only on single server analytics." D_PCE_0713_11. |
+| T46 | Dashboard term cards: (a) remove "Send Evaluation" CTA from current + last term cards; (b) replace "View Term" with "Setup Evaluations" in upcoming card; (c) faculty column = count or avatars + tooltip (not full names); (d) student count column = skip. D_PCE_0713_02, D_PCE_0713_03, D_PCE_0713_07, D_PCE_0713_10. |
+| T49 | Push survey wizard: start from Course Readiness (not Term Details). Term label pre-populated from card context. D_PCE_0713_04. |
+| T72 | Analytics tabs must be horizontal at TOP of screen (not sidebar). Tab labels: Overview / By Faculty / By Course / By Term. D_PCE_0713_06. |
+| T100 | **DEADLINE: end of Jul 18 week.** Monil will review single-survey analytics and provide feedback by end of day Jul 14. Feedback round → finalize → hand to engineering. D_PCE_0713_08. |
 
 ### New tasks
 
 | # | Task | Persona | Surface | Priority | Notes |
 |---|---|---|---|---|---|
-| T101 | Dashboard current + last term cards: remove "Send Evaluation" CTA; add "Total courses evaluated" KPI; rename any "send" language to "Setup Evaluations" | Admin | Dashboard prototype — current term + last term cards | P1 — DESIGN-REVIEW | Monil Jul 13: "we will not need send evaluation here. So you can remove that." / "We can also add in the first card. Things like. Total courses evaluated." / "wherever you are calling it as send evaluation. Instead of that rename it to setup." No code equivalent yet — apply in Figma/Lovable before Jul 14 call. D_PCE_0713_01, D_PCE_0713_02, D_PCE_0713_03, D_PCE_0713_09. |
-| T102 | Dashboard upcoming card: CTA → "Setup Evaluations"; date label "Open" → "term starts"; distinguish term vs survey dates wherever both appear; "add missing info" pre-selects courses + instructor | Admin | Dashboard prototype — upcoming card | P1 — DESIGN-REVIEW | Monil Jul 13: "instead of open we can write term starts because that's a term start date." / "there will be two type of dates... Wherever we use this start and end let's be clear also whether it's a term start or a survey start." Apply in prototype before Jul 14 call. D_PCE_0713_04, D_PCE_0713_05, D_PCE_0713_06. |
-| T103 | Dashboard courses table: remove student count column; faculty column shows avatar(s) or count — not full names | Admin | Dashboard prototype — courses table | P1 — DESIGN-REVIEW | Monil Jul 13: "we can skip students." / "we can show the count of faculty. Instead of the full names." Avatar approach preferred if images are available. Apply in prototype before Jul 14 call. D_PCE_0713_07, D_PCE_0713_08. |
-| T104 | Setup survey flow: remove "Term Details" as step 1; start from "Course Readiness"; term details becomes separate term calendar configuration | Admin | Dashboard prototype — setup survey flow | P1 — DESIGN-REVIEW | Monil Jul 13: "I don't want to call this as a five step process... Let's start from course readiness. Whatever term details that you have created, let's call that as a separate configuration process to configure a term calendar." Term pre-fills from the card clicked. Structural rearchitecture — needs Romit design direction before code. D_PCE_0713_10. |
-| T105 | NEW PAGE NEEDED — multi-survey analytics: 4 top tabs (Overview, by Faculty, by Course, by Term); tabs on top of page; 3-layer structure per tab (KPIs → trend graph → deep-dive table); by-Faculty = leaderboard → faculty detail → single-survey result drill | Admin | `/analytics` — multi-survey overlay or new route | P1 — DESIGN-REVIEW | Monil Jul 13: "Imagine these on the top of this screen." / "each tab here will have kpis, will have trend graphs and we'll have deep dive table or a navigation. Three things." By Faculty: "These are the five faculties who taught and this is the order of the score... I click on that view inside and then the entire view opens only for Dr. Sandra." Not due this week. Monil building PRD in parallel. Do NOT build until Romit designs and Monil reviews. D_PCE_0713_12, D_PCE_0713_13, D_PCE_0713_14. |
+| T101 | Dashboard course table: faculty column → count or 2 avatars + tooltip | Admin | Dashboard term-card drill view | P1 — pending T46 dashboard build | Show "1", "2", … count or two avatar circles; hover = tooltip with full names. D_PCE_0713_07. |
+| T102 | Dashboard upcoming card: replace "View Term" CTA with "Setup Evaluations" | Admin | Dashboard upcoming card | P1 — pending T46 dashboard build | No data to view in upcoming term — CTA initiates setup flow, pre-seeded with term context. D_PCE_0713_03. |
+| T103 | Remove "Send Evaluation" CTA from current + last term dashboard cards | Admin | Dashboard current/last term cards | P1 — pending T46 dashboard build | Wrong action for those cards. Only CTA is "View Term" (drill into course list). D_PCE_0713_02. |
+| T104 | Setup survey wizard: open on Course Readiness step (not Term Details) | Admin | Push survey wizard | P1 — DESIGN-REVIEW | Term label pre-populated from card context; wizard opens at course/cohort selection. Revise step structure per D_PCE_0713_04. |
+| T105 | Multi-survey analytics: By Faculty page | Admin | Analytics | P1 — BLOCKED (Monil PRD in progress) | Leaderboard of faculty sorted by score → click → faculty detail (performance by term, courses taught, avg numbers, theme gaps → single-survey results). D_PCE_0713_05. |
+| T106 | Multi-survey analytics: By Term page | Admin | Analytics | P1 — BLOCKED (Monil PRD in progress) | Top-level KPIs + trend graph + deep-dive course table. Investigate which courses pulled term average down. D_PCE_0713_05. |
+| T107 | Multi-survey analytics: tabs at top of screen | Admin | Analytics navigation | P1 — BLOCKED (Monil PRD in progress) | Horizontal tabs (Overview / By Faculty / By Course / By Term) in analytics header. D_PCE_0713_06. |
+| T108 | Analytics layout: remove max-w-4xl from analytics content container | Admin | `analytics/page.tsx` | P0 — ✅ APPLIED Jul 13 | Removed `max-w-4xl` from content div at line 478. Analytics page now uses full screen width (missed from T98 Jul 9 fix). D_PCE_0709_04. |
 
 ---
 

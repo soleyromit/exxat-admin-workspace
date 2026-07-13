@@ -475,7 +475,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6">
 
             {/* C9 — Template-aggregation guard rail */}
             {hasMixedTemplates && (
