@@ -1308,6 +1308,34 @@
       "source": "PRD watcher run 2026-06-24",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-07-13-compliance-violation-pce-014",
+      "date": "2026-07-13",
+      "product": "pce",
+      "type": "compliance-violation",
+      "title": "New P2 violation: raw <button> in key-metrics/index.tsx:289",
+      "what": "apps/pce/admin/components/key-metrics/index.tsx line 289 uses a raw <button> element with type=\"button\" inside the KeyMetrics card component. Present in prior sweeps but not previously inventoried.",
+      "why": "GUARDRAIL-raw-button: bypasses DS Button focus ring, variant system, and keyboard contract. The KeyMetrics component is used on multiple dashboard pages.",
+      "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
+      "fixLevel": "Replace with DS <Button> using explicit variant and size.",
+      "source": "Compliance sweep 2026-07-13",
+      "severity": "P2",
+      "files": ["apps/pce/admin/components/key-metrics/index.tsx"]
+    },
+    {
+      "id": "2026-07-13-compliance-violation-exam-033",
+      "date": "2026-07-13",
+      "product": "exam-management",
+      "type": "compliance-violation",
+      "title": "New P2 violation: raw <button> in key-metrics/index.tsx:289",
+      "what": "apps/exam-management/admin/components/key-metrics/index.tsx line 289 uses a raw <button> element with type=\"button\" inside the KeyMetrics card component. Present in prior sweeps but not previously inventoried.",
+      "why": "GUARDRAIL-raw-button: bypasses DS Button focus ring, variant system, and keyboard contract. The KeyMetrics component is used on multiple dashboard pages.",
+      "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
+      "fixLevel": "Replace with DS <Button> using explicit variant and size.",
+      "source": "Compliance sweep 2026-07-13",
+      "severity": "P2",
+      "files": ["apps/exam-management/admin/components/key-metrics/index.tsx"]
     }
   ]
 }
