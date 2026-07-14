@@ -243,12 +243,7 @@ export default function CoursesDirectoryPage() {
       <PageHeader
         title="Courses"
         subtitle="Manage and view all courses in the program."
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/surveys/push')}>Push Surveys</Button>
-            <Button onClick={() => setAddOpen(true)}>Add Course Offering</Button>
-          </div>
-        }
+        actions={<Button onClick={() => setAddOpen(true)}>Add Course Offering</Button>}
       />
       <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />
       <AddOfferingDialog open={addOpen} onOpenChange={setAddOpen} onAdd={(o) => setOfferings(prev => [o, ...prev])} />
@@ -258,7 +253,7 @@ export default function CoursesDirectoryPage() {
       </div>
 
       <div className="flex-1 overflow-auto" tabIndex={0} style={{ paddingTop: 16, paddingBottom: 28 }}>
-        <div className="max-w-6xl flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
           <DataTablePaginated<OfferingRow>
             data={tableRows}
             columns={columns}

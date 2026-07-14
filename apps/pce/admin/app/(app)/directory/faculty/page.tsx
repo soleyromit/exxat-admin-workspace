@@ -176,7 +176,7 @@ export default function FacultyPage() {
       </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
-        <div className="max-w-5xl flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
 
           <DataTablePaginated<FacultyRow>
             data={rows}
