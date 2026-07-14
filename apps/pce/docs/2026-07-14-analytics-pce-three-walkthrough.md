@@ -536,7 +536,48 @@ The entire chart surface in the package is **8 primitives**: `ChartConfig`, `Cha
 | *(response-rate collection curve, if wanted)* | **Cumulative line vs target + reminder markers** | `lib/pce-collection.ts:5`, `:21` `cumulativePct`; rendered `results/[id]/page.tsx:870-965` | Proven, exactly this use case |
 | *(question-level detail)* | **Heatmap** — course × term or question × term | `ChartHeatmap` `chart-heatmap.tsx:234` (**ECharts**, generic via `buildChartHeatmapPoints:36`) | ⚠️ Primitive exists but **gallery-only** — course × term would be its **first product use**. Uses `ChartLeoPixelPlotInsightOverlay:469` (canvas, not cartesian) |
 
-### 9.2 ⚠️ The vault asks for two charts that do not exist
+### 9.1b ⚠️ CORRECTION — §9.1 was written without the mandatory rubric
+
+`DESIGN.md:98` — **VIZ-005: *"Viz selection rubric (in `docs/patterns/viz/RUBRIC.md`) must be
+consulted for every analytics card."*** §9.1 was written without opening it. **That is a rule
+violation.** Worse, I quoted `VIZ-001` / `VIZ-004` / `VIZ-PATTERN-006` secondhand from vault prose
+without reading the catalogue. Corrections:
+
+| I said | Truth | Source |
+|---|---|---|
+| "VIZ-PATTERN-006 = amber-border outlier panels" | **VIZ-PATTERN-006 = Small Multiples.** The amber border is a styling detail *inside* it | `docs/patterns/viz/small-multiples.md:5`, `:61-62` |
+| "Slopegraph NOT FOUND" | **NOT FOUND as a *component*. It EXISTS as a sanctioned *pattern*** — `VIZ-PATTERN-004` slope-paired | `docs/patterns/viz/slope-paired.md` |
+| "Beeswarm NOT FOUND → substitute strip plot" | Right answer, wrong reasoning — the strip plot is itself a **named pattern**, `VIZ-PATTERN-002` outlier-strip-plot | `docs/patterns/viz/outlier-strip-plot.md` |
+
+**We already have the chart analogue of Mobbin. I wasn't using it.** `docs/patterns/viz/` — **9 named
+patterns**: `-001` gap-heatmap · `-002` outlier-strip-plot · `-003` bullet-vs-target · `-004`
+slope-paired · `-005` cleveland-dot · `-006` small-multiples · `-007` calendar-heatmap · `-008`
+progression-sankey · `AI-001` ai-vs-pulled-lane. Plus **11 VIZ-* rules** (`DESIGN.md:94-104`) and the
+**gate** at `docs/patterns/viz/RUBRIC.md` (five questions, each with an explicit ❌ Wrong row).
+
+**Four rules that land directly on these 10 tasks and that §1–§9 missed:**
+
+- **VIZ-006** — *"Cohort comparison must show pairing or distribution, never duo-numbers. **Two large
+  numbers side-by-side is forbidden in dashboard contexts.**"* ⇒ This is exactly §4.1's `4.55/84%`
+  above `4.38/81%`. There was already a rule for it.
+- **VIZ-007** — *"**Faceted views default to small multiples, not dropdowns.** The dropdown becomes an
+  optional drill-down."* ⇒ The whole reference app is dropdown-driven (Faculty / Course / Term
+  selectors). VIZ-007 inverts that default — and independently confirms **D8** (ranked list + per-row
+  sparkline *is* small multiples).
+- **VIZ-011** — banned: *"gauges/dials, donut/pie >5 slices, exploded pies, 3D anything, dual y-axis
+  line charts, stacked bars >4 stacks."* ⚠️ **Conflict:** the DS gallery ships a `gauge` type
+  (`chart-previews.tsx:1147`) and `dashboard-quota-progress-card.tsx` renders `RadialBarChart`.
+  **Our own gallery ships a banned chart.** Worth raising separately.
+- **`docs/patterns/dashboards/RUBRIC.md:20-26`** — *"frequency counts > percentages for coverage data"*
+  (*"8 of 20 questions" beats "40%"* — **Aarti D17**). ⇒ The ref app's `% COURSES BELOW BENCHMARK 50%`
+  should read **"4 of 8 courses."**
+
+Also two **live ID bugs** now in circulation, worth fixing at source:
+`docs/governance/claude-practices.md:182` cites **VIZ-008** (calendar-heatmap) where it means
+**VIZ-002** (annotation); and the vault's `2026-05-08-course-evaluation.md:75` reduces
+**VIZ-PATTERN-006** to "amber border" — the same misreading I repeated.
+
+### 9.2 ⚠️ The vault asks for two charts that have patterns but no components
 
 | Vault asks for | Status | Resolution |
 |---|---|---|
@@ -553,7 +594,63 @@ The entire chart surface in the package is **8 primitives**: `ChartConfig`, `Cha
 - **A Leo constant is not proof of a chart** — `CHART_GALLERY_LEO_*` exists for `_BULLET`, `_HEATMAP`,
   `_TREEMAP`, `_SANKEY`… whose renderers live elsewhere or nowhere. Don't infer a chart from an insight.
 
-### 9.4 Not verified
+### 9.4 Where chart choices are sourced from — the full register
+
+Answering *"are we checking anything else, the way we use Mobbin?"* — five sources, four of which
+§9.1 skipped:
+
+| # | Source | What it decides | Status |
+|---|---|---|---|
+| 1 | **`docs/patterns/viz/RUBRIC.md`** (the VIZ-005 gate) | *What shape* a chart takes — 5 questions, each with an ❌ Wrong row; decision flow `:84-94` where the progress bar survives in **exactly one** branch (*"single in-flight task 0–100%"*) | ❌ **was skipped — mandatory** |
+| 2 | **`docs/patterns/viz/*` — 9 named patterns** | The chart analogue of Mobbin. Our own vocabulary | ❌ **was skipped** |
+| 3 | **`docs/patterns/dashboards/RUBRIC.md`** | *Whether a card exists at all* — *"Dashboards answer questions. If you can't name the question a card answers, the card shouldn't exist."* | ❌ **was skipped** |
+| 4 | **Vendored DS suite** (`charts-overview.tsx` etc.) | What's actually buildable | ✅ used (§9.0) |
+| 5 | **Mobbin** | Layout/IA of the surface, not the chart type | ❌ was owed → **now run, below** |
+
+**External canon — what we actually hold.** `docs/governance/claude-practices.md:164-186` is a 14-row
+banned-pattern table, each row sourced: **Few** *Information Dashboard Design* (gauges) · **Cleveland
+1985** perception experiments (donut >5) · **Tufte** *VDQI* (3D, exploded pie, non-zero baseline) ·
+**Schwabish** *Better Data Visualizations* (dual y-axis, >4 stacks) · **Knaflic** *Storytelling with
+Data* (chart without takeaway) · **Borland 2007** (rainbow colormap).
+
+⚠️ **We do NOT hold the FT Visual Vocabulary.** That header name-drops *"FT canon"* but **no FT source
+appears in any of the 14 rows**, and there are zero hits for `Visual Vocabulary` / `data-to-viz` /
+`Datawrapper` / `Vega` / `Nivo` / `Tremor` across either tree. There is **no `REFERENCES.md`, no
+bibliography, no external chart-choice taxonomy**. If we want an FT-style "chart by analytical intent"
+taxonomy, **it does not exist yet and would need adopting deliberately** — that's a real gap, and the
+honest answer to the question.
+
+**Domain proof (Aarti-sanctioned).** `prototype-cards-catalog.md:108` — Aarti validated the faculty
+dossier *"compared to the department average to the university average"* and **cited Anthology /
+Watermark as existence proof**. That shape is **`VIZ-PATTERN-003` bullet-vs-target** — which is exactly
+the §9.1 percentile substitute, now with a pattern ID *and* competitor proof behind it. Note she cited
+them as proof *faculty accept the comparison*, not as chart-craft reference.
+
+### 9.5 Mobbin pass — run 2026-07-14
+
+The vault says this was never done: `apps/pce/docs/specs/2026-07-08-dashboard-insights-ia-decision.md:75`
+— *"Fresh Mobbin pass for 'evaluation insights dashboard'… **no saved reference exists** for the
+home-as-insights surface."* Run now (`surface-design-process.md:28` requires min 3 analogies, every
+`mobbin_url` cited):
+
+| Screen | What it proves | Maps to |
+|---|---|---|
+| [Pinterest — Shopping trends](https://mobbin.com/screens/f10d6053-a263-4609-89dd-30107c78effc) | **`Rank │ Category │ Trend (sparkline) │ Growth ↑106% MoM │ Volume`** — ranked table with an inline sparkline **and** a delta text per row | **D8 exactly** (tasks 7+10 as one component). Delta text beside the sparkline satisfies **A11Y-008** |
+| [Fresha — team performance](https://mobbin.com/screens/2ad71fd9-6708-4fe9-8956-fb4021a87beb) | **"Top 5 team members" + "Bottom 5 team members"** as two short tables, not one long leaderboard | **Task 2.** Matches the accepted *"surface lowest-scoring faculty descending"* user story better than a full ranking — and shortens the shaming surface |
+| [OKX — Rankings](https://mobbin.com/screens/616a128d-2240-490e-9204-749e7902aef3) | Same **best/worst split** ("Top gainers" / "Top losers") + per-row sparkline | **Task 2** — second independent instance of the split. Two apps converging is a signal |
+| [Dialpad — Coaching hub](https://mobbin.com/screens/e4f6a829-569c-4095-8568-9bed1a58cae6) | **"Team average" drawn as a marker ON the chart**, leaderboard below | **VIZ-002** (*"outliers/comparisons drawn on the viz"*) + Aarti's *"averages drawn ON viz, not in prose"*. The reference for the radar's program-avg overlay |
+| [15Five — answer distribution](https://mobbin.com/screens/ff92b206-5212-49a2-9ad6-176444d35358) | Per-question distribution with **anchor labels at both ends**, plus *"# of questions / # of answers"* frequency counts | **Task 4/9.** The frequency-count footer is **Aarti D17** shipped. (Its bars are the VIZ-001 trap — take the anchors, not the bars) |
+| [7shifts — employee profile](https://mobbin.com/screens/cf848844-34ef-403f-8280-5e1b4062b1df) | Left sub-nav (`Info / Performance / Permissions`) + right content | **D2** — the portfolio-as-route IA, if that's the call |
+
+**Prior Mobbin refs already on file** (don't redo): `2026-06-10-course-evaluation-aarti-brief.md:701-735`
+(searched Jun 12) — By-Faculty analytics → **Whop: User overview** (profile sidebar KPIs + tabs/DataTable)
+and **Amplitude: User profile insights** (*"aggregated-stats-before-drill"*). Both corroborate 7shifts.
+
+**Registry gap:** `docs/ANALOGIES.md` is the log these should live in — 8 rows, all dated 2026-05-09,
+**none viz, none PCE**. Its own `:47` says back-fill; nobody has since bootstrap. The Mobbin work keeps
+landing in specs and never returns to the registry.
+
+### 9.6 Not verified
 
 - **`localhost:4000` was DOWN** — no visual confirmation against the live DS catalog. Per Pattern L this
   is **static only**; the file:line inventory is from source, not from a rendered gallery.
