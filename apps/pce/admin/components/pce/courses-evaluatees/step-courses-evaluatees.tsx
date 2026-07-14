@@ -130,7 +130,8 @@ function TokenSelect({
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="size-4 p-0 shrink-0 bg-transparent hover:bg-transparent"
+                  className="size-4 p-0 shrink-0"
+                  style={{ backgroundColor: 'transparent' }}
                   disabled={atMin}
                   aria-label={`Remove ${o.label}`}
                   onClick={() => onToggle(v)}
@@ -150,8 +151,8 @@ function TokenSelect({
               aria-haspopup="listbox"
               aria-expanded={open}
               aria-labelledby={labelId}
-              className="flex-1 justify-start px-1 font-normal bg-transparent hover:bg-transparent focus-visible:bg-transparent"
-              style={{ minWidth: selected.length === 0 ? 64 : 20 }}
+              className="flex-1 justify-start px-1 font-normal"
+              style={{ minWidth: selected.length === 0 ? 64 : 20, backgroundColor: 'transparent' }}
             >
               {selected.length === 0
                 ? <span style={{ color: 'var(--muted-foreground)' }}>{placeholder}</span>
