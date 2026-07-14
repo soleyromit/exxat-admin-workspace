@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@exxatdesignux/ui'
+import { TruncatedText } from '@/components/truncated-text'
 import { MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 
 const _courseById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c]))
@@ -117,7 +118,7 @@ export function SetupView({
                   <span className="font-mono text-xs w-20 shrink-0" style={{ color: 'var(--muted-foreground)' }}>
                     {course?.code ?? '—'}
                   </span>
-                  <span className="flex-1 truncate">{course?.name ?? '—'}</span>
+                  <TruncatedText className="flex-1">{course?.name ?? '—'}</TruncatedText>
                   <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)' }}>
                     {o.enrolledCount} students
                   </span>

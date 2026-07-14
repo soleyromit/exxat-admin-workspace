@@ -27,6 +27,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { EmailThumbnail } from '@/components/pce/distribute-wizard/step-communication'
 import { EmailTemplateSheet } from '@/components/pce/distribute-wizard/email-template-sheet'
@@ -287,7 +288,7 @@ function RemindWizardInner() {
                         />
                         <Label htmlFor={`remind-${s.id}`} className="flex-1 min-w-0 flex flex-col items-start gap-0.5 font-normal cursor-pointer">
                           <span className="text-sm font-medium">{s.courseCode}</span>
-                          <span className="text-xs text-muted-foreground truncate">{s.courseName}</span>
+                          <TruncatedText className="text-xs text-muted-foreground">{s.courseName}</TruncatedText>
                         </Label>
                         {s.courseType && (
                           <Badge variant="outline" className="font-normal whitespace-nowrap shrink-0">

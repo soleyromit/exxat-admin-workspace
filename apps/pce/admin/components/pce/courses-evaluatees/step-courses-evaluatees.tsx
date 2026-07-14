@@ -8,6 +8,7 @@ import {
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
+import { TruncatedText } from '@/components/truncated-text'
 import { PaginationBar } from '@/components/data-table/pagination'
 import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -346,7 +347,9 @@ export function StepCoursesEvaluatees({
       },
       {
         key: 'name', label: 'Course', sortable: true, width: 160,
-        cell: r => <span className="text-sm block truncate" title={r.name}>{r.name}</span>,
+        // 160px clips most real course names, and a native title never fires on
+        // keyboard focus — the same reason the Unassigned line below uses Tip.
+        cell: r => <TruncatedText className="text-sm">{r.name}</TruncatedText>,
       },
       {
         key: 'enrolled', label: 'Students', sortable: true, width: 84,

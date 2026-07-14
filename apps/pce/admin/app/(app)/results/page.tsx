@@ -30,6 +30,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { ColumnDef } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { usePce } from '@/components/pce/pce-state'
 import {
   deriveResults,
@@ -155,7 +156,7 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
                 </Badge>
               )}
             </p>
-            <p className="text-xs text-muted-foreground truncate max-w-[220px]">{row.courseName}</p>
+            <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
           </div>
         ),
       },
