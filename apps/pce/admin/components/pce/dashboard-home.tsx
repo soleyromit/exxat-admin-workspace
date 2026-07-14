@@ -233,16 +233,11 @@ function CurrentTermCard({
               <i className="fa-light fa-layer-group text-muted-foreground" style={{ fontSize: 16 }} />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">No courses set up yet</p>
-                  <p className="text-xs text-muted-foreground">
-                    Add this term’s courses and rosters to start collecting responses.
-                  </p>
-                </div>
-                {snap.daysLeft != null && (
-                  <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
-                )}
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">No courses set up yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Add this term’s courses and rosters to start collecting responses.
+                </p>
               </div>
               <Button variant="outline" size="sm" asChild className="self-start">
                 <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
@@ -273,6 +268,13 @@ function CurrentTermCard({
             </>
           )}
         </div>
+        {/* Countdown is a term-level date fact stated in the card body — the
+            upcoming card carries it as a "Starts in" row for the same reason.
+            Inside the alert it stole width and wrapped the heading; in the
+            meta line it floated free of anything it qualified. */}
+        {snap.daysLeft != null && (
+          <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
+        )}
         {atRisk.length > 0 && (
           /* Student-first framing (Romit: the goal is students filling the
            * evaluation — lead with who still needs to act, not course rates).
@@ -289,19 +291,16 @@ function CurrentTermCard({
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">
-                    {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
-                    {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
-                  </p>
-                </div>
-                {snap.daysLeft != null && (
-                  <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
-                )}
+              {/* Heading gets the full width — the countdown sits above as a
+                  card-level fact, so it can't wrap this to two lines. */}
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
+                  {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
+                </p>
               </div>
               <Button variant="outline" size="sm" asChild className="self-start">
                 <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
@@ -410,6 +409,17 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
       value: dated && !noSetup ? `${win.open.replace(/, \d{4}$/, '')} – ${win.close}` : 'Not set yet',
       icon: 'fa-calendar-check',
     },
+    /* The countdown is a DATE FACT — it belongs with Term dates / Survey dates,
+       not inside the alert, where it stole width and wrapped the heading
+       (Romit, 2026-07-14). Only when dated; otherwise there's nothing to
+       count down to and "Term dates: Not set yet" already says so. */
+    ...(startsIn != null
+      ? [{
+          label: 'Starts in',
+          value: `${startsIn} ${startsIn === 1 ? 'day' : 'days'}`,
+          icon: 'fa-clock',
+        }]
+      : []),
   ]
   return (
     <Card>
@@ -473,18 +483,15 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">
-                    {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Missing faculty or student rosters
-                  </p>
-                </div>
-                {startsIn != null && (
-                  <CountdownIndicator days={startsIn} urgent={startsIn <= 7} mode="starts" />
-                )}
+              {/* Heading gets the full width — the countdown lives in the rows
+                  above as a date fact, so it can't wrap this to two lines. */}
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Missing faculty or student rosters
+                </p>
               </div>
               <Button variant="outline" size="sm" asChild className="self-start">
                 <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
