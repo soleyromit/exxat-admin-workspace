@@ -174,7 +174,26 @@ function RankingDotPlot({
           key={chartTooltipKeyboardSyncProps(activeIndex).key}
           {...chartTooltipKeyboardSyncProps(activeIndex).props}
           cursor={false}
-          content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />}
+          content={
+            <ChartTooltipContent
+              /* A ScatterChart tooltip emits an entry per AXIS, not per series as a
+                 BarChart does — so `v` arrives twice: once as the numeric avg, once
+                 as the category label ("DPT-710"). The bar version could assume a
+                 number; this cannot. Drop the category row and name the numeric one
+                 with its entity, so the tooltip reads "DPT-710 · 4.55/5". hideLabel
+                 because the scatter's auto label resolves to the series name
+                 ("Avg rating"), not the entity — which duplicated the row. */
+              hideLabel
+              formatter={(v: unknown, _name: unknown, item: unknown) => {
+                if (typeof v !== 'number') return null
+                const payload = (item as { payload?: Record<string, unknown> })?.payload
+                const entity = payload?.[labelKey]
+                // One string, not [value, name] — a returned tuple renders its two
+                // halves adjacent with no separator ("4.55/5DPT-710").
+                return entity ? `${String(entity)} · ${v.toFixed(2)}/5` : `${v.toFixed(2)}/5`
+              }}
+            />
+          }
         />
       </ScatterChart>
     </ChartContainer>
