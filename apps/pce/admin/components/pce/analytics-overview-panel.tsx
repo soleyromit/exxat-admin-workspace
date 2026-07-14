@@ -36,6 +36,8 @@ import {
   KpiSpark,
   type DriftRow,
 } from '@/components/pce/analytics-plots'
+import { responseFunnel } from '@/lib/pce-funnel'
+import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
 import {
   programSummary,
   termSeries,
@@ -57,6 +59,35 @@ export function AnalyticsOverviewPanel() {
   const matrix = useMemo(() => courseTermMatrix(), [])
 
   const courseMedian = useMemo(() => medianOf(courses.map((c) => c.score.weighted)), [courses])
+
+  const funnel = useMemo(() => responseFunnel(), [])
+
+  const funnelLeo: ChartLeoInsight | null = useMemo(() => {
+    const w = funnel.worst
+    if (!w) return null
+    const where =
+      w.after === 'Invited'
+        ? 'never opened the invitation'
+        : w.after === 'Opened'
+          ? 'opened it and never started'
+          : 'started and abandoned'
+    const fix =
+      w.after === 'Invited'
+        ? 'That is a deliverability or timing problem, not an opinion — students who never saw the ask cannot have declined it. Check send time and whether the invite is reaching inboxes before writing survey copy.'
+        : w.after === 'Opened'
+          ? 'They saw the ask and judged it not worth starting. That points at length or framing in the invitation, not at the questions themselves.'
+          : 'They committed and still quit partway. That is the survey being too long or too repetitive — the only stage where the instrument itself is the suspect.'
+    return {
+      headline: `${w.value.toLocaleString()} students ${where} — ${w.pct}% of everyone invited`,
+      explanation: `${fix} The response rate on this page counts only the final stage, so every stage above it is invisible in that one number.`,
+      kind: 'anomaly',
+      delta: { value: `${w.pct}%`, label: `lost after ${w.after}` },
+      bullets: [
+        `Invited ${funnel.counts.invited.toLocaleString()} → opened ${funnel.counts.opened.toLocaleString()} → started ${funnel.counts.started.toLocaleString()} → completed ${funnel.counts.completed.toLocaleString()}.`,
+        ...funnel.lost.map((l) => `Lost after ${l.after}: ${l.value.toLocaleString()} (${l.pct}%).`),
+      ],
+    }
+  }, [funnel])
 
   /* The quadrant split is the mean of the PLOTTED points, not the program-wide mean — a
      split line that doesn't match its own dots is the "numbers disagree with each other"
@@ -386,6 +417,54 @@ export function AnalyticsOverviewPanel() {
       </ChartCard>
 
       </div>
+
+      {/* Where the response rate leaks — VIZ-009: "sequential stages with attrition must use
+          flow viz, not separated count cards. Drop-off is the story." The 71% above is four
+          different problems depending on WHERE it fails, and each has a different fix:
+          never opened = deliverability or timing; opened-never-started = the ask looked too
+          long; started-abandoned = it WAS too long. Nothing else on this page can tell them
+          apart. Full width: a sankey needs horizontal room for its stages to breathe. */}
+      <ChartCard
+        variant="normal"
+        title="Where responses are lost"
+        description={
+          funnel.worst
+            ? `Biggest leak: ${funnel.worst.after === 'Invited' ? 'students who never opened the invitation' : funnel.worst.after === 'Opened' ? 'students who opened it but never started' : 'students who started and abandoned'} — ${funnel.worst.value.toLocaleString()} students, ${funnel.worst.pct}% of everyone invited.`
+            : 'Every invited student completed the survey.'
+        }
+        leoInsight={funnelLeo}
+      >
+        <ChartFigure
+          label="Where responses are lost"
+          summary={`Flow diagram of ${funnel.counts.invited.toLocaleString()} invited students through opened, started and completed, with the drop-off at each stage.`}
+          dataLength={4}
+          leoInsight={funnelLeo}
+        >
+          {() => (
+            <>
+              <ResponseFunnelSankey funnel={funnel} />
+              {/* The pattern requires a one-line takeaway naming the largest drop-off.
+                  Frequency counts, not percentages alone — Aarti D17. */}
+              {funnel.worst && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Largest drop-off: after <span className="font-medium text-foreground">{funnel.worst.after}</span> —{' '}
+                  {funnel.worst.value.toLocaleString()} of {funnel.counts.invited.toLocaleString()} students ({funnel.worst.pct}%).
+                </p>
+              )}
+              <ChartDataTable
+                caption="Response funnel"
+                headers={['Stage', 'Students', 'Lost after this stage']}
+                rows={[
+                  ['Invited', funnel.counts.invited, funnel.counts.invited - funnel.counts.opened],
+                  ['Opened', funnel.counts.opened, funnel.counts.opened - funnel.counts.started],
+                  ['Started', funnel.counts.started, funnel.counts.started - funnel.counts.completed],
+                  ['Completed', funnel.counts.completed, 0],
+                ]}
+              />
+            </>
+          )}
+        </ChartFigure>
+      </ChartCard>
 
       {/* ── Story 4 — heatmap. Stays FULL width: the mark needs its term columns, and a
              matrix squeezed to half is unreadable. Width is earned per chart, not uniform. ── */}
