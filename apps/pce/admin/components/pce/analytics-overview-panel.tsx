@@ -307,7 +307,14 @@ export function AnalyticsOverviewPanel() {
         </ChartCard>
       </div>
 
-      {/* ── Row 2 — stories 5, 6, 7. One card, two plots, one shared term axis. ── */}
+      {/* ── Row 2 — stories 5/6/7 beside story 8, 50/50.
+             Romit: "line charts don't have to cover 100% width — it doesn't look good."
+             He's right twice over: a line stretched across the full content column flattens
+             its own slope, which is the one thing the chart exists to show; and the scatter
+             beside it WANTS to be square — at full width the x-distance between two dots is
+             visually ~2x the y-distance for the same score difference, which quietly lies
+             about the gap the chart is entirely about. ── */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <ChartCard
         variant="normal"
         title="Program trajectory"
@@ -404,7 +411,10 @@ export function AnalyticsOverviewPanel() {
         </ChartFigure>
       </ChartCard>
 
-      {/* ── Story 4 — heatmap. ── */}
+      </div>
+
+      {/* ── Story 4 — heatmap. Stays FULL width: the mark needs its term columns, and a
+             matrix squeezed to half is unreadable. Width is earned per chart, not uniform. ── */}
       {/* Scope is stated on the card because it genuinely differs from the ranked-courses
           card below: course-CONTENT scores exist for only some courses, while faculty
           ratings exist for others. Two cards showing different course counts with no

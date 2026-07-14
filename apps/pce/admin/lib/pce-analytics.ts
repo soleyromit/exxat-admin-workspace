@@ -101,6 +101,11 @@ export interface OfferingPoint extends FacultyOfferingRecord {
   responded: number
 }
 
+/** Distinct cohorts present in the data, newest class last. */
+export function cohorts(): string[] {
+  return [...new Set(offeringPoints().map((o) => o.cohort).filter((c): c is string => !!c))].sort()
+}
+
 function initialsOf(name: string): string {
   const parts = name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i, '').trim().split(/\s+/)
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1]![0] : '')).toUpperCase()
@@ -142,25 +147,43 @@ export interface CourseTermPoint {
 }
 
 /**
- * Course × term pairs come from `priorOfferings` on CE surveys — the only place the model
- * carries course-content and faculty-performance scores side by side, which is what the
- * gap analysis (story 8) needs.
+ * Course × term, aggregated from the offerings.
+ *
+ * Was derived from `PceSurvey.priorOfferings`, which is the only place the model USED to
+ * carry course-content and faculty scores side by side — but it covered 5 of 15 courses, so
+ * Overview rendered 5 courses in the heatmap and 9 in the ranked list beside it: two course
+ * universes on one tab, which is the "numbers disagree with each other" class of bug this
+ * whole file exists to end. Offerings now carry `courseAvg` alongside `avgRating`, so both
+ * rated entities come from one grain and every course appears everywhere.
+ *
+ * A course taught by several faculty in one term collapses to one row per course × term,
+ * enrollment-weighted — the course-content score is a property of the COURSE, so co-teaching
+ * must not double-count it.
  */
 export function courseTermPoints(): CourseTermPoint[] {
-  const out: CourseTermPoint[] = []
-  MOCK_SURVEYS.filter((s) => s.surveyType !== 'programmatic').forEach((s) => {
-    s.priorOfferings?.forEach((po) => {
-      out.push({
-        courseCode: s.courseCode,
-        courseName: s.courseName,
-        term: po.term,
-        year: termToYear(po.term),
-        courseAvg: po.courseAvg,
-        facultyAvg: po.facultyAvg ?? null,
-      })
-    })
+  const byCourseTerm = new Map<string, OfferingPoint[]>()
+  offeringPoints().forEach((o) => {
+    if (o.courseAvg == null) return
+    const key = `${o.courseCode}::${o.term}`
+    const list = byCourseTerm.get(key) ?? []
+    list.push(o)
+    byCourseTerm.set(key, list)
   })
-  return out.sort((a, b) => a.year - b.year)
+
+  return [...byCourseTerm.values()]
+    .map((rows) => {
+      const first = rows[0]!
+      const weights = rows.map((r) => r.enrolled)
+      return {
+        courseCode: first.courseCode,
+        courseName: first.courseName,
+        term: first.term,
+        year: first.year,
+        courseAvg: dualMean(rows.map((r) => r.courseAvg as number), weights).weighted,
+        facultyAvg: dualMean(rows.map((r) => r.avgRating), weights).weighted,
+      }
+    })
+    .sort((a, b) => a.year - b.year)
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

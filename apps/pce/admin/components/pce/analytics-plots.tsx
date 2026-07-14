@@ -41,6 +41,15 @@ const SCORE_VIEW: [number, number] = [3.0, 5]
 const fmt2 = (v: number) => v.toFixed(2)
 
 /**
+ * Most on-plot text labels any one chart may draw.
+ *
+ * Naming the outlier is the point (VIZ-002) — naming twelve is a pile-up that hides the one
+ * that matters. With thin data a residual threshold flagged 2; with real scenario data it
+ * flags a dozen. Cap the text, keep the colour + tooltip on the rest.
+ */
+const MAX_PLOT_LABELS = 4
+
+/**
  * Inline empty state for a chart body.
  *
  * A chart with no data must SAY so — a blank plot area inside a titled card reads as a
@@ -186,9 +195,17 @@ export function GapQuadrant({
   height?: number
   leoAnchor?: { x: unknown; y: unknown }
 }) {
-  /** Residual from the fitted line — flags who is genuinely off-trend, not merely low. */
-  const outliers = React.useMemo(() => {
-    if (points.length < 3) return new Set<string>()
+  /**
+   * Residual from the fitted line — off-trend, not merely low.
+   *
+   * `outliers` colours the dots; `labelled` is a strict subset that gets text. Once the data
+   * has real structure a threshold flags a dozen points, and labelling a dozen is a pile-up,
+   * not annotation — so only the MOST extreme few are named. VIZ-002 says draw the outlier on
+   * the viz; it does not say name every one. The rest keep their amber fill and their tooltip.
+   */
+  const { outliers, labelled } = React.useMemo(() => {
+    const empty = { outliers: new Set<string>(), labelled: new Set<string>() }
+    if (points.length < 3) return empty
     const xs = points.map((p) => p.courseAvg)
     const ys = points.map((p) => p.facultyAvg)
     const n = xs.length
@@ -197,11 +214,31 @@ export function GapQuadrant({
     const den = xs.reduce((s, x) => s + (x - mx) ** 2, 0)
     const slope = den === 0 ? 0 : xs.reduce((s, x, i) => s + (x - mx) * (ys[i]! - my), 0) / den
     const intercept = my - slope * mx
-    const residuals = points.map((p) => Math.abs(p.facultyAvg - (slope * p.courseAvg + intercept)))
-    const sd = Math.sqrt(residuals.reduce((s, r) => s + r ** 2, 0) / residuals.length)
-    return new Set(
-      points.filter((p, i) => sd > 0 && residuals[i]! > sd * 1.2).map((p) => `${p.courseCode}::${p.term}`),
-    )
+    const scored = points.map((p) => ({
+      key: `${p.courseCode}::${p.term}`,
+      residual: Math.abs(p.facultyAvg - (slope * p.courseAvg + intercept)),
+    }))
+    const sd = Math.sqrt(scored.reduce((s, r) => s + r.residual ** 2, 0) / scored.length)
+    if (!(sd > 0)) return empty
+    const off = scored.filter((r) => r.residual > sd * 1.2)
+
+    // One label per COURSE, not per offering. A course that is off-trend in three terms is
+    // one story, and naming it three times just stacks text on its own cluster — which is
+    // exactly what happened once the scenarios gained depth.
+    const bestPerCourse = new Map<string, { key: string; residual: number }>()
+    off.forEach((r) => {
+      const code = r.key.split('::')[0]!
+      const prev = bestPerCourse.get(code)
+      if (!prev || r.residual > prev.residual) bestPerCourse.set(code, r)
+    })
+    const top = [...bestPerCourse.values()]
+      .sort((a, b) => b.residual - a.residual)
+      .slice(0, MAX_PLOT_LABELS)
+
+    return {
+      outliers: new Set(off.map((r) => r.key)),
+      labelled: new Set(top.map((r) => r.key)),
+    }
   }, [points])
 
   const spec = React.useCallback(
@@ -268,9 +305,9 @@ export function GapQuadrant({
           tip: { format: { x: false, y: false, r: false, fill: false } },
         }),
 
-        // Name only what is off-trend — labelling all 20 would be noise, not annotation.
+        // Name only the sharpest few — see the note on `labelled`.
         Plot.text(
-          points.filter((p) => outliers.has(`${p.courseCode}::${p.term}`)),
+          points.filter((p) => labelled.has(`${p.courseCode}::${p.term}`)),
           {
             x: 'courseAvg',
             y: 'facultyAvg',
@@ -285,7 +322,7 @@ export function GapQuadrant({
         ),
       ],
     }),
-    [points, courseMean, facultyMean, outliers],
+    [points, courseMean, facultyMean, outliers, labelled],
   )
 
   if (points.length < 3) {
