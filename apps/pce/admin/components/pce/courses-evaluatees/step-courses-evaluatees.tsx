@@ -343,31 +343,62 @@ export function StepCoursesEvaluatees({
     // program evaluates.
     if (facultySelected.length > 0) {
       cols.push({
-        key: 'faculty', label: 'Faculty', width: 200,
-        cell: r => (
-          <div className="flex flex-col gap-0.5 py-0.5">
-            {facultySelected.map(c => {
-              const cell = r.cells[c]
-              if (!cell) return null
-              return (
-                <span key={c} className="text-sm flex items-baseline gap-1.5 min-w-0">
-                  {cell.ok ? (
-                    <>
-                      <span className="truncate" title={cell.value ?? undefined}>{cell.value}</span>
-                      <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-                        {cell.label}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="truncate" style={{ color: 'var(--muted-foreground)' }}>
-                      {cell.label} — not assigned
-                    </span>
-                  )}
+        key: 'faculty', label: 'Faculty', width: 260,
+        cell: r => {
+          // One line per PERSON, not per role. A line per role repeated
+          // "— not assigned" once for every gap, printed the same human twice
+          // when they hold two roles, and grew the row to five lines — the
+          // absences shouted louder than the people who actually exist.
+          const byPerson = new Map<string, string[]>()
+          const unassigned: string[] = []
+          for (const c of facultySelected) {
+            const cell = r.cells[c]
+            if (!cell) continue // role not applicable to this course type
+            if (cell.ok && cell.value) {
+              byPerson.set(cell.value, [...(byPerson.get(cell.value) ?? []), cell.label])
+            } else {
+              unassigned.push(cell.label)
+            }
+          }
+          const people = [...byPerson]
+          const shown = people.slice(0, 2)
+          const more = people.length - shown.length
+          if (people.length === 0 && unassigned.length === 0) {
+            return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+          }
+          return (
+            <div className="flex flex-col gap-0.5 py-0.5">
+              {shown.map(([name, roles]) => (
+                <span key={name} className="text-sm flex items-baseline gap-1.5 min-w-0">
+                  <span className="truncate" title={name}>{name}</span>
+                  <span
+                    className="text-xs truncate shrink-0"
+                    style={{ color: 'var(--muted-foreground)', maxWidth: 110 }}
+                    title={roles.join(' · ')}
+                  >
+                    {roles.join(' · ')}
+                  </span>
                 </span>
-              )
-            })}
-          </div>
-        ),
+              ))}
+              {more > 0 && (
+                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  +{more} more
+                </span>
+              )}
+              {/* Names the gaps rather than counting them — one truncating line,
+                  full list on hover. The row stays 3 lines at any role count. */}
+              {unassigned.length > 0 && (
+                <span
+                  className="text-xs truncate"
+                  style={{ color: 'var(--muted-foreground)' }}
+                  title={`Unassigned: ${unassigned.join(', ')}`}
+                >
+                  Unassigned: {unassigned.join(', ')}
+                </span>
+              )}
+            </div>
+          )
+        },
       })
     }
     cols.push(
