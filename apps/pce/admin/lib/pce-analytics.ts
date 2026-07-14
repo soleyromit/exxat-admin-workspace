@@ -582,18 +582,34 @@ export function programSummary(): ProgramSummary {
 export interface Benchmarks {
   /** Every faculty member's weighted score — the distribution to place a dot on. */
   distribution: number[]
-  /** Mean across this program's faculty. */
+  /** Mean across the faculty member's OWN department. */
   department: number
-  /** Mean across every offering in the tenant — stands in for "university". */
+  /** Mean across every faculty member in the tenant — stands in for "university". */
   university: number
 }
 
-export function benchmarks(): Benchmarks {
+/**
+ * @param departmentOf - restrict the department benchmark to this faculty member's
+ *   department. Omit for the program-wide pair.
+ *
+ * Note the two benchmarks collapse to the same number when every faculty member shares one
+ * department, which is true of the current mock data — the rules then stack and the labels
+ * overlap. That is a data shape, not a bug in the chart: the tenant has one program, so
+ * "department" and "university" describe the same population. Real multi-department data
+ * separates them.
+ */
+export function benchmarks(departmentOf?: string): Benchmarks {
   const fac = facultyStats()
-  const offs = offeringPoints()
+  const facultyById = new Map(MOCK_FACULTY.map((f) => [f.id, f]))
+
+  const ownDept = departmentOf ? facultyById.get(departmentOf)?.department : undefined
+  const deptPool = ownDept
+    ? fac.filter((f) => facultyById.get(f.facultyId)?.department === ownDept)
+    : fac
+
   return {
-    distribution: fac.map((f) => f.score.weighted),
-    department: round2(mean(fac.map((f) => f.score.weighted))),
-    university: dualMean(offs.map((o) => o.avgRating), offs.map((o) => o.enrolled)).weighted,
+    distribution: deptPool.map((f) => f.score.weighted),
+    department: deptPool.length ? round2(mean(deptPool.map((f) => f.score.weighted))) : 0,
+    university: round2(mean(fac.map((f) => f.score.weighted))),
   }
 }

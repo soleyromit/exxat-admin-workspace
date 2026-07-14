@@ -17,17 +17,63 @@
  *
  * Tokens: Plot resolves color channels through d3-color, which cannot parse `var(--token)`
  * — it would silently treat the string as a *field name*. So tokens are resolved to concrete
- * colors via `readChartToken` (the same helper the DS ECharts heatmap uses) and re-resolved
- * on theme change through a MutationObserver on documentElement.
+ * colors by `resolveToken` below, and re-resolved on theme change through a MutationObserver
+ * on documentElement.
  */
 
 import * as React from 'react'
 import * as Plot from '@observablehq/plot'
 import { ChartLeoPixelPlotInsightOverlay } from '@/components/chart-leo-spotting'
 import type { ChartLeoSpottingFamily } from '@/lib/chart-leo-spotting'
-import { readChartToken } from '@/lib/chart-heatmap-scale'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { cn } from '@/lib/utils'
+
+/**
+ * Resolve a DS token to a concrete sRGB colour that Plot (via d3-color) can parse.
+ *
+ * Deliberately NOT `readChartToken` from `lib/chart-heatmap-scale`. That helper assigns
+ * `var(--token)` directly to `canvas.fillStyle`, but a canvas has no CSS-variable context,
+ * so the assignment is silently ignored and the FALLBACK is returned for every token.
+ * Verified in-browser: it returns its hard-coded indigo fallback while `--brand-color` is
+ * actually Prism pink — so every chart built on it renders the wrong palette. The DS's own
+ * `chart-heatmap.tsx` inherits the same bug, which fits it being dead code nobody rendered.
+ *
+ * Two steps, because each fixes a different half:
+ *   1. a hidden probe element resolves `var()` through the cascade — canvas cannot;
+ *   2. rasterising a single pixel forces the value out of `lab()` / `oklch()` into sRGB
+ *      bytes — `getComputedStyle` preserves the authored colour space, and d3-color parses
+ *      neither.
+ *
+ * The returned string is built from those bytes, so no colour literal is authored here —
+ * the value always originates from a token (DS-002).
+ */
+const toHexByte = (v: number) => v.toString(16).padStart(2, '0')
+
+function resolveToken(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  try {
+    const probe = document.createElement('span')
+    probe.style.color = `var(${name})`
+    probe.style.display = 'none'
+    document.body.appendChild(probe)
+    const computed = getComputedStyle(probe).color
+    probe.remove()
+    if (!computed) return fallback
+
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return fallback
+    ctx.clearRect(0, 0, 1, 1)
+    ctx.fillStyle = computed
+    ctx.fillRect(0, 0, 1, 1)
+    const data = ctx.getImageData(0, 0, 1, 1).data
+    return `#${toHexByte(data[0]!)}${toHexByte(data[1]!)}${toHexByte(data[2]!)}`
+  } catch {
+    return fallback
+  }
+}
 
 /** DS tokens resolved to concrete colors — Plot cannot consume `var(--token)`. */
 export interface PlotTheme {
@@ -35,6 +81,8 @@ export interface PlotTheme {
   mutedForeground: string
   border: string
   card: string
+  /** Text that sits ON a brand-filled surface (dark heatmap cells). */
+  primaryForeground: string
   brand: string
   /** --chart-1 … --chart-5, in order. Series color ramp (VIZ-003). */
   series: string[]
@@ -46,16 +94,22 @@ export interface PlotTheme {
   rule: string
 }
 
+/**
+ * SSR-only placeholders, in CSS named colours so no colour literal is authored (DS-002).
+ * `PlotFigure` renders exclusively inside `useEffect`, so in practice these are never
+ * painted — they exist so the type is total before the first resolve.
+ */
 const FALLBACK: PlotTheme = {
-  foreground: '#111827',
-  mutedForeground: '#6b7280',
-  border: '#e5e7eb',
-  card: '#ffffff',
-  brand: '#4f46e5',
-  series: ['#4f46e5', '#0ea5e9', '#14b8a6', '#f59e0b', '#8b5cf6'],
-  warn: '#f59e0b',
-  good: '#14b8a6',
-  rule: '#6b7280',
+  foreground: 'black',
+  mutedForeground: 'dimgray',
+  border: 'gainsboro',
+  card: 'white',
+  primaryForeground: 'white',
+  brand: 'navy',
+  series: ['navy', 'teal', 'olive', 'peru', 'purple'],
+  warn: 'peru',
+  good: 'teal',
+  rule: 'dimgray',
 }
 
 /** Resolve DS tokens → colors, re-resolving when the theme class flips. */
@@ -65,25 +119,26 @@ export function usePlotTheme(): PlotTheme {
   React.useEffect(() => {
     const sync = () => {
       setTheme({
-        foreground: readChartToken('--foreground', FALLBACK.foreground),
-        mutedForeground: readChartToken('--muted-foreground', FALLBACK.mutedForeground),
-        border: readChartToken('--border', FALLBACK.border),
-        card: readChartToken('--card', FALLBACK.card),
-        brand: readChartToken('--brand-color', FALLBACK.brand),
+        foreground: resolveToken('--foreground', FALLBACK.foreground),
+        mutedForeground: resolveToken('--muted-foreground', FALLBACK.mutedForeground),
+        border: resolveToken('--border', FALLBACK.border),
+        card: resolveToken('--card', FALLBACK.card),
+        primaryForeground: resolveToken('--primary-foreground', FALLBACK.primaryForeground),
+        brand: resolveToken('--brand-color', FALLBACK.brand),
         series: [
-          readChartToken('--chart-1', FALLBACK.series[0]!),
-          readChartToken('--chart-2', FALLBACK.series[1]!),
-          readChartToken('--chart-3', FALLBACK.series[2]!),
-          readChartToken('--chart-4', FALLBACK.series[3]!),
-          readChartToken('--chart-5', FALLBACK.series[4]!),
+          resolveToken('--chart-1', FALLBACK.series[0]!),
+          resolveToken('--chart-2', FALLBACK.series[1]!),
+          resolveToken('--chart-3', FALLBACK.series[2]!),
+          resolveToken('--chart-4', FALLBACK.series[3]!),
+          resolveToken('--chart-5', FALLBACK.series[4]!),
         ],
         // --chart-4 is the DS amber token and already ships as the below-threshold fill at
         // bullet-gauge.tsx. The anti-patterns doc bans *ad-hoc oklch* amber, not amber.
-        warn: readChartToken('--chart-4', FALLBACK.warn),
-        good: readChartToken('--chart-2', FALLBACK.good),
+        warn: resolveToken('--chart-4', FALLBACK.warn),
+        good: resolveToken('--chart-2', FALLBACK.good),
         // --muted-foreground, not --border: a reference line IS the state indicator, and
         // WCAG 1.4.11 needs 3:1 for non-text. A11Y-021.
-        rule: readChartToken('--muted-foreground', FALLBACK.rule),
+        rule: resolveToken('--muted-foreground', FALLBACK.rule),
       })
     }
     sync()

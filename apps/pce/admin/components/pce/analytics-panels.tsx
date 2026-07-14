@@ -95,7 +95,6 @@ const programTrendConfig: ChartConfig = {
 }
 const courseRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-1)' } }
 const facultyRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-2)' } }
-const compareConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 
 /* ── By Term columns ── */
@@ -635,47 +634,6 @@ export function ByFacultyPanel({
     ]
   }, [faculty, offerings])
 
-  /* Comparative bars: own vs dept avg vs school avg (enrollment-weighted). */
-  const compareData = useMemo(() => {
-    if (!faculty) return []
-    const ownOfferings  = MOCK_FACULTY_OFFERINGS.filter(o => o.facultyId === faculty.id)
-    const deptIds       = MOCK_FACULTY.filter(f => f.department === faculty.department).map(f => f.id)
-    const deptOfferings = MOCK_FACULTY_OFFERINGS.filter(o => deptIds.includes(o.facultyId))
-    return [
-      { label: 'School avg', rating: +weightedAvg(MOCK_FACULTY_OFFERINGS).toFixed(2) },
-      { label: 'Dept avg',   rating: +weightedAvg(deptOfferings).toFixed(2) },
-      { label: faculty.name.split(' ').slice(-1)[0], rating: +weightedAvg(ownOfferings).toFixed(2) },
-    ]
-  }, [faculty])
-
-  // Leo insight — own rating vs dept/school (derived from compareData).
-  const compareLeo: ChartLeoInsight | null = (() => {
-    if (!faculty || compareData.length < 3) return null
-    const own = compareData[2].rating
-    const dept = compareData[1].rating
-    const diff = +(own - dept).toFixed(2)
-    const lastName = faculty.name.split(' ').slice(-1)[0]
-    return {
-      headline:
-        diff < 0
-          ? `${lastName} rates ${Math.abs(diff).toFixed(2)} below the ${faculty.department} average`
-          : diff > 0
-            ? `${lastName} rates ${diff.toFixed(2)} above the ${faculty.department} average`
-            : `${lastName} matches the ${faculty.department} average`,
-      explanation:
-        diff < 0
-          ? 'A below-department average usually traces to one or two offerings, not the whole portfolio — check the offerings table below for the outlier terms.'
-          : 'Weighted by class size, so large sections move this number more than small ones.',
-      kind: diff < 0 ? 'dip' : 'trend',
-      delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs dept avg' },
-      bullets: [
-        `School avg ${compareData[0].rating.toFixed(2)}/5 · dept avg ${dept.toFixed(2)}/5 · own ${own.toFixed(2)}/5.`,
-        'Enrollment-weighted across all offerings.',
-      ],
-      anchor: { xValue: compareData[2].label, yDataKeys: ['rating'] },
-    }
-  })()
-
   if (!faculty) return null
 
   return (
@@ -684,49 +642,16 @@ export function ByFacultyPanel({
 
       {extraCharts}
 
-      {compareData.length > 0 && (
-        <ChartCard
-          variant="normal"
-          title="Comparative context"
-          description={`Avg rating, weighted by class size, vs. ${faculty.department} dept and program average.`}
-          leoInsight={compareLeo}
-        >
-          <ChartFigure
-            label="Comparative context"
-            summary={`Horizontal bars comparing ${compareData.map(d => `${d.label} ${d.rating}`).join(', ')} out of 5.`}
-            dataLength={compareData.length}
-          >
-            {(activeIndex) => (
-              <>
-                <div className="relative w-full">
-                <ChartContainer config={compareConfig} style={{ height: `${compareData.length * 40 + 8}px` }} className="w-full">
-                  <BarChart accessibilityLayer layout="vertical" data={compareData} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                    <XAxis type="number" domain={[0, 5]} hide />
-                    <YAxis type="category" dataKey="label" width={80} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
-                      {compareData.map((d, i) => (
-                        <Cell
-                          key={d.label}
-                          fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
-                          fillOpacity={i === compareData.length - 1 ? 1 : 0.45}
-                        />
-                      ))}
-                    </Bar>
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(1)}/5`, 'Avg rating']} />} />
-                  </BarChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={compareData} xDataKey="label" chartFamily="bar" />
-                </div>
-                <ChartDataTable
-                  caption="Comparative context"
-                  headers={['Scope', 'Avg rating']}
-                  rows={compareData.map(d => [d.label, `${d.rating.toFixed(2)}/5`])}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      )}
+      {/* "Comparative context" (three bars: school avg / dept avg / own) removed 2026-07-14.
+          It answered a real question with the weakest available shape — three bars carry a
+          value each and nothing else: no distribution, no spread, no trajectory. The same
+          question is now answered better in two places, neither of which is a bar:
+            · /analytics?tab=faculty — the leaderboard, which shows every peer AND each
+              person's spread (FacultyLeaderboardSection)
+            · the profile + self-view — "Standing vs benchmarks", a dot placed against the
+              department and university rules (BenchmarkDistribution, peer swarm gated by
+              lens per §7.3)
+          Keeping it would have meant two cards answering one question on the same page. */}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">

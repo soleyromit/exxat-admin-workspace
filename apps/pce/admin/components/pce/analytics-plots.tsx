@@ -23,7 +23,7 @@ import {
   gridMark,
   type PlotTheme,
 } from '@/components/pce/plot-figure'
-import { heatmapCellColor, heatmapCellUsesLightText, readChartToken } from '@/lib/chart-heatmap-scale'
+import { heatmapCellColor, heatmapCellUsesLightText } from '@/lib/chart-heatmap-scale'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import type {
   FacultyStat,
@@ -325,9 +325,11 @@ export function CourseTermHeat({
 
   const spec = React.useCallback(
     (theme: PlotTheme) => {
-      const brand = readChartToken('--brand-color', theme.brand)
-      const card = readChartToken('--card', theme.card)
-      const lightText = readChartToken('--primary-foreground', '#ffffff')
+      // theme.* comes from `resolveToken`, which actually resolves the cascade —
+      // `readChartToken` silently returns its fallback for any var() token.
+      const brand = theme.brand
+      const card = theme.card
+      const lightText = theme.primaryForeground
       return {
         marginLeft: 84,
         marginTop: 24,
@@ -614,14 +616,24 @@ export function ProgramTrendStack({
 /* ════════════════════════════════════════════════════════════════════════════
    Story 9 — faculty compared against each other over time.
    Q: "How is X changing over time?" → RUBRIC Q4 → line, one per entity.
-   `small-multiples.md:27` excludes itself here: "≤5 series → use one chart with
-   colored lines". Six faculty is at the boundary; one chart keeps them comparable.
+
+   Small multiples, one panel per faculty, NOT six colored lines on one chart:
+     · `small-multiples.md:27` only excuses a single chart at "≤5 series"; six is past it.
+     · the DS ships five chart tokens (--chart-1..5), so a sixth series silently recycles
+       a colour and two faculty become indistinguishable — which is what happened.
+     · VIZ-007 makes small multiples the default for a faceted view anyway.
+     · `small-multiples.md:8` — "the eye scans 16 mini-charts in 5 seconds; outliers
+       self-announce."
+
+   Each panel ghosts every OTHER faculty member's line behind the subject's, so the panel
+   answers "how is she doing" and "compared to whom" at once — the comparison story 9 asks
+   for survives the split, which is the usual objection to faceting.
    ════════════════════════════════════════════════════════════════════════════ */
 
 export function FacultyCompareLines({
   rows,
   programMean,
-  height = 240,
+  height,
 }: {
   rows: { facultyId: string; name: string; short: string; year: number; rating: number }[]
   programMean: number
@@ -632,51 +644,64 @@ export function FacultyCompareLines({
     [rows],
   )
 
+  const names = React.useMemo(() => [...new Set(rows.map((r) => r.name))].sort(), [rows])
+
+  /** Every row re-emitted under each panel — the grey context layer. */
+  const ghost = React.useMemo(
+    () => names.flatMap((panel) => rows.map((r) => ({ ...r, panel, series: `${panel}::${r.name}` }))),
+    [names, rows],
+  )
+
   const spec = React.useCallback(
     (theme: PlotTheme) => ({
-      marginLeft: 36,
-      marginTop: 16,
-      marginBottom: 24,
-      marginRight: 12,
+      marginLeft: 34,
+      marginTop: 12,
+      marginBottom: 26,
+      // Panel names sit in the right margin (Plot's fy default). 12px clipped them to "Dr.".
+      marginRight: 124,
       x: { domain: termOrder, label: null, ...axisDefaults(theme) },
-      y: { domain: SCORE_VIEW, label: null, ticks: 4, ...axisDefaults(theme) },
-      color: { legend: true, range: theme.series },
+      // Plot repeats the y axis inside every facet band. Five ticks in a ~72px panel
+      // collide with the neighbouring panel's ticks; two anchor the scale without noise.
+      y: { domain: SCORE_VIEW, label: null, ticks: [3.5, 4.5], ...axisDefaults(theme) },
+      fy: { domain: names, label: null, ...axisDefaults(theme) },
       marks: [
         gridMark(theme),
-        Plot.ruleY([programMean], { stroke: theme.rule, strokeDasharray: '4,4' }),
-        Plot.text([`program ${fmt2(programMean)}`], {
-          y: programMean,
-          frameAnchor: 'right',
-          dy: -7,
-          dx: -2,
-          fill: theme.mutedForeground,
-          fontSize: CHART_TICK_FONT_SIZE,
-          textAnchor: 'end',
-        }),
-        Plot.line(rows, {
+        // Peers, ghosted — context without competing for attention.
+        Plot.line(ghost, {
+          fy: 'panel',
           x: 'short',
           y: 'rating',
-          stroke: 'name',
-          strokeWidth: 1.75,
+          z: 'series',
+          stroke: theme.border,
+          strokeWidth: 1,
           curve: 'monotone-x',
-          // A faculty with a gap term must break the line, not dive to the axis floor —
-          // the legacy app's spaghetti bug.
-          marker: 'circle',
+        }),
+        Plot.ruleY([programMean], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
+        // The subject of the panel.
+        Plot.line(rows, {
+          fy: 'name',
+          x: 'short',
+          y: 'rating',
+          z: 'name',
+          stroke: theme.brand,
+          strokeWidth: 2,
+          curve: 'monotone-x',
         }),
         Plot.dot(rows, {
+          fy: 'name',
           x: 'short',
           y: 'rating',
-          fill: 'name',
-          r: 3,
+          r: 2.5,
+          fill: (d: { rating: number }) => (d.rating < programMean ? theme.warn : theme.brand),
           channels: { Faculty: 'name', Term: 'short', Score: (d: { rating: number }) => fmt2(d.rating) },
-          tip: { format: { x: false, y: false, fill: false } },
+          tip: { format: { x: false, y: false, fill: false, r: false, fy: false } },
         }),
       ],
     }),
-    [rows, termOrder, programMean],
+    [rows, ghost, termOrder, names, programMean],
   )
 
-  return <PlotFigure spec={spec} height={height} />
+  return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -753,44 +778,78 @@ export function BenchmarkDistribution({
   value,
   department,
   university,
-  height = 132,
+  showPeers = true,
+  height = 148,
 }: {
   distribution: number[]
   value: number
   department: number
   university: number
+  /**
+   * The access-scope toggle — one component, two lenses, which is how
+   * `prototype-cards-catalog.md` describes the chair/faculty split ("same component as
+   * faculty self-view but different access scope").
+   *
+   * `false` drops the peer swarm and leaves own-dot + two benchmark rules, i.e. a plain
+   * bullet-vs-target (VIZ-PATTERN-003) — the shape §7.3 explicitly allows for faculty
+   * ("✅ Allowed: department average, university average, threshold"). The swarm has to go
+   * on that lens because you can count the dots to your left, which is a percentile in
+   * everything but name — the thing §7.3 bans.
+   */
+  showPeers?: boolean
   height?: number
 }) {
   const peers = React.useMemo(() => distribution.map((v, i) => ({ v, i })), [distribution])
+  /** One department in the tenant ⇒ the two benchmarks are the same number. */
+  const same = Math.abs(department - university) < 0.005
 
   const spec = React.useCallback(
     (theme: PlotTheme) => ({
       marginLeft: 12,
       marginRight: 12,
-      marginTop: 26,
-      marginBottom: 26,
+      // Headroom for the benchmark labels above and the axis below — at 26px the "dept"
+      // label sat on the swarm and the "university" label sat on the axis ticks.
+      marginTop: 34,
+      marginBottom: 34,
       x: { domain: SCORE_VIEW, label: null, ticks: 5, ...axisDefaults(theme) },
       y: { axis: null },
       r: { range: [4, 4] },
       marks: [
-        // Unnamed peers — the shape of the pack, with no identity attached.
-        Plot.dot(
-          peers,
-          Plot.dodgeY(
-            { anchor: 'middle' },
-            { x: 'v', r: 4, fill: theme.mutedForeground, fillOpacity: 0.3, stroke: theme.card, strokeWidth: 1 },
-          ),
-        ),
+        // Unnamed peers — the shape of the pack, with no identity attached. Admin lens only.
+        ...(showPeers
+          ? [
+              Plot.dot(
+                peers,
+                Plot.dodgeY(
+                  { anchor: 'middle' },
+                  { x: 'v', r: 4, fill: theme.mutedForeground, fillOpacity: 0.3, stroke: theme.card, strokeWidth: 1 },
+                ),
+              ),
+            ]
+          : []),
         Plot.ruleX([department], { stroke: theme.rule, strokeDasharray: '4,4' }),
-        Plot.text([`dept ${fmt2(department)}`], {
-          x: department, frameAnchor: 'top', dy: -8, dx: 3,
-          fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
-        }),
-        Plot.ruleX([university], { stroke: theme.rule, strokeDasharray: '1,3' }),
-        Plot.text([`university ${fmt2(university)}`], {
-          x: university, frameAnchor: 'bottom', dy: 8, dx: 3,
-          fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
-        }),
+        Plot.text(
+          [
+            // One label when the two coincide — a single department tenant makes them
+            // identical, and two stacked labels at the same x reads as a rendering fault.
+            same
+              ? `dept · university ${fmt2(department)}`
+              : `dept ${fmt2(department)}`,
+          ],
+          {
+            x: department, frameAnchor: 'top', dy: -14, dx: 3,
+            fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
+          },
+        ),
+        ...(same
+          ? []
+          : [
+              Plot.ruleX([university], { stroke: theme.rule, strokeDasharray: '1,3' }),
+              Plot.text([`university ${fmt2(university)}`], {
+                x: university, frameAnchor: 'top', dy: -2, dx: 3,
+                fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
+              }),
+            ]),
         // You.
         Plot.dot([{ v: value }], {
           x: 'v',
@@ -806,7 +865,7 @@ export function BenchmarkDistribution({
         }),
       ],
     }),
-    [peers, value, department, university],
+    [peers, value, department, university, showPeers, same],
   )
 
   return <PlotFigure spec={spec} height={height} />

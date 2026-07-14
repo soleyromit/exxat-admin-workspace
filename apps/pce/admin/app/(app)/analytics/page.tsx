@@ -17,6 +17,7 @@ import { usePce } from '@/components/pce/pce-state'
 import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
+import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
 
 type Axis = 'term' | 'cohort'
 /**
@@ -128,9 +129,24 @@ function AnalyticsInner() {
           </div>
         </TabsContent>
 
-        {/* ───── By Faculty ───── */}
+        {/* ───── By Faculty — the most important tab (accepted 2026-07-13).
+                 Order follows the flow Monil described: land on the leaderboard of all
+                 faculty, then drill into one. The selector below is the drill-down, which
+                 is also what VIZ-007 asks for — the all-faculty view is the default and the
+                 dropdown is the optional narrowing, not the other way round. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6 max-w-5xl">
+            {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
+                /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
+            <FacultyLeaderboardSection />
+
+            <div className="border-t border-border pt-6">
+              <h2 className="text-sm font-semibold">Individual faculty</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Their portfolio: how they perform per term and per course, and every survey behind it.
+              </p>
+            </div>
+
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="faculty-select">Faculty</label>
               <Select value={selectedFacultyId} onValueChange={setSelectedFacultyId}>
