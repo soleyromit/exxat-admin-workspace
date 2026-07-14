@@ -168,7 +168,14 @@ function TokenSelect({
         </InputGroup>
       </PopoverAnchor>
 
-      <PopoverContent align="start" className="p-0" style={{ width: 260 }} aria-label={contentLabel}>
+      {/* Hugs its content instead of a fixed width: "Course / Instructor" needs
+          far less room than a cohort name, and a half-empty menu reads broken.
+          Bounded so a long role still wraps sanely. */}
+      <PopoverContent
+        align="start"
+        className="p-0 w-auto min-w-44 max-w-80"
+        aria-label={contentLabel}
+      >
         <Command>
           {options.length > searchThreshold && <CommandInput placeholder="Search" />}
           <CommandList>
