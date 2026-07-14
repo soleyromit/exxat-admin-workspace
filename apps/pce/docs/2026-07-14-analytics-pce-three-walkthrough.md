@@ -614,6 +614,90 @@ Three defects, all worth a follow-up PR:
 resolve to a pattern doc that was never written. Same for `scatter-quadrants` (the Gap Analysis) and
 `strip-with-marker` (the honest percentile encoding).
 
+#### 9.1f 🛑 BUILD HALTED — the mapping does not survive the real data
+
+Gate 1 (`ds-adoption-reviewer` + governance/data read) was run before any JSX. **Four of the seven
+"unblocked" builds died.** Recording honestly rather than shipping around it.
+
+**(a) Tasks 1 + 8 (section scores) — NO DATA. Not buildable.**
+- `TemplateSection` (`pce-mock-data.ts:2`) has **three** values: `course_content | faculty_performance
+  | course_director`. My mapping assumed 5.
+- `PceResponse.sectionScores` (`:359-363`) is keyed by **`surveyId` only — no `facultyId`**.
+  `deriveResultsForSurvey` (`pce-results.ts:106-131`) gives every instructor on a survey the *same*
+  `avgScore` — co-taught faculty are byte-identical.
+- **3 rows is not a ranking.** `cleveland-dot.md:23` targets ≤30 *entries*; a 3-row dot plot is a table
+  with extra steps.
+- ⇒ **This also moots the radar-vs-Cleveland conflict in 9.1c — neither chart has data.** The vault's
+  *"5 survey sections"* is not in the data model; `offerings/[code]/page.tsx:37-46` **synthesizes** five
+  fake sections from `seedKey.charCodeAt()` + a fixed offsets array. Invented labels.
+- **Needs a data-model decision (Romit/Himanshu), not a design one:** add `facultyId` to
+  `sectionScores`, or drop section-breakdown as a chart.
+
+**(b) Task 10 (per-course trends) — the pattern excludes itself. My §9.1 pick was wrong.**
+`small-multiples.md` **When NOT to use** (`:27`): *"Single chart with category encoding suffices
+(**≤5 series → use one chart with colored lines**)"*; `:74` *"**Min 3**, max ~24 panels"*; `:83` ❌
+*"Using small multiples when one chart with categories would do."*
+In this data faculty teach **1–3 courses** (Williams: **1**). Below the minimum, inside the exclusion.
+⇒ **Task 10 = one LineChart, one colored line per course.** Not small multiples. VIZ-007 doesn't
+override this — the pattern's own exclusion is narrower and wins.
+*(The pattern does name "Faculty home: 1 sparkline per course they teach (4-12 panels)" at `:14` — that's
+the shape we'd want if a faculty taught 4+. Revisit at real data volume.)*
+
+**(c) Task 3 (response-rate trend) — no history.** `PriorOffering` (`:333-345`) carries `term`,
+`courseAvg`, `facultyAvg` but **no `responseRate`**. Per-term response history for a faculty would have
+to be derived from `EvalResult` (`pce-results.ts:29-53`, keyed `${surveyId}:${facultyId}`, *does* carry
+`responseRate`) — feasible, but it's a data-derivation task, not a chart task.
+
+**(d) Task 5 (trend lines) — already built. Do not create files.** `analytics-panels.tsx` `ByTermPanel`
+(`:319-492`) already renders the dual course/faculty line chart; `ByCoursePanel` (`:793-883`) the
+per-course line. Adding target lines is a **`<ReferenceLine>` edit**, not a component. The file's own
+contract (`:3`) calls it *"the SINGLE source of design for the By Term / By Faculty / By Course views"* —
+a separate trend component would break it.
+
+**(e) Task 1/4/8/9 AI card — already built. My plan was a duplicate.** `AiInsightCard`
+(`components/pce/ai-insight-card.tsx:38-45`) ships the exact spec — sparkles + `var(--brand-color)` +
+"AI insight" + body + `Based on {source}`. Live at `results/[id]/page.tsx:1712`, `surveys/[id]/page.tsx:573`,
+`term-themes-insight.tsx:91`. **Pass `source="47 responses · 6 themes"` — the card prepends "Based on".**
+⚠️ **`ai-vs-pulled-lane.md:121`'s recipe is stale and now self-violating** — it hand-rolls
+`rounded-lg border border-border`, which `design-anti-patterns.md:61` bans, and imports from the old
+`@exxat/ds` path. **The shipped component supersedes the doc.**
+
+#### 9.1g What actually survives
+
+| Task | Verdict |
+|---|---|
+| 1, 8 sections | 🛑 **blocked — data model** |
+| 1, 4, 8, 9 themes | ✅ **done** — use `AiInsightCard`, build nothing |
+| 2, 7 rankings | 🛑 blocked — D3 weighting |
+| 3 response trend | ⚠️ derive `responseRate` history from `EvalResult` first |
+| 4, 5 score trends | ✅ **edit** `analytics-panels.tsx` — add `<ReferenceLine>` |
+| 6 bullet vs benchmarks | ✅ **buildable** — needs 2 derived averages (dept + university) |
+| 10 per-course trend | ✅ **buildable — as ONE line chart**, not small multiples |
+
+**Net: one genuinely new component** (`score-bullet.tsx`), one line-chart addition, and two
+`<ReferenceLine>` edits. Everything else is blocked, already built, or a data task.
+
+#### 9.1h Gate-1 findings that bind any build
+
+- **A11Y-021** (`design-anti-patterns.md:90`) — `var(--border)` as the *only* state indicator **fails**
+  (≈1.2:1; WCAG 1.4.11 needs 3:1). **Existing code violates this:** `bullet-gauge.tsx:106` and
+  `micro-trend.tsx:131` both `stroke="var(--border)"` on their ReferenceLine. My reference lines (program
+  avg, dept avg, target) **are** the state indicator ⇒ `--muted-foreground` minimum;
+  `cleveland-dot.md:38` independently says `--foreground` for the median.
+- **Amber is fine — the ban is narrower than it reads.** `design-anti-patterns.md:88` bans *ad-hoc oklch*
+  amber, not amber. `var(--chart-4)` **is** the DS token, already shipping at `bullet-gauge.tsx:68`.
+- **`SectionScoreStrip` is dead code** — zero call sites in `apps/pce/admin`. Candidate for deletion.
+- **`MicroTrend` lives in two places** (`components/pce/micro-trend.tsx` **and**
+  `apps/exam-management/admin/components/micro-trend.tsx`, `:14-18`) — any edit must be mirrored.
+- **`claude-practices.md:236` is wrong** — it marks `VIZ-PATTERN-006` *"✅ shipped"*; **no code backs it.**
+- **Register the viz**: `pce-ui-patterns.md:45-56` §0.2 — *"Every viz answers one question and prompts one
+  action."* Any new chart must be added there; `BulletGauge`/`SectionScoreStrip`/`MicroTrend` are rows 51-53.
+- **`BulletGauge` cannot absorb task 6.** Its API is count/count (`responseCount`/`enrollmentCount`
+  required, `:27-46`) with `pct = responseCount / enrollmentCount`; a 1–5 score vs two benchmarks has no
+  numerator. It's live in 3 call sites, so prop changes break them. New file — named `*Bullet`, never
+  `*Gauge`. (VIZ-011 bans **circular dials**, not Tufte bullets; the existing `BulletGauge` *name* is the
+  misnomer, not its shape.)
+
 ### 9.1-old The mapping (superseded — kept for the audit trail)
 
 | Task | Chart type | Component (file:line) | Source & proof |
