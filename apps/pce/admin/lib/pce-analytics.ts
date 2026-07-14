@@ -374,11 +374,21 @@ export interface FacultyStat {
   ratings: number[]
 }
 
-function windowMean(points: OfferingPoint[], from: number, to: number): number | null {
-  const inWindow = points.filter((p) => p.year > from && p.year <= to)
+function windowMean(
+  points: OfferingPoint[],
+  from: number,
+  to: number,
+  metric: 'avgRating' | 'courseAvg' = 'avgRating',
+): number | null {
+  const inWindow = points
+    .filter((p) => p.year > from && p.year <= to)
+    .filter((p) => (metric === 'courseAvg' ? p.courseAvg != null : true))
   if (!inWindow.length) return null
   return round2(
-    dualMean(inWindow.map((p) => p.avgRating), inWindow.map((p) => p.enrolled)).weighted,
+    dualMean(
+      inWindow.map((p) => (metric === 'courseAvg' ? (p.courseAvg as number) : p.avgRating)),
+      inWindow.map((p) => p.enrolled),
+    ).weighted,
   )
 }
 
@@ -542,18 +552,38 @@ export function facultyTermSeries(): { facultyId: string; name: string; term: st
 export interface CourseStat {
   courseCode: string
   courseName: string
+  /**
+   * The COURSE-CONTENT score — how the course itself was rated.
+   *
+   * This used to be the faculty rating (`avgRating`) aggregated by course, which is a
+   * different question wearing the same label: "courses needing attention" was ranking
+   * courses by their instructor's score, and the Overview KPI took its headline from the
+   * content mean while taking its median from this, so the two halves of one sentence
+   * measured different things. Students rate two entities (D27) — keep them apart.
+   */
   score: DualMean
+  /** The FACULTY-PERFORMANCE score for the same course — kept separate, never merged. */
+  facultyScore: DualMean
   responseRate: number
   terms: number
   avg1y: number | null
   avg3y: number | null
   drift: number | null
+  /** Individual per-offering CONTENT scores — the distribution behind the mean. */
   ratings: number[]
 }
 
-export function courseStats(): CourseStat[] {
-  const points = offeringPoints()
-  const now = latestYear(points)
+/**
+ * @param term - scope to one term, or omit for all terms.
+ *
+ * Scoped, this answers §9.1's row 5 — "spread across a term's courses" — which the rubric
+ * routes to a Cleveland dot at this N. The 1Y/3Y windows deliberately stay on full history
+ * (see `facultyStats`): scoping them to a single term makes drift identically zero.
+ */
+export function courseStats(term?: string): CourseStat[] {
+  const all = offeringPoints()
+  const now = latestYear(all)
+  const points = term ? all.filter((p) => p.term === term) : all
   const byCourse = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byCourse.get(p.courseCode) ?? []
@@ -565,17 +595,122 @@ export function courseStats(): CourseStat[] {
     .map(([courseCode, rows]) => {
       const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
       const responded = rows.reduce((s, r) => s + r.responded, 0)
-      const avg1y = windowMean(rows, now - 1, now)
-      const avg3y = windowMean(rows, now - 3, now)
+      // Windows run over ALL of this course's history, not the scoped slice — scoping them
+      // to one term makes avg1y === avg3y and drift identically zero. Same rule as facultyStats.
+      const own = all.filter((p) => p.courseCode === courseCode)
+      const avg1y = windowMean(own, now - 1, now, 'courseAvg')
+      const avg3y = windowMean(own, now - 3, now, 'courseAvg')
+      const content = rows.map((r) => r.courseAvg).filter((v): v is number => v != null)
+      const contentWeights = rows.filter((r) => r.courseAvg != null).map((r) => r.enrolled)
       return {
         courseCode,
         courseName: rows[0]!.courseName,
-        score: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
+        score: content.length
+          ? dualMean(content, contentWeights)
+          : dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
+        facultyScore: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
         terms: new Set(rows.map((r) => r.term)).size,
         avg1y,
         avg3y,
         drift: avg1y != null && avg3y != null ? round2(avg1y - avg3y) : null,
+        ratings: content.length ? content : rows.map((r) => r.avgRating),
+      }
+    })
+    .sort((a, b) => b.score.weighted - a.score.weighted)
+}
+
+/* ── By Course — the curriculum-committee surface ─────────────────────────── */
+
+export interface CourseTrendPoint {
+  term: string
+  short: string
+  year: number
+  /** The two rated entities, never merged (D27). */
+  courseAvg: number | null
+  facultyAvg: number
+  responseRate: number
+  enrolled: number
+  responded: number
+  faculty: string[]
+}
+
+/**
+ * One course's history by term, carrying BOTH scores.
+ *
+ * By Course previously plotted a single "Avg rating" line, which is the faculty rating —
+ * so the curriculum-committee tab, whose question is "is this COURSE working", charted the
+ * instructor. D27/D7: students rate two entities and they are never combined.
+ */
+export function courseTrend(courseCode: string): CourseTrendPoint[] {
+  const offs = offeringPoints().filter((o) => o.courseCode === courseCode)
+  const byTerm = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => {
+    const list = byTerm.get(o.term) ?? []
+    list.push(o)
+    byTerm.set(o.term, list)
+  })
+
+  return [...byTerm.values()]
+    .map((rows) => {
+      const first = rows[0]!
+      const weights = rows.map((r) => r.enrolled)
+      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
+      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      const content = rows.map((r) => r.courseAvg).filter((v): v is number => v != null)
+      return {
+        term: first.term,
+        short: shortTerm(first.term),
+        year: first.year,
+        courseAvg: content.length
+          ? dualMean(content, weights.slice(0, content.length)).weighted
+          : null,
+        facultyAvg: dualMean(rows.map((r) => r.avgRating), weights).weighted,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        enrolled,
+        responded,
+        faculty: [...new Set(rows.map((r) => r.facultyName))],
+      }
+    })
+    .sort((a, b) => a.year - b.year)
+}
+
+export interface CourseFacultyStat {
+  facultyId: string
+  name: string
+  score: DualMean
+  responseRate: number
+  terms: number
+  ratings: number[]
+}
+
+/**
+ * Who taught this course, and how each of them did.
+ *
+ * The By Course mirror of the portfolio's per-course ranking: the portfolio asks "which of
+ * this person's courses is weakest", this asks "which instructor of this course is weakest".
+ * Same disentangling the gap quadrant does program-wide — a course whose score swings by
+ * instructor is a staffing conversation; one that is uniformly low is a content conversation.
+ */
+export function courseFacultyStats(courseCode: string): CourseFacultyStat[] {
+  const offs = offeringPoints().filter((o) => o.courseCode === courseCode)
+  const byFaculty = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => {
+    const list = byFaculty.get(o.facultyId) ?? []
+    list.push(o)
+    byFaculty.set(o.facultyId, list)
+  })
+
+  return [...byFaculty.entries()]
+    .map(([facultyId, rows]) => {
+      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
+      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      return {
+        facultyId,
+        name: rows[0]!.facultyName,
+        score: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        terms: rows.length,
         ratings: rows.map((r) => r.avgRating),
       }
     })
@@ -642,10 +777,12 @@ export interface GapPoint {
  *
  * The legacy app's Gap Analysis was course-level too (§2.1: "8 evaluated" courses).
  */
-export function gapPoints(): GapPoint[] {
+/** @param term - scope to one term, or omit for all terms. */
+export function gapPoints(term?: string): GapPoint[] {
   const byCourse = new Map<string, CourseTermPoint[]>()
   courseTermPoints()
     .filter((p): p is CourseTermPoint & { facultyAvg: number } => p.facultyAvg != null)
+    .filter((p) => !term || p.term === term)
     .forEach((p) => {
       const list = byCourse.get(p.courseCode) ?? []
       list.push(p)
@@ -653,9 +790,11 @@ export function gapPoints(): GapPoint[] {
     })
 
   const enrolledByCourse = new Map<string, number>()
-  offeringPoints().forEach((o) => {
-    enrolledByCourse.set(o.courseCode, (enrolledByCourse.get(o.courseCode) ?? 0) + o.enrolled)
-  })
+  offeringPoints()
+    .filter((o) => !term || o.term === term)
+    .forEach((o) => {
+      enrolledByCourse.set(o.courseCode, (enrolledByCourse.get(o.courseCode) ?? 0) + o.enrolled)
+    })
 
   return [...byCourse.entries()].map(([courseCode, rows]) => ({
     courseCode,

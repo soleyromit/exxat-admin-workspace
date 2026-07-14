@@ -738,6 +738,111 @@ export function ProgramTrendStack({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   Story 12 — one course over time.
+   Q4 (change over time) → line, one per rated entity + the response path below.
+
+   Replaces a single "Avg rating" line that plotted the FACULTY score — so the
+   curriculum-committee tab, whose question is "is this COURSE working", was
+   charting the instructor. D27/D7: two entities, never merged.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export function CourseTrendStack({
+  rows,
+  responseTarget = 80,
+}: {
+  rows: { short: string; year: number; courseAvg: number | null; facultyAvg: number; responseRate: number }[]
+  responseTarget?: number
+}) {
+  const termOrder = React.useMemo(() => rows.map((r) => r.short), [rows])
+
+  const scoreRows = React.useMemo(
+    () =>
+      rows.flatMap((r) => [
+        ...(r.courseAvg != null ? [{ term: r.short, metric: 'Course content', value: r.courseAvg }] : []),
+        { term: r.short, metric: 'Faculty', value: r.facultyAvg },
+      ]),
+    [rows],
+  )
+
+  const scoreDomain = React.useMemo(
+    () => paddedDomain(scoreRows.map((r) => r.value), 0.6),
+    [scoreRows],
+  )
+
+  const scoreSpec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 36,
+      marginTop: 16,
+      marginBottom: 4,
+      marginRight: 92,
+      x: { domain: termOrder, label: null, axis: null },
+      y: { domain: scoreDomain, label: null, ticks: 4, ...axisDefaults(theme) },
+      color: { domain: ['Course content', 'Faculty'], range: [theme.series[0]!, theme.series[1]!], legend: false },
+      marks: [
+        gridMark(theme),
+        Plot.line(scoreRows, { x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.dot(scoreRows, {
+          x: 'term', y: 'value', fill: 'metric', r: 3,
+          channels: { Term: 'term', Metric: 'metric', Score: (d: { value: number }) => fmt2(d.value) },
+          tip: { format: { x: false, y: false, fill: false } },
+        }),
+        ...(['Faculty', 'Course content'] as const).map((metric) =>
+          Plot.text(
+            [[...scoreRows].reverse().find((r) => r.metric === metric)].filter(
+              (r): r is (typeof scoreRows)[number] => !!r,
+            ),
+            {
+              x: 'term', y: 'value', text: 'metric', fill: 'metric',
+              textAnchor: 'start', dx: 8, dy: metric === 'Faculty' ? -9 : 9,
+              fontSize: CHART_TICK_FONT_SIZE,
+            },
+          ),
+        ),
+      ],
+    }),
+    [scoreRows, termOrder, scoreDomain],
+  )
+
+  const rateSpec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 36,
+      marginTop: 16,
+      marginBottom: 22,
+      // Must match the score plot — the two are stacked to be read across ONE term axis.
+      marginRight: 92,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      y: { domain: [40, 100], label: null, ticks: 3, tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
+      marks: [
+        gridMark(theme),
+        Plot.ruleY([responseTarget], { stroke: theme.rule, strokeDasharray: '4,4' }),
+        Plot.text([`target ${responseTarget}%`], {
+          y: responseTarget, frameAnchor: 'right', dy: -7, dx: -2,
+          fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
+        }),
+        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.series[2]!, fillOpacity: 0.12, curve: 'monotone-x' }),
+        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.series[2]!, strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.dot(rows, {
+          x: 'short', y: 'responseRate', r: 3,
+          fill: (d: { responseRate: number }) => (d.responseRate < responseTarget ? theme.warn : theme.series[2]!),
+          channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
+          tip: { format: { x: false, y: false, fill: false, r: false } },
+        }),
+      ],
+    }),
+    [rows, termOrder, responseTarget],
+  )
+
+  if (rows.length < 2) return <ChartEmpty note="One term of history — a trend needs at least two." />
+
+  return (
+    <div className="flex flex-col">
+      <PlotFigure spec={scoreSpec} height={172} />
+      <PlotFigure spec={rateSpec} height={116} />
+    </div>
+  )
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    Story 9 — faculty compared against each other over time.
    Q: "How is X changing over time?" → RUBRIC Q4 → line, one per entity.
 

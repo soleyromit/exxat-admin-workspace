@@ -22,6 +22,7 @@ import {
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
+import { CourseRankDots, GapQuadrant, CourseTrendStack, FacultyLeaderboardDots } from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTable } from '@/components/data-table'
@@ -30,7 +31,10 @@ import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
-import { termKpis, termCourseBreakdown, termSeries, type TermCourseRow } from '@/lib/pce-analytics'
+import {
+  termKpis, termCourseBreakdown, termSeries, courseStats, gapPoints, medianOf,
+  courseTrend, courseFacultyStats, type TermCourseRow,
+} from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
 /* ── shared helpers ── */
@@ -420,6 +424,63 @@ export function ByTermPanel({
     ]
   }, [termStats, termCourseRows, value])
 
+  /* Term-scoped derivations for row 2. Scoped to THIS term — the trend above is all-terms
+     by design (Monil: "trend graph is not for a single term, but for all the terms"), so the
+     single-term answer has to live somewhere, and these are it. */
+  const termScopedCourses = useMemo(
+    () => (axis === 'term' ? courseStats(value) : []),
+    [axis, value],
+  )
+  const termScopedMedian = useMemo(
+    () => medianOf(termScopedCourses.map(c => c.score.weighted)),
+    [termScopedCourses],
+  )
+  const termGaps = useMemo(() => (axis === 'term' ? gapPoints(value) : []), [axis, value])
+  const termGapMeans = useMemo(() => ({
+    course: termGaps.length ? termGaps.reduce((s, g) => s + g.courseAvg, 0) / termGaps.length : 0,
+    faculty: termGaps.length ? termGaps.reduce((s, g) => s + g.facultyAvg, 0) / termGaps.length : 0,
+  }), [termGaps])
+
+  const termSpreadLeo: ChartLeoInsight | null = useMemo(() => {
+    if (termScopedCourses.length < 2) return null
+    const worst = termScopedCourses[termScopedCourses.length - 1]!
+    const below = termScopedCourses.filter(c => c.score.weighted < termScopedMedian)
+    return {
+      // Frequency count, not a percentage — Aarti D17.
+      headline: `${below.length} of ${termScopedCourses.length} courses sit below the ${termScopedMedian.toFixed(2)} median in ${value}`,
+      explanation:
+        `This is the term's own spread, not the program's — a course can sit above the all-time median and still ` +
+        `be the weakest thing that ran this term. ${worst.courseCode} is lowest at ${worst.score.weighted.toFixed(2)}.`,
+      kind: below.length > 0 ? 'anomaly' : 'trend',
+      delta: { value: worst.score.weighted.toFixed(2), label: `lowest — ${worst.courseCode}` },
+      bullets: [
+        `${worst.courseCode} — ${worst.courseName}: ${worst.score.weighted.toFixed(2)} content · ${worst.responseRate}% response.`,
+        `Term median ${termScopedMedian.toFixed(2)} across ${termScopedCourses.length} courses.`,
+      ],
+      anchor: { yValue: worst.score.weighted },
+    }
+  }, [termScopedCourses, termScopedMedian, value])
+
+  const termGapLeo: ChartLeoInsight | null = useMemo(() => {
+    if (termGaps.length < 3) return null
+    const widest = [...termGaps].sort((a, b) => (b.facultyAvg - b.courseAvg) - (a.facultyAvg - a.courseAvg))[0]!
+    const gap = widest.facultyAvg - widest.courseAvg
+    const bothLow = termGaps.filter(g => g.courseAvg < termGapMeans.course && g.facultyAvg < termGapMeans.faculty)
+    return {
+      headline: `${widest.courseCode} scores ${gap.toFixed(2)} higher on teaching than on content this term`,
+      explanation:
+        `When the instructor rates well above the material, coaching the person will not move the number — the ` +
+        `content needs work. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} in ${value} sit below both term means.`,
+      kind: 'anomaly',
+      delta: { value: `+${gap.toFixed(2)}`, label: 'faculty over content' },
+      bullets: [
+        `${widest.courseCode}: content ${widest.courseAvg.toFixed(2)} vs teaching ${widest.facultyAvg.toFixed(2)}.`,
+        `${bothLow.length} of ${termGaps.length} courses below both term means.`,
+      ],
+      anchor: { yValue: widest.facultyAvg },
+    }
+  }, [termGaps, termGapMeans, value])
+
   const termColumns = useMemo(
     () => buildTermColumns((row) => onNudge({
       id: row.id,
@@ -639,6 +700,78 @@ export function ByTermPanel({
         </ChartFigure>
       </ChartCard>
 
+      {/* Row 2 continued — the term-scoped viz this tab was missing.
+          §9.1 maps it explicitly: "5 — spread across a term's courses | Q2 | Cleveland dot
+          (N=8)". The trend above answers "which way is the program heading"; these answer
+          "what happened INSIDE this term", which is the question the term selector implies. */}
+      {axis === 'term' && termScopedCourses.length > 0 && (
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+          <ChartCard
+            variant="normal"
+            title={`Course spread — ${value}`}
+            description="Every course evaluated this term against the term's own median. Faint dots are the individual offerings behind each mean."
+            leoInsight={termSpreadLeo}
+          >
+            <ChartFigure
+              label={`Course spread in ${value}`}
+              summary={`Ranked dot plot of ${termScopedCourses.length} courses' content scores in ${value}, against the term median.`}
+              dataLength={termScopedCourses.length}
+              leoInsight={termSpreadLeo}
+            >
+              {() => (
+                <>
+                  <CourseRankDots courses={termScopedCourses} median={termScopedMedian} />
+                  <ChartDataTable
+                    caption={`Course content scores in ${value}`}
+                    headers={['Course', 'Content score', 'Simple mean', 'Response rate']}
+                    rows={termScopedCourses.map(c => [
+                      `${c.courseCode} — ${c.courseName}`,
+                      c.score.weighted.toFixed(2),
+                      c.score.simple.toFixed(2),
+                      `${c.responseRate}%`,
+                    ])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+
+          <ChartCard
+            variant="normal"
+            title={`Content vs teaching — ${value}`}
+            description="One dot per course this term. Separates a course that needs redesigning from an instructor who needs support."
+            leoInsight={termGapLeo}
+          >
+            <ChartFigure
+              label={`Content versus teaching in ${value}`}
+              summary={`Scatter of ${termGaps.length} courses in ${value}, course content score against faculty score, split at the term means.`}
+              dataLength={termGaps.length}
+              leoInsight={termGapLeo}
+            >
+              {() => (
+                <>
+                  <GapQuadrant
+                    points={termGaps}
+                    courseMean={termGapMeans.course}
+                    facultyMean={termGapMeans.faculty}
+                  />
+                  <ChartDataTable
+                    caption={`Content versus teaching in ${value}`}
+                    headers={['Course', 'Content', 'Teaching', 'Enrolled']}
+                    rows={termGaps.map(g => [
+                      `${g.courseCode} — ${g.courseName}`,
+                      g.courseAvg.toFixed(2),
+                      g.facultyAvg.toFixed(2),
+                      g.enrolled,
+                    ])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+        </div>
+      )}
+
       {/* REMOVED 2026-07-14 — "Course rankings" + "Faculty rankings" (two ranked bar charts).
           Three reasons, any one sufficient:
           1. They were labelled "all terms" on a tab scoped to a single term — the chart
@@ -756,6 +889,8 @@ export function ByFacultyPanel({
 
   return (
     <>
+      <h2 className="sr-only">{faculty.name} overview</h2>
+
       <KeyMetrics variant="compact" metricsSingleRow metrics={facultyKpis} />
 
       {extraCharts}
@@ -817,6 +952,56 @@ export function ByCoursePanel({
       .sort((a, b) => b.term.localeCompare(a.term))
   }, [courseCode])
 
+  /* By Course row 2 — both rated entities + the instructor comparison. */
+  const courseTrendRows = useMemo(() => courseTrend(courseCode), [courseCode])
+  const courseFaculty = useMemo(() => courseFacultyStats(courseCode), [courseCode])
+  const courseFacultyMedian = useMemo(
+    () => medianOf(courseFaculty.map(f => f.score.weighted)),
+    [courseFaculty],
+  )
+  /* FacultyLeaderboardDots takes a FacultyStat. These instructors are scoped to ONE course,
+     so `courses` is 1 by construction and the 1Y/3Y windows are meaningless at this scope —
+     they are null rather than faked, and the chart does not read them. */
+  const courseFacultyAsStats = useMemo(
+    () =>
+      courseFaculty.map(f => ({
+        facultyId: f.facultyId,
+        name: f.name,
+        initials: '',
+        score: f.score,
+        responseRate: f.responseRate,
+        offerings: f.terms,
+        courses: 1,
+        terms: f.terms,
+        avg1y: null,
+        avg3y: null,
+        drift: null,
+        ratings: f.ratings,
+      })),
+    [courseFaculty],
+  )
+
+  const courseFacultyLeo: ChartLeoInsight | null = useMemo(() => {
+    if (courseFaculty.length < 2) return null
+    const best = courseFaculty[0]!
+    const worst = courseFaculty[courseFaculty.length - 1]!
+    const spread = best.score.weighted - worst.score.weighted
+    return {
+      headline:
+        spread >= 0.4
+          ? `${courseCode} swings ${spread.toFixed(2)} depending on who teaches it`
+          : `${courseCode} scores consistently across its ${courseFaculty.length} instructors`,
+      explanation:
+        spread >= 0.4
+          ? 'A course that scores very differently by instructor is a staffing question, not a content one — the material is evidently teachable.'
+          : 'Instructors land close together, so the score is a property of the course rather than of who is in front of it. That points at content.',
+      kind: spread >= 0.4 ? 'anomaly' : 'trend',
+      delta: { value: spread.toFixed(2), label: 'best to worst' },
+      bullets: courseFaculty.map(f => `${f.name}: ${f.score.weighted.toFixed(2)}/5 across ${f.terms} term${f.terms === 1 ? '' : 's'}.`),
+      anchor: { yValue: worst.score.weighted },
+    }
+  }, [courseFaculty, courseCode])
+
   /** This course's CE surveys — the AI theme card's scope (story 12). */
   const courseSurveys = useMemo(
     () => MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic' && s.courseCode === courseCode),
@@ -866,6 +1051,10 @@ export function ByCoursePanel({
 
   return (
     <>
+      {/* ChartCard titles are h3 — without a section h2 the document jumps h1 → h3
+          (axe `heading-order`). Real section, needn't be seen. */}
+      <h2 className="sr-only">{courseCode} overview</h2>
+
       <KeyMetrics variant="compact" metricsSingleRow metrics={courseKpis} />
 
       {/* Story 12's theme half. Themes are the AI lane, NOT a chart — `ai-vs-pulled-lane.md`
@@ -910,33 +1099,29 @@ export function ByCoursePanel({
         return (
           <ChartCard
             variant="normal"
-            title={`Rating trend — ${courseCode}`}
-            description="Avg rating, weighted by class size, per term."
+            title={`Score trend — ${courseCode}`}
+            description="Content and teaching move independently — that separation is the whole point of the tab. Response rate shares the term axis below."
             leoInsight={courseTrendLeo}
           >
             <ChartFigure
-              label={`Rating trend for ${courseCode}`}
-              summary={`Line chart of average rating per term: ${courseTrendData.map(d => `${d.term} ${d.rating}`).join(', ')}.`}
-              dataLength={courseTrendData.length}
+              label={`Score trend for ${courseCode}`}
+              summary={`Course content and faculty scores per term for ${courseCode}, with response rate against an 80% target below on the same term axis.`}
+              dataLength={courseTrendRows.length}
+              leoInsight={courseTrendLeo}
             >
-              {(activeIndex) => (
+              {() => (
                 <>
-                  <div className="relative w-full">
-                    <ChartContainer config={courseRatingTrendConfig} className="w-full" style={{ height: 140 }}>
-                      <LineChart accessibilityLayer data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="term" tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                        <YAxis domain={[3, 5]} tickFormatter={(v: number) => v.toFixed(1)} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={28} />
-                        <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
-                        <Line type="monotone" dataKey="rating" stroke="var(--color-rating)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-rating)' }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} isAnimationActive={false} />
-                      </LineChart>
-                    </ChartContainer>
-                    <ChartLeoPlotInsightOverlay data={courseTrendData} xDataKey="term" />
-                  </div>
+                  <CourseTrendStack rows={courseTrendRows} />
                   <ChartDataTable
-                    caption={`Rating trend for ${courseCode}`}
-                    headers={['Term', 'Avg rating']}
-                    rows={courseTrendData.map(d => [d.term, `${d.rating.toFixed(2)}/5`])}
+                    caption={`Score trend for ${courseCode}`}
+                    headers={['Term', 'Content', 'Teaching', 'Response rate', 'Faculty']}
+                    rows={courseTrendRows.map(d => [
+                      d.term,
+                      d.courseAvg != null ? d.courseAvg.toFixed(2) : '—',
+                      d.facultyAvg.toFixed(2),
+                      `${d.responseRate}%`,
+                      d.faculty.join(', '),
+                    ])}
                   />
                 </>
               )}
@@ -944,6 +1129,43 @@ export function ByCoursePanel({
           </ChartCard>
         )
       })()}
+
+      {/* Who taught it, and how each did — the By Course mirror of the portfolio's per-course
+          ranking. A course whose score swings by instructor is a staffing conversation; one
+          that is uniformly low is a content conversation. Same disentangling the gap quadrant
+          does program-wide, asked from the course's side. */}
+      {courseFaculty.length > 1 && (
+        <ChartCard
+          variant="normal"
+          title={`Who taught ${courseCode}`}
+          description="Each instructor's mean for this course, with their individual offerings drawn behind it."
+          leoInsight={courseFacultyLeo}
+        >
+          <ChartFigure
+            label={`Instructors of ${courseCode}`}
+            summary={`Ranked dot plot of ${courseFaculty.length} instructors' scores for ${courseCode}, against the course median.`}
+            dataLength={courseFaculty.length}
+            leoInsight={courseFacultyLeo}
+          >
+            {() => (
+              <>
+                <FacultyLeaderboardDots faculty={courseFacultyAsStats} median={courseFacultyMedian} />
+                <ChartDataTable
+                  caption={`Instructors of ${courseCode}`}
+                  headers={['Faculty', 'Score', 'Simple mean', 'Terms', 'Response rate']}
+                  rows={courseFaculty.map(f => [
+                    f.name,
+                    f.score.weighted.toFixed(2),
+                    f.score.simple.toFixed(2),
+                    f.terms,
+                    `${f.responseRate}%`,
+                  ])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+      )}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">Offerings of {courseCode}</h2>
