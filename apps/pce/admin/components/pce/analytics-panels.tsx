@@ -136,16 +136,61 @@ function RankingDotPlot({
   activeIndex: number | null
   labelWidth?: number
 }) {
-  const median = medianOf(rows.map(r => r.avg))
+  const values = rows.map(r => r.avg)
+  const median = medianOf(values)
+
+  /* Zoom the axis to the DATA, not to the Likert scale.
+     Evaluation scores always converge — Arvind (2026-05-13): "scores converge
+     around 3.2 (minimal differentiation)" and "small differences (3.2 vs 3.25)
+     determine top 20% vs 40% faculty rankings". Real spread here is ~3.5-4.6, so
+     a [1,5] domain crushed every dot into the right third and made nine distinct
+     courses look identical — it rendered the scale honestly and the DIFFERENCES
+     illegibly. A dot plot has no zero-baseline obligation (cleveland-dot.md:28),
+     so the axis is free to frame the data. Pad by 12% of the spread, floor the
+     window at 0.8 so a near-tied set can't zoom to absurdity, and clamp to the
+     1-5 scale so we never imply a score outside it. */
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const pad = Math.max((hi - lo) * 0.12, 0.08)
+  const halfFloor = Math.max((0.8 - (hi - lo)) / 2, 0)
+  const domainMin = Math.max(1, +(lo - pad - halfFloor).toFixed(2))
+  const domainMax = Math.min(5, +(hi + pad + halfFloor).toFixed(2))
+
+  const best = Math.max(...values)
+  const worst = Math.min(...values)
+
   return (
-    <ChartContainer config={config} style={{ height: `${rows.length * 24 + 40}px` }} className="w-full">
-      <ScatterChart accessibilityLayer margin={{ top: 18, right: 36, bottom: 0, left: 0 }}>
-        {/* Domain starts at 1: these are 1-5 Likert means, and a 0 baseline is
-            irrelevant for a dot plot (cleveland-dot.md:28 — zero-baseline only
-            matters when magnitude/sum does). Starting at 1 spends the axis on
-            the range the data actually occupies. */}
-        <XAxis type="number" dataKey="avg" domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+    <ChartContainer config={config} style={{ height: `${rows.length * 26 + 44}px` }} className="w-full">
+      <ScatterChart accessibilityLayer margin={{ top: 18, right: 52, bottom: 0, left: 0 }}>
+        <XAxis
+          type="number"
+          dataKey="avg"
+          domain={[domainMin, domainMax]}
+          tickCount={4}
+          tickFormatter={(v: number) => v.toFixed(1)}
+          tick={CHART_AXIS_TICK}
+          tickLine={false}
+          axisLine={false}
+        />
         <YAxis type="category" dataKey={labelKey} width={labelWidth} interval={0} reversed tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+        {/* Leader line per row, median → dot. cleveland-dot.md's anatomy draws it
+            ("●────│"): it turns "where is this dot" into "how far from the median,
+            and which side" — the actual question. Drawn as ReferenceLine segments
+            rather than inside the dot's shape because a custom Scatter shape is not
+            handed a usable x scale, so it cannot locate the median in pixel space. */}
+        {rows.map((r, i) => (
+          <ReferenceLine
+            key={`leader-${i}`}
+            segment={[
+              { x: median, y: (r as Record<string, unknown>)[labelKey] as string },
+              { x: r.avg, y: (r as Record<string, unknown>)[labelKey] as string },
+            ]}
+            stroke={r.avg < median ? 'var(--chart-4)' : 'var(--chart-1)'}
+            strokeWidth={1.5}
+            strokeOpacity={0.4}
+            ifOverflow="extendDomain"
+          />
+        ))}
         <ReferenceLine x={median} stroke="var(--foreground)" strokeDasharray="4 2" strokeWidth={1}>
           <Label value={`Median ${median.toFixed(2)}`} position="top" fill="var(--muted-foreground)" fontSize={11} />
         </ReferenceLine>
@@ -155,17 +200,31 @@ function RankingDotPlot({
           isAnimationActive={false}
           shape={(props: { cx?: number; cy?: number; payload?: { avg: number } }) => {
             const { cx, cy, payload } = props
-            if (cx == null || cy == null || !payload) return <circle />
+            if (cx == null || cy == null || !payload) return <g />
             const below = payload.avg < median
+            const fill = below ? 'var(--chart-4)' : 'var(--chart-1)'
+            /* Delta label on the extremes only (:62 — "top dot + bottom dot labeled
+               with delta-from-median"). Labelling every row would be chartjunk; the
+               extremes are what the reader came for. Ties at an extreme all label,
+               which is correct — they are all the extreme. */
+            const isExtreme = payload.avg === best || payload.avg === worst
+            const delta = payload.avg - median
             return (
-              <circle
-                cx={cx}
-                cy={cy}
-                r={5}
-                fill={below ? 'var(--chart-4)' : 'var(--chart-1)'}
-                stroke="var(--background)"
-                strokeWidth={1}
-              />
+              <g>
+                <circle cx={cx} cy={cy} r={5} fill={fill} stroke="var(--background)" strokeWidth={1} />
+                {isExtreme && (
+                  <text
+                    x={cx + 9}
+                    y={cy}
+                    dominantBaseline="central"
+                    fontSize={11}
+                    fill="var(--muted-foreground)"
+                    className="tabular-nums"
+                  >
+                    {`${delta >= 0 ? '+' : '−'}${Math.abs(delta).toFixed(2)}`}
+                  </text>
+                )}
+              </g>
             )
           }}
           {...(activeIndex != null ? { activeIndex } : {})}
