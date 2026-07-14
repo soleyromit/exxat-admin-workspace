@@ -113,7 +113,7 @@ function TokenSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor>
-        <InputGroup className="flex flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden">
+        <InputGroup className="flex w-fit min-w-44 max-w-96 flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden">
           {shown.map(v => {
             const o = byValue.get(v)
             if (!o) return null
@@ -125,7 +125,7 @@ function TokenSelect({
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="size-4 p-0 shrink-0 hover:bg-transparent"
+                  className="size-4 p-0 shrink-0 bg-transparent hover:bg-transparent"
                   disabled={atMin}
                   aria-label={`Remove ${o.label}`}
                   onClick={() => onToggle(v)}
@@ -145,7 +145,7 @@ function TokenSelect({
               aria-haspopup="listbox"
               aria-expanded={open}
               aria-labelledby={labelId}
-              className="flex-1 justify-start px-1 font-normal hover:bg-transparent"
+              className="flex-1 justify-start px-1 font-normal bg-transparent hover:bg-transparent focus-visible:bg-transparent"
               style={{ minWidth: selected.length === 0 ? 64 : 20 }}
             >
               {selected.length === 0
@@ -503,7 +503,7 @@ export function StepCoursesEvaluatees({
           )}
 
           {termChosen && cohortOpts.length > 0 && (
-            <div className="flex flex-col gap-1.5" style={{ width: 380 }}>
+            <div className="flex flex-col gap-1.5">
               <span className="text-sm font-semibold" id="cohort-label">
                 Cohort <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>(optional)</span>
               </span>
@@ -536,7 +536,7 @@ export function StepCoursesEvaluatees({
                 different interaction model. The role universe (~40-50 in Prism,
                 narrowed per program in Settings) stays in the searchable popup,
                 so the field shows what you PICKED and never the whole list. */}
-            <div style={{ maxWidth: 420 }}>
+            <div>
               <TokenSelect
                 labelId="evaluatees-label"
                 placeholder="Select roles"
