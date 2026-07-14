@@ -3,7 +3,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Skeleton, Button, InputGroup, InputGroupAddon,
+  Badge, Skeleton, Button, InputGroup,
   Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
@@ -144,6 +144,10 @@ function TokenSelect({
           {overflow > 0 && (
             <Badge variant="outline" className="font-normal shrink-0">+{overflow}</Badge>
           )}
+          {/* The chevron lives INSIDE the trigger. It was previously a sibling in
+              an InputGroupAddon — a plain div — so the one affordance that reads
+              as "open me" was not clickable, and the only hit area was a ~20px
+              invisible strip beside it. */}
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
@@ -151,17 +155,19 @@ function TokenSelect({
               aria-haspopup="listbox"
               aria-expanded={open}
               aria-labelledby={labelId}
-              className="flex-1 justify-start px-1 font-normal"
-              style={{ minWidth: selected.length === 0 ? 64 : 20, backgroundColor: 'transparent' }}
+              className="flex-1 justify-between gap-1 px-1 font-normal"
+              style={{ minWidth: selected.length === 0 ? 64 : 32, backgroundColor: 'transparent' }}
             >
               {selected.length === 0
                 ? <span style={{ color: 'var(--muted-foreground)' }}>{placeholder}</span>
                 : <span className="sr-only">Change selection</span>}
+              <i
+                className="fa-light fa-chevron-down text-xs shrink-0"
+                aria-hidden="true"
+                style={{ color: 'var(--muted-foreground)' }}
+              />
             </Button>
           </PopoverTrigger>
-          <InputGroupAddon align="inline-end">
-            <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
-          </InputGroupAddon>
         </InputGroup>
       </PopoverAnchor>
 
