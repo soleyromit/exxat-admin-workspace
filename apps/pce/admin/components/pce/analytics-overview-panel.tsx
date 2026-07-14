@@ -256,7 +256,9 @@ export function AnalyticsOverviewPanel() {
             },
           ]}
         >
-          <KpiSpark points={summary.facultySpark} tone="brand" />
+          {/* seriesIndex 1 = --chart-2 = the "Faculty" line in Program trajectory below.
+              One metric, one colour, down the whole tab. */}
+          <KpiSpark points={summary.facultySpark} seriesIndex={1} />
         </ChartCard>
 
         <ChartCard
@@ -272,7 +274,8 @@ export function AnalyticsOverviewPanel() {
             },
           ]}
         >
-          <KpiSpark points={summary.courseSpark} tone="brand" />
+          {/* seriesIndex 0 = --chart-1 = the "Course content" line below. */}
+          <KpiSpark points={summary.courseSpark} seriesIndex={0} />
         </ChartCard>
 
         <ChartCard
@@ -288,7 +291,13 @@ export function AnalyticsOverviewPanel() {
             },
           ]}
         >
-          <KpiSpark points={summary.responseSpark} tone={summary.responseRate < 80 ? 'warn' : 'good'} />
+          {/* Response rate keeps the amber/target semantic rather than a series colour:
+              unlike the two scores it has a stated bar (80%), so below-target is a state,
+              not an identity. seriesIndex 2 = --chart-3 = its line in Program trajectory. */}
+          <KpiSpark
+            points={summary.responseSpark}
+            {...(summary.responseRate < 80 ? { tone: 'warn' as const } : { seriesIndex: 2 })}
+          />
         </ChartCard>
       </div>
 

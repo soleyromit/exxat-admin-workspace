@@ -925,15 +925,30 @@ export function CourseRankSpark({ course, median }: { course: FacultyCourseStat;
 export function KpiSpark({
   points,
   tone = 'brand',
+  seriesIndex,
   height = 34,
 }: {
   points: { x: number; y: number }[]
   tone?: 'brand' | 'warn' | 'good'
+  /**
+   * Pin the spark to a `--chart-N` series colour so a metric keeps ONE identity across the
+   * tab. Without this the faculty KPI spark drew in brand while the faculty line in
+   * "Program trajectory" drew in --chart-2 — the same metric in two colours on one screen,
+   * which trains the reader that colour means nothing.
+   */
+  seriesIndex?: number
   height?: number
 }) {
   const spec = React.useCallback(
     (theme: PlotTheme) => {
-      const stroke = tone === 'warn' ? theme.warn : tone === 'good' ? theme.good : theme.brand
+      const stroke =
+        seriesIndex != null
+          ? theme.series[seriesIndex] ?? theme.brand
+          : tone === 'warn'
+            ? theme.warn
+            : tone === 'good'
+              ? theme.good
+              : theme.brand
       return {
         marginLeft: 1,
         marginRight: 1,
@@ -948,7 +963,7 @@ export function KpiSpark({
         ],
       }
     },
-    [points, tone],
+    [points, tone, seriesIndex],
   )
 
   if (points.length < 3) return null
