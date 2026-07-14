@@ -118,7 +118,12 @@ function TokenSelect({
             const o = byValue.get(v)
             if (!o) return null
             return (
-              <Badge key={v} variant="secondary" className="gap-1 ps-2 pe-0.5 py-0.5 font-normal min-w-0 shrink" style={{ maxWidth: 150 }}>
+              /* outline, not secondary: every filled neutral in this theme is
+                 brand-tinted (--secondary oklch .012 @345, --muted .008 @345),
+                 so a filled chip is always pink. outline = white + --border
+                 (chroma .002) = actually neutral, and it's a real DS variant
+                 rather than a className override of one. */
+              <Badge key={v} variant="outline" className="gap-1 ps-2 pe-0.5 py-0.5 font-normal min-w-0 shrink" style={{ maxWidth: 150 }}>
                 {/* Long values truncate rather than force the field wider — a
                     cohort can be "Class of 2027 – Group B". */}
                 <span className="truncate" title={o.label}>{o.label}</span>
