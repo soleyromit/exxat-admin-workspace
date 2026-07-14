@@ -363,6 +363,10 @@ as a filtered state. That's the single biggest structural decision to make — s
 > *"When generating charts with AI, **do not feed the existing prototype URL to the agent** (biases
 > toward the current solution); rethink each chart's intent first."*
 
+⚠️ **2026-07-14 — this paraphrase was written without the transcript and drops the operative half of
+the rule. See §11 for the verbatim.** The rule is not "don't look at the prototype"; it is *look at it,
+extract the intent, discard the execution, prompt from the intent*. §11 supersedes this block.
+
 That is exactly what §1–§7 did. Aarti's process anti-patterns compound it: **C10 — trim speculative
 dashboard polish**; ❌ *"prototype-first design before alignment"*; ❌ *"wearing personas you're not"*.
 **⇒ Use §1–§7 as a gap-finder and a list of things to *not* re-inherit. Do not let §6
@@ -863,3 +867,164 @@ landing in specs and never returns to the registry.
 is a black-box walkthrough of a deployed prototype whose source is not in this repo, so DS
 conformance is not assessable. Design observations in §5 are from rendered screenshots only.
 Data contradictions in §4 are reported as observed; root causes are inferred, not traced to source.
+
+---
+
+## 11. Monil's analytics design model — from the raw transcript
+
+> **Provenance:** Granola `8330d724-6bbd-4605-b075-4978c3078b98` — *"Dashboard and analytics design —
+> messaging, KPIs, and multi-survey structure"*, 2026-07-13, pulled verbatim via
+> `get_meeting_transcript` on 2026-07-14. Cross-checked against `f1f8d1e4-…` (Jul 14, *"Course
+> evaluation setup"*). **§1–§10 were written without either transcript** — they quote Monil from a
+> secondhand one-line paraphrase. This section supersedes §8.0(a) and corrects §7 and §8 where noted.
+> Speaker labels: `Speaker` = Monil · `Microphone` = Romit.
+
+### 11.1 The rule that §8.0(a) truncated
+
+> *"When you are thinking you can refer this as your starting point, but **you don't have to feed this
+> URL to your agent. Otherwise your agent will create whatever is here.** We should not do that. **Each
+> graph that you see here — you have to sit and think what this graph or what this chart is conveying,
+> what data needs to be interpreted. Is there a better way to represent the same intent? If there is a
+> better way, you start with that prompt.** … Like we should not give solution to the agent. Otherwise
+> the agent will also get biased."*
+
+And again, closing the topic: *"You can use it at a **reference** — that is the right word — but do not
+share this URL with the agent, otherwise you will have a **biased solution**."*
+
+⇒ **The prototype is a legitimate reference. The prohibition is on handing it to the model.** The method
+is four steps, per chart: **(1) what is this conveying? (2) what data needs interpreting? (3) is there a
+better way to represent the same intent? (4) if yes — prompt from *that*, not from the screenshot.**
+§8.0(a)'s "do not mine this prototype" is stronger than what was said.
+
+### 11.2 Single-survey vs multi-survey — the spine (absent from §1–§10)
+
+| | Definition (verbatim) | Status |
+|---|---|---|
+| **Single-survey analytics** | one survey → one course → one term → one academic year. The `view results` page. *"That's the **final node**, the smallest node — a single instance of the survey."* | **designed; hands to engineering end of this week** |
+| **Multi-survey analytics** | everything under the Analytics tab. *"Multiple survey results **combine** to give this experience."* *"Whatever is there inside analytics is multi-survey. **It's longitudinal.**"* | **not frozen this week** |
+
+Nomenclature is borrowed from SurveyMonkey — *"that's why I'm using it."* **Use these two terms in all
+future comms.** Multi-survey has **three dimensions: term (+ academic year as a combination), faculty,
+course.**
+
+### 11.3 The tab template — three rows, every tab
+
+> *"Coming back to the structure — **each tab here will have KPIs, will have trend graphs, and we'll
+> have a deep-dive table or a navigation. Three things.**"*
+
+⇒ Tabs are not designed individually. **KPIs → trend graphs → deep-dive table/navigation.** §5.7's
+"four tabs, four filter grammars" is a violation of a template Monil had already stated.
+
+**Trend graph ≠ single term.** *"Trend graph is not for a single term, but it is **for all the terms**."*
+Click a data point → the top filter scopes to that term → *"in this graph it will just be a single dot."*
+So **the single-term answer lives in row 3, not row 2.** And row 3 currently fails:
+
+> *"This third table, where you just see some numbers — which is **also a repetition of the above KPIs.
+> Which again does not make sense. So this is where the requirement is missing.** What additional we can
+> add for that term that gives you actionable data."*
+
+His sketch: *"a table where you have **all the courses listed for this term**, and you have response rate
+and average score for those courses"* — ordered lowest-first (agreed live: *"order by the lowest one,
+order by the highest one"* → *"Correct. Yeah."*).
+
+### 11.4 Average score is never one number — Monil, independently of Aarti
+
+> *"**Average score does not mean anything. Average score is broken into course-content score, faculty-role
+> score. Like each actor will have their score.** So how can we present that? It is not straightforward. It
+> is not like just one single number. **So that's where you have to start.**"*
+
+⇒ Corroborates **D7 / D27** from a second, independent source. Task 6 ("average score, percentile,
+response rate") contradicts this as literally written. Not a blocker — a settled decomposition.
+
+### 11.5 By Faculty is the most important tab — and D5 is resolved
+
+> *"**In fact, by faculty is the most important.** By faculty is where an admin has the most interest.
+> Admin comes, logs into the system and wants to see **leaderboard of my faculty**."*
+
+Pointing at the Overview leaderboard, verbatim: **"This should be in faculty."**
+
+⇒ **§8.2's D5 is no longer open.** Monil's placement matches Aarti's *"faculty is one click down"* (D5, P0)
+and the 2026-07-13 accepted decision. All three agree; nothing needs escalating. Flow he described:
+all faculty → scroll → leaderboard → `view insights` → *"the entire view opens **only for Dr. Sandra**."*
+Filters are **global on these tables** — scope to a term or span all terms.
+
+### 11.6 The Portfolio is a drill-down, not a route — D2 half-resolved
+
+> *"This view we get like a **multi-survey analytics for Dr. Sandra** — how she performed by term, how many
+> courses she taught, what are the average numbers by term. **Then if we are capturing the theme**, we can
+> also see high level which theme she is lagging behind."*
+> *"Each card that you see — if you open that, that will open **that single-survey result**. We will connect
+> those single-survey results with this. **So that's the final node.**"*
+
+⇒ **The admin lens is settled: Portfolio = By Faculty, drilled down.** §7's *"biggest structural decision"*
+is decided. **The faculty *self-view* boundary (§7.3's percentile ban) remains unwritten — that half of D2
+still needs Aarti.**
+
+⚠️ **"if we are capturing the theme"** — themes are **conditional, not committed**. Four P1 tasks (1, 4, 8
+and the theme half of 9) assume an object Monil treats as an open question. Compounds D28 + §9.1f(a).
+
+### 11.7 Investigation must terminate in an action
+
+Romit: *"Looking into this data, what is it that I am going to do? There's a lot of bulk action that may be
+required… we should actually call that out."* Monil: *"**Yeah. Absolutely.** So this is a good user story —
+that I got to know a particular term had a very low score and a very low response rate. **I want to
+investigate. What we can help them is what we need to build.**"*
+
+Actions named live: **comment to the faculty · create an internal note · escalate upward.** Comments are
+**sampled as evidence, not exhaustive** — *"we don't have to completely take everything from that
+evaluation, we can just pick from four surveys… used as reference to take an action"* → *"Correct."*
+
+⇒ This is the **"action surfaces show work, not counts"** rule arriving from the PM side. No analytics card
+ships without naming the action it enables.
+
+### 11.8 Reporting is the final leg
+
+> *"**Whatever we build on screen should also have a reporting angle to it.** That's the final leg of the
+> module. Users can select filter and produce a report out of it as an **Excel or a PDF**."*
+
+Plus Romit's ask, accepted: per-card export. ⇒ Every surface in §11.3's template needs a filter→export path.
+
+### 11.9 Corrections this forces on §1–§10
+
+| § | Said | Transcript says |
+|---|---|---|
+| §8.0(a) | *"Do not mine this prototype for design"* | *"You can use it as a **reference** — that is the right word."* The ban is on feeding the URL to the agent, not on studying it. **Truncated.** |
+| §7, §2.1 | Overview retired (`page.tsx:21`), tasks have "no home" | Monil's model has **four tabs including Overview** — *"three tabs, in fact four: overview, by faculty, by course and by term"* — and they belong **on top, not the sidebar**. ⇒ **Our retirement is a live contradiction to raise, not a settled fact.** |
+| §8.2 D5 | *"A live, unreconciled contradiction… confirm with Aarti"* | **Resolved.** *"This should be in faculty."* Aarti, Jul 13, and Monil all agree. |
+| §7 | *"Portfolio: route or filtered state — the single biggest structural decision"* | **Decided for the admin lens** — filtered state. Self-view boundary still open. |
+| §8.2 D6 | *"Cohort — two co-equal top-level axes (Aarti D4)"* | Monil, Jul 14: *"**Cohort is not dependent on term or academic year. It is just a defined lookup value that comes from Prism**"* — and can be **20 types**; **45–50 faculty roles** exist. ⇒ The co-equal-axes framing needs re-checking, and any cohort control has a **density problem**, not just a placement one. |
+| §7, §8 | treats the 20 rows as scope | *"By Course only has **one user story listed yet. But that does not mean there is only one user story.**"* Monil is **writing the PRD in parallel** — *"we will have to both build in parallel… some of the times you might not have that document."* ⇒ **Column B is a seed list, not a spec.** |
+
+### 11.10 Priority — as directed 2026-07-14
+
+**P1 — the ten (excl. Overview):** By Faculty ×3 · By Course ×1 · By Term ×1 · Portfolio ×5.
+Matches §8's subset. Monil's *"by faculty is the most important"* ranks its head.
+**P2 — the remaining ten:** Overview ×8 · By Faculty compare-over-time · Portfolio survey log.
+
+⚠️ **Analytics is not the live P0.** Jul 14 (`f1f8d1e4`): *"Did you get time to work on that multi-survey
+analytics?"* → *"No, not yet."* Confirmed P0s are **dashboard scenarios + single-survey results + the
+cohort / what-to-evaluate component** — *"those are P0s."* Multi-survey: *"we don't have to freeze this by
+this week."* **P1-of-analytics ≠ P1-of-the-week.**
+
+### 11.11 Competitor reference — align before it diverges
+
+Monil, Jul 14: *"I'm going to go through a **Watermark** and **Anthology** designs. And if we get some
+inspiration, we can brainstorm."* Same two vendors Aarti cited as existence proof for the
+department-avg → university-avg comparison (`prototype-cards-catalog.md:108`, §9.4). ⇒ Two people are
+about to research the same two products independently. **Share the §9.4 finding before he starts.**
+
+### 11.12 Reference URLs — the walked surface
+
+Base: **`https://pce-three.vercel.app`** (legacy reference app; prod is `exxat-pce-design.vercel.app`).
+**Per §11.1 these are for human study — do not paste them into an agent prompt.**
+
+| Nav / tab | URL |
+|---|---|
+| Overview | `/analytics?tab=overview` |
+| By Faculty | `/analytics?tab=faculty` |
+| By Course | `/analytics?tab=course` |
+| By Term | `/analytics?tab=term` |
+| Faculty drill-down | `/analytics?tab=faculty&faculty=m.williams%40university.edu&facultyName=Dr.+Marcus+Williams` |
+| Course drill-down | `/analytics?tab=course&course=DPT-503` · `&course=OT-401` |
+| Single-survey result ("the final node") | `/results/result-006` · `/results/result-007` |
+| Term drill-down — **broken** (§3) | `/analytics?term=Spring%202026` — drops `tab=term`, lands on Overview, param ignored |
