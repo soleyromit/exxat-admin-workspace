@@ -23,6 +23,15 @@ export type Criterion = 'students' | 'instructor' | 'coordinator'
 
 export const ALL_CRITERIA: Criterion[] = ['students', 'instructor', 'coordinator']
 
+/**
+ * Criteria that resolve to a *person* in Prism. These share one "Faculty" column
+ * and one "Add faculty" CTA rather than a column + button per role: the role set
+ * is drawn from the Prism universe (~40–50 roles, narrowed per program in
+ * Settings), so a column-per-role table does not survive a program that evaluates
+ * more than a handful. The specific role stays legible inside the cell.
+ */
+export const FACULTY_CRITERIA: Criterion[] = ['instructor', 'coordinator']
+
 /** Labels for the "What to evaluate" toggles (generic; per-course label lives in CRITERION_BY_TYPE). */
 export const CRITERION_TOGGLE_LABEL: Record<Criterion, string> = {
   students: 'Course',
@@ -97,6 +106,15 @@ export interface CourseReadiness {
 export function prismAddHref(o: CourseOffering, c: Criterion): string {
   const target = CRITERION_BY_TYPE[deliveryModeOf(o)][c].prismTarget
   return `${PRISM_BASE}/offerings/${o.id}?add=${target}`
+}
+
+/**
+ * One deep-link to the offering's faculty area, covering every missing faculty
+ * role at once. A course missing both an instructor and a coordinator is one
+ * trip to Prism, not two new tabs.
+ */
+export function prismAddFacultyHref(o: CourseOffering): string {
+  return `${PRISM_BASE}/offerings/${o.id}?add=faculty`
 }
 
 export function courseLabelOf(o: CourseOffering): string {
