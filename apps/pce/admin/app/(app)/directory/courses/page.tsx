@@ -258,7 +258,7 @@ export default function CoursesDirectoryPage() {
       </div>
 
       <div className="flex-1 overflow-auto" tabIndex={0} style={{ paddingTop: 16, paddingBottom: 28 }}>
-        <div className="max-w-6xl flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
           <DataTablePaginated<OfferingRow>
             data={tableRows}
             columns={columns}
