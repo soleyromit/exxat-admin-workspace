@@ -516,7 +516,105 @@ The entire chart surface in the package is **8 primitives**: `ChartConfig`, `Cha
 | `components/design-system/chart-previews.tsx:1318` `CHART_TABS` | the DS type enumeration — **9 families, 21 types** |
 | `components/chart-leo-spotting.tsx:352/447/469` | 3 Leo overlays (cartesian / context / pixel-for-canvas) |
 
-### 9.1 The mapping
+### 9.1 The mapping — **redone through `viz/RUBRIC.md`** (supersedes 9.1-old below)
+
+The rubric is five questions. **Match the task's question to a question, take its answer.** Every row
+below names the rubric question it resolves under, so the choice is auditable rather than asserted.
+
+> `RUBRIC.md:25` — *"If your question matches none, ask Romit before generating."*
+
+#### First: which lane? (`VIZ-PATTERN-AI-001`)
+
+Before picking any chart, `ai-vs-pulled-lane.md:14-15` splits the surface — and **this decides D1 outright**:
+
+| Lane | Contents (verbatim) | Treatment |
+|---|---|---|
+| **Pulled** | *"trends, averages, comparative metrics, distributions, **leaderboards** (computed from data)"* | Standard DS chart. **No AI badge.** |
+| **AI** | *"**themes**, insights, action plans, summaries (LLM-extracted from open-text)"* | `Banner`/distinct card · `fa-light fa-sparkles` + "AI insight" · **must cite source** (*"Based on 47 open-text responses · 6 themes"*) |
+
+⇒ **Sections are pulled → chart them. Themes are AI → they are NOT a chart.** The pattern's own bad-content
+example makes the boundary explicit (`:99`): ❌ *"'Average rating is 4.2.' (that's pulled, not AI)."*
+
+⇒ The reference app's `Theme Distribution` bar chart is a **double violation**: it charts AI themes as
+if they were pulled data (`:158` ❌ *"AI content visually identical to pulled-data content — ADR-005
+violation"*) **and** uses a preset taxonomy (D28). **Delete it. Do not port it.**
+
+#### The mapping
+
+| Task | Rubric Q | Chart | Pattern | Why the rubric says so |
+|---|---|---|---|---|
+| **1, 8** — section scores, one faculty | **Q2** (outlier across N≤30) | **Cleveland dot**, sections ranked, program-avg reference line | `VIZ-PATTERN-005` | 5 sections = *"N≤30 named entities"* on a single metric. ⚠️ **Not radar — see 9.1c** |
+| **1, 8** — themes | — | **AI-lane card. NOT a chart** | `VIZ-PATTERN-AI-001` | Themes are the AI lane by definition (`:15`) |
+| **2** — faculty leaderboard + alerts | **Q2** | **Cleveland dot**, median reference line, below-threshold dots amber | `VIZ-PATTERN-005` | `cleveland-dot.md:14` lists **"Ranked faculty response rate"** as a use case verbatim. Q2 ❌ *"Sorted bar list"*; `:21` ❌ *"anywhere a `<table>` … exists for a ranking"* |
+| **3** — response-rate trend, one faculty | **Q4** (change over time) | **Line + target reference line** | (P3) `line-trajectory` | Q4 ❌ *"Single % delta with arrow. **Hides the path; a drop-and-recovery looks identical to flat.**"* |
+| **4** — course key numbers | — | Each card needs **≥1 of**: sparkline (≥3 pts) · bullet-vs-target · delta-from-cohort · n-of-total | **VIZ-010** | Bare numbers are non-compliant |
+| **4** — course score trend | **Q4** | **Line + program-avg reference line** | (P3) `line-trajectory` | — |
+| **4** — course themes | — | **AI-lane card** | `VIZ-PATTERN-AI-001` | — |
+| **5** — term trends ×2 | **Q4** | **Line ×2 + reference lines**; delta chips as `miniMetrics` | (P3) `line-trajectory` | Chips are legal *because the line is shown* — VIZ-002: *"text below a chart labels values; it does not interpret"* |
+| **5** — spread across a term's courses | **Q2** | **Cleveland dot** (N=8) | `VIZ-PATTERN-005` | ⚠️ **The vault's "histogram/beeswarm" is wrong at this N** — strip plot is for **N>30** (`cleveland-dot.md:25`). 8 courses → dot plot |
+| **6** — portfolio key numbers | **Q1** (vs target/cohort) | **Bullet** vs dept avg + university avg | `VIZ-PATTERN-003` | Q1 ❌ *"Progress bar. Hides cohort, hides target, hides trajectory."* Decompose per D7 — never one number |
+| **6** — **percentile** | **Q1** | **Bullet vs two nested benchmarks** — the percentile substitute | `VIZ-PATTERN-003` | Rubric Q1 + Aarti A5 (*"vs the department average to the university average"*, Anthology/Watermark-proven) + §7.3 ban. Three sources converge |
+| **7 + 10** — courses ranked **and** trending | **Q2 + Q4** | **Small multiples** — one mini slope/line **per course**, panels **sorted by score** | `VIZ-PATTERN-006` | **Supersedes my D8 "table + sparkline".** VIZ-007: *"faceted views default to small multiples, **not dropdowns**"*. Panel order is meaningful (A11Y-008) ⇒ **sort order IS the ranking**. One component answers both tasks. `small-multiples.md:8`: *"the eye scans 16 mini-charts in 5 seconds; outliers self-announce"* |
+| **9** — comments + sentiment | — | **AI-lane card**, chips + verbatims + citation | `VIZ-PATTERN-AI-001` | Sentiment polarity is AI-extracted |
+| *(ref app's Gap Analysis)* | **Q2** | **Scatter, quadrants** — already correct | (P3) `scatter-quadrants` | Q2 row 3: *"Quadrants surface high-low / low-high outliers"* |
+| *(ref app's course × term heatmap)* | **Q3** (two-dim gaps) | **Heatmap** — already correct | `VIZ-PATTERN-001` | — |
+
+#### 9.1c ⚠️ Radar is not in the rubric — and the vault says keep it
+
+`2026-06-18` §3 says *"Score by dimension? \| **Radar** (have) \| 5 survey sections. **Keep.**"*, and
+`faculty-profile-dashboard.tsx:57` already ships it. But **radar appears nowhere in `RUBRIC.md`** — not in
+any of the five questions, not in the decision flow, not in the pattern index. Under `RUBRIC.md:25` an
+unmatched question means *ask before generating*.
+
+The rubric's own reasoning cuts against radar (`cleveland-dot.md:101`): *"Per Schwabish … and
+**Cleveland's original perception experiments, dot plots beat bars on accuracy of judgment for ranked
+data**"* — and radar is worse than bars, encoding by **angle and area**, the two channels Cleveland
+ranked lowest.
+
+**Recommendation: Cleveland dot for section scores; raise the radar conflict with Romit rather than
+silently keeping it.** VIZ-005 makes the rubric binding, so "we already built radar" is not an argument.
+Note this is *not* blocked by §7.3 — that bans ranking **faculty by name**; ranking a person's own
+**sections** is not peer comparison.
+
+#### 9.1d The rubric answers D4 ("what is low?")
+
+`cleveland-dot.md:86` — `const threshold = props.threshold ?? median  // can be set per metric`.
+
+**Default threshold = the median, overridable per metric.** Below-threshold dots take `--chart-4` amber,
+which `:65` calls *"THE redundant encoding (color + position) for A11Y-008"*. The median reference line is
+mandatory (`:75` ❌ *"Hiding the median reference line — that's the anchor"*). And the required takeaway
+line (`:66`) — *"3 of 8 students below 75% threshold; lowest is Student H at 62%"* — **is Aarti's D17
+frequency-count rule already shipped in a pattern**.
+
+⇒ **D4 is less open than §8 claimed.** A defensible default exists in-pattern. What still needs Aarti is
+whether the program can override it in Settings — not what the default should be.
+
+#### 9.1e ⚠️ The rubric itself is out of date — 11 of the files it points at don't exist
+
+Verified by listing `docs/patterns/viz/` against every filename `RUBRIC.md` references:
+
+| Referenced by the rubric | On disk |
+|---|---|
+| `strip-with-marker` · `slope-single` · `slope-multi` · `slope-pair` · `scatter-quadrants` · `box-distribution` · `line-trajectory` · `sparkline-table` · `cumulative-area` · `distribution-overlay` · `grouped-bar` | ❌ **all 11 MISSING** |
+| `bullet-vs-target` · `outlier-strip-plot` · `gap-heatmap` · `cleveland-dot` · `small-multiples` · `slope-paired` · `calendar-heatmap` · `progression-sankey` · `ai-vs-pulled-lane` | ✅ 9 exist |
+
+Three defects, all worth a follow-up PR:
+1. **The P1/P3 footer (`:126-131`) is stale.** It lists `small-multiples`, `slope-*`, `cleveland-dot` as
+   *"(P3) later"* — but `small-multiples.md`, `slope-paired.md`, `cleveland-dot.md`,
+   `calendar-heatmap.md`, `progression-sankey.md` and `ai-vs-pulled-lane.md` all shipped. It claims only
+   3 P1 patterns; there are 9.
+2. **Naming drift.** Q4/Q5 cite `slope-multi.md` / `slope-pair.md` / `slope-single.md`; the real file is
+   **`slope-paired.md`**.
+3. **Header miscount** (`:7`) — *"8 patterns"*; the index lists **9**.
+
+**What this costs us here:** the rubric's answer for the most common question in this task set —
+**Q4, "how is X changing over time"** (tasks 3, 4, 5, 10) — routes to `line-trajectory.md` and
+`sparkline-table.md`, **neither of which exists**. The chart is obvious and proven in product
+(`analytics-panels.tsx`, `trend-sparkline.tsx:44`), so nothing is blocked — but four of the ten tasks
+resolve to a pattern doc that was never written. Same for `scatter-quadrants` (the Gap Analysis) and
+`strip-with-marker` (the honest percentile encoding).
+
+### 9.1-old The mapping (superseded — kept for the audit trail)
 
 | Task | Chart type | Component (file:line) | Source & proof |
 |---|---|---|---|
