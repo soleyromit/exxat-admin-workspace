@@ -53,6 +53,7 @@ import {
   DropdownMenuTrigger,
   LocalBanner,
   StatusBadge,
+  AvatarInitials,
   PersonIdentityCell,
   Tooltip,
   TooltipTrigger,
@@ -183,6 +184,69 @@ function FacultySwitcher({ siblings }: { siblings: EvalResult[] }) {
         </Fragment>
       ))}
     </span>
+  )
+}
+
+/** Faculty scope selector — for a co-taught course, a segmented control that
+ *  scopes Overview / Reports to the whole course ("All faculty") or one
+ *  instructor. The selected option IS the current view (clear active state);
+ *  an amber dot flags instructors still in review. A single-instructor course
+ *  shows just the identity + its status. */
+function FacultyScopeSelector({
+  instructors,
+  scope,
+  setScope,
+  isPD,
+}: {
+  instructors: EvalResult[]
+  scope: 'all' | string
+  setScope: (v: string) => void
+  isPD: boolean
+}) {
+  if (instructors.length <= 1) {
+    const f = instructors[0]
+    if (!f) return null
+    return (
+      <div className="flex items-center gap-2">
+        <AvatarInitials initials={f.facultyInitials} className="size-7 text-xs" decorative />
+        <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
+        {isPD && (
+          <StatusBadge
+            label={f.releasedToFaculty ? 'Released' : 'In review'}
+            tone={f.releasedToFaculty ? 'neutral' : 'warning'}
+          />
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        value={scope}
+        onValueChange={(v) => v && setScope(v)}
+        aria-label="Scope the results by instructor"
+      >
+        <ToggleGroupItem value="all" className="gap-1.5">
+          <i className="fa-light fa-users text-xs" aria-hidden="true" />
+          All faculty
+        </ToggleGroupItem>
+        {instructors.map((f) => (
+          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
+            <span
+              aria-hidden="true"
+              className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
+              style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+            >
+              {f.facultyInitials}
+            </span>
+            {f.facultyName}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   )
 }
 
@@ -1187,14 +1251,21 @@ function ResultDetail({
   const siblings = results.filter(
     (r) => r.courseCode === result.courseCode && r.term === result.term && r.id !== result.id,
   )
+  /* The faculty whose access the header can enable follows the scope selector:
+   * a picked instructor, or the page owner while viewing the whole course. */
+  const scopedFaculty =
+    facultyScope === 'all'
+      ? result
+      : [result, ...siblings].find((f) => f.facultyId === facultyScope) ?? result
 
   /* Score cards — this course vs program, plus prior term */
   const courseAvg = responses?.sectionScores.find((s) => s.section === 'course_content')?.avg ?? null
   const sectionFacultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
-  /* Live: the Faculty Performance signal follows the faculty scope chips —
-   * averaged from the scoped instructor block(s); section avg is the fallback. */
+  /* The Faculty Performance signal follows the faculty scope selector —
+   * averaged from the scoped instructor block(s) ('all' = whole course);
+   * section avg is the fallback. */
   const facultyAvg = useMemo(() => {
-    if (!inCollection || !qData) return sectionFacultyAvg
+    if (!qData) return sectionFacultyAvg
     const blocks = (qData.instructorBlocks ?? []).filter(
       (b) =>
         survey.instructors.some((i) => i.id === b.instructorId) &&
@@ -1252,11 +1323,9 @@ function ResultDetail({
       }
       return qs
     }
-    /* Scope: live follows the faculty chips; finished results stay per-faculty. */
+    /* Scope follows the faculty selector: 'all' = whole course, else one instructor. */
     const mine = collect(qData, (id) =>
-      inCollection
-        ? survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope)
-        : id === result.facultyId,
+      survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope),
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
     const rows: ThemeRowDatum[] = []
@@ -1281,7 +1350,13 @@ function ResultDetail({
   const allQuestionScores = qData
     ? [
         ...Object.values(qData.sectionScores).flat(),
-        ...(qData.instructorBlocks?.find((b) => b.instructorId === result.facultyId)?.scores ?? []),
+        ...(qData.instructorBlocks ?? [])
+          .filter(
+            (b) =>
+              survey.instructors.some((i) => i.id === b.instructorId) &&
+              (facultyScope === 'all' || b.instructorId === facultyScope),
+          )
+          .flatMap((b) => b.scores),
       ]
     : []
   const lowestScore = allQuestionScores.length
@@ -1294,12 +1369,10 @@ function ResultDetail({
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
-      /* Scope-aware (live): a picked faculty shows their block; 'all' averages
-       * every instructor's answer to this question. Finished stays per-owner. */
+      /* Scope-aware: a picked faculty shows their block; 'all' averages every
+       * instructor's answer to this question. */
       const allowed = (id: string) =>
-        inCollection
-          ? survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope)
-          : id === result.facultyId
+        survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope)
       const hits = (qData.instructorBlocks ?? [])
         .filter((b) => allowed(b.instructorId))
         .map((b) => b.scores.find((q) => q.questionId === questionId))
@@ -1499,6 +1572,13 @@ function ResultDetail({
             )}
             {!inCollection && (
               <>
+                {isPD && !scopedFaculty.releasedToFaculty && (
+                  <Button variant="outline" size="sm" onClick={onRelease}>
+                    {facultyScope === 'all'
+                      ? 'Enable faculty access'
+                      : `Enable access for ${scopedFaculty.facultyName}`}
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
                 </Button>
@@ -1538,66 +1618,14 @@ function ResultDetail({
           {/* Identity strip — the faculty SCOPE control (live) or the result
               owner (finished). Status chip lives beside the title now. */}
           <div className="flex items-center gap-3 flex-wrap">
-            {inCollection ? (
-              <>
-                <span className="text-xs font-medium text-muted-foreground">Faculty</span>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  size="sm"
-                  value={facultyScope}
-                  onValueChange={(v) => v && setFacultyScope(v)}
-                  aria-label="Scope overview and reports by faculty"
-                >
-                  <ToggleGroupItem value="all">All faculty</ToggleGroupItem>
-                  {liveFacultyRows.map((f) => (
-                    <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-                      <span
-                        aria-hidden="true"
-                        className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
-                        style={{
-                          background: 'var(--avatar-initials-bg)',
-                          color: 'var(--avatar-initials-fg)',
-                        }}
-                      >
-                        {f.facultyInitials}
-                      </span>
-                      {f.facultyName}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </>
-            ) : (
-              <>
-                <PersonIdentityCell name={result.facultyName} initials={result.facultyInitials} email={result.facultyEmail} />
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  Response rate{' '}
-                  <span className="text-sm font-semibold" style={{ color: rateColor(result.responseRate) }}>
-                    {result.responseRate}%
-                  </span>{' '}
-                  · {result.responses} of {result.enrolled} students responded
-                </span>
-                {isPD && <FacultySwitcher siblings={siblings} />}
-              </>
-            )}
+            <FacultyScopeSelector
+              instructors={inCollection ? liveFacultyRows : [result, ...siblings]}
+              scope={facultyScope}
+              setScope={setFacultyScope}
+              isPD={isPD}
+            />
           </div>
 
-          {/* Coordinator banner — PD only (spec's toast replaced by banner flip) */}
-          {!inCollection && isPD && !result.releasedToFaculty && (
-            <LocalBanner
-              variant="info"
-              title="Review mode — faculty cannot see this yet"
-              action={{ label: 'Enable Faculty Access', onClick: onRelease }}
-            >
-              Review and hide inappropriate comments in Qualitative feedback below, then enable
-              faculty access.{hiddenCount > 0 ? ` ${hiddenCount} comment${hiddenCount !== 1 ? 's' : ''} hidden so far.` : ''}
-            </LocalBanner>
-          )}
-          {isPD && result.releasedToFaculty && (
-            <LocalBanner variant="success" title="Faculty access enabled">
-              Faculty can now view these results.
-            </LocalBanner>
-          )}
 
           <Tabs defaultValue="overview" className="flex flex-col gap-4">
             <div className="border-b border-border">
@@ -1621,11 +1649,22 @@ function ResultDetail({
               )}
 
               <div id="scores" className="scroll-mt-16 flex flex-col gap-2">
-                {inCollection && (
+                {inCollection ? (
                   <div className="flex items-baseline gap-2">
                     <h3 className="text-sm font-semibold text-foreground">Early signal</h3>
                     <span className="text-xs text-muted-foreground">
                       Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far — expect movement until close
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <h3 className="text-sm font-semibold text-foreground">Scores</h3>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      Response rate{' '}
+                      <span className="font-semibold" style={{ color: rateColor(result.responseRate) }}>
+                        {result.responseRate}%
+                      </span>
+                      {' · '}{result.responses} of {result.enrolled} students responded
                     </span>
                   </div>
                 )}
