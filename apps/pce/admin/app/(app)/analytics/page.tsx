@@ -19,7 +19,7 @@ import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
 import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
-import { facultyStats } from '@/lib/pce-analytics'
+import { facultyStats, allTerms } from '@/lib/pce-analytics'
 
 type Axis = 'term' | 'cohort'
 /**
@@ -56,6 +56,9 @@ function AnalyticsInner() {
   )
   /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
   const [facultyTerm, setFacultyTerm]               = useState<string | undefined>(undefined)
+
+  /** Terms that HAVE evaluation history, newest first — the By Term axis. */
+  const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
 
   const scopeLabel = axis === 'term' ? term : cohort
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
@@ -124,9 +127,15 @@ function AnalyticsInner() {
               </ToggleGroup>
 
               {axis === 'term' ? (
+                /* analyticsTerms, not MOCK_TERMS. MOCK_TERMS is the set of terms you can PUSH
+                   an evaluation to (used by my-surveys, the push modal, the surveys table) —
+                   it lists 3 while offerings span 5, so Spring 2024 and Fall 2024 had real
+                   data that this dropdown could not reach. Operational terms and historical
+                   terms are different questions; this tab asks the historical one. That is the
+                   same class of bug the legacy app shipped (§4.7 "Term dropdown ≠ Term table"). */
                 <Select value={term} onValueChange={setTerm}>
                   <SelectTrigger className="h-8 w-36 text-sm" aria-label="Select term"><SelectValue /></SelectTrigger>
-                  <SelectContent>{MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>{analyticsTerms.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               ) : (
                 <Select value={cohort} onValueChange={setCohort}>

@@ -240,6 +240,116 @@ export function termSeries(): TermSeriesPoint[] {
 const mean = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length
 
 /* ────────────────────────────────────────────────────────────────────────────
+   By Term — row 1 (KPIs) and row 3 (the deep-dive), per Monil's tab template
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface TermKpis {
+  term: string
+  /** Distinct courses evaluated in the term. */
+  courses: number
+  /** Course-content mean for the term, and its change on the previous term. */
+  courseAvg: number | null
+  courseDelta: number | null
+  /** Faculty-performance mean for the term, kept separate (D27 — never one number). */
+  facultyAvg: number | null
+  facultyDelta: number | null
+  responseRate: number | null
+  responseDelta: number | null
+  responded: number
+  enrolled: number
+}
+
+/**
+ * The four numbers the By Term tab actually needs.
+ *
+ * What it renders today is completion / responses / courses / collecting — response-COLLECTION
+ * ops metrics. There is no average score anywhere on the tab whose entire job is "is the
+ * program improving over time". The legacy app got this right (Terms tracked · Avg Response
+ * Rate ↑3% · Avg Score ↑0.1 · Total Responses), and its deltas-vs-previous-term are the part
+ * that makes a term KPI mean anything.
+ */
+export function termKpis(term: string): TermKpis {
+  const series = termSeries()
+  const i = series.findIndex((s) => s.term === term)
+  const cur = i >= 0 ? series[i]! : null
+  const prev = i > 0 ? series[i - 1]! : null
+
+  const delta = (a: number | null | undefined, b: number | null | undefined) =>
+    a != null && b != null ? round2(a - b) : null
+
+  return {
+    term,
+    courses: cur?.courses ?? 0,
+    courseAvg: cur?.courseAvg ?? null,
+    courseDelta: delta(cur?.courseAvg, prev?.courseAvg),
+    facultyAvg: cur?.facultyAvg ?? null,
+    facultyDelta: delta(cur?.facultyAvg, prev?.facultyAvg),
+    responseRate: cur?.responseRate ?? null,
+    responseDelta: delta(cur?.responseRate, prev?.responseRate),
+    responded: cur?.responded ?? 0,
+    enrolled: cur?.enrolled ?? 0,
+  }
+}
+
+export interface TermCourseRow {
+  courseCode: string
+  courseName: string
+  courseAvg: number | null
+  facultyAvg: number | null
+  responseRate: number
+  enrolled: number
+  responded: number
+  faculty: string[]
+}
+
+/**
+ * Row 3 for By Term: every course in the term with its response rate and average score,
+ * ordered LOWEST-FIRST.
+ *
+ * Monil's most specific complaint, verbatim: "This third table, where you just see some
+ * numbers — which is also a repetition of the above KPIs. Which again does not make sense.
+ * So this is where the requirement is missing." His sketch is exactly this, and lowest-first
+ * was agreed live ("order by the lowest one" → "Correct. Yeah.") because the reason you open
+ * a term is to find what went wrong in it.
+ */
+export function termCourseBreakdown(term: string): TermCourseRow[] {
+  const offs = offeringPoints().filter((o) => o.term === term)
+  const byCourse = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => {
+    const list = byCourse.get(o.courseCode) ?? []
+    list.push(o)
+    byCourse.set(o.courseCode, list)
+  })
+
+  return [...byCourse.values()]
+    .map((rows) => {
+      const first = rows[0]!
+      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
+      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      const weights = rows.map((r) => r.enrolled)
+      const contentScores = rows.map((r) => r.courseAvg).filter((v): v is number => v != null)
+      return {
+        courseCode: first.courseCode,
+        courseName: first.courseName,
+        courseAvg: contentScores.length
+          ? dualMean(contentScores, weights.slice(0, contentScores.length)).weighted
+          : null,
+        facultyAvg: dualMean(rows.map((r) => r.avgRating), weights).weighted,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        enrolled,
+        responded,
+        faculty: [...new Set(rows.map((r) => r.facultyName))],
+      }
+    })
+    .sort((a, b) => (a.courseAvg ?? 99) - (b.courseAvg ?? 99))
+}
+
+/** Every calendar term the data touches, oldest first — including terms with no data. */
+export function allTerms(): string[] {
+  return termSeries().map((s) => s.term)
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
    Faculty aggregates — stories 2, 9, 10, 11, 15, 16, 19
    ──────────────────────────────────────────────────────────────────────────── */
 

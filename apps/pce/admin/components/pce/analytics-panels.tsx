@@ -30,6 +30,7 @@ import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
+import { termKpis, termCourseBreakdown, termSeries, type TermCourseRow } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
 /* ── shared helpers ── */
@@ -85,6 +86,7 @@ type CourseTermRow = {
   status: string; isReleased: boolean
 } & Record<string, unknown>
 type CourseOfferingRow = FacultyOfferingRecord & { facultyName: string } & Record<string, unknown>
+type TermBreakdownRow = TermCourseRow & Record<string, unknown>
 
 export type NudgeTarget = { id: string; courseCode: string; courseName: string; nonResponders: number }
 
@@ -98,6 +100,62 @@ const facultyRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var
 const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 
 /* ── By Term columns ── */
+/**
+ * By Term row 3 — the "what went wrong in this term" table.
+ *
+ * Content and teaching stay in separate columns rather than averaging into one (D7 / D27:
+ * "average score does not mean anything… each actor will have their score"). Below-median
+ * scores take `--chip-4` amber, never red (VIZ-004, Aarti), and always pair the colour with
+ * the number itself so colour is never the only encoding (A11Y-008).
+ */
+const TERM_BREAKDOWN_COLUMNS: ColumnDef<TermBreakdownRow>[] = [
+  {
+    key: 'courseCode', label: 'Course', sortable: true,
+    cell: (row) => (
+      <div>
+        <p className="text-sm font-medium">{row.courseCode}</p>
+        <TruncatedText className="text-xs text-muted-foreground max-w-[200px]">{row.courseName}</TruncatedText>
+      </div>
+    ),
+  },
+  {
+    key: 'faculty', label: 'Faculty', sortable: true, width: 200,
+    cell: (row) => <FacultyCell name={row.faculty[0] ?? '—'} />,
+  },
+  {
+    key: 'courseAvg', label: 'Content', sortable: true, width: 110,
+    header: () => <span className="block text-right">Content</span>,
+    cell: (row) => (
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.courseAvg != null ? tierTextColor(row.courseAvg) : 'var(--muted-foreground)' }}>
+        {row.courseAvg != null ? row.courseAvg.toFixed(2) : '—'}
+      </div>
+    ),
+  },
+  {
+    key: 'facultyAvg', label: 'Teaching', sortable: true, width: 110,
+    header: () => <span className="block text-right">Teaching</span>,
+    cell: (row) => (
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.facultyAvg != null ? tierTextColor(row.facultyAvg) : 'var(--muted-foreground)' }}>
+        {row.facultyAvg != null ? row.facultyAvg.toFixed(2) : '—'}
+      </div>
+    ),
+  },
+  {
+    key: 'responseRate', label: 'Response', sortable: true, width: 130,
+    header: () => <span className="block text-right">Response</span>,
+    cell: (row) => (
+      <div className="text-right">
+        <span className="block text-sm tabular-nums font-semibold" style={{ color: completionColor(row.responseRate) }}>
+          {row.responseRate}%
+        </span>
+        <span className="block text-xs text-muted-foreground tabular-nums">
+          {row.responded} of {row.enrolled}
+        </span>
+      </div>
+    ),
+  },
+]
+
 function buildTermColumns(onNudge: (row: CourseTermRow) => void): ColumnDef<CourseTermRow>[] {
   return [
     // Leading checkbox column — required for `selectable` to render checkboxes + bulk bar.
@@ -292,18 +350,75 @@ export function ByTermPanel({
     return []
   }, [scopedSurveys, axis, value])
 
+  /**
+   * Row 1 of Monil's tab template, and it was the wrong four numbers.
+   *
+   * This used to render Overall completion / Responses / Courses / Collecting — those are
+   * response-COLLECTION ops metrics (they belong on the Dashboard, which is a collection
+   * cockpit). The tab's job is "is the program improving over time", and it carried no score
+   * at all. The legacy app got this right: Terms tracked · Avg Response Rate ↑3% · Avg Score
+   * ↑0.1 · Total Responses — and the deltas-vs-previous-term are the part that makes a term
+   * KPI mean anything, since a term number without its predecessor answers nothing.
+   *
+   * Score is split course-content vs faculty rather than averaged into one (D7 / D27, Monil
+   * and Aarti independently: "average score does not mean anything… each actor will have
+   * their score"). Cohort axis keeps the old collection framing — the canonical term
+   * derivations are term-keyed, and cohort as an axis is still unreconciled (Aarti D4 vs the
+   * accepted July model), so it is not silently re-grained here.
+   */
+  const termStats = useMemo(() => (axis === 'term' ? termKpis(value) : null), [axis, value])
+  const termBreakdown = useMemo<TermBreakdownRow[]>(
+    () => (axis === 'term' ? (termCourseBreakdown(value) as TermBreakdownRow[]) : []),
+    [axis, value],
+  )
+  const termBreakdownColumns = TERM_BREAKDOWN_COLUMNS
+
   const byTermKpis: MetricItem[] = useMemo(() => {
-    const totalEnrolled  = termCourseRows.reduce((sum, r) => sum + r.enrolled, 0)
-    const totalResponses = termCourseRows.reduce((sum, r) => sum + Math.round(r.enrolled * r.completion / 100), 0)
-    const overallPct     = totalEnrolled > 0 ? Math.round((totalResponses / totalEnrolled) * 100) : 0
-    const collecting     = termCourseRows.filter(r => r.status === 'collecting' || r.status === 'scheduled').length
+    if (!termStats) {
+      const totalEnrolled  = termCourseRows.reduce((sum, r) => sum + r.enrolled, 0)
+      const totalResponses = termCourseRows.reduce((sum, r) => sum + Math.round(r.enrolled * r.completion / 100), 0)
+      const overallPct     = totalEnrolled > 0 ? Math.round((totalResponses / totalEnrolled) * 100) : 0
+      return [
+        { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,     delta: '', trend: 'neutral', description: `${termCourseRows.length} courses` },
+        { id: 'responses',  label: 'Responses',          value: totalResponses,        delta: '', trend: 'neutral', description: `of ${totalEnrolled} enrolled` },
+        { id: 'courses',    label: 'Courses',            value: termCourseRows.length, delta: '', trend: 'neutral', description: value },
+      ]
+    }
+    const t = termStats
+    const signed = (d: number | null, suffix = '') =>
+      d == null ? '' : `${d >= 0 ? '+' : ''}${suffix === '%' ? Math.round(d) : d.toFixed(2)}${suffix}`
+    const dir = (d: number | null): 'up' | 'down' | 'neutral' =>
+      d == null || d === 0 ? 'neutral' : d > 0 ? 'up' : 'down'
     return [
-      { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,      delta: '', trend: 'neutral', description: `${termCourseRows.length} courses` },
-      { id: 'responses',  label: 'Responses',          value: totalResponses,         delta: '', trend: 'neutral', description: `of ${totalEnrolled} enrolled` },
-      { id: 'courses',    label: 'Courses',            value: termCourseRows.length,  delta: '', trend: 'neutral', description: value },
-      { id: 'collecting', label: 'Collecting',         value: collecting,             delta: '', trend: 'neutral', description: 'still open' },
+      {
+        id: 'term-course-avg', label: 'Course score',
+        value: t.courseAvg != null ? t.courseAvg.toFixed(2) : '—',
+        delta: signed(t.courseDelta), trend: dir(t.courseDelta),
+        // informational: an arrow tinted red on a score is banned (VIZ-004, Aarti).
+        trendPolarity: 'informational',
+        description: 'content · vs prior term',
+      },
+      {
+        id: 'term-faculty-avg', label: 'Faculty score',
+        value: t.facultyAvg != null ? t.facultyAvg.toFixed(2) : '—',
+        delta: signed(t.facultyDelta), trend: dir(t.facultyDelta),
+        trendPolarity: 'informational',
+        description: 'teaching · vs prior term',
+      },
+      {
+        id: 'term-response', label: 'Response rate',
+        value: t.responseRate != null ? `${t.responseRate}%` : '—',
+        delta: signed(t.responseDelta, '%'), trend: dir(t.responseDelta),
+        trendPolarity: 'informational',
+        description: `${t.responded.toLocaleString()} of ${t.enrolled.toLocaleString()} · target 80%`,
+      },
+      {
+        id: 'term-courses', label: 'Courses evaluated',
+        value: t.courses, delta: '', trend: 'neutral',
+        description: value,
+      },
     ]
-  }, [termCourseRows, value])
+  }, [termStats, termCourseRows, value])
 
   const termColumns = useMemo(
     () => buildTermColumns((row) => onNudge({
@@ -315,25 +430,26 @@ export function ByTermPanel({
     [onNudge],
   )
 
-  /* Dual-line trend: aggregate priorOfferings from CE surveys by term. */
-  const programTrendData = useMemo(() => {
-    const ceSurveys = MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic')
-    const byTerm: Record<string, { courseAvgs: number[]; facultyAvgs: number[] }> = {}
-    ceSurveys.forEach(s => {
-      s.priorOfferings?.forEach(po => {
-        if (!byTerm[po.term]) byTerm[po.term] = { courseAvgs: [], facultyAvgs: [] }
-        byTerm[po.term].courseAvgs.push(po.courseAvg)
-        if (po.facultyAvg != null) byTerm[po.term].facultyAvgs.push(po.facultyAvg)
-      })
-    })
-    return TERM_ORDER.filter(t => byTerm[t]).map(t => ({
-      term: t.replace('Spring ', 'Sp ').replace('Fall ', 'Fa '),
-      courseAvg:  +(byTerm[t].courseAvgs.reduce((s, v) => s + v, 0) / byTerm[t].courseAvgs.length).toFixed(2),
-      facultyAvg: byTerm[t].facultyAvgs.length > 0
-        ? +(byTerm[t].facultyAvgs.reduce((s, v) => s + v, 0) / byTerm[t].facultyAvgs.length).toFixed(2)
-        : null,
-    }))
-  }, [])
+  /**
+   * Dual-line trend, from the CANONICAL term series.
+   *
+   * This used to aggregate `priorOfferings` off the surveys, which put the chart on a
+   * different dataset from the KPIs directly above it: the trend ran Fa 2022 → Sp 2025 while
+   * the KPI strip said Spring 2026, and `priorOfferings` only covered 5 of 15 courses. One
+   * tab, two universes — the exact "numbers disagree with each other" failure (§4) that
+   * `lib/pce-analytics.ts` exists to end. Every surface now derives from one place.
+   */
+  const programTrendData = useMemo(
+    () =>
+      termSeries()
+        .filter(s => s.courseAvg != null)
+        .map(s => ({
+          term: s.short,
+          courseAvg: s.courseAvg as number,
+          facultyAvg: s.facultyAvg,
+        })),
+    [],
+  )
 
   const courseAllTimeRanked = useMemo(() => {
     const byCode: Record<string, { totalRating: number; totalEnrolled: number }> = {}
@@ -447,6 +563,11 @@ export function ByTermPanel({
 
   return (
     <>
+      {/* ChartCard titles are h3, and the first visible h2 on this panel is further down, so
+          the document jumps h1 → h3 (axe `heading-order`). The section is real; it just
+          doesn't need to be seen. */}
+      <h2 className="sr-only">{axis === 'term' ? `${value} overview` : `${value} cohort overview`}</h2>
+
       <KeyMetrics variant="compact" metricsSingleRow metrics={byTermKpis} />
 
       {/* AI themes — cross-course summary BEFORE the pulled metrics below
@@ -486,85 +607,82 @@ export function ByTermPanel({
                 headers={['Term', 'Course avg', 'Faculty avg']}
                 rows={programTrendData.map(d => [d.term, d.courseAvg.toFixed(2), d.facultyAvg != null ? d.facultyAvg.toFixed(2) : '—'])}
               />
+
+              {/* §2.4 — the per-term delta chip row, and the doc singles it out as "the one
+                  place the surface does [viz-first] well": the line gives the shape, the
+                  chips give the exact value and its direction. Legal under VIZ-002 precisely
+                  BECAUSE the line is above it — text below a chart labels values, it does
+                  not interpret them. Negative deltas amber, never red (VIZ-004). */}
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-border pt-2">
+                {programTrendData.map((d, i, arr) => {
+                  const prev = i > 0 ? arr[i - 1].courseAvg : null
+                  const delta = prev != null ? d.courseAvg - prev : null
+                  const isScoped = d.term === value.replace('Spring ', 'Sp ').replace('Fall ', 'Fa ')
+                  return (
+                    <div key={d.term} className="flex flex-col">
+                      <span className={`text-xs ${isScoped ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                        {d.term}
+                      </span>
+                      <span className="text-sm tabular-nums">{d.courseAvg.toFixed(2)}</span>
+                      <span
+                        className="text-xs tabular-nums"
+                        style={{ color: delta != null && delta < 0 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
+                      >
+                        {delta == null ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             </>
           )}
         </ChartFigure>
       </ChartCard>
 
-      {/* Leaderboards: course rankings + faculty rankings — DS OS ChartCard + Leo */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard
-          variant="normal"
-          title="Course rankings"
-          description="Avg rating, weighted by class size · all terms. Color = tier."
-          leoInsight={courseRankLeo}
-        >
-          <ChartFigure
-            label="Course rankings"
-            summary="Horizontal bar chart ranking courses by enrollment-weighted average rating; bar color marks the quality tier."
-            dataLength={courseAllTimeRanked.length}
-          >
-            {(activeIndex) => (
-              <>
-                <div className="relative w-full">
-                <ChartContainer config={courseRankConfig} style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }} className="w-full">
-                  <BarChart accessibilityLayer layout="vertical" data={courseAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                    <XAxis type="number" domain={[0, 5]} hide />
-                    <YAxis type="category" dataKey="code" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
-                      {courseAllTimeRanked.map((c) => <Cell key={c.code} fill={tierColor(c.avg)} />)}
-                    </Bar>
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-                  </BarChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={courseAllTimeRanked} xDataKey="code" chartFamily="bar" />
-                </div>
-                <ChartDataTable
-                  caption="Course rankings"
-                  headers={['Course', 'Avg rating']}
-                  rows={courseAllTimeRanked.map(c => [c.code, `${c.avg.toFixed(2)}/5`])}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
+      {/* REMOVED 2026-07-14 — "Course rankings" + "Faculty rankings" (two ranked bar charts).
+          Three reasons, any one sufficient:
+          1. They were labelled "all terms" on a tab scoped to a single term — the chart
+             contradicted the selector directly above it.
+          2. Duplicates. Course rankings repeats Overview's ranked dots; faculty rankings
+             repeats the By Faculty leaderboard — and Monil, pointing at exactly this chart:
+             "This should be in faculty." Aarti's D5 agrees ("faculty is one click down").
+          3. Ranked bars are the shape the ranked dot plot replaced: a bar carries one value
+             and nothing else — no spread, no median, no sense of whether a mean is stable.
+          The term-scoped ranking this tab actually needs is the deep-dive table below, which
+          is Monil's own sketch. */}
 
-        <ChartCard
-          variant="normal"
-          title="Faculty rankings"
-          description="Avg rating, weighted by class size · all terms. Color = tier."
-          leoInsight={facultyRankLeo}
-        >
-          <ChartFigure
-            label="Faculty rankings"
-            summary="Horizontal bar chart ranking faculty by enrollment-weighted average rating; bar color marks the quality tier."
-            dataLength={facultyAllTimeRanked.length}
-          >
-            {(activeIndex) => (
-              <>
-                <div className="relative w-full">
-                <ChartContainer config={facultyRankConfig} style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }} className="w-full">
-                  <BarChart accessibilityLayer layout="vertical" data={facultyAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                    <XAxis type="number" domain={[0, 5]} hide />
-                    <YAxis type="category" dataKey="name" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
-                      {facultyAllTimeRanked.map((f) => <Cell key={f.name} fill={tierColor(f.avg)} />)}
-                    </Bar>
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-                  </BarChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={facultyAllTimeRanked} xDataKey="name" chartFamily="bar" />
+      {/* Row 3 of the tab template — the deep-dive, and the one Monil said was missing:
+          "This third table, where you just see some numbers — which is also a repetition of
+          the above KPIs. Which again does not make sense. So this is where the requirement is
+          missing. What additional we can add for that term that gives you actionable data."
+          His sketch: every course in the term with response rate AND average score, ordered
+          lowest-first — because the reason you open a term is to find what went wrong in it.
+          Sits ABOVE the ops table below, which answers a different job (push / remind). */}
+      {axis === 'term' && termBreakdown.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Where {value} needs attention</h2>
+          <p className="text-xs text-muted-foreground">
+            Every course in the term, weakest content score first. Content and teaching are scored
+            separately — they rarely fail together, and the fix differs.
+          </p>
+          <div className="-mx-4 lg:-mx-6">
+            <DataTable<TermBreakdownRow>
+              data={termBreakdown}
+              columns={termBreakdownColumns}
+              getRowId={(row) => row.courseCode}
+              searchable={false}
+              toolbarSlot={() => null}
+              emptyState={
+                <div className="flex flex-col items-center gap-2 py-8">
+                  <i className="fa-light fa-chart-simple text-2xl text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-medium">No evaluated courses in {value}</p>
+                  <p className="text-xs text-muted-foreground">Scores appear once a survey in this term closes.</p>
                 </div>
-                <ChartDataTable
-                  caption="Faculty rankings"
-                  headers={['Faculty', 'Avg rating']}
-                  rows={facultyAllTimeRanked.map(f => [f.name, `${f.avg.toFixed(2)}/5`])}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      </div>
+              }
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">Courses in {value}</h2>
