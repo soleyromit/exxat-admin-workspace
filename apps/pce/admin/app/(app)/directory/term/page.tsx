@@ -261,13 +261,6 @@ export default function TermsPage() {
             toolbarSlot={() => null}
           />
 
-          {!MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is off. This list is managed manually.
-            </p>
-          )}
-
         </div>
       </div>
 
