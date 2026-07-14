@@ -16,7 +16,7 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
-import { BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell, ScatterChart, Scatter, ReferenceLine, Label } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
   ChartLeoPlotInsightOverlay,
@@ -38,9 +38,11 @@ export const TERM_ORDER = [
 ]
 
 /* Amber for <3.7, brand for 3.7–4.3, green for ≥4.3. No red per aarti_no_red memory.
-   tierColor = chart fills; tierTextColor swaps the amber for AA-safe --chip-4 on text. */
-const tierColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
+   tierColor (chart fills) retired 2026-07-14 — the rankings moved to a Cleveland
+   dot plot where position carries rank and colour must not encode the metric
+   (cleveland-dot.md:63). It also painted the mid tier var(--brand-color), which
+   VIZ-003 and design-anti-patterns.md:72 both forbid in charts. tierTextColor
+   stays: it is text, not a chart mark, and swaps amber for AA-safe --chip-4. */
 const tierTextColor = (avg: number) =>
   avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
 
@@ -94,6 +96,100 @@ const programTrendConfig: ChartConfig = {
 }
 const courseRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-1)' } }
 const facultyRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-2)' } }
+
+/* ------------------------------------------------------------------ *
+ * RankingDotPlot — Cleveland dot plot (VIZ-PATTERN-005)
+ *
+ * Replaces the sorted horizontal bar charts that used to draw "Course
+ * rankings" and "Faculty rankings". Mandated, not preference:
+ *   - viz/RUBRIC.md Q2 ("Who is an outlier across N entities?") answers
+ *     "Cleveland dot plot (N<=30)" and lists as WRONG: "Sorted bar list.
+ *     Works for ranking but buries the gap if there's a true outlier."
+ *   - cleveland-dot.md:16 — "Anywhere you'd otherwise use a sorted
+ *     horizontal bar chart with <=30 entries"; :19 "Replaces in current
+ *     product: Sorted-bar lists"; :70 rejects the bar for this job outright.
+ *   - cleveland-dot.md:14 names "Ranked faculty response rate" as a use case.
+ * N here is 8 courses / 5 faculty — comfortably inside the <=30 bound.
+ *
+ * Position carries rank, so colour does NOT encode the metric (:63). The only
+ * colour signal is below-median amber (--chart-4, never red — VIZ-004), which
+ * doubles with position as the redundant encoding A11Y-008 requires. That
+ * retires tierColor() here: it painted the mid tier var(--brand-color),
+ * breaking VIZ-003 (charts use --chart-1..5) and design-anti-patterns.md:72
+ * (brand is for primary CTAs, not data).
+ *
+ * The median reference line is mandatory (:75 — "that's the anchor").
+ * ------------------------------------------------------------------ */
+function medianOf(values: number[]): number {
+  if (values.length === 0) return 0
+  const s = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid]
+}
+
+function RankingDotPlot({
+  rows, labelKey, config, activeIndex, labelWidth = 68,
+}: {
+  rows: { avg: number }[] & Record<string, unknown>[]
+  labelKey: string
+  config: ChartConfig
+  activeIndex: number | null
+  labelWidth?: number
+}) {
+  const median = medianOf(rows.map(r => r.avg))
+  return (
+    <ChartContainer config={config} style={{ height: `${rows.length * 24 + 40}px` }} className="w-full">
+      <ScatterChart accessibilityLayer margin={{ top: 18, right: 36, bottom: 0, left: 0 }}>
+        {/* Domain starts at 1: these are 1-5 Likert means, and a 0 baseline is
+            irrelevant for a dot plot (cleveland-dot.md:28 — zero-baseline only
+            matters when magnitude/sum does). Starting at 1 spends the axis on
+            the range the data actually occupies. */}
+        <XAxis type="number" dataKey="avg" domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+        <YAxis type="category" dataKey={labelKey} width={labelWidth} interval={0} reversed tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
+        <ReferenceLine x={median} stroke="var(--foreground)" strokeDasharray="4 2" strokeWidth={1}>
+          <Label value={`Median ${median.toFixed(2)}`} position="top" fill="var(--muted-foreground)" fontSize={11} />
+        </ReferenceLine>
+        <Scatter
+          data={rows}
+          dataKey="avg"
+          isAnimationActive={false}
+          shape={(props: { cx?: number; cy?: number; payload?: { avg: number } }) => {
+            const { cx, cy, payload } = props
+            if (cx == null || cy == null || !payload) return <circle />
+            const below = payload.avg < median
+            return (
+              <circle
+                cx={cx}
+                cy={cy}
+                r={5}
+                fill={below ? 'var(--chart-4)' : 'var(--chart-1)'}
+                stroke="var(--background)"
+                strokeWidth={1}
+              />
+            )
+          }}
+          {...(activeIndex != null ? { activeIndex } : {})}
+        />
+        <ChartTooltip
+          key={chartTooltipKeyboardSyncProps(activeIndex).key}
+          {...chartTooltipKeyboardSyncProps(activeIndex).props}
+          cursor={false}
+          content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />}
+        />
+      </ScatterChart>
+    </ChartContainer>
+  )
+}
+
+/** "3 of 8 below the median" — the takeaway line cleveland-dot.md:66 requires.
+ *  Frequency, not percentage, per dashboards/RUBRIC.md:20-26 (Aarti D17). */
+function belowMedianTakeaway(rows: { avg: number }[], noun: string): string {
+  const median = medianOf(rows.map(r => r.avg))
+  const below = rows.filter(r => r.avg < median).length
+  if (rows.length === 0) return ''
+  const lowest = [...rows].sort((a, b) => a.avg - b.avg)[0]
+  return `${below} of ${rows.length} ${noun} below the ${median.toFixed(2)} median · lowest ${lowest.avg.toFixed(2)}/5`
+}
 const compareConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 
@@ -496,29 +592,20 @@ export function ByTermPanel({
         <ChartCard
           variant="normal"
           title="Course rankings"
-          description="Avg rating, weighted by class size · all terms. Color = tier."
+          description="Avg rating, weighted by class size · all terms. Dashed line marks the median."
           leoInsight={courseRankLeo}
         >
           <ChartFigure
             label="Course rankings"
-            summary="Horizontal bar chart ranking courses by enrollment-weighted average rating; bar color marks the quality tier."
+            summary="Dot plot ranking courses by enrollment-weighted average rating; a dashed median reference line anchors the comparison and dots below the median are amber."
             dataLength={courseAllTimeRanked.length}
           >
             {(activeIndex) => (
               <>
                 <div className="relative w-full">
-                <ChartContainer config={courseRankConfig} style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }} className="w-full">
-                  <BarChart accessibilityLayer layout="vertical" data={courseAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                    <XAxis type="number" domain={[0, 5]} hide />
-                    <YAxis type="category" dataKey="code" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
-                      {courseAllTimeRanked.map((c) => <Cell key={c.code} fill={tierColor(c.avg)} />)}
-                    </Bar>
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-                  </BarChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={courseAllTimeRanked} xDataKey="code" chartFamily="bar" />
+                <RankingDotPlot rows={courseAllTimeRanked} labelKey="code" config={courseRankConfig} activeIndex={activeIndex} />
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">{belowMedianTakeaway(courseAllTimeRanked, 'courses')}</p>
                 <ChartDataTable
                   caption="Course rankings"
                   headers={['Course', 'Avg rating']}
@@ -532,29 +619,20 @@ export function ByTermPanel({
         <ChartCard
           variant="normal"
           title="Faculty rankings"
-          description="Avg rating, weighted by class size · all terms. Color = tier."
+          description="Avg rating, weighted by class size · all terms. Dashed line marks the median."
           leoInsight={facultyRankLeo}
         >
           <ChartFigure
             label="Faculty rankings"
-            summary="Horizontal bar chart ranking faculty by enrollment-weighted average rating; bar color marks the quality tier."
+            summary="Dot plot ranking faculty by enrollment-weighted average rating; a dashed median reference line anchors the comparison and dots below the median are amber."
             dataLength={facultyAllTimeRanked.length}
           >
             {(activeIndex) => (
               <>
                 <div className="relative w-full">
-                <ChartContainer config={facultyRankConfig} style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }} className="w-full">
-                  <BarChart accessibilityLayer layout="vertical" data={facultyAllTimeRanked} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-                    <XAxis type="number" domain={[0, 5]} hide />
-                    <YAxis type="category" dataKey="name" width={68} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }} isAnimationActive={false} activeBar={{ stroke: 'var(--ring)', strokeWidth: 2 }} {...(activeIndex != null ? { activeIndex } : {})}>
-                      {facultyAllTimeRanked.map((f) => <Cell key={f.name} fill={tierColor(f.avg)} />)}
-                    </Bar>
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />} />
-                  </BarChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={facultyAllTimeRanked} xDataKey="name" chartFamily="bar" />
+                <RankingDotPlot rows={facultyAllTimeRanked} labelKey="name" config={facultyRankConfig} activeIndex={activeIndex} />
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">{belowMedianTakeaway(facultyAllTimeRanked, 'faculty')}</p>
                 <ChartDataTable
                   caption="Faculty rankings"
                   headers={['Faculty', 'Avg rating']}
