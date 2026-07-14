@@ -81,6 +81,10 @@ export default function TermsPage() {
     () => Object.fromEntries(groupOrder.map(y => [y, y])),
     [groupOrder]
   )
+  const academicYearOptions = useMemo(
+    () => groupOrder.map(y => ({ value: y, label: y })),
+    [groupOrder]
+  )
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {}
@@ -140,6 +144,10 @@ export default function TermsPage() {
       sortable: true,
       width: 150,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.academicYear}</span>,
+      filter: {
+        type: 'select', icon: 'fa-calendar', operators: ['is', 'is_not'],
+        options: academicYearOptions,
+      },
     },
     {
       key: 'startDate',
@@ -165,6 +173,13 @@ export default function TermsPage() {
           {row.status}
         </Badge>
       ),
+      filter: {
+        type: 'select', icon: 'fa-circle-dot', operators: ['is', 'is_not'],
+        options: [
+          { value: 'active',   label: 'Active' },
+          { value: 'archived', label: 'Archived' },
+        ],
+      },
     },
     {
       key: 'actions',
@@ -247,18 +262,17 @@ export default function TermsPage() {
             onRowClick={(row) => router.push(`/admin/terms/${row.id}`)}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-calendar-days text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <i className="fa-light fa-calendar-days text-muted-foreground text-2xl" aria-hidden="true" />
                 <p className="text-sm font-medium">
-                  {rows.length === 0 ? 'No terms yet' : 'No terms match your search'}
+                  {rows.length === 0 ? 'No terms yet' : 'No terms match your search or filters'}
                 </p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
                   {rows.length === 0
                     ? (MOCK_LMS_ENABLED ? 'Terms sync from your LMS — none have synced yet.' : 'Add a term to anchor course offerings to an academic calendar.')
-                    : 'Try a different name or clear the search.'}
+                    : 'Try a different name, or clear the search and filters.'}
                 </p>
               </div>
             }
-            toolbarSlot={() => null}
           />
 
           {!MOCK_LMS_ENABLED && (
