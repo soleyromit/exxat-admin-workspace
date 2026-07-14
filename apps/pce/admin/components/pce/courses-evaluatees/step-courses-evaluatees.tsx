@@ -6,7 +6,6 @@ import {
   Badge, Skeleton, Button,
   Popover, PopoverTrigger, PopoverContent,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
-  ToggleGroup, ToggleGroupItem,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import { PaginationBar } from '@/components/data-table/pagination'
@@ -27,6 +26,16 @@ const CRITERIA_ORDER: Criterion[] = ['students', 'instructor', 'coordinator']
 
 /** Above this count the cohort picker gains a search field. */
 const COHORT_SEARCH_THRESHOLD = 8
+
+/** The three fixed top-level categories a role can sit under (settled: no custom
+ *  groups, no free-text roles — roles come from the Prism universe). */
+const CRITERION_GROUP_ORDER = ['Course', 'Faculty', 'General'] as const
+
+const CRITERION_GROUP: Record<Criterion, (typeof CRITERION_GROUP_ORDER)[number]> = {
+  students: 'Course',
+  instructor: 'Faculty',
+  coordinator: 'Faculty',
+}
 
 const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
@@ -98,6 +107,13 @@ export function StepCoursesEvaluatees({
   const scopeReady = termChosen && criteria.length > 0
 
   const [cohortOpen, setCohortOpen] = useState(false)
+  const [roleOpen, setRoleOpen] = useState(false)
+  // Guarded, not disabled: the picker item stays reachable, and the visible line
+  // below states why the last one won't come off.
+  const toggleCriterion = (c: Criterion) => {
+    const next = criteria.includes(c) ? criteria.filter(x => x !== c) : [...criteria, c]
+    if (next.length > 0) onCriteriaChange(next)
+  }
   // No cohort selected = no filter, so the resting label states the real scope.
   const cohortTriggerLabel = useMemo(() => {
     if (cohorts.length === 0) return 'All cohorts'
@@ -413,32 +429,88 @@ export function StepCoursesEvaluatees({
                 Readiness updates as you select
               </span>
             </div>
-            {/* Stays inline rather than collapsing into a picker: this is the
-                step's primary decision and the readiness table below is live
-                feedback on it — an overlay would cover the very thing it drives. */}
-            <ToggleGroup
-              type="multiple"
-              variant="outline"
-              size="sm"
-              value={criteria}
-              onValueChange={(next: string[]) => {
-                // Guarded rather than disabled so the last remaining toggle stays
-                // focusable; aria-disabled + title explain why it won't turn off.
-                if (next.length > 0) onCriteriaChange(next as Criterion[])
-              }}
-              className="justify-start"
-              aria-label="Choose what to evaluate"
+            {/* Chosen roles stay inline — this is the step's primary decision and
+                the readiness table below is live feedback on it, so the selection
+                must remain visible (and must not look like the Cohort filter).
+                The role universe (~40–50 in Prism, narrowed per program in
+                Settings) lives behind "Add role", so the row shows what you PICKED
+                and never the whole list. A flat row of every option overflows —
+                30 roles measured 3223px in a 1153px container. */}
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="group"
+              aria-label="Chosen evaluatees"
             >
-              {CRITERIA_ORDER.map(c => (
-                <ToggleGroupItem
-                  key={c}
-                  value={c}
-                  aria-disabled={(criteria.length === 1 && criteria[0] === c) || undefined}
+              {CRITERIA_ORDER.filter(c => criteria.includes(c)).map(c => {
+                const isLast = criteria.length === 1
+                return (
+                  <Badge key={c} variant="secondary" className="gap-1 ps-2.5 pe-1 py-1 font-normal">
+                    {CRITERION_TOGGLE_LABEL[c]}
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="size-4 p-0 hover:bg-transparent"
+                      disabled={isLast}
+                      aria-label={`Remove ${CRITERION_TOGGLE_LABEL[c]}`}
+                      onClick={() => onCriteriaChange(criteria.filter(x => x !== c))}
+                    >
+                      <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                    </Button>
+                  </Badge>
+                )
+              })}
+
+              <Popover open={roleOpen} onOpenChange={setRoleOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-haspopup="listbox"
+                    aria-expanded={roleOpen}
+                  >
+                    Add role
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="p-0"
+                  style={{ width: 260 }}
+                  aria-label="Add evaluatee role"
                 >
-                  {CRITERION_TOGGLE_LABEL[c]}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+                  <Command>
+                    <CommandInput placeholder="Search roles" />
+                    <CommandList>
+                      <CommandEmpty>No roles found.</CommandEmpty>
+                      {CRITERION_GROUP_ORDER.map(group => {
+                        const inGroup = CRITERIA_ORDER.filter(c => CRITERION_GROUP[c] === group)
+                        if (inGroup.length === 0) return null
+                        return (
+                          <CommandGroup key={group} heading={group}>
+                            {inGroup.map(c => {
+                              const checked = criteria.includes(c)
+                              return (
+                                <CommandItem
+                                  key={c}
+                                  value={CRITERION_TOGGLE_LABEL[c]}
+                                  onSelect={() => toggleCriterion(c)}
+                                >
+                                  <i
+                                    className={`fa-solid fa-check text-xs ${checked ? '' : 'opacity-0'}`}
+                                    aria-hidden="true"
+                                  />
+                                  <span className="truncate">{CRITERION_TOGGLE_LABEL[c]}</span>
+                                  {checked && <span className="sr-only">, selected</span>}
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandGroup>
+                        )
+                      })}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
             {/* Stated rather than left to a title tooltip: the guard also fires on
                 keyboard, where a native title never surfaces. */}
             {criteria.length === 1 && (
