@@ -15,6 +15,7 @@ import {
   type CourseOffering,
 } from '@/lib/pce-mock-data'
 import { DataTablePaginated } from '@/components/data-table/pagination'
+import { TruncatedText } from '@/components/truncated-text'
 import { OfferingStatusBadge } from '@/components/pce/pce-badges'
 import type { ColumnDef } from '@/components/data-table/types'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
@@ -183,7 +184,7 @@ export default function CoursesDirectoryPage() {
       cell: (row) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-mono text-xs">{row.courseCode}</span>
-          <span className="text-xs text-muted-foreground truncate max-w-44">{row.courseName}</span>
+          <TruncatedText className="text-xs text-muted-foreground max-w-44">{row.courseName}</TruncatedText>
         </div>
       ),
     },

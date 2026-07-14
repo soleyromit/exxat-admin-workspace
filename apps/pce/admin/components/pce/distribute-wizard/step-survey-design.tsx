@@ -14,6 +14,7 @@ import {
   SelectItem,
   SelectValue,
 } from '@exxatdesignux/ui'
+import { TruncatedText } from '@/components/truncated-text'
 import {
   MOCK_MASTER_COURSES,
   type CourseOffering,
@@ -329,7 +330,7 @@ export function StepSurveyDesign({
                       style={{ padding: '9px 14px', borderBottom: isLast ? 'none' : '1px solid var(--border)' }}
                     >
                       <span className="text-sm font-semibold shrink-0" style={{ minWidth: 72 }}>{course?.code}</span>
-                      <span className="text-sm flex-1 truncate" style={{ color: 'var(--muted-foreground)' }}>{course?.name}</span>
+                      <TruncatedText className="text-sm flex-1" style={{ color: 'var(--muted-foreground)' }}>{course?.name ?? '—'}</TruncatedText>
                       <div className="flex items-center gap-1 shrink-0">
                         <Select value={assignedId} onValueChange={v => onTemplateChange(offering.id, v)}>
                           <SelectTrigger className="w-48" aria-label={`Template for ${course?.code}`} style={{ height: 32, fontSize: 13 }}>
