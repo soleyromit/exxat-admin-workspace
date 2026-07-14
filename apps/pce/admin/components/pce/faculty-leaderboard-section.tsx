@@ -22,22 +22,47 @@
 
 import { useMemo } from 'react'
 import {
+  Button,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+} from '@exxatdesignux/ui'
+import {
   ChartCard,
   ChartFigure,
   ChartDataTable,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
 import { FacultyLeaderboardDots, FacultyCompareLines } from '@/components/pce/analytics-plots'
-import { facultyStats, facultyTermSeries, medianOf, benchmarks } from '@/lib/pce-analytics'
+import { facultyStats, facultyTermSeries, medianOf, benchmarks, termSeries } from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
+const ALL_TERMS = '__all__'
+
 export function FacultyLeaderboardSection({
+  term,
+  onTermChange,
   onSelectFaculty,
 }: {
+  /** Scoped term, or undefined for all terms. */
+  term?: string
+  onTermChange?: (term: string | undefined) => void
+  /** Drill into one faculty member — the "view insights" step. */
   onSelectFaculty?: (facultyId: string) => void
 }) {
-  const faculty = useMemo(() => facultyStats(), [])
+  /**
+   * Term scope. Monil, on these tables: "Filters are global — scope to a term or span all
+   * terms." An all-time-only leaderboard cannot answer "who struggled THIS term", which is
+   * the question an admin arrives with at term close.
+   *
+   * The terms offered are only those that HAVE data — a dropdown listing terms that render
+   * an empty board is the legacy app's "term dropdown ≠ term table" bug (§4.7).
+   */
+  const termOptions = useMemo(
+    () => termSeries().filter((t) => t.enrolled > 0).map((t) => t.term).reverse(),
+    [],
+  )
+
+  const faculty = useMemo(() => facultyStats(term), [term])
   const median = useMemo(() => medianOf(faculty.map((f) => f.score.weighted)), [faculty])
   const series = useMemo(() => facultyTermSeries(), [])
   const bench = useMemo(() => benchmarks(), [])
@@ -113,10 +138,40 @@ export function FacultyLeaderboardSection({
     <div className="flex flex-col gap-4">
       <h2 className="sr-only">All faculty</h2>
 
+      {/* Global term scope for the tables below — Monil: "scope to a term or span all terms". */}
+      <div className="flex items-center gap-3">
+        <label className="shrink-0 text-sm text-muted-foreground" htmlFor="leaderboard-term">
+          Scope
+        </label>
+        <Select
+          value={term ?? ALL_TERMS}
+          onValueChange={(v) => onTermChange?.(v === ALL_TERMS ? undefined : v)}
+        >
+          <SelectTrigger id="leaderboard-term" className="h-8 w-44 text-sm" aria-label="Scope the leaderboard to a term">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_TERMS}>All terms</SelectItem>
+            {termOptions.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          {term
+            ? `${faculty.length} faculty taught in ${term}.`
+            : `${faculty.length} faculty across all terms — 1-year and 3-year windows always span full history.`}
+        </p>
+      </div>
+
       <ChartCard
         variant="normal"
         title="Faculty leaderboard"
-        description="Each faculty member's class-size-weighted mean, with every one of their offerings drawn behind it — so a steady 4.2 and a volatile 4.2 stop looking identical."
+        description={
+          term
+            ? `${term} only. Each faculty member's class-size-weighted mean, with that term's offerings drawn behind it.`
+            : 'Each faculty member\'s class-size-weighted mean, with every one of their offerings drawn behind it — so a steady 4.2 and a volatile 4.2 stop looking identical.'
+        }
         leoInsight={leaderLeo}
       >
         <ChartFigure
@@ -128,6 +183,39 @@ export function FacultyLeaderboardSection({
           {() => (
             <>
               <FacultyLeaderboardDots faculty={faculty} median={median} leoAnchor={leaderAnchor} />
+
+              {/* Every aggregate is a door (§3 of the walkthrough): the leaderboard's whole
+                  job is to end in "view insights → the entire view opens only for Dr. Sandra"
+                  (Monil). A ranked chart you cannot click is a poster. Rows are also the
+                  keyboard path to the drill-down — the plot itself is aria-hidden, so the
+                  navigable affordance has to be real DOM. */}
+              <ul className="mt-2 flex flex-col">
+                {faculty.map((f) => (
+                  <li
+                    key={f.facultyId}
+                    className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border py-1.5 last:border-b-0"
+                  >
+                    <span className="truncate text-sm">{f.name}</span>
+                    <span className="text-sm tabular-nums text-muted-foreground">
+                      {fmt2(f.score.weighted)}
+                      {f.score.weighted < median && (
+                        <span className="ml-1.5 text-xs" style={{ color: 'var(--chip-4)' }}>
+                          below median
+                        </span>
+                      )}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSelectFaculty?.(f.facultyId)}
+                      aria-label={`View insights for ${f.name}`}
+                    >
+                      View insights
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+
               <ChartDataTable
                 caption="Faculty scores against the program median"
                 headers={['Faculty', 'Weighted score', 'Simple mean', 'Offerings', 'Courses', 'Response rate']}

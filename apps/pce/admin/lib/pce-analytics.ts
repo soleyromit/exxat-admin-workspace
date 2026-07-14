@@ -80,6 +80,15 @@ export function dualMean(values: number[], weights: number[]): DualMean {
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 
+/**
+ * The response-rate target every rate is judged against.
+ *
+ * Settings already configures a *response* threshold (D3 in the P2 gaps design), so this is
+ * the one benchmark with a real home. The 80% figure matches the legacy app's `Target 80%`
+ * reference line; wire it to Settings when that page grows the field.
+ */
+export const RESPONSE_TARGET = 80
+
 /* ────────────────────────────────────────────────────────────────────────────
    Grain 1 — faculty × course × term (the finest grain the model carries)
    ──────────────────────────────────────────────────────────────────────────── */
@@ -240,9 +249,22 @@ function windowMean(points: OfferingPoint[], from: number, to: number): number |
   )
 }
 
-export function facultyStats(): FacultyStat[] {
-  const points = offeringPoints()
-  const now = latestYear(points)
+/**
+ * @param term - scope to a single term, or omit for all terms.
+ *
+ * Monil, on the By Faculty tables: "Filters are global on these tables — scope to a term or
+ * span all terms." An all-time-only leaderboard cannot answer "who struggled THIS term",
+ * which is the question an admin actually arrives with at term close.
+ *
+ * The 1Y/3Y windows are deliberately NOT re-based on the scoped term: they are defined
+ * against the latest term that has data, so "drift" keeps meaning the same thing whether you
+ * are looking at one term or all of them. Scoping the window to a single term would make
+ * avg1y === avg3y === that term, i.e. drift always 0.
+ */
+export function facultyStats(term?: string): FacultyStat[] {
+  const all = offeringPoints()
+  const now = latestYear(all)
+  const points = term ? all.filter((p) => p.term === term) : all
   const byFaculty = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byFaculty.get(p.facultyId) ?? []
@@ -254,8 +276,11 @@ export function facultyStats(): FacultyStat[] {
     .map(([facultyId, offs]) => {
       const enrolled = offs.reduce((s, o) => s + o.enrolled, 0)
       const responded = offs.reduce((s, o) => s + o.responded, 0)
-      const avg1y = windowMean(offs, now - 1, now)
-      const avg3y = windowMean(offs, now - 3, now)
+      // Windows are computed against ALL of this person's history, not the scoped slice —
+      // see the note on the term param.
+      const own = all.filter((p) => p.facultyId === facultyId)
+      const avg1y = windowMean(own, now - 1, now)
+      const avg3y = windowMean(own, now - 3, now)
       return {
         facultyId,
         name: offs[0]!.facultyName,
@@ -508,6 +533,11 @@ export interface ProgramSummary {
   /** Frequency counts, not percentages — Aarti D17 ("8 of 20 questions" beats "40%"). */
   facultyBelowThreshold: number
   coursesBelowThreshold: number
+  /** The thresholds those counts were measured against — §6: state the bar, don't imply it. */
+  facultyMedian: number
+  courseMedian: number
+  /** Terms that missed the 80% response target. */
+  termsBelowTarget: number
   /** Sparkline series for the KPI tiles (VIZ-010 forbids a bare number). */
   facultySpark: { x: number; y: number }[]
   courseSpark: { x: number; y: number }[]
@@ -559,6 +589,9 @@ export function programSummary(): ProgramSummary {
     termCount: series.filter((s) => s.courses > 0 || s.enrolled > 0).length,
     facultyBelowThreshold: fac.filter((f) => f.score.weighted < facultyMedian).length,
     coursesBelowThreshold: courses.filter((c) => c.score.weighted < courseMedian).length,
+    facultyMedian,
+    courseMedian,
+    termsBelowTarget: series.filter((s) => s.responseRate != null && s.responseRate < RESPONSE_TARGET).length,
     facultySpark: scored
       .filter((s) => s.facultyAvg != null)
       .map((s) => ({ x: s.year, y: s.facultyAvg as number })),

@@ -54,6 +54,8 @@ function AnalyticsInner() {
   const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
     searchParams?.get('courseCode') || ''
   )
+  /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
+  const [facultyTerm, setFacultyTerm]               = useState<string | undefined>(undefined)
 
   const scopeLabel = axis === 'term' ? term : cohort
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
@@ -147,9 +149,21 @@ function AnalyticsInner() {
           <div className="flex flex-col gap-6 max-w-5xl">
             {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
                 /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
-            <FacultyLeaderboardSection />
+            <FacultyLeaderboardSection
+              term={facultyTerm}
+              onTermChange={setFacultyTerm}
+              onSelectFaculty={(id) => {
+                // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
+                // drill-down is the same tab scrolled to the portfolio, not a new route —
+                // the portfolio is a filtered state of By Faculty, not a surface of its own.
+                setSelectedFacultyId(id)
+                requestAnimationFrame(() =>
+                  document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                )
+              }}
+            />
 
-            <div className="border-t border-border pt-6">
+            <div id="individual-faculty" className="border-t border-border pt-6">
               <h2 className="text-sm font-semibold">Individual faculty</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 Their portfolio: how they perform per term and per course, and every survey behind it.

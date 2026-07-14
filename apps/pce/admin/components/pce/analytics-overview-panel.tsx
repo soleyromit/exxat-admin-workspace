@@ -245,10 +245,14 @@ export function AnalyticsOverviewPanel() {
 
       {/* ── Row 1 — story 1. Three tiles, each a number WITH its trajectory. ── */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {/* §6 of the walkthrough — "explicit benchmarks on every KPI": the legacy app stated
+            the threshold that produced each percentage (`< 4.00 avg score`), which is the one
+            thing that makes a KPI auditable rather than assertive. Frequency counts, not
+            percentages (Aarti D17: "4 of 6 faculty" beats "67%"). */}
         <ChartCard
           variant="kpi-chart"
           title="Average faculty score"
-          description={`Weighted by class size · simple mean ${fmt2(summary.facultyScore.simple)}`}
+          description={`${summary.facultyBelowThreshold} of ${summary.facultyCount} faculty below the ${fmt2(summary.facultyMedian)} median · weighted by class size · simple mean ${fmt2(summary.facultyScore.simple)}`}
           miniMetrics={[
             {
               label: `across ${summary.facultyScore.n} offerings`,
@@ -266,7 +270,7 @@ export function AnalyticsOverviewPanel() {
         <ChartCard
           variant="kpi-chart"
           title="Average course score"
-          description={`Course content only · simple mean ${fmt2(summary.courseScore.simple)}`}
+          description={`${summary.coursesBelowThreshold} of ${summary.courseCount} courses below the ${fmt2(summary.courseMedian)} median · course content only · simple mean ${fmt2(summary.courseScore.simple)}`}
           miniMetrics={[
             {
               label: `across ${summary.courseScore.n} course-terms`,
@@ -283,7 +287,7 @@ export function AnalyticsOverviewPanel() {
         <ChartCard
           variant="kpi-chart"
           title="Overall response rate"
-          description={`${summary.responded.toLocaleString()} of ${summary.enrolled.toLocaleString()} students responded`}
+          description={`${summary.termsBelowTarget} of ${summary.termCount} terms below the 80% target · ${summary.responded.toLocaleString()} of ${summary.enrolled.toLocaleString()} students responded`}
           miniMetrics={[
             {
               label: `${summary.termCount} terms · target 80%`,
@@ -319,6 +323,33 @@ export function AnalyticsOverviewPanel() {
           {() => (
             <>
               <ProgramTrendStack series={series} />
+
+              {/* §6 of the walkthrough — the per-term delta chip row. The doc singles this
+                  out as "the one place the surface does [viz-first] well": the line gives
+                  the shape, the chips give the exact value and direction. Legal under
+                  VIZ-002 precisely BECAUSE the line is shown — text below a chart labels
+                  values, it does not replace them. */}
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-border pt-2">
+                {series
+                  .filter((s) => s.courseAvg != null)
+                  .map((s, i, arr) => {
+                    const prev = i > 0 ? arr[i - 1]!.courseAvg : null
+                    const d = prev != null ? (s.courseAvg as number) - prev : null
+                    return (
+                      <div key={s.term} className="flex flex-col">
+                        <span className="text-xs text-muted-foreground">{s.short}</span>
+                        <span className="text-sm tabular-nums">{fmt2(s.courseAvg as number)}</span>
+                        <span
+                          className="text-xs tabular-nums"
+                          style={{ color: d != null && d < 0 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
+                        >
+                          {d == null ? '—' : `${d >= 0 ? '+' : ''}${fmt2(d)}`}
+                        </span>
+                      </div>
+                    )
+                  })}
+              </div>
+
               <ChartDataTable
                 caption="Program trajectory by term"
                 headers={['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled']}
