@@ -134,15 +134,31 @@ function TermMetaLine({
   )
 }
 
-/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status). */
-function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boolean }) {
+/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status).
+ *
+ * Renders INSIDE the sub-card, on the CTA's row — never in the meta line
+ * (Romit, 2026-07-14). The countdown qualifies the action it sits with
+ * ("send reminders — 8 days left"); hoisted into the header it becomes a
+ * free-floating number the reader must re-associate with the CTA below.
+ *
+ * `mode` carries the two readings — a window closing vs. a term approaching —
+ * so the current and upcoming cards keep one anatomy. */
+function CountdownIndicator({
+  days, urgent, mode,
+}: {
+  days: number
+  urgent: boolean
+  mode: 'left' | 'starts'
+}) {
   return (
     <span
       className="flex shrink-0 items-center gap-1.5 text-xs font-medium tabular-nums"
       style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
     >
       <i className="fa-light fa-clock" aria-hidden="true" />
-      {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+      {mode === 'left'
+        ? `${days} ${days === 1 ? 'day' : 'days'} left`
+        : `starts in ${days} ${days === 1 ? 'day' : 'days'}`}
     </span>
   )
 }
@@ -205,21 +221,9 @@ function CurrentTermCard({
           termId={term.id}
           badge={<StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />}
         />
-        <TermMetaLine
-          term={term}
-          /* Countdown is a TERM-level fact → it sits in the meta line next to
-           * the window (high in hierarchy, width-independent), never buried
-           * under a CTA inside the reminder block. */
-          trailing={
-            snap.daysLeft != null ? (
-              /* Separator wraps WITH its unit — never a dangling dot. */
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                {'· '}
-                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
-              </span>
-            ) : undefined
-          }
-        />
+        {/* No countdown here — it belongs with the action it qualifies, inside
+            the sub-card below (Romit, 2026-07-14). */}
+        <TermMetaLine term={term} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {noCourses ? (
@@ -234,9 +238,14 @@ function CurrentTermCard({
                   Add this term’s courses and rosters to start collecting responses.
                 </p>
               </div>
-              <Button variant="outline" size="sm" asChild className="self-start">
-                <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
-              </Button>
+              <div className="flex flex-col items-start gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
+                </Button>
+                {snap.daysLeft != null && (
+                  <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -288,11 +297,18 @@ function CurrentTermCard({
                   {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
                 </p>
               </div>
-              {/* Just the action — the countdown now lives in the meta line
-                  (a term-level fact), so it isn't stacked under the CTA. */}
-              <Button variant="outline" size="sm" asChild className="self-start">
-                <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
-              </Button>
+              {/* Action + countdown share the bottom row — the deadline is what
+                  makes the reminder urgent, so it reads with the button. Stacked
+                  (not inline) so the countdown wraps below on the narrow card
+                  rather than squeezing the heading. */}
+              <div className="flex flex-col items-start gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
+                </Button>
+                {snap.daysLeft != null && (
+                  <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -412,13 +428,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
              line stays to the AY + countdown so it never reads "window not
              set · starts in Nd", which conflated two facts. */
           hideWindow
-          /* Countdown is a term-level fact → always in the meta line (matches
-             the current card), never inside a body block. */
-          trailing={
-            dated
-              ? <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
-              : undefined
-          }
+          /* No countdown here — it sits with the action inside the sub-card
+             below, matching the current card (Romit, 2026-07-14). */
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -473,10 +484,16 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                   Missing faculty or student rosters
                 </p>
               </div>
-              {/* Just the action — the countdown lives in the meta line. */}
-              <Button variant="outline" size="sm" asChild className="self-start">
-                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
-              </Button>
+              {/* Action + countdown share the bottom row — same anatomy as the
+                  current card's reminder block, so the two read alike. */}
+              <div className="flex flex-col items-start gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+                </Button>
+                {startsIn != null && (
+                  <CountdownIndicator days={startsIn} urgent={startsIn <= 7} mode="starts" />
+                )}
+              </div>
             </div>
           </div>
         ) : null}
