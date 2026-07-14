@@ -351,7 +351,148 @@ as a filtered state. That's the single biggest structural decision to make — s
 
 ---
 
-## 8. Verification
+## 8. Open design decisions — the 10-task subset
+
+> **Scope:** the 10 ADMIN tasks excluding Overview (By Faculty ×3, By Course ×1, By Term ×1,
+> Individual Faculty Portfolio ×5). Vault consulted before writing this section; every claim below
+> cites its note.
+
+### 8.0 ⚠️ Two vault findings that invalidate part of §7
+
+**(a) Monil, 2026-07-13 — don't mine this prototype for design.**
+> *"When generating charts with AI, **do not feed the existing prototype URL to the agent** (biases
+> toward the current solution); rethink each chart's intent first."*
+
+That is exactly what §1–§7 did. Aarti's process anti-patterns compound it: **C10 — trim speculative
+dashboard polish**; ❌ *"prototype-first design before alignment"*; ❌ *"wearing personas you're not"*.
+**⇒ Use §1–§7 as a gap-finder and a list of things to *not* re-inherit. Do not let §6
+("what's worth keeping") drive the design.**
+
+**(b) §7 marks "theme breakdown" PRESENT. Per the vault it is architecturally wrong.**
+`2026-05-08-aarti-design-review.md` **D28** (marked `ADR? yes`, still PENDING):
+> *"Evaluation themes: **AI-extracted from school-authored questions; no preset taxonomy**."*
+> Aarti verbatim: *"You're still thinking that everything has to be tagged and grouped and organized.
+> **But, no, like, let it be dynamic.**"*
+> `experience-principles.md` anti-pattern: **"Pre-tagged theme taxonomies | Aarti 2026-05-08"**.
+
+The reference app's `Theme Distribution` is **three fixed categories** (`Teaching effectiveness /
+Communication / Assessment practice`) — precisely the preset taxonomy D28 bans. It is also
+**internally inconsistent**, which is the tell: the By Faculty tab shows **3** themes; the result page
+shows **4** (`+ Course Content`, and `Assessment Practice*s*`), with per-theme question counts that
+**vary by course** (OT-401 = 1/2/1/2; DPT-503 = 2/1/1/2). A "theme" whose question count changes per
+course is not a comparable axis. **⇒ §7's PRESENT verdicts on tasks 1, 4 and 8 should read
+PRESENT-BUT-WRONG.**
+
+### 8.1 Revised verdicts for the 10 (vault-adjusted)
+
+| # | Task | §7 said | Vault-adjusted |
+|---|---|---|---|
+| 1 | By Faculty — theme breakdown per faculty | PRESENT | **WRONG SHAPE** — preset taxonomy banned (D28) |
+| 2 | By Faculty — ranked leaderboard **with alerts** | PARTIAL | **BLOCKED ×3** — IA contradiction, weighting undecided, "low" undefined |
+| 3 | By Faculty — response-rate trend, specific faculty | PRESENT | **PRESENT** ✅ shape settled |
+| 4 | By Course — key numbers + trends + theme breakdown | PARTIAL | **PARTIAL + WRONG SHAPE** — themes absent *and* mis-modelled; needs C9 template guard |
+| 5 | By Term — avg score + response trends | PRESENT | **PRESENT, INCOMPLETE** — vault wants 5–6 terms (app: 4), courses grouped by **cohort**, course vs faculty averages shown **separately** |
+| 6 | Portfolio — key numbers incl. **percentile** | PARTIAL | **BLOCKED** — percentile banned faculty-side (§7.3); admin-side boundary unwritten. Also D27: never show a single average |
+| 7 | Portfolio — courses ranked best→worst | MISSING | **MISSING, blocked on weighting** |
+| 8 | Portfolio — theme breakdown, one faculty | PRESENT | **WRONG SHAPE** (D28) |
+| 9 | Portfolio — comments with sentiment | PRESENT | **PRESENT** ✅ (vault frames sentiment as moderation, not portfolio — thin but no conflict) |
+| 10 | Portfolio — score + response trends **by course** | MISSING | **MISSING, wanted** (Arvind; §4.1 slopegraph) |
+
+Genuinely clean: **3 of 10** (tasks 3, 5, 9). Everything else is blocked or mis-shaped.
+
+### 8.2 The decisions, ranked by what they unblock
+
+**D1 — "Theme breakdown" means *sections* or *AI themes*? → blocks tasks 1, 4, 8**
+The vault holds two different objects and the task list conflates them:
+- **Template sections** — fixed, comparable, chartable. `2026-06-18` build plan §3: *"Score by dimension? | **Radar** (have) | **5 survey sections**. Keep."* `_Insights.md` (Jun 10): *"faculty **spider graph maps to survey sections**."*
+- **AI themes** — dynamic, per-slice, 3–6 per course/faculty, cited, uneditable (`ai-layer.md` F1).
+
+**Recommendation: build both, they are different jobs.** Radar/bullet **by section** = the comparable
+quantitative axis. AI themes = a cited insight block placed **above** the detail (D14/C3: *"AI
+summaries surface BEFORE question-level detail at every aggregation level"*). Rename the task to
+kill the ambiguity. The reference app's 3 fixed themes are the banned middle ground — don't port them.
+
+**D2 — Is the Portfolio the *admin lens* or the *faculty self-view*? → blocks task 6, gates all RBAC**
+`course-evaluation.md` §7.3 bans, for the faculty view: *"❌ Any peer-comparison metric (**'you're at
+the 60th percentile' included** — that reverse-encodes peer rank)"*. D-4: *"Faculty cannot see peer
+comparisons — only their own performance vs. averages."* But `prototype-cards-catalog.md` (Chair
+persona): *"**same component as faculty self-view but different access scope**."*
+**The ban's scope boundary is never drawn — that is the open question, and only Aarti can draw it.**
+
+**Recommendation:** one component, two access scopes; the **peer/percentile layer is the toggle**,
+default OFF. Ship the admin lens first. Do **not** ship percentile until the boundary is written down.
+Note ≥5 anonymity suppression is already settled and the app has **no suppressed state** to speak of.
+
+**D3 — Weighted or simple mean? → blocks tasks 2 and 7 (all ranking)**
+`2026-06-22-evaluations-dashboard-consolidation.md` §4, flagged **for Aarti**, still unanswered:
+> *"So a course with 100 students is weighted more than one with 10 students? **Not sure if we want
+> this — further discussions needed.**"* — Recommendation in-note: *"decide with Aarti **before the
+> rankings work**."*
+
+Arvind (2026-05-13) is the evidence: *"**Misleading averages** when teaching diverse course types
+(5-student PhD vs 85-student MBA)"* and *"**small differences (3.2 vs 3.25) determine top 20% vs 40%**
+faculty rankings."* **⇒ A ranked list is a career artefact built on an undefined number. Hard blocker
+— get the answer before designing the leaderboard.**
+
+**D4 — What is "low"? → blocks task 2's alerts**
+No note defines a score threshold, names an owner, or makes it configurable. Settings covers
+**response** threshold + Likert only (`THRESHOLD_OPTIONS = [3,4,5,7,10]`, default 5). §7.3's
+*"threshold (e.g., 'below 4.0')"* is illustrative, not a decision.
+**Recommendation:** program-configurable **score** threshold in Settings beside the response one.
+Styling is already settled and non-negotiable: **amber/orange, NEVER red** (VIZ-004, Aarti).
+
+**D5 — Leaderboard: top-level, or one click down? → blocks task 2**
+A live, unreconciled contradiction:
+| Note | Says |
+|---|---|
+| `2026-05-08-aarti-curriculum-mapping.md` **D5, P0** | *"**Demote faculty leaderboard from top** — make faculty one-click drill-down."* Aarti verbatim: *"Faculty is one click down."* |
+| `Decisions/pce/2026-07-13-…` **accepted** | *"**By-Faculty (a score leaderboard drilling into per-faculty longitudinal views) is the most important.**"* |
+Neither cites or supersedes the other.
+**Recommendation — these reconcile.** Put the leaderboard **on the By Faculty tab** (one click down
+from Analytics), not on Overview. That satisfies D5's IA, honours Jul 13's priority, *and* fixes §7's
+"placement mismatch" (the app has it on Overview; the task list files it under By Faculty). Confirm
+with Aarti, but this is the cheap resolution.
+
+**D6 — Where is Cohort? → affects all 10**
+Aarti **D4**: CFE has **two co-equal top-level axes: Term + Cohort**. **D-1/D3**: the collection grain
+is a 4-tuple — *"course × term × cohort × faculty"*, verbatim *"it is always on a course offering,
+which is for a particular cohort in a particular term."* **The 10 tasks contain no cohort anywhere.**
+Either the list is incomplete or cohort was dropped — raise it before building, because it changes the
+grain of every aggregate here.
+
+**D7 — Single average, or decomposed? → task 6**
+Task 6 says *"average score"*. `2026-07-13` (**accepted**): *"**Average score is never shown as a
+single number** — it breaks into course-content, faculty-role, and other per-actor scores."* D27:
+students rate **two distinct entities** — course content + faculty teaching style. D33 (pending): the
+self-view *"must show all five"* — course rating, faculty rating, trend, lifetime, comparative.
+**⇒ Task 6 as literally written contradicts an accepted decision. Decompose it.**
+
+**D8 — Tasks 7 + 10 are one component, not two**
+"Courses ranked best→worst" and "score/response trends by course" both want **the course as the unit
+of analysis within a person** — the thing the app never does (it only slices a person by term).
+**Recommendation:** a single ranked course list where each row carries a sparkline (per-course
+trend). One component closes both tasks. Guard the n=1 case — Williams' whole portfolio is one course,
+so "ranked best to worst" over a list of one must degrade gracefully.
+
+### 8.3 What to settle before any JSX
+
+1. **D3 weighting** and **D4 threshold** — Aarti. Both gate the leaderboard; both are already logged as
+   open *for her* and never answered.
+2. **D2 portfolio scope** (admin vs self-view) — Aarti. Gates percentile and the whole RBAC surface.
+   The report-access matrix is **P0-assigned to Romit since 2026-05-28 and still unwritten**.
+3. **D5 leaderboard placement** — Aarti/Monil. Reconcile D5 vs 2026-07-13 explicitly, mark one superseded.
+4. **D1 sections vs themes** — this one is arguably already answered (D28 + radar-by-section); it just
+   needs writing down as an ADR. **D26/D27/D28/D33 are all directives with no accepted ADR.**
+5. **D6 cohort** — confirm the omission is deliberate.
+
+> Aarti, on exactly this: *"There is no document that lists all of these things. And then I will get on
+> a review call, and I will see eight versions of it, and I will lose it."* — §8 is that list.
+> **Vishaka has no PCE voice (scaffold only); Nipun has zero course-eval notes.** Aarti is the only
+> authority for D1–D7.
+
+---
+
+## 9. Verification
 
 | Claim | How checked |
 |---|---|
