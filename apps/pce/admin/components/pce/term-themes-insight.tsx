@@ -16,7 +16,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
-import { deriveTermThemes, type ThemeSentiment, type TermThemeRow } from '@/lib/pce-themes'
+import { deriveTermThemes, type ThemeComment, type ThemeSentiment, type TermThemeRow } from '@/lib/pce-themes'
 import { MOCK_RESPONSES, type PceSurvey } from '@/lib/pce-mock-data'
 
 function SentimentDot({ sentiment }: { sentiment: ThemeSentiment }) {
@@ -53,8 +53,22 @@ export function TermThemesInsight({
         (x): x is { survey: PceSurvey; resp: NonNullable<typeof x.resp> } =>
           !!x.resp && x.resp.comments.length > 0,
       )
+    /**
+     * Group by course BEFORE deriving. `deriveTermThemes` documents its input as "one
+     * {courseCode, comments} entry per course" — passing one entry per *survey* only
+     * happens to hold at term scope, where each survey is a different course. At course
+     * scope (this card scoped to DPT-501 across terms) every entry shares a code, and the
+     * chips render "DPT-501, DPT-501, DPT-501" while the citation claims "3 courses".
+     * A claim that miscounts its own evidence is worse than no claim — the whole point of
+     * naming the courses is that "2 courses mentioned pacing" is unactionable without them.
+     */
+    const byCourse = new Map<string, ThemeComment[]>()
+    for (const x of withComments) {
+      const prev = byCourse.get(x.survey.courseCode) ?? []
+      byCourse.set(x.survey.courseCode, [...prev, ...x.resp.comments])
+    }
     const themes = deriveTermThemes(
-      withComments.map((x) => ({ code: x.survey.courseCode, comments: x.resp.comments })),
+      [...byCourse.entries()].map(([code, comments]) => ({ code, comments })),
     )
     // One grounding quote for the top theme — shortest matching concern first.
     const top: TermThemeRow | undefined = themes[0]
@@ -77,7 +91,8 @@ export function TermThemesInsight({
       quote,
       surveyIdByCode,
       commentCount: withComments.reduce((n, x) => n + x.resp.comments.length, 0),
-      courseCount: withComments.length,
+      // Distinct courses, not surveys — three terms of one course is one course.
+      courseCount: byCourse.size,
     }
   }, [surveys])
 

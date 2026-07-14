@@ -699,6 +699,12 @@ export function ByCoursePanel({
       .sort((a, b) => b.term.localeCompare(a.term))
   }, [courseCode])
 
+  /** This course's CE surveys — the AI theme card's scope (story 12). */
+  const courseSurveys = useMemo(
+    () => MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic' && s.courseCode === courseCode),
+    [courseCode],
+  )
+
   const courseKpis: MetricItem[] = useMemo(() => {
     if (!courseOfferings.length) return []
     const avgRating     = +weightedAvg(courseOfferings).toFixed(1)
@@ -743,6 +749,19 @@ export function ByCoursePanel({
   return (
     <>
       <KeyMetrics variant="compact" metricsSingleRow metrics={courseKpis} />
+
+      {/* Story 12's theme half. Themes are the AI lane, NOT a chart — `ai-vs-pulled-lane.md`
+          puts "themes, insights, action plans, summaries (LLM-extracted from open-text)" on
+          the AI side and "trends, averages, distributions" on the pulled side, and charting
+          an AI theme as if it were pulled data is a double violation (ADR-005 + D28's ban on
+          preset taxonomies). The legacy prototype's three fixed themes as a bar chart is
+          exactly that; this reuses the existing AiInsightCard composition instead, scoped to
+          the course rather than the term.
+          ⚠️ Monil treats themes as conditional — "if we are capturing the theme" — so this
+          renders only where comments exist and cites its own source count. */}
+      {courseSurveys.length > 0 && (
+        <TermThemesInsight surveys={courseSurveys} scopeLabel={courseCode} />
+      )}
 
       {extraCharts}
 
