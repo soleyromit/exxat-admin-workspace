@@ -1679,24 +1679,24 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
 
   // ── Fall 2026 (pt5) — full term ──────────────────────────────────────────
   // Year 1 — Foundations
-  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
-  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
-  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
-  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Year 1 – Section A', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Year 1 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
+  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1 – Section D', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
   // Year 2 — Clinical Sciences
-  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
-  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
-  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
-  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
+  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2 – Section D', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
   // Year 3 — Clinical Practicums
-  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
-  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
-  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Year 3 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
+  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Year 3 – Section B', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
+  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Year 3 – Section C', primaryFacultyId: 'f3', collaboratorIds: ['f4'],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
 
   // ── Lab-based (LB) + Practice-based (PB) — audit readiness fixtures (deliveryMode + one gap each) ──
-  { id: 'co20', masterCourseId: 'mc7',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
-  { id: 'co21', masterCourseId: 'mc4',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
-  { id: 'co22', masterCourseId: 'mc16', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: '',   collaboratorIds: ['f6'], placementFacultyIds: ['f6'], enrolledCount: 12, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no clinical coordinator
+  { id: 'co20', masterCourseId: 'mc7',  termId: 'pt5', cohort: 'Year 2 – Section E', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
+  { id: 'co21', masterCourseId: 'mc4',  termId: 'pt5', cohort: 'Year 1 – Section E', primaryFacultyId: 'f4', collaboratorIds: ['f2','f5'],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
+  { id: 'co22', masterCourseId: 'mc16', termId: 'pt5', cohort: 'Year 3 – Section D', primaryFacultyId: '',   collaboratorIds: ['f6'], placementFacultyIds: ['f6'], enrolledCount: 12, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no clinical coordinator
   { id: 'co23', masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     placementFacultyIds: [],     enrolledCount: 18, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no placement faculty
 ]
 

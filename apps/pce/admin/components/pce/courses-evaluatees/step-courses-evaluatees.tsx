@@ -18,24 +18,15 @@ import {
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
-  CRITERION_TOGGLE_LABEL, FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref,
+  ALL_CRITERIA, CRITERION_TOGGLE_LABEL, CRITERION_GROUP, CRITERION_GROUP_ORDER,
+  FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
 
-const CRITERIA_ORDER: Criterion[] = ['students', 'instructor', 'coordinator']
+const CRITERIA_ORDER: Criterion[] = ALL_CRITERIA
 
-/** Above this count the cohort picker gains a search field. */
+/** Above this count a picker gains a search field. */
 const COHORT_SEARCH_THRESHOLD = 8
-
-/** The three fixed top-level categories a role can sit under (settled: no custom
- *  groups, no free-text roles — roles come from the Prism universe). */
-const CRITERION_GROUP_ORDER = ['Course', 'Faculty', 'General'] as const
-
-const CRITERION_GROUP: Record<Criterion, (typeof CRITERION_GROUP_ORDER)[number]> = {
-  students: 'Course',
-  instructor: 'Faculty',
-  coordinator: 'Faculty',
-}
 
 const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
