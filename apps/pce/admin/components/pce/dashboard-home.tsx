@@ -136,13 +136,14 @@ function TermMetaLine({
 
 /** Countdown — plain text + clock, NOT a badge (it's a fact, not a status).
  *
- * Renders INSIDE the sub-card, on the CTA's row — never in the meta line
- * (Romit, 2026-07-14). The countdown qualifies the action it sits with
- * ("send reminders — 8 days left"); hoisted into the header it becomes a
- * free-floating number the reader must re-associate with the CTA below.
+ * Sits TOP-RIGHT inside the sub-card, opposite the heading (Romit,
+ * 2026-07-14). Top-right is a fixed anchor: "8 days left" and "Starts in
+ * 41 days" land in the same place regardless of length, and the CTA keeps
+ * its own row instead of being pushed down by a stacked countdown.
  *
- * `mode` carries the two readings — a window closing vs. a term approaching —
- * so the current and upcoming cards keep one anatomy. */
+ * `mode` carries the two readings — a window closing vs. a term approaching.
+ * Both are sentence case: "8 days left" opens on a digit, so only "Starts"
+ * shows the capital, and a lowercase twin would read as a broken fragment. */
 function CountdownIndicator({
   days, urgent, mode,
 }: {
@@ -158,7 +159,7 @@ function CountdownIndicator({
       <i className="fa-light fa-clock" aria-hidden="true" />
       {mode === 'left'
         ? `${days} ${days === 1 ? 'day' : 'days'} left`
-        : `starts in ${days} ${days === 1 ? 'day' : 'days'}`}
+        : `Starts in ${days} ${days === 1 ? 'day' : 'days'}`}
     </span>
   )
 }
@@ -232,20 +233,20 @@ function CurrentTermCard({
               <i className="fa-light fa-layer-group text-muted-foreground" style={{ fontSize: 16 }} />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-foreground">No courses set up yet</p>
-                <p className="text-xs text-muted-foreground">
-                  Add this term’s courses and rosters to start collecting responses.
-                </p>
-              </div>
-              <div className="flex flex-col items-start gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
-                </Button>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-sm font-medium text-foreground">No courses set up yet</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add this term’s courses and rosters to start collecting responses.
+                  </p>
+                </div>
                 {snap.daysLeft != null && (
                   <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
                 )}
               </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
+              </Button>
             </div>
           </div>
         ) : (
@@ -288,27 +289,23 @@ function CurrentTermCard({
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
-                  {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
-                </p>
-              </div>
-              {/* Action + countdown share the bottom row — the deadline is what
-                  makes the reminder urgent, so it reads with the button. Stacked
-                  (not inline) so the countdown wraps below on the narrow card
-                  rather than squeezing the heading. */}
-              <div className="flex flex-col items-start gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
-                </Button>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-sm font-medium text-foreground">
+                    {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
+                    {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
+                  </p>
+                </div>
                 {snap.daysLeft != null && (
                   <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
                 )}
               </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
+              </Button>
             </div>
           </div>
         )}
@@ -476,24 +473,22 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Missing faculty or student rosters
-                </p>
-              </div>
-              {/* Action + countdown share the bottom row — same anatomy as the
-                  current card's reminder block, so the two read alike. */}
-              <div className="flex flex-col items-start gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
-                </Button>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-sm font-medium text-foreground">
+                    {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Missing faculty or student rosters
+                  </p>
+                </div>
                 {startsIn != null && (
                   <CountdownIndicator days={startsIn} urgent={startsIn <= 7} mode="starts" />
                 )}
               </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+              </Button>
             </div>
           </div>
         ) : null}
