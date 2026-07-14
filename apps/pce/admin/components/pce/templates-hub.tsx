@@ -70,7 +70,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
     key: 'courseType',
     label: 'Course category',
     sortable: true,
-    width: 140,
+    width: 120,
     filter: {
       type: 'select',
       icon: 'fa-chalkboard-teacher',
@@ -103,7 +103,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
     key: 'program',
     label: 'Program',
     sortable: true,
-    width: 180,
+    width: 160,
     filter: {
       type: 'select',
       icon: 'fa-graduation-cap',
@@ -123,7 +123,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       key: 'name',
       label: 'Name',
       sortable: true,
-      width: 280,
+      width: 220,
       cell: (row) => (
         <Link
           href={isGeneral ? `/templates/programmatic/${row.template.id}` : `/templates/${row.template.id}`}
@@ -139,7 +139,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       key: 'questionCount',
       label: 'Questions',
       sortable: true,
-      width: 120,
+      width: 110,
       cell: (row) => (
         <span className="text-sm text-muted-foreground">
           {row.template.questionCount > 0
@@ -152,7 +152,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       key: 'usedBySurveyCount',
       label: 'Used by',
       sortable: true,
-      width: 140,
+      width: 120,
       cell: (row) => (
         row.template.usedBySurveyCount > 0 ? (
           <Button variant="link" size="sm" className="h-auto p-0 text-sm font-normal text-muted-foreground hover:text-foreground">
@@ -197,7 +197,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       key: 'lastModified',
       label: 'Last modified',
       sortable: true,
-      width: 160,
+      width: 130,
       cell: (row) => (
         <span className="text-sm font-medium text-muted-foreground">{row.template.lastModified}</span>
       ),
@@ -222,8 +222,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       {!embedded && <SiteHeader title={title} />}
       {embedded ? (
         /* Inside the Settings tab: slim toolbar instead of page chrome */
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{subtitle}</p>
+        <div className="flex items-center justify-end gap-3">
           <Button size="sm" onClick={() => router.push(newTemplateHref)}>
             <i className="fa-light fa-plus" aria-hidden="true" />
             {newTemplateLabel}
@@ -252,6 +251,7 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
             data={rows}
             columns={columns}
             getRowId={(row) => row.id}
+            edgeInset={!embedded}
             selectable
             searchable
             onRowClick={(row) => {

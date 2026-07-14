@@ -12,6 +12,24 @@
 @import "@exxatdesignux/ui/globals.css";
 
 
+/* App shell — scroll lives in `[data-page-scroll]` / hub insets, not the document. */
+@layer base {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
 /* This app's own files (templates auto-scan these regardless of CSS file location). */
 @source "../../components";
 @source "../../contexts";
@@ -154,27 +172,63 @@
    * padding on [data-app-shell-main] instead.
    */
   [data-app-shell-row] [data-slot="sidebar-inset"] {
-    margin-inline: 0;
+    margin-inline: 0 !important;
     width: 100%;
     max-width: 100%;
   }
 
+  [data-app-shell-workspace-body] > [data-slot="secondary-panel"]:not([data-overlay]),
+  [data-app-shell-workspace-body] [data-slot="sidebar-inset"] {
+    margin-block-end: 0 !important;
+    margin-block-start: 0 !important;
+  }
+
   [data-app-shell-main] {
-    padding-inline: 0.5rem;
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    padding-inline-end: 0.5rem;
+  }
+
+  /*
+   * Scope rail closed (record detail, dashboards, etc.) — main column needs a
+   * start gutter so the inset card is not flush to the workspace edge.
+   */
+  [data-app-shell-workspace-body]:not(:has(
+      [data-slot="secondary-panel"][data-state="open"]:not([data-overlay])
+    ))
+    [data-app-shell-main] {
+    padding-inline-start: 0.5rem;
+  }
+
+  /* Primary nav unmounted (focus shell) or flyout-only — no sidebar-gap spacer. */
+  [data-app-shell-row]:not(:has([data-slot="sidebar"]:not([data-nav-flyout="true"])))
+    [data-app-shell-main],
+  [data-app-shell-row]:has([data-slot="sidebar"][data-nav-flyout="true"]) [data-app-shell-main] {
+    padding-inline-start: 0.5rem;
   }
 
   @media (min-width: 768px) {
     [data-app-shell-main] {
-      padding-inline-start: 0;
+      padding-inline-end: 0.5rem;
     }
+  }
 
-    [data-slot="sidebar-wrapper"][data-state="collapsed"] [data-app-shell-main] {
-      padding-inline-start: 0.5rem;
-    }
+  [data-app-shell-workspace-body]:has(
+    [data-slot="secondary-panel"][data-state="open"]:not([data-overlay])
+  ) [data-app-shell-main] {
+    padding-inline-start: 0;
+  }
 
-    [data-app-shell-row][data-ask-leo-open="true"] [data-app-shell-main] {
-      padding-inline-end: 0;
-    }
+  [data-app-shell-row][data-ask-leo-open="true"] [data-app-shell-main] {
+    padding-inline-end: 0;
+  }
+
+  [data-shell-utility-bar-full] [data-app-shell-workspace] {
+    padding-top: 0;
+  }
+
+  [data-shell-utility-bar-full] [data-app-shell-row] [data-slot="sidebar"]:not([data-nav-flyout="true"]) [data-slot="sidebar-container"] {
+    top: 3rem;
   }
 
 }

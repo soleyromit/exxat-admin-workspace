@@ -17,6 +17,34 @@
       {
         "command": ".cursor/hooks/exxat-image-ia-gate.mjs"
       }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "_comment": "Exxat-DS-specific content check (raw Badge vs StatusBadge/PillCell, duplicate favorite-star components, tabs-in-tabs nesting, double table padding) — the automated floor for rules that were previously prose-only. See exxat-ds-check.mjs header for why this exists.",
+        "command": ".cursor/hooks/exxat-ds-check.mjs",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 15
+      }
     ]
   }
 }

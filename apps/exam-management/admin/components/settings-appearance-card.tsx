@@ -23,6 +23,7 @@ import {
 import { SelectionTileGrid } from "@/components/ui/selection-tile-grid"
 import { useAppTheme, type Brand, type TextSizePreference } from "@/hooks/use-app-theme"
 import { useDashboardView, type DashboardView } from "@/contexts/dashboard-view-context"
+import { useShellLayout, type ShellLayoutVariant } from "@/contexts/shell-layout-context"
 import { useChartVariant, type ChartVariant } from "@/contexts/chart-variant-context"
 import { SettingsFormRow } from "@/components/settings-form-row"
 import { BrandColorPicker } from "@/components/brand-color-picker"
@@ -519,6 +520,7 @@ export function SettingsAppearanceCard({
     [setStartupProduct, switchProduct],
   )
   const { activeView, setActiveView } = useDashboardView()
+  const { variant: shellLayoutVariant, setVariant: setShellLayoutVariant } = useShellLayout()
   const { chartVariant, setChartVariant } = useChartVariant()
   const productNameId = React.useId()
   const productColorId = React.useId()
@@ -1091,6 +1093,39 @@ export function SettingsAppearanceCard({
                 <RadioRow value="report" id="dash-report" label={VIEW_LABELS.report} iconClass="fa-chart-mixed" />
                 <RadioRow value="simple" id="dash-simple" label={VIEW_LABELS.simple} iconClass="fa-grid-2" />
                 <RadioRow value="mix" id="dash-mix" label={VIEW_LABELS.mix} iconClass="fa-layer-group" />
+              </RadioGroup>
+            </SettingsFormRow>
+
+            <SettingsFormRow
+              label="Shell layout"
+              description="Classic sidebar keeps everything in the rail. Utility-bar modes move search, Ask Leo, and notifications to the bar — product switcher stays in the sidebar (recommended) or moves to the bar."
+            >
+              <RadioGroup
+                value={shellLayoutVariant}
+                onValueChange={(v) => setShellLayoutVariant(v as ShellLayoutVariant)}
+                className="flex flex-col gap-3"
+                aria-label="Shell layout"
+                itemVariant="outline"
+                itemMotion="glow"
+              >
+                <RadioRow
+                  value="sidebar-classic"
+                  id="shell-layout-sidebar-classic"
+                  label="Sidebar (classic)"
+                  iconClass="fa-sidebar"
+                />
+                <RadioRow
+                  value="utility-sidebar"
+                  id="shell-layout-utility-sidebar"
+                  label="Utility bar — product in sidebar"
+                  iconClass="fa-table-columns"
+                />
+                <RadioRow
+                  value="utility-bar"
+                  id="shell-layout-utility-bar"
+                  label="Utility bar — product on bar"
+                  iconClass="fa-window-maximize"
+                />
               </RadioGroup>
             </SettingsFormRow>
 

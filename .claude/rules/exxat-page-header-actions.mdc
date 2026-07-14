@@ -22,6 +22,21 @@ appliesTo: [react]
 
 - Compose **`PageHeader`** + pass **`actions`** as DS **`Button`** / **`DropdownMenu`** primitives.
 - Keep **one** filled primary; put Export and long-tail items under **⋯**.
+- **List hubs** (`ListPageTemplate` + table/board views): wire **`ExportDrawer`** (or domain header with **`onExport`**) and mount the drawer on the page client — see `library-client.tsx`.
+- **Record detail routes** (`PrimaryPageTemplate` + entity header): **`PageHeader`** with **⋯** overflow at minimum **Export** when the surface has exportable rows; add domain actions (Configure, Invite, etc.) as extra menu items — see `learning-activities-course-detail-client.tsx`.
+- Reuse **`LibraryPageHeader`** / domain `*-page-header.tsx` when the hub matches library collaboration patterns — do not hand-roll a second overflow menu.
+
+## List hub checklist (binding)
+
+| Piece | DS primitive |
+|-------|----------------|
+| Shell | `PrimaryPageTemplate` or `SecondaryPanelHubTemplate` |
+| Hub body | `ListPageTemplate` |
+| Route identity | `PageHeader` or domain `*PageHeader` with **`actions`** |
+| Primary CTA | One `Button variant="default" size="lg"` when the hub has a create action |
+| Overflow | `Button variant="outline" size="icon-lg"` → `DropdownMenu` |
+| Export | Menu item → `setExportOpen(true)` + **`<ExportDrawer>`** sibling on the client |
+| Table | `HubTable` inside `renderContent` — not a bespoke grid |
 
 ## MUST NOT
 
@@ -30,4 +45,6 @@ appliesTo: [react]
 
 ## Reference
 
-- `components/library-page-header.tsx`, Placements/Team header patterns in **`docs/exxat-ds/reference-implementations.md`**
+- `components/library-page-header.tsx`, `components/library-client.tsx` — hub + export drawer
+- `components/learning-activities-course-detail-client.tsx` — detail ⋯ + export
+- Placements/Team patterns in **`docs/exxat-ds/reference-implementations.md`**

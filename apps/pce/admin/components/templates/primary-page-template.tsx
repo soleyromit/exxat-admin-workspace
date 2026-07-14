@@ -56,9 +56,17 @@ export function PrimaryPageTemplate({
     <SidebarInset
       id="main-content"
       tabIndex={-1}
+      // `SidebarInset`'s own `my-1.5`/`md:peer-data-[variant=inset]:my-2` aren't
+      // `!important`, but `tailwind-merge` doesn't reliably dedupe them against
+      // the `!my-0`/`!mx-0` override below (mixed important-modifier syntax), so
+      // both rules can end up in the generated CSS. An inline style is the one
+      // override every utility-class combination can't win against, guaranteeing
+      // `PrimaryPageTemplate` content top-aligns flush with `SecondaryPanel`
+      // (which has no vertical margin) instead of floating a few px down.
+      style={{ marginBlock: 0, marginInline: 0 }}
       className={cn(
         pageCanvas && "relative",
-        "flex min-h-0 flex-1 flex-col overflow-hidden !my-0 h-full",
+        "flex min-h-0 flex-1 flex-col overflow-hidden !my-0 !mx-0 md:peer-data-[variant=inset]:!my-0 h-full",
         containScroll &&
           "max-h-[calc(100svh-0.75rem)] px-2 pb-4 [--composer-card-shadow-inset:0.75rem]",
         sidebarInsetClassName,

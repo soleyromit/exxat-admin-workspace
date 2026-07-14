@@ -1,0 +1,20 @@
+import { chromium } from 'playwright'
+const OUT = '/Users/romitsoley/.claude/jobs/ddf507d6/tmp'
+const b = await chromium.launch()
+const p = await (await b.newContext({ viewport: { width: 1400, height: 1000 } })).newPage()
+const errs = []
+p.on('pageerror', e => errs.push('PAGEERR: ' + e.message))
+// Templates tab (DataTable width)
+await p.goto('http://localhost:3005/admin/eval-settings?section=templates', { waitUntil: 'domcontentloaded', timeout: 60000 })
+await p.waitForTimeout(4000)
+await p.screenshot({ path: `${OUT}/set-01-templates.png`, fullPage: true })
+// Evaluation Rules tab (dividers + benchmark fields)
+await p.goto('http://localhost:3005/admin/eval-settings?section=evaluation-rules', { waitUntil: 'domcontentloaded', timeout: 60000 })
+await p.waitForTimeout(3500)
+await p.screenshot({ path: `${OUT}/set-02-rules.png`, fullPage: true })
+// Schedule & release tab (more rows/dividers)
+await p.goto('http://localhost:3005/admin/eval-settings?section=evaluation-dates', { waitUntil: 'domcontentloaded', timeout: 60000 })
+await p.waitForTimeout(3500)
+await p.screenshot({ path: `${OUT}/set-03-dates.png`, fullPage: true })
+console.log('pageerrors:', errs.length ? errs : 'none')
+await b.close()

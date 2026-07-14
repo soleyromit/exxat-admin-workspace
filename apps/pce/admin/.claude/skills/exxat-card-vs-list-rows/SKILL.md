@@ -1,3 +1,8 @@
+---
+name: exxat-card-vs-list-rows
+description: Choose card grids, DataTable, or simple list rows for a hub surface. Load when deciding record density and comparison UX.
+---
+
 # Exxat DS — cards vs rows vs lists
 
 Use when choosing **card grids**, **`DataTable`**, or **simple list rows** for a surface.

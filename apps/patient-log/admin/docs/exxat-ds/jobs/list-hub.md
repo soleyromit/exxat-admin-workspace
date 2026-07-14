@@ -50,7 +50,8 @@ Help a coordinator **find, compare, filter, and act on many records** in one ses
 - [ ] All seven views render real bodies (no placeholders)
 - [ ] Empty / loading / error states
 - [ ] [`accessibility-ship-checklist.md`](../accessibility-ship-checklist.md)
-- [ ] Export CTA + overflow menu if exportable hub
+- [ ] **`PageHeader`** (or domain `*PageHeader`) with **⋯ More** → **Export** + **`ExportDrawer`** on the page client when rows are exportable
+- [ ] One filled primary CTA when the hub has a create action; secondary/export under overflow
 
 ---
 
@@ -61,6 +62,8 @@ Help a coordinator **find, compare, filter, and act on many records** in one ses
 | Rule | `.cursor/rules/exxat-data-tables.mdc` |
 | Rule | `.cursor/rules/exxat-table-column-cells.mdc` |
 | Rule | `.cursor/rules/exxat-hub-supported-views.mdc` |
+| Rule | `.cursor/rules/exxat-page-header-actions.mdc` |
 | Skill | `.cursor/skills/exxat-table-column-cells/SKILL.md` |
 | Skill | `.cursor/skills/exxat-centralized-list-dataset/SKILL.md` |
+| Skill | `.cursor/skills/exxat-overlays/SKILL.md` (export drawer) |
 | Router | `.cursor/skills/exxat-token-economy/SKILL.md` §1 |

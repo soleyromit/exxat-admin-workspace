@@ -36,9 +36,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FAVORITE_HOVER_GROUP, FavoriteToggleButton } from "@/components/ui/favorite-toggle-button"
 import { Tip } from "@/components/ui/tip"
 import { ToggleSwitch } from "@/components/ui/toggle-switch"
 import { cn } from "@/lib/utils"
+
+export { FAVORITE_HOVER_GROUP }
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Shared helpers
@@ -136,7 +139,6 @@ export function ProgressCell({
   tone = "auto",
   label,
   className,
-  fillColor,
 }: {
   value: number | null | undefined
   max?: number
@@ -144,8 +146,6 @@ export function ProgressCell({
   /** Right-side label. Defaults to `${pct}%`. Pass `false` to hide. */
   label?: React.ReactNode | false
   className?: string
-  /** PCE extension: explicit fill (product status tokens) — overrides `tone`. */
-  fillColor?: string
 }) {
   if (value == null || Number.isNaN(value)) return <EmptyCell label="No progress" />
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)))
@@ -173,8 +173,8 @@ export function ProgressCell({
         className="h-1.5 overflow-hidden rounded-full bg-muted"
       >
         <div
-          className={cn("h-full rounded-full transition-[width]", !fillColor && toneClass)}
-          style={{ width: `${pct}%`, ...(fillColor ? { backgroundColor: fillColor } : {}) }}
+          className={cn("h-full rounded-full transition-[width]", toneClass)}
+          style={{ width: `${pct}%` }}
         />
       </div>
       {labelNode}
@@ -293,6 +293,83 @@ export function PeopleAvatarRailCell({
         </Tip>
       )}
     </AvatarGroup>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── *
+ * New / unread row affordance
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Subtle dot for unread/new table rows — pair with `row.isNew` + `bg-dt-new-row-bg`. */
+export function TableNewRowDot({
+  tone = "info",
+  className,
+}: {
+  tone?: "info" | "danger"
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        "size-1.5 shrink-0 rounded-full",
+        tone === "danger" ? "bg-destructive" : "bg-blue-500 dark:bg-blue-400",
+        className,
+      )}
+      aria-hidden="true"
+    />
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── *
+ * Name + favorite
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Name/title column with an inline favorite star — the "identity + favorite"
+ * pattern used by every hub with a favoritable primary column (question
+ * bank, course forms, course reports, …). One shared composition so hubs
+ * don't each re-derive the hover-reveal star, gap, and text treatment
+ * (`exxat-reuse-before-custom.mdc`). Star is trailing (after the text) —
+ * keep new call sites consistent rather than flipping the icon to lead.
+ */
+export function FavoriteNameCell({
+  label,
+  isFavorite,
+  onToggleFavorite,
+  subtitle,
+  interactive = false,
+  badge,
+}: {
+  label: string
+  isFavorite: boolean
+  onToggleFavorite: () => void
+  /** Secondary line under the label (mono ID, meta, etc.). */
+  subtitle?: React.ReactNode
+  /** Render `label` as a link-styled button (row opens its own detail view) instead of plain text. */
+  interactive?: boolean
+  /** Trailing badge/chip after the label (e.g. "New"). */
+  badge?: React.ReactNode
+}) {
+  return (
+    <div className={cn(FAVORITE_HOVER_GROUP, "flex min-w-0 items-start gap-2")}>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pe-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {interactive ? (
+            <button
+              type="button"
+              className="min-w-0 truncate text-left text-sm font-medium text-interactive hover:text-interactive-hover-foreground"
+            >
+              {label}
+            </button>
+          ) : (
+            <span className="line-clamp-2 text-sm font-medium text-foreground">{label}</span>
+          )}
+          {badge}
+        </div>
+        {subtitle}
+      </div>
+      <FavoriteToggleButton isFavorite={isFavorite} onToggle={onToggleFavorite} label={label} />
+    </div>
   )
 }
 

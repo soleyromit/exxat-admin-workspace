@@ -125,7 +125,7 @@ import {
   CHART_KBD_ACTIVE_PIE_SHAPE,
 } from "@/lib/chart-keyboard-selection"
 import { cn } from "@/lib/utils"
-import { metricTrendTone, type MetricTrendPolarity } from "@exxatdesignux/ui"
+import { metricTrendTone, type MetricTrendPolarity } from "@/components/key-metrics"
 
 /** Recharts passes `index` into Line `dot` renderers; keep the callback typed against the v3 dot contract. */
 type LineDotRenderProps = DotItemDotProps & { index?: number }

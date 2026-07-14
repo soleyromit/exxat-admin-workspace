@@ -1,3 +1,8 @@
+---
+name: exxat-drawer-vs-dialog
+description: Choose Dialog vs Sheet vs route for overlays. Prefer exxat-overlays skill for new work; load for drawer/dialog decisions.
+---
+
 # Exxat DS — drawer vs dialog
 
 > **Consolidated skill:** prefer [`.cursor/skills/exxat-overlays/SKILL.md`](../exxat-overlays/SKILL.md) for new work.

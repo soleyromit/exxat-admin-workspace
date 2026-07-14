@@ -38,6 +38,8 @@ const CARD_KPI_METRICS: MetricItem[] = [
     delta: "+5",
     trend: "up",
     trendPolarity: "higher_is_better",
+    progress: 84,
+    description: "84% of spring cohort capacity filled",
   },
   {
     id: "review",
@@ -46,6 +48,9 @@ const CARD_KPI_METRICS: MetricItem[] = [
     delta: "−2",
     trend: "down",
     trendPolarity: "lower_is_better",
+    progress: 24,
+    progressTone: "warning",
+    description: "6 sites awaiting coordinator sign-off",
   },
 ]
 
@@ -198,9 +203,14 @@ export function CardHeaderBorderPreview() {
   )
 }
 
-export function CardScrollableContentPreview() {
-  const items = ["Review placement paperwork", "Confirm preceptor availability", "Upload compliance packet", "Send welcome email"]
+const CARD_SCROLLABLE_PREVIEW_ITEMS = [
+  "Review placement paperwork",
+  "Confirm preceptor availability",
+  "Upload compliance packet",
+  "Send welcome email",
+] as const
 
+export function CardScrollableContentPreview() {
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader>
@@ -209,7 +219,7 @@ export function CardScrollableContentPreview() {
       </CardHeader>
       <CardContent className="max-h-28 overflow-auto">
         <ul className="flex flex-col gap-2">
-          {items.map((item) => (
+          {CARD_SCROLLABLE_PREVIEW_ITEMS.map((item) => (
             <li key={item} className="text-sm text-muted-foreground">
               {item}
             </li>
@@ -329,6 +339,20 @@ export function CardKpiInCardPreview() {
       insight={CARD_KPI_INSIGHT}
       metricsSingleRow
       className="max-w-2xl"
+    />
+  )
+}
+
+/** Each KPI in its own Card — overview grids and browse surfaces. */
+export function KeyMetricsCardsPreview() {
+  return (
+    <KeyMetrics
+      variant="cards"
+      title="Placement health"
+      description="Spring 2026 cohort"
+      metrics={CARD_KPI_METRICS}
+      insight={CARD_KPI_INSIGHT}
+      className="max-w-3xl"
     />
   )
 }

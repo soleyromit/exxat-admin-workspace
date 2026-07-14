@@ -14,7 +14,7 @@ user-invocable: true
 | Topic | Path |
 |-------|------|
 | Panel vs drill-in | `.cursor/rules/exxat-secondary-panel-vs-drill-in.mdc` |
-| Secondary panel | § SecondaryPanel wiring below · `.cursor/rules/exxat-primary-nav-secondary-panel.mdc` |
+| Secondary panel | `.cursor/skills/exxat-primary-nav-secondary-panel/SKILL.md` |
 | Library IA | `apps/web/docs/library-nav-ia-pattern.md` |
 | Shell elevation | `apps/web/docs/shell-surface-elevation-pattern.md` |
 
@@ -49,44 +49,6 @@ user-invocable: true
 - [ ] Hub calls `useAutoPanel("<id>")`
 - [ ] `--secondary-panel-bg` elevation (not forked sidebar colors)
 - [ ] Mobile flyout: `dismissNavFlyout()` on leaf navigation
-
-### SecondaryPanel wiring (detailed — one primary row opens a nested panel)
-
-1. **`lib/mock/navigation.tsx`** — set **`secondaryPanel: "<id>"`** on the primary **`NavLinkItem`**; **`url`** = hub route. For Library: parent **Question bank**, child **Library** → `/library/all`, **`primaryHubChildKey: "library-all"`**.
-2. **`components/sidebar/secondary-panel.tsx`** — add **`PANELS["<id>"]`** → panel shell (title, optional search) + secondary nav component.
-3. **Hub layout** — **`useAutoPanel("<id>")`** or a layout effect on list-hub paths (e.g. `src/views/library/_layout.tsx` → `openPanel("library")` on `/library/all`).
-4. **Data** — keep **one** **`useTableState`** / **`tableState.rows`**; drive scope from **URL** + helpers (see `lib/library-nav.ts`).
-5. **Folder-scoped hub header (Library)** — when `scope === "folder"` in the URL, `LibraryPageHeader` **⋯ More** includes **Customize folder** — `.cursor/rules/exxat-library-hub-header.mdc`.
-6. **Collapse control (desktop rail)** — header `collapseActiveSecondaryPanel()` (angles-left); panel stays mounted until `closePanel` on route leave.
-7. **Surface elevation** — `--secondary-panel-bg` on `NestedSecondaryPanelShell` — `docs/exxat-ds/shell-surface-elevation-pattern.md`.
-
-#### Flyout stack (mobile / ≥200% zoom)
-
-| User action | Call | Result |
-|-------------|------|--------|
-| Close scope sheet (X, Esc, ⌘B) | `closeSecondaryFlyout()` | Sheet hidden; `activePanel` unchanged |
-| Main menu (←) | `hideSecondaryFlyout()` | Primary flyout; expand parent collapsible; show active child |
-| ⌘B on list hub with sheet closed | `useRegisterNavFlyoutToggle` handler | Reopen **scope** sheet, not primary only |
-| Leave hub route | `closePanel()` | Clear panel + restore sidebar |
-
-**MUST NOT** clear `activePanel` when the user only dismisses the scope **sheet**.
-
-#### High-zoom behaviour
-
-- `useSidebarReflowZoom()` — shared with the primary sidebar (WCAG 1.4.10); never invent a parallel zoom hook.
-- **Compact icon rail** (`secondaryPanelCompact`) applies to the **pinned desktop rail only**. When `navFlyout` (mobile or reflow zoom), panel content **MUST** render **labels** (ignore compact). Provider clears compact when entering `navFlyout`. Custom panel content reads `secondaryPanelCompact` + `navFlyout` — `LibraryPanel` / `LibrarySecondaryNav` are the reference.
-
-#### Library active-state helpers (`lib/library-nav.ts`)
-
-- `isLibraryPrimaryListNavActive(pathname)` — primary child **Library** on `/library/all` (any scope).
-- `isLibraryAllQuestionsScopeActive(...)` — secondary row **All questions** when `scope=all`.
-- `LIBRARY_PRIMARY_LIST_NAV_KEY` = `"library-all"`.
-
-#### SecondaryPanel MUST NOT
-
-- Set `secondaryPanel` without `PANELS[id]` + hub `openPanel` — broken empty rail.
-- Put **All questions** in primary `children` — secondary scope nav only.
-- Use `bg-sidebar` on the nested panel — use `--secondary-panel-bg`.
 
 ---
 

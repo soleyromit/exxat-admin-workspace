@@ -37,6 +37,7 @@ seeAlso:
 4. **Route-owned layout** — templates own canvas + card; do not fork `PrimaryPageTemplate` / `SidebarInset` for lock surfaces.
 5. **Keyboard** — workflow Submit = Enter + inline `Kbd`; Cancel = Esc; pair with `<Shortcut>`.
 6. **No toast** — submit confirmation inline or blocking dialog.
+7. **Action pairs** — secondary **ghost** (Retry) **left**, filled primary (Raise hand) **right** (same as `DialogFooter` / wizard Back→Next). Pin with `sm:order-1` / `sm:order-2` when using `flex-col-reverse` on mobile.
 
 ## MUST NOT
 

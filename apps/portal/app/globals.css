@@ -91,6 +91,26 @@
   --product-faas-from: oklch(0.93 0.008 270);
   --product-faas-to:   oklch(0.86 0.012 268);
   --product-faas-icon: oklch(0.54 0.009 268);
+
+  /* Clinical & Experiential Education — blue */
+  --product-cee-from: oklch(0.88 0.06 245);
+  --product-cee-to:   oklch(0.75 0.12 245);
+  --product-cee-icon: oklch(0.40 0.15 245);
+
+  /* Curriculum Mapping — amber */
+  --product-cm-from: oklch(0.92 0.06 75);
+  --product-cm-to:   oklch(0.82 0.12 72);
+  --product-cm-icon: oklch(0.48 0.15 70);
+
+  /* Compliance Management — green */
+  --product-cmp-from: oklch(0.88 0.06 150);
+  --product-cmp-to:   oklch(0.75 0.12 148);
+  --product-cmp-icon: oklch(0.40 0.14 148);
+
+  /* Accreditation Management — rose */
+  --product-am-from: oklch(0.90 0.05 340);
+  --product-am-to:   oklch(0.79 0.11 340);
+  --product-am-icon: oklch(0.44 0.14 340);
 }
 
 /* Sidebar background token */

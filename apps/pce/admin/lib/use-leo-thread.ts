@@ -11,10 +11,10 @@
  *      KPI/chart triggers. Ephemeral by design — recents are owned by
  *      the landing.
  *
- * The hook owns the message list, the mock streaming timeout, and the
- * scroll anchor. Today the assistant response is a stub
- * (`mockAssistantReply`); when a real model is wired the API call goes
- * here and both surfaces inherit it for free.
+ * The hook owns the message list and the mock streaming timeout. Scroll
+ * pinning is handled by `MessageScroller` in `LeoThreadMessages`. Today the
+ * assistant response is a stub (`mockAssistantReply`); when a real model is
+ * wired the API call goes here and both surfaces inherit it for free.
  */
 
 import * as React from "react"
@@ -108,14 +108,7 @@ export function useLeoThread(options: UseLeoThreadOptions = {}): UseLeoThread {
     setMessages([])
   }, [clearPendingReplyTimeouts])
 
-  // Auto-scroll on every message change (and on mount).
-  React.useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight
-    })
-  }, [messages])
+  // MessageScroller owns scroll pinning; scrollRef kept for API compatibility.
 
   // Cancel timers on unmount so a closed Sheet doesn't push state changes.
   React.useEffect(() => () => clearPendingReplyTimeouts(), [clearPendingReplyTimeouts])

@@ -158,7 +158,7 @@ Cite these in the design brief by name + Mx codes:
 - [ ] No body "Back to <parent>" button.
 - [ ] One H1.
 - [ ] Status row visible without scrolling.
-- [ ] One filled primary action; overflow has the rest.
+- [ ] One filled primary action; overflow has the rest (⋯ → Export when rows are exportable + **`ExportDrawer`**).
 - [ ] 2-col card grid for fields (or tabs if ≥ 4 sections / 20+ fields).
 - [ ] `Skeleton` matches the IA on load; empty state designed for "not found".
 - [ ] Tab order: breadcrumb → identity → primary → overflow → fields.
@@ -173,5 +173,6 @@ Cite these in the design brief by name + Mx codes:
 - [`../../../.cursor/rules/exxat-breadcrumbs-no-back.mdc`](../../../.cursor/rules/exxat-breadcrumbs-no-back.mdc)
 - [`../../../.cursor/rules/exxat-tabs-chrome.mdc`](../../../.cursor/rules/exxat-tabs-chrome.mdc)
 - [`../modern-saas-patterns.md`](../modern-saas-patterns.md)
+- [`../../../.cursor/rules/exxat-page-header-actions.mdc`](../../../.cursor/rules/exxat-page-header-actions.mdc)
 - [`../blueprints/page-header.md`](../blueprints/page-header.md)
 - [`../component-selection-guide.md`](../component-selection-guide.md) §1

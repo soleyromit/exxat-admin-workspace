@@ -134,9 +134,9 @@ const SCHOOL_OPTIONS: ReadonlyArray<string> = [
 ]
 
 const PROGRAM_OPTIONS: ReadonlyArray<string> = [
-  "School of Medicine",
-  "School of Nursing",
-  "School of Pharmacy",
+  "Medicine",
+  "Nursing",
+  "Pharmacy",
   "Physical Therapy",
   "Occupational Therapy",
   "Physician Assistant",

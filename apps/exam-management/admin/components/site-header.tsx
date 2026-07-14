@@ -17,6 +17,7 @@ import {
   PageBreadcrumbBack,
   PageBreadcrumbTrail,
   type PageBreadcrumbBackProps,
+  type PageBreadcrumbMenuOption,
   type PageBreadcrumbTrailItem,
 } from "@/components/page-breadcrumb-trail"
 import { Separator } from "@/components/ui/separator"
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils"
 import { useSecondaryPanel } from "@/components/sidebar/secondary-panel"
 
 export type BreadcrumbItem = PageBreadcrumbTrailItem
+export type BreadcrumbMenuOption = PageBreadcrumbMenuOption
 export type SiteHeaderBackLink = Pick<PageBreadcrumbBackProps, "label" | "href">
 
 export interface SiteHeaderProps {
@@ -41,6 +43,9 @@ export interface SiteHeaderProps {
   title?: string
   /** Full breadcrumb trail — each item can be a link or plain text. Title is appended automatically as the last segment. */
   breadcrumbs?: BreadcrumbItem[]
+  /** Switch among peer records on the current breadcrumb segment (detail routes). */
+  currentPageMenu?: BreadcrumbMenuOption[]
+  currentPageMenuAriaLabel?: string
   /**
    * Back-icon variant — parent link only (no `title` segment in the header).
    * Prefer when the page `<h1>` carries the current title (e.g. New question composer).
@@ -55,6 +60,8 @@ export interface SiteHeaderProps {
 export function SiteHeader({
   title = "Dashboard",
   breadcrumbs,
+  currentPageMenu,
+  currentPageMenuAriaLabel,
   back,
   documentTitle,
   trailing,
@@ -126,6 +133,8 @@ export function SiteHeader({
             variant="header"
             items={breadcrumbs}
             currentPage={title}
+            currentPageMenu={currentPageMenu}
+            currentPageMenuAriaLabel={currentPageMenuAriaLabel}
             className="min-w-0 flex-1"
           />
         )}

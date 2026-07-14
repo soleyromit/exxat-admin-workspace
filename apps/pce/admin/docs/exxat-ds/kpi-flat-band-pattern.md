@@ -18,7 +18,7 @@ List hubs and the main dashboard mix view use **`KeyMetrics variant="flat"`** as
    - **4 tiles, wide strip (default):** `border-r` on cells 1–3 (verticals between all columns); **no** horizontal rule.
    - **4 tiles, narrow `@container` (&lt; 30rem, 2×2 grid):** odd-column `border-r` + `border-b` on the top row only (via `@[max-width:29.99rem]` overrides).
 4. **Divider color (OKLCH)** — `--key-metrics-flat-divider: color-mix(in oklch, var(--sidebar-border) 55%, transparent)`; apply on children with `[&>*]:border-[color:var(--key-metrics-flat-divider)]`. Dividers follow **active product** hue (`--sidebar-border`), not neutral grey alone.
-5. **Glow (OKLCH)** — Radial stops use `color-mix(in oklch, var(--brand-color) …%, transparent)` so **Exxat One / Prism / Assessment / `theme-custom`** each tint correctly. **Do not** hardcode rose/indigo literals on theme blocks unless documenting a one-off.
+5. **Glow (OKLCH)** — Radial stops use `color-mix(in oklch, var(--brand-color) …%, transparent)` so **Exxat One / Prism / `theme-custom`** each tint correctly. **Do not** hardcode rose/indigo literals on theme blocks unless documenting a one-off.
 6. **List page usage** — Prefer **`showHeader={false}`**, **`metricsSingleRow`** when four KPIs share one row; pass **`insight`** only when the insight rail is product-required (same row uses `lg:grid-cols-[3fr_2fr]`).
 7. **Cap at four tiles** — See **`docs/kpi-strip-max-four-pattern.md`**.
 
@@ -44,7 +44,7 @@ Dark mode (`.dark`): same rules — transparent cells, radial glow only, no line
 
 - `components/library-client.tsx` — `KeyMetrics variant="flat" metricsSingleRow`
 - `components/dashboard-tabs.tsx` — mix view flat band + insight
-- `components/placements-client.tsx`, `team-client.tsx`, `compliance-client.tsx` — list hub metrics slot
+- `components/library-hub-client.tsx`, `columns-client.tsx`, `tokens-themes-client.tsx` — list hub metrics slot
 
 ## Insight rail (flat + side-by-side)
 

@@ -34,15 +34,20 @@ import type { Product } from "@/contexts/product-context"
 import { useAppStore, type CustomProductBrand, getActiveCustomProductBrand } from "@/stores/app-store"
 import { customProductBrandConfig } from "@/lib/product-brand"
 
-export type ExxatProductLogoVariant = "default" | "mutedSuffix" | "sidebar"
+export type ExxatProductLogoVariant = "default" | "mutedSuffix" | "sidebar" | "utility-bar"
 
 export interface ExxatProductLogoProps {
   product: Product
   className?: string
-  /** Reserved for switcher chrome; suffix stays Exxat pink in all modes. */
+  /** Reserved for switcher chrome; suffix fill uses `--product-wordmark-suffix`. */
   variant?: ExxatProductLogoVariant
   /** Live preview or a specific custom slot — bypasses the active custom index. */
   previewCustomBrand?: CustomProductBrand | null
+  /**
+   * Utility bar rail — the round mark renders in its own column (aligned with
+   * the school selector); this instance is wordmark-only.
+   */
+  mark?: "included" | "external"
 }
 
 /**
@@ -221,15 +226,22 @@ export function ExxatProductLogo({
   className,
   variant = "default",
   previewCustomBrand,
+  mark = "included",
 }: ExxatProductLogoProps) {
   const activeCustomProductBrand = useAppStore(s => getActiveCustomProductBrand(s))
   const productBrandColors = useAppStore(s => s.productBrandColors)
   const effectiveCustomBrand = previewCustomBrand ?? activeCustomProductBrand
   const config = brandForProduct(product, effectiveCustomBrand, productBrandColors)
-  const suffixColor = config.wordmarkColor ?? config.brandColor
 
-  if (variant === "sidebar") {
-    return <SidebarLockup config={config} suffixColor={suffixColor} className={className} />
+  if (variant === "sidebar" || variant === "utility-bar") {
+    return (
+      <SidebarLockup
+        config={config}
+        className={className}
+        density={variant}
+        externalMark={mark === "external"}
+      />
+    )
   }
 
   return (
@@ -247,7 +259,7 @@ export function ExxatProductLogo({
       {/* HTML suffix — IvyPresto Text SemiBold per Figma brand spec. */}
       <span
         data-product-wordmark-suffix
-        className="font-heading ms-[0.18em] text-[1.55em] font-semibold tracking-[-0.03em] -translate-y-[3px] text-[--brand-color]"
+        className="font-heading ms-[0.18em] text-[1.55em] font-semibold tracking-[-0.03em] -translate-y-[3px]"
       >
         {config.suffix}
       </span>
@@ -290,19 +302,23 @@ export function ExxatProductLogo({
  */
 function SidebarLockup({
   config,
-  suffixColor,
   className,
+  density = "sidebar",
+  externalMark = false,
 }: {
   config: ProductBrandConfig
-  suffixColor: string
   className?: string
+  density?: "sidebar" | "utility-bar"
+  externalMark?: boolean
 }) {
+  const utilityBar = density === "utility-bar"
   const suffix = config.suffix
   const words = suffix.trim().split(/\s+/)
-  // Two-word + long enough to merit wrapping → stacked B2. Two-word but
-  // short ("New one") still fits A comfortably and reads better unwrapped.
-  const lockup: "A" | "B1" | "B2" =
-    words.length === 2 && suffix.length > 10
+  // Utility bar — suffix-only wordmark (`Clinical Education`); round mark is external.
+  // Sidebar keeps the deterministic A / B1 / B2 cascade for narrow triggers.
+  const lockup: "A" | "B1" | "B2" = utilityBar
+    ? "B1"
+    : words.length === 2 && suffix.length > 10
       ? "B2"
       : suffix.length > 8
         ? "B1"
@@ -315,19 +331,22 @@ function SidebarLockup({
     <span
       aria-hidden="true"
       data-product-logo
-      data-product-logo-variant="sidebar"
+      data-product-logo-variant={utilityBar ? "utility-bar" : "sidebar"}
       data-product-id={config.id}
       data-lockup={lockup}
       className={cn(
-        "flex min-w-0 flex-1 items-center gap-2 text-base leading-none",
+        "flex items-center text-base leading-none",
+        utilityBar ? "min-w-0 shrink-0 gap-0" : "min-w-0 flex-1 gap-2",
         className,
       )}
     >
-      <span className="flex size-8 shrink-0 items-center justify-center">
-        <ProductMark config={config} className="size-6" />
-      </span>
+      {!externalMark ? (
+        <span className="flex size-8 shrink-0 items-center justify-center">
+          <ProductMark config={config} className="size-6" />
+        </span>
+      ) : null}
 
-      <span className="flex min-w-0 flex-1 items-center">
+      <span className={cn("flex items-center", utilityBar ? "shrink-0" : "min-w-0 flex-1")}>
         {lockup === "A" && (
           <span className="inline-flex items-end overflow-visible whitespace-nowrap leading-none">
             <ExxatLogoBase
@@ -338,7 +357,6 @@ function SidebarLockup({
             <span
               data-product-wordmark-suffix
               className={cn("ms-[0.18em] -translate-y-[3px]", suffixTypeClasses)}
-              style={{ color: suffixColor }}
             >
               {suffix}
             </span>
@@ -348,7 +366,6 @@ function SidebarLockup({
           <span
             data-product-wordmark-suffix
             className={cn("whitespace-nowrap", suffixTypeClasses)}
-            style={{ color: suffixColor }}
           >
             {suffix}
           </span>
@@ -362,7 +379,6 @@ function SidebarLockup({
             className={cn(
               "flex flex-col whitespace-nowrap leading-[1.05] font-heading font-semibold tracking-[-0.03em]",
             )}
-            style={{ color: suffixColor }}
           >
             <span className="text-base leading-none">{words[0]}</span>
             <span className="text-[1.55em] leading-none">{words[1]}</span>
@@ -377,6 +393,51 @@ export interface ExxatProductMarkProps {
   product: Product
   className?: string
   cutoutColor?: string
+}
+
+export interface ProductSwitcherMenuRowLabelProps {
+  product: Product
+  className?: string
+  /** Live preview or a specific custom slot — bypasses the active custom index. */
+  previewCustomBrand?: CustomProductBrand | null
+}
+
+/**
+ * Product switcher dropdown row — round mark + suffix-only wordmark tinted with
+ * **that row's** registry brand colour. Omits the shared "Exxat" prefix and does
+ * not inherit the active shell's `--product-wordmark-suffix` token (which would
+ * paint every row in the current product's theme colour).
+ */
+export function ProductSwitcherMenuRowLabel({
+  product,
+  className,
+  previewCustomBrand,
+}: ProductSwitcherMenuRowLabelProps) {
+  const activeCustomProductBrand = useAppStore(s => getActiveCustomProductBrand(s))
+  const productBrandColors = useAppStore(s => s.productBrandColors)
+  const effectiveCustomBrand = previewCustomBrand ?? activeCustomProductBrand
+  const config = brandForProduct(product, effectiveCustomBrand, productBrandColors)
+  const suffixColor =
+    config.id === "exxat-custom"
+      ? config.brandColor
+      : (config.wordmarkColor ?? config.brandColor)
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("inline-flex min-w-0 flex-1 items-center gap-2", className)}
+    >
+      <ProductMark config={config} className="size-7 shrink-0" />
+      <span
+        data-product-switcher-suffix
+        data-product-id={config.id}
+        className="font-heading min-w-0 text-base font-semibold leading-none tracking-[-0.03em]"
+        style={{ color: suffixColor }}
+      >
+        {config.suffix}
+      </span>
+    </span>
+  )
 }
 
 /**
@@ -419,7 +480,6 @@ export function ExxatProductWordmarkEditor({
     ...previewCustomBrand,
     suffix,
   })
-  const suffixColor = config.wordmarkColor ?? config.brandColor
 
   React.useLayoutEffect(() => {
     const node = suffixRef.current
@@ -471,7 +531,6 @@ export function ExxatProductWordmarkEditor({
           "outline-none empty:before:text-current/45 empty:before:content-[attr(data-placeholder)]",
           "focus-visible:outline-none focus-visible:ring-0",
         )}
-        style={{ color: suffixColor }}
       />
     </span>
   )

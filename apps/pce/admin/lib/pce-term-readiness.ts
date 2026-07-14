@@ -15,10 +15,10 @@
 // ============================================================================
 
 import {
-  MOCK_COURSE_OFFERINGS,
   MOCK_MASTER_COURSES,
   type CourseOffering,
 } from '@/lib/pce-mock-data'
+import { activeOfferings } from '@/lib/pce-demo-accounts'
 
 /** A faculty role the program chooses to evaluate (drives which gaps count). */
 export type EvalRole = 'course_coordinator' | 'instructor'
@@ -94,7 +94,7 @@ export function auditTerm(
   termId: string,
   roles: EvalRole[] = DEFAULT_EVAL_ROLES,
 ): TermReadiness {
-  const offerings = MOCK_COURSE_OFFERINGS.filter((o) => o.termId === termId).map(
+  const offerings = activeOfferings().filter((o) => o.termId === termId).map(
     (o) => auditOffering(o, roles),
   )
   const needsData = offerings.filter((o) => o.gaps.length > 0).length

@@ -19,10 +19,10 @@
 import * as React from "react"
 import { useLocation } from "react-router-dom"
 
-import { Avatar, AvatarFallback, AvatarImage, AvatarLeoAssistant } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { AskLeoComposer } from "@/components/ask-leo-composer"
 import { AskLeoViewToggle } from "@/components/ask-leo-view-toggle"
+import { LeoThreadMessages } from "@/components/leo-thread-messages"
 import { LeoSidebarToggle } from "@/components/leo-page-chrome"
 import { useLeoThread } from "@/lib/use-leo-thread"
 import { useLeoRecents } from "@/lib/leo-recents"
@@ -86,7 +86,7 @@ export function LeoLandingClient({ productSlug }: LeoLandingClientProps) {
     [pushRecent, pathname],
   )
 
-  const { messages, isThinking, send, stop, reset, scrollRef } = useLeoThread({
+  const { messages, isThinking, send, stop, reset } = useLeoThread({
     onUserTurn: handleUserTurn,
   })
   const isEmpty = messages.length === 0
@@ -147,7 +147,6 @@ export function LeoLandingClient({ productSlug }: LeoLandingClientProps) {
           <ConversationPane
             messages={messages}
             isThinking={isThinking}
-            scrollRef={scrollRef}
             composer={
               <HeroComposer ref={composerRef} {...composerProps} size="compact" />
             }
@@ -230,68 +229,33 @@ function EmptyHero({
 
 function ConversationPane({
   messages,
-  isThinking: _isThinking,
-  scrollRef,
+  isThinking,
   composer,
 }: {
   messages: ReturnType<typeof useLeoThread>["messages"]
   isThinking: boolean
-  scrollRef: React.RefObject<HTMLDivElement | null>
   composer: React.ReactNode
 }) {
   return (
-    <>
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <div
-          ref={scrollRef}
-          className="absolute inset-0 overflow-y-auto overscroll-y-contain px-4 pb-40 pt-8 [-webkit-overflow-scrolling:touch]"
-          role="log"
-          aria-label="Conversation with Leo"
-          aria-live="polite"
-        >
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
-            {messages.map((m) =>
-              m.role === "user" ? (
-                <div key={m.id} className="flex w-full min-w-0 flex-row-reverse gap-3">
-                  <Avatar size="sm" className="mt-0.5 shrink-0">
-                    <AvatarImage src={NAV_USER.avatar} alt="" />
-                    <AvatarFallback className="bg-secondary text-xs font-medium text-secondary-foreground">
-                      {NAV_USER.name.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 max-w-[min(36rem,calc(100%-3rem))] break-words rounded-2xl rounded-tr-sm bg-primary px-4 py-2.5 text-start text-sm leading-relaxed text-primary-foreground shadow-sm">
-                    {m.content}
-                  </div>
-                </div>
-              ) : (
-                <div key={m.id} className="flex w-full min-w-0 gap-3">
-                  <AvatarLeoAssistant className="mt-0.5 shrink-0" />
-                  <div className="min-w-0 flex-1 pt-1 text-start text-sm leading-relaxed text-foreground">
-                    {m.pending ? (
-                      <p className="m-0 text-muted-foreground">Thinking…</p>
-                    ) : (
-                      <p className="m-0 break-words">{m.content}</p>
-                    )}
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-        </div>
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <LeoThreadMessages
+        messages={messages}
+        isThinking={isThinking}
+        maxWidthClassName="max-w-2xl"
+        contentClassName="gap-5 pb-40 pt-8"
+        className="absolute inset-0"
+      />
 
-        {/* Composer pinned to the bottom, with a soft fade-to-background so
-            scrolled content doesn't slam into it. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-6 pt-10">
-          <div
-            className="pointer-events-none absolute inset-0 -z-0 bg-gradient-to-t from-background via-background/80 to-transparent"
-            aria-hidden="true"
-          />
-          <div className="pointer-events-auto relative z-[1] mx-auto w-full max-w-2xl">
-            {composer}
-          </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-6 pt-10">
+        <div
+          className="pointer-events-none absolute inset-0 -z-0 bg-gradient-to-t from-background via-background/80 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="pointer-events-auto relative z-[1] mx-auto w-full max-w-2xl">
+          {composer}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

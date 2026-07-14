@@ -49,5 +49,5 @@ Seven views: **table**, **list**, **board**, **dashboard**, **folder**, **panel*
 ## See also
 
 - `packages/ui/src/lib/data-list-view-registry.ts`
-- `docs/exxat-ds/patterns/data-views-pattern.md`
+- `apps/web/docs/data-views-pattern.md`
 - `apps/web/lib/hub-connected-view-renderers.ts` — `defineHubViewRenderers` dev warnings

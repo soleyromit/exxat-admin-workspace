@@ -11,18 +11,10 @@ import { useLocation } from "react-router-dom"
 import { useProduct } from "@/contexts/product-context"
 import { productSlug } from "@/stores/app-store"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage, AvatarLeoAssistant } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AskLeoComposer } from "@/components/ask-leo-composer"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { LeoThreadMessages } from "@/components/leo-thread-messages"
 import {
   Tooltip,
   TooltipContent,
@@ -36,6 +28,11 @@ import {
   NestedSecondaryPanelShell,
 } from "@/components/templates/nested-secondary-panel-shell"
 import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
+import { ASK_LEO_GENERIC_SUGGESTIONS, getAskLeoRouteContext } from "@/lib/ask-leo-route-context"
+import { NAV_USER } from "@/lib/mock/navigation"
+import { useLeoThread } from "@/lib/use-leo-thread"
+import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-context"
+import { AskLeoViewToggle } from "@/components/ask-leo-view-toggle"
 
 // React.lazy + Suspense for the chart bundle.
 // PR-6. Same call-site shape (`<LeoIcon />`) — Suspense boundary is internal.
@@ -52,11 +49,6 @@ function LeoIcon(props: React.ComponentProps<typeof LeoIconLazy>) {
     </React.Suspense>
   )
 }
-import { ASK_LEO_GENERIC_SUGGESTIONS, getAskLeoRouteContext } from "@/lib/ask-leo-route-context"
-import { NAV_USER } from "@/lib/mock/navigation"
-import { useLeoThread } from "@/lib/use-leo-thread"
-import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-context"
-import { AskLeoViewToggle } from "@/components/ask-leo-view-toggle"
 
 function isLeoLandingPath(pathname: string, leoHref: string) {
   return pathname === leoHref || pathname.startsWith(`${leoHref}/`)
@@ -84,7 +76,6 @@ export function AskLeoSidebar() {
     send,
     stop,
     reset,
-    scrollRef: conversationScrollRef,
   } = useLeoThread()
   const routeContext = React.useMemo(() => getAskLeoRouteContext(pathname), [pathname])
 
@@ -148,11 +139,11 @@ export function AskLeoSidebar() {
         widthPersistKey={ASK_LEO_PANEL_WIDTH_KEY}
         widthDefault={ASK_LEO_PANEL_WIDTH_DEFAULT}
         aria-label="Ask Leo — AI assistant"
-        contentClassName="min-h-0 overflow-hidden"
+        contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
         {/* Header — title row + view menu + close */}
-        <div className="flex shrink-0 flex-col gap-2 border-b border-sidebar-border/50 px-3 py-3">
+        <div className="flex shrink-0 flex-col gap-2 border-b border-sidebar-border/50 px-3 pb-3 pt-3.5">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-col gap-0.5">
               <div className="flex items-center gap-2 min-w-0">
@@ -188,96 +179,48 @@ export function AskLeoSidebar() {
           </div>
         </div>
 
-        {/* Conversation scrolls behind composer; composer is absolutely pinned to the bottom. */}
-        <div className="relative min-h-0 flex-1">
-          <div
-            ref={conversationScrollRef}
-            className={cn(
-              "absolute inset-0 scroll-smooth overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pt-4 pb-28 [-webkit-overflow-scrolling:touch]",
-              threadMessages.length === 0 && "flex items-center justify-center",
-            )}
-            role="log"
-            aria-label="Conversation with Leo"
-            aria-live="polite"
-          >
-            <div
-              className={cn(
-                "flex w-full min-w-0 flex-col gap-4",
-                threadMessages.length === 0 && "items-center",
-              )}
-            >
-              {threadMessages.length === 0 ? (
-                <>
-                  <LeoIcon variant="interactive" size="xl" />
-                  <ul className="m-0 flex list-none flex-wrap justify-center gap-2 p-0" aria-label="Suggested prompts">
-                  {suggestionChips.map((q, i) => (
-                    <li
-                      key={`${i}-${q.slice(0, 24)}`}
-                      className="max-w-full list-none"
-                    >
-                      <Badge
-                        asChild
-                        variant="outline"
-                        className="h-auto min-h-8 max-w-full items-stretch whitespace-normal rounded-4xl border-border/90 bg-card p-0 font-normal text-card-foreground shadow-sm transition-transform duration-150 hover:-translate-y-0.5 dark:border-border dark:bg-card"
+        <LeoThreadMessages
+          messages={threadMessages}
+          isThinking={isThinking}
+          emptyState={
+            <div className="flex flex-col items-center gap-4">
+              <LeoIcon variant="interactive" size="xl" />
+              <ul
+                className="m-0 flex list-none flex-wrap justify-center gap-2 p-0"
+                aria-label="Suggested prompts"
+              >
+                {suggestionChips.map((q, i) => (
+                  <li
+                    key={`${i}-${q.slice(0, 24)}`}
+                    className="max-w-full list-none"
+                  >
+                    <Badge asChild variant="prompt">
+                      <button
+                        type="button"
+                        onClick={() => appendUserTurn(q)}
+                        className="inline-flex min-h-8 w-full max-w-full cursor-pointer text-start text-xs leading-snug transition-colors hover:bg-interactive-hover"
                       >
-                        <button
-                          type="button"
-                          onClick={() => appendUserTurn(q)}
-                          className="inline-flex min-h-8 w-full max-w-full cursor-pointer text-start text-xs leading-snug transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground dark:hover:bg-sidebar-accent/40"
-                        >
-                          <span className="line-clamp-4 px-3 py-2">{q}</span>
-                        </button>
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-                </>
-              ) : (
-                threadMessages.map((m) =>
-                  m.role === "user" ? (
-                    <div key={m.id} className="flex w-full min-w-0 flex-row-reverse gap-3">
-                      <Avatar size="sm" className="mt-0.5 shrink-0">
-                        <AvatarImage src={NAV_USER.avatar} alt="" />
-                        <AvatarFallback className="bg-secondary text-xs font-medium text-secondary-foreground">
-                          {NAV_USER.name.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {/* Reserve avatar (~2rem) + gap-3 so max-w 100% does not include sibling width (overflow). */}
-                      <div className="min-w-0 max-w-[min(18rem,calc(100%-3rem))] break-words rounded-lg rounded-tr-sm bg-primary px-3 py-2.5 text-start text-sm leading-relaxed text-primary-foreground shadow-sm">
-                        {m.content}
-                      </div>
-                    </div>
-                  ) : (
-                    <div key={m.id} className="flex w-full min-w-0 gap-3">
-                      <AvatarLeoAssistant className="mt-0.5 shrink-0" />
-                      <div className="min-w-0 flex-1 pt-0.5 text-start text-sm leading-relaxed text-sidebar-foreground">
-                        {m.pending ? (
-                          <p className="m-0 text-muted-foreground">Thinking…</p>
-                        ) : (
-                          <p className="m-0 break-words">{m.content}</p>
-                        )}
-                      </div>
-                    </div>
-                  ),
-                )
-              )}
+                        <span className="line-clamp-4 px-3 py-2">{q}</span>
+                      </button>
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          }
+        />
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-[var(--secondary-panel-bg)] px-3 pb-4 pt-10 sm:pb-5">
-            <div className="pointer-events-auto">
-              <AskLeoComposer
-                ref={composerTextareaRef}
-                value={composerValue}
-                onChange={setComposerValue}
-                onSubmit={appendUserTurn}
-                onExpandedChange={setComposerExpanded}
-                isAnalyzing={isThinking}
-                onStop={stop}
-                placeholder="Ask Leo anything…"
-              />
-            </div>
-          </div>
+        <div className="shrink-0 border-t border-sidebar-border/40 bg-[var(--secondary-panel-bg)] px-3 pb-4 pt-3 sm:pb-5">
+          <AskLeoComposer
+            ref={composerTextareaRef}
+            value={composerValue}
+            onChange={setComposerValue}
+            onSubmit={appendUserTurn}
+            onExpandedChange={setComposerExpanded}
+            isAnalyzing={isThinking}
+            onStop={stop}
+            placeholder="Ask Leo anything…"
+          />
         </div>
         </div>
       </NestedSecondaryPanelShell>
@@ -295,13 +238,17 @@ export function AskLeoToggle({ className }: { className?: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={open ? "Close Ask Leo" : "Ask Leo"}
           onClick={toggle}
-          className={cn("gap-1.5 md:aspect-auto aspect-square", open && "bg-brand/10 border-brand/30 text-brand", className)}
+          className={cn(
+            open && "bg-brand/10 text-brand hover:bg-brand/15 hover:text-brand",
+            className,
+          )}
         >
-          <i className="fa-duotone fa-solid fa-star-christmas text-xs text-brand" aria-hidden="true" />
-          <span className="hidden md:inline">Ask Leo</span>
+          <i className="fa-duotone fa-solid fa-star-christmas text-sm text-brand" aria-hidden="true" />
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="flex flex-wrap items-center gap-1.5">
