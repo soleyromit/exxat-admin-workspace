@@ -16,10 +16,17 @@ import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
+import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 
 type Axis = 'term' | 'cohort'
-// 'overview' retired Jul 2026 — the monitoring layer moved to the Dashboard home.
-type AnalyticsTab = 'term' | 'faculty' | 'course'
+/**
+ * 'overview' was retired Jul 2026 on the premise that "the monitoring layer moved to the
+ * Dashboard home" — but it never did: `dashboard-home.tsx` is a response-collection ops
+ * surface with no charts, so 8 of the 20 ADMIN analytics stories had no home at all.
+ * Restored 2026-07-14 per Monil's accepted model (2026-07-13): "three tabs, in fact four:
+ * overview, by faculty, by course and by term", tabs on top rather than in the sidebar.
+ */
+type AnalyticsTab = 'overview' | 'term' | 'faculty' | 'course'
 
 function AnalyticsInner() {
   const searchParams = useSearchParams()
@@ -27,7 +34,9 @@ function AnalyticsInner() {
 
   const [activeTab, setActiveTab]                   = useState<AnalyticsTab>(() => {
     const requested = searchParams?.get('tab')
-    return requested === 'faculty' || requested === 'course' ? requested : 'term'
+    return requested === 'faculty' || requested === 'course' || requested === 'term'
+      ? requested
+      : 'overview'
   })
   const [axis, setAxis]                             = useState<Axis>('term')
   const [term, setTerm]                             = useState(
@@ -77,11 +86,21 @@ function AnalyticsInner() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnalyticsTab)} className="flex flex-col flex-1 min-h-0">
         <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
           <TabsList variant="line">
-            <TabsTrigger value="term">By Term</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="faculty">By Faculty</TabsTrigger>
             <TabsTrigger value="course">By Course</TabsTrigger>
+            <TabsTrigger value="term">By Term</TabsTrigger>
           </TabsList>
         </div>
+
+        {/* ───── Overview — the program brief. No entity selector by design: this is the
+                 one tab whose scope is "everything", so a filter here would be a
+                 different question. ───── */}
+        <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
+          <div className="flex flex-col gap-6 max-w-5xl">
+            <AnalyticsOverviewPanel />
+          </div>
+        </TabsContent>
 
         {/* ───── By Term ───── */}
         <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
