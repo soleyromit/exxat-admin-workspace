@@ -179,7 +179,16 @@ function RemindWizardInner() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
-        breadcrumbs={[{ label: origin.label, href: origin.href }]}
+        /* Full trail so every prior page backtracks: Dashboard › {term} › here.
+           The term segment only when the reminder is scoped to one. */
+        breadcrumbs={
+          originTerm
+            ? [
+                { label: 'Dashboard', href: '/course-evaluation/dashboard' },
+                { label: originTerm.name, href: `/course-evaluation/term/${originTerm.id}` },
+              ]
+            : [{ label: 'Dashboard', href: '/course-evaluation/dashboard' }]
+        }
         title="Send reminders"
       />
       <h1 className="sr-only">Send reminders</h1>
@@ -310,7 +319,9 @@ function RemindWizardInner() {
               {candidates.length > 0 && (
                 <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={origin.href}>Cancel</Link>
+                    {/* Cancel abandons the wizard → module home (matches term-setup).
+                        The breadcrumb, not Cancel, backtracks to the term. */}
+                    <Link href="/course-evaluation/dashboard">Cancel</Link>
                   </Button>
                   <div className="flex items-center gap-4">
                     <p className="text-sm text-muted-foreground tabular-nums">

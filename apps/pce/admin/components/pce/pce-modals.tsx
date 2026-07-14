@@ -114,7 +114,7 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
                   <Checkbox checked disabled aria-label="Course Content (required section, cannot be unchecked)" />
                   <span className="text-sm font-medium">Course Content</span>
                 </div>
-                <span className="text-xs text-muted-foreground">required</span>
+                <span className="text-xs text-muted-foreground">Required</span>
               </div>
               <Separator />
               <div className="flex items-center gap-2">
@@ -914,7 +914,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
                   </Avatar>
                   <span className="text-sm">{i.name}</span>
                   {i.role === 'guest' && (
-                    <span className="text-xs text-muted-foreground">guest</span>
+                    <span className="text-xs text-muted-foreground">Guest</span>
                   )}
                 </div>
               ))}

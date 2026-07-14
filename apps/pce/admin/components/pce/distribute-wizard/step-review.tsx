@@ -346,7 +346,7 @@ export function StepReview({
             </p>
           ) : null}
           <Button variant="default" size="sm" className="shrink-0" disabled={!allReady} onClick={() => setConfirmOpen(true)}>
-            Push evaluation{totalRecipients > 0 ? ` · ${totalRecipients} ${totalRecipients === 1 ? 'person' : 'people'}` : ''}
+            Set up Evaluations{totalRecipients > 0 ? ` · ${totalRecipients} ${totalRecipients === 1 ? 'person' : 'people'}` : ''}
           </Button>
         </div>
       </div>

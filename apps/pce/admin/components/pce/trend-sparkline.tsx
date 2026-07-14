@@ -68,7 +68,7 @@ export function TrendSparkline({
         className="text-xs text-muted-foreground tabular-nums"
         aria-label={`Single offering: ${points[0].value} on ${points[0].label}`}
       >
-        first time
+        First time
       </span>
     )
   }

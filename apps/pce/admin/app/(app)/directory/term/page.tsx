@@ -233,7 +233,7 @@ export default function TermsPage() {
       />
 
       <div className="flex-1 overflow-auto" style={{ paddingTop: 20, paddingBottom: 28 }}>
-        <div className="max-w-5xl flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
 
           <DataTable<TermRow>
             data={tableRows}
@@ -260,13 +260,6 @@ export default function TermsPage() {
             }
             toolbarSlot={() => null}
           />
-
-          {!MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is off. This list is managed manually.
-            </p>
-          )}
 
         </div>
       </div>

@@ -435,7 +435,7 @@ export default function SurveyDetailPage() {
         breadcrumbs={[
           survey.surveyType === 'programmatic'
             ? { label: 'Dashboard', href: '/analytics/programmatic' }
-            : { label: 'Dashboard', href: '/analytics' },
+            : { label: 'Dashboard', href: '/course-evaluation/dashboard' },
         ]}
         title={`${survey.courseCode} — ${survey.courseName}`}
       />
