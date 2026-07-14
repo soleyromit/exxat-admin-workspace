@@ -1345,6 +1345,32 @@
       "source": "Compliance sweep 2026-07-13",
       "severity": "P2",
       "files": ["apps/exam-management/admin/components/key-metrics/index.tsx"]
+    },
+    {
+      "id": "2026-07-14-prd-flagged-pce-001",
+      "date": "2026-07-14",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "P1 conflict: per-aspect upload (Monil Jul 2) vs top-level-only import (pce-decision-028 / Vishaka Jun 9)",
+      "what": "Monil Pokar proposed 'upload capability for individual aspects' in the Jul 2 'Create template — upload capability and handoff readiness' meeting. pce-decision-028 (source: Vishaka Bhavsar, Jun 9) mandates document import at the top-level template creation screen only, not buried per section.",
+      "why": "Two stakeholders hold directly contradictory positions on where document upload appears in the template creation flow. Building to either without resolution risks a rework.",
+      "source": "Granola transcript — Create template — upload capability and handoff readiness with Monil — Jul 2, 2026 (Monil Pokar, Speaker)",
+      "severity": "P1",
+      "conflictsWith": "pce-decision-028",
+      "flagFile": "docs/watch/flags/pce.md"
+    },
+    {
+      "id": "2026-07-14-prd-flagged-exam-001",
+      "date": "2026-07-14",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "P1 conflict: Exam PRD §5.2 Student Accommodations Modal vs exam-decision-015 (out of phase 1 scope)",
+      "what": "Assessment Builder PRD (Nipun) §5.2 describes a fully designed Student Accommodations Modal with five capability areas (Extra Time, Scribe Required, Extended Breaks, Screen Reader Mode, Bulk Apply). Vishal (PM) in the Jul 7 'Course Eval sync up' meeting explicitly stated accommodations are not being built in any phase 1 scope.",
+      "why": "PRD §5.2 presents accommodations as a designed, in-scope feature. PM's directive removes it entirely from phase 1. Any UI built against §5.2 is wasted work until the PRD is updated.",
+      "source": "Granola transcript — Course Eval sync up — Jul 7, 2026 (Vishal PM, Speaker)",
+      "severity": "P1",
+      "conflictsWith": "exam-decision-015",
+      "flagFile": "docs/watch/flags/exam-management.md"
     }
   ]
 }

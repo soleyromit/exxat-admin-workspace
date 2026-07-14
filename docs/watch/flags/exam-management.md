@@ -399,6 +399,16 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 ---
 
+## TRANSCRIPT-PRD CONFLICT — 2026-07-14
+**Meeting:** Course Eval sync up — Jul 7, 2026
+**Speaker:** Vishal (PM)
+**What they said:** "accommodations is not something we are building in, in any, anytime soon. Right. So there is no point building any UI for accommodations in the first phase."
+**What the PRD says:** Assessment Builder PRD (Nipun) §5.2 Student Accommodations — "Administrators and Course Directors can define specific overrides for students with special requirements. This features a Student Accommodations Modal allowing: Extra Time: Add +N minutes or a fixed multiplier (e.g., 1.5x time). Scribe Required: For injured / differently abled students who need physical assistance. Extended Breaks: Configuration for paused intervals. Screen Reader Mode: Enforced or optional accessibility features. Bulk Apply: Ability to select multiple students and apply uniform accommodations simultaneously."
+**Conflict:** The Assessment Builder PRD §5.2 describes a fully designed Student Accommodations Modal with five capability areas; Vishal (PM) explicitly confirmed no accommodations UI should be built in phase 1.
+**Suggested action:** Update PRD §5.2 to mark Student Accommodations as out of phase 1 scope (deferred) OR confirm with Nipun the PRD has already been revised. Reference exam-decision-015 as the authoritative decision. Do not build any accommodations UI until PM explicitly re-scopes it.
+
+---
+
 ## 2026-06-26 — Flagged: Exam Mgmt Roadmap — Nipun (2 changes)
 
 ### Flag 1 — First release table: TBD values persist for 3rd consecutive run — ESCALATE (URGENT)

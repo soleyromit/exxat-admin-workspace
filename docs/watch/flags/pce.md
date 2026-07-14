@@ -472,3 +472,13 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Update PRD §4 Step 3 to remove the student portal entry point and "Survey is also accessible from the student portal (Entry point TBD)" line. Reference pce-decision-021 (email-only distribution) and pce-decision-037 (no student login till Q3 2027) for alignment.
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-07-14
+**Meeting:** Create template — upload capability and handoff readiness with Monil — Jul 2, 2026
+**Speaker:** Monil Pokar
+**What they said:** "my proposal was to give upload capability for individual aspects"
+**What the PRD says:** pce-decision-028 (source: Vishaka Bhavsar, Jun 9, 2026) — "The document import option is presented at the top-level template creation screen, not buried per section."
+**Conflict:** Monil proposes per-aspect document upload (scoped to individual aspects/sections), directly contradicting Vishaka's Jun 9 directive that document import must appear only at the top-level template creation screen — not buried per section.
+**Suggested action:** Update PRD §4 Step 1 to clarify the upload placement OR confirm with Monil and Vishaka which scope wins before building the template creation screen. Vishaka's directive is the current authoritative decision (pce-decision-028). If Monil's per-aspect proposal supersedes it, update pce-decision-028 accordingly.
+
+---
