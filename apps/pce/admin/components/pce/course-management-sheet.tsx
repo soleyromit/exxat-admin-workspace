@@ -191,10 +191,11 @@ export function CourseManagementSheet({
               ))
             )}
 
-            {/* Add instructor */}
+            {/* Add faculty — the search adds any faculty (coordinator, TA, lab
+                instructor), so the heading must not name a single role. */}
             <div className="flex flex-col gap-2 mt-5 pb-4">
               <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-                Add instructor
+                Add faculty
               </p>
               <Input
                 placeholder="Search faculty by name…"
