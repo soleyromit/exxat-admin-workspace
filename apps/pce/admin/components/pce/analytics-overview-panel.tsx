@@ -226,6 +226,8 @@ export function AnalyticsOverviewPanel() {
     }
   }, [courses, courseMedian])
 
+  /* Memoised — PlotFigure compares leoAnchor by reference in its effect deps, so a fresh
+     object literal each render would re-create the chart SVG every parent render. */
   const anchorGap = useMemo(() => {
     if (gaps.length < 3) return undefined
     const widest = [...gaps].sort(

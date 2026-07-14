@@ -40,6 +40,17 @@ const SCORE_VIEW: [number, number] = [3.0, 5]
 
 const fmt2 = (v: number) => v.toFixed(2)
 
+/**
+ * Inline empty state for a chart body.
+ *
+ * A chart with no data must SAY so — a blank plot area inside a titled card reads as a
+ * rendering failure, and the user cannot tell "no data" from "broken". DriftDumbbell already
+ * did this; the rest of the file now shares it.
+ */
+function ChartEmpty({ note }: { note: string }) {
+  return <p className="py-6 text-center text-sm text-muted-foreground">{note}</p>
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    Story 10 — Faculty leaderboard.
    Q: "Who is an outlier across N faculty?"  → RUBRIC Q2 → Cleveland dot (N≤30).
@@ -138,6 +149,8 @@ export function FacultyLeaderboardDots({
     }),
     [faculty, spread, order, median],
   )
+
+  if (!faculty.length) return <ChartEmpty note="No faculty with evaluated offerings yet." />
 
   return (
     <PlotFigure
@@ -275,6 +288,12 @@ export function GapQuadrant({
     [points, courseMean, facultyMean, outliers],
   )
 
+  if (points.length < 3) {
+    return (
+      <ChartEmpty note="Needs at least three evaluated offerings before a course-vs-faculty pattern means anything." />
+    )
+  }
+
   return <PlotFigure spec={spec} height={height} leoAnchor={leoAnchor} leoFamily="scatter" />
 }
 
@@ -302,6 +321,10 @@ export function CourseTermHeat({
 }) {
   const [lo, hi] = React.useMemo(() => {
     const vals = cells.map((c) => c.courseAvg)
+    // Math.min(...[]) is Infinity and Math.max(...[]) is -Infinity. The norm() guard below
+    // happens to survive that, but shipping IEEE sentinels into a scale is a trap for the
+    // next edit — fall back to the score domain instead.
+    if (!vals.length) return SCORE_DOMAIN
     return [Math.min(...vals), Math.max(...vals)]
   }, [cells])
 
@@ -376,6 +399,8 @@ export function CourseTermHeat({
     },
     [cells, courses, terms, norm, slots],
   )
+
+  if (!cells.length) return <ChartEmpty note="No course-content scores recorded yet." />
 
   return <PlotFigure spec={spec} height={height ?? Math.max(180, courses.length * 34 + 44)} />
 }
@@ -701,6 +726,8 @@ export function FacultyCompareLines({
     [rows, ghost, termOrder, names, programMean],
   )
 
+  if (!names.length) return <ChartEmpty note="No faculty scores recorded across terms yet." />
+
   return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
 }
 
@@ -966,7 +993,16 @@ export function KpiSpark({
     [points, tone, seriesIndex],
   )
 
-  if (points.length < 3) return null
+  // A sparkline needs ≥3 points to show a shape. Returning null would leave the tile as a
+  // bare number, which is precisely what VIZ-010 forbids — so say why the trend is missing
+  // rather than silently omitting it.
+  if (points.length < 3) {
+    return (
+      <p className="py-2 text-xs text-muted-foreground">
+        {points.length <= 1 ? 'One term of data — no trend yet.' : 'Two terms of data — not enough for a trend.'}
+      </p>
+    )
+  }
   return <PlotFigure spec={spec} height={height} />
 }
 
@@ -1038,6 +1074,8 @@ export function CourseRankDots({
     }),
     [courses, spread, order, median],
   )
+
+  if (!courses.length) return <ChartEmpty note="No courses with evaluated offerings yet." />
 
   return <PlotFigure spec={spec} height={height ?? Math.max(160, courses.length * 32 + 40)} />
 }

@@ -18,6 +18,8 @@ import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '
 import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
+import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
+import { facultyStats } from '@/lib/pce-analytics'
 
 type Axis = 'term' | 'cohort'
 /**
@@ -55,6 +57,13 @@ function AnalyticsInner() {
 
   const scopeLabel = axis === 'term' ? term : cohort
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
+
+  /** The selected faculty member's class-size-weighted mean — the portfolio's anchor value.
+   *  Derived from the canonical dataset so it cannot drift from the leaderboard above. */
+  const selectedFacultyAvg = useMemo(() => {
+    const stat = facultyStats().find(f => f.facultyId === selectedFacultyId)
+    return stat ? stat.score.weighted : null
+  }, [selectedFacultyId])
 
   const distinctCourses = useMemo(() => {
     const seen = new Set<string>()
@@ -172,7 +181,23 @@ function AnalyticsInner() {
               </div>
             )}
 
-            <ByFacultyPanel facultyId={selectedFacultyId} onOpenSurvey={setSelectedSurveyId} />
+            {/* extraCharts is what makes this tab's "their portfolio" copy true. Without it
+                the tab rendered a KPI strip and a table while /admin/faculty/[id] showed the
+                full portfolio — two doors to the same faculty member, different contents.
+                lens="admin": this tab is admin-only, so the peer distribution is allowed. */}
+            <ByFacultyPanel
+              facultyId={selectedFacultyId}
+              onOpenSurvey={setSelectedSurveyId}
+              extraCharts={
+                selectedFacultyId ? (
+                  <FacultyPortfolioCharts
+                    facultyId={selectedFacultyId}
+                    avgRating={selectedFacultyAvg}
+                    lens="admin"
+                  />
+                ) : null
+              }
+            />
           </div>
         </TabsContent>
 

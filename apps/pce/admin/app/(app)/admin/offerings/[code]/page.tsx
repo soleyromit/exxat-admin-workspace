@@ -11,7 +11,6 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
 } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
@@ -33,25 +32,25 @@ const TERM_ORDER = [
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
 
-// Derive section scores from avgRating with deterministic per-section variance
-function sectionScores(seedKey: string, avgRating: number) {
-  const seed = seedKey.charCodeAt(seedKey.length - 1)
-  const offsets = [0.2, -0.1, 0.3, -0.2, 0.1]
-  const sections = ['Content', 'Organization', 'Workload', 'Materials', 'Assessment']
-  return sections.map((name, i) => ({
-    name,
-    score: Math.min(5, Math.max(1, +(avgRating + offsets[(i + seed) % offsets.length]).toFixed(1))),
-    fullMark: 5,
-  }))
-}
+/**
+ * REMOVED 2026-07-14 — the "Score by section" radar was fabricated.
+ *
+ * It synthesised five dimensions (Content / Organization / Workload / Materials /
+ * Assessment) from `avgRating + offsets[(i + seed) % 5]`, seeded off a charCode. Same bug
+ * class as the faculty version removed from `faculty-profile-dashboard.tsx` — and it does
+ * not even agree with it, since that one invented a DIFFERENT five labels from the same
+ * seed. Neither set is measured: `TemplateSection` has THREE values (course_content,
+ * faculty_performance, course_director), and `PceResponse.sectionScores` is keyed by
+ * surveyId with no per-actor attribution.
+ *
+ * A section breakdown needs a data-model decision first (Romit/Himanshu). Until then an
+ * absent chart beats invented numbers on a real course's review page.
+ */
 
 const trendChartConfig: ChartConfig = {
   range:  { label: 'Course range', color: 'var(--border)' },
   median: { label: 'Median',       color: 'var(--muted-foreground)' },
   course: { label: 'This course',  color: 'var(--brand-color)' },
-}
-const radarChartConfig: ChartConfig = {
-  score: { label: 'Score', color: 'var(--brand-color)' },
 }
 
 export default function CourseAnalyticsProfile() {
@@ -101,11 +100,6 @@ export default function CourseAnalyticsProfile() {
     }).filter(Boolean)
   }, [offerings])
 
-  const radarData = useMemo(
-    () => avgRating !== null ? sectionScores(courseCode, avgRating) : [],
-    [courseCode, avgRating],
-  )
-
   if (!course) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center gap-2">
@@ -119,24 +113,6 @@ export default function CourseAnalyticsProfile() {
   }
 
   // ── Leo insights — derived from the course's own data ───────────────────────
-  const weakest = radarData.length ? radarData.reduce((a, b) => (b.score < a.score ? b : a)) : null
-  const strongest = radarData.length ? radarData.reduce((a, b) => (b.score > a.score ? b : a)) : null
-  const radarLeo: ChartLeoInsight | null = weakest && strongest
-    ? {
-        headline:
-          weakest.score < 3.7
-            ? `${weakest.name} is the weakest dimension at ${weakest.score.toFixed(1)}/5`
-            : `${strongest.name} is the strongest dimension at ${strongest.score.toFixed(1)}/5`,
-        explanation:
-          weakest.score < 3.7
-            ? `The other dimensions hold up — targeted changes to ${weakest.name.toLowerCase()} would move this course's rating fastest.`
-            : 'All dimensions sit at or above the 3.7 tier — a balanced profile.',
-        kind: weakest.score < 3.7 ? 'anomaly' : 'trend',
-        delta: { value: (strongest.score - weakest.score).toFixed(1), label: 'spread across dimensions' },
-        bullets: radarData.map(d => `${d.name}: ${d.score.toFixed(1)}/5.`),
-      }
-    : null
-
   const trendRows = trendData.filter((d): d is NonNullable<typeof d> => d != null)
   const lastWithCourse = [...trendRows].reverse().find(d => d.course != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithCourse
@@ -161,34 +137,10 @@ export default function CourseAnalyticsProfile() {
       })()
     : null
 
-  // Radar + distribution band — DS OS ChartCards, merged in above the By Course panel.
+  // Distribution band — DS OS ChartCard, merged in above the By Course panel.
+  // (The fabricated "Score by section" radar was removed 2026-07-14 — see the note above.)
   const extraCharts = (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <ChartCard variant="normal" title="Score by section" description="Survey dimension breakdown" leoInsight={radarLeo}>
-        <ChartFigure
-          label="Score by section"
-          summary={`Radar chart of survey dimensions: ${radarData.map(d => `${d.name} ${d.score.toFixed(1)}`).join(', ')} out of 5.`}
-          dataLength={radarData.length}
-        >
-          {(activeIndex) => (
-            <>
-              <ChartContainer config={radarChartConfig} className="h-52 w-full">
-                <RadarChart data={radarData} outerRadius="75%">
-                  <PolarGrid stroke="var(--border)" />
-                  <PolarAngleAxis dataKey="name" tick={CHART_AXIS_TICK} />
-                  <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                  <Radar dataKey="score" stroke="var(--brand-color)" fill="var(--brand-color)" fillOpacity={0.15} strokeWidth={2} dot={{ r: 3, fill: 'var(--brand-color)' }} isAnimationActive={false} />
-                </RadarChart>
-              </ChartContainer>
-              <ChartDataTable
-                caption="Score by section"
-                headers={['Dimension', 'Score']}
-                rows={radarData.map(d => [d.name, `${d.score.toFixed(1)}/5`])}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
 
       <ChartCard
         variant="normal"

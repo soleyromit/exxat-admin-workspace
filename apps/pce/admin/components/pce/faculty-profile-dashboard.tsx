@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   Avatar, AvatarFallback, Button, Badge,
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -16,12 +15,7 @@ import {
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import {
-  BenchmarkDistribution,
-  CourseRankSpark,
-  ResponseTrendLine,
-} from '@/components/pce/analytics-plots'
-import { benchmarks, facultyCourseStats, facultyResponseTrend, medianOf } from '@/lib/pce-analytics'
+import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByFacultyPanel } from '@/components/pce/analytics-panels'
@@ -117,16 +111,6 @@ export function FacultyProfileDashboard({
     })
   }, [offerings])
 
-  /* Story 15 — the percentile substitute, and stories 16 + 19 — the course as the unit
-     of analysis within a person (the cut the legacy prototype never made). */
-  const bench = useMemo(() => benchmarks(facultyId), [facultyId])
-  const courseRank = useMemo(() => facultyCourseStats(facultyId), [facultyId])
-  const courseMedian = useMemo(
-    () => medianOf(courseRank.map((c) => c.score.weighted)),
-    [courseRank],
-  )
-  const responseTrend = useMemo(() => facultyResponseTrend(facultyId), [facultyId])
-
   if (!faculty) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center gap-2">
@@ -135,60 +119,6 @@ export function FacultyProfileDashboard({
       </div>
     )
   }
-
-  // ── Leo insights — derived from the profile's own data ──────────────────────
-  const benchLeo: ChartLeoInsight | null = avgRating != null
-    ? {
-        headline:
-          avgRating >= bench.department
-            ? `Rated ${(avgRating - bench.department).toFixed(2)} above the department average`
-            : `Rated ${(bench.department - avgRating).toFixed(2)} below the department average`,
-        explanation:
-          lens === 'admin'
-            ? 'Position against two benchmarks, not a rank. Each grey dot is another faculty member with ' +
-              'no name attached — the shape shows whether the department is tightly clustered (a small gap ' +
-              'means a lot) or widely spread (it means little).'
-            : 'Position against the department and university averages. No peer ranking is shown — a small ' +
-              'gap and a large one mean different things depending on how spread the department is.',
-        kind: avgRating >= bench.department ? 'trend' : 'dip',
-        delta: {
-          value: `${avgRating >= bench.department ? '+' : ''}${(avgRating - bench.department).toFixed(2)}`,
-          label: 'vs dept average',
-        },
-        bullets: [
-          `Own ${avgRating.toFixed(2)}/5 · department ${bench.department.toFixed(2)}/5 · university ${bench.university.toFixed(2)}/5.`,
-          `${bench.distribution.length} faculty in the distribution.`,
-        ],
-        anchor: { yValue: avgRating },
-      }
-    : null
-
-  const courseRankLeo: ChartLeoInsight | null = courseRank.length
-    ? (() => {
-        const best = courseRank[0]!
-        const worst = courseRank[courseRank.length - 1]!
-        const single = courseRank.length === 1
-        return {
-          headline: single
-            ? `${best.courseCode} is the only course in this portfolio`
-            : `${worst.courseCode} is the weakest of ${courseRank.length} courses at ${worst.score.weighted.toFixed(2)}`,
-          explanation: single
-            ? 'A one-course portfolio cannot be ranked, and the spread between courses — usually the most ' +
-              'useful signal about a person — is not available. The per-term trend is the only comparison here.'
-            : `The gap between ${best.courseCode} (${best.score.weighted.toFixed(2)}) and ${worst.courseCode} ` +
-              `(${worst.score.weighted.toFixed(2)}) is ${(best.score.weighted - worst.score.weighted).toFixed(2)}. ` +
-              'A person strong in one course and weak in another is a course-fit conversation, not a teaching one.',
-          kind: single ? 'trend' : 'anomaly',
-          delta: {
-            value: worst.score.weighted.toFixed(2),
-            label: single ? best.courseCode : `lowest — ${worst.courseCode}`,
-          },
-          bullets: courseRank.map(
-            (c) => `${c.courseCode}: ${c.score.weighted.toFixed(2)}/5 across ${c.terms} term${c.terms === 1 ? '' : 's'}.`,
-          ),
-        }
-      })()
-    : null
 
   const lastWithFaculty = [...trendData].reverse().find(d => d.faculty != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
@@ -214,143 +144,12 @@ export function FacultyProfileDashboard({
       })()
     : null
 
-  // Portfolio charts — DS OS ChartCards, rendered above the By Faculty panel.
+  // Portfolio charts — the shared portfolio (stories 11/15/16/19), which /analytics?tab=faculty
+  // renders too so both doors to a faculty member show the same thing, plus this route's own
+  // distribution band.
   const extraCharts = (
     <>
-    {/* ChartCard titles are h3; without a section h2 the document jumps h1 → h3
-        (axe `heading-order`). The section is real, it just needn't be seen. */}
-    <h2 className="sr-only">Performance</h2>
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      {/* Story 15 — "key numbers: avg score, PERCENTILE, response rate", answered without
-          a percentile. §7.3 bans percentile by name; Aarti validated the substitute
-          ("compared to the department average to the university average") and cited
-          Watermark/Anthology as proof faculty accept it.
-          Both lenses render the card; only the admin lens gets the peer swarm — see
-          `showPeers` on BenchmarkDistribution. */}
-      {avgRating != null && (
-        <ChartCard
-          variant="normal"
-          title="Standing vs benchmarks"
-          description={
-            lens === 'admin'
-              ? 'Position against the department and university averages — not a rank. Each grey dot is an unnamed faculty member.'
-              : 'Your average against the department and university averages.'
-          }
-          leoInsight={benchLeo}
-        >
-          <ChartFigure
-            label="Standing versus benchmarks"
-            summary={`This faculty member scores ${avgRating.toFixed(2)} out of 5, against a department average of ${bench.department.toFixed(2)} and a university average of ${bench.university.toFixed(2)}.${lens === 'admin' ? ' Peers are shown as an anonymous distribution.' : ''}`}
-            dataLength={lens === 'admin' ? bench.distribution.length : 1}
-            leoInsight={benchLeo}
-          >
-            {() => (
-              <>
-                <BenchmarkDistribution
-                  distribution={bench.distribution}
-                  value={avgRating}
-                  department={bench.department}
-                  university={bench.university}
-                  showPeers={lens === 'admin'}
-                />
-                <ChartDataTable
-                  caption="Standing versus benchmarks"
-                  headers={['Measure', 'Score']}
-                  rows={[
-                    ['This faculty', avgRating.toFixed(2)],
-                    ['Department average', bench.department.toFixed(2)],
-                    ['University average', bench.university.toFixed(2)],
-                  ]}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      )}
-
-      {/* Stories 16 + 19 — one component, because they are one idea: rank the courses this
-          person teaches AND show each one's trend. Guarded for n=1: some faculty teach a
-          single course, so "ranked best to worst" over a list of one must still read sanely. */}
-      <ChartCard
-        variant="normal"
-        title="Courses taught"
-        description={
-          courseRank.length === 1
-            ? 'One course in this portfolio — ranking needs at least two, so the per-term trend is the comparison.'
-            : 'Ranked best to worst, each with its own trend. Strong in one course and weak in another is a course-fit problem, not a teaching one.'
-        }
-        leoInsight={courseRankLeo}
-      >
-        <ChartFigure
-          label="Courses taught"
-          summary={`${courseRank.length} course${courseRank.length === 1 ? '' : 's'} ranked by weighted score, each with a per-term trend line.`}
-          dataLength={courseRank.length}
-          leoInsight={courseRankLeo}
-        >
-          {() => (
-            <>
-              <div className="flex flex-col">
-                {courseRank.map((c, i) => (
-                  <div
-                    key={c.courseCode}
-                    className="grid grid-cols-[1.5rem_1fr_5rem_3.5rem] items-center gap-3 border-b border-border py-2 last:border-b-0"
-                  >
-                    <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{c.courseCode}</p>
-                      <p className="truncate text-xs text-muted-foreground">{c.courseName}</p>
-                    </div>
-                    <CourseRankSpark course={c} median={courseMedian} />
-                    <span className="text-right text-sm font-medium tabular-nums">
-                      {c.score.weighted.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <ChartDataTable
-                caption="Courses taught, ranked by weighted score"
-                headers={['Rank', 'Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
-                rows={courseRank.map((c, i) => [
-                  i + 1,
-                  `${c.courseCode} — ${c.courseName}`,
-                  c.score.weighted.toFixed(2),
-                  c.score.simple.toFixed(2),
-                  c.terms,
-                  `${c.responseRate}%`,
-                ])}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
-
-      {/* Story 11 — response-rate trend for this faculty member. Own data, so it is safe on
-          both lenses. RUBRIC Q4's ❌ is "single % delta with arrow — hides the path; a
-          drop-and-recovery looks identical to flat". */}
-      {responseTrend.length > 1 && (
-        <ChartCard
-          variant="normal"
-          title="Response rate over time"
-          description="Their own collection rate per term against the 80% target — the path, not a single delta."
-        >
-          <ChartFigure
-            label="Response rate over time"
-            summary={`Response rate per term for this faculty member against an 80% target, across ${responseTrend.length} terms.`}
-            dataLength={responseTrend.length}
-          >
-            {() => (
-              <>
-                <ResponseTrendLine rows={responseTrend} />
-                <ChartDataTable
-                  caption="Response rate by term"
-                  headers={['Term', 'Response rate']}
-                  rows={responseTrend.map((r) => [r.term, `${r.responseRate}%`])}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      )}
+      <FacultyPortfolioCharts facultyId={facultyId} avgRating={avgRating} lens={lens} />
 
       <ChartCard
         variant="normal"
@@ -392,7 +191,6 @@ export function FacultyProfileDashboard({
           )}
         </ChartFigure>
       </ChartCard>
-    </div>
     </>
   )
 

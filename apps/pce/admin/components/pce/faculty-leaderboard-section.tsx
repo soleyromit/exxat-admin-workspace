@@ -99,6 +99,16 @@ export function FacultyLeaderboardSection({
 
   const lowest = faculty[faculty.length - 1]
 
+  /**
+   * Memoised: `PlotFigure` lists `leoAnchor` in its effect deps, and object literals compare
+   * by reference — a fresh `{x, y}` each render would tear down the SVG and re-run
+   * `Plot.plot()` on every parent render (DOM thrash + a visible repaint).
+   */
+  const leaderAnchor = useMemo(
+    () => (lowest ? { x: lowest.score.weighted, y: lowest.name } : undefined),
+    [lowest],
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="sr-only">All faculty</h2>
@@ -117,13 +127,7 @@ export function FacultyLeaderboardSection({
         >
           {() => (
             <>
-              <FacultyLeaderboardDots
-                faculty={faculty}
-                median={median}
-                leoAnchor={
-                  lowest ? { x: lowest.score.weighted, y: lowest.name } : undefined
-                }
-              />
+              <FacultyLeaderboardDots faculty={faculty} median={median} leoAnchor={leaderAnchor} />
               <ChartDataTable
                 caption="Faculty scores against the program median"
                 headers={['Faculty', 'Weighted score', 'Simple mean', 'Offerings', 'Courses', 'Response rate']}
