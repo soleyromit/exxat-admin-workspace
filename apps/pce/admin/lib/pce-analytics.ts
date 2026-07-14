@@ -344,6 +344,68 @@ export function termCourseBreakdown(term: string): TermCourseRow[] {
     .sort((a, b) => (a.courseAvg ?? 99) - (b.courseAvg ?? 99))
 }
 
+export interface SlopeRow {
+  courseCode: string
+  courseName: string
+  from: number
+  to: number
+  delta: number
+  enrolled: number
+}
+
+/**
+ * Course scores from the PREVIOUS term to this one — one line per course.
+ *
+ * RUBRIC Q5 / VIZ-PATTERN-004 (slope-paired). The vault asks for it by name: "Slopegraph |
+ * Two-to-N term columns, one line per section/faculty — reads direction instantly."
+ *
+ * This answers a question none of the other charts do. A ranked dot plot says who is low;
+ * a trend line says where the programme is heading in aggregate. Neither says WHO MOVED —
+ * and "which courses changed since last term, and by how much" is the accreditation question
+ * this tab exists for. Crossing lines are the signal: they are courses that swapped places.
+ */
+export function termSlope(term: string): { rows: SlopeRow[]; from: string; to: string } | null {
+  const series = termSeries()
+  const i = series.findIndex((s) => s.term === term)
+  if (i <= 0) return null
+  const prevTerm = series[i - 1]!.term
+
+  const scoreFor = (t: string) => {
+    const m = new Map<string, { avg: number; name: string; enrolled: number }>()
+    courseTermPoints()
+      .filter((p) => p.term === t)
+      .forEach((p) => m.set(p.courseCode, { avg: p.courseAvg, name: p.courseName, enrolled: 0 }))
+    offeringPoints()
+      .filter((o) => o.term === t)
+      .forEach((o) => {
+        const e = m.get(o.courseCode)
+        if (e) e.enrolled += o.enrolled
+      })
+    return m
+  }
+
+  const a = scoreFor(prevTerm)
+  const b = scoreFor(term)
+
+  const rows: SlopeRow[] = []
+  b.forEach((cur, code) => {
+    const prev = a.get(code)
+    // Only courses that ran in BOTH terms — a slope needs two points, and inventing one
+    // would fabricate movement where the course simply wasn't offered.
+    if (!prev) return
+    rows.push({
+      courseCode: code,
+      courseName: cur.name,
+      from: prev.avg,
+      to: cur.avg,
+      delta: round2(cur.avg - prev.avg),
+      enrolled: cur.enrolled,
+    })
+  })
+
+  return { rows: rows.sort((x, y) => y.delta - x.delta), from: prevTerm, to: term }
+}
+
 /** Every calendar term the data touches, oldest first — including terms with no data. */
 export function allTerms(): string[] {
   return termSeries().map((s) => s.term)

@@ -22,7 +22,7 @@ import {
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { CourseRankDots, GapQuadrant, CourseTrendStack, FacultyLeaderboardDots } from '@/components/pce/analytics-plots'
+import { GapQuadrant, CourseTrendStack, FacultyLeaderboardDots, Slopegraph } from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTable } from '@/components/data-table'
@@ -32,8 +32,8 @@ import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
-  termKpis, termCourseBreakdown, termSeries, courseStats, gapPoints, medianOf,
-  courseTrend, courseFacultyStats, type TermCourseRow,
+  termKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
+  courseTrend, courseFacultyStats, termSlope, shortTerm, type TermCourseRow,
 } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
@@ -427,39 +427,46 @@ export function ByTermPanel({
   /* Term-scoped derivations for row 2. Scoped to THIS term — the trend above is all-terms
      by design (Monil: "trend graph is not for a single term, but for all the terms"), so the
      single-term answer has to live somewhere, and these are it. */
-  const termScopedCourses = useMemo(
-    () => (axis === 'term' ? courseStats(value) : []),
-    [axis, value],
-  )
-  const termScopedMedian = useMemo(
-    () => medianOf(termScopedCourses.map(c => c.score.weighted)),
-    [termScopedCourses],
-  )
+  const termSlopeData = useMemo(() => (axis === 'term' ? termSlope(value) : null), [axis, value])
+
+  const termSlopeLeo: ChartLeoInsight | null = useMemo(() => {
+    if (!termSlopeData || termSlopeData.rows.length < 2) return null
+    const rows = termSlopeData.rows
+    const risers = rows.filter(r => r.delta > 0.15)
+    const fallers = rows.filter(r => r.delta < -0.15)
+    const worst = rows[rows.length - 1]!
+    const best = rows[0]!
+    return {
+      // Frequency counts, not percentages — Aarti D17.
+      headline:
+        fallers.length > 0
+          ? `${fallers.length} of ${rows.length} courses fell coming into ${value}`
+          : `No course lost ground coming into ${value}`,
+      explanation:
+        fallers.length > 0
+          ? `${worst.courseCode} fell furthest, ${Math.abs(worst.delta).toFixed(2)}. A ranked list would show it as "low" ` +
+            `and an aggregate trend would average it away — only the slope shows it MOVED, which is the difference ` +
+            `between a course that is hard and a course that broke.`
+          : `${risers.length} course${risers.length === 1 ? '' : 's'} improved and the rest held. Flat lines are stability, not missing data.`,
+      kind: fallers.length > 0 ? 'dip' : 'trend',
+      delta: {
+        value: `${worst.delta >= 0 ? '+' : ''}${worst.delta.toFixed(2)}`,
+        label: `${worst.courseCode} · biggest fall`,
+      },
+      bullets: [
+        `${worst.courseCode}: ${worst.from.toFixed(2)} → ${worst.to.toFixed(2)} (${worst.delta >= 0 ? '+' : ''}${worst.delta.toFixed(2)}).`,
+        `${best.courseCode}: ${best.from.toFixed(2)} → ${best.to.toFixed(2)} (${best.delta >= 0 ? '+' : ''}${best.delta.toFixed(2)}).`,
+        `${rows.length} courses ran in both ${termSlopeData.from} and ${value}.`,
+      ],
+      anchor: { yValue: worst.to },
+    }
+  }, [termSlopeData, value])
+
   const termGaps = useMemo(() => (axis === 'term' ? gapPoints(value) : []), [axis, value])
   const termGapMeans = useMemo(() => ({
     course: termGaps.length ? termGaps.reduce((s, g) => s + g.courseAvg, 0) / termGaps.length : 0,
     faculty: termGaps.length ? termGaps.reduce((s, g) => s + g.facultyAvg, 0) / termGaps.length : 0,
   }), [termGaps])
-
-  const termSpreadLeo: ChartLeoInsight | null = useMemo(() => {
-    if (termScopedCourses.length < 2) return null
-    const worst = termScopedCourses[termScopedCourses.length - 1]!
-    const below = termScopedCourses.filter(c => c.score.weighted < termScopedMedian)
-    return {
-      // Frequency count, not a percentage — Aarti D17.
-      headline: `${below.length} of ${termScopedCourses.length} courses sit below the ${termScopedMedian.toFixed(2)} median in ${value}`,
-      explanation:
-        `This is the term's own spread, not the program's — a course can sit above the all-time median and still ` +
-        `be the weakest thing that ran this term. ${worst.courseCode} is lowest at ${worst.score.weighted.toFixed(2)}.`,
-      kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: worst.score.weighted.toFixed(2), label: `lowest — ${worst.courseCode}` },
-      bullets: [
-        `${worst.courseCode} — ${worst.courseName}: ${worst.score.weighted.toFixed(2)} content · ${worst.responseRate}% response.`,
-        `Term median ${termScopedMedian.toFixed(2)} across ${termScopedCourses.length} courses.`,
-      ],
-      anchor: { yValue: worst.score.weighted },
-    }
-  }, [termScopedCourses, termScopedMedian, value])
 
   const termGapLeo: ChartLeoInsight | null = useMemo(() => {
     if (termGaps.length < 3) return null
@@ -704,35 +711,49 @@ export function ByTermPanel({
           §9.1 maps it explicitly: "5 — spread across a term's courses | Q2 | Cleveland dot
           (N=8)". The trend above answers "which way is the program heading"; these answer
           "what happened INSIDE this term", which is the question the term selector implies. */}
-      {axis === 'term' && termScopedCourses.length > 0 && (
+      {axis === 'term' && (termSlopeData !== null || termGaps.length > 0) && (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <ChartCard
             variant="normal"
-            title={`Course spread — ${value}`}
-            description="Every course evaluated this term against the term's own median. Faint dots are the individual offerings behind each mean."
-            leoInsight={termSpreadLeo}
+            title={termSlopeData ? `What moved — ${termSlopeData.from} → ${value}` : `What moved — ${value}`}
+            description="One line per course, previous term to this one. Crossing lines are courses that swapped places; a flat line is a course that held."
+            leoInsight={termSlopeLeo}
           >
             <ChartFigure
-              label={`Course spread in ${value}`}
-              summary={`Ranked dot plot of ${termScopedCourses.length} courses' content scores in ${value}, against the term median.`}
-              dataLength={termScopedCourses.length}
-              leoInsight={termSpreadLeo}
+              label={`Course movement into ${value}`}
+              summary={
+                termSlopeData
+                  ? `Slopegraph of ${termSlopeData.rows.length} courses' content scores from ${termSlopeData.from} to ${value}.`
+                  : 'No previous term to compare against.'
+              }
+              dataLength={termSlopeData?.rows.length ?? 0}
+              leoInsight={termSlopeLeo}
             >
-              {() => (
-                <>
-                  <CourseRankDots courses={termScopedCourses} median={termScopedMedian} />
-                  <ChartDataTable
-                    caption={`Course content scores in ${value}`}
-                    headers={['Course', 'Content score', 'Simple mean', 'Response rate']}
-                    rows={termScopedCourses.map(c => [
-                      `${c.courseCode} — ${c.courseName}`,
-                      c.score.weighted.toFixed(2),
-                      c.score.simple.toFixed(2),
-                      `${c.responseRate}%`,
-                    ])}
-                  />
-                </>
-              )}
+              {() =>
+                !termSlopeData ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    {value} is the earliest term with data — nothing to compare it against yet.
+                  </p>
+                ) : (
+                  <>
+                    <Slopegraph
+                      rows={termSlopeData.rows}
+                      fromLabel={shortTerm(termSlopeData.from)}
+                      toLabel={shortTerm(value)}
+                    />
+                    <ChartDataTable
+                      caption={`Course content score, ${termSlopeData.from} to ${value}`}
+                      headers={['Course', termSlopeData.from, value, 'Change']}
+                      rows={termSlopeData.rows.map(r => [
+                        `${r.courseCode} — ${r.courseName}`,
+                        r.from.toFixed(2),
+                        r.to.toFixed(2),
+                        `${r.delta >= 0 ? '+' : ''}${r.delta.toFixed(2)}`,
+                      ])}
+                    />
+                  </>
+                )
+              }
             </ChartFigure>
           </ChartCard>
 

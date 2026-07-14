@@ -738,6 +738,118 @@ export function ProgramTrendStack({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   Slopegraph — VIZ-PATTERN-004 (slope-paired).
+   Q5 ("how does A compare to B") across two adjacent terms.
+   A: open the course that fell.
+
+   Exists because the rest of this file kept answering ONE question — "who is
+   low?" — which is why it kept reaching for a ranked dot plot. This asks "who
+   MOVED", which a ranked list cannot show at all and an aggregate trend line
+   averages away. Crossing lines are the whole point: they are courses that
+   swapped places between two terms.
+
+   Tufte's slopegraph rules, kept: no gridlines, no y-axis furniture, the two
+   term columns ARE the axis, and every line is labelled at both ends.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export function Slopegraph({
+  rows,
+  fromLabel,
+  toLabel,
+  height,
+}: {
+  rows: { courseCode: string; courseName: string; from: number; to: number; delta: number }[]
+  fromLabel: string
+  toLabel: string
+  height?: number
+}) {
+  /** Long form: two points per course, joined by `courseCode`. */
+  const points = React.useMemo(
+    () =>
+      rows.flatMap((r) => [
+        { code: r.courseCode, side: fromLabel, value: r.from, delta: r.delta },
+        { code: r.courseCode, side: toLabel, value: r.to, delta: r.delta },
+      ]),
+    [rows, fromLabel, toLabel],
+  )
+
+  const domain = React.useMemo(
+    () => paddedDomain(rows.flatMap((r) => [r.from, r.to]), 0.5, 0.1),
+    [rows],
+  )
+
+  /** Movement worth naming — below this the label is noise on a flat line. */
+  const MOVED = 0.15
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 92,
+      marginRight: 92,
+      marginTop: 26,
+      marginBottom: 10,
+      x: { domain: [fromLabel, toLabel], label: null, axis: 'top' as const, ...axisDefaults(theme) },
+      y: { domain, axis: null },
+      marks: [
+        // The two term columns are the axis — no gridlines (Tufte).
+        Plot.line(points, {
+          x: 'side',
+          y: 'value',
+          z: 'code',
+          stroke: (d: { delta: number }) =>
+            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.good : theme.border,
+          strokeWidth: (d: { delta: number }) => (Math.abs(d.delta) > MOVED ? 2 : 1),
+        }),
+        Plot.dot(points, {
+          x: 'side',
+          y: 'value',
+          r: 3,
+          fill: (d: { delta: number }) =>
+            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.good : theme.mutedForeground,
+          channels: {
+            Course: 'code',
+            Term: 'side',
+            Score: (d: { value: number }) => fmt2(d.value),
+            Change: (d: { delta: number }) => `${d.delta >= 0 ? '+' : ''}${fmt2(d.delta)}`,
+          },
+          tip: { format: { x: false, y: false, fill: false, r: false } },
+        }),
+        // Both ends labelled — a slopegraph with one label is a mystery.
+        Plot.text(
+          points.filter((p) => p.side === fromLabel),
+          {
+            x: 'side', y: 'value', text: 'code', textAnchor: 'end', dx: -8,
+            fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE,
+          },
+        ),
+        Plot.text(
+          points.filter((p) => p.side === toLabel),
+          {
+            x: 'side',
+            y: 'value',
+            text: (d: { code: string; delta: number }) =>
+              Math.abs(d.delta) > MOVED
+                ? `${d.code}  ${d.delta >= 0 ? '+' : ''}${fmt2(d.delta)}`
+                : d.code,
+            textAnchor: 'start',
+            dx: 8,
+            fill: (d: { delta: number }) =>
+              Math.abs(d.delta) > MOVED ? theme.foreground : theme.mutedForeground,
+            fontSize: CHART_TICK_FONT_SIZE,
+          },
+        ),
+      ],
+    }),
+    [points, domain, fromLabel, toLabel],
+  )
+
+  if (rows.length < 2) {
+    return <ChartEmpty note="Needs two terms with at least two shared courses to show movement." />
+  }
+
+  return <PlotFigure spec={spec} height={height ?? Math.max(260, rows.length * 26 + 60)} />
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    Story 12 — one course over time.
    Q4 (change over time) → line, one per rated entity + the response path below.
 
