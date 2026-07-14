@@ -492,7 +492,79 @@ so "ranked best to worst" over a list of one must degrade gracefully.
 
 ---
 
-## 9. Verification
+## 9. Chart types per decision — and where each comes from
+
+> **No invented charts.** Every type below is either (a) a component that already exists with a
+> file:line, or (b) explicitly marked NOT FOUND. Sources are the vendored DS OS chart suite, the
+> proven in-product primitives, and the vault's settled viz decisions — never a default from thin air.
+
+### 9.0 Premise correction: the DS package ships **zero** chart types
+
+`node tools/ds/source.mjs` → `@exxatdesignux/ui@0.6.57 — 702 exports`. `Chart` is **not** among them.
+The entire chart surface in the package is **8 primitives**: `ChartConfig`, `ChartContainer`,
+`ChartLegend`, `ChartLegendContent`, `ChartStyle`, `ChartTooltip`, `ChartTooltipContent`,
+`chartTooltipKeyboardSyncProps`. `components/ui/chart.tsx` is a one-line re-export.
+
+**⇒ "DS OS chart vocabulary" means the vendored suite in `apps/pce/admin`, not the package.**
+
+| Source | What it gives |
+|---|---|
+| `components/charts-overview.tsx:209` | `ChartCardVariant = normal \| tabs \| selector \| metrics-tabs \| kpi-chart` — **confirmed** |
+| `:455` `ChartCard` | `miniMetrics: MiniMetric[]`, `leoInsight`, `trendContent`, `filterOptions` |
+| `:271` `ChartFigure` | a11y shell — `role="application"`, arrow-key nav, `aria-live` |
+| `:241` `ChartDataTable` | `sr-only` table fallback — **mandatory pairing** |
+| `components/design-system/chart-previews.tsx:1318` `CHART_TABS` | the DS type enumeration — **9 families, 21 types** |
+| `components/chart-leo-spotting.tsx:352/447/469` | 3 Leo overlays (cartesian / context / pixel-for-canvas) |
+
+### 9.1 The mapping
+
+| Task | Chart type | Component (file:line) | Source & proof |
+|---|---|---|---|
+| **1, 8** — section breakdown per faculty | **Radar**, 2 series (faculty + program avg overlay) | `RadarChartContent` `charts-overview.tsx:1400`; product: `components/pce/faculty-profile-dashboard.tsx:57` | Vault `2026-06-18` §3: *"Score by dimension? \| **Radar** (have) \| **5 survey sections**. Keep."* · `_Insights` Jun 10: *"faculty **spider graph maps to survey sections**."* **Already rendering sections in product.** Second series satisfies Aarti: *"averages drawn **ON viz**, not in prose"* |
+| **1, 8** — AI themes | **NOT A CHART** — cited theme block | `leoInsight` on `ChartCard:455`; `ChartLeoInsight` `leo-insight-indicator.tsx:58` | D28: themes are dynamic AI clusters, *"let it be dynamic"* · `ai-layer.md`: 3–6 themes, *"provenance always cited"*. **Current progress bars violate VIZ-001 — delete, don't port** |
+| **2** — leaderboard + alerts | **DataTable + row sparkline**; alert = amber badge | `TrendSparkline` `components/pce/trend-sparkline.tsx:44` (72×20, row-sized) → `MicroTrend` `micro-trend.tsx:83` | Proven. Amber-never-red is enforced in code: `bullet-gauge.tsx:11` *"Aarti's rule"* (VIZ-004). ⚠️ §7.3 bans **Cleveland dot plot of faculty rankings by name** — faculty-side only; admin-side allowed but unbuilt. **Blocked on D3/D4** |
+| **3** — response-rate trend, one faculty | **Line + target ReferenceLine** | `LineChartContent` `charts-overview.tsx:1087`; product: `analytics-panels.tsx` | Proven. (Distinct from the *cumulative* curve below — this is across terms, that is within one collection window) |
+| **4** — By Course key numbers | **KeyMetrics**, ≤4 tiles | DS `KeyMetrics` | `exxat-kpi-max-four`; ref app ships only 2 here |
+| **4** — By Course score trend | **Line + program-avg ReferenceLine**, or `ChartCard variant="kpi-chart"` | `charts-overview.tsx:1087` / `:455` | Jun 10 brief: *"slope/strip plot preferred, **progress bars last resort**"* |
+| **4** — template variance guard | **NOT A CHART** — `LocalBanner` | — | C-2: *"Cross-course analysis limited — N templates in use across these courses"*; D-3/C9. Never toast |
+| **5** — term trends ×2 | **Line ×2 + ReferenceLine** (`Target 4.0` / `Target 80%`); delta chips = **`miniMetrics`** | `charts-overview.tsx:1087`; `MiniMetric[]` on `ChartCard:455` | Proven. The ref app's per-term chip row (§2.4) has a real DS home — `miniMetrics`, not a bespoke row. Vault: 5–6 terms, cohort grouping, course vs faculty averages **separately** |
+| **5** — spread across a term's courses | **Strip/dot plot** *(beeswarm substitute — see 9.2)* | `SectionScoreStrip` `components/pce/section-score-strip.tsx:60` (`ChartContainer` + recharts `ScatterChart`, dot on a 1–5 track) | Proven at `results/[id]/page.tsx:570` *"theme strip plot"* |
+| **6** — portfolio key numbers | **KeyMetrics**, decomposed | DS `KeyMetrics` | D7/D27: *"average score is **never** shown as a single number"* → course rating + faculty rating, ≤4 tiles |
+| **6** — **percentile** | **NOT A CHART — substitute `BulletGauge` vs dept + university averages** | `BulletGauge` `components/pce/bullet-gauge.tsx:48` (BarChart + `ReferenceLine`) | **The key move.** §7.3 bans percentile (*"reverse-encodes peer rank"*), but Aarti **validated** the alternative — A5: *"How am I doing with respect to others? **compared to the department average to the university average.**"* A bullet vs averages answers the same question **without** encoding peer rank. Proven: `offerings/[code]`, `analytics/programmatic` |
+| **7 + 10** — ranked courses **with** per-course trend | **One component:** DataTable ranked + `TrendSparkline` per row | `trend-sparkline.tsx:44` | D8 — the two tasks collapse. Sparkline pairs with delta text so colour isn't sole encoding (A11Y-008). Guard n=1 |
+| **9** — comments with sentiment | **NOT A CHART** — sentiment chips + verbatims | — | 3 numbers don't earn a chart (`RUBRIC`: *"decorative metrics with no decision"*). `ai-layer.md`: polarity positive/negative/neutral |
+| *(response-rate collection curve, if wanted)* | **Cumulative line vs target + reminder markers** | `lib/pce-collection.ts:5`, `:21` `cumulativePct`; rendered `results/[id]/page.tsx:870-965` | Proven, exactly this use case |
+| *(question-level detail)* | **Heatmap** — course × term or question × term | `ChartHeatmap` `chart-heatmap.tsx:234` (**ECharts**, generic via `buildChartHeatmapPoints:36`) | ⚠️ Primitive exists but **gallery-only** — course × term would be its **first product use**. Uses `ChartLeoPixelPlotInsightOverlay:469` (canvas, not cartesian) |
+
+### 9.2 ⚠️ The vault asks for two charts that do not exist
+
+| Vault asks for | Status | Resolution |
+|---|---|---|
+| **Slopegraph** — `2026-06-18` §4.1 *"section-score slopegraph"*; C7 *"slope per offering"* | **NOT FOUND as a primitive.** No `slope` in `CHART_TABS`, no renderer. A **rogue hand-rolled `<svg>`** exists at `app/(app)/admin/setup/_view-retrospective.tsx:34` (`<line>` at `:80`) — which **violates the Jul 2026 no-hand-rolled-SVG-viz directive** cited in `section-score-strip.tsx:15-16` and `bullet-gauge.tsx:19-20` | A slopegraph is a Line restricted to two x-positions. **Add `slope` to `CHART_TABS` as a named DS type** built on `ChartContainer` + recharts `Line`. **Do not hand-roll SVG** — and retire the rogue one |
+| **Beeswarm** — `2026-06-18` §4.4 *"histogram/beeswarm across term's courses"* | **NOT FOUND** — zero hits for `beeswarm`/`swarm` | Use **`SectionScoreStrip`** (`section-score-strip.tsx:60`) — a strip/dot plot on a track is the proven substitute, already shipping |
+| **Histogram** — same note | **NOT FOUND as a primitive** | Not a real gap: Likert buckets are ordinal, so a **bar over buckets** is correct and proven — `question-chart-block.tsx:82`, `medianFromDistribution` (`results/[id]:1264`) |
+
+### 9.3 Binding rules these choices already encode
+
+- **Never red in score viz** — enforced at `bullet-gauge.tsx:11`; amber/orange below threshold (VIZ-004, Aarti).
+- **No hand-rolled `<svg>` viz** — `section-score-strip.tsx:15-16`, `bullet-gauge.tsx:19-20`.
+- **Progress bars last resort** (VIZ-001) — which condemns the ref app's `Theme Distribution` bars.
+- **Every chart pairs with `ChartDataTable`** (`charts-overview.tsx:241`) + `ChartFigure` a11y shell (`:271`).
+- **A Leo constant is not proof of a chart** — `CHART_GALLERY_LEO_*` exists for `_BULLET`, `_HEATMAP`,
+  `_TREEMAP`, `_SANKEY`… whose renderers live elsewhere or nowhere. Don't infer a chart from an insight.
+
+### 9.4 Not verified
+
+- **`localhost:4000` was DOWN** — no visual confirmation against the live DS catalog. Per Pattern L this
+  is **static only**; the file:line inventory is from source, not from a rendered gallery.
+- **Mobbin not yet consulted** — `feedback_mobbin_first` requires a Mobbin pass before any mockup. This
+  section picks *primitives*, not layouts; the layout pass still owes Mobbin research.
+- Chart **choices** here are recommendations against decisions that are still open (§8) — D1 in
+  particular determines whether the radar is even the right axis.
+
+---
+
+## 10. Verification
 
 | Claim | How checked |
 |---|---|
