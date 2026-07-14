@@ -199,8 +199,9 @@ These are the observations that matter most if this prototype is ever mined for 
 
 | # | Contradiction | Evidence |
 |---|---|---|
-| 1 | **Same screen, two answers.** Faculty identity card says **4.55 / 84%**; the KPI strip directly below says **4.38 / 81%** — for Dr. Marcus Williams, simultaneously. | `?tab=faculty&faculty=m.williams@…` |
-| 2 | **Course count disagrees.** Leaderboard: Williams `Professor · 1 course`. Filtered tab: `SURVEYS 4 / 4 courses`. | Overview vs faculty tab |
+| 1 | **Unlabelled scope collision** (not a maths error — corrected on second pass). Faculty identity card reads **4.55 / 84%**; the KPI strip directly below reads **4.38 / 81%**. Both are *correct*: the card shows the **latest term** (Sp 2026 = 4.55 / 84%), the strip shows the **all-time mean** (`(4.20+4.32+4.44+4.55)/4 = 4.38`; `78+81+82+84 → 81%`). Neither states its scope, and the card's label just says `Avg Score`. Two different questions answered in the same visual breath, 6 px apart. | `?tab=faculty&faculty=m.williams@…` |
+| 2 | **`4 courses` is simply wrong.** KPI reads `SURVEYS 4 / 4 courses`, but all 4 surveys are the *same* course (DPT-503 across Fa24→Sp26) — the heatmap shows one row and All Surveys shows 4 DPT-503 rows. The Overview leaderboard agrees with reality (`Professor · 1 course`). The strip is counting surveys and labelling them courses. | faculty tab vs heatmap + All Surveys |
+| 2b | **Student Voice cites a course the survey log doesn't have.** Filtered to Williams, Student Voice renders `DPT-501 · Musculoskeletal Anatomy I · Spring 2026 · 4.65`, but neither the Course × Term heatmap nor All Surveys (4 rows, all DPT-503) contains DPT-501 for him. The verbatim feed and the survey log disagree about what he taught. | faculty tab, filtered |
 | 3 | **Survey total disagrees.** By Term: `24 surveys total` (4+5+7+8). Every other tab: `22 rows`. | By Term KPI vs Survey Details |
 | 4 | **Term count disagrees.** Overview: `TOTAL TERMS EVALUATED 4`. By Term: `TERMS TRACKED 7`. | Both defensible (7 = calendar, 4 = with data) but unlabelled on Overview |
 | 5 | **Avg score disagrees.** By Term `4.01`; Overview/faculty `4.02`. | Rounding or different denominator |
@@ -261,7 +262,96 @@ representative quote → counts), which compresses what Student Voice spends tho
 
 ---
 
-## 7. Verification
+## 7. Coverage vs the ADMIN task list
+
+The 20 high-level tasks mapped against what the reference app actually renders.
+**PRESENT** = built and does the job · **PARTIAL** = there, but misses part of the ask ·
+**MISSING** = no equivalent on that surface.
+
+**Tally: 10 PRESENT · 5 PARTIAL · 5 MISSING.**
+
+### Analytics — Overview (8 tasks) → 3 present · 2 partial · 3 missing
+
+| Task | Verdict | Where / gap |
+|---|---|---|
+| Key numbers: avg faculty score, course score, overall response rate | **PRESENT** | Aggregate Breakdown — `4.02` faculty, `4.00` course, `80%` response |
+| Heat map of course quality across terms | **PRESENT** | `Course Score by Term`, 8 × 4, cells deep-link to results |
+| Interactive chart comparing course vs faculty scores *(marked NEW)* | **PRESENT** | **Already built** — `Gap Analysis` scatter with quadrants. Tagged NEW on the list, but the reference app has it; see §2.1 |
+| Flag faculty needing attention, on **1-year and 3-year** trends | **PARTIAL** | Faculty Leaderboard has `Last Term Average`, `3Y Avg Faculty Score`, `Trend` — but **no 1Y column**. No per-row alert; "needs attention" is only the aggregate `40% below benchmark` |
+| Flag courses needing attention due to low scores | **PARTIAL** | Course Leaderboard ranks and carries `1Y` + `3Y` — but **no Trend column** and no per-row flag. Only `50% below benchmark` in aggregate |
+| Chart overall response rate over time | **MISSING** | Overview has **no time-series chart at all** |
+| Chart average faculty scores over time | **MISSING** | ⤷ same — lives on By Faculty instead |
+| Chart average course scores over time | **MISSING** | ⤷ same — lives on By Term instead |
+
+> **The one structural gap.** Three of eight Overview tasks ask for trend lines, and Overview has
+> zero. The heatmap shows scores *across* terms but reads as a matrix, not a trajectory. The charts
+> exist — they're just on By Term and By Faculty. Whoever wrote these tasks expects Overview to
+> answer *"which way are we heading"*; the reference app makes you leave Overview to find out.
+>
+> Note the leaderboards are **asymmetric**: faculty gets `Trend` but no `1Y`; course gets `1Y` but no
+> `Trend`. Neither is complete, and they're incomplete in *opposite* directions — which is what makes
+> both "flag who needs attention" tasks land on PARTIAL.
+
+### By Faculty Analytics (4 tasks) → 3 present · 1 partial
+
+| Task | Verdict | Where / gap |
+|---|---|---|
+| Chart breaking down each faculty member's scores by theme | **PRESENT** | `Theme Distribution` — **verified it re-scopes per faculty**: All Faculty `4.18 / 4.13 / 3.95` → Williams `4.62 / 4.58 / 4.40` |
+| Chart comparing faculty scores against each other over time | **PRESENT** | `Faculty Score by Term`, one line per faculty + `Program avg` reference line |
+| Response-rate trend for a specific faculty member | **PRESENT** | `Faculty Response Rate Trend` + `Target 80%` line; re-scopes when filtered |
+| Ranked list of faculty performance with **alerts** for low scores (leaderboard) | **PARTIAL** | The Faculty Leaderboard exists but **lives on Overview, not By Faculty** — a placement mismatch vs this list. And it has no alerts: `Trend` arrows only (red down / green up), no threshold badge |
+
+### By Course Analytics (1 task) → 1 partial
+
+| Task | Verdict | Where / gap |
+|---|---|---|
+| Key numbers, score trends, and **theme breakdown** for a course | **PARTIAL** | Key numbers ✅ (though only **2** KPIs vs 4 elsewhere) · score trends ✅ (`Course Score by Terms` + `Response Rate Trend`) · **theme breakdown ❌ — verified absent.** `Theme Distribution` exists only on By Faculty; per-course themes appear only on the individual result page (`Theme-wise Distribution`), never on the By Course tab |
+
+### By Term Analytics (1 task) → 1 present
+
+| Task | Verdict | Where / gap |
+|---|---|---|
+| Term average score trend, response rate trend | **PRESENT** | Both charts, each with a reference line (`Target 4.0` / `Target 80%`) **and** the per-term delta chip row. The best-executed task on the list — see §2.4 |
+
+### Individual Faculty Portfolio Analytics (6 tasks) → 3 present · 1 partial · 2 missing
+
+**IA note first:** there is **no separate portfolio route**. This whole category is served by
+By Faculty + a faculty filter. The task list treats it as a fifth surface; the reference app treats it
+as a filtered state. That's the single biggest structural decision to make — see below.
+
+| Task | Verdict | Where / gap |
+|---|---|---|
+| Theme breakdown chart for one faculty member | **PRESENT** | `Theme Distribution`, re-scoped (verified) |
+| Student comments with sentiment for one faculty member | **PRESENT** | `Student Voice` — AI synthesis paragraph + verbatims tagged `Positive / Constructive / Neutral`, split `COURSE MATERIAL` vs `INSTRUCTOR FEEDBACK`. Richer than the ask |
+| Detailed log of every survey for one faculty member | **PRESENT** | `All Surveys` table, re-scoped to 4 rows, `Export CSV` |
+| Key numbers: avg score, **percentile**, response rate | **PARTIAL** | Avg score ✅ · response rate ✅ · **percentile ❌ — no percentile anywhere on the surface.** The nearest thing is leaderboard rank position and `% below benchmark`, neither of which is a percentile |
+| List the courses a faculty member teaches, **ranked best to worst** | **MISSING** | Filtered to Williams you get a **Course × Term heatmap** (ordered by term, not rank). No ranked course list per faculty. The Course Leaderboard ranks courses program-wide, not per person |
+| Chart one faculty member's score and response trends **by course** | **MISSING** | `Score by Term` and `Response Rate Trend` are both **by term**, one line total. Nothing decomposes a person's trend **per course** — so you can't see that someone is strong in one course and weak in another |
+
+> **The two MISSING items are the same missing idea.** "Courses ranked best to worst" and "trends by
+> course" both want the **course as the unit of analysis *within* a person**. The reference app only
+> ever slices a faculty member by *term*. That's precisely the gap the Gap Analysis scatter gestures
+> at program-wide (§2.1) but nothing does per-person — and Williams is the proof it matters: his four
+> surveys are all one course, so his "portfolio" is currently a single line.
+
+### What this implies
+
+1. **Overview needs its trend layer.** 3 of 8 tasks, all missing, all the same shape. Cheapest real win.
+2. **Decide the portfolio question.** Is Individual Faculty Portfolio a route, or By Faculty filtered?
+   The task list says route (6 dedicated tasks); the reference app says filtered state. Half its
+   PARTIAL/MISSING verdicts dissolve if it becomes a real surface with a per-course spine.
+3. **Percentile is genuinely new.** Nothing in the reference app computes rank-as-percentile.
+4. **Theme breakdown must reach By Course.** The component exists on By Faculty; the data exists on the
+   result page. It just isn't wired to the course tab.
+5. **Gap Analysis is marked NEW but already exists.** Worth reconciling before it's built twice —
+   §2.1 documents its quadrant logic.
+6. **Reconcile the leaderboards** into one column set (`Last Term / 1Y / 3Y / Trend / flag`), then place
+   it deliberately. Today faculty and course each miss a different half, and the faculty one sits on
+   the tab the task list doesn't expect.
+
+---
+
+## 8. Verification
 
 | Claim | How checked |
 |---|---|
@@ -271,6 +361,11 @@ representative quote → counts), which compresses what Student Voice spends tho
 | `?course=` works | `?tab=course&course=OT-401` → `4 evaluations / 3.81`, "Clear all" appears |
 | Provenance | `git log -S --all` for 3 identifiers, all zero hits; `page.tsx:21-22` read |
 | Current build differs | Loaded `exxat-pce-design.vercel.app/analytics` — 3 tabs, no Overview, Leo block |
+| §7 theme re-scoping | Loaded faculty tab filtered to Williams; `Theme Distribution` changed `4.18/4.13/3.95` → `4.62/4.58/4.40` |
+| §7 no theme on By Course | `find` for theme section on `?tab=course&course=DPT-503` → not found |
+| §7 no percentile | Full page text of filtered faculty tab — no percentile string on any surface |
+| §7 portfolio scoping | Filtered faculty tab: heatmap 1 row (DPT-503), All Surveys 4 rows, trends by term only |
+| §4.1 scope collision | Arithmetic checked: `(4.20+4.32+4.44+4.55)/4 = 4.3775 → 4.38`; card `4.55` = Sp 2026 |
 
 **Not verified:** no axe run, no visual-diff vs `localhost:4000`, no token/DS conformance audit — this
 is a black-box walkthrough of a deployed prototype whose source is not in this repo, so DS
