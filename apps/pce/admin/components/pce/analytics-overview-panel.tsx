@@ -111,12 +111,12 @@ export function AnalyticsOverviewPanel() {
       explanation:
         `Students rate two different things — the course and the person teaching it. When faculty score runs ` +
         `well above course score, the instructor is carrying material that needs a redesign; coaching the person ` +
-        `will not move it. ${bothLow.length} offering${bothLow.length === 1 ? '' : 's'} sit in the both-need-attention quadrant.`,
+        `will not move it. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} sit in the both-need-attention quadrant.`,
       kind: 'anomaly',
       delta: { value: `+${fmt2(gap)}`, label: 'faculty over course' },
       bullets: [
-        `${widest.courseCode} · ${widest.short}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)}.`,
-        `${bothLow.length} of ${gaps.length} offerings are below both program means.`,
+        `${widest.courseCode} — ${widest.courseName}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)} across ${widest.terms} term${widest.terms === 1 ? '' : 's'}.`,
+        `${bothLow.length} of ${gaps.length} courses are below both program means.`,
         'Dots off the shaded band are anomalous for their kind, not merely low.',
       ],
       // Plot charts position the marker through `leoAnchor` + the live Plot scales; the
@@ -331,32 +331,6 @@ export function AnalyticsOverviewPanel() {
             <>
               <ProgramTrendStack series={series} />
 
-              {/* §6 of the walkthrough — the per-term delta chip row. The doc singles this
-                  out as "the one place the surface does [viz-first] well": the line gives
-                  the shape, the chips give the exact value and direction. Legal under
-                  VIZ-002 precisely BECAUSE the line is shown — text below a chart labels
-                  values, it does not replace them. */}
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-border pt-2">
-                {series
-                  .filter((s) => s.courseAvg != null)
-                  .map((s, i, arr) => {
-                    const prev = i > 0 ? arr[i - 1]!.courseAvg : null
-                    const d = prev != null ? (s.courseAvg as number) - prev : null
-                    return (
-                      <div key={s.term} className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">{s.short}</span>
-                        <span className="text-sm tabular-nums">{fmt2(s.courseAvg as number)}</span>
-                        <span
-                          className="text-xs tabular-nums"
-                          style={{ color: d != null && d < 0 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
-                        >
-                          {d == null ? '—' : `${d >= 0 ? '+' : ''}${fmt2(d)}`}
-                        </span>
-                      </div>
-                    )
-                  })}
-              </div>
-
               <ChartDataTable
                 caption="Program trajectory by term"
                 headers={['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled']}
@@ -378,12 +352,12 @@ export function AnalyticsOverviewPanel() {
       <ChartCard
         variant="normal"
         title="Course score vs faculty score"
-        description="Separates a course that needs redesigning from an instructor who needs support — two problems, two different fixes."
+        description="One dot per course. Separates a course that needs redesigning from an instructor who needs support — two problems, two different fixes."
         leoInsight={gapLeo}
       >
         <ChartFigure
           label="Course score versus faculty score"
-          summary="Scatter plot. Each dot is one course in one term, sized by enrolment, split into quadrants at the program means, with a fitted trend and 95% confidence band."
+          summary="Scatter plot. Each dot is one course, sized by total enrolment, split into quadrants at the program means, with a fitted trend and 95% confidence band."
           dataLength={gaps.length}
           leoInsight={gapLeo}
         >
@@ -396,11 +370,11 @@ export function AnalyticsOverviewPanel() {
                 leoAnchor={anchorGap}
               />
               <ChartDataTable
-                caption="Course score versus faculty score by offering"
-                headers={['Course', 'Term', 'Course score', 'Faculty score', 'Enrolled']}
+                caption="Course score versus faculty score, by course"
+                headers={['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled']}
                 rows={gaps.map((g) => [
                   `${g.courseCode} — ${g.courseName}`,
-                  g.term,
+                  g.terms,
                   fmt2(g.courseAvg),
                   fmt2(g.facultyAvg),
                   g.enrolled,

@@ -41,6 +41,28 @@ const SCORE_VIEW: [number, number] = [3.0, 5]
 const fmt2 = (v: number) => v.toFixed(2)
 
 /**
+ * Fit the axis to the data, with padding and a floor on the span.
+ *
+ * A fixed 3.0–5.0 score axis buries the story: real programme movement is ~0.3, which on a
+ * 2.0 domain is 15% of the plot height — the line reads flat while the delta chips beside it
+ * say -0.22. Same failure as a line stretched to 100% width, on the other axis.
+ *
+ * `minSpan` stops the opposite error: with near-identical values a data-fitted domain would
+ * magnify noise into a mountain. The axis keeps its own ticks either way, so the scale is
+ * always legible. (Tufte's non-zero-baseline ban is about BARS, whose length encodes the
+ * value; a line encodes position and a fitted domain is standard practice.)
+ */
+function paddedDomain(values: number[], minSpan: number, pad = 0.18): [number, number] {
+  if (!values.length) return SCORE_VIEW
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const span = Math.max(hi - lo, minSpan)
+  const mid = (lo + hi) / 2
+  const half = span / 2 + span * pad
+  return [Math.max(1, mid - half), Math.min(5, mid + half)]
+}
+
+/**
  * Most on-plot text labels any one chart may draw.
  *
  * Naming the outlier is the point (VIZ-002) — naming twelve is a pile-up that hides the one
@@ -215,25 +237,13 @@ export function GapQuadrant({
     const slope = den === 0 ? 0 : xs.reduce((s, x, i) => s + (x - mx) * (ys[i]! - my), 0) / den
     const intercept = my - slope * mx
     const scored = points.map((p) => ({
-      key: `${p.courseCode}::${p.term}`,
+      key: p.courseCode,
       residual: Math.abs(p.facultyAvg - (slope * p.courseAvg + intercept)),
     }))
     const sd = Math.sqrt(scored.reduce((s, r) => s + r.residual ** 2, 0) / scored.length)
     if (!(sd > 0)) return empty
     const off = scored.filter((r) => r.residual > sd * 1.2)
-
-    // One label per COURSE, not per offering. A course that is off-trend in three terms is
-    // one story, and naming it three times just stacks text on its own cluster — which is
-    // exactly what happened once the scenarios gained depth.
-    const bestPerCourse = new Map<string, { key: string; residual: number }>()
-    off.forEach((r) => {
-      const code = r.key.split('::')[0]!
-      const prev = bestPerCourse.get(code)
-      if (!prev || r.residual > prev.residual) bestPerCourse.set(code, r)
-    })
-    const top = [...bestPerCourse.values()]
-      .sort((a, b) => b.residual - a.residual)
-      .slice(0, MAX_PLOT_LABELS)
+    const top = [...off].sort((a, b) => b.residual - a.residual).slice(0, MAX_PLOT_LABELS)
 
     return {
       outliers: new Set(off.map((r) => r.key)),
@@ -241,15 +251,26 @@ export function GapQuadrant({
     }
   }, [points])
 
+  /* Fit both axes to the plotted courses (means always fall inside), so the dots use the
+     frame instead of huddling in the middle third of a fixed 3–5 grid. */
+  const xDomain = React.useMemo(
+    () => paddedDomain([...points.map((p) => p.courseAvg), courseMean], 0.8),
+    [points, courseMean],
+  )
+  const yDomain = React.useMemo(
+    () => paddedDomain([...points.map((p) => p.facultyAvg), facultyMean], 0.8),
+    [points, facultyMean],
+  )
+
   const spec = React.useCallback(
     (theme: PlotTheme) => ({
       marginLeft: 44,
       marginBottom: 36,
       marginTop: 24,
       marginRight: 20,
-      x: { domain: SCORE_VIEW, label: 'Course content score →', labelAnchor: 'center' as const, ...axisDefaults(theme) },
-      y: { domain: SCORE_VIEW, label: '↑ Faculty score', labelAnchor: 'center' as const, ...axisDefaults(theme) },
-      r: { range: [3, 14] },
+      x: { domain: xDomain, label: 'Course content score →', labelAnchor: 'center' as const, ...axisDefaults(theme) },
+      y: { domain: yDomain, label: '↑ Faculty score', labelAnchor: 'center' as const, ...axisDefaults(theme) },
+      r: { range: [4, 11] },
       marks: [
         gridMark(theme),
 
@@ -290,14 +311,13 @@ export function GapQuadrant({
           x: 'courseAvg',
           y: 'facultyAvg',
           r: 'enrolled',
-          fill: (d: GapPoint) =>
-            outliers.has(`${d.courseCode}::${d.term}`) ? theme.warn : theme.brand,
-          fillOpacity: 0.75,
+          fill: (d: GapPoint) => (outliers.has(d.courseCode) ? theme.warn : theme.brand),
+          fillOpacity: 0.72,
           stroke: theme.card,
-          strokeWidth: 1,
+          strokeWidth: 1.25,
           channels: {
             Course: (d: GapPoint) => `${d.courseCode} — ${d.courseName}`,
-            Term: 'term',
+            Terms: 'terms',
             'Course score': (d: GapPoint) => fmt2(d.courseAvg),
             'Faculty score': (d: GapPoint) => fmt2(d.facultyAvg),
             Enrolled: 'enrolled',
@@ -307,12 +327,12 @@ export function GapQuadrant({
 
         // Name only the sharpest few — see the note on `labelled`.
         Plot.text(
-          points.filter((p) => labelled.has(`${p.courseCode}::${p.term}`)),
+          points.filter((p) => labelled.has(p.courseCode)),
           {
             x: 'courseAvg',
             y: 'facultyAvg',
-            text: (d: GapPoint) => `${d.courseCode} · ${d.short}`,
-            dy: -14,
+            text: 'courseCode',
+            dy: -15,
             fill: theme.foreground,
             fontSize: CHART_TICK_FONT_SIZE,
             stroke: theme.card,
@@ -322,7 +342,7 @@ export function GapQuadrant({
         ),
       ],
     }),
-    [points, courseMean, facultyMean, outliers, labelled],
+    [points, courseMean, facultyMean, outliers, labelled, xDomain, yDomain],
   )
 
   if (points.length < 3) {
@@ -596,6 +616,12 @@ export function ProgramTrendStack({
 
   const termOrder = React.useMemo(() => series.map((s) => s.short), [series])
 
+  /** 0.6 keeps a quiet programme from looking like a rollercoaster. */
+  const scoreDomain = React.useMemo(
+    () => paddedDomain(scoreRows.map((r) => r.value), 0.6),
+    [scoreRows],
+  )
+
   const scoreSpec = React.useCallback(
     (theme: PlotTheme) => ({
       marginLeft: 36,
@@ -604,15 +630,42 @@ export function ProgramTrendStack({
       // The term axis belongs to the LOWER plot only — the two are stacked precisely so
       // there is one shared axis to read across. Drawing it twice defeats the arrangement.
       x: { domain: termOrder, label: null, axis: null },
-      y: { domain: SCORE_VIEW, label: null, ticks: 4, ...axisDefaults(theme) },
+      y: { domain: scoreDomain, label: null, ticks: 4, ...axisDefaults(theme) },
+      // Direct labelling, not a legend. A legend costs a whole row of card height and makes
+      // the reader look away from the line to decode it; the label at the line's end is read
+      // in place. Removing it also gives the two stacked plots room to breathe.
       color: {
         domain: ['Course content', 'Faculty'],
         range: [theme.series[0]!, theme.series[1]!],
-        legend: true,
+        legend: false,
       },
+      marginRight: 92,
       marks: [
         gridMark(theme),
         Plot.line(scoreRows, { x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x' }),
+        // Course and faculty scores track each other closely by nature, so their end-labels
+        // land on top of each other. A fixed opposing offset guarantees separation without
+        // depending on the data — Plot has no collision avoidance for text marks.
+        // One mark per series: `dy` is a constant in Plot, not a channel, and the two labels
+        // need opposing offsets or they collide — course and faculty scores track each other
+        // closely by nature, so their line-ends sit on the same pixel.
+        ...(['Faculty', 'Course content'] as const).map((metric) =>
+          Plot.text(
+            [[...scoreRows].reverse().find((r) => r.metric === metric)].filter(
+              (r): r is (typeof scoreRows)[number] => !!r,
+            ),
+            {
+              x: 'term',
+              y: 'value',
+              text: 'metric',
+              fill: 'metric',
+              textAnchor: 'start',
+              dx: 8,
+              dy: metric === 'Faculty' ? -9 : 9,
+              fontSize: CHART_TICK_FONT_SIZE,
+            },
+          ),
+        ),
         Plot.dot(scoreRows, {
           x: 'term',
           y: 'value',
@@ -623,7 +676,7 @@ export function ProgramTrendStack({
         }),
       ],
     }),
-    [scoreRows, termOrder],
+    [scoreRows, termOrder, scoreDomain],
   )
 
   const rateSpec = React.useCallback(
@@ -631,8 +684,15 @@ export function ProgramTrendStack({
       marginLeft: 36,
       marginTop: 16,
       marginBottom: 22,
+      // MUST match the score plot's marginRight. The two are stacked precisely so one term
+      // axis reads across both; a different right margin shifts the plot area and silently
+      // misaligns the terms, which is worse than not stacking at all.
+      marginRight: 92,
       x: { domain: termOrder, label: null, ...axisDefaults(theme) },
-      y: { domain: [0, 100], label: null, ticks: 3, tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
+      // Response rates live 50-95; a 0-100 domain spends most of the plot on empty space and
+      // squashes the line into a flat ribbon. The 80% target is on-plot, so the scale is still
+      // anchored to something real rather than to zero.
+      y: { domain: [40, 100], label: null, ticks: 3, tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
       marks: [
         gridMark(theme),
         // The target is the point of the chart — a rate without its bar means nothing.
@@ -667,10 +727,12 @@ export function ProgramTrendStack({
     [rateRows, termOrder, responseTarget],
   )
 
+  // ChartCard's shell is `h-full`, so in a 50/50 row this card stretches to the taller one
+  // beside it. Spend that height on the plots rather than leaving it blank under them.
   return (
     <div className="flex flex-col">
-      <PlotFigure spec={scoreSpec} height={150} />
-      <PlotFigure spec={rateSpec} height={104} />
+      <PlotFigure spec={scoreSpec} height={196} />
+      <PlotFigure spec={rateSpec} height={124} />
     </div>
   )
 }

@@ -512,32 +512,49 @@ export function courseTermMatrix(): { cells: HeatCell[]; courses: string[]; term
 export interface GapPoint {
   courseCode: string
   courseName: string
-  term: string
-  short: string
+  /** How many terms are behind this point — surfaced in the tooltip, not the position. */
+  terms: number
   courseAvg: number
   facultyAvg: number
-  /** Bubble weight — enrolled students behind the pair. */
+  /** Bubble weight — total enrolled students behind the course. */
   enrolled: number
 }
 
+/**
+ * ONE POINT PER COURSE, not per course × term.
+ *
+ * The question is "is the COURSE broken, or is the instructor struggling" — a course-level
+ * question with a course-level action (redesign the curriculum vs coach the person). Plotting
+ * every course-term put 52 bubbles in one frame: an unreadable mass where the regression band
+ * disappeared behind the dots and the same course got named in several places. The term
+ * dimension is already answered next to it by the heatmap (course × term) and the trend, so
+ * spending this chart's resolution on it bought nothing and cost the story.
+ *
+ * The legacy app's Gap Analysis was course-level too (§2.1: "8 evaluated" courses).
+ */
 export function gapPoints(): GapPoint[] {
-  const enrolledByCourseTerm = new Map<string, number>()
+  const byCourse = new Map<string, CourseTermPoint[]>()
+  courseTermPoints()
+    .filter((p): p is CourseTermPoint & { facultyAvg: number } => p.facultyAvg != null)
+    .forEach((p) => {
+      const list = byCourse.get(p.courseCode) ?? []
+      list.push(p)
+      byCourse.set(p.courseCode, list)
+    })
+
+  const enrolledByCourse = new Map<string, number>()
   offeringPoints().forEach((o) => {
-    const key = `${o.courseCode}::${o.term}`
-    enrolledByCourseTerm.set(key, (enrolledByCourseTerm.get(key) ?? 0) + o.enrolled)
+    enrolledByCourse.set(o.courseCode, (enrolledByCourse.get(o.courseCode) ?? 0) + o.enrolled)
   })
 
-  return courseTermPoints()
-    .filter((p): p is CourseTermPoint & { facultyAvg: number } => p.facultyAvg != null)
-    .map((p) => ({
-      courseCode: p.courseCode,
-      courseName: p.courseName,
-      term: p.term,
-      short: shortTerm(p.term),
-      courseAvg: p.courseAvg,
-      facultyAvg: p.facultyAvg,
-      enrolled: enrolledByCourseTerm.get(`${p.courseCode}::${p.term}`) ?? 20,
-    }))
+  return [...byCourse.entries()].map(([courseCode, rows]) => ({
+    courseCode,
+    courseName: rows[0]!.courseName,
+    terms: rows.length,
+    courseAvg: round2(mean(rows.map((r) => r.courseAvg))),
+    facultyAvg: round2(mean(rows.map((r) => r.facultyAvg as number))),
+    enrolled: enrolledByCourse.get(courseCode) ?? 20,
+  }))
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
