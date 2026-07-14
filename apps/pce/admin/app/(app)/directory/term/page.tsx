@@ -216,34 +216,20 @@ export default function TermsPage() {
         title="Academic Terms"
         subtitle="Manage term start/end dates used across the program."
         actions={
-          <div className="flex items-center gap-2">
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add term
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="outline" onClick={() => setAddOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Add New Term
-              </Button>
-            )}
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
+          MOCK_LMS_ENABLED ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="default" disabled aria-disabled="true">
+                  Set up term
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Managed by your LMS</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button variant="default" onClick={() => setAddOpen(true)}>
+              Set up term
             </Button>
-            {/* Activate term for evaluation — the term-directory home for this action
-                (replaces the old dashboard "Activate Term" button). */}
-            <Button variant="default" onClick={() => router.push('/surveys/push')}>
-              <i className="fa-light fa-circle-play" aria-hidden="true" />
-              Activate term
-            </Button>
-          </div>
+          )
         }
       />
 
