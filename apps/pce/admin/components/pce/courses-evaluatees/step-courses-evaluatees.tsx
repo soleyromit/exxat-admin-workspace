@@ -3,7 +3,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Skeleton, Button, InputGroup,
+  Badge, Skeleton, Button, InputGroup, Tip,
   Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
@@ -225,22 +225,39 @@ function TokenSelect({
   )
 }
 
-/** Fix action for the Actions column — opens Prism in a new tab. */
-function AddInPrismButton({ href, label }: { href: string; label: string }) {
-  return (
+/**
+ * Fix action for the Actions column — opens Prism in a new tab.
+ *
+ * The label stays generic ("Add faculty") because a course can be missing
+ * several roles at once and naming one of them lies. `roles` names them on
+ * hover/focus instead, so the CTA still tells you WHAT to add. DS Tip rather
+ * than a native title: title never fires on keyboard focus.
+ */
+function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
+  const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
+  const trigger = (
     <Button asChild variant="outline" size="xs" className="justify-start">
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={`${label} in Exxat Prism — opens in a new tab`}
-      >
+      <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}
+        {missing && <span className="sr-only"> — {missing}</span>}
         <span className="sr-only"> (opens in new tab)</span>
         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
       </a>
     </Button>
+  )
+  return (
+    <Tip
+      label={
+        <>
+          {missing ?? `${label} in Exxat Prism`}
+          <span className="block opacity-70">Opens Exxat Prism in a new tab</span>
+        </>
+      }
+      side="left"
+    >
+      {trigger}
+    </Tip>
   )
 }
 
@@ -392,15 +409,18 @@ export function StepCoursesEvaluatees({
                 </span>
               )}
               {/* Names the gaps rather than counting them — one truncating line,
-                  full list on hover. The row stays 3 lines at any role count. */}
+                  the full list on hover AND keyboard focus (a native title never
+                  fires on focus). The row stays 3 lines at any role count. */}
               {unassigned.length > 0 && (
-                <span
-                  className="text-xs truncate"
-                  style={{ color: 'var(--muted-foreground)' }}
-                  title={`Unassigned: ${unassigned.join(', ')}`}
-                >
-                  Unassigned: {unassigned.join(', ')}
-                </span>
+                <Tip label={`Unassigned: ${unassigned.join(', ')}`} side="top">
+                  <span
+                    className="text-xs truncate w-fit max-w-full cursor-default"
+                    style={{ color: 'var(--muted-foreground)' }}
+                    tabIndex={0}
+                  >
+                    Unassigned: {unassigned.join(', ')}
+                  </span>
+                </Tip>
               )}
             </div>
           )
@@ -431,8 +451,11 @@ export function StepCoursesEvaluatees({
           const studentCell = criteria.includes('students') ? r.cells.students : undefined
           const studentGap = !!studentCell && !studentCell.ok
           // Every missing person-role collapses into a single trip to Prism.
-          const facultyGap = facultySelected.some(c => r.cells[c] && !r.cells[c]!.ok)
-          if (!studentGap && !facultyGap) {
+          // The exact roles behind the gap, so the generic CTA can still say WHICH.
+          const facultyMissing = facultySelected
+            .filter(c => r.cells[c] && !r.cells[c]!.ok)
+            .map(c => r.cells[c]!.label)
+          if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
           return (
@@ -440,7 +463,9 @@ export function StepCoursesEvaluatees({
               {studentGap && (
                 <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
               )}
-              {facultyGap && <AddInPrismButton href={r.facultyHref} label="Add faculty" />}
+              {facultyMissing.length > 0 && (
+                <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
+              )}
             </div>
           )
         },
