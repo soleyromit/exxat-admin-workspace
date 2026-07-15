@@ -27,15 +27,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0  # need the base ref to diff against for change detection
 
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
       - name: Parse matrix entry
         id: parse
         run: |
@@ -46,6 +37,10 @@ jobs:
           echo "cls=$cls" >> $GITHUB_OUTPUT
           echo "a11y=$a11y" >> $GITHUB_OUTPUT
 
+      # Decide before setting up the toolchain. setup-node's `cache: pnpm` adds a
+      # post-job step that saves the pnpm store; if Install is skipped that store
+      # never exists and the post-step fails the whole job, so a skipped app would
+      # still report red.
       - name: Skip if app missing or untouched
         id: check
         run: |
@@ -65,6 +60,17 @@ jobs:
             echo "Changes detected under $APP; running Lighthouse."
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
+
+      - uses: pnpm/action-setup@v3
+        if: steps.check.outputs.skip != 'true'
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != 'true'
+        with:
+          node-version: 20
+          cache: 'pnpm'
 
       - name: Install
         if: steps.check.outputs.skip != 'true'
