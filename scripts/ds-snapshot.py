@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DS Snapshot — generates `node tools/ds/source.mjs --list` from DS source.
+"""DS Snapshot — generates docs/foundations/ds-snapshot.json from DS source.
 
 Walks exxat-ds/packages/ui/src/ and studentUX/src/ to extract:
 - Component file list (kebab-case modules)
@@ -7,7 +7,7 @@ Walks exxat-ds/packages/ui/src/ and studentUX/src/ to extract:
 - Hooks
 - CSS custom properties (tokens) from theme.css / globals.css
 
-Output: `node tools/ds/source.mjs --list` — agent-readable surface map.
+Output: docs/foundations/ds-snapshot.json — agent-readable surface map.
 The PreToolUse hook (DS-010) uses the per-export identifiers to validate
 that imported components actually exist for the active profile.
 
@@ -16,11 +16,10 @@ Triggered automatically by post-merge hook on submodule update (P5.5).
 """
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 
-WORKSPACE = Path("/Users/romitsoley/Work")
+WORKSPACE = Path(__file__).resolve().parents[1]
 
 
 def extract_exports_from_tsx(path: Path) -> set[str]:
@@ -204,10 +203,10 @@ def main() -> None:
     admin_tokens = extract_tokens(WORKSPACE / "exxat-ds/packages/ui/src/theme.css")
     student_tokens = extract_tokens(WORKSPACE / "studentUX/src/styles/globals.css")
 
+    # NOTE: this file is committed and diffed by CI to detect staleness, so its
+    # contents must depend only on DS source — no timestamps, no absolute paths.
     snapshot = {
         "version": "0.2.0",  # bumped: now includes per-export identifiers
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "workspace": str(WORKSPACE),
         "profiles": {
             "admin": {
                 "ds_name": "Exxat-DS",
@@ -240,7 +239,7 @@ def main() -> None:
         },
     }
 
-    out_path = WORKSPACE / "`node tools/ds/source.mjs --list`"
+    out_path = WORKSPACE / "docs" / "foundations" / "ds-snapshot.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(snapshot, indent=2))
 
