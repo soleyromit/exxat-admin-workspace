@@ -338,6 +338,93 @@ export function AnalyticsOverviewPanel() {
         </ChartCard>
       </div>
 
+      {/* RANK comes second, before any pattern chart. §2.1 is explicit that Overview is a
+          deliberate aggregate → rank → pattern → raw funnel, and this row used to sit at the
+          very bottom: the reader got four abstract pattern charts before being told WHO needs
+          attention. Rank is the actionable answer; the patterns below exist to explain it,
+          which only works if you already know who you are explaining. */}
+      {/* ── Stories 2 + 3 — who needs attention.
+             items-start: the two charts have different row counts, and stretching the
+             shorter card to match leaves a block of dead space under its plot. ── */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <ChartCard
+          variant="normal"
+          title="Faculty needing attention"
+          description="Each arrow runs from a three-year mean to a one-year mean — direction and size in one mark."
+          leoInsight={facultyDriftLeo}
+        >
+          <ChartFigure
+            label="Faculty needing attention"
+            summary="Arrow chart from each faculty member's three-year mean score to their one-year mean, sorted by change."
+            dataLength={facultyDriftRows.length}
+            leoInsight={facultyDriftLeo}
+          >
+            {() => (
+              <>
+                <DriftDumbbell
+                  rows={facultyDriftRows}
+                  emptyNote="No faculty has offerings in both the 1-year and 3-year windows yet."
+                />
+                <ChartDataTable
+                  caption="Faculty score change, three-year mean to one-year mean"
+                  headers={['Faculty', '3-year mean', '1-year mean', 'Change']}
+                  rows={facultyDriftRows.map((r) => [
+                    r.label,
+                    r.avg3y != null ? fmt2(r.avg3y) : '—',
+                    r.avg1y != null ? fmt2(r.avg1y) : '—',
+                    r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
+                  ])}
+                />
+                <div className="mt-2 flex justify-end">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/analytics?tab=faculty">Open By Faculty</Link>
+                  </Button>
+                </div>
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+
+        <ChartCard
+          variant="normal"
+          title="Courses needing attention"
+          description="Ranked against the program median, with every offering behind each course drawn as a faint dot."
+          leoInsight={courseDriftLeo}
+        >
+          <ChartFigure
+            label="Courses needing attention"
+            summary="Ranked dot plot of course scores against the program median, with every individual offering drawn behind each course's mean."
+            dataLength={courses.length}
+            leoInsight={courseDriftLeo}
+          >
+            {() => (
+              <>
+                {/* Story 3 asks to flag courses on LOW SCORES, not on drift — so this is the
+                    ranked dot plot against the median, not the 1Y/3Y arrow chart used for
+                    faculty (story 2, which does ask for the two windows). */}
+                <CourseRankDots courses={courses} median={courseMedian} />
+                <ChartDataTable
+                  caption="Course scores against the program median"
+                  headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
+                  rows={courses.map((c) => [
+                    `${c.courseCode} — ${c.courseName}`,
+                    fmt2(c.score.weighted),
+                    fmt2(c.score.simple),
+                    c.terms,
+                    `${c.responseRate}%`,
+                  ])}
+                />
+                <div className="mt-2 flex justify-end">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/analytics?tab=course">Open By Course</Link>
+                  </Button>
+                </div>
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+      </div>
+
       {/* ── Row 2 — stories 5/6/7 beside story 8, 50/50.
              Romit: "line charts don't have to cover 100% width — it doesn't look good."
              He's right twice over: a line stretched across the full content column flattens
@@ -503,87 +590,6 @@ export function AnalyticsOverviewPanel() {
         </ChartFigure>
       </ChartCard>
 
-      {/* ── Stories 2 + 3 — who needs attention.
-             items-start: the two charts have different row counts, and stretching the
-             shorter card to match leaves a block of dead space under its plot. ── */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <ChartCard
-          variant="normal"
-          title="Faculty needing attention"
-          description="Each arrow runs from a three-year mean to a one-year mean — direction and size in one mark."
-          leoInsight={facultyDriftLeo}
-        >
-          <ChartFigure
-            label="Faculty needing attention"
-            summary="Arrow chart from each faculty member's three-year mean score to their one-year mean, sorted by change."
-            dataLength={facultyDriftRows.length}
-            leoInsight={facultyDriftLeo}
-          >
-            {() => (
-              <>
-                <DriftDumbbell
-                  rows={facultyDriftRows}
-                  emptyNote="No faculty has offerings in both the 1-year and 3-year windows yet."
-                />
-                <ChartDataTable
-                  caption="Faculty score change, three-year mean to one-year mean"
-                  headers={['Faculty', '3-year mean', '1-year mean', 'Change']}
-                  rows={facultyDriftRows.map((r) => [
-                    r.label,
-                    r.avg3y != null ? fmt2(r.avg3y) : '—',
-                    r.avg1y != null ? fmt2(r.avg1y) : '—',
-                    r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
-                  ])}
-                />
-                <div className="mt-2 flex justify-end">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/analytics?tab=faculty">Open By Faculty</Link>
-                  </Button>
-                </div>
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-
-        <ChartCard
-          variant="normal"
-          title="Courses needing attention"
-          description="Ranked against the program median, with every offering behind each course drawn as a faint dot."
-          leoInsight={courseDriftLeo}
-        >
-          <ChartFigure
-            label="Courses needing attention"
-            summary="Ranked dot plot of course scores against the program median, with every individual offering drawn behind each course's mean."
-            dataLength={courses.length}
-            leoInsight={courseDriftLeo}
-          >
-            {() => (
-              <>
-                {/* Story 3 asks to flag courses on LOW SCORES, not on drift — so this is the
-                    ranked dot plot against the median, not the 1Y/3Y arrow chart used for
-                    faculty (story 2, which does ask for the two windows). */}
-                <CourseRankDots courses={courses} median={courseMedian} />
-                <ChartDataTable
-                  caption="Course scores against the program median"
-                  headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
-                  rows={courses.map((c) => [
-                    `${c.courseCode} — ${c.courseName}`,
-                    fmt2(c.score.weighted),
-                    fmt2(c.score.simple),
-                    c.terms,
-                    `${c.responseRate}%`,
-                  ])}
-                />
-                <div className="mt-2 flex justify-end">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/analytics?tab=course">Open By Course</Link>
-                  </Button>
-                </div>
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      </div>
     </div>
   )
 }
