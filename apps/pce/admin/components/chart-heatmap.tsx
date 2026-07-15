@@ -35,6 +35,14 @@ const HEATMAP_LABEL_WEIGHT = 600
 /** The DS default — preserved exactly for callers that pass no height. */
 const DEFAULT_HEATMAP_HEIGHT = 280
 
+/**
+ * The grid's insets. `GRID_TOP` is NOT empty margin: the x axis is `position: "top"`, so this
+ * band holds the column headers. Leo's pill must never be placed inside it, and the marker must
+ * not be drawn for a row that has scrolled out of the band between them.
+ */
+const GRID_TOP = 28
+const GRID_BOTTOM = 16
+
 echarts.use([
   HeatmapChart,
   GridComponent,
@@ -201,8 +209,8 @@ function buildHeatmapOption({
       left: 52,
       // The slider needs its own lane when it exists; without it the bar lands on the cells.
       right: scrolls ? 96 : 72,
-      top: 28,
-      bottom: 16,
+      top: GRID_TOP,
+      bottom: GRID_BOTTOM,
       containLabel: false,
     },
     xAxis: {
@@ -428,6 +436,18 @@ export function ChartHeatmap({
       )
       if (!pixel || !Array.isArray(pixel) || pixel.length < 2) return
 
+      /**
+       * The anchored row can scroll out of the plot under `dataZoom`. ECharts still returns a
+       * pixel for it — one above the grid — and the marker was then clamped back down to the
+       * top of the canvas, leaving a pill asserting a value while its connector collapsed to
+       * zero height and its dot sat off-screen: an annotation pointing at nothing. A marker
+       * whose cell is not visible must not be drawn at all.
+       */
+      if (pixel[1] < GRID_TOP || pixel[1] > height - GRID_BOTTOM) {
+        setLeoPos(null)
+        return
+      }
+
       const plotRect = plot.getBoundingClientRect()
       const chartDom = chart.getDom()
       const chartRect = chartDom.getBoundingClientRect()
@@ -488,7 +508,14 @@ export function ChartHeatmap({
          */
         aria-hidden="true"
       />
-      <ChartLeoPixelPlotInsightOverlay position={leoPos} chartFamily="heatmap" />
+      {/*
+        `avoidTopPx` is the column-header band. Rows are ordered worst-to-best and the insight
+        always anchors the WORST cell, so the anchor is always in the top row(s) — which put the
+        pill's default position (above the dot) permanently on top of the first term's header,
+        leaving a 5-column matrix with 4 readable labels. Handing the band to the overlay lets it
+        flip the pill below the dot when the space above belongs to the header.
+      */}
+      <ChartLeoPixelPlotInsightOverlay position={leoPos} chartFamily="heatmap" avoidTopPx={GRID_TOP} />
     </div>
   )
 }

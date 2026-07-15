@@ -295,18 +295,43 @@ function useChartLeoSelectorPosition(plotSelector: string | undefined) {
   return { ref, pos }
 }
 
+/** Gap between the dot and the connector, so the line never touches the dot's edge. */
+const CONNECTOR_GAP_PX = 7
+/** The pill's own height. It is drawn away from its anchor edge, so placement must reserve it. */
+const PILL_HEIGHT_PX = 32
+
 function ChartLeoPlotMarkerLayer({
   pos,
   insight,
   chartTitle,
   markerLiftPx,
+  avoidTopPx,
 }: {
   pos: { x: number; y: number; plotTop: number }
   insight: ChartLeoInsight
   chartTitle: string
   markerLiftPx: number
+  /**
+   * A band at the top of the plot that the pill must not be drawn into — for a chart whose x
+   * axis is `position: "top"`, that band holds the column headers. Omit (the default) and
+   * placement is unchanged: the pill always sits above the dot, clamped to the plot top. Pass it
+   * and the pill flips BELOW the dot when the space above the dot is not the pill's to use.
+   */
+  avoidTopPx?: number
 }) {
-  const chipBottomY = Math.max((pos.plotTop ?? 0) + 28, pos.y - markerLiftPx)
+  const desiredChipBottomY = pos.y - markerLiftPx
+  // The pill grows upward from its bottom edge, so it collides when its TOP would enter the band.
+  const flipBelow = avoidTopPx != null && desiredChipBottomY - PILL_HEIGHT_PX < avoidTopPx
+
+  // The edge the pill is anchored to: its bottom when above the dot, its top when flipped below.
+  const chipEdgeY = flipBelow
+    ? pos.y + markerLiftPx
+    : Math.max((pos.plotTop ?? 0) + 28, desiredChipBottomY)
+
+  const connectorTopY = flipBelow ? pos.y + CONNECTOR_GAP_PX : chipEdgeY
+  const connectorHeight = flipBelow
+    ? Math.max(0, chipEdgeY - pos.y - CONNECTOR_GAP_PX)
+    : Math.max(0, pos.y - chipEdgeY - CONNECTOR_GAP_PX)
 
   return (
     <>
@@ -315,8 +340,8 @@ function ChartLeoPlotMarkerLayer({
         className="pointer-events-none absolute"
         style={{
           left: pos.x,
-          top: chipBottomY,
-          height: Math.max(0, pos.y - chipBottomY - 7),
+          top: connectorTopY,
+          height: connectorHeight,
           transform: "translateX(-50%)",
           borderLeft: `2px dashed oklch(from ${LEO_TOKENS.cssVar} l c h / 0.7)`,
         }}
@@ -335,8 +360,8 @@ function ChartLeoPlotMarkerLayer({
         className="pointer-events-auto absolute"
         style={{
           left: pos.x,
-          top: chipBottomY,
-          transform: "translate(-50%, -100%)",
+          top: chipEdgeY,
+          transform: flipBelow ? "translate(-50%, 0)" : "translate(-50%, -100%)",
         }}
       >
         <LeoInsightIndicator
@@ -469,9 +494,12 @@ export function ChartLeoInsightOverlay({
 export function ChartLeoPixelPlotInsightOverlay({
   position,
   chartFamily = "heatmap",
+  avoidTopPx,
 }: {
   position: { x: number; y: number } | null
   chartFamily?: ChartLeoSpottingFamily
+  /** Top band the pill must not enter — e.g. the header lane of a `position: "top"` x axis. */
+  avoidTopPx?: number
 }) {
   const bundle = React.useContext(ChartLeoInsightContext)
   if (!bundle?.insight.anchor || !position) return null
@@ -483,6 +511,7 @@ export function ChartLeoPixelPlotInsightOverlay({
         insight={bundle.insight}
         chartTitle={bundle.chartTitle}
         markerLiftPx={chartLeoMarkerLiftPx(chartFamily)}
+        avoidTopPx={avoidTopPx}
       />
     </div>
   )
