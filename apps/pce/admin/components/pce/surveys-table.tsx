@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
@@ -15,7 +15,7 @@ import { SURVEY_STATUS_BADGE } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { CloseSurveyDialog, SendReminderDialog, EditEndDateDialog } from '@/components/pce/pce-modals'
 import { ModerationSheet } from '@/components/pce/moderation-sheet'
-import { MOCK_TERMS } from '@/lib/pce-mock-data'
+import { compareTerms } from '@/lib/pce-analytics'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -181,7 +181,27 @@ export function SurveysTable({
     }
   })
 
-  const termFilterOptions = MOCK_TERMS.map(t => ({ value: t, label: t }))
+  /**
+   * The terms THESE ROWS actually have — never MOCK_TERMS.
+   *
+   * MOCK_TERMS is the set of terms you can PUSH to (3: Spring 2026, Fall 2025, Spring 2025).
+   * The surveys being filtered span 9 terms, back to Fall 2022 and forward to Summer 2026, so
+   * 11 of 40 rows were UNREACHABLE BY THEIR OWN FILTER — you could not filter to Spring 2024
+   * or Fall 2024 at all. That is `course-evaluation.md` §4.7's "term dropdown ≠ term table"
+   * bug, the exact one the leaderboard's term scope already guards against by offering only
+   * terms with data.
+   *
+   * A filter's options are a property of the data in front of you, not of a constant defined
+   * for a different job. Sorted newest-first by the shared term comparator so the ordering
+   * matches every other term list in the product.
+   */
+  const termFilterOptions = useMemo(
+    () => [...new Set(rows.map(r => r.term).filter(Boolean))]
+      .sort(compareTerms)
+      .reverse()
+      .map(t => ({ value: t, label: t })),
+    [rows],
+  )
   const termColumn: ColumnDef<SurveyRow> = {
     key: 'term',
     label: 'Term',
