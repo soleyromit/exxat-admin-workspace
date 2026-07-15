@@ -208,7 +208,7 @@ function AnalyticsInner() {
 
         {/* ───── By Term ───── */}
         <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6 max-w-5xl">
             <div className="flex items-center gap-3">
               <ToggleGroup type="single" value={axis} onValueChange={(v) => v && setAxis(v as Axis)} variant="outline" size="sm">
                 <ToggleGroupItem value="term"   aria-label="View by term">Term</ToggleGroupItem>
@@ -315,7 +315,7 @@ function AnalyticsInner() {
 
         {/* ───── By Course ───── */}
         <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6 max-w-5xl">
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">Course</label>
               <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>

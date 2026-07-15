@@ -36,7 +36,7 @@ import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
   termKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
-  courseTrend, courseFacultyStats, termSlope, shortTerm, RESPONSE_TARGET,
+  courseTrend, courseFacultyStats, courseStats, facultyStats, termSlope, shortTerm, RESPONSE_TARGET,
   type TermCourseRow,
 } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
@@ -80,11 +80,7 @@ function FacultyCell({ name, initials }: { name: string; initials?: string }) {
 }
 
 /* Enrollment-weighted average rating. */
-function weightedAvg(offerings: FacultyOfferingRecord[]): number {
-  const totalEnrolled = offerings.reduce((s, o) => s + o.enrolled, 0)
-  if (totalEnrolled === 0) return 0
-  return offerings.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / totalEnrolled
-}
+const fmt2 = (v: number) => v.toFixed(2)
 
 type FacultyOfferingRow = FacultyOfferingRecord & Record<string, unknown>
 type CourseTermRow = {
@@ -970,19 +966,36 @@ export function ByFacultyPanel({
     [facultyId],
   )
 
+  /**
+   * KPIs from the CANONICAL layer — same fix as the By Course strip, same reasons.
+   *
+   * "Courses taught" was `offerings.length`, which counts OFFERINGS: Patel read "9" when she
+   * teaches 4 courses, 9 times. The label said courses and the value counted something else.
+   * `FacultyStat` has carried both `courses` and `offerings` all along; the panel just wasn't
+   * using them.
+   *
+   * The rating also rounded to 1dp ("4.4/5") while the leaderboard directly above prints 2dp
+   * ("4.43") for the same number — the same fact at two precisions on one screen reads as two
+   * facts. Both now come from `facultyStats()` at 2dp.
+   *
+   * (Unlike the course strip, the underlying variable here was right: a faculty member IS
+   * scored by `avgRating`. The bug was the label and the precision, not the entity.)
+   */
   const facultyKpis: MetricItem[] = useMemo(() => {
     if (!faculty) return []
-    const avgRating     = +weightedAvg(offerings).toFixed(1)
-    const avgCompletion = offerings.length > 0
-      ? Math.round(offerings.reduce((s, o) => s + o.responseRate, 0) / offerings.length) : 0
-    const termsCount    = new Set(offerings.map(o => o.term)).size
+    const stat = facultyStats().find(f => f.facultyId === facultyId)
+    if (!stat) return []
     return [
-      { id: 'f-courses',    label: 'Courses taught', value: offerings.length,                              delta: '', trend: 'neutral', description: 'across all terms (all data)' },
-      { id: 'f-rating',     label: 'Avg faculty rating', value: avgRating > 0 ? `${avgRating.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'weighted by class size' },
-      { id: 'f-completion', label: 'Avg completion', value: avgCompletion > 0 ? `${avgCompletion}%` : '—',    delta: '', trend: 'neutral', description: 'all offerings' },
-      { id: 'f-terms',      label: 'Terms active',   value: termsCount,                                     delta: '', trend: 'neutral', description: 'term appearances' },
+      { id: 'f-courses', label: 'Courses taught', value: stat.courses, delta: '', trend: 'neutral',
+        description: `${stat.offerings} offering${stat.offerings === 1 ? '' : 's'} across ${stat.terms} term${stat.terms === 1 ? '' : 's'}` },
+      { id: 'f-rating', label: 'Avg faculty rating', value: fmt2(stat.score.weighted), delta: '', trend: 'neutral',
+        description: 'weighted by class size' },
+      { id: 'f-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
+        description: `target ${RESPONSE_TARGET}%` },
+      { id: 'f-terms', label: 'Terms active', value: stat.terms, delta: '', trend: 'neutral',
+        description: 'term appearances' },
     ]
-  }, [faculty, offerings])
+  }, [faculty, facultyId])
 
   if (!faculty) return null
 
@@ -1118,21 +1131,51 @@ export function ByCoursePanel({
     [courseCode],
   )
 
+  /**
+   * KPIs from the CANONICAL layer, not a local mean.
+   *
+   * This used to average `o.avgRating` via a local `weightedAvg` — which is the INSTRUCTOR's
+   * score, not the course's. So "Avg rating 4.3/5" here disagreed with Overview listing the
+   * same course at 4.17 (its content score). The same course read two different numbers on two
+   * tabs, and the trend chart directly below plotted a third thing. `CourseStat.score`'s own
+   * doc-comment warns about exactly this mistake; ByCoursePanel reintroduced it by bypassing
+   * the layer built to prevent it. Students rate two entities (D27) — keep them apart, and
+   * derive both from one place.
+   *
+   * The 'Trend' tile is gone. Its value was a bare '↗' glyph: no magnitude, no baseline, and a
+   * comparison of only the last two terms — while the full 5-term path is charted immediately
+   * below it. That is RUBRIC Q4's ❌ ("single delta with arrow — hides the path") in its
+   * weakest possible form, and it isn't even a number. Direction now rides on the score tile
+   * as the DS `delta`/`trend` chip, where it is attached to the magnitude it describes.
+   *
+   * 'Instructors' replaces it: a real number the other tiles don't carry, and it sets up the
+   * "Who taught" card below.
+   */
   const courseKpis: MetricItem[] = useMemo(() => {
     if (!courseOfferings.length) return []
-    const avgRating     = +weightedAvg(courseOfferings).toFixed(1)
-    const avgCompletion = Math.round(courseOfferings.reduce((s, o) => s + o.responseRate, 0) / courseOfferings.length)
-    const sorted        = [...courseOfferings].sort((a, b) => a.term.localeCompare(b.term))
-    const trendDir      = sorted.length >= 2
-      ? (sorted[sorted.length - 1].avgRating >= sorted[sorted.length - 2].avgRating ? '↗' : '↘')
-      : '—'
+    const stat = courseStats().find(c => c.courseCode === courseCode)
+    if (!stat) return []
+    const trend = courseTrendRows
+    const last  = trend[trend.length - 1]
+    const prev  = trend.length >= 2 ? trend[trend.length - 2] : undefined
+    // courseAvg is nullable on the trend rows — a term with no content score is not a zero.
+    const delta =
+      last?.courseAvg != null && prev?.courseAvg != null ? last.courseAvg - prev.courseAvg : null
     return [
-      { id: 'c-count',      label: 'Times offered',  value: courseOfferings.length, delta: '', trend: 'neutral', description: 'all terms' },
-      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,       delta: '', trend: 'neutral', description: 'weighted by class size' },
-      { id: 'c-completion', label: 'Avg completion', value: `${avgCompletion}%`,    delta: '', trend: 'neutral', description: 'all offerings' },
-      { id: 'c-trend',      label: 'Trend',          value: trendDir,               delta: '', trend: 'neutral', description: 'vs prior term' },
+      { id: 'c-count', label: 'Times offered', value: stat.terms, delta: '', trend: 'neutral',
+        description: 'all terms' },
+      { id: 'c-rating', label: 'Course content score', value: fmt2(stat.score.weighted),
+        delta: delta == null ? '' : `${delta >= 0 ? '+' : ''}${fmt2(delta)}`,
+        // Aarti dislikes red in score viz (VIZ-004); the DS maps 'down' to its own warn tone,
+        // which is amber in this theme — verified against the token, not assumed.
+        trend: delta == null ? 'neutral' : delta >= 0 ? 'up' : 'down',
+        description: prev ? `weighted by class size · vs ${prev.short}` : 'weighted by class size' },
+      { id: 'c-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
+        description: `target ${RESPONSE_TARGET}%` },
+      { id: 'c-faculty', label: 'Instructors', value: courseFaculty.length, delta: '', trend: 'neutral',
+        description: courseFaculty.length === 1 ? 'one has taught it' : 'have taught it' },
     ]
-  }, [courseOfferings])
+  }, [courseOfferings, courseCode, courseTrendRows, courseFaculty])
 
   /* Rating trend for this course (enrollment-weighted per term). */
   const courseTrendData = useMemo(() => {
