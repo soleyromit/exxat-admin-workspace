@@ -283,7 +283,7 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 - `components/columns-showcase.tsx` — custom table via **`LibraryTable`** + same seven views
 - `components/tokens-themes-client.tsx` + `components/tokens-hub-auxiliary-views.tsx`
 - `components/team-client.tsx` + `components/team-table.tsx` — entity hub pattern
-- `components/placements-client.tsx` + `components/placements-table.tsx` — Placements (most complete)
+- `components/library-client.tsx` + `components/library-table.tsx` — Question bank (canonical full hub)
 
 **Files to create for a new hub page `Foo`:**
 | File | Purpose |

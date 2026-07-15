@@ -81,6 +81,10 @@ export default function TermsPage() {
     () => Object.fromEntries(groupOrder.map(y => [y, y])),
     [groupOrder]
   )
+  const academicYearOptions = useMemo(
+    () => groupOrder.map(y => ({ value: y, label: y })),
+    [groupOrder]
+  )
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {}
@@ -140,6 +144,10 @@ export default function TermsPage() {
       sortable: true,
       width: 150,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.academicYear}</span>,
+      filter: {
+        type: 'select', icon: 'fa-calendar', operators: ['is', 'is_not'],
+        options: academicYearOptions,
+      },
     },
     {
       key: 'startDate',
@@ -165,6 +173,13 @@ export default function TermsPage() {
           {row.status}
         </Badge>
       ),
+      filter: {
+        type: 'select', icon: 'fa-circle-dot', operators: ['is', 'is_not'],
+        options: [
+          { value: 'active',   label: 'Active' },
+          { value: 'archived', label: 'Archived' },
+        ],
+      },
     },
     {
       key: 'actions',
@@ -201,34 +216,20 @@ export default function TermsPage() {
         title="Academic Terms"
         subtitle="Manage term start/end dates used across the program."
         actions={
-          <div className="flex items-center gap-2">
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add term
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="outline" onClick={() => setAddOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Add New Term
-              </Button>
-            )}
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
+          MOCK_LMS_ENABLED ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="default" disabled aria-disabled="true">
+                  Set up term
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Managed by your LMS</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button variant="default" onClick={() => setAddOpen(true)}>
+              Set up term
             </Button>
-            {/* Activate term for evaluation — the term-directory home for this action
-                (replaces the old dashboard "Activate Term" button). */}
-            <Button variant="default" onClick={() => router.push('/surveys/push')}>
-              <i className="fa-light fa-circle-play" aria-hidden="true" />
-              Activate term
-            </Button>
-          </div>
+          )
         }
       />
 
@@ -247,26 +248,18 @@ export default function TermsPage() {
             onRowClick={(row) => router.push(`/admin/terms/${row.id}`)}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-calendar-days text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <i className="fa-light fa-calendar-days text-muted-foreground text-2xl" aria-hidden="true" />
                 <p className="text-sm font-medium">
-                  {rows.length === 0 ? 'No terms yet' : 'No terms match your search'}
+                  {rows.length === 0 ? 'No terms yet' : 'No terms match your search or filters'}
                 </p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
                   {rows.length === 0
                     ? (MOCK_LMS_ENABLED ? 'Terms sync from your LMS — none have synced yet.' : 'Add a term to anchor course offerings to an academic calendar.')
-                    : 'Try a different name or clear the search.'}
+                    : 'Try a different name, or clear the search and filters.'}
                 </p>
               </div>
             }
-            toolbarSlot={() => null}
           />
-
-          {!MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is off. This list is managed manually.
-            </p>
-          )}
 
         </div>
       </div>

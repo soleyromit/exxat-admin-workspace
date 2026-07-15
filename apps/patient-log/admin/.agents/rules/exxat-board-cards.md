@@ -1,0 +1,63 @@
+---
+description: Exxat DS — board (kanban) cards via ListPageBoardCard, badges, primitives. Auto-attaches when editing React board/list files; ask explicitly when designing kanban surfaces.
+activation: glob
+globs: {components,lib,src}/**/*.{tsx,ts}
+---
+
+<!-- Synced from .agents/rules/exxat-board-cards.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — board cards
+
+**Authoritative detail:** **`./AGENTS.md` §4.4** and **`.agents/skills/exxat-board-cards/SKILL.md`**.
+
+## MUST
+
+1. **Shell** — Use **`ListPageBoardCard`** from **`components/data-views/list-page-board-card.tsx`** for product board cards (same **`Card` `size="sm"`** treatment as Placements).
+2. **Hierarchy** — **Title** (`ListPageBoardCardTitleRow`) → optional **avatar** (`ListPageBoardCardAvatar` on `trailing`) → **status row** (`ListPageBoardCardBadgeRow` + **`ListHubStatusBadge`** **`surface="board"`**) when the entity has status → **body** (`ListPageBoardCardBody`) with **`BoardCardTwoLineBlock`** / **`BoardCardIconRow`** (**`components/data-views/board-card-primitives.tsx`**).
+3. **Status** — Use **`ListHubStatusBadge`** with **`surface="table"`** in grid / list rows and **`surface="board"`** on kanban cards. Generic semantic tints live in **`lib/list-status-badges.ts`** (**`LIST_HUB_STATUS_TINT_SUCCESS / WARNING / INFO / NEUTRAL / DANGER`**); compose per-domain label / icon maps next to the entity's mock data. Reference: **`library-board-view.tsx`** + **`lib/mock/library.ts`**. **MUST NOT** use **`uppercase`** on those chips.
+4. **Simple column boards** — **`ListPageBoardTemplate`** + **`renderCard`**; compose **`ListPageBoardCard`** inside **`renderCard`**.
+
+## MUST NOT
+
+- Duplicate **`ListPageBoardCard`** with ad-hoc **`<button>`** + border/padding classes for the same hub pattern.
+- Show **status** only as plain text in the **body** when the hub uses **status** elsewhere — use the **badge row** + shared maps.
+- Pass **raw `<div>` children** into **`<ListPageBoardCard layout="stack">`** — `Card` only carries **`py-*`**; horizontal padding lives on **`CardHeader`** / **`CardContent`** which the DS primitives wrap. Raw children render flush to the card edges.
+
+## ⛔ Wrong vs ✅ Right (`layout="stack"`)
+
+```tsx
+// ⛔ WRONG — raw children get NO horizontal padding
+//   (this is the bug we hit shipping 0.5.16 — content sat flush against the card edge)
+<ListPageBoardCard layout="stack">
+  <div className="flex items-start gap-3">
+    <AvatarInitials initials={initials} />
+    <div className="min-w-0 flex-1">
+      <p className="font-semibold">{fullName}</p>
+      <p className="text-xs text-muted-foreground">{record.id}</p>
+    </div>
+  </div>
+  <p className="text-xs text-muted-foreground">{record.subtitle}</p>
+</ListPageBoardCard>
+
+// ✅ RIGHT — DS primitives carry the px-3/4 from CardHeader / CardContent
+<ListPageBoardCard layout="stack">
+  <ListPageBoardCardHeader>
+    <ListPageBoardCardTitleRow
+      title={fullName}
+      trailing={<ListPageBoardCardAvatar initials={initials} />}
+    />
+    <p className="font-mono text-xs tabular-nums text-muted-foreground">{record.id}</p>
+  </ListPageBoardCardHeader>
+  <ListPageBoardCardBody>
+    <p className="text-xs text-muted-foreground">{record.subtitle}</p>
+  </ListPageBoardCardBody>
+</ListPageBoardCard>
+```
+
+The DS emits a dev-mode `console.warn` from `ListPageBoardCard` when `layout="stack"` direct children don't include any of the named primitives — so the customer sees the issue on first dev boot even if the agent forgets this rule.
+
+## See also
+
+- **`./AGENTS.md` §4.4**, **§13** checklist
+- **`docs/exxat-ds/data-views-pattern.md`** — Board UI reuse
+- **`lib/initials-from-name.ts`** — owner initials when mock has no `initials` field

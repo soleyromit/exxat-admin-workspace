@@ -60,9 +60,12 @@ jobs:
       - name: Verify DS snapshot is current
         run: |
           python3 scripts/ds-snapshot.py
-          if ! git diff --quiet docs/foundations/ds-snapshot.json; then
+          # `--` disambiguates the path from a revision: without it, git exits 128
+          # ("ambiguous argument") rather than 0/1 if the file is ever missing,
+          # which reads as "stale" and fails the gate for the wrong reason.
+          if ! git diff --quiet -- docs/foundations/ds-snapshot.json; then
             echo "::error::ds-snapshot.json is stale. Run \`python3 scripts/ds-snapshot.py\` and commit the result."
-            git diff docs/foundations/ds-snapshot.json | head -40
+            git diff -- docs/foundations/ds-snapshot.json | head -40
             exit 1
           fi
           echo "DS snapshot is current."

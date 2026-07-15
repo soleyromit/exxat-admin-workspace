@@ -235,7 +235,7 @@ function SettingsInner() {
             </TabsContent>
 
             {/* ── Evaluation Rules ─────────────────────────────────────── */}
-            <TabsContent value="evaluation-rules" className="flex flex-col gap-0 mt-0">
+            <TabsContent value="evaluation-rules" className="flex flex-col gap-8 mt-0">
               <SettingsFormRow label="Rating scale" description="Central default for scaled / rating questions in new templates.">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-1.5">
@@ -297,26 +297,20 @@ function SettingsInner() {
               </SettingsFormRow>
 
               <SettingsFormRow label="Benchmarks" description="Reference targets drawn as lines on term and course analytics.">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-4 max-w-xs">
-                    <span className="text-sm">Response rate</span>
-                    {numField(bRate, setBRate, 'Target response rate', '%', 0, 100)}
-                  </div>
-                  <div className="flex items-center justify-between gap-4 max-w-xs">
-                    <span className="text-sm">Course score</span>
-                    {numField(bCourse, setBCourse, 'Target course score', `/ ${scaleMax}.0`, 1, scaleMax, 0.1)}
-                  </div>
-                  <div className="flex items-center justify-between gap-4 max-w-xs">
-                    <span className="text-sm">Faculty score</span>
-                    {numField(bFaculty, setBFaculty, 'Target faculty score', `/ ${scaleMax}.0`, 1, scaleMax, 0.1)}
-                  </div>
+                <div className="grid w-fit grid-cols-[auto_auto] items-center gap-x-8 gap-y-3">
+                  <span className="text-sm">Response rate</span>
+                  {numField(bRate, setBRate, 'Target response rate', '%', 0, 100)}
+                  <span className="text-sm">Course score</span>
+                  {numField(bCourse, setBCourse, 'Target course score', `/ ${scaleMax}.0`, 1, scaleMax, 0.1)}
+                  <span className="text-sm">Faculty score</span>
+                  {numField(bFaculty, setBFaculty, 'Target faculty score', `/ ${scaleMax}.0`, 1, scaleMax, 0.1)}
                 </div>
               </SettingsFormRow>
 
             </TabsContent>
 
             {/* ── Schedule & release ───────────────────────────────────── */}
-            <TabsContent value="evaluation-dates" className="flex flex-col gap-0 mt-0">
+            <TabsContent value="evaluation-dates" className="flex flex-col gap-8 mt-0">
               <SubHeading>Evaluation window</SubHeading>
               <SettingsFormRow label="Anchor date" description="Anchor the survey window to the term's or course's end date, then offset by days.">
                 <Select value={windowAnchor} onValueChange={v => setWindowAnchor(v as DateAnchor)}>

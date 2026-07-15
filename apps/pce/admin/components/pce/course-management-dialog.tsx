@@ -183,9 +183,11 @@ export function CourseManagementDialog({
               ))
             )}
 
+            {/* Add faculty — the search adds any faculty (coordinator, TA, lab
+                instructor), so the heading must not name a single role. */}
             <div className="flex flex-col gap-2 mt-4 pb-1">
               <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-                Add instructor
+                Add faculty
               </p>
               <InputGroup>
                 <Input

@@ -74,13 +74,13 @@ function GreetingWidget({ compact = false }: { compact?: boolean }) {
             <p
               className="text-2xl font-semibold tracking-tight leading-tight text-foreground font-heading"
                          >
-              {greeting}, Anita 👋
+              {greeting}, Himanshu 👋
             </p>
           ) : (
             <h2
               className="text-2xl font-semibold tracking-tight leading-tight text-foreground font-heading"
                          >
-              {greeting}, Anita 👋
+              {greeting}, Himanshu 👋
             </h2>
           )}
           {!compact ? (

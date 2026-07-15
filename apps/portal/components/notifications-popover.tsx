@@ -21,9 +21,9 @@ type Notification = {
 
 const NOTIFICATIONS: Notification[] = [
   { id: 1, type: 'feature', title: 'QB AI Gap Analysis shipped', body: 'AI gap analysis is now live in Exam Management v2.4', date: '2026-05-14', read: false },
-  { id: 2, type: 'feature', title: 'PCE Master List views', body: 'New entity list views for all placement types in PCE v3.1', date: '2026-05-05', read: false },
-  { id: 3, type: 'offer', title: 'Upgrade Learning Contracts', body: 'Add Learning Contracts to your subscription — 3 months free trial.', date: '2026-05-01', read: true },
-  { id: 4, type: 'offer', title: 'FaaS 2.0 early access', body: 'Join the FaaS 2.0 beta and shape the form builder experience.', date: '2026-04-20', read: true },
+  { id: 2, type: 'feature', title: 'Term workspace for Surveys & Course Evaluations', body: 'New Table ⇄ Board term workspace shipped in Surveys & Course Evaluations v3.1', date: '2026-05-05', read: false },
+  { id: 3, type: 'offer', title: 'Clinical & Experiential Education early access', body: 'Join the early-access list for placements, preceptors, and experiential hours tracking.', date: '2026-05-01', read: true },
+  { id: 4, type: 'offer', title: 'Accreditation Management preview', body: 'Preview self-study assembly and evidence collection ahead of launch.', date: '2026-04-20', read: true },
 ]
 
 function formatDate(dateStr: string) {

@@ -46,6 +46,11 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import { requestOpenCommandMenu } from "@/components/command-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
@@ -411,7 +416,7 @@ function SecondaryNavItems({ items }: { items: NavSecondaryItem[] }) {
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, toggleRole } = usePce()
+  const { user, toggleRole, accountId, accounts, switchAccount } = usePce()
   const router = useRouter()
   const [appearanceOpen, setAppearanceOpen] = React.useState(false)
   const navItems = user.role === "admin" ? NAV_ADMIN : NAV_FACULTY
@@ -503,6 +508,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <i className="fa-light fa-paintbrush" aria-hidden="true" />
                     Appearance
                   </DropdownMenuItem>
+                  {/* Demo account switcher — each account is a distinct dashboard
+                      term-card scenario (no current term, undated term, no
+                      roster, no history, no next term…). */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <i className="fa-light fa-user-group" aria-hidden="true" />
+                      Demo account
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="max-w-[20rem]">
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Term-card scenarios
+                      </DropdownMenuLabel>
+                      <DropdownMenuRadioGroup value={accountId} onValueChange={switchAccount}>
+                        {accounts.map((a) => (
+                          <DropdownMenuRadioItem key={a.id} value={a.id} className="items-start">
+                            <span className="flex flex-col gap-0.5">
+                              <span className="text-sm font-medium text-foreground">{a.name}</span>
+                              <span className="text-xs text-muted-foreground">{a.blurb}</span>
+                            </span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                 </>
               }
             />

@@ -2,7 +2,7 @@
 
 > **Tokens:** `app/globals.css` — `--sidebar`, `--secondary-panel-bg`, `--background`, `--brand-tint*`.  
 > **Shell:** `components/templates/nested-secondary-panel-shell.tsx` — `bg-[var(--secondary-panel-bg)]`.  
-> **Cursor:** `.cursor/rules/exxat-primary-nav-secondary-panel.mdc` · `.cursor/skills/exxat-sidebar-nav/SKILL.md`
+> **Cursor:** `.cursor/rules/exxat-primary-nav-secondary-panel.mdc` · `.cursor/skills/exxat-primary-nav-secondary-panel/SKILL.md`
 
 ## Stack (back → front)
 
@@ -37,7 +37,7 @@ Per-product **dark** theme blocks (`.theme-one.dark`, `.theme-prism.dark`, …) 
 
 ## Product theme classes
 
-- **`theme-one`** / **`theme-prism`** / **`theme-assessment`** — built-in OKLCH brand scales in `globals.css`.
+- **`theme-one`** / **`theme-prism`** — built-in OKLCH brand scales in `globals.css`.
 - **`theme-custom`** — when user picks an accent in Settings; driven by `--custom-product-brand-color`.
 - **`ProductProvider`** — applies `theme-one` vs `theme-prism` vs `theme-custom`; accent override only when it **differs** from the product default (see `accentOverrideActive` in `contexts/product-context.tsx`).
 

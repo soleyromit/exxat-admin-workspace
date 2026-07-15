@@ -2,6 +2,8 @@
 description: Exxat DS — map each table data point to the correct cell primitive (person avatar column, status badge, ProgressCell, etc.); no inline re-implementation. Auto-attaches when editing hub column defs and table cell renderers.
 globs: 
   - "**/*-table.tsx"
+  - "**/*-client.tsx"
+  - "**/*-hub.tsx"
   - "**/columns-showcase.tsx"
   - "**/table-cells.tsx"
   - "**/data-views/hub-table.tsx"

@@ -26,14 +26,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Tip } from "@/components/ui/tip"
-import { SidebarNavLabel } from "@/components/ui/sidebar-nav-label"
-import { useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import type { LibraryFolder } from "@/lib/mock/library-folders"
 import { DEFAULT_LIBRARY_FOLDERS, newFolderId, collectFolderDescendantIds } from "@/lib/mock/library-folders"
 import { useSecondaryPanel } from "@/components/sidebar"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
+import {
+  SecondaryHubIconNavRow,
+  SecondaryHubNavCompactShell,
+  SecondaryHubNavRow,
+  SecondaryHubNavSectionHeader,
+  useSecondaryHubNavChrome,
+} from "@/components/sidebar/secondary-hub-nav-primitives"
 import { LibraryNewFolderSheet } from "@/components/library-new-folder-sheet"
 import {
   isLibraryNavActive,
@@ -47,110 +50,13 @@ import {
 import { LibraryFolderTreeBranch } from "@/components/data-views/library-folder-tree-branch"
 import { outlineTreeBranchDepthStyle } from "@/components/data-views/outline-tree-menu"
 
-function NavRow({
-  href,
-  active,
-  iconClass,
-  label,
-  onClick,
-}: {
-  href: string
-  active: boolean
-  iconClass: string
-  label: string
-  /** e.g. reopen secondary panel on same-route “All questions” */
-  onClick?: () => void
-}) {
-  const { dismissNavFlyout } = useSidebar()
-  return (
-    <li className="min-w-0">
-      <Tip label={label} side="right" triggerClassName="block w-full min-w-0">
-        <Link
-          to={href}
-          onClick={() => {
-            onClick?.()
-            dismissNavFlyout()
-          }}
-          aria-current={active ? "page" : undefined}
-          className={cn(
-            "flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-            active
-              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground ring-1 ring-inset ring-sidebar-border/80"
-              : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-          )}
-        >
-          <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden>
-            <i
-              className={cn(
-                active ? "fa-solid" : "fa-light",
-                iconClass,
-                "block text-xs leading-none",
-              )}
-              aria-hidden
-            />
-          </span>
-          <SidebarNavLabel>{label}</SidebarNavLabel>
-        </Link>
-      </Tip>
-    </li>
-  )
-}
-
-/** Icon-rail row — matches primary sidebar collapsed hit target (`size-9`). */
-function IconNavRow({
-  href,
-  active,
-  iconClass,
-  label,
-  onClick,
-}: {
-  href: string
-  active: boolean
-  iconClass: string
-  label: string
-  onClick?: () => void
-}) {
-  const { dismissNavFlyout } = useSidebar()
-  return (
-    <li className="flex w-full justify-center" role="none">
-      <Tip label={label} side="right">
-        <Link
-          to={href}
-          onClick={() => {
-            onClick?.()
-            dismissNavFlyout()
-          }}
-          aria-current={active ? "page" : undefined}
-          className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-md transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-            active
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-          )}
-        >
-          <span className="text-center text-md leading-none" aria-hidden>
-            <i className={cn(active ? "fa-solid" : "fa-light", iconClass)} aria-hidden />
-          </span>
-        </Link>
-      </Tip>
-    </li>
-  )
-}
-
 export function LibrarySecondaryNav() {
   const pathname = useLocation().pathname
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const searchParamsKey = searchParams.toString()
-  const { openPanel, libraryFolderBridge, libraryAccessBridge, secondaryPanelCompact } =
-    useSecondaryPanel()
-  const isMobile = useIsMobile()
-  const reflowZoom = useSidebarReflowZoom()
-  const navFlyout = isMobile || reflowZoom
-  const showCompactRail = secondaryPanelCompact && !navFlyout
-  const { dismissNavFlyout } = useSidebar()
+  const { openPanel, libraryFolderBridge, libraryAccessBridge } = useSecondaryPanel()
+  const { showCompactRail, dismissNavFlyout } = useSecondaryHubNavChrome()
   const [newFolderOpen, setNewFolderOpen] = React.useState(false)
   const [newFolderParentId, setNewFolderParentId] = React.useState<string | null>(null)
   const [customizingFolder, setCustomizingFolder] = React.useState<LibraryFolder | null>(null)
@@ -343,110 +249,99 @@ export function LibrarySecondaryNav() {
   if (showCompactRail) {
     return (
       <>
-        <nav className="flex min-h-0 flex-1 flex-col" aria-label="Library">
-          <div className="flex flex-col items-center border-b border-sidebar-border/60 px-1 py-2">
-            <Tip label="Show labels" side="right">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-9 shrink-0"
-                aria-label="Show labels"
-                onClick={() => openPanel("library")}
-              >
-                <i className="fa-light fa-angles-right text-md" aria-hidden="true" />
-              </Button>
-            </Tip>
-          </div>
-          <ul className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-1 py-2">
-            <IconNavRow
-              href={libraryHubScopeHref(pathname, searchParams, { scope: "all" })}
-              active={isLibraryNavActive(pathname, nav, "all", null, folders)}
-              iconClass="fa-table-list"
-              label="All questions"
-              onClick={() => openPanel("library")}
-            />
-            <IconNavRow
-              href={libraryHubScopeHref(pathname, searchParams, { scope: "my" })}
-              active={isLibraryNavActive(pathname, nav, "my", null, folders)}
-              iconClass="fa-user"
-              label="My questions"
-              onClick={() => openPanel("library")}
-            />
-            <IconNavRow
-              href={libraryFavoritesFolderHref(pathname, searchParams)}
-              active={isLibraryNavActive(pathname, nav, "folder", LIBRARY_FAVORITES_FOLDER_ID, folders)}
-              iconClass="fa-star"
-              label="Favorites"
-              onClick={() => openPanel("library")}
-            />
-            <li className="flex w-full justify-center pt-1" role="none">
-              <DropdownMenu>
-                <Tip label="Folders" side="right">
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className={cn(
-                        "size-9 shrink-0 text-sidebar-foreground",
-                        folderTreeScopeActive &&
-                          "bg-sidebar-accent text-sidebar-accent-foreground",
-                      )}
-                      aria-current={folderTreeScopeActive ? "page" : undefined}
-                      aria-label="Folders"
-                    >
-                      <i className="fa-light fa-folder-tree text-md" aria-hidden="true" />
-                    </Button>
-                  </DropdownMenuTrigger>
+        <SecondaryHubNavCompactShell
+          ariaLabel="Library"
+          panelId="library"
+          footer={
+            canManageFolders ? (
+              <div className="flex flex-col items-center border-t border-sidebar-border/60 px-1 py-2">
+                <Tip label="Add folder" side="right">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="icon-button-chrome size-9 shrink-0"
+                    aria-label="Add folder"
+                    onClick={openTopLevelFolder}
+                  >
+                    <i className="fa-light fa-plus text-md" aria-hidden="true" />
+                  </Button>
                 </Tip>
-                <DropdownMenuContent side="right" align="start" className="max-h-72 overflow-y-auto">
-                  {flattenedFolderLinks.length === 0 ? (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">No folders</div>
-                  ) : (
-                    flattenedFolderLinks.map(folder => {
-                      const href = libraryHubScopeHref(pathname, searchParams, {
-                        scope: "folder",
-                        folderId: folder.id,
-                      })
-                      const active = isLibraryNavActive(pathname, nav, "folder", folder.id, folders)
-                      return (
-                        <DropdownMenuItem key={folder.id} asChild>
-                          <Link
-                            to={href}
-                            className={cn(active && "bg-accent")}
-                            onClick={() => {
-                              openPanel("library")
-                              dismissNavFlyout()
-                            }}
-                          >
-                            {folder.name}
-                          </Link>
-                        </DropdownMenuItem>
-                      )
-                    })
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </li>
-          </ul>
-          {canManageFolders ? (
-            <div className="flex flex-col items-center border-t border-sidebar-border/60 px-1 py-2">
-              <Tip label="Add folder" side="right">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="icon-button-chrome size-9 shrink-0"
-                  aria-label="Add folder"
-                  onClick={openTopLevelFolder}
-                >
-                  <i className="fa-light fa-plus text-md" aria-hidden="true" />
-                </Button>
+              </div>
+            ) : null
+          }
+        >
+          <SecondaryHubIconNavRow
+            href={libraryHubScopeHref(pathname, searchParams, { scope: "all" })}
+            active={isLibraryNavActive(pathname, nav, "all", null, folders)}
+            iconClass="fa-table-list"
+            label="All questions"
+            onClick={() => openPanel("library")}
+          />
+          <SecondaryHubIconNavRow
+            href={libraryHubScopeHref(pathname, searchParams, { scope: "my" })}
+            active={isLibraryNavActive(pathname, nav, "my", null, folders)}
+            iconClass="fa-user"
+            label="My questions"
+            onClick={() => openPanel("library")}
+          />
+          <SecondaryHubIconNavRow
+            href={libraryFavoritesFolderHref(pathname, searchParams)}
+            active={isLibraryNavActive(pathname, nav, "folder", LIBRARY_FAVORITES_FOLDER_ID, folders)}
+            iconClass="fa-star"
+            label="Favorites"
+            onClick={() => openPanel("library")}
+          />
+          <li className="flex w-full justify-center pt-1" role="none">
+            <DropdownMenu>
+              <Tip label="Folders" side="right">
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className={cn(
+                      "size-9 shrink-0 text-sidebar-foreground",
+                      folderTreeScopeActive &&
+                        "bg-sidebar-accent text-sidebar-accent-foreground",
+                    )}
+                    aria-current={folderTreeScopeActive ? "page" : undefined}
+                    aria-label="Folders"
+                  >
+                    <i className="fa-light fa-folder-tree text-md" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
               </Tip>
-            </div>
-          ) : null}
-        </nav>
+              <DropdownMenuContent side="right" align="start" className="max-h-72 overflow-y-auto">
+                {flattenedFolderLinks.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">No folders</div>
+                ) : (
+                  flattenedFolderLinks.map(folder => {
+                    const href = libraryHubScopeHref(pathname, searchParams, {
+                      scope: "folder",
+                      folderId: folder.id,
+                    })
+                    const active = isLibraryNavActive(pathname, nav, "folder", folder.id, folders)
+                    return (
+                      <DropdownMenuItem key={folder.id} asChild>
+                        <Link
+                          to={href}
+                          className={cn(active && "bg-accent")}
+                          onClick={() => {
+                            openPanel("library")
+                            dismissNavFlyout()
+                          }}
+                        >
+                          {folder.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  })
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </li>
+        </SecondaryHubNavCompactShell>
         {hubNavModals}
       </>
     )
@@ -456,31 +351,29 @@ export function LibrarySecondaryNav() {
     <>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4" role="navigation" aria-label="Library">
         <ul className="space-y-0.5">
-          <NavRow
+          <SecondaryHubNavRow
             href={libraryHubScopeHref(pathname, searchParams, { scope: "all" })}
             active={isLibraryNavActive(pathname, nav, "all", null, folders)}
             iconClass="fa-table-list"
             label="All questions"
             onClick={() => openPanel("library")}
           />
-          <NavRow
+          <SecondaryHubNavRow
             href={libraryHubScopeHref(pathname, searchParams, { scope: "my" })}
             active={isLibraryNavActive(pathname, nav, "my", null, folders)}
             iconClass="fa-user"
             label="My questions"
           />
-          <NavRow
+          <SecondaryHubNavRow
             href={libraryFavoritesFolderHref(pathname, searchParams)}
             active={isLibraryNavActive(pathname, nav, "folder", LIBRARY_FAVORITES_FOLDER_ID, folders)}
             iconClass="fa-star"
             label="Favorites"
             onClick={() => openPanel("library")}
           />
-          <li className="select-none">
-            <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-0.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-secondary-action-foreground">
-                Folders
-              </span>
+          <SecondaryHubNavSectionHeader
+            label="Folders"
+            action={
               <Tip label="Add folder" side="right">
                 <Button
                   type="button"
@@ -494,8 +387,8 @@ export function LibrarySecondaryNav() {
                   <i className="fa-light fa-plus" aria-hidden="true" />
                 </Button>
               </Tip>
-            </div>
-          </li>
+            }
+          />
           {folderTreeRoots.map(folder => (
             <li
               key={folder.id}

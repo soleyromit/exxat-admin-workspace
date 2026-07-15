@@ -55,11 +55,6 @@ Need hub visible behind?
 - Centered dialog for wide export column pickers — use sheet.
 - Irreversible delete via toast only — dialog with confirm.
 
-## Accessibility
-
-- Dialog **and** sheet both need an accessible **title**; restore focus to the trigger on close.
-- `TablePropertiesDrawer`, `ExportDrawer`, `InviteCollaboratorsDrawer` end in "Drawer" but are **`Sheet`** only — no Vaul.
-
 ---
 
 ## Workflow keyboard (inside sheet/dialog)

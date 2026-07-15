@@ -28,6 +28,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { usePce } from '@/components/pce/pce-state'
@@ -150,12 +151,7 @@ function TermWorkspaceInner() {
             className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
           >
             <p className="text-sm font-medium">{row.courseCode}</p>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p className="text-xs text-muted-foreground truncate max-w-[220px]">{row.courseName}</p>
-              </TooltipTrigger>
-              <TooltipContent>{row.courseName}</TooltipContent>
-            </Tooltip>
+            <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
           </Link>
         ),
       },

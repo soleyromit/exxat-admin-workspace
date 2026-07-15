@@ -59,8 +59,10 @@ const POSITION_BADGE: Record<TermPosition, { label: string; tone: StatusBadgeTon
   upcoming: { label: 'Upcoming', tone: 'info' },
 }
 
-function positionOf(term: ProgramTerm, curId: string): TermPosition {
-  if (term.id === curId) return 'current'
+function positionOf(term: ProgramTerm, curId: string | null): TermPosition {
+  if (curId && term.id === curId) return 'current'
+  // A term created before its dates are entered is being set up → upcoming.
+  if (!term.startDate) return 'upcoming'
   const today = new Date().toISOString().slice(0, 10)
   return term.startDate > today ? 'upcoming' : 'past'
 }
@@ -132,15 +134,32 @@ function TermMetaLine({
   )
 }
 
-/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status). */
-function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boolean }) {
+/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status).
+ *
+ * Sits TOP-RIGHT inside the sub-card, opposite the heading (Romit,
+ * 2026-07-14). Top-right is a fixed anchor: "8 days left" and "Starts in
+ * 41 days" land in the same place regardless of length, and the CTA keeps
+ * its own row instead of being pushed down by a stacked countdown.
+ *
+ * `mode` carries the two readings — a window closing vs. a term approaching.
+ * Both are sentence case: "8 days left" opens on a digit, so only "Starts"
+ * shows the capital, and a lowercase twin would read as a broken fragment. */
+function CountdownIndicator({
+  days, urgent, mode,
+}: {
+  days: number
+  urgent: boolean
+  mode: 'left' | 'starts'
+}) {
   return (
     <span
       className="flex shrink-0 items-center gap-1.5 text-xs font-medium tabular-nums"
       style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
     >
       <i className="fa-light fa-clock" aria-hidden="true" />
-      {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+      {mode === 'left'
+        ? `${days} ${days === 1 ? 'day' : 'days'} left`
+        : `Starts in ${days} ${days === 1 ? 'day' : 'days'}`}
     </span>
   )
 }
@@ -181,10 +200,11 @@ function ViewTermLink({ termId, name }: { termId: string; name: string }) {
 /* ── current term (the hero card) ─────────────────────────────────────────── */
 
 function CurrentTermCard({
-  snap, atRisk,
+  snap, atRisk, className,
 }: {
   snap: TermSnapshot
   atRisk: PceSurvey[]
+  className?: string
 }) {
   const { term } = snap
   const urgent = snap.daysLeft != null && snap.daysLeft <= 7
@@ -192,30 +212,40 @@ function CurrentTermCard({
   const pendingAtRisk = atRisk.reduce(
     (n, s) => n + Math.max(0, s.enrollmentCount - s.responseCount), 0,
   )
+  /* Current term with no offerings/evaluations yet — the roster isn't built. */
+  const noCourses = snap.total === 0 && (snap.coverage?.total ?? 0) === 0
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <TermTitleRow
           name={term.name}
           termId={term.id}
           badge={<StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />}
         />
-        <TermMetaLine
-          term={term}
-          /* Days-left rides in the reminder block when it exists; otherwise
-           * it joins the meta line so the countdown never disappears. */
-          trailing={
-            atRisk.length === 0 && snap.daysLeft != null ? (
-              /* Separator wraps WITH its unit — never a dangling dot. */
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                {'· '}
-                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
-              </span>
-            ) : undefined
-          }
-        />
+        {/* No countdown here — it belongs with the action it qualifies, inside
+            the sub-card below (Romit, 2026-07-14). */}
+        <TermMetaLine term={term} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {noCourses ? (
+          <div className="flex items-start gap-3 rounded-md border border-border p-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted" aria-hidden="true">
+              <i className="fa-light fa-layer-group text-muted-foreground" style={{ fontSize: 16 }} />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">No courses set up yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Add this term’s courses and rosters to start collecting responses.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href={`/surveys/push?term=${term.id}`}>Set up evaluations</Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* HubSpot-goals anatomy: label/value row → full-width bar → status words. */}
         <div className="flex flex-col gap-1">
           <div className="flex items-baseline justify-between gap-2">
@@ -238,6 +268,13 @@ function CurrentTermCard({
             </>
           )}
         </div>
+        {/* Countdown is a term-level date fact stated in the card body — the
+            upcoming card carries it as a "Starts in" row for the same reason.
+            Inside the alert it stole width and wrapped the heading; in the
+            meta line it floated free of anything it qualified. */}
+        {snap.daysLeft != null && (
+          <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
+        )}
         {atRisk.length > 0 && (
           /* Student-first framing (Romit: the goal is students filling the
            * evaluation — lead with who still needs to act, not course rates).
@@ -254,6 +291,8 @@ function CurrentTermCard({
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {/* Heading gets the full width — the countdown sits above as a
+                  card-level fact, so it can't wrap this to two lines. */}
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">
                   {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
@@ -263,20 +302,13 @@ function CurrentTermCard({
                   {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
                 </p>
               </div>
-              {/* Batch action + countdown share the bottom row — identical to
-                  the upcoming card's needs-info block so the two read the same;
-                  the countdown wraps below the button on the narrow card rather
-                  than squeezing the heading. (multi-course batch → wizard.) */}
-              <div className="flex flex-col items-start gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
-                </Button>
-                {snap.daysLeft != null && (
-                  <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
-                )}
-              </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
+              </Button>
             </div>
           </div>
+        )}
+        </>
         )}
       </CardContent>
       {/* mt-auto pins the footer to the card bottom like its siblings — the
@@ -298,7 +330,7 @@ function CurrentTermCard({
 
 /* ── last term ────────────────────────────────────────────────────────────── */
 
-function LastTermCard({ snap }: { snap: TermSnapshot }) {
+function LastTermCard({ snap, className }: { snap: TermSnapshot; className?: string }) {
   const { term } = snap
   const rows: { label: string; value: string; icon: string; emphasis?: boolean }[] = [
     { label: 'Evaluations', value: `${snap.total}`, icon: 'fa-square-poll-vertical' },
@@ -307,7 +339,7 @@ function LastTermCard({ snap }: { snap: TermSnapshot }) {
     { label: 'Avg response', value: snap.rate != null ? `${snap.rate}%` : '—', icon: 'fa-chart-mixed' },
   ]
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <TermTitleRow
           name={term.name}
@@ -348,13 +380,15 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
   /* The card is an ACTION surface when setup is incomplete — the remaining
    * offerings are work, not just a count (reference: live PCE upcoming card:
    * offerings found · starts-in countdown · needs-attention → Fix Data). */
+  /* A term created before its dates are entered — the window can't be derived
+   * and there's no countdown; the card's job becomes "add dates". */
+  const dated = !!term.startDate && !!term.endDate
   const remaining = snap.coverage ? snap.coverage.total - snap.coverage.surveyed : 0
   const noSetup = (snap.coverage?.surveyed ?? snap.total) === 0
   const readiness = auditTerm(term.id)
-  const startsIn = Math.max(
-    0,
-    Math.ceil((new Date(term.startDate).getTime() - Date.now()) / 86_400_000),
-  )
+  const startsIn = dated
+    ? Math.max(0, Math.ceil((new Date(term.startDate).getTime() - Date.now()) / 86_400_000))
+    : null
   const win = evalWindow(term)
   const rows: { label: string; value: string; icon: string }[] = [
     {
@@ -367,14 +401,25 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
       value: snap.coverage ? `${snap.coverage.surveyed} of ${snap.coverage.total}` : `${snap.total}`,
       icon: 'fa-square-poll-vertical',
     },
-    { label: 'Term dates', value: fmtRange(term.startDate, term.endDate), icon: 'fa-calendar' },
+    { label: 'Term dates', value: dated ? fmtRange(term.startDate, term.endDate) : 'Not set yet', icon: 'fa-calendar' },
     {
       /* Survey window is a projection until evaluations are set up — say so
          rather than printing a derived range as a committed fact. */
       label: 'Survey dates',
-      value: noSetup ? 'Not set yet' : `${win.open.replace(/, \d{4}$/, '')} – ${win.close}`,
+      value: dated && !noSetup ? `${win.open.replace(/, \d{4}$/, '')} – ${win.close}` : 'Not set yet',
       icon: 'fa-calendar-check',
     },
+    /* The countdown is a DATE FACT — it belongs with Term dates / Survey dates,
+       not inside the alert, where it stole width and wrapped the heading
+       (Romit, 2026-07-14). Only when dated; otherwise there's nothing to
+       count down to and "Term dates: Not set yet" already says so. */
+    ...(startsIn != null
+      ? [{
+          label: 'Starts in',
+          value: `${startsIn} ${startsIn === 1 ? 'day' : 'days'}`,
+          icon: 'fa-clock',
+        }]
+      : []),
   ]
   return (
     <Card>
@@ -390,14 +435,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
              line stays to the AY + countdown so it never reads "window not
              set · starts in Nd", which conflated two facts. */
           hideWindow
-          /* The countdown rides inside the needs-info block (like the current
-             card's "N days left" rides its reminder block); only when there's
-             no such block does it fall back to the meta line. */
-          trailing={
-            readiness.needsData > 0
-              ? undefined
-              : <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
-          }
+          /* No countdown here — it sits with the action inside the sub-card
+             below, matching the current card (Romit, 2026-07-14). */
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -412,7 +451,25 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
             </div>
           ))}
         </dl>
-        {readiness.needsData > 0 ? (
+        {!dated ? (
+          /* Term exists but isn't scheduled — the one thing to do is add dates. */
+          <div className="flex items-start gap-3 rounded-md border border-border p-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted" aria-hidden="true">
+              <i className="fa-light fa-calendar-plus text-muted-foreground" style={{ fontSize: 16 }} />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">Add term dates</p>
+                <p className="text-xs text-muted-foreground">
+                  Set start and end dates to schedule the evaluation window.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href="/course-evaluation/term-setup">Add term dates</Link>
+              </Button>
+            </div>
+          </div>
+        ) : readiness.needsData > 0 ? (
           /* Same needs-attention anatomy as the current card's reminder block. */
           <div className="flex items-start gap-3 rounded-md border border-border p-3">
             <span
@@ -426,6 +483,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {/* Heading gets the full width — the countdown lives in the rows
+                  above as a date fact, so it can't wrap this to two lines. */}
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">
                   {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
@@ -434,15 +493,9 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                   Missing faculty or student rosters
                 </p>
               </div>
-              {/* Action + countdown share the bottom row so neither squeezes
-                  the heading; on a narrow card the countdown wraps below the
-                  button instead of forcing the heading onto 3–4 lines. */}
-              <div className="flex flex-col items-start gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
-                </Button>
-                <DaysLeftIndicator daysLeft={startsIn} urgent={startsIn <= 7} />
-              </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+              </Button>
             </div>
           </div>
         ) : null}
@@ -468,12 +521,20 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
   )
 }
 
-function NoUpcomingSlot() {
+/* No term is collecting AND none scheduled next — a slim strip with the setup
+ * action. (When an upcoming card is present it speaks for itself, so this
+ * notice is suppressed; an absent LAST term needs no placeholder either.) */
+function NoActiveTermNotice() {
   return (
-    <div className="flex min-h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/25 px-6 py-8">
-      <i className="fa-light fa-calendar-plus text-2xl text-muted-foreground" aria-hidden="true" />
-      <p className="text-sm font-medium text-foreground">No upcoming term yet</p>
-      <Button variant="outline" size="sm" asChild>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <i className="fa-light fa-calendar-xmark text-muted-foreground" aria-hidden="true" />
+        No term is collecting right now
+      </span>
+      <span className="text-sm text-muted-foreground">
+        Set up a term to start collecting responses.
+      </span>
+      <Button variant="outline" size="sm" asChild className="ms-auto">
         <Link href="/course-evaluation/term-setup">Set up term</Link>
       </Button>
     </div>
@@ -495,7 +556,7 @@ type TermRow = {
 
 /** Past terms only — the triptych above already shows current/last/upcoming,
  * so this is the HISTORY archive, not a repeat of the same list (Romit). */
-function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string; terms: ProgramTerm[] }) {
+function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string | null; terms: ProgramTerm[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
@@ -603,20 +664,31 @@ function DashboardHomeInner() {
     () => [...programTerms].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [programTerms],
   )
+  /* Current cycle may be ABSENT (brand-new program, pre-launch, or the gap
+   * between terms) — currentTermId returns null then. Positioning is by date,
+   * not index, so a missing current doesn't push past terms into "upcoming". */
   const curId = currentTermId()
-  const curIdx = ordered.findIndex((t) => t.id === curId)
 
   const ce = useMemo(
     () => surveys.filter((s) => !s.surveyType || s.surveyType === 'course_evaluation'),
     [surveys],
   )
 
-  const curTerm = ordered[curIdx]
-  const lastTerm = ordered[curIdx - 1]
-  /* ALL upcoming terms — a newly introduced term must appear here even when
-   * another already occupies the slot (the past-terms table is history-only,
-   * so this stack is an upcoming term's ONLY dashboard presence). */
-  const upcomingTerms = useMemo(() => ordered.slice(curIdx + 1), [ordered, curIdx])
+  const curTerm = useMemo(
+    () => (curId ? ordered.find((t) => t.id === curId) : undefined),
+    [ordered, curId],
+  )
+  const pastTerms = useMemo(
+    () => ordered.filter((t) => positionOf(t, curId) === 'past'),
+    [ordered, curId],
+  )
+  /* Most recent past term (ordered is ascending by start date) = "last term". */
+  const lastTerm = pastTerms.at(-1)
+  /* ALL upcoming terms — undated terms (being set up) count as upcoming too. */
+  const upcomingTerms = useMemo(
+    () => ordered.filter((t) => positionOf(t, curId) === 'upcoming'),
+    [ordered, curId],
+  )
 
   const curSnap = useMemo(() => (curTerm ? snapshot(curTerm, ce) : null), [curTerm, ce])
   const lastSnap = useMemo(() => (lastTerm ? snapshot(lastTerm, ce) : null), [lastTerm, ce])
@@ -635,7 +707,9 @@ function DashboardHomeInner() {
     [ce, curTerm],
   )
 
-  const firstRun = ce.length === 0
+  /* First run = no terms at all (not merely no surveys) — a term created but
+   * not yet dated/populated still gets its own card, not the empty state. */
+  const firstRun = programTerms.length === 0
 
   return (
     <div className="flex flex-col flex-1">
@@ -644,14 +718,20 @@ function DashboardHomeInner() {
         title="Dashboard"
         subtitle="Track response collection and act where students haven’t responded"
         actions={
-          <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
-            <Button variant="outline" size="default" asChild>
-              <Link href="/course-evaluation/term-setup">Set up term</Link>
-            </Button>
-            <Button variant="default" size="default" asChild>
-              <Link href="/surveys/push">Set up Evaluations</Link>
-            </Button>
-          </div>
+          /* Before any term exists, "Set up Evaluations" is premature (there's
+             nothing to evaluate) and duplicates the empty state's own CTA — so
+             the header stays clean and the single "Set up term" action lives in
+             the empty state. Both header actions return once a term exists. */
+          firstRun ? undefined : (
+            <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
+              <Button variant="outline" size="default" asChild>
+                <Link href="/course-evaluation/term-setup">Set up term</Link>
+              </Button>
+              <Button variant="default" size="default" asChild>
+                <Link href="/surveys/push">Set up Evaluations</Link>
+              </Button>
+            </div>
+          )
         }
       />
 
@@ -664,20 +744,29 @@ function DashboardHomeInner() {
                  is the working surface, so it takes double width; the other
                  two are reference cards (visual priority = usage priority). ── */}
             <h2 className="sr-only">Terms</h2>
-            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[2fr_1fr_1fr]">
-              {curSnap && (
-                <CurrentTermCard snap={curSnap} atRisk={curAtRisk} />
-              )}
-              {lastSnap && <LastTermCard snap={lastSnap} />}
-              {upcomingSnaps.length > 0 ? (
+            {/* No active term → a slim notice ONLY when there's no upcoming
+                card to convey it (the Upcoming card's badge + setup CTA already
+                say "nothing's collecting, this is next"). Cards fill from the
+                LEFT; the current term (when present) takes the wide hero column,
+                otherwise every card is equal width so a lone card sits in the
+                leftmost slot. No placeholder for an absent previous term. */}
+            {!curSnap && upcomingSnaps.length === 0 && <NoActiveTermNotice />}
+            {/* Order is forward-looking — current → upcoming → last — so the
+                actionable next term sits ahead of finished history. The first
+                column is wider (the primary term = hero) but the reference
+                columns stay wide enough that their content never wraps. Cards
+                fill from the left; the first rendered card lands in the hero
+                column. */}
+            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1.35fr_1fr_1fr]">
+              {curSnap && <CurrentTermCard snap={curSnap} atRisk={curAtRisk} />}
+              {upcomingSnaps.length > 0 && (
                 <div className="flex flex-col gap-4">
                   {upcomingSnaps.map((s) => (
                     <UpcomingCard key={s.term.id} snap={s} />
                   ))}
                 </div>
-              ) : (
-                <NoUpcomingSlot />
               )}
+              {lastSnap && <LastTermCard snap={lastSnap} />}
             </div>
 
             {/* ── All terms — history one gesture away ── */}

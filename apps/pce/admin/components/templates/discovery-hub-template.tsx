@@ -96,7 +96,7 @@ export function DiscoveryHubTemplate({
   bodyClassName,
 }: DiscoveryHubTemplateProps) {
   const navigate = useNavigate()
-  const { openWithPrompt, toggle } = useAskLeo()
+  const { openWithPrompt, setOpen } = useAskLeo()
   const mod = useModKeyLabel()
   const alt = useAltKeyLabel()
   const [inputValue, setInputValue] = React.useState("")
@@ -222,7 +222,7 @@ export function DiscoveryHubTemplate({
                     </span>
                   )}
                 >
-                  <Button type="button" variant="outline" size="sm" onClick={toggle}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
                     <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />
                     Ask Leo
                     <KbdGroup className="ms-1.5 hidden sm:inline-flex">

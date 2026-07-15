@@ -61,8 +61,19 @@ bg-sidebar p-2 (brand canvas, uniform gutter)
 ├── ExamLockAppHeader (transparent — title, tools, timer, avatar)
 └── <main> inset card (rounded-xl bg-background shadow-sm)
     ├── progress bar (optional, flush top — variant="card-top")
-    └── question body + nav
+    ├── question body + nav (active)
+    └── ExamLockInterruptionPanel (behind main card; revealed when card slides down)
 ```
+
+**Session interruptions** — offline, tab blur, leave attempt, and time expiry **must** hard-pause the attempt:
+
+- `useExamLockSessionController` — timer countdown + pause/resume policy
+- `ExamLockInterruptionPanel` — full-bleed main-card pause surface; **Retry (ghost) left, Raise hand (primary) right** with `sm:order-1` / `sm:order-2` (matches `DialogFooter`)
+- `ExamLockTemplate` `interruption` + `sessionPaused` — question card slides down; pause surface sits behind it
+- `ExamLockTimerDisplay` — shows **Paused** pill while the clock is frozen
+- `ExamLockSessionAlert` — **soft notices only** (sync lag, background save); not for integrity pauses
+
+Reference: `components/exam-lock-showcase-client.tsx` (settings → simulate offline / tab switch).
 
 ### Focus workflow (`FocusWorkflowTemplate`)
 

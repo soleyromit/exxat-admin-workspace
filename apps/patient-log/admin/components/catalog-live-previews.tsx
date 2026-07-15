@@ -40,6 +40,8 @@ const CATALOG_METRICS: MetricItem[] = [
     delta: "+6",
     trend: "up",
     trendPolarity: "higher_is_better",
+    progress: 82,
+    description: "82% of Q2 publishing goal",
   },
   {
     id: "draft",
@@ -48,6 +50,9 @@ const CATALOG_METRICS: MetricItem[] = [
     delta: "−2",
     trend: "down",
     trendPolarity: "higher_is_better",
+    progress: 28,
+    progressTone: "info",
+    description: "14 drafts awaiting faculty sign-off",
   },
   {
     id: "review",
@@ -56,6 +61,8 @@ const CATALOG_METRICS: MetricItem[] = [
     delta: "",
     trend: "neutral",
     trendPolarity: "informational",
+    progress: 45,
+    description: "Median review time 3.2 days",
   },
 ]
 
@@ -155,7 +162,7 @@ export function CatalogChartCardPreview({ className }: { className?: string }) {
 }
 
 export function CatalogKeyMetricsPreview({ className }: { className?: string }) {
-  const [variant, setVariant] = React.useState<"flat" | "card">("flat")
+  const [variant, setVariant] = React.useState<"flat" | "card" | "cards">("flat")
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -165,14 +172,27 @@ export function CatalogKeyMetricsPreview({ className }: { className?: string }) 
         aria-label="KeyMetrics variant"
         options={[
           { value: "flat", label: "Flat band", icon: "fa-light fa-grip-lines" },
-          { value: "card", label: "Card", icon: "fa-light fa-square" },
+          { value: "card", label: "Card strip", icon: "fa-light fa-square" },
+          { value: "cards", label: "Metric cards", icon: "fa-light fa-grid-2" },
         ]}
       />
       <KeyMetrics
         variant={variant}
         metrics={CATALOG_METRICS}
-        showHeader={variant === "card"}
-        metricsSingleRow
+        insight={
+          variant === "cards"
+            ? {
+                title: "Throughput note",
+                description: "3 placements need coordinator review before Friday.",
+                severity: "warning",
+                actionLabel: "Ask Leo",
+              }
+            : undefined
+        }
+        title="Placement health"
+        description="Spring 2026 cohort"
+        showHeader={variant === "card" || variant === "cards"}
+        metricsSingleRow={variant !== "cards"}
       />
     </div>
   )

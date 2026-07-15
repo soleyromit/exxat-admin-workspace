@@ -1,109 +1,88 @@
 'use client'
 
 import Link from 'next/link'
-import { Button, Badge } from '@exxatdesignux/ui'
+import { Button } from '@exxatdesignux/ui'
 import type { Product } from '@/lib/products'
 
-function StatusDot({ status }: { status: Product['subscriptionStatus'] }) {
-  if (status === 'active') {
-    return (
-      <span
-        className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: 'var(--brand-color)' }}
-        aria-hidden="true"
-      />
-    )
-  }
-  if (status === 'trial') {
-    return (
-      <span
-        className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: 'var(--portal-amber-border)' }}
-        aria-hidden="true"
-      />
-    )
-  }
-  return (
-    <span
-      className="inline-block h-2 w-2 rounded-full shrink-0"
-      style={{ backgroundColor: 'var(--muted-foreground)', opacity: 0.45 }}
-      aria-hidden="true"
-    />
-  )
+const STATUS_META: Record<Product['subscriptionStatus'], { label: string; color: string }> = {
+  active: { label: 'Active', color: 'var(--brand-color)' },
+  trial: { label: 'Trial', color: 'var(--portal-amber-border)' },
+  'not-subscribed': { label: '', color: 'var(--muted-foreground)' },
 }
 
 export function ProductConnectorRow({ product }: { product: Product }) {
+  const dimmed = product.comingSoon || product.subscriptionStatus === 'not-subscribed'
   const isNotSubscribed = product.subscriptionStatus === 'not-subscribed' && !product.comingSoon
-  const isTrial = product.subscriptionStatus === 'trial'
+  const status = STATUS_META[product.subscriptionStatus]
 
   const expressInterestHref = `mailto:sales@exxat.com?subject=${encodeURIComponent(`Interest in ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to learn more about ${product.name} for our program.`)}`
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3.5 group">
-      {/* Status dot + icon */}
-      <div className="flex items-center gap-2 shrink-0">
-        <StatusDot status={product.subscriptionStatus} />
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-          style={{
-            background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
-            opacity: product.comingSoon || product.subscriptionStatus === 'not-subscribed' ? 0.45 : 1,
-          }}
-        >
-          <i
-            className={`fa-light ${product.icon} text-sm`}
-            aria-hidden="true"
-            style={{ color: `var(--product-${product.colorKey}-icon)` }}
-          />
-        </div>
+    <div className="group relative flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent">
+      {/* Product mark — per-product identity */}
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+        style={{
+          background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
+          opacity: dimmed ? 0.5 : 1,
+        }}
+      >
+        <i
+          className={`fa-light ${product.icon} text-base`}
+          aria-hidden="true"
+          style={{ color: `var(--product-${product.colorKey}-icon)` }}
+        />
       </div>
 
-      {/* Name + description — clickable to detail */}
-      <Link
-        href={`/product/${product.id}`}
-        className="flex-1 min-w-0 flex flex-col gap-0.5"
-      >
-        <span className="text-sm font-semibold leading-tight group-hover:underline underline-offset-2">
-          {product.name}
-        </span>
-        <span className="text-xs text-muted-foreground truncate">{product.description}</span>
-      </Link>
+      {/* Name + description — stretched link makes the whole row open the detail page */}
+      <div className="min-w-0 flex-1">
+        <Link
+          href={`/product/${product.id}`}
+          className="flex flex-col gap-0.5 rounded-sm before:absolute before:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="text-base font-medium leading-tight text-foreground">{product.name}</span>
+          <span className="text-sm text-muted-foreground truncate">{product.description}</span>
+        </Link>
+      </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Right cluster — sits above the stretched link */}
+      <div className="relative z-10 flex items-center gap-3 shrink-0">
         {product.comingSoon ? (
-          <Badge variant="secondary" className="rounded text-xs">Coming Soon</Badge>
-        ) : isNotSubscribed ? (
-          <>
-            <span className="text-xs text-muted-foreground hidden sm:block">v{product.version}</span>
-            <Button asChild variant="outline" size="sm">
-              <a href={expressInterestHref} onClick={(e) => e.stopPropagation()}>
-                Express Interest
-                <i className="fa-light fa-envelope" aria-hidden="true" />
-              </a>
-            </Button>
-          </>
+          <span className="text-xs text-muted-foreground">Coming soon</span>
         ) : (
           <>
-            <span className="text-xs text-muted-foreground hidden sm:block">v{product.version}</span>
-            {isTrial && (
-              <Badge
-                variant="outline"
-                className="rounded text-xs"
-                style={{ color: 'var(--portal-amber-fg)', borderColor: 'var(--portal-amber-border)', backgroundColor: 'var(--portal-amber-bg)' }}
-              >
-                Trial
-              </Badge>
-            )}
+            <span className="hidden items-center gap-1.5 sm:flex">
+              {status.label && (
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: status.color }}
+                  aria-hidden="true"
+                />
+              )}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {status.label ? `${status.label} · ` : ''}v{product.version}
+              </span>
+            </span>
             <Button asChild variant="outline" size="sm">
-              <a href={product.adminUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                Open Admin
-                <i className="fa-light fa-arrow-up-right" aria-hidden="true" />
-              </a>
+              {isNotSubscribed ? (
+                <a href={expressInterestHref} aria-label={`Express interest in ${product.name}`}>
+                  Express interest
+                  <i className="fa-light fa-arrow-up-right" aria-hidden="true" />
+                </a>
+              ) : (
+                <a
+                  href={product.adminUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${product.name} admin`}
+                >
+                  Open
+                  <i className="fa-light fa-arrow-up-right" aria-hidden="true" />
+                </a>
+              )}
             </Button>
           </>
         )}
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
       </div>
     </div>
   )

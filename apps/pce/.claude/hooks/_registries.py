@@ -1,0 +1,1 @@
+/Users/romitsoley/Work/.claude/hooks/_registries.py

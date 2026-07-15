@@ -16,6 +16,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { ChartConfig, MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { usePce } from '@/components/pce/pce-state'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -417,7 +418,7 @@ export default function SetupOverviewPage() {
       cell: (row) => (
         <div>
           <p className="text-sm font-medium">{row.courseCode as string}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[140px]">{row.courseName as string}</p>
+          <TruncatedText className="text-xs text-muted-foreground max-w-[140px]">{row.courseName as string}</TruncatedText>
         </div>
       ),
     },

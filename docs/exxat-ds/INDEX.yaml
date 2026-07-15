@@ -62,6 +62,15 @@ patterns:
   toggle-switch: apps/web/docs/toggle-switch-pattern.md
   avatar: apps/web/docs/avatar-pattern.md
   multi-product-routing: apps/web/docs/multi-product-routing-pattern.md
+  shell-utility-bar: apps/web/docs/shell-utility-bar-pattern.md
+  ask-leo: apps/web/docs/ask-leo-pattern.md
+  hub-supported-views: apps/web/docs/hub-supported-views-pattern.md
+  library-hub-header: apps/web/docs/library-hub-header-pattern.md
+  library-nav-ia: apps/web/docs/library-nav-ia-pattern.md
+  perf-memory: apps/web/docs/perf-memory-pattern.md
+  persisted-state: apps/web/docs/persisted-state-pattern.md
+  shell-surface-elevation: apps/web/docs/shell-surface-elevation-pattern.md
+  table-column-cells: apps/web/docs/table-column-cells-pattern.md
 
 blueprints:
   page-header: apps/web/docs/blueprints/page-header.md
@@ -85,6 +94,30 @@ skills:
   kpi: .cursor/skills/exxat-kpi/SKILL.md
   overlays: .cursor/skills/exxat-overlays/SKILL.md
   sidebar-nav: .cursor/skills/exxat-sidebar-nav/SKILL.md
+  primary-nav-secondary-panel: .cursor/skills/exxat-primary-nav-secondary-panel/SKILL.md
+  ds-skill: .cursor/skills/exxat-ds-skill/SKILL.md
+  table-column-cells: .cursor/skills/exxat-table-column-cells/SKILL.md
+  board-cards: .cursor/skills/exxat-board-cards/SKILL.md
+  card-vs-list-rows: .cursor/skills/exxat-card-vs-list-rows/SKILL.md
+  centralized-list-dataset: .cursor/skills/exxat-centralized-list-dataset/SKILL.md
+  collaboration-access: .cursor/skills/exxat-collaboration-access/SKILL.md
+  dedicated-search-surfaces: .cursor/skills/exxat-dedicated-search-surfaces/SKILL.md
+  list-page-view-shells: .cursor/skills/exxat-list-page-view-shells/SKILL.md
+  drawer-vs-dialog: .cursor/skills/exxat-drawer-vs-dialog/SKILL.md
+  kpi-flat-band: .cursor/skills/exxat-kpi-flat-band/SKILL.md
+  kpi-max-four: .cursor/skills/exxat-kpi-max-four/SKILL.md
+  kpi-trends: .cursor/skills/exxat-kpi-trends/SKILL.md
+  chart-leo-spotting: .cursor/skills/exxat-chart-leo-spotting/SKILL.md
+  fontawesome-icons: .cursor/skills/exxat-fontawesome-icons/SKILL.md
+  mono-ids: .cursor/skills/exxat-mono-ids/SKILL.md
+  react-doctor: .cursor/skills/react-doctor/SKILL.md
+
+hooks:
+  brief-gate: .cursor/hooks/exxat-brief-gate.mjs
+  image-ia-gate: .cursor/hooks/exxat-image-ia-gate.mjs
+  session-status: .cursor/hooks/exxat-session-status.mjs
+  react-doctor: .cursor/hooks/react-doctor.sh
+  config: .cursor/hooks.json
 
 rules:
   always_on:
@@ -116,10 +149,32 @@ rules:
     tabs-chrome: .cursor/rules/exxat-tabs-chrome.mdc
     wizard: .cursor/rules/exxat-wizard.mdc
     horizontal-scroll: .cursor/rules/exxat-horizontal-scroll.mdc
+    primary-nav-secondary-panel: .cursor/rules/exxat-primary-nav-secondary-panel.mdc
+    board-cards: .cursor/rules/exxat-board-cards.mdc
+    card-vs-list-rows: .cursor/rules/exxat-card-vs-list-rows.mdc
+    centralized-list-dataset: .cursor/rules/exxat-centralized-list-dataset.mdc
+    collaboration-access: .cursor/rules/exxat-collaboration-access.mdc
+    command-menu: .cursor/rules/exxat-command-menu.mdc
+    dedicated-search-surfaces: .cursor/rules/exxat-dedicated-search-surfaces.mdc
+    fontawesome-icons: .cursor/rules/exxat-fontawesome-icons.mdc
+    list-page-connected-views: .cursor/rules/exxat-list-page-connected-views.mdc
+    list-page-hub-scroll: .cursor/rules/exxat-list-page-hub-scroll.mdc
+    list-page-view-shells: .cursor/rules/exxat-list-page-view-shells.mdc
+    library-hub-header: .cursor/rules/exxat-library-hub-header.mdc
+    mono-ids: .cursor/rules/exxat-mono-ids.mdc
+    page-header-actions: .cursor/rules/exxat-page-header-actions.mdc
+    persisted-state: .cursor/rules/exxat-persisted-state.mdc
+    person-identity-display: .cursor/rules/exxat-person-identity-display.mdc
+    sidebar-shell: .cursor/rules/exxat-sidebar-shell.mdc
+    table-properties-drawer: .cursor/rules/exxat-table-properties-drawer.mdc
+    table-row-preview: .cursor/rules/exxat-table-row-preview.mdc
+    ux-principles: .cursor/rules/exxat-ux-principles.mdc
+    utility-bar: .cursor/rules/exxat-utility-bar.mdc
+    ask-leo: .cursor/rules/exxat-ask-leo.mdc
 
 references:
-  library-hub: apps/web/components/library-table.tsx
-  placements-hub: apps/web/components/placements-client.tsx
+  library-hub: apps/web/components/library-client.tsx
+  learning-activities-hub: apps/web/components/learning-activities-client.tsx
   exam-lock: apps/web/components/exam-lock-showcase-client.tsx
   focus-workflow: apps/web/components/focus-workflow-showcase-client.tsx
   catalog: apps/web/components/catalog-client.tsx
@@ -138,6 +193,37 @@ task_router:
       - exxat-centralized-list-dataset
     skills:
       - exxat-table-column-cells
+      - exxat-centralized-list-dataset
+      - exxat-primary-nav-secondary-panel
+  secondary_panel_hub:
+    read:
+      - apps/web/docs/library-nav-ia-pattern.md
+      - apps/web/components/sidebar/secondary-hub-nav-primitives.tsx
+      - apps/web/components/library-secondary-nav.tsx
+      - apps/web/components/learning-activities-secondary-nav.tsx
+    rules:
+      - exxat-primary-nav-secondary-panel
+    skills:
+      - exxat-primary-nav-secondary-panel
+      - exxat-sidebar-nav
+  ask_leo:
+    read:
+      - apps/web/docs/ask-leo-pattern.md
+      - apps/web/components/leo-thread-messages.tsx
+      - apps/web/components/ask-leo-sidebar.tsx
+      - apps/web/lib/design-system/component-docs/message.tsx
+    rules:
+      - exxat-ask-leo
+    skills:
+      - exxat-fontawesome-icons
+  utility_bar:
+    read:
+      - apps/web/docs/shell-utility-bar-pattern.md
+      - apps/web/components/utility-bar-slot.tsx
+      - apps/web/contexts/shell-layout-context.tsx
+      - apps/web/lib/design-system/component-docs/utility-bar.tsx
+    rules:
+      - exxat-utility-bar
   focus_shell:
     read:
       - apps/web/docs/jobs/focus-workflow.md

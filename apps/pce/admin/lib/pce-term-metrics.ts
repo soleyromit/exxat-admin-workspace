@@ -10,11 +10,11 @@
 
 import {
   MOCK_PROGRAM_TERMS,
-  MOCK_COURSE_OFFERINGS,
   MOCK_MASTER_COURSES,
   type PceSurvey,
   type ProgramTerm,
 } from '@/lib/pce-mock-data'
+import { activeTerms, activeOfferings } from '@/lib/pce-demo-accounts'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 
@@ -26,7 +26,7 @@ export const completionColor = (pct: number) =>
 
 /** Term id for a survey's `term` (name string) — for deep links into the workspace. */
 export function termIdByName(name: string): string | null {
-  return MOCK_PROGRAM_TERMS.find((t) => t.name === name)?.id ?? null
+  return activeTerms().find((t) => t.name === name)?.id ?? null
 }
 
 /** Course codes of a term's offerings that have no non-draft evaluation yet. */
@@ -34,7 +34,7 @@ export function uncoveredCodes(termId: string, termSurveys: PceSurvey[]): string
   const surveyedCodes = new Set(
     termSurveys.filter((s) => s.status !== 'draft').map((s) => s.courseCode),
   )
-  return MOCK_COURSE_OFFERINGS.filter((o) => o.termId === termId)
+  return activeOfferings().filter((o) => o.termId === termId)
     .map((o) => MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)?.code)
     .filter((code): code is string => !!code && !surveyedCodes.has(code))
 }
@@ -59,6 +59,7 @@ export function daysUntilClose(term: ProgramTerm): number | null {
 }
 
 export function evalWindow(term: ProgramTerm): { open: string; close: string } {
+  if (!term.startDate || !term.endDate) return { open: '—', close: '—' }
   const closeDate = new Date(term.endDate)
   closeDate.setDate(closeDate.getDate() + 7)
   const fmt = (d: Date) =>
@@ -80,7 +81,7 @@ export function coverageFor(
   termId: string,
   termSurveys: PceSurvey[],
 ): { surveyed: number; total: number } | null {
-  const offerings = MOCK_COURSE_OFFERINGS.filter((o) => o.termId === termId)
+  const offerings = activeOfferings().filter((o) => o.termId === termId)
   if (offerings.length === 0) return null
   const surveyedCodes = new Set(
     termSurveys.filter((s) => s.status !== 'draft').map((s) => s.courseCode),
@@ -93,15 +94,32 @@ export function coverageFor(
 }
 
 /* ── term ordering / current cycle ────────────────────────────────────────── */
+/* Default-account ordering — kept as a stable const for term lookups on
+ * secondary surfaces (command menu, breadcrumbs, remind). The dashboard sorts
+ * its own account-scoped `programTerms` from context. */
 export const termsOrdered: ProgramTerm[] = [...MOCK_PROGRAM_TERMS].sort(
   (a, b) => a.startDate.localeCompare(b.startDate),
 )
 
-/** Latest term whose start date has passed = the current cycle. */
-export function currentTermId(): string {
+/**
+ * The current cycle = the latest term whose evaluation window is OPEN today
+ * (it has started, and today is on/before close = endDate + 7d). Returns null
+ * when nothing is active: a brand-new program, a pre-launch upcoming term, or
+ * the gap between a finished term and the next one. Undated terms are never
+ * current (a term you haven't scheduled can't be the one collecting responses).
+ */
+export function currentTermId(): string | null {
   const today = new Date().toISOString().slice(0, 10)
-  const started = termsOrdered.filter((t) => t.startDate <= today)
-  return (started.at(-1) ?? termsOrdered[0]).id
+  const open = activeTerms()
+    .filter((t) => {
+      if (!t.startDate || !t.endDate) return false
+      const close = new Date(t.endDate)
+      close.setDate(close.getDate() + 7)
+      const closeIso = close.toISOString().slice(0, 10)
+      return t.startDate <= today && today <= closeIso
+    })
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
+  return open.at(-1)?.id ?? null
 }
 
 /* ── term stage model (shares the survey vocabulary) ──────────────────────── */

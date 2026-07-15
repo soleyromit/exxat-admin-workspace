@@ -15,6 +15,7 @@ import {
   type CourseOffering,
 } from '@/lib/pce-mock-data'
 import { DataTablePaginated } from '@/components/data-table/pagination'
+import { TruncatedText } from '@/components/truncated-text'
 import { OfferingStatusBadge } from '@/components/pce/pce-badges'
 import type { ColumnDef } from '@/components/data-table/types'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
@@ -127,8 +128,6 @@ function AddOfferingDialog({ open, onOpenChange, onAdd }: {
 export default function CoursesDirectoryPage() {
   const router = useRouter()
   const [offerings, setOfferings] = useState<CourseOffering[]>(MOCK_COURSE_OFFERINGS)
-  const [termFilter, setTermFilter]       = useState('all')
-  const [statusFilter, setStatusFilter]   = useState('all')
   const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
 
@@ -138,11 +137,6 @@ export default function CoursesDirectoryPage() {
 
   const tableRows: OfferingRow[] = useMemo(
     () => offerings
-      .filter(r => {
-        if (termFilter   !== 'all' && r.termId !== termFilter)    return false
-        if (statusFilter !== 'all' && r.status !== statusFilter)  return false
-        return true
-      })
       .map(r => {
         const courseCode = courseById.get(r.masterCourseId)?.code ?? '—'
         const termName   = termById.get(r.termId)?.name ?? '—'
@@ -163,7 +157,15 @@ export default function CoursesDirectoryPage() {
           completion: completion !== null && completion > 0 ? completion : null,
         }
       }),
-    [offerings, termFilter, statusFilter, courseById, termById, facultyById],
+    [offerings, courseById, termById, facultyById],
+  )
+
+  // Filter options derive from the live offering set so manually-added offerings
+  // stay filterable.
+  const cohortOptions = useMemo(
+    () => Array.from(new Set(offerings.map(o => o.cohort))).sort()
+      .map(c => ({ value: c, label: c })),
+    [offerings],
   )
 
   const activeCount = offerings.filter(o => o.status === 'active').length
@@ -182,14 +184,29 @@ export default function CoursesDirectoryPage() {
       cell: (row) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-mono text-xs">{row.courseCode}</span>
-          <span className="text-xs text-muted-foreground truncate max-w-44">{row.courseName}</span>
+          <TruncatedText className="text-xs text-muted-foreground max-w-44">{row.courseName}</TruncatedText>
         </div>
       ),
     },
-    { key: 'termName', label: 'Term', sortable: true, width: 140, cell: (row) => <span className="text-sm">{row.termName}</span> },
-    { key: 'cohort', label: 'Cohort', sortable: true, width: 140, cell: (row) => <span className="text-sm text-muted-foreground">{row.cohort}</span> },
+    {
+      key: 'termName', label: 'Term', sortable: true, width: 140,
+      cell: (row) => <span className="text-sm">{row.termName}</span>,
+      filter: {
+        type: 'select', icon: 'fa-calendar', operators: ['is', 'is_not'],
+        options: MOCK_PROGRAM_TERMS.map(t => ({ value: t.name, label: t.name })),
+      },
+    },
+    {
+      key: 'cohort', label: 'Cohort', sortable: true, width: 140,
+      cell: (row) => <span className="text-sm text-muted-foreground">{row.cohort}</span>,
+      filter: { type: 'select', icon: 'fa-users', operators: ['is', 'is_not'], options: cohortOptions },
+    },
     {
       key: 'primaryFacultyName', label: 'Primary faculty', sortable: true, width: 220,
+      filter: {
+        type: 'select', icon: 'fa-user', operators: ['is', 'is_not'],
+        options: MOCK_FACULTY.map(f => ({ value: f.name, label: f.name })),
+      },
       cell: (row) => (
         <div className="flex items-center gap-1.5 w-fit">
           <Avatar className="h-6 w-6 shrink-0">
@@ -221,7 +238,19 @@ export default function CoursesDirectoryPage() {
         </div>
       ),
     },
-    { key: 'status', label: 'Status', sortable: true, width: 120, cell: (row) => <OfferingStatusBadge status={row.status} /> },
+    {
+      key: 'status', label: 'Status', sortable: true, width: 120,
+      cell: (row) => <OfferingStatusBadge status={row.status} />,
+      filter: {
+        type: 'select', icon: 'fa-circle-dot', operators: ['is', 'is_not'],
+        options: [
+          { value: 'planned',   label: 'Planned' },
+          { value: 'active',    label: 'Active' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'archived',  label: 'Archived' },
+        ],
+      },
+    },
     {
       key: 'evalOrPrism', label: '', width: 32,
       cell: (row) => row.surveyId ? (
@@ -269,33 +298,10 @@ export default function CoursesDirectoryPage() {
             onRowClick={(row) => router.push(`/admin/offerings/${encodeURIComponent(row.courseCode)}`)}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-rectangle-list text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">
-                  {termFilter !== 'all' || statusFilter !== 'all' ? 'No courses match these filters' : 'No courses match your search'}
-                </p>
+                <i className="fa-light fa-rectangle-list text-muted-foreground text-2xl" aria-hidden="true" />
+                <p className="text-sm font-medium">No courses match your search or filters</p>
               </div>
             }
-            toolbarSlot={() => (
-              <>
-                <Select value={termFilter} onValueChange={setTermFilter}>
-                  <SelectTrigger className="h-8 w-40 text-sm" aria-label="Filter by term"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All terms</SelectItem>
-                    {MOCK_PROGRAM_TERMS.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by status"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="planned">Planned</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
-            )}
             bulkActionsSlot={(selected) => (
               <Button variant="default" size="sm" className="h-7 text-xs"
                 onClick={() => { router.push(`/surveys/push?offerings=${Array.from(selected).join(',')}`) }}>

@@ -52,6 +52,12 @@ export default function FacultyPage() {
     })
   }, [])
 
+  const departmentOptions = useMemo(
+    () => Array.from(new Set(MOCK_FACULTY.map(f => f.department).filter(Boolean) as string[])).sort()
+      .map(d => ({ value: d, label: d })),
+    [],
+  )
+
   const departments  = [...new Set(MOCK_FACULTY.map(f => f.department).filter(Boolean))].length
   const programAvg   = (() => {
     const totalE = MOCK_FACULTY_OFFERINGS.reduce((s, o) => s + o.enrolled, 0)
@@ -100,9 +106,18 @@ export default function FacultyPage() {
     {
       key: 'department', label: 'Department', sortable: true, width: 180,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+      filter: { type: 'select', icon: 'fa-building', operators: ['is', 'is_not'], options: departmentOptions },
     },
     {
       key: 'facultyType', label: 'Type', sortable: true, width: 150,
+      filter: {
+        type: 'select', icon: 'fa-user-tag', operators: ['is', 'is_not'],
+        options: [
+          { value: 'core',       label: 'Core Faculty' },
+          { value: 'associated', label: 'Associated Faculty' },
+          { value: 'adjunct',    label: 'Adjunct' },
+        ],
+      },
       cell: (row) => {
         const label = row.facultyType === 'core' ? 'Core Faculty'
           : row.facultyType === 'associated' ? 'Associated Faculty'
@@ -117,6 +132,13 @@ export default function FacultyPage() {
     },
     {
       key: 'employmentStatus', label: 'Status', sortable: true, width: 110,
+      filter: {
+        type: 'select', icon: 'fa-circle-dot', operators: ['is', 'is_not'],
+        options: [
+          { value: 'active',   label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+      },
       cell: (row) => (
         <Badge variant={row.employmentStatus === 'inactive' ? 'outline' : 'secondary'} className="capitalize">
           {row.employmentStatus === 'inactive' ? 'Inactive' : 'Active'}
@@ -201,11 +223,10 @@ export default function FacultyPage() {
             )}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-users text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">No faculty match your search</p>
+                <i className="fa-light fa-users text-muted-foreground text-2xl" aria-hidden="true" />
+                <p className="text-sm font-medium">No faculty match your search or filters</p>
               </div>
             }
-            toolbarSlot={() => null}
           />
 
         </div>

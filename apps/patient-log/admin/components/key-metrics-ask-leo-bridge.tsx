@@ -26,15 +26,16 @@ export function KeyMetricsAskLeoBridge({
 }: {
   children: React.ReactNode
 }) {
-  const { toggle } = useAskLeo()
+  const { setOpen } = useAskLeo()
+  const openAskLeo = React.useCallback(() => setOpen(true), [setOpen])
   const shortcutHint = React.useMemo(() => <AskLeoShortcutKbds />, [])
   const value = React.useMemo(
     () => ({
-      defaultInsightAction: toggle,
+      defaultInsightAction: openAskLeo,
       shortcutHint,
       defaultActionLabel: "Ask Leo",
     }),
-    [toggle, shortcutHint],
+    [openAskLeo, shortcutHint],
   )
   return <KeyMetricsProvider value={value}>{children}</KeyMetricsProvider>
 }

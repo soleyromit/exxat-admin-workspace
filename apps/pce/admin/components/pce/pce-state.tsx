@@ -1,6 +1,13 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import {
+  DEMO_ACCOUNTS,
+  DEFAULT_ACCOUNT_ID,
+  accountById,
+  setActiveAccountId,
+  type DemoAccount,
+} from '@/lib/pce-demo-accounts'
 import type {
   PceUser,
   PceSurvey,
@@ -63,9 +70,13 @@ interface PceState {
   user: PceUser
   surveys: PceSurvey[]
   templates: PceTemplate[]
-  /** Program terms — seeded from mock, grows when term setup finishes. */
+  /** Program terms — seeded from the active demo account, grows when term setup finishes. */
   programTerms: ProgramTerm[]
   addProgramTerm: (term: ProgramTerm) => void
+  /** Demo account (each is a distinct dashboard term-card scenario). */
+  accountId: string
+  accounts: DemoAccount[]
+  switchAccount: (id: string) => void
   hiddenComments: Record<string, number[]>
   toggleRole: () => void
   releaseSurvey: (id: string) => void
@@ -119,6 +130,33 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       ts.some(t => t.id === term.id || t.name === term.name) ? ts : [...ts, term],
     )
   }, [])
+
+  // ── Demo account (dashboard term-card scenarios) ──────────────────────────
+  // SSR + first client render use the default account (so the module-level
+  // register and the seeded state agree, no hydration mismatch); a persisted
+  // choice is applied post-mount below.
+  const [accountId, setAccountId] = useState<string>(DEFAULT_ACCOUNT_ID)
+  const ACCOUNT_STORAGE_KEY = 'pce.demoAccount'
+
+  const switchAccount = useCallback((id: string) => {
+    const acc = accountById(id)
+    setActiveAccountId(acc.id)      // module register — feeds the term helpers
+    setAccountId(acc.id)
+    setSurveys(acc.surveys)
+    setProgramTerms(acc.terms)
+    setHiddenComments({})
+    if (typeof window !== 'undefined') {
+      try { window.localStorage.setItem(ACCOUNT_STORAGE_KEY, acc.id) } catch { /* ignore */ }
+    }
+  }, [])
+
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored && stored !== DEFAULT_ACCOUNT_ID && DEMO_ACCOUNTS.some(a => a.id === stored)) {
+      switchAccount(stored)
+    }
+  }, [switchAccount])
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
@@ -540,6 +578,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
       setupDefaults, saveSetupDefaults,
       programTerms, addProgramTerm,
+      accountId, accounts: DEMO_ACCOUNTS, switchAccount,
       pushSurveyBatch,
       enableResults,
       sendSurveyReminder,

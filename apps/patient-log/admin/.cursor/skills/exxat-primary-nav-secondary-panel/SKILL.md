@@ -12,6 +12,7 @@ user-invocable: true
 
 ## Wiring checklist
 
+0. **Hub secondary-nav parity** — before custom rows, import **`components/sidebar/secondary-hub-nav-primitives.tsx`** and satisfy **`docs/exxat-ds/library-nav-ia-pattern.md` § Hub secondary-nav parity** (compact rail + shared rows). **`library-secondary-nav.tsx`** is the reference; do not duplicate `NavRow` / `IconNavRow`.
 1. **`lib/mock/navigation.tsx`** — set **`secondaryPanel: "<id>"`** on the primary **`NavLinkItem`**; **`url`** = hub route. For Library: parent **Question bank**, child **Library** → `/library/all`, **`primaryHubChildKey: "library-all"`**.
 2. **`components/sidebar/secondary-panel.tsx`** — add **`PANELS["<id>"]`** → panel shell (title, optional search) + secondary nav component.
 3. **Hub layout** — **`useAutoPanel("<id>")`** or layout effect on list-hub paths (e.g. **`src/views/library/_layout.tsx`** → **`openPanel("library")`** on `/library/all`).
@@ -39,6 +40,8 @@ user-invocable: true
 
 Custom panel content should read **`secondaryPanelCompact`** and **`navFlyout`** — **`LibraryPanel`** / **`LibrarySecondaryNav`** are the reference.
 
+**New hub navs:** compose **`useSecondaryHubNavChrome`**, **`SecondaryHubNavCompactShell`**, **`SecondaryHubNavRow`**, **`SecondaryHubIconNavRow`**, **`SecondaryHubNavSectionHeader`** from **`secondary-hub-nav-primitives.tsx`**. See parity checklist in **`library-nav-ia-pattern.md`**.
+
 ## Library active-state helpers (`lib/library-nav.ts`)
 
 - **`isLibraryPrimaryListNavActive(pathname)`** — primary child **Library** on `/library/all` (any scope).
@@ -57,4 +60,6 @@ Custom panel content should read **`secondaryPanelCompact`** and **`navFlyout`**
 - `components/sidebar/app-sidebar.tsx` — collapsible expand when panel open / Main menu.
 - `components/sidebar/secondary-panel.tsx` — **`closeSecondaryFlyout`**, **`hideSecondaryFlyout`**, **`secondaryFlyoutVisible`**.
 - `components/library-secondary-nav.tsx` + `lib/library-nav.ts`.
+- `components/sidebar/secondary-hub-nav-primitives.tsx` — shared compact rail + nav rows.
+- `components/learning-activities-secondary-nav.tsx` — second reference hub.
 - `hooks/use-secondary-panel-hub-nav.ts` — scope URL sync.

@@ -3,9 +3,12 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Skeleton, Checkbox, CheckboxLabel, Button,
+  Badge, Skeleton, Button, InputGroup, Tip,
+  Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
+  Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
+import { TruncatedText } from '@/components/truncated-text'
 import { PaginationBar } from '@/components/data-table/pagination'
 import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -16,17 +19,17 @@ import {
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
-  CRITERION_TOGGLE_LABEL, deriveReadiness,
+  ALL_CRITERIA, CRITERION_TOGGLE_LABEL, CRITERION_GROUP, CRITERION_GROUP_ORDER,
+  FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
 
-const CRITERIA_ORDER: Criterion[] = ['students', 'instructor', 'coordinator']
+const CRITERIA_ORDER: Criterion[] = ALL_CRITERIA
+
+/** Above this count a picker gains a search field. */
+const COHORT_SEARCH_THRESHOLD = 8
 
 const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-const ROLE_LABEL: Record<Criterion, string> = {
-  students: 'Students', instructor: 'Instructor', coordinator: 'Coordinator',
-}
 
 interface ReadinessRow extends Record<string, unknown> {
   id: string
@@ -40,26 +43,222 @@ interface ReadinessRow extends Record<string, unknown> {
   datesLabel: string
   cells: Partial<Record<Criterion, CellReadiness>>
   hasGap: boolean
+  /** One Prism link covering every missing faculty role on this offering. */
+  facultyHref: string
   /** Group key: gaps first, then ready. */
   readiness: 'gap' | 'ready'
 }
 
-/** Fix action for the Actions column — names the role it adds, opens Prism. */
-function AddInPrismButton({ cell }: { cell: CellReadiness }) {
+interface TokenOption {
+  value: string
+  label: string
+  /** Optional heading this option sits under in the dropdown. */
+  group?: string
+}
+
+interface TokenSelectProps {
+  /** id of the field's visible label — names both the field and the popup. */
+  labelId: string
+  /** Resting text when nothing is chosen (e.g. "All cohorts"). */
+  placeholder: string
+  options: TokenOption[]
+  selected: string[]
+  onToggle: (value: string) => void
+  onClear?: () => void
+  groupOrder?: readonly string[]
+  /** Above this many options the dropdown gains a search field. */
+  searchThreshold?: number
+  /** Block removing the last chip (required fields). */
+  minOne?: boolean
+  contentLabel: string
+  /**
+   * Chips rendered before the rest collapse into "+N". Keep this LOW — the field
+   * sits in a horizontal scope band, so chips must never wrap past one row or the
+   * field grows into the table. Measured: 9 chips in a 190px field stacked
+   * vertically and overlapped the page.
+   */
+  maxChips?: number
+}
+
+/**
+ * One control for both scope fields: chosen values are chips INSIDE the field,
+ * the full option list lives in a searchable, grouped popup.
+ *
+ * Cohort and What-to-evaluate are different jobs, but they are the same *job
+ * shape* — pick several from many — so they get the same control; the label and
+ * the required marker carry the difference. Convergent across Gusto, Juicebox,
+ * Contra, Udemy and Upwork.
+ *
+ * Chips and the popup trigger are SIBLINGS inside the shell, never nested: the
+ * chip's remove button inside a trigger button would trip nested-interactive.
+ */
+function TokenSelect({
+  labelId, placeholder, options, selected, onToggle, onClear,
+  groupOrder, searchThreshold = 8, minOne = false, contentLabel, maxChips = 2,
+}: TokenSelectProps) {
+  const [open, setOpen] = useState(false)
+  const byValue = useMemo(() => new Map(options.map(o => [o.value, o])), [options])
+  const groups = useMemo(() => {
+    if (!groupOrder?.length) return [{ heading: undefined as string | undefined, items: options }]
+    return groupOrder
+      .map(g => ({ heading: g as string | undefined, items: options.filter(o => o.group === g) }))
+      .filter(g => g.items.length > 0)
+  }, [options, groupOrder])
+
+  const shown = selected.slice(0, maxChips)
+  const overflow = selected.length - shown.length
+  // The last chip of a required field must stay put; the field's helper line
+  // explains why rather than a title tooltip that never fires on keyboard.
+  const atMin = minOne && selected.length === 1
+
   return (
-    <Button asChild variant="outline" size="xs" className="justify-start">
-      <a
-        href={cell.prismHref ?? '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={`Add ${cell.label} in Exxat Prism — opens in a new tab`}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor>
+        <InputGroup className="flex w-fit min-w-44 max-w-96 flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden">
+          {shown.map(v => {
+            const o = byValue.get(v)
+            if (!o) return null
+            return (
+              /* outline, not secondary: every filled neutral in this theme is
+                 brand-tinted (--secondary oklch .012 @345, --muted .008 @345),
+                 so a filled chip is always pink. outline = white + --border
+                 (chroma .002) = actually neutral, and it's a real DS variant
+                 rather than a className override of one. */
+              <Badge key={v} variant="outline" className="gap-1 ps-2 pe-0.5 py-0.5 font-normal min-w-0 shrink" style={{ maxWidth: 150 }}>
+                {/* Long values truncate rather than force the field wider — a
+                    cohort can be "Class of 2027 – Group B". */}
+                <span className="truncate" title={o.label}>{o.label}</span>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="size-4 p-0 shrink-0"
+                  style={{ backgroundColor: 'transparent' }}
+                  disabled={atMin}
+                  aria-label={`Remove ${o.label}`}
+                  onClick={() => onToggle(v)}
+                >
+                  <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                </Button>
+              </Badge>
+            )
+          })}
+          {overflow > 0 && (
+            <Badge variant="outline" className="font-normal shrink-0">+{overflow}</Badge>
+          )}
+          {/* The chevron lives INSIDE the trigger. It was previously a sibling in
+              an InputGroupAddon — a plain div — so the one affordance that reads
+              as "open me" was not clickable, and the only hit area was a ~20px
+              invisible strip beside it. */}
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-haspopup="listbox"
+              aria-expanded={open}
+              aria-labelledby={labelId}
+              className="flex-1 justify-between gap-1 px-1 font-normal"
+              style={{ minWidth: selected.length === 0 ? 64 : 32, backgroundColor: 'transparent' }}
+            >
+              {selected.length === 0
+                ? <span style={{ color: 'var(--muted-foreground)' }}>{placeholder}</span>
+                : <span className="sr-only">Change selection</span>}
+              <i
+                className="fa-light fa-chevron-down text-xs shrink-0"
+                aria-hidden="true"
+                style={{ color: 'var(--muted-foreground)' }}
+              />
+            </Button>
+          </PopoverTrigger>
+        </InputGroup>
+      </PopoverAnchor>
+
+      {/* Hugs its content instead of a fixed width: "Course / Instructor" needs
+          far less room than a cohort name, and a half-empty menu reads broken.
+          Bounded so a long role still wraps sanely. */}
+      <PopoverContent
+        align="start"
+        className="p-0 w-auto min-w-44 max-w-80"
+        aria-label={contentLabel}
       >
+        <Command>
+          {options.length > searchThreshold && <CommandInput placeholder="Search" />}
+          <CommandList>
+            <CommandEmpty>No matches.</CommandEmpty>
+            {groups.map(({ heading, items }) => (
+              <CommandGroup key={heading ?? '_'} heading={heading}>
+                {items.map(o => {
+                  const checked = selected.includes(o.value)
+                  return (
+                    /* Check glyph, not a DS Checkbox — Checkbox is a button and
+                       would nest inside role="option". cmdk owns aria-selected
+                       for its highlight, so state rides in the accessible name. */
+                    <CommandItem key={o.value} value={o.label} onSelect={() => onToggle(o.value)}>
+                      <i
+                        className={`fa-solid fa-check text-xs ${checked ? '' : 'opacity-0'}`}
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">{o.label}</span>
+                      {checked && <span className="sr-only">, selected</span>}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            ))}
+          </CommandList>
+          {onClear && selected.length > 0 && (
+            <>
+              <CommandSeparator />
+              <div className="p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start font-normal"
+                  onClick={onClear}
+                >
+                  Clear
+                </Button>
+              </div>
+            </>
+          )}
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/**
+ * Fix action for the Actions column — opens Prism in a new tab.
+ *
+ * The label stays generic ("Add faculty") because a course can be missing
+ * several roles at once and naming one of them lies. `roles` names them on
+ * hover/focus instead, so the CTA still tells you WHAT to add. DS Tip rather
+ * than a native title: title never fires on keyboard focus.
+ */
+function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
+  const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
+  const trigger = (
+    <Button asChild variant="outline" size="xs" className="justify-start">
+      <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
-        Add {cell.label}
+        {label}
+        {missing && <span className="sr-only"> — {missing}</span>}
         <span className="sr-only"> (opens in new tab)</span>
         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
       </a>
     </Button>
+  )
+  return (
+    <Tip
+      label={
+        <>
+          {missing ?? `${label} in Exxat Prism`}
+          <span className="block opacity-70">Opens Exxat Prism in a new tab</span>
+        </>
+      }
+      side="left"
+    >
+      {trigger}
+    </Tip>
   )
 }
 
@@ -93,6 +292,26 @@ export function StepCoursesEvaluatees({
   const termChosen = !!season && !!academicYear
   const scopeReady = termChosen && criteria.length > 0
 
+  // Guarded, not disabled in the popup: the item stays reachable there, while the
+  // last chip's remove button is disabled and the helper line says why.
+  const toggleCriterion = (c: Criterion) => {
+    const next = criteria.includes(c) ? criteria.filter(x => x !== c) : [...criteria, c]
+    if (next.length > 0) onCriteriaChange(next)
+  }
+  const cohortTokenOptions = useMemo<TokenOption[]>(
+    () => cohortOpts.map(c => ({ value: c, label: c })),
+    [cohortOpts],
+  )
+  // Both callers own cohorts via functional setState, so toggling each selected
+  // one off clears without widening the prop contract. Empty = no filter.
+  const clearCohorts = () => { for (const c of [...cohorts]) onToggleCohort(c) }
+  const criterionTokenOptions = useMemo<TokenOption[]>(
+    () => CRITERIA_ORDER.map(c => ({
+      value: c, label: CRITERION_TOGGLE_LABEL[c], group: CRITERION_GROUP[c],
+    })),
+    [],
+  )
+
   const readiness = useMemo(() => deriveReadiness(scoped, criteria), [scoped, criteria])
   // One row per course (one type per course), ordered by code.
   const rows = useMemo<ReadinessRow[]>(
@@ -110,6 +329,7 @@ export function StepCoursesEvaluatees({
             dates,
             datesLabel: dates ? `${fmtD(dates.start)} – ${fmtD(dates.end)}` : '—',
             cells: r.cells, hasGap: r.hasGap,
+            facultyHref: prismAddFacultyHref(r.offering),
             readiness: (r.hasGap ? 'gap' : 'ready') as 'gap' | 'ready',
           }
         })
@@ -118,6 +338,7 @@ export function StepCoursesEvaluatees({
   )
 
   const columns = useMemo<ColumnDef<ReadinessRow>[]>(() => {
+    const facultySelected = FACULTY_CRITERIA.filter(c => criteria.includes(c))
     const cols: ColumnDef<ReadinessRow>[] = [
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
       {
@@ -126,7 +347,9 @@ export function StepCoursesEvaluatees({
       },
       {
         key: 'name', label: 'Course', sortable: true, width: 160,
-        cell: r => <span className="text-sm block truncate" title={r.name}>{r.name}</span>,
+        // 160px clips most real course names, and a native title never fires on
+        // keyboard focus — the same reason the Unassigned line below uses Tip.
+        cell: r => <TruncatedText className="text-sm">{r.name}</TruncatedText>,
       },
       {
         key: 'enrolled', label: 'Students', sortable: true, width: 84,
@@ -140,16 +363,70 @@ export function StepCoursesEvaluatees({
         },
       },
     ]
-    // Evaluatee columns appear per selection — each cell is the value or the fix action.
-    for (const c of (['instructor', 'coordinator'] as Criterion[])) {
-      if (!criteria.includes(c)) continue
+    // One Faculty column for every selected person-role, not a column each: the
+    // header stays generic while each line names its own type-aware role
+    // ("Lab Instructor"), so the table width is independent of how many roles a
+    // program evaluates.
+    if (facultySelected.length > 0) {
       cols.push({
-        key: c, label: ROLE_LABEL[c], width: 132,
+        key: 'faculty', label: 'Faculty', width: 260,
         cell: r => {
-          const cell = r.cells[c]
-          if (!cell) return null
-          if (cell.ok) return <span className="text-sm block truncate" title={cell.value ?? undefined}>{cell.value}</span>
-          return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Not assigned</span>
+          // One line per PERSON, not per role. A line per role repeated
+          // "— not assigned" once for every gap, printed the same human twice
+          // when they hold two roles, and grew the row to five lines — the
+          // absences shouted louder than the people who actually exist.
+          const byPerson = new Map<string, string[]>()
+          const unassigned: string[] = []
+          for (const c of facultySelected) {
+            const cell = r.cells[c]
+            if (!cell) continue // role not applicable to this course type
+            if (cell.ok && cell.value) {
+              byPerson.set(cell.value, [...(byPerson.get(cell.value) ?? []), cell.label])
+            } else {
+              unassigned.push(cell.label)
+            }
+          }
+          const people = [...byPerson]
+          const shown = people.slice(0, 2)
+          const more = people.length - shown.length
+          if (people.length === 0 && unassigned.length === 0) {
+            return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+          }
+          return (
+            <div className="flex flex-col gap-0.5 py-0.5">
+              {shown.map(([name, roles]) => (
+                <span key={name} className="text-sm flex items-baseline gap-1.5 min-w-0">
+                  <span className="truncate" title={name}>{name}</span>
+                  <span
+                    className="text-xs truncate shrink-0"
+                    style={{ color: 'var(--muted-foreground)', maxWidth: 110 }}
+                    title={roles.join(' · ')}
+                  >
+                    {roles.join(' · ')}
+                  </span>
+                </span>
+              ))}
+              {more > 0 && (
+                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  +{more} more
+                </span>
+              )}
+              {/* Names the gaps rather than counting them — one truncating line,
+                  the full list on hover AND keyboard focus (a native title never
+                  fires on focus). The row stays 3 lines at any role count. */}
+              {unassigned.length > 0 && (
+                <Tip label={`Unassigned: ${unassigned.join(', ')}`} side="top">
+                  <span
+                    className="text-xs truncate w-fit max-w-full cursor-default"
+                    style={{ color: 'var(--muted-foreground)' }}
+                    tabIndex={0}
+                  >
+                    Unassigned: {unassigned.join(', ')}
+                  </span>
+                </Tip>
+              )}
+            </div>
+          )
         },
       })
     }
@@ -174,13 +451,24 @@ export function StepCoursesEvaluatees({
         // What's needed to complete setup — one consolidated column, pinned right.
         key: 'actions', label: 'Action needed', width: 230, defaultPin: 'right', lockPin: true,
         cell: r => {
-          const gaps = CRITERIA_ORDER.filter(c => criteria.includes(c) && r.cells[c] && !r.cells[c]!.ok)
-          if (gaps.length === 0) {
+          const studentCell = criteria.includes('students') ? r.cells.students : undefined
+          const studentGap = !!studentCell && !studentCell.ok
+          // Every missing person-role collapses into a single trip to Prism.
+          // The exact roles behind the gap, so the generic CTA can still say WHICH.
+          const facultyMissing = facultySelected
+            .filter(c => r.cells[c] && !r.cells[c]!.ok)
+            .map(c => r.cells[c]!.label)
+          if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
           return (
             <div className="flex flex-col items-start gap-1 py-0.5">
-              {gaps.map(c => <AddInPrismButton key={c} cell={r.cells[c]!} />)}
+              {studentGap && (
+                <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
+              )}
+              {facultyMissing.length > 0 && (
+                <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
+              )}
             </div>
           )
         },
@@ -287,22 +575,19 @@ export function StepCoursesEvaluatees({
 
           {termChosen && cohortOpts.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold" id="cohort-label">
                 Cohort <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>(optional)</span>
               </span>
-              <div
-                className="flex flex-wrap items-center gap-x-5 gap-y-2"
-                style={{ minHeight: 'var(--control-height, 36px)' }}
-                role="group"
-                aria-label="Filter by cohort"
-              >
-                {cohortOpts.map(c => (
-                  <div key={c} className="flex items-center gap-2">
-                    <Checkbox id={`cohort-${c}`} checked={cohorts.includes(c)} onCheckedChange={() => onToggleCohort(c)} />
-                    <CheckboxLabel htmlFor={`cohort-${c}`} className="text-sm font-normal cursor-pointer">{c}</CheckboxLabel>
-                  </div>
-                ))}
-              </div>
+              <TokenSelect
+                labelId="cohort-label"
+                placeholder="All cohorts"
+                contentLabel="Cohorts"
+                options={cohortTokenOptions}
+                selected={cohorts}
+                onToggle={onToggleCohort}
+                onClear={clearCohorts}
+                searchThreshold={COHORT_SEARCH_THRESHOLD}
+              />
             </div>
           )}
         </div>
@@ -310,37 +595,37 @@ export function StepCoursesEvaluatees({
         {termChosen && (
           <div className="flex flex-col gap-2 border-t border-border pt-4">
             <div className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold" id="evaluatees-label">
                 What to evaluate <span style={{ color: 'var(--destructive)' }}>*</span>
               </span>
               <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                 Readiness updates as you select
               </span>
             </div>
-            <div
-              className="flex flex-wrap items-center gap-x-5 gap-y-2"
-              role="group"
-              aria-label="Choose what to evaluate"
-            >
-              {CRITERIA_ORDER.map(c => {
-                const checked = criteria.includes(c)
-                return (
-                  <div key={c} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`criterion-${c}`}
-                      checked={checked}
-                      onCheckedChange={() => {
-                        const next = checked ? criteria.filter(x => x !== c) : [...criteria, c]
-                        if (next.length > 0) onCriteriaChange(next)
-                      }}
-                    />
-                    <CheckboxLabel htmlFor={`criterion-${c}`} className="text-sm font-normal cursor-pointer">
-                      {CRITERION_TOGGLE_LABEL[c]}
-                    </CheckboxLabel>
-                  </div>
-                )
-              })}
+            {/* Same control as Cohort: same job shape (pick several from many).
+                The label and the required marker carry the difference, not a
+                different interaction model. The role universe (~40-50 in Prism,
+                narrowed per program in Settings) stays in the searchable popup,
+                so the field shows what you PICKED and never the whole list. */}
+            <div>
+              <TokenSelect
+                labelId="evaluatees-label"
+                placeholder="Select roles"
+                contentLabel="Evaluatee roles"
+                options={criterionTokenOptions}
+                selected={criteria}
+                onToggle={v => toggleCriterion(v as Criterion)}
+                groupOrder={CRITERION_GROUP_ORDER}
+                minOne
+              />
             </div>
+            {/* Stated, not left to a title tooltip: the last chip's remove button
+                is disabled, and a native title never fires on keyboard. */}
+            {criteria.length === 1 && (
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                At least one selection is required.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -368,6 +653,7 @@ export function StepCoursesEvaluatees({
           state={tableState}
           getRowId={r => r.id}
           getRowSelectionLabel={r => r.courseLabel}
+          emptyState="No courses match your search or filter. Clear the search or change the type filter."
           selectable
           searchable
           hideBulkActions
