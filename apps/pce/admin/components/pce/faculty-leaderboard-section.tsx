@@ -31,8 +31,11 @@ import {
   ChartDataTable,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { FacultyLeaderboardDots, FacultyCompareLines } from '@/components/pce/analytics-plots'
-import { facultyStats, facultyTermSeries, medianOf, benchmarks, termSeries } from '@/lib/pce-analytics'
+import { FacultyLeaderboardDots, FacultyCompareLines, FacultyResponseCompare } from '@/components/pce/analytics-plots'
+import {
+  facultyStats, facultyTermSeries, facultyResponseSeries, medianOf, benchmarks, termSeries,
+  RESPONSE_TARGET,
+} from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -65,6 +68,7 @@ export function FacultyLeaderboardSection({
   const faculty = useMemo(() => facultyStats(term), [term])
   const median = useMemo(() => medianOf(faculty.map((f) => f.score.weighted)), [faculty])
   const series = useMemo(() => facultyTermSeries(), [])
+  const responseSeries = useMemo(() => facultyResponseSeries(), [])
   const bench = useMemo(() => benchmarks(), [])
 
   /* ── Story 10 — the leaderboard, as a dot plot with each person's spread behind them. ── */
@@ -121,6 +125,32 @@ export function FacultyLeaderboardSection({
       anchor: { yValue: bench.university },
     }
   }, [series, bench])
+
+  /* ── §2.2's SECOND trend — response rate across the roster. ── */
+  const responseLeo: ChartLeoInsight | null = useMemo(() => {
+    if (!responseSeries.length) return null
+    const below = responseSeries.filter((r) => r.responseRate < RESPONSE_TARGET)
+    const byFaculty = new Map<string, number[]>()
+    responseSeries.forEach((r) => byFaculty.set(r.name, [...(byFaculty.get(r.name) ?? []), r.responseRate]))
+    const worst = [...byFaculty.entries()]
+      .map(([name, rates]) => ({ name, mean: rates.reduce((s, v) => s + v, 0) / rates.length }))
+      .sort((a, b) => a.mean - b.mean)[0]!
+    return {
+      // Frequency count, not a percentage — Aarti D17.
+      headline: `${below.length} of ${responseSeries.length} faculty-terms came in under the ${RESPONSE_TARGET}% target`,
+      explanation:
+        `${worst.name} averages ${worst.mean.toFixed(0)}% across their terms — the lowest on the roster. ` +
+        `A collection problem is not a teaching problem, and the leaderboard above will not surface it: a ` +
+        `faculty member can be rated perfectly well by the handful of students who answered.`,
+      kind: below.length > 0 ? 'dip' : 'trend',
+      delta: { value: `${worst.mean.toFixed(0)}%`, label: `lowest — ${worst.name}` },
+      bullets: [
+        `${worst.name}: ${worst.mean.toFixed(0)}% average response.`,
+        `Target ${RESPONSE_TARGET}% · ${below.length} of ${responseSeries.length} faculty-terms below it.`,
+      ],
+      anchor: { yValue: worst.mean },
+    }
+  }, [responseSeries])
 
   const lowest = faculty[faculty.length - 1]
 
@@ -233,30 +263,69 @@ export function FacultyLeaderboardSection({
         </ChartFigure>
       </ChartCard>
 
-      <ChartCard
-        variant="normal"
-        title="Faculty scores over time"
-        description="One panel per faculty member, every peer ghosted behind them, all on the same axis. A break in a line is a term they did not teach."
-        leoInsight={compareLeo}
-      >
-        <ChartFigure
-          label="Faculty scores over time"
-          summary="Small multiples: one panel per faculty member showing their score by term against a dashed program-mean reference line, with all other faculty drawn faintly behind for context."
-          dataLength={series.length}
+      {/*
+        The two trends are a PAIR, and the pairing is the point — so they sit side by side with
+        their panels in the same faculty order, and you read ACROSS one person: score on the
+        left, collection on the right.
+
+        They answer different questions with different fixes. A low score is a coaching
+        conversation. A low response rate is a reminder — and the leaderboard cannot surface it,
+        because someone can be rated perfectly well by the handful of students who answered.
+        Stacked full-width (where these started) you must hold panel 4 of chart 1 in your head
+        while scrolling to panel 4 of chart 2; the comparison never happens. Side by side it is
+        one saccade. This is also Romit's width rule: a line chart does not earn 100%.
+      */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard
+          variant="normal"
+          title="Scores over time"
+          description="One panel per faculty member, every peer ghosted behind them, all on the same axis. A break in a line is a term they did not teach."
           leoInsight={compareLeo}
         >
-          {() => (
-            <>
-              <FacultyCompareLines rows={series} programMean={bench.university} />
-              <ChartDataTable
-                caption="Faculty score by term"
-                headers={['Faculty', 'Term', 'Score']}
-                rows={series.map((s) => [s.name, s.term, fmt2(s.rating)])}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
+          <ChartFigure
+            label="Faculty scores over time"
+            summary="Small multiples: one panel per faculty member showing their score by term against a dashed program-mean reference line, with all other faculty drawn faintly behind for context."
+            dataLength={series.length}
+            leoInsight={compareLeo}
+          >
+            {() => (
+              <>
+                <FacultyCompareLines rows={series} programMean={bench.university} />
+                <ChartDataTable
+                  caption="Faculty score by term"
+                  headers={['Faculty', 'Term', 'Score']}
+                  rows={series.map((s) => [s.name, s.term, fmt2(s.rating)])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+
+        <ChartCard
+          variant="normal"
+          title="Response rate over time"
+          description={`The same six people, same order — read across. A low rate is a collection problem, not a teaching one, and the fix is a reminder rather than a conversation.`}
+          leoInsight={responseLeo}
+        >
+          <ChartFigure
+            label="Faculty response rate over time"
+            summary={`Small multiples: one panel per faculty member showing their response rate by term against a ${RESPONSE_TARGET}% target, with all other faculty drawn faintly behind for context.`}
+            dataLength={responseSeries.length}
+            leoInsight={responseLeo}
+          >
+            {() => (
+              <>
+                <FacultyResponseCompare rows={responseSeries} target={RESPONSE_TARGET} />
+                <ChartDataTable
+                  caption="Faculty response rate by term"
+                  headers={['Faculty', 'Term', 'Response rate']}
+                  rows={responseSeries.map((r) => [r.name, r.term, `${r.responseRate}%`])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+      </div>
     </div>
   )
 }

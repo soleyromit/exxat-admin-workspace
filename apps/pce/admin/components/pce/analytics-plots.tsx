@@ -1067,6 +1067,77 @@ export function FacultyCompareLines({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   §2.2's SECOND trend — response rate across every faculty member.
+   Q4 → line per entity → small multiples, same reason FacultyCompareLines uses them
+   (6 faculty > the ≤5-series rule, and the DS ships 5 chart tokens).
+
+   The ref app shows score-by-term and rate-by-term SIDE BY SIDE, and we only had the
+   first. They are different problems with different fixes: a low score is a coaching
+   conversation; a low collection rate is a reminder. Asking "whose collection is
+   failing" was only possible one faculty member at a time.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export function FacultyResponseCompare({
+  rows,
+  target = 80,
+  height,
+}: {
+  rows: { facultyId: string; name: string; short: string; year: number; responseRate: number }[]
+  target?: number
+  height?: number
+}) {
+  const termOrder = React.useMemo(
+    () => [...new Map(rows.map((r) => [r.short, r.year])).entries()].sort((a, b) => a[1] - b[1]).map(([s]) => s),
+    [rows],
+  )
+  const names = React.useMemo(() => [...new Set(rows.map((r) => r.name))].sort(), [rows])
+  const ghost = React.useMemo(
+    () => names.flatMap((panel) => rows.map((r) => ({ ...r, panel, series: `${panel}::${r.name}` }))),
+    [names, rows],
+  )
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 40,
+      marginTop: 12,
+      marginBottom: 26,
+      marginRight: 124,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      // 45 not 0: the question is "who is under the bar", not "what fraction responded", and a
+      // zero baseline spends half the panel on rates nobody has ever recorded. The target rule
+      // is the reference that makes a truncated axis honest here — you read against 80%, not
+      // against the floor. (A zero baseline IS required for bar length; these are positions.)
+      y: { domain: [45, 100], label: null, ticks: [50, 80], tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
+      fy: { domain: names, label: null, ...axisDefaults(theme) },
+      marks: [
+        gridMark(theme),
+        Plot.line(ghost, {
+          fy: 'panel', x: 'short', y: 'responseRate', z: 'series',
+          stroke: theme.border, strokeWidth: 1, curve: 'monotone-x',
+        }),
+        // The target IS the chart — a rate without its bar means nothing.
+        Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
+        Plot.line(rows, {
+          fy: 'name', x: 'short', y: 'responseRate', z: 'name',
+          stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x',
+        }),
+        Plot.dot(rows, {
+          fy: 'name', x: 'short', y: 'responseRate', r: 2.5,
+          fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
+          channels: { Faculty: 'name', Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
+          tip: { format: { x: false, y: false, fill: false, r: false, fy: false } },
+        }),
+      ],
+    }),
+    [rows, ghost, termOrder, names, target],
+  )
+
+  if (!names.length) return <ChartEmpty note="No response history recorded yet." />
+
+  return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    Story 11 — one faculty member's response-rate trend.
    Q4 → line + target. "Single % delta with arrow" is the RUBRIC's ❌ here: it hides
    the path, and a drop-and-recovery looks identical to flat.

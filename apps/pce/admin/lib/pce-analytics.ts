@@ -602,6 +602,62 @@ export function facultyResponseTrend(facultyId: string): { term: string; short: 
     .sort((a, b) => a.year - b.year)
 }
 
+/**
+ * Every faculty member's RESPONSE RATE by term — the second half of §2.2's "Score Trends",
+ * which the ref app shows as two side-by-side charts and we only had the first of.
+ *
+ * Score-across-faculty answered "who is rated low"; this answers "whose collection is
+ * failing", which is a different problem with a different fix (a reminder, not coaching) —
+ * and it was only askable one faculty member at a time.
+ */
+export function facultyResponseSeries(): { facultyId: string; name: string; term: string; short: string; year: number; responseRate: number }[] {
+  const byKey = new Map<string, OfferingPoint[]>()
+  offeringPoints().forEach((p) => {
+    const key = `${p.facultyId}::${p.term}`
+    const list = byKey.get(key) ?? []
+    list.push(p)
+    byKey.set(key, list)
+  })
+  return [...byKey.values()]
+    .map((rows) => {
+      const r = rows[0]!
+      const enrolled = rows.reduce((s, x) => s + x.enrolled, 0)
+      const responded = rows.reduce((s, x) => s + x.responded, 0)
+      return {
+        facultyId: r.facultyId,
+        name: r.facultyName,
+        term: r.term,
+        short: shortTerm(r.term),
+        year: r.year,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+      }
+    })
+    .sort((a, b) => a.year - b.year)
+}
+
+/** One faculty member's course × term grid — §2.2's heatmap, scoped to a person. */
+export function facultyHeatCells(facultyId: string): { cells: HeatCell[]; courses: string[]; terms: string[] } {
+  const offs = offeringPoints().filter((o) => o.facultyId === facultyId)
+  const cells: HeatCell[] = offs.map((o) => ({
+    courseCode: o.courseCode,
+    term: o.term,
+    short: shortTerm(o.term),
+    year: o.year,
+    // The person's own teaching score is the cell value here — a faculty-scoped grid asking
+    // about course content would be answering the By Course question in the wrong place.
+    courseAvg: o.avgRating,
+    facultyAvg: o.avgRating,
+    surveyId: o.surveyId,
+  }))
+  const meanByCourse = new Map<string, number[]>()
+  cells.forEach((c) => meanByCourse.set(c.courseCode, [...(meanByCourse.get(c.courseCode) ?? []), c.courseAvg]))
+  const courses = [...meanByCourse.entries()]
+    .sort((a, b) => mean(a[1]) - mean(b[1]))
+    .map(([code]) => code)
+  const terms = [...new Set(cells.map((c) => c.term))].sort(compareTerms)
+  return { cells, courses, terms }
+}
+
 /** Every faculty member's score by term — story 9 (compared against each other over time). */
 export function facultyTermSeries(): { facultyId: string; name: string; term: string; short: string; year: number; rating: number }[] {
   const points = offeringPoints()
