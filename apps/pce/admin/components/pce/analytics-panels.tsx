@@ -36,7 +36,8 @@ import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
   termKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
-  courseTrend, courseFacultyStats, courseStats, facultyStats, termSlope, shortTerm, RESPONSE_TARGET,
+  courseTrend, courseFacultyStats, courseStats, facultyStats, facultySurveys, termSlope,
+  shortTerm, RESPONSE_TARGET,
   type TermCourseRow,
 } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
@@ -1029,6 +1030,9 @@ export function ByFacultyPanel({
    * (Unlike the course strip, the underlying variable here was right: a faculty member IS
    * scored by `avgRating`. The bug was the label and the precision, not the entity.)
    */
+  /* Surveys this faculty member is the PRIMARY instructor on — story 17's corpus. */
+  const facultyThemeSurveys = useMemo(() => facultySurveys(facultyId), [facultyId])
+
   const facultyOfferingCols = useMemo(
     () => facultyOfferingColumnsFor(medianOf(facultyStats().map(f => f.score.weighted))),
     [],
@@ -1060,6 +1064,23 @@ export function ByFacultyPanel({
 
       {/* Story 18 — the verbatims, cut on the PERSON axis. §2.2 calls this "the payload":
           the scores say a 3.58 happened, these say why. */}
+      {/*
+        Story 17 — the theme breakdown on the FACULTY axis. I had this logged as not
+        derivable: "sectionScores is keyed by surveyId with no facultyId". The premise was
+        true and the conclusion was wrong — surveyId → survey → primary instructor is a JOIN,
+        not a data-model change. The blocker I actually feared was ambiguity (two co-teachers,
+        whose teaching score is it?) and that case has zero instances: every survey resolves
+        to exactly one primary, guests excluded. See `facultySurveys`.
+
+        Same component as the term and course axes, because it is the same question asked of a
+        different scope — TermThemesInsight was never term-specific, it just takes surveys.
+        Placed ABOVE Student Voice: themes are the summary, verbatims are the evidence, and
+        Aarti's D14 puts AI summaries first at every aggregation level.
+      */}
+      {facultyThemeSurveys.length > 0 && (
+        <TermThemesInsight surveys={facultyThemeSurveys} scopeLabel={faculty.name} />
+      )}
+
       <StudentVoice axis="faculty" facultyId={faculty.id} scopeLabel={faculty.name} />
 
       {extraCharts}

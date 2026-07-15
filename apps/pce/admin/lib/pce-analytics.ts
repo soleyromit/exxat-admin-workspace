@@ -21,7 +21,7 @@
  */
 
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
-import type { FacultyOfferingRecord } from '@/lib/pce-mock-data'
+import type { FacultyOfferingRecord, PceSurvey } from '@/lib/pce-mock-data'
 
 /* ────────────────────────────────────────────────────────────────────────────
    Term algebra — terms are strings in the model; ranking and 1Y/3Y windows
@@ -641,6 +641,29 @@ export function facultyHeatCells(facultyId: string): { cells: HeatCell[]; course
  * Course is the right unit because response is a property of the OFFERING, not the person:
  * students skip a survey over its timing and workload, not over who is teaching it.
  */
+/**
+ * The surveys a faculty member is the PRIMARY instructor on — the join that unblocks story 17.
+ *
+ * I logged the per-faculty theme breakdown as "not derivable: sectionScores is keyed by
+ * surveyId with no facultyId". The first half is true and the conclusion was wrong.
+ * surveyId → survey → instructors is a join, not a data-model change. The blocker I actually
+ * feared was ambiguity — if two people co-teach, whose faculty_performance score is it? —
+ * and that case has ZERO instances: of 28 survey records, 19 carry one instructor and the 2
+ * co-taught ones each carry one primary plus one `role: 'guest'`. Every survey resolves to
+ * exactly one primary. Measured before building on it.
+ *
+ * Guests are excluded deliberately. A guest lecturer is not the instructor the course's
+ * teaching score is about, so attributing a survey's faculty_performance to them would be the
+ * same entity mix-up that had By Course reporting the instructor's score as the course's.
+ */
+export function facultySurveys(facultyId: string): PceSurvey[] {
+  return MOCK_SURVEYS.filter((s) => {
+    if (s.surveyType === 'programmatic') return false
+    const primary = s.instructors.filter((i) => i.role !== 'guest')
+    return primary.length > 0 && primary[0]!.id === facultyId
+  })
+}
+
 export function facultyCourseResponseTrend(
   facultyId: string,
 ): { courseCode: string; courseName: string; term: string; short: string; year: number; responseRate: number }[] {
