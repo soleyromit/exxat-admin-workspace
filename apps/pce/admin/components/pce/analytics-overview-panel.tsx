@@ -18,9 +18,9 @@
  * a chart without a takeaway is a banned pattern (Knaflic, via claude-practices).
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@exxatdesignux/ui'
+import { Button, type ChartConfig } from '@exxatdesignux/ui'
 import {
   ChartCard,
   ChartFigure,
@@ -29,7 +29,6 @@ import {
 } from '@/components/charts-overview'
 import {
   GapQuadrant,
-  CourseTermHeat,
   ProgramTrendStack,
   DriftDumbbell,
   CourseRankDots,
@@ -37,6 +36,7 @@ import {
   KpiSpark,
   type DriftRow,
 } from '@/components/pce/analytics-plots'
+import { ChartHeatmap, buildChartHeatmapPoints } from '@/components/chart-heatmap'
 import { responseFunnel } from '@/lib/pce-funnel'
 import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
 import { AnalyticsSurveyDetails } from '@/components/pce/analytics-survey-details'
@@ -48,9 +48,35 @@ import {
   gapPoints,
   courseTermMatrix,
   medianOf,
+  shortTerm,
 } from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
+
+/**
+ * Heatmap geometry — width is a design decision, not a leftover.
+ *
+ * A heatmap is a grid of SQUARES. Stretch 5 terms across a 1600px card and each cell becomes a
+ * 300px lozenge: the eye stops reading a matrix and starts reading five unrelated bars. So the
+ * figure is sized to its content (`gutter + cols x cell`) and left-aligned, and the page's width
+ * is spent on whitespace instead of on distortion. This is the width question Romit raised —
+ * full-width is right for a table and wrong for a grid.
+ */
+const HEAT_CELL_PX = 76
+const HEAT_LABEL_GUTTER = 124
+/** Column headers sit on top (`xAxis.position: "top"`), plus the DS grid's own top/bottom. */
+const HEAT_AXIS_GUTTER = 52
+
+/**
+ * Rows shown before the expand control. Romit, 2026-07-15: a program averages 10–15 courses —
+ * so at the stated average NOTHING collapses and no control appears. It exists for the tail:
+ * a 30-course program gets the same summary→expand contract as the 34-faculty leaderboard
+ * rather than a wall of rows.
+ */
+const HEAT_ROW_LIMIT = 15
+
+/** Scores occupy a narrow high band; the ramp is spent there, not on 0–3 nobody scores. */
+const SCORE_HEAT_DOMAIN: readonly [number, number] = [3, 5]
 
 /**
  * §2.1 calls the three Aggregate cards "the cleverest move here: they double as a preview of
@@ -70,6 +96,64 @@ export function AnalyticsOverviewPanel() {
   const courses = useMemo(() => courseStats(), [])
   const gaps = useMemo(() => gapPoints(), [])
   const matrix = useMemo(() => courseTermMatrix(), [])
+
+  /**
+   * The heatmap at real scale.
+   *
+   * Romit, 2026-07-15: a program averages 10–15 courses, and the viz has to stay legible when
+   * courses or students grow. 15 rows x 5 terms is a comfortable grid; 30+ rows is a wall with
+   * the same shape as the 34-row leaderboard. So the same summary→expand contract applies, and
+   * HEAT_ROW_LIMIT sits at the top of the stated range — at 10–15 courses nothing collapses and
+   * the control never appears.
+   *
+   * `courseTermMatrix` already sorts rows worst→best, so the weakest band is the head of the
+   * list and slicing from the front keeps the courses worth looking at.
+   */
+  const [heatExpanded, setHeatExpanded] = useState(false)
+  const heatRows = useMemo(
+    () => (heatExpanded ? matrix.courses : matrix.courses.slice(0, HEAT_ROW_LIMIT)),
+    [matrix.courses, heatExpanded],
+  )
+  const heatHiddenCount = matrix.courses.length - Math.min(matrix.courses.length, HEAT_ROW_LIMIT)
+
+  /* One lookup, then a dense rows x cols matrix. `null` is NOT a zero — it means the course ran
+     no evaluation that term, which the DS heatmap now renders as empty ground. */
+  const heatPoints = useMemo(() => {
+    const byKey = new Map(matrix.cells.map((c) => [`${c.courseCode}::${c.term}`, c.courseAvg]))
+    const grid = heatRows.map((code) =>
+      matrix.terms.map((t) => byKey.get(`${code}::${t}`) ?? null),
+    )
+    return buildChartHeatmapPoints(heatRows, matrix.terms.map(shortTerm), grid)
+  }, [heatRows, matrix.terms, matrix.cells])
+
+  /* Leo anchors on the WEAKEST cell, not the strongest. The prop is named peakCellIndex because
+     the DS's own example charts activity counts, where the peak is the story; here the lowest
+     score is. Same slot, opposite end. */
+  const heatPeakIndex = useMemo(() => {
+    let idx = 0
+    let worst = Infinity
+    heatPoints.forEach((p) => {
+      if (p.value !== null && p.value < worst) { worst = p.value; idx = p.cellIndex }
+    })
+    return idx
+  }, [heatPoints])
+
+  const heatConfig = useMemo<ChartConfig>(
+    () => ({ value: { label: 'Course score', color: 'var(--brand-color)' } }),
+    [],
+  )
+
+  /* Natural size on BOTH axes — see the note at the render site. Height follows the row count
+     for the same reason width follows the column count: a cell that is 76 wide and 14 tall is
+     not a square, and a heatmap of lozenges is just a bar chart that lies about its shape. */
+  const heatWidth = useMemo(
+    () => HEAT_LABEL_GUTTER + matrix.terms.length * HEAT_CELL_PX,
+    [matrix.terms.length],
+  )
+  const heatHeight = useMemo(
+    () => HEAT_AXIS_GUTTER + heatRows.length * HEAT_CELL_PX,
+    [heatRows.length],
+  )
 
   /* The chart draws the lowest N; its data table is the ACCESSIBLE EQUIVALENT of the chart,
      so it must list the same rows. A table of all 15 under a chart of 6 would mean the two
@@ -608,9 +692,49 @@ export function AnalyticsOverviewPanel() {
           dataLength={matrix.cells.length}
           leoInsight={heatLeo}
         >
-          {() => (
+          {(activeIndex) => (
             <>
-              <CourseTermHeat cells={matrix.cells} courses={matrix.courses} terms={matrix.terms} />
+              {/*
+                The DS OS heatmap (`components/chart-heatmap.tsx`, ECharts), not a hand-rolled
+                Plot one. It was vendored into this app and had ZERO callers while I built
+                `CourseTermHeat` alongside it — the DS shipped the component and I re-made it.
+                Romit, 2026-07-15: use the DS heatmap.
+
+                WIDTH IS THE DESIGN HERE. A heatmap is a grid of squares, and squares have an
+                intrinsic size — stretched across a 1600px card, 5 terms become 300px-wide
+                lozenges and the grid stops reading as a matrix. So the figure is capped at its
+                natural width (cols x cell + row labels) and left-aligned, rather than filling
+                the column because the column exists.
+              */}
+              <div className="overflow-x-auto">
+                <div style={{ width: heatWidth, maxWidth: '100%' }}>
+                  <ChartHeatmap
+                    rows={heatRows}
+                    cols={matrix.terms.map(shortTerm)}
+                    points={heatPoints}
+                    config={heatConfig}
+                    activeIndex={activeIndex}
+                    peakCellIndex={heatPeakIndex}
+                    valueLabel="Course score"
+                    domain={SCORE_HEAT_DOMAIN}
+                    valueFormatter={fmt2}
+                    height={heatHeight}
+                  />
+                </div>
+              </div>
+              {heatHiddenCount > 0 && (
+                <div className="mt-2">
+                  <Button variant="outline" size="sm" onClick={() => setHeatExpanded((v) => !v)} aria-expanded={heatExpanded}>
+                    {heatExpanded
+                      ? `Show the ${HEAT_ROW_LIMIT} weakest only`
+                      : `Show all ${matrix.courses.length} courses`}
+                  </Button>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Showing the {heatRows.length} weakest of {matrix.courses.length} evaluated
+                    courses. {heatHiddenCount} more scored higher.
+                  </p>
+                </div>
+              )}
               <ChartDataTable
                 caption="Course content score by course and term"
                 headers={['Course', 'Term', 'Course score', 'Faculty score']}
