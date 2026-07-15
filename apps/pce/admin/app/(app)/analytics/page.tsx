@@ -52,37 +52,60 @@ function AnalyticsInner() {
    * Deriving from the URL also makes the tabs genuinely deep-linkable (which the code already
    * claimed) and makes the browser back button work across tabs.
    *
-   * NOTE: term / facultyId / courseCode are still read-once local state — selecting a faculty
-   * does not update the URL, so that state is not shareable or restorable. That is task #11.
+   * SCOPE LIVES IN THE URL, all of it — tab, term, facultyId, courseCode.
+   *
+   * These used to be read-once `useState(() => searchParams.get(...))`: the page READ them on
+   * mount and never WROTE them, so /analytics?facultyId=f4 worked on a cold load and nothing
+   * you did afterwards was shareable. Half-honouring a query param is worse than ignoring it,
+   * because the URL then looks authoritative while silently describing a stale view.
+   *
+   * Closing the course→faculty round trip made this concrete: that drill selects a faculty
+   * member and switches tab, and the tab moved in the URL while the person did not. Copying
+   * the link sent a colleague to the faculty tab showing someone else.
+   *
+   * One derivation for all four (`param`), one writer (`setScope`) — the same shape `tab`
+   * already had, extended rather than duplicated. A second mechanism for the other three is
+   * how two sources of truth start.
    */
+  const param = (key: string) => searchParams?.get(key) ?? null
+
   const activeTab: AnalyticsTab = (() => {
-    const requested = searchParams?.get('tab')
+    const requested = param('tab')
     return requested === 'faculty' || requested === 'course' || requested === 'term'
       ? requested
       : 'overview'
   })()
 
-  const setActiveTab = (tab: AnalyticsTab) => {
+  /**
+   * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
+   * drill: person AND tab) lands as ONE history entry — two pushes would make Back a
+   * half-step into a state the user never saw.
+   *
+   * `null` deletes the param: an explicit "all terms" must not leave a stale `term=` behind.
+   */
+  const setScope = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams?.toString() ?? '')
-    next.set('tab', tab)
-    // scroll:false — switching tab should not fling the reader to the top of a long page.
+    Object.entries(patch).forEach(([k, v]) => (v === null ? next.delete(k) : next.set(k, v)))
+    // scroll:false — changing scope should not fling the reader to the top of a long page.
     router.push(`${pathname}?${next.toString()}`, { scroll: false })
   }
+
+  const setActiveTab = (tab: AnalyticsTab) => setScope({ tab })
   const [axis, setAxis]                             = useState<Axis>('term')
-  const [term, setTerm]                             = useState(
-    searchParams?.get('term') || 'Spring 2026'
-  )
+  const term = param('term') || 'Spring 2026'
+  const setTerm = (t: string) => setScope({ term: t })
   const [cohort, setCohort]                         = useState('Class of 2026')
   const [nudgeTarget, setNudgeTarget]               = useState<NudgeTarget | null>(null)
   const [selectedSurveyId, setSelectedSurveyId]     = useState<string | null>(null)
-  const [selectedFacultyId, setSelectedFacultyId]   = useState<string>(
-    searchParams?.get('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
-  )
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
-    searchParams?.get('courseCode') || ''
-  )
+  const selectedFacultyId = param('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
+  const setSelectedFacultyId = (id: string) => setScope({ facultyId: id })
+
+  const selectedCourseCode = param('courseCode') || ''
+  const setSelectedCourseCode = (code: string) => setScope({ courseCode: code })
+
   /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
-  const [facultyTerm, setFacultyTerm]               = useState<string | undefined>(undefined)
+  const facultyTerm = param('facultyTerm') ?? undefined
+  const setFacultyTerm = (t: string | undefined) => setScope({ facultyTerm: t ?? null })
 
   /** Terms that HAVE evaluation history, newest first — the By Term axis. */
   const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
@@ -309,10 +332,9 @@ function AnalyticsInner() {
             <ByCoursePanel
               courseCode={effectiveCourseCode}
               onOpenSurvey={setSelectedSurveyId}
-              onSelectFaculty={(facultyId) => {
-                setSelectedFacultyId(facultyId)
-                setActiveTab('faculty')
-              }}
+              // ONE push, both changes — see setScope. Two calls would race on the same
+              // searchParams snapshot and the second would clobber the first.
+              onSelectFaculty={(facultyId) => setScope({ facultyId, tab: 'faculty' })}
             />
           </div>
         </TabsContent>
