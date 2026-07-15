@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+// Sidebar symbols must come from @/components/ui/sidebar so they share one
+// SidebarContext with app/(app)/providers.tsx — see the note there.
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +16,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import {
   Avatar,
   AvatarFallback,
   DropdownMenu,
@@ -29,7 +34,6 @@ import {
   SheetTitle,
   SheetDescription,
   Badge,
-  useSidebar,
 } from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
 

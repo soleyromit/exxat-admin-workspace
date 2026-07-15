@@ -12,6 +12,7 @@
     "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true && rm -f src/pages/_not-found.tsx"
   },
   "dependencies": {
+    "@exxatdesignux/product-framework": "^0.1.7",
     "@exxatdesignux/ui": "0.6.57",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-hover-card": "^1.1.15",

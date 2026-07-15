@@ -1,12 +1,14 @@
 'use client'
 import { useQB } from './qb-state'
 import {
-  Button, useSidebar,
+  Button,
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator,
   Popover, PopoverTrigger, PopoverContent,
   Tip,
   Avatar, AvatarFallback,
 } from '@exxatdesignux/ui'
+// One SidebarContext — see app/(app)/providers.tsx.
+import { useSidebar } from '@/components/ui/sidebar'
 import type { FolderNode, Persona } from '@/lib/qb-types'
 import { PERSONAS as GLOBAL_PERSONAS } from '@/lib/personas'
 
