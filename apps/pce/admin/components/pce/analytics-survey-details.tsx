@@ -1,0 +1,205 @@
+'use client'
+
+/**
+ * Overview row 3 — the raw grain, and the end of the funnel.
+ *
+ * §2.1 describes Overview as a deliberate **aggregate → rank → pattern → raw** sequence.
+ * Ours stopped at "pattern": four charts explaining a program, with no way to reach the thing
+ * they were explaining. This is "raw", and the round trip §3 asks for — "every aggregate is
+ * meant to be a door" — lands here, at what Monil calls the final node.
+ *
+ * ── Why this reads offerings, not deriveResults() ──────────────────────────────
+ * The obvious build was `deriveResults(MOCK_SURVEYS)`: it has result ids, statuses and
+ * suppression already. It also disagrees with every chart on this tab, because MOCK_SURVEYS
+ * and MOCK_FACULTY_OFFERINGS are two unreconciled universes. Verified:
+ *   · DPT-505 is "Biomechanics I" in offerings and "Neuroanatomy" in surveys
+ *   · DPT-502 is "Exercise Physiology" vs "Physiology & Pathophysiology"
+ *   · DPT-710 / 711 / 801 / 506 exist only in offerings; DPT-504 / 511 / 520 only in surveys
+ *   · co-taught instructors come back byte-identical (`deriveResultsForSurvey` hands every
+ *     instructor on a survey the same avgScore), so the table showed two faculty with the
+ *     same 4.20 on the same course
+ * Putting that table under charts built from offerings would ship the exact "numbers disagree
+ * with each other" bug this layer exists to prevent — at the bottom of the tab that explains
+ * them. So the register derives from the same grain as the charts, and links to a result only
+ * where the offering actually carries a surveyId.
+ *
+ * Sorted newest-first, not worst-first: the charts above already rank by weakness, and a
+ * register you look things up in should be chronological.
+ *
+ * DataTable from the DS package, not the vendored copy — DS-023 bans the vendored import in
+ * new files (analytics-panels.tsx predates the rule). The ColumnDef shape is identical.
+ */
+
+import { useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { DataTable, Avatar, AvatarFallback, StatusBadge } from '@exxatdesignux/ui'
+import type { ColumnDef } from '@exxatdesignux/ui'
+import { TruncatedText } from '@/components/truncated-text'
+import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
+import { offeringPoints, compareTerms } from '@/lib/pce-analytics'
+
+interface Row extends Record<string, unknown> {
+  id: string
+  term: string
+  courseCode: string
+  courseName: string
+  facultyName: string
+  initials: string
+  courseAvg: number | null
+  facultyAvg: number
+  responseRate: number
+  responded: number
+  enrolled: number
+  suppressed: boolean
+  surveyId?: string
+}
+
+/* Amber below 3.7, brand 3.7–4.3, green at or above 4.3 — never red (VIZ-004, Aarti).
+   Same tiers analytics-panels uses, so a score means one thing across the product. */
+const tierTextColor = (avg: number) =>
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+
+const rateColor = (pct: number) =>
+  pct >= 70 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chip-4)'
+
+const scoreCell = (v: number | null, suppressed: boolean) => (
+  <div
+    className="text-right text-sm font-semibold tabular-nums"
+    style={{ color: v != null && !suppressed ? tierTextColor(v) : 'var(--muted-foreground)' }}
+  >
+    {suppressed ? '—' : v != null ? v.toFixed(2) : '—'}
+  </div>
+)
+
+const COLUMNS: ColumnDef<Row>[] = [
+  {
+    key: 'term', label: 'Term', sortable: true, width: 110,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.term}</span>,
+  },
+  {
+    key: 'courseCode', label: 'Course', sortable: true,
+    cell: (row) => (
+      <div>
+        <p className="text-sm font-medium">{row.courseCode}</p>
+        <TruncatedText className="text-xs text-muted-foreground max-w-[200px]">{row.courseName}</TruncatedText>
+      </div>
+    ),
+  },
+  {
+    key: 'facultyName', label: 'Faculty', sortable: true, width: 180,
+    cell: (row) => (
+      <div className="flex w-fit items-center gap-1.5">
+        <Avatar className="h-6 w-6 shrink-0">
+          <AvatarFallback
+            className="text-xs"
+            style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+          >
+            {row.initials}
+          </AvatarFallback>
+        </Avatar>
+        <span className="truncate text-sm font-medium">{row.facultyName}</span>
+      </div>
+    ),
+  },
+  {
+    // Both rated entities, never merged into one "score" (D7/D27).
+    key: 'courseAvg', label: 'Content', sortable: true, width: 92,
+    header: () => <span className="block text-right">Content</span>,
+    cell: (row) => scoreCell(row.courseAvg, row.suppressed),
+  },
+  {
+    key: 'facultyAvg', label: 'Teaching', sortable: true, width: 92,
+    header: () => <span className="block text-right">Teaching</span>,
+    cell: (row) => scoreCell(row.facultyAvg, row.suppressed),
+  },
+  {
+    key: 'responseRate', label: 'Response', sortable: true, width: 118,
+    header: () => <span className="block text-right">Response</span>,
+    cell: (row) => (
+      <div className="text-right">
+        <span className="block text-sm font-semibold tabular-nums" style={{ color: rateColor(row.responseRate) }}>
+          {row.responseRate}%
+        </span>
+        {/* Frequency alongside the rate — Aarti D17: "8 of 20" beats "40%". */}
+        <span className="block text-xs tabular-nums text-muted-foreground">
+          {row.responded} of {row.enrolled}
+        </span>
+      </div>
+    ),
+  },
+  {
+    key: 'status', label: 'Result', sortable: true, width: 150,
+    cell: (row) =>
+      row.suppressed ? (
+        <StatusBadge label="Suppressed" tone="neutral" icon="fa-eye-slash" />
+      ) : row.surveyId ? (
+        <StatusBadge label="Available" tone="success" icon="fa-circle-check" />
+      ) : (
+        <span className="text-xs text-muted-foreground">Archived offering</span>
+      ),
+  },
+]
+
+export function AnalyticsSurveyDetails() {
+  const router = useRouter()
+
+  const rows = useMemo<Row[]>(
+    () =>
+      offeringPoints()
+        .map((o) => ({
+          id: `${o.facultyId}:${o.courseCode}:${o.term}`,
+          term: o.term,
+          courseCode: o.courseCode,
+          courseName: o.courseName,
+          facultyName: o.facultyName,
+          initials: o.initials,
+          courseAvg: o.courseAvg ?? null,
+          facultyAvg: o.avgRating,
+          responseRate: o.responseRate,
+          responded: o.responded,
+          enrolled: o.enrolled,
+          // The ≥5 anonymity gate is settled and applies here too — a register that shows a
+          // score the result page would withhold defeats the gate.
+          suppressed: o.responded < MINIMUM_THRESHOLD,
+          surveyId: o.surveyId,
+        }))
+        .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode)),
+    [],
+  )
+
+  const suppressed = rows.filter((r) => r.suppressed).length
+  const linkable = rows.filter((r) => r.surveyId).length
+
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-sm font-semibold">Every offering</h2>
+      <p className="text-xs text-muted-foreground">
+        The raw grain behind every chart above — one row per course, term and instructor, newest
+        first. {linkable} of {rows.length} have a survey result to open.
+        {suppressed > 0 && (
+          <> {suppressed} {suppressed === 1 ? 'is' : 'are'} suppressed below the {MINIMUM_THRESHOLD}-response
+          anonymity threshold and show no score.</>
+        )}
+      </p>
+      <div className="-mx-4 lg:-mx-6">
+        <DataTable<Row>
+          data={rows}
+          columns={COLUMNS}
+          getRowId={(row) => row.id}
+          searchable
+          toolbarSlot={() => null}
+          onRowClick={(row) =>
+            row.surveyId && router.push(`/results/${encodeURIComponent(row.surveyId)}?from=analytics`)
+          }
+          emptyState={
+            <div className="flex flex-col items-center gap-2 py-8">
+              <i className="fa-light fa-clipboard-list text-2xl text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm font-medium">No evaluated offerings yet</p>
+              <p className="text-xs text-muted-foreground">Rows appear here once a survey closes.</p>
+            </div>
+          }
+        />
+      </div>
+    </div>
+  )
+}

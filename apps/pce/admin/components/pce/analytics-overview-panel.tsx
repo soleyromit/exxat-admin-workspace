@@ -38,6 +38,7 @@ import {
 } from '@/components/pce/analytics-plots'
 import { responseFunnel } from '@/lib/pce-funnel'
 import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
+import { AnalyticsSurveyDetails } from '@/components/pce/analytics-survey-details'
 import {
   programSummary,
   termSeries,
@@ -590,6 +591,11 @@ export function AnalyticsOverviewPanel() {
         </ChartFigure>
       </ChartCard>
 
+
+      {/* RAW — the last step of §2.1's aggregate → rank → pattern → raw funnel, and the door
+          to Monil's "final node": the single-survey result. Every chart above explains this
+          table; without it the tab explains something you cannot reach. */}
+      <AnalyticsSurveyDetails />
     </div>
   )
 }

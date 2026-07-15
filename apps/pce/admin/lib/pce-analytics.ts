@@ -111,6 +111,23 @@ function initialsOf(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1]![0] : '')).toUpperCase()
 }
 
+/**
+ * Resolve an offering to a survey so the raw register can open its result.
+ *
+ * `MOCK_FACULTY_OFFERINGS` and `MOCK_SURVEYS` are two unreconciled universes — they disagree
+ * on course names (DPT-505 is "Biomechanics I" in one and "Neuroanatomy" in the other) and
+ * each holds courses the other lacks. Analytics derives from offerings; results live on
+ * surveys. Matching on courseCode + term is the only honest bridge available: it links the
+ * rows that genuinely refer to the same offering and leaves the rest unlinked rather than
+ * pointing at a result for a different course. The real fix is reconciling the two fixtures.
+ */
+function surveyIdFor(courseCode: string, term: string): string | undefined {
+  const s = MOCK_SURVEYS.find(
+    (x) => x.surveyType !== 'programmatic' && x.courseCode === courseCode && x.term === term,
+  )
+  return s?.id
+}
+
 export function offeringPoints(): OfferingPoint[] {
   const facultyById = new Map(MOCK_FACULTY.map((f) => [f.id, f]))
   return MOCK_FACULTY_OFFERINGS.map((o) => {
@@ -118,6 +135,9 @@ export function offeringPoints(): OfferingPoint[] {
     const name = f?.name ?? o.facultyId
     return {
       ...o,
+      // The diversified fixture dropped the per-row surveyId; fall back to a
+      // courseCode + term match so the register's rows can still reach a result.
+      surveyId: o.surveyId ?? surveyIdFor(o.courseCode, o.term),
       year: termToYear(o.term),
       facultyName: name,
       initials: f?.initials ?? initialsOf(name),
