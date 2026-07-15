@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleGroup, ToggleGroupItem,
@@ -33,14 +33,38 @@ type AnalyticsTab = 'overview' | 'term' | 'faculty' | 'course'
 
 function AnalyticsInner() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const { sendSurveyReminder } = usePce()
 
-  const [activeTab, setActiveTab]                   = useState<AnalyticsTab>(() => {
+  /**
+   * The URL is the single source of truth for the active tab — not local state seeded from it.
+   *
+   * It used to be `useState(() => searchParams.get('tab'))`, which reads ONCE on mount. Next's
+   * App Router does not remount on a same-route search-param change, so every in-page link to
+   * another tab (the "Open By Faculty" buttons on the attention cards) changed the address bar
+   * and did nothing visible — worse than having no link at all. Verified before this fix:
+   * clicking it produced `?tab=faculty` while the Overview tab stayed selected.
+   *
+   * Deriving from the URL also makes the tabs genuinely deep-linkable (which the code already
+   * claimed) and makes the browser back button work across tabs.
+   *
+   * NOTE: term / facultyId / courseCode are still read-once local state — selecting a faculty
+   * does not update the URL, so that state is not shareable or restorable. That is task #11.
+   */
+  const activeTab: AnalyticsTab = (() => {
     const requested = searchParams?.get('tab')
     return requested === 'faculty' || requested === 'course' || requested === 'term'
       ? requested
       : 'overview'
-  })
+  })()
+
+  const setActiveTab = (tab: AnalyticsTab) => {
+    const next = new URLSearchParams(searchParams?.toString() ?? '')
+    next.set('tab', tab)
+    // scroll:false — switching tab should not fling the reader to the top of a long page.
+    router.push(`${pathname}?${next.toString()}`, { scroll: false })
+  }
   const [axis, setAxis]                             = useState<Axis>('term')
   const [term, setTerm]                             = useState(
     searchParams?.get('term') || 'Spring 2026'
