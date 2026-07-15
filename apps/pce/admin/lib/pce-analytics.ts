@@ -807,10 +807,18 @@ export interface HeatCell {
   year: number
   courseAvg: number
   facultyAvg: number | null
+  /** The survey behind this cell, when one resolves — §3: "every aggregate is a door". */
+  surveyId?: string
 }
 
 export function courseTermMatrix(): { cells: HeatCell[]; courses: string[]; terms: string[] } {
   const ctp = courseTermPoints()
+  // §3 of the walkthrough: the heatmap cell is a door — "Heatmap cell OT-401/Fa 2025 →
+  // view → /results/result-006". Ours were inert.
+  const surveyByCourseTerm = new Map<string, string>()
+  offeringPoints().forEach((o) => {
+    if (o.surveyId) surveyByCourseTerm.set(`${o.courseCode}::${o.term}`, o.surveyId)
+  })
   const cells = ctp.map((p) => ({
     courseCode: p.courseCode,
     term: p.term,
@@ -818,6 +826,7 @@ export function courseTermMatrix(): { cells: HeatCell[]; courses: string[]; term
     year: p.year,
     courseAvg: p.courseAvg,
     facultyAvg: p.facultyAvg,
+    surveyId: surveyByCourseTerm.get(`${p.courseCode}::${p.term}`),
   }))
   // Rows ordered worst → best mean, so the problem courses sit together at one edge
   // rather than scattered alphabetically.

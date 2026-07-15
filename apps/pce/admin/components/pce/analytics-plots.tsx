@@ -365,6 +365,21 @@ export function GapQuadrant({
    Rows are ordered worst → best so the problem courses band together.
    ════════════════════════════════════════════════════════════════════════════ */
 
+/**
+ * §3 asks for a clickable cell ("Heatmap cell OT-401/Fa 2025 → view → /results/result-006")
+ * and this does NOT do that, deliberately. Two reasons, verified rather than assumed:
+ *   1. Plot has no event API — passing `onclick`/`cursor` as mark options is silently ignored.
+ *      Measured: 127 rects rendered, 0 with a click handler, 0 with cursor:pointer. Shipping
+ *      the option would have produced a dead affordance.
+ *   2. More fundamentally, the Plot SVG is `aria-hidden` — that is how the chart avoids axe's
+ *      `aria-prohibited-attr` and delegates its accessible duty to ChartFigure + the sr-only
+ *      ChartDataTable. A click target inside aria-hidden is mouse-only: unreachable by
+ *      keyboard or a screen reader. A door only some people can walk through is not a door.
+ *
+ * The course-term door is the "Every offering" register below instead: searchable by course,
+ * keyboard-reachable, and it opens the same result. The heatmap's job is the pattern; the
+ * register's job is the reach.
+ */
 export function CourseTermHeat({
   cells,
   courses,

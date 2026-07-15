@@ -51,6 +51,27 @@ import {
 
 const fmt2 = (v: number) => v.toFixed(2)
 
+/**
+ * The KPI tiles are the Aggregate Breakdown, and §2.1's actual insight about it is not the
+ * numbers — it is that the cards "double as a preview of and a table of contents for the
+ * other three tabs". Each tile already carries the doc's rhetorical shape (count / average /
+ * n-below-benchmark, one per dimension); this is the missing half: the tile is a door.
+ *
+ * A link rather than a clickable card: the tile contains a sparkline with its own hover
+ * target, so making the whole surface a button would swallow it and give the reader no way
+ * to tell what is interactive.
+ */
+function TabDoor({ tab, label }: { tab: 'faculty' | 'course' | 'term'; label: string }) {
+  return (
+    <Button asChild variant="ghost" size="sm" className="mt-1 self-start px-2">
+      <Link href={`/analytics?tab=${tab}`}>
+        {label}
+        <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+      </Link>
+    </Button>
+  )
+}
+
 export function AnalyticsOverviewPanel() {
   const summary = useMemo(() => programSummary(), [])
   const series = useMemo(() => termSeries(), [])
@@ -297,6 +318,7 @@ export function AnalyticsOverviewPanel() {
           {/* seriesIndex 1 = --chart-2 = the "Faculty" line in Program trajectory below.
               One metric, one colour, down the whole tab. */}
           <KpiSpark points={summary.facultySpark} seriesIndex={1} />
+          <TabDoor tab="faculty" label={`All ${summary.facultyCount} faculty`} />
         </ChartCard>
 
         <ChartCard
@@ -314,6 +336,7 @@ export function AnalyticsOverviewPanel() {
         >
           {/* seriesIndex 0 = --chart-1 = the "Course content" line below. */}
           <KpiSpark points={summary.courseSpark} seriesIndex={0} />
+          <TabDoor tab="course" label={`All ${summary.courseCount} courses`} />
         </ChartCard>
 
         <ChartCard
@@ -336,6 +359,7 @@ export function AnalyticsOverviewPanel() {
             points={summary.responseSpark}
             {...(summary.responseRate < 80 ? { tone: 'warn' as const } : { seriesIndex: 2 })}
           />
+          <TabDoor tab="term" label={`All ${summary.termCount} terms`} />
         </ChartCard>
       </div>
 
