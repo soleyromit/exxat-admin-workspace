@@ -52,26 +52,16 @@ import {
 const fmt2 = (v: number) => v.toFixed(2)
 
 /**
- * The KPI tiles are the Aggregate Breakdown, and §2.1's actual insight about it is not the
- * numbers — it is that the cards "double as a preview of and a table of contents for the
- * other three tabs". Each tile already carries the doc's rhetorical shape (count / average /
- * n-below-benchmark, one per dimension); this is the missing half: the tile is a door.
+ * §2.1 calls the three Aggregate cards "the cleverest move here: they double as a preview of
+ * and a table of contents for the other three tabs. Each card's three KPIs are count /
+ * average / % below benchmark — the same rhetorical shape three times, so one glance compares
+ * dimensions."
  *
- * A link rather than a clickable card: the tile contains a sparkline with its own hover
- * target, so making the whole surface a button would swallow it and give the reader no way
- * to tell what is interactive.
+ * The insight is the SHAPE, not navigation. A first pass added "All 6 faculty →" CTAs under
+ * each spark; wrong on both counts — a metric tile's job is to state a number, not to carry a
+ * CTA, and the tab bar sits 40px above with the same three destinations. Redundant navigation
+ * inside a tile is noise. The tiles keep the rhetorical shape; the tabs stay the doors.
  */
-function TabDoor({ tab, label }: { tab: 'faculty' | 'course' | 'term'; label: string }) {
-  return (
-    <Button asChild variant="ghost" size="sm" className="mt-1 self-start px-2">
-      <Link href={`/analytics?tab=${tab}`}>
-        {label}
-        <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
-      </Link>
-    </Button>
-  )
-}
-
 export function AnalyticsOverviewPanel() {
   const summary = useMemo(() => programSummary(), [])
   const series = useMemo(() => termSeries(), [])
@@ -318,7 +308,6 @@ export function AnalyticsOverviewPanel() {
           {/* seriesIndex 1 = --chart-2 = the "Faculty" line in Program trajectory below.
               One metric, one colour, down the whole tab. */}
           <KpiSpark points={summary.facultySpark} seriesIndex={1} />
-          <TabDoor tab="faculty" label={`All ${summary.facultyCount} faculty`} />
         </ChartCard>
 
         <ChartCard
@@ -336,7 +325,6 @@ export function AnalyticsOverviewPanel() {
         >
           {/* seriesIndex 0 = --chart-1 = the "Course content" line below. */}
           <KpiSpark points={summary.courseSpark} seriesIndex={0} />
-          <TabDoor tab="course" label={`All ${summary.courseCount} courses`} />
         </ChartCard>
 
         <ChartCard
@@ -359,7 +347,6 @@ export function AnalyticsOverviewPanel() {
             points={summary.responseSpark}
             {...(summary.responseRate < 80 ? { tone: 'warn' as const } : { seriesIndex: 2 })}
           />
-          <TabDoor tab="term" label={`All ${summary.termCount} terms`} />
         </ChartCard>
       </div>
 
@@ -371,11 +358,19 @@ export function AnalyticsOverviewPanel() {
       {/* ── Stories 2 + 3 — who needs attention.
              items-start: the two charts have different row counts, and stretching the
              shorter card to match leaves a block of dead space under its plot. ── */}
+      {/* The two titles name which QUESTION each answers. They used to both read
+          "… needing attention", promising the same thing while the charts answered
+          differently: this pair is drift (who MOVED) and rank (who is LOW). Under parallel
+          titles their amber meant different things — declining on the left, below-median on
+          the right — so a faculty member could be amber-left while comfortably above the
+          median. The doc calls that exact asymmetry a defect in the legacy app (§7: the two
+          leaderboards were "incomplete in OPPOSITE directions"); we had rebuilt a version of
+          it. Each description now also says what its chart does NOT tell you. */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <ChartCard
           variant="normal"
-          title="Faculty needing attention"
-          description="Each arrow runs from a three-year mean to a one-year mean — direction and size in one mark."
+          title="Faculty who are slipping"
+          description="Each arrow runs from a three-year mean to a one-year mean — direction and size in one mark. Amber is a fall; this says nothing about who is lowest."
           leoInsight={facultyDriftLeo}
         >
           <ChartFigure
@@ -412,8 +407,8 @@ export function AnalyticsOverviewPanel() {
 
         <ChartCard
           variant="normal"
-          title="Courses needing attention"
-          description="Ranked against the program median, with every offering behind each course drawn as a faint dot."
+          title="Courses scoring lowest"
+          description="Ranked against the program median, with every offering behind each course drawn as a faint dot. Amber is below the median; this says nothing about who is falling."
           leoInsight={courseDriftLeo}
         >
           <ChartFigure

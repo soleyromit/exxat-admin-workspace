@@ -139,7 +139,9 @@ export function FacultyLeaderboardDots({
           x: (d: FacultyStat) => d.score.weighted,
           y: 'name',
           r: 5,
-          fill: (d: FacultyStat) => (d.score.weighted < median ? theme.warn : theme.brand),
+          // Every dot here IS a faculty member — so `faculty`, not brand. Brand is
+          // reserved for the SUBJECT of a view, and a leaderboard has no subject.
+          fill: (d: FacultyStat) => (d.score.weighted < median ? theme.warn : theme.faculty),
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {
@@ -311,7 +313,8 @@ export function GapQuadrant({
           x: 'courseAvg',
           y: 'facultyAvg',
           r: 'enrolled',
-          fill: (d: GapPoint) => (outliers.has(d.courseCode) ? theme.warn : theme.brand),
+          // One dot per COURSE — content, not brand.
+          fill: (d: GapPoint) => (outliers.has(d.courseCode) ? theme.warn : theme.content),
           fillOpacity: 0.72,
           stroke: theme.card,
           strokeWidth: 1.25,
@@ -554,7 +557,10 @@ export function DriftDumbbell({
           x2: 'avg1y',
           y1: 'label',
           y2: 'label',
-          stroke: (d: (typeof usable)[number]) => (d.drift < 0 ? theme.warn : theme.good),
+          // Declined = amber; improved = neutral, NOT green. Green means "faculty" across
+          // this set (see PlotTheme's semantic contract), and a drift chart's story is the
+          // decline — only the exception earns colour.
+          stroke: (d: (typeof usable)[number]) => (d.drift < 0 ? theme.warn : theme.mutedForeground),
           strokeWidth: 2,
           headLength: 6,
           insetEnd: 4,
@@ -563,7 +569,7 @@ export function DriftDumbbell({
           x: 'avg1y',
           y: 'label',
           r: 4.5,
-          fill: (d: (typeof usable)[number]) => (d.drift < 0 ? theme.warn : theme.good),
+          fill: (d: (typeof usable)[number]) => (d.drift < 0 ? theme.warn : theme.mutedForeground),
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {
@@ -649,11 +655,7 @@ export function ProgramTrendStack({
       // Direct labelling, not a legend. A legend costs a whole row of card height and makes
       // the reader look away from the line to decode it; the label at the line's end is read
       // in place. Removing it also gives the two stacked plots room to breathe.
-      color: {
-        domain: ['Course content', 'Faculty'],
-        range: [theme.series[0]!, theme.series[1]!],
-        legend: false,
-      },
+      color: { domain: ['Course content', 'Faculty'], range: [theme.content, theme.faculty], legend: false },
       marginRight: 92,
       marks: [
         gridMark(theme),
@@ -724,15 +726,15 @@ export function ProgramTrendStack({
         Plot.areaY(rateRows, {
           x: 'term',
           y: 'value',
-          fill: theme.series[2]!,
+          fill: theme.rate,
           fillOpacity: 0.12,
           curve: 'monotone-x',
         }),
-        Plot.line(rateRows, { x: 'term', y: 'value', stroke: theme.series[2]!, strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.line(rateRows, { x: 'term', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
         Plot.dot(rateRows, {
           x: 'term',
           y: 'value',
-          fill: (d: { value: number }) => (d.value < responseTarget ? theme.warn : theme.series[2]!),
+          fill: (d: { value: number }) => (d.value < responseTarget ? theme.warn : theme.rate),
           r: 3,
           channels: { Term: 'term', 'Response rate': (d: { value: number }) => `${d.value}%` },
           tip: { format: { x: false, y: false, fill: false } },
@@ -810,8 +812,10 @@ export function Slopegraph({
           x: 'side',
           y: 'value',
           z: 'code',
+          // Fell = amber, held = border, rose = neutral foreground. Rising is not painted
+          // green: green is "faculty" in this set, and the story of a slopegraph is who fell.
           stroke: (d: { delta: number }) =>
-            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.good : theme.border,
+            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.mutedForeground : theme.border,
           strokeWidth: (d: { delta: number }) => (Math.abs(d.delta) > MOVED ? 2 : 1),
         }),
         Plot.dot(points, {
@@ -819,7 +823,7 @@ export function Slopegraph({
           y: 'value',
           r: 3,
           fill: (d: { delta: number }) =>
-            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.good : theme.mutedForeground,
+            d.delta < -MOVED ? theme.warn : d.delta > MOVED ? theme.foreground : theme.mutedForeground,
           channels: {
             Course: 'code',
             Term: 'side',
@@ -904,7 +908,7 @@ export function CourseTrendStack({
       marginRight: 92,
       x: { domain: termOrder, label: null, axis: null },
       y: { domain: scoreDomain, label: null, ticks: 4, ...axisDefaults(theme) },
-      color: { domain: ['Course content', 'Faculty'], range: [theme.series[0]!, theme.series[1]!], legend: false },
+      color: { domain: ['Course content', 'Faculty'], range: [theme.content, theme.faculty], legend: false },
       marks: [
         gridMark(theme),
         Plot.line(scoreRows, { x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x' }),
@@ -946,11 +950,11 @@ export function CourseTrendStack({
           y: responseTarget, frameAnchor: 'right', dy: -7, dx: -2,
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
         }),
-        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.series[2]!, fillOpacity: 0.12, curve: 'monotone-x' }),
-        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.series[2]!, strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.rate, fillOpacity: 0.12, curve: 'monotone-x' }),
+        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
         Plot.dot(rows, {
           x: 'short', y: 'responseRate', r: 3,
-          fill: (d: { responseRate: number }) => (d.responseRate < responseTarget ? theme.warn : theme.series[2]!),
+          fill: (d: { responseRate: number }) => (d.responseRate < responseTarget ? theme.warn : theme.rate),
           channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
           tip: { format: { x: false, y: false, fill: false, r: false } },
         }),
@@ -1098,13 +1102,13 @@ export function ResponseTrendLine({
           fontSize: CHART_TICK_FONT_SIZE,
           textAnchor: 'end',
         }),
-        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.brand, fillOpacity: 0.1, curve: 'monotone-x' }),
-        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.brand, strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.rate, fillOpacity: 0.1, curve: 'monotone-x' }),
+        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
         Plot.dot(rows, {
           x: 'short',
           y: 'responseRate',
           r: 3.5,
-          fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.brand),
+          fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
           stroke: theme.card,
           strokeWidth: 1,
           channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
@@ -1256,7 +1260,7 @@ export function CourseRankSpark({ course, median }: { course: FacultyCourseStat;
               Plot.line(course.trend, {
                 x: 'short',
                 y: 'rating',
-                stroke: theme.brand,
+                stroke: theme.content,
                 strokeWidth: 1.75,
                 curve: 'monotone-x',
               }),
@@ -1266,7 +1270,7 @@ export function CourseRankSpark({ course, median }: { course: FacultyCourseStat;
           x: 'short',
           y: 'rating',
           r: 2.5,
-          fill: (d: { rating: number }) => (d.rating < median ? theme.warn : theme.brand),
+          fill: (d: { rating: number }) => (d.rating < median ? theme.warn : theme.content),
           channels: { Term: 'term', Score: (d: { rating: number }) => fmt2(d.rating) },
           tip: { format: { x: false, y: false, fill: false, r: false } },
         }),
@@ -1305,7 +1309,7 @@ export function KpiSpark({
           : tone === 'warn'
             ? theme.warn
             : tone === 'good'
-              ? theme.good
+              ? theme.rate
               : theme.brand
       return {
         marginLeft: 1,
@@ -1374,7 +1378,7 @@ export function CourseRankDots({
           x: (d: CourseStat) => d.score.weighted,
           y: 'courseCode',
           r: 5,
-          fill: (d: CourseStat) => (d.score.weighted < median ? theme.warn : theme.brand),
+          fill: (d: CourseStat) => (d.score.weighted < median ? theme.warn : theme.content),
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {

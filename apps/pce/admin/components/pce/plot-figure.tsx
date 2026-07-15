@@ -75,7 +75,28 @@ function resolveToken(name: string, fallback: string): string {
   }
 }
 
-/** DS tokens resolved to concrete colors — Plot cannot consume `var(--token)`. */
+/**
+ * DS tokens resolved to concrete colors — Plot cannot consume `var(--token)`.
+ *
+ * ── The semantic contract ──────────────────────────────────────────────────────
+ * A colour must mean ONE thing across the analytics set, or it means nothing. Before this
+ * was written down, green was "Faculty" in Program trajectory and "improved" in the
+ * slopegraph — on the same tab. Blue was "course content" in one chart and "student flow" in
+ * the sankey. Amber was the only consistent one.
+ *
+ *   content  (--chart-1)  the COURSE as a rated entity — its content score. Always.
+ *   faculty  (--chart-2)  the PERSON as a rated entity — their teaching score. Always.
+ *   rate     (--chart-3)  response rate / collection.
+ *   warn     (--chart-4)  BELOW THRESHOLD, LOST, DECLINED. Never red (VIZ-004, Aarti).
+ *   brand                 the SUBJECT of the view — you, the selected faculty, the dot that
+ *                         is "this one". Never a generic entity colour.
+ *   neutral  (--muted-fg) peers, context, held-steady.
+ *
+ * Consequence, and it is an improvement rather than a cost: direction charts (slopegraph,
+ * dumbbell) no longer paint "improved" green, because green is taken. Only the EXCEPTION
+ * earns colour — declined is amber, improved is neutral. The story of a drift chart is the
+ * decline; a rise does not need to shout.
+ */
 export interface PlotTheme {
   foreground: string
   mutedForeground: string
@@ -83,13 +104,21 @@ export interface PlotTheme {
   card: string
   /** Text that sits ON a brand-filled surface (dark heatmap cells). */
   primaryForeground: string
+  /** The SUBJECT of the view — "this one", never a generic entity colour. */
   brand: string
   /** --chart-1 … --chart-5, in order. Series color ramp (VIZ-003). */
   series: string[]
-  /** Below-threshold. Amber, NEVER red (VIZ-004, Aarti). */
+  /** BELOW THRESHOLD / LOST / DECLINED. Amber, NEVER red (VIZ-004, Aarti). */
   warn: string
-  /** Above-threshold / healthy. */
+  /** @deprecated Use `content` / `faculty` / `neutral`. "good" has no single meaning — it was
+   *  green for both "faculty" and "improved", which is how the collision started. */
   good: string
+  /** COURSE CONTENT as a rated entity. */
+  content: string
+  /** FACULTY as a rated entity. */
+  faculty: string
+  /** Response rate / collection. */
+  rate: string
   /** Non-text state indicators need 3:1 (A11Y-021) — --border alone is ~1.2:1 and fails. */
   rule: string
 }
@@ -109,6 +138,9 @@ const FALLBACK: PlotTheme = {
   series: ['navy', 'teal', 'olive', 'peru', 'purple'],
   warn: 'peru',
   good: 'teal',
+  content: 'navy',
+  faculty: 'teal',
+  rate: 'olive',
   rule: 'dimgray',
 }
 
@@ -136,6 +168,9 @@ export function usePlotTheme(): PlotTheme {
         // bullet-gauge.tsx. The anti-patterns doc bans *ad-hoc oklch* amber, not amber.
         warn: resolveToken('--chart-4', FALLBACK.warn),
         good: resolveToken('--chart-2', FALLBACK.good),
+        content: resolveToken('--chart-1', FALLBACK.content),
+        faculty: resolveToken('--chart-2', FALLBACK.faculty),
+        rate: resolveToken('--chart-3', FALLBACK.rate),
         // --muted-foreground, not --border: a reference line IS the state indicator, and
         // WCAG 1.4.11 needs 3:1 for non-text. A11Y-021.
         rule: resolveToken('--muted-foreground', FALLBACK.rule),
