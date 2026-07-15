@@ -22,7 +22,7 @@
 
 import { useMemo, useState } from 'react'
 import {
-  Button,
+  Button, ScrollRegion,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
 import {
@@ -46,6 +46,9 @@ const ALL_TERMS = '__all__'
 
 /** How many faculty the collapsed card lists — the lowest scorers, the only actionable ones. */
 const LOWEST_SHOWN = 5
+
+/** ~8 rows. Enough to read a run of the roster without the card header leaving the screen. */
+const EXPANDED_LIST_MAX_H = 420
 
 export function FacultyLeaderboardSection({
   term,
@@ -269,7 +272,20 @@ export function FacultyLeaderboardSection({
                   Collapsed, the rows are the LOWEST few rather than the first few: the card's
                   question is who needs attention, and `facultyStats` sorts best-first, so the
                   head of the list is the people you never have to open. */}
-              <ul className="mt-2 flex flex-col">
+              {/* Expanded, 34 rows is ~1700px of list. Capping the viewport keeps the strip and
+                  the card header on screen while you read down the roster — an expand that
+                  scrolls its own context away has just moved the problem.
+
+                  ScrollRegion, not `style={{overflowY:'auto'}}` on the <ul>: a clipped overflow
+                  container that isn't a DS primitive fails axe `scrollable-region-focusable`,
+                  because a keyboard user cannot focus it to scroll it. The DS ships the wrapper
+                  precisely for this. */}
+              <ScrollRegion
+                label={`All ${faculty.length} faculty, ranked`}
+                className="mt-2"
+                style={expanded ? { maxHeight: EXPANDED_LIST_MAX_H, overflowY: 'auto' } : undefined}
+              >
+              <ul className="flex flex-col">
                 {collapsedRows.map((f) => (
                   <li
                     key={f.facultyId}
@@ -295,9 +311,13 @@ export function FacultyLeaderboardSection({
                   </li>
                 ))}
               </ul>
+              </ScrollRegion>
 
               {/* No silent caps — the control says exactly what is being withheld and what
-                  expanding will show, so a truncated list never reads as the whole roster. */}
+                  expanding will show, so a truncated list never reads as the whole roster.
+                  Expanded, the roster SCROLLS rather than growing the page to 2889px: the point
+                  of expanding is to explore the list, not to lose the chart above it off the top
+                  of the screen. */}
               {isLarge && (
                 <div className="mt-2">
                   <Button
@@ -310,12 +330,11 @@ export function FacultyLeaderboardSection({
                       ? `Show the ${LOWEST_SHOWN} lowest only`
                       : `Show all ${faculty.length} faculty`}
                   </Button>
-                  {!expanded && (
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      Showing the {collapsedRows.length} lowest of {faculty.length}. The strip
-                      above is all {faculty.length}.
-                    </p>
-                  )}
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {expanded
+                      ? `All ${faculty.length} faculty, ranked best first — scroll the list.`
+                      : `Showing the ${collapsedRows.length} lowest of ${faculty.length}. The strip above is all ${faculty.length}.`}
+                  </p>
                 </div>
               )}
 

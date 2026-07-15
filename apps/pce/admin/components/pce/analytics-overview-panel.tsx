@@ -18,9 +18,9 @@
  * a chart without a takeaway is a banned pattern (Knaflic, via claude-practices).
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import { Button, type ChartConfig } from '@exxatdesignux/ui'
+import { Button, ScrollRegion, type ChartConfig } from '@exxatdesignux/ui'
 import {
   ChartCard,
   ChartFigure,
@@ -68,12 +68,19 @@ const HEAT_LABEL_GUTTER = 124
 const HEAT_AXIS_GUTTER = 52
 
 /**
- * Rows shown before the expand control. Romit, 2026-07-15: a program averages 10–15 courses —
- * so at the stated average NOTHING collapses and no control appears. It exists for the tail:
- * a 30-course program gets the same summary→expand contract as the 34-faculty leaderboard
- * rather than a wall of rows.
+ * Rows VISIBLE AT ONCE — a viewport, not a cap.
+ *
+ * This used to be a truncation ("show the 15 weakest, hide the rest behind a button"), which
+ * answers the wrong question. Romit: "can't these charts have a scroll bar or expand so I can
+ * explore this data more clearly?" — the data is the point; hiding it to fit a card is the
+ * failure. So every course is always IN the chart, 8 are on screen, and the rest are a
+ * scrollbar-drag away. Nothing is withheld and nothing is 1200px tall.
+ *
+ * 8 x 76px ≈ 660px: tall enough that the pattern across terms reads, short enough that the card
+ * does not push the rest of the page off the screen. At the stated 10–15 course average that
+ * means a short drag, not a wall.
  */
-const HEAT_ROW_LIMIT = 15
+const HEAT_VISIBLE_ROWS = 8
 
 /** Scores occupy a narrow high band; the ramp is spent there, not on 0–3 nobody scores. */
 const SCORE_HEAT_DOMAIN: readonly [number, number] = [3, 5]
@@ -100,21 +107,16 @@ export function AnalyticsOverviewPanel() {
   /**
    * The heatmap at real scale.
    *
-   * Romit, 2026-07-15: a program averages 10–15 courses, and the viz has to stay legible when
-   * courses or students grow. 15 rows x 5 terms is a comfortable grid; 30+ rows is a wall with
-   * the same shape as the 34-row leaderboard. So the same summary→expand contract applies, and
-   * HEAT_ROW_LIMIT sits at the top of the stated range — at 10–15 courses nothing collapses and
-   * the control never appears.
+   * Romit, 2026-07-15: a program averages 10–15 courses and the viz must stay legible as courses
+   * or students grow — then, seeing the result: "can't these charts have a scroll bar or expand
+   * so I can explore this data more clearly?"
    *
-   * `courseTermMatrix` already sorts rows worst→best, so the weakest band is the head of the
-   * list and slicing from the front keeps the courses worth looking at.
+   * That question retired the first answer. I had made the chart TRUNCATE (15 weakest, rest
+   * behind a button), which trades the reader's data for the card's convenience. Every course is
+   * in the grid now, always, ordered weakest-first by `courseTermMatrix`; the chart shows a
+   * window of them and scrolls. Nothing is hidden and nothing is 1200px tall.
    */
-  const [heatExpanded, setHeatExpanded] = useState(false)
-  const heatRows = useMemo(
-    () => (heatExpanded ? matrix.courses : matrix.courses.slice(0, HEAT_ROW_LIMIT)),
-    [matrix.courses, heatExpanded],
-  )
-  const heatHiddenCount = matrix.courses.length - Math.min(matrix.courses.length, HEAT_ROW_LIMIT)
+  const heatRows = matrix.courses
 
   /* One lookup, then a dense rows x cols matrix. `null` is NOT a zero — it means the course ran
      no evaluation that term, which the DS heatmap now renders as empty ground. */
@@ -150,8 +152,10 @@ export function AnalyticsOverviewPanel() {
     () => HEAT_LABEL_GUTTER + matrix.terms.length * HEAT_CELL_PX,
     [matrix.terms.length],
   )
+  /* Height follows the VIEWPORT, not the row count — the scrollbar covers the overflow. A
+     15-row grid rendered at full height was 1192px of card that shoved the page down. */
   const heatHeight = useMemo(
-    () => HEAT_AXIS_GUTTER + heatRows.length * HEAT_CELL_PX,
+    () => HEAT_AXIS_GUTTER + Math.min(heatRows.length, HEAT_VISIBLE_ROWS) * HEAT_CELL_PX,
     [heatRows.length],
   )
 
@@ -706,7 +710,10 @@ export function AnalyticsOverviewPanel() {
                 natural width (cols x cell + row labels) and left-aligned, rather than filling
                 the column because the column exists.
               */}
-              <div className="overflow-x-auto">
+              {/* ScrollRegion, not a bare `overflow-x-auto` div: a clipped overflow container
+                  that is not a DS primitive fails axe `scrollable-region-focusable` — it cannot
+                  be reached or panned by keyboard. The DS ships this exact wrapper for the case. */}
+              <ScrollRegion label="Course quality across terms, scroll horizontally" className="overflow-x-auto">
                 <div style={{ width: heatWidth, maxWidth: '100%' }}>
                   <ChartHeatmap
                     rows={heatRows}
@@ -719,21 +726,15 @@ export function AnalyticsOverviewPanel() {
                     domain={SCORE_HEAT_DOMAIN}
                     valueFormatter={fmt2}
                     height={heatHeight}
+                    maxVisibleRows={HEAT_VISIBLE_ROWS}
                   />
                 </div>
-              </div>
-              {heatHiddenCount > 0 && (
-                <div className="mt-2">
-                  <Button variant="outline" size="sm" onClick={() => setHeatExpanded((v) => !v)} aria-expanded={heatExpanded}>
-                    {heatExpanded
-                      ? `Show the ${HEAT_ROW_LIMIT} weakest only`
-                      : `Show all ${matrix.courses.length} courses`}
-                  </Button>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    Showing the {heatRows.length} weakest of {matrix.courses.length} evaluated
-                    courses. {heatHiddenCount} more scored higher.
-                  </p>
-                </div>
+              </ScrollRegion>
+              {heatRows.length > HEAT_VISIBLE_ROWS && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  All {heatRows.length} evaluated courses are in the grid, weakest first —
+                  {' '}{HEAT_VISIBLE_ROWS} shown; drag the scrollbar for the rest.
+                </p>
               )}
               <ChartDataTable
                 caption="Course content score by course and term"

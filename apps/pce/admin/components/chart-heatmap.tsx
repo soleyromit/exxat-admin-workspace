@@ -7,6 +7,12 @@ import {
   GridComponent,
   TooltipComponent,
   VisualMapComponent,
+  // ECharts is tree-shaken: an unregistered component makes its option a SILENT no-op. The
+  // first pass shipped a `dataZoom` block with no DataZoom*Component registered — no error, no
+  // warning, and all 15 rows rendered squeezed into the 8-row viewport as lozenges. Same
+  // species as Plot's string-channel trap: the config was accepted and the render disagreed.
+  DataZoomInsideComponent,
+  DataZoomSliderComponent,
 } from "echarts/components"
 import * as echarts from "echarts/core"
 import { CanvasRenderer } from "echarts/renderers"
@@ -29,7 +35,15 @@ const HEATMAP_LABEL_WEIGHT = 600
 /** The DS default — preserved exactly for callers that pass no height. */
 const DEFAULT_HEATMAP_HEIGHT = 280
 
-echarts.use([HeatmapChart, GridComponent, TooltipComponent, VisualMapComponent, CanvasRenderer])
+echarts.use([
+  HeatmapChart,
+  GridComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  DataZoomInsideComponent,
+  DataZoomSliderComponent,
+  CanvasRenderer,
+])
 
 export type ChartHeatmapPoint = {
   row: string
@@ -119,6 +133,7 @@ function buildHeatmapOption({
   valueLabel,
   domain,
   valueFormatter,
+  maxVisibleRows,
 }: {
   rows: readonly string[]
   cols: readonly string[]
@@ -130,14 +145,62 @@ function buildHeatmapOption({
   valueLabel: string
   domain?: readonly [number, number]
   valueFormatter?: (v: number) => string
+  maxVisibleRows?: number
 }): EChartsOption {
   // Default reproduces the original 0→max ramp exactly, so existing callers are untouched.
   const lo = domain?.[0] ?? 0
   const hi = domain?.[1] ?? maxValue
+
+  /**
+   * A real scrollbar, inside the plot — not an overflow container around it.
+   *
+   * Romit: "can't these charts have a scroll bar or expand so I can explore this data more
+   * clearly?" Right question, and wrapping the canvas in a scrolling div is the wrong answer:
+   * the column headers are PAINTED INTO the canvas, so scrolling the container carries "Fa 24 /
+   * Sp 25 / Fa 25" off the top and leaves a grid of numbers with nothing to read them against.
+   *
+   * ECharts `dataZoom` scrolls the y axis WITHIN the plot: rows move, the header stays. `inside`
+   * gives wheel/drag, `slider` draws the visible scrollbar he asked for. `zoomLock` keeps it a
+   * scrollbar rather than a zoom — the row height stays constant, so a cell is always a square
+   * and the grid never silently rescales under the reader.
+   */
+  const scrolls = maxVisibleRows != null && rows.length > maxVisibleRows
+  const zoom = scrolls
+    ? [
+        {
+          type: "inside" as const,
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: maxVisibleRows! - 1,
+          zoomLock: true,
+          // The page must keep scrolling normally; the grid only pans when dragged.
+          moveOnMouseWheel: false,
+          zoomOnMouseWheel: false,
+          moveOnMouseMove: true,
+        },
+        {
+          type: "slider" as const,
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: maxVisibleRows! - 1,
+          zoomLock: true,
+          right: 44,
+          width: 14,
+          showDetail: false,
+          brushSelect: false,
+          borderColor: "transparent",
+          fillerColor: theme.border,
+          handleStyle: { color: theme.mutedForeground },
+        },
+      ]
+    : []
+
   return {
+    dataZoom: zoom,
     grid: {
       left: 52,
-      right: 72,
+      // The slider needs its own lane when it exists; without it the bar lands on the cells.
+      right: scrolls ? 96 : 72,
       top: 28,
       bottom: 16,
       containLabel: false,
@@ -284,6 +347,7 @@ export function ChartHeatmap({
   domain,
   valueFormatter,
   height,
+  maxVisibleRows,
 }: {
   rows: readonly string[]
   cols: readonly string[]
@@ -332,8 +396,9 @@ export function ChartHeatmap({
         valueLabel,
         domain,
         valueFormatter,
+        maxVisibleRows,
       }),
-    [rows, cols, points, maxValue, theme, activeIndex, peakCellIndex, valueLabel, domain, valueFormatter],
+    [rows, cols, points, maxValue, theme, activeIndex, peakCellIndex, valueLabel, domain, valueFormatter, maxVisibleRows],
   )
 
   const updateLeoPosition = React.useCallback(() => {
