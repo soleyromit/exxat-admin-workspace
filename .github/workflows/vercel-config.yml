@@ -1,0 +1,40 @@
+name: Vercel config
+
+# Validates every apps/**/vercel.json BEFORE Vercel sees it.
+#
+# WHY this exists — 2026-07-15. A perfectly correct ignoreCommand was pushed that
+# happened to be 270 characters. Vercel's `ignoreCommand` has an UNDOCUMENTED
+# 256-character limit, so vercel.json failed schema validation:
+#
+#   The `vercel.json` schema validation failed with the following message:
+#   `ignoreCommand` should NOT be longer than 256 characters
+#
+# A schema failure is not a build failure — it errors the deployment at 0ms,
+# before any build step runs. All 7 Vercel projects watch this one repo, so a
+# single push turned into 7 "deployment failed" emails, with a log that says
+# nothing about length. Nothing in the repo could catch it: `typecheck.yml` only
+# triggers on apps/**/*.ts{,x}, tsconfig, package.json and lockfiles, so no
+# workflow ever looked at a vercel.json.
+#
+# Cheap check, no toolchain, runs in seconds. Keep it that way.
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/vercel.json'
+      - '.github/workflows/vercel-config.yml'
+  push:
+    branches: [dev, main]
+    paths:
+      - 'apps/**/vercel.json'
+      - '.github/workflows/vercel-config.yml'
+
+jobs:
+  validate:
+    name: validate apps/**/vercel.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate schema limits
+        run: python3 scripts/check-vercel-json.py

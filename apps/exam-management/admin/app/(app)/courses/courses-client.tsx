@@ -17,10 +17,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEntryPoint } from '@/lib/use-entry-point'
 import { cn } from '@/lib/utils'
-import { StatusBadge, STATUS_TINT_SUCCESS, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Button, Badge,
+  StatusBadge, type StatusBadgeTone,
   Card, CardContent,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -75,40 +75,28 @@ type TermTableRow = Term & Record<string, unknown>
 
 const TERM_STATUS_CONFIG: Record<
   Term['status'],
-  { label: string; icon: string; bg: string; fg: string }
+  { label: string; icon: string; tone: StatusBadgeTone }
 > = {
   active: {
     label: 'Active',
     icon: 'fa-circle-check',
-    bg: 'var(--qb-status-saved-bg)',
-    fg: 'var(--qb-status-saved-fg)',
+    tone: 'success',
   },
   upcoming: {
     label: 'Upcoming',
     icon: 'fa-hourglass',
-    bg: 'var(--brand-tint)',
-    fg: 'var(--brand-color-dark)',
+    tone: 'info',
   },
   completed: {
     label: 'Completed',
     icon: 'fa-circle-check',
-    bg: 'var(--muted)',
-    fg: 'var(--muted-foreground)',
+    tone: 'neutral',
   },
 }
 
 function TermStatusBadge({ status }: { status: Term['status'] }) {
   const s = TERM_STATUS_CONFIG[status]
-  return (
-    <Badge
-      variant="secondary"
-      className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      <i className={`fa-light ${s.icon} text-[11px]`} aria-hidden="true" />
-      {s.label}
-    </Badge>
-  )
+  return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} />
 }
 
 function buildTermColumns(onEdit: (t: TermTableRow) => void): ColumnDef<TermTableRow>[] {
@@ -467,7 +455,7 @@ function buildCatalogColumns(onEdit: (c: MasterCourse) => void): ColumnDef<Maste
           <StatusBadge
             label={t}
             icon={t === 'Core' ? 'fa-star' : 'fa-bookmark'}
-            tint={t === 'Core' ? STATUS_TINT_SUCCESS : STATUS_TINT_NEUTRAL}
+            tone={t === 'Core' ? 'success' : 'neutral'}
           />
         )
       },
