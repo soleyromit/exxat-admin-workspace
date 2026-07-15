@@ -1,19 +1,56 @@
-/** Resolve any CSS color (var, oklch, color-mix) to #rrggbb for canvas charts. */
+function toHexByte(n: number): string {
+  return n.toString(16).padStart(2, "0")
+}
+
+/**
+ * Resolve any CSS color (var, oklch, lab, color-mix) to #rrggbb for canvas charts.
+ *
+ * THIS USED TO RETURN THE FALLBACK FOR EVERY TOKEN. The old implementation assigned the token
+ * straight to `ctx.fillStyle` — but a canvas has NO CSS cascade, so it cannot resolve
+ * `var(--brand-color)`. Worse, assigning an invalid fillStyle is a SILENT NO-OP: fillStyle
+ * keeps its previous value (the fallback), the guard reads it back, sees a valid "#..." and
+ * returns it as if resolution had succeeded. No error, no warning, always wrong.
+ *
+ * Measured in-browser before this fix:
+ *   resolveCssColor("var(--brand-color)", "#4f46e5") → "#4f46e5"   (true value: Prism pink)
+ *   resolveCssColor("var(--chart-2)",     "#e5e7eb") → "#e5e7eb"   (true value: rgb(0,110,100))
+ * So every consumer silently rendered its hardcoded fallback — which is why charts came out
+ * indigo next to a pink DS.
+ *
+ * The fix is two steps, because each solves a different half:
+ *   1. PROBE — put a real element in the document and read `getComputedStyle().color`. Only
+ *      the cascade can resolve `var()`, so only the DOM can do this.
+ *   2. RASTER — the cascade hands back the AUTHORED space (this theme returns `lab(...)` and
+ *      `oklch(...)`), which `hexToRgb` can't parse. Painting one pixel and reading it back
+ *      converts any space to sRGB bytes. Canvas is the right tool here — just for conversion,
+ *      never for resolution.
+ */
 export function resolveCssColor(token: string, fallback = "#6366f1"): string {
   if (typeof document === "undefined") return fallback
-  const canvas = document.createElement("canvas")
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return fallback
-  ctx.fillStyle = fallback
   try {
-    ctx.fillStyle = token
+    // 1. Resolve through the cascade.
+    const probe = document.createElement("span")
+    probe.style.color = token
+    probe.style.display = "none"
+    document.body.appendChild(probe)
+    const computed = getComputedStyle(probe).color
+    probe.remove()
+    if (!computed) return fallback
+
+    // 2. Convert whatever space it came back in to sRGB bytes.
+    const canvas = document.createElement("canvas")
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })
+    if (!ctx) return fallback
+    ctx.clearRect(0, 0, 1, 1)
+    ctx.fillStyle = computed
+    ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+    return `#${toHexByte(r ?? 0)}${toHexByte(g ?? 0)}${toHexByte(b ?? 0)}`
   } catch {
     return fallback
   }
-  const resolved = ctx.fillStyle
-  if (typeof resolved === "string" && resolved.startsWith("#")) return resolved
-  if (typeof resolved === "string" && resolved.startsWith("rgb")) return resolved
-  return fallback
 }
 
 export function readChartToken(name: string, fallback: string) {
