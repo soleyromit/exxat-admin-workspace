@@ -1206,6 +1206,28 @@ export function ResponseTrendLine({
    encoding no rank and naming no peer.
    ════════════════════════════════════════════════════════════════════════════ */
 
+/**
+ * Below this many people in the pool, a percentile is false precision and the mark degrades
+ * to a plain rank. 20 ⇒ each person moves the percentile at most 5 points, which is about
+ * where the third digit stops lying.
+ */
+const PERCENTILE_MIN_POOL = 20
+
+/**
+ * 1st / 2nd / 3rd / 4th … — English ordinals, including the 11–13 exception that a naive
+ * `n % 10` gets wrong ("11st percentile").
+ */
+function ordinal(n: number): string {
+  const rem100 = n % 100
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`
+  switch (n % 10) {
+    case 1: return `${n}st`
+    case 2: return `${n}nd`
+    case 3: return `${n}rd`
+    default: return `${n}th`
+  }
+}
+
 export function BenchmarkDistribution({
   distribution,
   value,
@@ -1233,6 +1255,32 @@ export function BenchmarkDistribution({
   height?: number
 }) {
   const peers = React.useMemo(() => distribution.map((v, i) => ({ v, i })), [distribution])
+
+  /**
+   * Story 15's standing, derived here rather than passed in — it is a property of THIS
+   * chart's own distribution, and computing it anywhere else invites the two numbers to
+   * drift apart (the "numbers disagree" class of bug this layer exists to end).
+   *
+   * PERCENTILE ONLY WHEN THE POOL CAN CARRY ONE. Below ~20 people a percentile is false
+   * precision: in this tenant a department is 3 faculty, so "67th percentile" is "2nd of 3"
+   * wearing a lab coat — each person moves it 33 points. So the mark degrades to a rank,
+   * which is the same fact stated at the precision the data actually has. Both answer "where
+   * does this person stand"; only one of them pretends.
+   *
+   * This is not mock-data scaffolding — a real program with 40 faculty crosses the threshold
+   * and gets the percentile the story asks for. The component is honest at both scales.
+   */
+  const standing = React.useMemo((): string | null => {
+    const n = distribution.length
+    if (n < 2) return null
+    if (n >= PERCENTILE_MIN_POOL) {
+      // Strictly-below / n — the standard definition.
+      const below = distribution.filter((v) => v < value).length
+      return `${ordinal(Math.round((below / n) * 100))} percentile`
+    }
+    const rank = distribution.filter((v) => v > value).length + 1
+    return `${ordinal(rank)} of ${n}`
+  }, [distribution, value])
   /** One department in the tenant ⇒ the two benchmarks are the same number. */
   const same = Math.abs(department - university) < 0.005
 
@@ -1296,9 +1344,31 @@ export function BenchmarkDistribution({
           fill: theme.foreground, fontSize: CHART_TICK_FONT_SIZE, fontWeight: 600,
           stroke: theme.card, strokeWidth: 3, paintOrder: 'stroke',
         }),
+        /*
+          Story 15's standing — ON the dot, never as a KPI tile.
+
+          The dot's position in the swarm ALREADY is the percentile; you can count the peers
+          to its left. Printing it as a fourth tile would be a bare number restating what the
+          chart shows (VIZ-010, VIZ-002 "viz first, text annotates"), and it would restate it
+          in the weakest form: "63rd" tells you where you stand but not that the pack is
+          bunched between 4.0 and 4.4 with you a hair outside it.
+
+          Bound to `showPeers`, which is the §7.3 RBAC lens — the ban on percentile is a ban
+          on the SELF-view, where it reverse-encodes peer rank. The admin lens ranks faculty
+          by name on the leaderboard one card up, so there is nothing left to leak here.
+        */
+        ...(showPeers && standing !== null
+          ? [
+              Plot.text([standing], {
+                x: value, frameAnchor: 'bottom', dy: 14,
+                fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE,
+                stroke: theme.card, strokeWidth: 3, paintOrder: 'stroke',
+              }),
+            ]
+          : []),
       ],
     }),
-    [peers, value, department, university, showPeers, same],
+    [peers, value, department, university, showPeers, same, standing],
   )
 
   return <PlotFigure spec={spec} height={height} />
