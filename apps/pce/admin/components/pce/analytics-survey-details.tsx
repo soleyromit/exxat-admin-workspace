@@ -173,9 +173,12 @@ export function AnalyticsSurveyDetails() {
           responseRate: o.responseRate,
           responded: o.responded,
           enrolled: o.enrolled,
-          // The ≥5 anonymity gate is settled and applies here too — a register that shows a
-          // score the result page would withhold defeats the gate.
-          suppressed: o.responded < MINIMUM_THRESHOLD,
+          // The anonymity gate is settled and applies here too — a register that shows a
+          // score the result page would withhold defeats the gate. So compare against the
+          // OFFERING's threshold (its survey's override, else the program default), which
+          // is what `pce-results` gates on. The bare constant happens to agree on today's
+          // fixture and would stop agreeing the moment a survey raises its own gate.
+          suppressed: o.responded < o.minimumThreshold,
           surveyId: o.surveyId,
         }))
         .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode)),
@@ -192,8 +195,9 @@ export function AnalyticsSurveyDetails() {
         The raw grain behind every chart above — one row per course, term and instructor, newest
         first. {linkable} of {rows.length} have a survey result to open.
         {suppressed > 0 && (
-          <> {suppressed} {suppressed === 1 ? 'is' : 'are'} suppressed below the {MINIMUM_THRESHOLD}-response
-          anonymity threshold and show no score.</>
+          <> {suppressed} {suppressed === 1 ? 'is' : 'are'} suppressed below the anonymity
+          threshold and show no score — {MINIMUM_THRESHOLD} responses by default, though a
+          survey can set its own.</>
         )}
       </p>
       <div className="-mx-4 lg:-mx-6">

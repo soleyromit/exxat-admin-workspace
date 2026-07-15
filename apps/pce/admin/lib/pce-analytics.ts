@@ -22,6 +22,10 @@
 
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import type { FacultyOfferingRecord, PceSurvey } from '@/lib/pce-mock-data'
+// The anonymity gate's default, imported rather than re-declared. `pce-results` resolves it
+// per survey (`survey.minimumThreshold ?? MINIMUM_THRESHOLD`) and so must this file — a
+// threshold that means 40 on the result page and 5 here is not a gate.
+import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
 
 /* ────────────────────────────────────────────────────────────────────────────
    Term algebra — terms are strings in the model; ranking and 1Y/3Y windows
@@ -99,6 +103,21 @@ export interface OfferingPoint extends FacultyOfferingRecord {
   initials: string
   /** Responses derived from rate × enrolled — the model stores the rate, not the count. */
   responded: number
+  /**
+   * The anonymity threshold THIS offering is gated by — its survey's override when it sets
+   * one, the program default otherwise.
+   *
+   * The model lets a survey raise its own gate (`minimumThreshold`, e.g. `mon13` sets 40)
+   * and `pce-results` honours it. The register compared against the bare default instead, so
+   * any offering whose survey raises the gate would show a score the result page withholds —
+   * the anonymity gate answering differently depending on which door you came through.
+   *
+   * No offering hits that today: the one override sits on a Fall 2024 survey and DPT-510's
+   * offerings are Spring 2025 / 2026, so nothing resolves to it. This is a latent leak, not
+   * a live one. It is resolved here anyway because the alternative is a privacy gate whose
+   * correctness depends on a fixture coincidence.
+   */
+  minimumThreshold: number
 }
 
 /** Distinct cohorts present in the data, newest class last. */
@@ -121,11 +140,14 @@ function initialsOf(name: string): string {
  * rows that genuinely refer to the same offering and leaves the rest unlinked rather than
  * pointing at a result for a different course. The real fix is reconciling the two fixtures.
  */
-function surveyIdFor(courseCode: string, term: string): string | undefined {
-  const s = MOCK_SURVEYS.find(
-    (x) => x.surveyType !== 'programmatic' && x.courseCode === courseCode && x.term === term,
+function surveyFor(o: FacultyOfferingRecord): PceSurvey | undefined {
+  if (o.surveyId) {
+    const byId = MOCK_SURVEYS.find((x) => x.id === o.surveyId)
+    if (byId) return byId
+  }
+  return MOCK_SURVEYS.find(
+    (x) => x.surveyType !== 'programmatic' && x.courseCode === o.courseCode && x.term === o.term,
   )
-  return s?.id
 }
 
 export function offeringPoints(): OfferingPoint[] {
@@ -133,15 +155,19 @@ export function offeringPoints(): OfferingPoint[] {
   return MOCK_FACULTY_OFFERINGS.map((o) => {
     const f = facultyById.get(o.facultyId)
     const name = f?.name ?? o.facultyId
+    const survey = surveyFor(o)
     return {
       ...o,
       // The diversified fixture dropped the per-row surveyId; fall back to a
       // courseCode + term match so the register's rows can still reach a result.
-      surveyId: o.surveyId ?? surveyIdFor(o.courseCode, o.term),
+      surveyId: o.surveyId ?? survey?.id,
       year: termToYear(o.term),
       facultyName: name,
       initials: f?.initials ?? initialsOf(name),
       responded: Math.round((o.enrolled * o.responseRate) / 100),
+      // An offering with no linked survey falls back to the program default. It cannot be
+      // gated by an override it has no way to read.
+      minimumThreshold: survey?.minimumThreshold ?? MINIMUM_THRESHOLD,
     }
   }).sort((a, b) => a.year - b.year)
 }
