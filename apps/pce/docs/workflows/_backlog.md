@@ -341,6 +341,31 @@ Source: `docs/research/meetings/2026-07-13-dashboard-analytics-design-monil.md` 
 | T107 | Multi-survey analytics: tabs at top of screen | Admin | Analytics navigation | P1 — BLOCKED (Monil PRD in progress) | Horizontal tabs (Overview / By Faculty / By Course / By Term) in analytics header. D_PCE_0713_06. |
 | T108 | Analytics layout: remove max-w-4xl from analytics content container | Admin | `analytics/page.tsx` | P0 — ✅ APPLIED Jul 13 | Removed `max-w-4xl` from content div at line 478. Analytics page now uses full screen width (missed from T98 Jul 9 fix). D_PCE_0709_04. |
 
+## Phase 1 design tasks — added 2026-07-14 (Course eval setup feedback — Monil)
+
+Source: `docs/research/meetings/2026-07-14-course-eval-setup-feedback-monil.md` (Granola `f1f8d1e4`)
+
+> Monil design review Jul 14 (morning, pre-bi-weekly call). Cohort + "What to evaluate" radio buttons fail at Prism scale. Action needed column CTA consolidation. Step 1 reframed as data-audit, not evaluee selection.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T109 | Action needed column: consolidate to max 2 CTAs ("Add Faculty" + "Add Student") | Admin | Dashboard setup evaluation / action needed column | P1 — DESIGN-REVIEW | D_PCE_0714A_01. No code equivalent (dashboard is prototype-only). Apply in Lovable prototype. Individual per-role CTAs (add lab instructor / add instructor / add course coordinator as separate buttons) → replace with one "Add Faculty" + one "Add Student" CTA. |
+| T110 | Cohort + "What to evaluate" fields: replace radio buttons with scalable selector | Admin | Setup evaluation flow (Course Readiness step) | P1 — DESIGN-REVIEW | D_PCE_0714A_02, D_PCE_0714A_03, D_PCE_0714A_04. Cohort = Prism lookup, can have 20+ options. "What to evaluate" = Prism faculty roles, 45–50 options. Radio buttons overflow horizontally at this scale. Redesign as dropdown or scrollable multi-select. Cohort = empty state by default (not pre-selected). |
+| T111 | Step 1 copy change: frame as "data audit" not "evaluee selection" | Admin | Setup evaluation flow step 1 | P1 — DESIGN-REVIEW + async feedback | D_PCE_0714A_05. Goal of Step 1 = help admin identify and fill missing course data, not to pick who gets evaluated. Try copy/label change first (section header + description). Share screen in feedback doc; Monil to tag Vishaka + David for async input. |
+
+## Phase 1 design tasks — added 2026-07-14 (BiWeekly cadence — Vishaka + David + Monil)
+
+Source: `docs/research/meetings/2026-07-14-post-course-survey-cadence-vishaka-david.md` (Granola `90332d37`)
+
+> Bi-weekly cadence call. Homepage landing concept introduced. All 4 term-card scenarios required. Clinical term PA edge case flagged. "Settings" → "Setup" terminology confirmed (code already correct).
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T112 | Confirm "Setup" label in all prototype screens (not "Settings") | Admin | All PCE prototype nav screens | P1 — DESIGN-REVIEW | D_PCE_0714B_01. Code already uses "Setup" in ADMIN_NAV (app-sidebar.tsx:150) — confirmation only. Review Lovable prototype for remaining "Settings" labels in PCE module nav and rename. |
+| T113 | Homepage landing page: overview of both programmatic survey + course eval modules | Admin | PCE tile landing | P1 — NEW PAGE NEEDED | D_PCE_0714B_02. Cannot default to either module alone. Show aggregate stats from both (active surveys, active evaluations). Entry points to each module. Supplements T46. Needs Romit design direction before any code. |
+| T114 | Dashboard: design all 4 term-card scenarios | Admin | Dashboard prototype | P1 — DESIGN-REVIEW | D_PCE_0714B_03. Scenario 1: empty state (nothing configured). Scenario 2: current term only (no last, no upcoming). Scenario 3: current + last (no upcoming). Scenario 4: all three terms present. Currently only scenario 4 exists in prototype. |
+| T115 | Clinical term edge case: investigate PA program data + propose dashboard handling | Admin | Dashboard term cards | P1 — RESEARCH FLAG | D_PCE_0714B_04. PA programs define a year-long "clinical term" spanning the full academic year — it always appears as the current term. Vishaka to ask Carol (PA admin) how they collect course evals for clinical courses. Monil to run data query: how many PA programs have a clinical term defined. No design change until investigation complete. |
+
 ---
 
 ## Open product questions
