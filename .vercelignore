@@ -1,8 +1,6 @@
 # Vite/SPA app in PCE — not part of the Next.js build, causes pages-router conflicts
 apps/pce/admin/src/
 
-# exxat-ui upgrade template files — untracked, incompatible with Next.js (use react-router-dom)
-apps/pce/admin/components/library-folder-picker-panel.tsx
-apps/pce/admin/components/library-new-folder-sheet.tsx
-apps/pce/admin/components/library-secondary-nav.tsx
-apps/pce/admin/components/new-library-item-form.tsx
+# Nothing under apps/pce/admin/components/ belongs here: it is all tracked source
+# reachable from the Next graph. A `react-router-dom` import is not grounds to
+# ignore a file — next.config.ts aliases that specifier to lib/react-router-compat.tsx.
