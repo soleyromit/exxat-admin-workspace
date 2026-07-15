@@ -946,7 +946,15 @@ function FacultyAvatarStack({ faculty }: { faculty: FacultyChip[] }) {
             <Avatar key={f.name} size="sm" aria-hidden="true">
               <AvatarFallback
                 className="text-xs font-semibold"
-                style={{ backgroundColor: f.chipToken }}
+                // The chip token paints the disc, so the initials need a
+                // foreground too — without one they inherit --muted-foreground
+                // and axe measured 1.03:1 (dark grey on dark indigo), i.e.
+                // invisible. --background is the right pairing because it
+                // inverts with the theme in step with --chip-*: light theme is
+                // chip L=0.38 on white (~10:1), dark theme raises chips to
+                // L=0.72 against a near-black background (~8:1). A fixed light
+                // colour would pass light mode and fail dark.
+                style={{ backgroundColor: f.chipToken, color: 'var(--background)' }}
               >
                 {f.initials}
               </AvatarFallback>
