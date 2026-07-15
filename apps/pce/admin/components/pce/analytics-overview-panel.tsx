@@ -33,6 +33,7 @@ import {
   ProgramTrendStack,
   DriftDumbbell,
   CourseRankDots,
+  COURSE_RANK_LIMIT,
   KpiSpark,
   type DriftRow,
 } from '@/components/pce/analytics-plots'
@@ -69,6 +70,15 @@ export function AnalyticsOverviewPanel() {
   const courses = useMemo(() => courseStats(), [])
   const gaps = useMemo(() => gapPoints(), [])
   const matrix = useMemo(() => courseTermMatrix(), [])
+
+  /* The chart draws the lowest N; its data table is the ACCESSIBLE EQUIVALENT of the chart,
+     so it must list the same rows. A table of all 15 under a chart of 6 would mean the two
+     halves of one figure disagreed about what the figure shows. Derived with the same sort
+     the chart uses. */
+  const lowestCourses = useMemo(
+    () => [...courses].sort((a, b) => a.score.weighted - b.score.weighted).slice(0, COURSE_RANK_LIMIT),
+    [courses],
+  )
 
   const courseMedian = useMemo(() => medianOf(courses.map((c) => c.score.weighted)), [courses])
 
@@ -369,8 +379,14 @@ export function AnalyticsOverviewPanel() {
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <ChartCard
           variant="normal"
-          title="Faculty who are slipping"
-          description="Each arrow runs from a three-year mean to a one-year mean — direction and size in one mark. Amber is a fall; this says nothing about who is lowest."
+          /* NOT "Faculty who are slipping". It listed six people of whom four were RISING
+             (+0.03 to +0.11) — a title that promises slippers and delivers a roster is the
+             same lie "Courses scoring lowest" was telling one card over. The honest framing
+             is the question the chart answers: which way is each person moving. The amber
+             arrow and the Leo do the flagging, and "5 of 6 are holding or improving" is
+             genuinely the news here — filtering to the one faller would hide it. */
+          title="Which way each faculty is moving"
+          description="Each arrow runs from a faculty member's own three-year mean to their one-year mean, so the axis is the change itself — not the score. Amber is a fall; this says nothing about who is lowest."
           leoInsight={facultyDriftLeo}
         >
           <ChartFigure
@@ -408,7 +424,7 @@ export function AnalyticsOverviewPanel() {
         <ChartCard
           variant="normal"
           title="Courses scoring lowest"
-          description="Ranked against the program median, with every offering behind each course drawn as a faint dot. Amber is below the median; this says nothing about who is falling."
+          description={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} weakest of ${courses.length}, worst first, against the program median — every offering behind each course drawn as a faint dot. Amber is below the median; this says nothing about who is falling. Open By Course for the full list.`}
           leoInsight={courseDriftLeo}
         >
           <ChartFigure
@@ -424,9 +440,9 @@ export function AnalyticsOverviewPanel() {
                     faculty (story 2, which does ask for the two windows). */}
                 <CourseRankDots courses={courses} median={courseMedian} />
                 <ChartDataTable
-                  caption="Course scores against the program median"
+                  caption={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} lowest-scoring courses against the program median`}
                   headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
-                  rows={courses.map((c) => [
+                  rows={lowestCourses.map((c) => [
                     `${c.courseCode} — ${c.courseName}`,
                     fmt2(c.score.weighted),
                     fmt2(c.score.simple),

@@ -519,19 +519,26 @@ export function DriftDumbbell({
   const order = React.useMemo(() => usable.map((r) => r.label), [usable])
 
   /**
-   * Zoom the axis to the values actually plotted, with padding.
+   * THE AXIS IS THE CHANGE, not the score. This is the fix for a chart that was decorative.
    *
-   * Real drifts in this data are ±0.2 on a 1–5 scale. Rendered on the full score axis every
-   * arrow collapses to a dot and the mark conveys nothing — the chart would be decorative.
-   * The axis still shows its own ticks, so the zoom is legible rather than misleading.
+   * It used to plot absolute means (3-year dot → 1-year dot on a score axis, zoomed to the
+   * data). That puts TWO variables on one axis — a person's LEVEL and their CHANGE — and
+   * level wins: levels spread ~1.0 across this roster while drifts are ±0.25, so four of six
+   * arrows rendered as a 9px smudge of two overlapping dots. Screenshot, not tsc, caught it.
+   *
+   * The card already disclaimed level in its own description ("this says nothing about who is
+   * lowest") — and then scaled to level anyway. That was the incoherence. Scale to the one
+   * variable the card is actually about and every arrow becomes readable and comparable:
+   * each runs from 0 (their own 3-year baseline) to their drift.
+   *
+   * Symmetric around zero so "fell 0.25" and "rose 0.25" are mirror-length. An asymmetric
+   * domain would make a small rise look like a big one.
    */
   const domain = React.useMemo<[number, number]>(() => {
-    if (!usable.length) return SCORE_VIEW
-    const vals = usable.flatMap((r) => [r.avg1y, r.avg3y])
-    const lo = Math.min(...vals)
-    const hi = Math.max(...vals)
-    const pad = Math.max((hi - lo) * 0.35, 0.12)
-    return [lo - pad, hi + pad]
+    if (!usable.length) return [-0.5, 0.5]
+    const widest = Math.max(...usable.map((r) => Math.abs(r.drift)))
+    const half = Math.max(widest * 1.35, 0.15)
+    return [-half, half]
   }, [usable])
 
   const spec = React.useCallback(
@@ -539,12 +546,22 @@ export function DriftDumbbell({
       marginLeft: 132,
       marginRight: 56,
       marginTop: 20,
-      x: { domain, label: null, ticks: 4, ...axisDefaults(theme) },
+      x: {
+        domain,
+        label: null,
+        ticks: 5,
+        // Signed ticks — the axis must read as change, not as a score anyone scored.
+        tickFormat: (d: number) => (d === 0 ? '0' : `${d > 0 ? '+' : ''}${d.toFixed(2)}`),
+        ...axisDefaults(theme),
+      },
       y: { domain: order, label: null, ...axisDefaults(theme) },
       marks: [
-        // Where they were.
+        gridMark(theme),
+        // Zero — every arrow's origin, and the line the whole chart is read against.
+        Plot.ruleX([0], { stroke: theme.rule, strokeWidth: 1 }),
+        // Where they were: their own baseline, which on a change axis is always zero.
         Plot.dot(usable, {
-          x: 'avg3y',
+          x: () => 0,
           y: 'label',
           r: 3.5,
           fill: theme.card,
@@ -553,8 +570,8 @@ export function DriftDumbbell({
         }),
         // Where they are now — arrow carries direction + magnitude.
         Plot.arrow(usable, {
-          x1: 'avg3y',
-          x2: 'avg1y',
+          x1: () => 0,
+          x2: 'drift',
           y1: 'label',
           y2: 'label',
           // Declined = amber; improved = neutral, NOT green. Green means "faculty" across
@@ -566,7 +583,7 @@ export function DriftDumbbell({
           insetEnd: 4,
         }),
         Plot.dot(usable, {
-          x: 'avg1y',
+          x: 'drift',
           y: 'label',
           r: 4.5,
           fill: (d: (typeof usable)[number]) => (d.drift < 0 ? theme.warn : theme.mutedForeground),
@@ -810,13 +827,11 @@ export function ProgramTrendStack({
           fontSize: CHART_TICK_FONT_SIZE,
           textAnchor: 'end',
         }),
-        Plot.areaY(rateRows, {
-          x: 'term',
-          y: 'value',
-          fill: theme.rate,
-          fillOpacity: 0.12,
-          curve: 'monotone-x',
-        }),
+        // NO areaY here. `Plot.areaY` fills from the value down to y=0, and this facet's domain
+        // starts at 40 — so the fill ran far outside the frame, unclipped, sitting on top of
+        // the x-axis tick labels as a grey slab. Clipping it would only hide the deeper
+        // problem: area encodes ACCUMULATION, and a response rate does not accumulate. The
+        // line carries the shape and the target rule carries the meaning.
         Plot.line(rateRows, { x: 'term', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
         Plot.dot(rateRows, {
           x: 'term',
@@ -1037,7 +1052,8 @@ export function CourseTrendStack({
           y: responseTarget, frameAnchor: 'right', dy: -7, dx: -2,
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
         }),
-        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.rate, fillOpacity: 0.12, curve: 'monotone-x' }),
+        // No areaY — same reason as ProgramTrendStack: fills to y=0 outside a [40,100] domain,
+        // and a rate doesn't accumulate.
         Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
         Plot.dot(rows, {
           x: 'short', y: 'responseRate', r: 3,
@@ -1499,7 +1515,11 @@ export function KpiSpark({
         x: { axis: null },
         y: { axis: null, domain: [Math.min(...points.map((p) => p.y)) * 0.96, Math.max(...points.map((p) => p.y)) * 1.04] },
         marks: [
-          Plot.areaY(points, { x: 'x', y: 'y', fill: stroke, fillOpacity: 0.1, curve: 'monotone-x' }),
+          // No areaY. The y domain here is [min*0.96, max*1.04] — a tight window that never
+          // includes zero — so an area filling to y=0 was not a sparkline fill at all: it was
+          // a solid rectangle covering the whole tile and bleeding past the card edge. That is
+          // the "decorative gradient blob" it rendered as. Area under a truncated baseline
+          // measures nothing. A sparkline is a line.
           Plot.line(points, { x: 'x', y: 'y', stroke, strokeWidth: 1.5, curve: 'monotone-x' }),
           Plot.dot(points.slice(-1), { x: 'x', y: 'y', r: 2.5, fill: stroke }),
         ],
@@ -1523,19 +1543,41 @@ export function KpiSpark({
 
 /* ── Course-level ranked dots, reused by By Course + the "needs attention" split. ── */
 
+/** Default rows for "Courses scoring lowest" — enough to act on, few enough to read. */
+export const COURSE_RANK_LIMIT = 6
+
 export function CourseRankDots({
   courses,
   median,
+  limit = COURSE_RANK_LIMIT,
   height,
 }: {
   courses: CourseStat[]
   median: number
+  /** How many of the lowest to draw. The caller must say what was dropped — no silent caps. */
+  limit?: number
   height?: number
 }) {
-  const order = React.useMemo(() => courses.map((c) => c.courseCode), [courses])
+  /**
+   * The N LOWEST, worst first — the card is called "Courses scoring lowest" and its job
+   * (story 3) is to flag low courses.
+   *
+   * It used to take whatever order it was handed and render all 15, best first, so the top
+   * row of "Courses scoring lowest" was DPT-510 at 4.38 — the highest course in the program,
+   * above the median. A card that promises the worst and opens with the best is not a ranking
+   * problem, it's a truthfulness one. The screenshot caught it; no test could.
+   *
+   * `limit` is applied here rather than by the caller so the chart and its ChartDataTable
+   * cannot drift apart about which rows exist.
+   */
+  const ranked = React.useMemo(
+    () => [...courses].sort((a, b) => a.score.weighted - b.score.weighted).slice(0, limit),
+    [courses, limit],
+  )
+  const order = React.useMemo(() => ranked.map((c) => c.courseCode), [ranked])
   const spread = React.useMemo(
-    () => courses.flatMap((c) => c.ratings.map((r) => ({ code: c.courseCode, rating: r }))),
-    [courses],
+    () => ranked.flatMap((c) => c.ratings.map((r) => ({ code: c.courseCode, rating: r }))),
+    [ranked],
   )
 
   const spec = React.useCallback(
@@ -1546,7 +1588,7 @@ export function CourseRankDots({
       x: { domain: SCORE_VIEW, label: null, ticks: 5, ...axisDefaults(theme) },
       y: { domain: order, label: null, ...axisDefaults(theme) },
       marks: [
-        Plot.ruleY(courses, {
+        Plot.ruleY(ranked, {
           y: 'courseCode',
           x1: (d: CourseStat) => Math.min(...d.ratings),
           x2: (d: CourseStat) => Math.max(...d.ratings),
@@ -1554,7 +1596,7 @@ export function CourseRankDots({
           strokeWidth: 2,
         }),
         Plot.dot(spread, { x: 'rating', y: 'code', r: 2.5, fill: theme.mutedForeground, fillOpacity: 0.4 }),
-        Plot.dot(courses, {
+        Plot.dot(ranked, {
           x: (d: CourseStat) => d.score.weighted,
           y: 'courseCode',
           r: 5,
@@ -1576,7 +1618,7 @@ export function CourseRankDots({
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
         }),
         // Pinned to the right frame — see the note in FacultyLeaderboardDots.
-        Plot.text(courses, {
+        Plot.text(ranked, {
           y: 'courseCode',
           text: (d: CourseStat) => fmt2(d.score.weighted),
           frameAnchor: 'right',
@@ -1587,10 +1629,12 @@ export function CourseRankDots({
         }),
       ],
     }),
-    [courses, spread, order, median],
+    [ranked, spread, order, median],
   )
 
   if (!courses.length) return <ChartEmpty note="No courses with evaluated offerings yet." />
 
-  return <PlotFigure spec={spec} height={height ?? Math.max(160, courses.length * 32 + 40)} />
+  // `ranked.length`, not `courses.length` — sizing on the unsliced list reserved 520px for 15
+  // rows while drawing 6, which is where the card's ~250px of dead white space came from.
+  return <PlotFigure spec={spec} height={height ?? Math.max(160, ranked.length * 32 + 40)} />
 }
