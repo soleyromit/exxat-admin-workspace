@@ -301,7 +301,19 @@ function AnalyticsInner() {
               </Select>
             </div>
 
-            <ByCoursePanel courseCode={effectiveCourseCode} onOpenSurvey={setSelectedSurveyId} />
+            {/* The round trip: By Faculty could always reach a course (the portfolio ranks
+                them), but By Course could not reach a person — so "is this the course or the
+                instructor?" was only pursuable in one direction. Selecting the faculty member
+                AND switching tabs in one click, because landing on the faculty tab still
+                showing someone else would be a worse lie than not linking at all. */}
+            <ByCoursePanel
+              courseCode={effectiveCourseCode}
+              onOpenSurvey={setSelectedSurveyId}
+              onSelectFaculty={(facultyId) => {
+                setSelectedFacultyId(facultyId)
+                setActiveTab('faculty')
+              }}
+            />
           </div>
         </TabsContent>
       </Tabs>

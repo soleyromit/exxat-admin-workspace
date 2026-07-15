@@ -1040,10 +1040,17 @@ export function ByFacultyPanel({
 
 /* ════════════════════ By Course panel ════════════════════ */
 export function ByCoursePanel({
-  courseCode, onOpenSurvey, extraCharts,
+  courseCode, onOpenSurvey, onSelectFaculty, extraCharts,
 }: {
   courseCode: string
   onOpenSurvey: (surveyId: string) => void
+  /**
+   * Drill from a course to one of its instructors — the round trip that closes the
+   * course↔faculty loop. By Faculty could reach a course (the portfolio ranks them); By
+   * Course could not reach a person, so the disentangling question ("is this the course or
+   * the person?") could only be pursued in one direction.
+   */
+  onSelectFaculty?: (facultyId: string) => void
   /** Optional viz rendered right after the KPI strip (e.g. profile radar + distribution band). */
   extraCharts?: ReactNode
 }) {
@@ -1257,6 +1264,39 @@ export function ByCoursePanel({
             {() => (
               <>
                 <FacultyLeaderboardDots faculty={courseFacultyAsStats} median={courseFacultyMedian} />
+
+                {/* Same row treatment as the By Faculty leaderboard, deliberately — one
+                    ranked-list grammar, not two. Monil's job ends in "view insights → the
+                    entire view opens only for Dr. Sandra"; a ranked chart you cannot click is
+                    a poster. The rows are also the keyboard path, because the plot above is
+                    aria-hidden and a mouse-only drill is not a drill. */}
+                <ul className="mt-2 flex flex-col">
+                  {courseFaculty.map(f => (
+                    <li
+                      key={f.facultyId}
+                      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border py-1.5 last:border-b-0"
+                    >
+                      <span className="truncate text-sm">{f.name}</span>
+                      <span className="text-sm tabular-nums text-muted-foreground">
+                        {f.score.weighted.toFixed(2)}
+                        {f.score.weighted < courseFacultyMedian && (
+                          <span className="ml-1.5 text-xs" style={{ color: 'var(--chip-4)' }}>
+                            below median
+                          </span>
+                        )}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onSelectFaculty?.(f.facultyId)}
+                        aria-label={`View insights for ${f.name}`}
+                      >
+                        View insights
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+
                 <ChartDataTable
                   caption={`Instructors of ${courseCode}`}
                   headers={['Faculty', 'Score', 'Simple mean', 'Terms', 'Response rate']}
