@@ -10,6 +10,9 @@ importers:
 
   apps/exam-management/admin:
     dependencies:
+      '@exxatdesignux/product-framework':
+        specifier: ^0.1.7
+        version: 0.1.7(@types/react@19.2.14)(immer@11.1.8)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
       '@exxatdesignux/ui':
         specifier: 0.6.57
         version: 0.6.57(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.5(react@19.2.5))(react-router-dom@7.18.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
