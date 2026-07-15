@@ -19,7 +19,7 @@ import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
 import type { PceTemplate, PceSurvey, TemplateSection } from '@/lib/pce-mock-data'
 import {
-  MOCK_COURSES, MOCK_FACULTY, MOCK_TERMS, SECTION_LABELS, MOCK_RESPONSES,
+  MOCK_MASTER_COURSES, MOCK_FACULTY, MOCK_TERMS, SECTION_LABELS, MOCK_RESPONSES,
 } from '@/lib/pce-mock-data'
 import {
   REMINDER_TEMPLATES, nonRespondersFor, reminderGuardrail, daysSinceIso, dayPhrase,
@@ -224,7 +224,13 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const activeTemplates = templates.filter(t => t.status === 'active')
-  const selectedCourse = MOCK_COURSES.find(c => c.code === courseCode)
+  // MOCK_MASTER_COURSES, not MOCK_COURSES. MOCK_COURSES was generic scaffolding — BIO 201
+  // Cellular Biology, NURS 310 Advanced Patient Care, CHEM 201 Biochemistry — a catalogue with
+  // no overlap whatsoever with this Doctor of Physical Therapy program. It was wired straight
+  // into the Course picker on this sheet, so creating a survey offered you eight courses the
+  // program does not teach and none of the ones it does. Deleted; MOCK_MASTER_COURSES is the
+  // program's real catalogue (ADR-001: master entities live ONCE at program level).
+  const selectedCourse = MOCK_MASTER_COURSES.find(c => c.code === courseCode)
   const selectedInstructor = MOCK_FACULTY.find(f => f.id === primaryInstructorId)
 
   // Validation pattern: accommodations/page.tsx:96-126.
@@ -308,7 +314,7 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
                 <SelectValue placeholder="Select a course…" />
               </SelectTrigger>
               <SelectContent>
-                {MOCK_COURSES.map(c => (
+                {MOCK_MASTER_COURSES.map(c => (
                   <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
                 ))}
               </SelectContent>
