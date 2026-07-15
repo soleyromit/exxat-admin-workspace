@@ -614,6 +614,93 @@ export function DriftDumbbell({
    collapsed the same term the score dipped" — the story two separate cards would hide.
    ════════════════════════════════════════════════════════════════════════════ */
 
+/* ════════════════════════════════════════════════════════════════════════════
+   Story 13's response half, for By Term.
+
+   The By Term panel charted "Program trend" (course avg vs faculty avg) and then reported
+   response rate as a single KPI delta chip. RUBRIC Q4's ❌ is exactly that: "single % delta
+   with arrow — hides the path; a drop-and-recovery looks identical to flat". The story asks
+   for "term avg score AND response trends"; only the score half was a trend.
+
+   It sits BESIDE the score card rather than under it, which also retires the last 100%-width
+   line chart on this tab (Romit: a line chart doesn't earn full width).
+
+   Not `ProgramTrendStack` (the Overview component): that one already carries score AND rate,
+   so dropping it here would put two cards answering the score question on one panel. This is
+   the complement to what's already there, not a second copy of it.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export function ProgramResponseTrend({
+  series,
+  target = 80,
+  scopedTerm,
+  height = 168,
+}: {
+  series: TermSeriesPoint[]
+  target?: number
+  /** The term the tab is scoped to — marked so the trend reads as context around it. */
+  scopedTerm?: string
+  height?: number
+}) {
+  const rows = React.useMemo(
+    () =>
+      series
+        .filter((s) => s.responseRate != null)
+        .map((s) => ({ term: s.term, short: s.short, value: s.responseRate as number })),
+    [series],
+  )
+  const termOrder = React.useMemo(() => rows.map((r) => r.short), [rows])
+  const scopedShort = React.useMemo(
+    () => rows.find((r) => r.term === scopedTerm)?.short,
+    [rows, scopedTerm],
+  )
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 34,
+      marginTop: 16,
+      marginBottom: 26,
+      marginRight: 12,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      // Same 45–100 window as the roster chart: the question is "which terms missed the bar",
+      // and a zero baseline spends half the panel on rates nobody has recorded. The target
+      // rule is what makes the truncated axis honest — you read against 80%, not the floor.
+      y: { domain: [45, 100], label: null, ticks: [50, 80], tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
+      marks: [
+        gridMark(theme),
+        // The scoped term, marked before everything else so it reads as ground, not figure.
+        ...(scopedShort
+          ? [Plot.ruleX([scopedShort], { stroke: theme.border, strokeWidth: 12, strokeOpacity: 0.55 })]
+          : []),
+        Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
+        // frameAnchor, NOT `x: termOrder[0]`. In Plot a string option is a FIELD ACCESSOR, so
+        // `x: 'Sp 24'` looks up a field named "Sp 24", finds undefined, and silently drops the
+        // mark — the rule drew and its label vanished with no error. Caught by counting text
+        // nodes in the rendered SVG, which is why the check is "did it render", not "did it
+        // compile".
+        Plot.text([`target ${target}%`], {
+          frameAnchor: 'left', y: target, dy: -7, dx: 4,
+          fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
+        }),
+        Plot.line(rows, { x: 'short', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
+        Plot.dot(rows, {
+          x: 'short', y: 'value', r: 3,
+          // Colour is never the only encoding (A11Y-008) — the target rule carries the same
+          // fact positionally, so a dot below the line reads as below without the amber.
+          fill: (d: { value: number }) => (d.value < target ? theme.warn : theme.rate),
+          channels: { Term: 'term', 'Response rate': (d: { value: number }) => `${d.value}%` },
+          tip: { format: { x: false, y: false, fill: false, r: false } },
+        }),
+      ],
+    }),
+    [rows, termOrder, target, scopedShort],
+  )
+
+  if (!rows.length) return <ChartEmpty note="No response history recorded yet." />
+
+  return <PlotFigure spec={spec} height={height} />
+}
+
 export function ProgramTrendStack({
   series,
   responseTarget = 80,

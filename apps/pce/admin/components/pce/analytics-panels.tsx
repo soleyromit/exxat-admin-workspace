@@ -22,7 +22,9 @@ import {
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { GapQuadrant, CourseTrendStack, FacultyLeaderboardDots, Slopegraph } from '@/components/pce/analytics-plots'
+import {
+  GapQuadrant, CourseTrendStack, FacultyLeaderboardDots, Slopegraph, ProgramResponseTrend,
+} from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTable } from '@/components/data-table'
@@ -34,7 +36,8 @@ import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
   termKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
-  courseTrend, courseFacultyStats, termSlope, shortTerm, type TermCourseRow,
+  courseTrend, courseFacultyStats, termSlope, shortTerm, RESPONSE_TARGET,
+  type TermCourseRow,
 } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
@@ -508,6 +511,11 @@ export function ByTermPanel({
    * tab, two universes — the exact "numbers disagree with each other" failure (§4) that
    * `lib/pce-analytics.ts` exists to end. Every surface now derives from one place.
    */
+  /* The full term series — `programTrendData` reshapes this for recharts, but the response
+     chart wants the canonical points (it needs `term` for the scoped-term band, not just the
+     abbreviated `short`). One derivation, two views. */
+  const termSeriesData = useMemo(() => termSeries(), [])
+
   const programTrendData = useMemo(
     () =>
       termSeries()
@@ -550,6 +558,37 @@ export function ByTermPanel({
   }, [])
 
   // ── Leo insights — DS OS chart signature, all values derived from chart data ──
+  /* Story 13's response half — the Leo reads the PATH, which is the whole point of promoting
+     it from a delta chip to a trend. */
+  const responseTrendLeo: ChartLeoInsight | null = useMemo(() => {
+    const rows = termSeriesData.filter(t => t.responseRate != null)
+    if (rows.length < 2) return null
+    const rates = rows.map(t => t.responseRate as number)
+    const below = rates.filter(r => r < RESPONSE_TARGET).length
+    const first = rates[0]!
+    const last = rates[rates.length - 1]!
+    const lowest = Math.min(...rates)
+    const trough = rows[rates.indexOf(lowest)]!
+    const recovered = lowest < last - 4
+    return {
+      // Frequency, not percentage — Aarti D17.
+      headline: `${below} of ${rows.length} terms came in under the ${RESPONSE_TARGET}% target`,
+      explanation: recovered
+        ? `Collection bottomed out at ${lowest}% in ${trough.term} and has climbed to ${last}% since. ` +
+          `A single delta would have shown ${last - first >= 0 ? '+' : ''}${last - first} points and hidden the dip ` +
+          `entirely — a drop-and-recovery and a flat line produce the same number.`
+        : `Collection runs from ${first}% to ${last}%, with the low at ${lowest}% in ${trough.term}. ` +
+          `Read the path: the target is what a rate means, not the rate on its own.`,
+      kind: below > 0 ? 'dip' : 'trend',
+      delta: { value: `${lowest}%`, label: `low — ${trough.short}` },
+      bullets: [
+        `Latest ${last}% · low ${lowest}% (${trough.term}) · target ${RESPONSE_TARGET}%.`,
+        `${below} of ${rows.length} terms below target.`,
+      ],
+      anchor: { yValue: lowest },
+    }
+  }, [termSeriesData])
+
   const programTrendLeo: ChartLeoInsight | null = useMemo(() => {
     if (programTrendData.length < 2) return null
     const last = programTrendData[programTrendData.length - 1]
@@ -643,7 +682,13 @@ export function ByTermPanel({
           (Aarti 2026-05-08 D14: AI summaries first at every aggregation level) */}
       <TermThemesInsight surveys={scopedSurveys} scopeLabel={value} />
 
-      {/* Program-level trend (full width) — DS OS ChartCard + Leo insight */}
+      {/* Row 1 — the two halves of story 13, paired.
+          "term avg score AND response trends": the score half was charted and the response
+          half was a single KPI delta chip, which is RUBRIC Q4's ❌ verbatim ("hides the path;
+          a drop-and-recovery looks identical to flat"). They sit side by side because they are
+          different problems — a falling score is a curriculum conversation, a falling
+          collection rate is a reminder — and because a line chart doesn't earn 100% width. */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <ChartCard
         variant="normal"
         title="Program trend"
@@ -707,6 +752,38 @@ export function ByTermPanel({
           )}
         </ChartFigure>
       </ChartCard>
+
+      <ChartCard
+        variant="normal"
+        title="Response rate across terms"
+        description={`The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. The band marks ${value}.`}
+        leoInsight={responseTrendLeo}
+      >
+        <ChartFigure
+          label="Response rate across terms"
+          summary={`Line chart of the program's enrollment-weighted response rate across terms against a ${RESPONSE_TARGET}% target.`}
+          dataLength={termSeriesData.length}
+          leoInsight={responseTrendLeo}
+        >
+          {() => (
+            <>
+              <ProgramResponseTrend
+                series={termSeriesData}
+                target={RESPONSE_TARGET}
+                scopedTerm={axis === 'term' ? value : undefined}
+              />
+              <ChartDataTable
+                caption="Response rate by term"
+                headers={['Term', 'Response rate']}
+                rows={termSeriesData
+                  .filter(t => t.responseRate != null)
+                  .map(t => [t.term, `${t.responseRate}%`])}
+              />
+            </>
+          )}
+        </ChartFigure>
+      </ChartCard>
+      </div>
 
       {/* Row 2 continued — the term-scoped viz this tab was missing.
           §9.1 maps it explicitly: "5 — spread across a term's courses | Q2 | Cleveland dot
