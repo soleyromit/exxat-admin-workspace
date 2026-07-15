@@ -29,6 +29,7 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
+import { StudentVoice } from '@/components/pce/student-voice'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
@@ -914,6 +915,10 @@ export function ByFacultyPanel({
 
       <KeyMetrics variant="compact" metricsSingleRow metrics={facultyKpis} />
 
+      {/* Story 18 — the verbatims, cut on the PERSON axis. §2.2 calls this "the payload":
+          the scores say a 3.58 happened, these say why. */}
+      <StudentVoice axis="faculty" facultyId={faculty.id} scopeLabel={faculty.name} />
+
       {extraCharts}
 
       {/* "Comparative context" (three bars: school avg / dept avg / own) removed 2026-07-14.
@@ -1090,6 +1095,10 @@ export function ByCoursePanel({
       {courseSurveys.length > 0 && (
         <TermThemesInsight surveys={courseSurveys} scopeLabel={courseCode} />
       )}
+
+      {/* Story 18 on the COURSE axis — the same corpus the faculty tab reads, in the opposite
+          order. §2.3: "same raw comments, re-cut by the axis the persona cares about." */}
+      <StudentVoice axis="course" courseCode={courseCode} scopeLabel={courseCode} />
 
       {extraCharts}
 
