@@ -5,3 +5,4 @@ export default function RootPage() {
   // dashboard now hosts the evaluations table + push/activate actions).
   redirect('/analytics')
 }
+
