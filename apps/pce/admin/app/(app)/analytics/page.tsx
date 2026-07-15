@@ -20,6 +20,9 @@ import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-pane
 import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
 import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
 import { facultyStats, allTerms } from '@/lib/pce-analytics'
+import {
+  offeringsCsv, exportFilename, downloadCsv, scopedOfferings, type ExportScope,
+} from '@/lib/pce-analytics-export'
 
 type Axis = 'term' | 'cohort'
 /**
@@ -104,15 +107,54 @@ function AnalyticsInner() {
   }, [])
   const effectiveCourseCode = selectedCourseCode || distinctCourses[0]?.code || ''
 
+  /**
+   * The export scope IS the tab's scope. Exporting the whole program from a screen filtered
+   * to one faculty member is a lie of omission — the reader believes they downloaded what
+   * they were looking at.
+   */
+  const exportScope: ExportScope = useMemo(() => {
+    switch (activeTab) {
+      case 'faculty': return { tab: 'faculty', facultyId: selectedFacultyId, term: facultyTerm }
+      case 'course':  return { tab: 'course', courseCode: effectiveCourseCode }
+      case 'term':    return { tab: 'term', term }
+      default:        return { tab: 'overview' }
+    }
+  }, [activeTab, selectedFacultyId, facultyTerm, effectiveCourseCode, term])
+
+  /* The count goes ON the button so the scope is legible BEFORE the click — you can see that
+     "Export 9 offerings" means this faculty member, not the program's 53. It also makes the
+     empty case honest: 0 rows disables rather than handing back a header-only file. */
+  const exportCount = useMemo(() => scopedOfferings(exportScope).length, [exportScope])
+
+  const exportLabel =
+    activeTab === 'faculty' ? selectedFaculty?.name
+      : activeTab === 'course' ? effectiveCourseCode
+      : activeTab === 'term' ? term
+      : undefined
+
+  const runExport = () => {
+    const csv = offeringsCsv(exportScope)
+    // The clock is read here, at the click, not inside the pure export module.
+    //
+    // LOCAL date, not toISOString(). ISO is UTC: exporting at 8pm in New York stamped the
+    // file with tomorrow's date, which I only caught because the download came back
+    // "…-2026-07-15.csv" on the 14th. `en-CA` is the terse way to get YYYY-MM-DD local.
+    const today = new Date().toLocaleDateString('en-CA')
+    downloadCsv(exportFilename(exportScope, exportLabel, today), csv)
+  }
+
   return (
     <>
       <SiteHeader title="Analytics" />
 
       <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-        <Button variant="outline" size="sm">
+        {/* This button used to have no onClick — it rendered, looked live, and did nothing.
+            It now exports the offering grain scoped to whatever the tab is showing, and the
+            label says what you'll get rather than the bare word "Export". */}
+        <Button variant="outline" size="sm" onClick={runExport} disabled={exportCount === 0}>
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
-          Export
+          Export {exportCount} {exportCount === 1 ? 'offering' : 'offerings'}
         </Button>
         <Button size="sm" asChild>
           <Link href="/surveys/push">
