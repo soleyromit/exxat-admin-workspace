@@ -47,16 +47,47 @@ export const TERM_ORDER = [
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
 
-/* Amber for <3.7, brand for 3.7–4.3, green for ≥4.3. No red per aarti_no_red memory.
-   tierColor = chart fills; tierTextColor swaps the amber for AA-safe --chip-4 on text. */
-const tierColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
-const tierTextColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+/*
+  Three tiers, and the MIDDLE ONE IS NEUTRAL — never the brand.
 
-/* Completion % (higher is better): green ≥70, brand ≥60, AA-safe amber below. */
+  This used to paint 3.7–4.3 in `--brand-color`, which put the product's own pink on every
+  middling score. Measured on the rendered cells, not guessed: DPT-540's 3.70, DPT-515's 3.75
+  and DPT-601's 3.80 all computed to lab(46.65 73.389 -26.6458) — the brand token exactly.
+
+  Three things wrong with that, and they compound:
+    · The brand colour ends up meaning "mediocre". Brand is identity and primary CTAs, never a
+      data tier — and PlotTheme's own contract reserves it for the SUBJECT of a view.
+    · Brand pink sits at hue 342, which is red-adjacent, so it READS as "bad" while it
+      actually meant "middle" — the encoding is inverted for the reader, and VIZ-004 keeps red
+      out of score viz precisely because Aarti reads it as alarm.
+    · Every chart in this feature is a TWO-tier split (above threshold = teal, below = amber).
+      A three-tier table with brand in the middle meant the table and the charts disagreed
+      about what colour means on the same page.
+
+  Neutral middle fixes all three: unremarkable scores look unremarkable, and only the
+  exceptions earn colour — the same rule the drift arrows already follow.
+*/
+/**
+ * BELOW THE MEDIAN IS AMBER, everything else is plain — a threshold, not a fixed tier ladder.
+ *
+ * The table's own doc-comment promised "below-median scores take --chip-4 amber" and the code
+ * did something else: an absolute 3.7 boundary. Nothing in Spring 2026 scores below 3.7, so
+ * the amber tier NEVER FIRED — in a card called "Where Spring 2026 needs attention", sorted
+ * weakest-first, the failing courses (3.70, 3.75, 3.80) rendered in plain text while the
+ * healthy ones (4.30+) got teal. The colour was celebrating success in a triage table and
+ * leaving the problems unmarked. The comment was right; the implementation was wrong.
+ *
+ * Median-relative also matches every chart in the feature — CourseRankDots and
+ * FacultyLeaderboardDots both split on the median — so the table and the charts finally agree
+ * on what colour means. No teal-for-good here: in a triage table position already carries
+ * "needs attention" (weakest first), and only the exceptions earn ink.
+ */
+const belowMedianColor = (v: number, median: number) =>
+  v < median ? 'var(--chip-4)' : 'var(--foreground)'
+
+/* Response % against the collection target, not a median — a rate has an absolute bar. */
 const completionColor = (pct: number) =>
-  pct >= 70 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chip-4)'
+  pct < RESPONSE_TARGET ? 'var(--chip-4)' : 'var(--foreground)'
 
 /* Initials from a display name ("Dr. Anita Patel" → "AP"). */
 function initialsOf(name: string): string {
@@ -112,7 +143,10 @@ const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', co
  * scores take `--chip-4` amber, never red (VIZ-004, Aarti), and always pair the colour with
  * the number itself so colour is never the only encoding (A11Y-008).
  */
-const TERM_BREAKDOWN_COLUMNS: ColumnDef<TermBreakdownRow>[] = [
+const termBreakdownColumnsFor = (
+  courseMedian: number,
+  facultyMedian: number,
+): ColumnDef<TermBreakdownRow>[] => [
   {
     key: 'courseCode', label: 'Course', sortable: true,
     cell: (row) => (
@@ -130,7 +164,7 @@ const TERM_BREAKDOWN_COLUMNS: ColumnDef<TermBreakdownRow>[] = [
     key: 'courseAvg', label: 'Content', sortable: true, width: 110,
     header: () => <span className="block text-right">Content</span>,
     cell: (row) => (
-      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.courseAvg != null ? tierTextColor(row.courseAvg) : 'var(--muted-foreground)' }}>
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.courseAvg != null ? belowMedianColor(row.courseAvg, courseMedian) : 'var(--muted-foreground)' }}>
         {row.courseAvg != null ? row.courseAvg.toFixed(2) : '—'}
       </div>
     ),
@@ -139,7 +173,7 @@ const TERM_BREAKDOWN_COLUMNS: ColumnDef<TermBreakdownRow>[] = [
     key: 'facultyAvg', label: 'Teaching', sortable: true, width: 110,
     header: () => <span className="block text-right">Teaching</span>,
     cell: (row) => (
-      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.facultyAvg != null ? tierTextColor(row.facultyAvg) : 'var(--muted-foreground)' }}>
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.facultyAvg != null ? belowMedianColor(row.facultyAvg, facultyMedian) : 'var(--muted-foreground)' }}>
         {row.facultyAvg != null ? row.facultyAvg.toFixed(2) : '—'}
       </div>
     ),
@@ -212,7 +246,10 @@ function buildTermColumns(onNudge: (row: CourseTermRow) => void): ColumnDef<Cour
 }
 
 /* ── By Faculty offering columns ── */
-const facultyOfferingColumns: ColumnDef<FacultyOfferingRow>[] = [
+/* Factory, like the term breakdown — the Rating column needs a median to split on, and a
+   module-level const can't have one. Rating here is the INSTRUCTOR's score for that offering,
+   so it splits on the faculty median. */
+const facultyOfferingColumnsFor = (facultyMedian: number): ColumnDef<FacultyOfferingRow>[] => [
   {
     key: 'courseCode', label: 'Course', sortable: true,
     cell: (row) => (
@@ -237,8 +274,8 @@ const facultyOfferingColumns: ColumnDef<FacultyOfferingRow>[] = [
     key: 'avgRating', label: 'Rating', sortable: true,
     header: () => <span className="block text-right">Rating</span>,
     cell: (row) => (
-      <div className="text-right tabular-nums text-sm font-semibold" style={{ color: tierTextColor(row.avgRating) }}>
-        {row.avgRating.toFixed(1)}
+      <div className="text-right tabular-nums text-sm font-semibold" style={{ color: belowMedianColor(row.avgRating, facultyMedian) }}>
+        {row.avgRating.toFixed(2)}
       </div>
     ),
   },
@@ -251,7 +288,8 @@ const facultyOfferingColumns: ColumnDef<FacultyOfferingRow>[] = [
 ]
 
 /* ── By Course offering columns ── */
-const courseOfferingColumns: ColumnDef<CourseOfferingRow>[] = [
+/* Same as facultyOfferingColumnsFor — Rating is the instructor's score for the offering. */
+const courseOfferingColumnsFor = (facultyMedian: number): ColumnDef<CourseOfferingRow>[] => [
   { key: 'term', label: 'Term', sortable: true, cell: (row) => <span className="text-sm">{row.term}</span> },
   {
     key: 'facultyName', label: 'Faculty', sortable: true, width: 200,
@@ -277,8 +315,8 @@ const courseOfferingColumns: ColumnDef<CourseOfferingRow>[] = [
     key: 'avgRating', label: 'Rating', sortable: true,
     header: () => <span className="block text-right">Rating</span>,
     cell: (row) => (
-      <div className="text-right tabular-nums text-sm font-semibold" style={{ color: tierTextColor(row.avgRating) }}>
-        {row.avgRating.toFixed(1)}
+      <div className="text-right tabular-nums text-sm font-semibold" style={{ color: belowMedianColor(row.avgRating, facultyMedian) }}>
+        {row.avgRating.toFixed(2)}
       </div>
     ),
   },
@@ -375,7 +413,17 @@ export function ByTermPanel({
     () => (axis === 'term' ? (termCourseBreakdown(value) as TermBreakdownRow[]) : []),
     [axis, value],
   )
-  const termBreakdownColumns = TERM_BREAKDOWN_COLUMNS
+  /* Program medians, not this term's — "is this course weak, period" is the useful question.
+     A within-term median would put half the term below it by construction, every term. Same
+     medians the Overview charts split on, so a course flagged here is flagged there. */
+  const breakdownMedians = useMemo(() => ({
+    course: medianOf(courseStats().map(c => c.score.weighted)),
+    faculty: medianOf(facultyStats().map(f => f.score.weighted)),
+  }), [])
+  const termBreakdownColumns = useMemo(
+    () => termBreakdownColumnsFor(breakdownMedians.course, breakdownMedians.faculty),
+    [breakdownMedians],
+  )
 
   const byTermKpis: MetricItem[] = useMemo(() => {
     if (!termStats) {
@@ -981,6 +1029,11 @@ export function ByFacultyPanel({
    * (Unlike the course strip, the underlying variable here was right: a faculty member IS
    * scored by `avgRating`. The bug was the label and the precision, not the entity.)
    */
+  const facultyOfferingCols = useMemo(
+    () => facultyOfferingColumnsFor(medianOf(facultyStats().map(f => f.score.weighted))),
+    [],
+  )
+
   const facultyKpis: MetricItem[] = useMemo(() => {
     if (!faculty) return []
     const stat = facultyStats().find(f => f.facultyId === facultyId)
@@ -1032,7 +1085,7 @@ export function ByFacultyPanel({
         <div className="-mx-4 lg:-mx-6">
           <DataTable<FacultyOfferingRow>
             data={offerings}
-            columns={facultyOfferingColumns}
+            columns={facultyOfferingCols}
             getRowId={(row) => `${row.facultyId}-${row.term}-${row.courseCode}`}
             selectable={false}
             searchable={false}
@@ -1151,6 +1204,11 @@ export function ByCoursePanel({
    * 'Instructors' replaces it: a real number the other tiles don't carry, and it sets up the
    * "Who taught" card below.
    */
+  const courseOfferingCols = useMemo(
+    () => courseOfferingColumnsFor(medianOf(facultyStats().map(f => f.score.weighted))),
+    [],
+  )
+
   const courseKpis: MetricItem[] = useMemo(() => {
     if (!courseOfferings.length) return []
     const stat = courseStats().find(c => c.courseCode === courseCode)
@@ -1363,7 +1421,7 @@ export function ByCoursePanel({
         <div className="-mx-4 lg:-mx-6">
           <DataTable<CourseOfferingRow>
             data={courseOfferings}
-            columns={courseOfferingColumns}
+            columns={courseOfferingCols}
             getRowId={(row) => `${row.courseCode}-${row.term}-${row.facultyId}`}
             selectable={false}
             searchable={false}

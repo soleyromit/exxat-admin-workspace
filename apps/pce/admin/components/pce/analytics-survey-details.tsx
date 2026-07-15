@@ -36,7 +36,9 @@ import { DataTable, Avatar, AvatarFallback, StatusBadge } from '@exxatdesignux/u
 import type { ColumnDef } from '@exxatdesignux/ui'
 import { TruncatedText } from '@/components/truncated-text'
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
-import { offeringPoints, compareTerms } from '@/lib/pce-analytics'
+import {
+  offeringPoints, compareTerms, medianOf, courseStats, facultyStats, RESPONSE_TARGET,
+} from '@/lib/pce-analytics'
 
 interface Row extends Record<string, unknown> {
   id: string
@@ -56,22 +58,25 @@ interface Row extends Record<string, unknown> {
 
 /* Amber below 3.7, brand 3.7–4.3, green at or above 4.3 — never red (VIZ-004, Aarti).
    Same tiers analytics-panels uses, so a score means one thing across the product. */
-const tierTextColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+/* Below the median is amber, everything else plain — the same rule as the By Term breakdown
+   and every chart. See the long note on `belowMedianColor` in analytics-panels.tsx: this file
+   had its own copy of the old absolute ladder, brand middle tier and all, so the register and
+   the tables were colouring the same numbers by different rules. */
+const belowMedianColor = (v: number, median: number) =>
+  v < median ? 'var(--chip-4)' : 'var(--foreground)'
 
-const rateColor = (pct: number) =>
-  pct >= 70 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chip-4)'
-
-const scoreCell = (v: number | null, suppressed: boolean) => (
+const scoreCell = (v: number | null, suppressed: boolean, median: number) => (
   <div
     className="text-right text-sm font-semibold tabular-nums"
-    style={{ color: v != null && !suppressed ? tierTextColor(v) : 'var(--muted-foreground)' }}
+    style={{ color: v != null && !suppressed ? belowMedianColor(v, median) : 'var(--muted-foreground)' }}
   >
     {suppressed ? '—' : v != null ? v.toFixed(2) : '—'}
   </div>
 )
 
-const COLUMNS: ColumnDef<Row>[] = [
+/* Factory — the score cells need medians to split on, and a module const can't hold them.
+   Program medians, matching the Overview charts, so a row flagged here is flagged there. */
+const columnsFor = (courseMedian: number, facultyMedian: number): ColumnDef<Row>[] => [
   {
     key: 'term', label: 'Term', sortable: true, width: 110,
     cell: (row) => <span className="text-sm text-muted-foreground">{row.term}</span>,
@@ -105,19 +110,19 @@ const COLUMNS: ColumnDef<Row>[] = [
     // Both rated entities, never merged into one "score" (D7/D27).
     key: 'courseAvg', label: 'Content', sortable: true, width: 92,
     header: () => <span className="block text-right">Content</span>,
-    cell: (row) => scoreCell(row.courseAvg, row.suppressed),
+    cell: (row) => scoreCell(row.courseAvg, row.suppressed, courseMedian),
   },
   {
     key: 'facultyAvg', label: 'Teaching', sortable: true, width: 92,
     header: () => <span className="block text-right">Teaching</span>,
-    cell: (row) => scoreCell(row.facultyAvg, row.suppressed),
+    cell: (row) => scoreCell(row.facultyAvg, row.suppressed, facultyMedian),
   },
   {
     key: 'responseRate', label: 'Response', sortable: true, width: 118,
     header: () => <span className="block text-right">Response</span>,
     cell: (row) => (
       <div className="text-right">
-        <span className="block text-sm font-semibold tabular-nums" style={{ color: rateColor(row.responseRate) }}>
+        <span className="block text-sm font-semibold tabular-nums" style={{ color: row.responseRate < RESPONSE_TARGET ? 'var(--chip-4)' : 'var(--foreground)' }}>
           {row.responseRate}%
         </span>
         {/* Frequency alongside the rate — Aarti D17: "8 of 20" beats "40%". */}
@@ -141,6 +146,16 @@ const COLUMNS: ColumnDef<Row>[] = [
 ]
 
 export function AnalyticsSurveyDetails() {
+  /* Program medians — same split the Overview charts use, so the raw register and the charts
+     above it never disagree about which numbers are flagged. */
+  const columns = useMemo(
+    () => columnsFor(
+      medianOf(courseStats().map(c => c.score.weighted)),
+      medianOf(facultyStats().map(f => f.score.weighted)),
+    ),
+    [],
+  )
+
   const router = useRouter()
 
   const rows = useMemo<Row[]>(
@@ -184,7 +199,7 @@ export function AnalyticsSurveyDetails() {
       <div className="-mx-4 lg:-mx-6">
         <DataTable<Row>
           data={rows}
-          columns={COLUMNS}
+          columns={columns}
           getRowId={(row) => row.id}
           searchable
           toolbarSlot={() => null}
