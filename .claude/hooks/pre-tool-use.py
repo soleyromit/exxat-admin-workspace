@@ -31,8 +31,8 @@ except ImportError:
     def _telemetry_emit(*a, **k): pass
 
 
-WORKSPACE = Path("/Users/romitsoley/Work")
-SNAPSHOT_PATH = WORKSPACE / "`node tools/ds/source.mjs --list`"
+WORKSPACE = Path(__file__).resolve().parents[2]
+SNAPSHOT_PATH = WORKSPACE / "docs" / "foundations" / "ds-snapshot.json"
 
 
 # Pattern-based rules: (rule_id, regex_pattern, message, file_path_pattern, blocking)
@@ -302,7 +302,7 @@ def load_component_truth() -> dict:
     if _component_truth_cache is not None:
         return _component_truth_cache
     try:
-        foundations = WORKSPACE / "`node tools/ds/source.mjs --list`"
+        foundations = SNAPSHOT_PATH
         if not foundations.exists():
             _component_truth_cache = {}
             return {}
