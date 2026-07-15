@@ -24,6 +24,7 @@ import {
 } from '@/components/charts-overview'
 import {
   GapQuadrant, CourseTrendStack, FacultyLeaderboardDots, Slopegraph, ProgramResponseTrend,
+  CourseRankDots, CohortStudentWaffle,
 } from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
@@ -511,6 +512,45 @@ export function ByTermPanel({
     }
   }, [termSlopeData, value])
 
+  /**
+   * The cohort's three populations — n students, n faculty, n courses.
+   *
+   * Romit: "in a cohort there are n number of students, faculties and courses, and your viz
+   * hasn't accounted for that." He was right, and the reason is worth writing down: the cohort
+   * axis reused the term axis's charts wholesale, so it inherited a shape built for a slice of
+   * TIME and applied it to a slice of PEOPLE. Every one of the three n's was aggregated into a
+   * scalar before it reached a mark.
+   *
+   * The rubric decides the marks, not novelty. Courses (5–12) and faculty (~8) are N≤30 →
+   * Cleveland dot (`VIZ-PATTERN-005`), which is the same mark the other tabs use — that
+   * repetition is instructed, and swapping in a different chart per tab for variety would
+   * break the rubric. Students (371) are N>30, which `cleveland-dot.md:25` puts outside the
+   * dot's range, and that is the dimension that genuinely had no mark: it was rendered as the
+   * bare string "69%".
+   *
+   * Scoped through `courseStats`/`facultyStats` with a cohort argument rather than a parallel
+   * `cohortCourseStats`, so the cohort axis and every other surface read the same derivation.
+   */
+  const cohortCourses = useMemo(
+    () => (axis === 'cohort' ? courseStats(undefined, value) : []),
+    [axis, value],
+  )
+  const cohortFaculty = useMemo(
+    () => (axis === 'cohort' ? facultyStats(undefined, value) : []),
+    [axis, value],
+  )
+  /* Medians over the COHORT's own entities, not the program's. On the term axis the program
+     median is right ("is this course weak, period"); here the question the selector implies is
+     "who is weak WITHIN this class", and a program median would answer a question nobody asked
+     of a cohort. */
+  const cohortMedians = useMemo(
+    () => ({
+      course: medianOf(cohortCourses.map(c => c.score.weighted)),
+      faculty: medianOf(cohortFaculty.map(f => f.score.weighted)),
+    }),
+    [cohortCourses, cohortFaculty],
+  )
+
   const termGaps = useMemo(() => (axis === 'term' ? gapPoints(value) : []), [axis, value])
   const termGapMeans = useMemo(() => ({
     course: termGaps.length ? termGaps.reduce((s, g) => s + g.courseAvg, 0) / termGaps.length : 0,
@@ -737,7 +777,16 @@ export function ByTermPanel({
       <ChartCard
         variant="normal"
         title="Program trend"
-        description="Course rating vs. faculty rating across terms."
+        /* Program-wide on BOTH axes, by design — Monil: "trend graph is not for a single term,
+           but for all the terms". That is defensible next to a term selector and dangerous next
+           to a cohort one: the KPI strip directly above IS cohort-scoped, so two adjacent
+           readings of "4.11" and "4.18" describe different populations. Saying which is which is
+           the whole fix; silently mixing scopes on one screen is the bug this file exists to end. */
+        description={
+          axis === 'term'
+            ? 'Course rating vs. faculty rating across terms.'
+            : `Course rating vs. faculty rating across terms — program-wide, not ${value}. The numbers above are this cohort's.`
+        }
         leoInsight={programTrendLeo}
       >
         <ChartFigure
@@ -801,7 +850,16 @@ export function ByTermPanel({
       <ChartCard
         variant="normal"
         title="Response rate across terms"
-        description={`The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. The band marks ${value}.`}
+        /* The band only exists on the term axis — `scopedTerm` below is undefined for a cohort,
+           because a cohort is not a point on a term axis and has nowhere to mark. The copy used
+           to promise "The band marks Class of 2026" regardless, describing a mark that was never
+           drawn. A description that names a thing the reader cannot find is worse than no
+           description: they go looking for it. */
+        description={
+          axis === 'term'
+            ? `The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. The band marks ${value}.`
+            : `The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. Program-wide across all terms, not scoped to ${value}.`
+        }
         leoInsight={responseTrendLeo}
       >
         <ChartFigure
@@ -829,6 +887,116 @@ export function ByTermPanel({
         </ChartFigure>
       </ChartCard>
       </div>
+
+      {/* Row 2, COHORT axis — the class's three populations, each as itself.
+          This row used to not exist: flipping to Cohort silently dropped every panel below the
+          trends, so the page got shorter and never said why. VIZ-006 is the binding rule —
+          "Cohort comparison must show pairing or distribution, never duo-numbers. Two large
+          numbers side-by-side is forbidden in dashboard contexts" — and a KPI strip reading
+          4.11 / 4.09 is exactly the forbidden shape. Distributions are the fix. */}
+      {axis === 'cohort' && (
+        <>
+          <ChartCard
+            variant="normal"
+            title={`Who answered — ${value}`}
+            description="One square is one student. A class of 38 and a class of 371 read differently here; under a percentage they look identical."
+          >
+            <ChartFigure
+              label={`Students who answered in ${value}`}
+              summary={`Waffle chart: ${termStats.responded} of ${termStats.enrolled} students in ${value} answered their evaluations, one square per student.`}
+              dataLength={termStats.enrolled}
+            >
+              {() => (
+                <>
+                  <CohortStudentWaffle
+                    responded={termStats.responded}
+                    enrolled={termStats.enrolled}
+                    target={RESPONSE_TARGET}
+                  />
+                  <ChartDataTable
+                    caption={`Student response in ${value}`}
+                    headers={['Outcome', 'Students']}
+                    rows={[
+                      ['Answered', termStats.responded],
+                      ['No response', Math.max(0, termStats.enrolled - termStats.responded)],
+                      ['Enrolled', termStats.enrolled],
+                    ]}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <ChartCard
+              variant="normal"
+              /* NOT "Courses in {value}" — the DataTable further down already owns that title,
+                 and it answers a different question with a different count: it lists the LIVE
+                 surveys you can push (5), while this ranks every course the class has been
+                 evaluated on (7). Two panels, one title, two numbers is how a reader concludes
+                 the page is broken. The title names the metric; the table names the worklist. */
+              title={`Course scores — ${value}`}
+              description={`All ${cohortCourses.length} courses this class has been evaluated on, ranked by content score against the class's own median. Content, not teaching — they are scored separately (D27).`}
+            >
+              <ChartFigure
+                label={`Courses in ${value} ranked by content score`}
+                summary={`Cleveland dot plot of the ${cohortCourses.length} courses ${value} took, ranked by course-content score against this cohort's median of ${cohortMedians.course.toFixed(2)}.`}
+                dataLength={cohortCourses.length}
+              >
+                {() => (
+                  <>
+                    <CourseRankDots
+                      courses={cohortCourses}
+                      median={cohortMedians.course}
+                      limit={cohortCourses.length}
+                    />
+                    <ChartDataTable
+                      caption={`Courses in ${value}`}
+                      headers={['Course', 'Content score', 'Response rate']}
+                      rows={cohortCourses.map(c => [
+                        `${c.courseCode} — ${c.courseName}`,
+                        c.score.weighted.toFixed(2),
+                        `${c.responseRate}%`,
+                      ])}
+                    />
+                  </>
+                )}
+              </ChartFigure>
+            </ChartCard>
+
+            <ChartCard
+              variant="normal"
+              title={`Teaching scores — ${value}`}
+              description={`The ${cohortFaculty.length} people who taught this class, against the class's own median. Each grey dot is one offering — a wide spread is a person whose result depends on the course.`}
+            >
+              <ChartFigure
+                label={`Faculty who taught ${value}`}
+                summary={`Cleveland dot plot of the ${cohortFaculty.length} faculty who taught ${value}, ranked by teaching score against this cohort's median of ${cohortMedians.faculty.toFixed(2)}.`}
+                dataLength={cohortFaculty.length}
+              >
+                {() => (
+                  <>
+                    <FacultyLeaderboardDots
+                      faculty={cohortFaculty}
+                      median={cohortMedians.faculty}
+                    />
+                    <ChartDataTable
+                      caption={`Faculty who taught ${value}`}
+                      headers={['Faculty', 'Teaching score', 'Courses', 'Response rate']}
+                      rows={cohortFaculty.map(f => [
+                        f.name,
+                        f.score.weighted.toFixed(2),
+                        f.courses,
+                        `${f.responseRate}%`,
+                      ])}
+                    />
+                  </>
+                )}
+              </ChartFigure>
+            </ChartCard>
+          </div>
+        </>
+      )}
 
       {/* Row 2 continued — the term-scoped viz this tab was missing.
           §9.1 maps it explicitly: "5 — spread across a term's courses | Q2 | Cleveland dot

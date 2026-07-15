@@ -575,10 +575,11 @@ function windowMean(
  * are looking at one term or all of them. Scoping the window to a single term would make
  * avg1y === avg3y === that term, i.e. drift always 0.
  */
-export function facultyStats(term?: string): FacultyStat[] {
+/** `cohort` scopes to one class — see the note on `courseStats`. */
+export function facultyStats(term?: string, cohort?: string): FacultyStat[] {
   const all = offeringPoints()
   const now = latestYear(all)
-  const points = term ? all.filter((p) => p.term === term) : all
+  const points = all.filter((p) => (!term || p.term === term) && (!cohort || p.cohort === cohort))
   const byFaculty = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byFaculty.get(p.facultyId) ?? []
@@ -837,10 +838,18 @@ export interface CourseStat {
  * routes to a Cleveland dot at this N. The 1Y/3Y windows deliberately stay on full history
  * (see `facultyStats`): scoping them to a single term makes drift identically zero.
  */
-export function courseStats(term?: string): CourseStat[] {
+/**
+ * `cohort` scopes the same derivation to one class rather than one term. Added because the
+ * cohort axis had no entity-level derivation at all: it rendered four scalars and a table,
+ * so "which of this class's courses is weakest" — the question a cohort exists to answer —
+ * was unanswerable. Scoping here rather than forking a `cohortCourseStats` keeps the ONE
+ * derivation this file promises; a parallel copy is how Overview and By Course came to
+ * disagree about the same course in the first place.
+ */
+export function courseStats(term?: string, cohort?: string): CourseStat[] {
   const all = offeringPoints()
   const now = latestYear(all)
-  const points = term ? all.filter((p) => p.term === term) : all
+  const points = all.filter((p) => (!term || p.term === term) && (!cohort || p.cohort === cohort))
   const byCourse = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byCourse.get(p.courseCode) ?? []

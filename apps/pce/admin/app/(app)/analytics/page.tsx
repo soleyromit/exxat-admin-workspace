@@ -131,7 +131,7 @@ function AnalyticsInner() {
       <SiteHeader title="Analytics" />
 
       <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnalyticsTab)} className="flex flex-col flex-1 min-h-0">
@@ -148,14 +148,14 @@ function AnalyticsInner() {
                  one tab whose scope is "everything", so a filter here would be a
                  different question. ───── */}
         <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-5xl">
+          <div className="flex flex-col gap-6">
             <AnalyticsOverviewPanel />
           </div>
         </TabsContent>
 
         {/* ───── By Term ───── */}
         <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-5xl">
+          <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <ToggleGroup type="single" value={axis} onValueChange={(v) => v && setAxis(v as Axis)} variant="outline" size="sm">
                 <ToggleGroupItem value="term"   aria-label="View by term">Term</ToggleGroupItem>
@@ -191,7 +191,7 @@ function AnalyticsInner() {
                  is also what VIZ-007 asks for — the all-faculty view is the default and the
                  dropdown is the optional narrowing, not the other way round. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-5xl">
+          <div className="flex flex-col gap-6">
             {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
                 /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
             <FacultyLeaderboardSection
@@ -262,7 +262,7 @@ function AnalyticsInner() {
 
         {/* ───── By Course ───── */}
         <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-5xl">
+          <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">Course</label>
               <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>

@@ -147,7 +147,7 @@ function MySurveysContent() {
     <>
       <SiteHeader title={filterParam === 'released' ? 'Results' : 'My Surveys'} />
       <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
         <Select value={term} onValueChange={setTerm}>
@@ -191,7 +191,7 @@ function MySurveysSkeleton() {
     <>
       <SiteHeader title="My Surveys" />
       <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           My Surveys
         </h1>
         <Skeleton className="h-8 w-36" />

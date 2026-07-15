@@ -25,6 +25,7 @@ import {
 } from '@/components/pce/plot-figure'
 import { heatmapCellColor, heatmapCellUsesLightText } from '@/lib/chart-heatmap-scale'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
+import { RESPONSE_TARGET } from '@/lib/pce-analytics'
 import type {
   FacultyStat,
   CourseStat,
@@ -740,6 +741,93 @@ export function ProgramResponseTrend({
   if (!rows.length) return <ChartEmpty note="No response history recorded yet." />
 
   return <PlotFigure spec={spec} height={height} />
+}
+
+/**
+ * The cohort's STUDENTS, one cell each — the dimension every other chart here aggregates away.
+ *
+ * A cohort is n students, n faculty and n courses, and the cohort axis showed none of the
+ * three: it rendered `69%` and four scalars. Courses and faculty are N≤30, where the rubric
+ * mandates a Cleveland dot (`VIZ-PATTERN-005`) — so those repeat the dot vocabulary by
+ * instruction, not by accident. Students are the N>30 case (371 here), and `cleveland-dot.md:25`
+ * puts N>30 outside the dot's range. That left the student dimension with no mark at all.
+ *
+ * A waffle because the question is part-of-whole over countable people: `unit: 1` means one
+ * cell IS one student, so the answer is read by counting, not by trusting a percentage. That
+ * is D17 verbatim — *"frequency counts > percentages for coverage data"*, "255 of 371" over
+ * "69%" — and it satisfies VIZ-010's `n-of-total` requirement that a bare `69%` fails.
+ *
+ * Not a progress bar (VIZ-P: bars are last resort, and Q1 ❌ *"Progress bar. Hides cohort,
+ * hides target, hides trajectory."*). The waffle keeps the individuals visible: a class of 38
+ * and a class of 371 look different here, and under a percentage they look identical.
+ */
+export function CohortStudentWaffle({
+  responded,
+  enrolled,
+  target = RESPONSE_TARGET,
+  height = 188,
+}: {
+  responded: number
+  enrolled: number
+  target?: number
+  height?: number
+}) {
+  const missing = Math.max(0, enrolled - responded)
+  const rows = React.useMemo(
+    () => [
+      { k: 'Answered', n: responded },
+      { k: 'No response', n: missing },
+    ],
+    [responded, missing],
+  )
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 8,
+      marginTop: 10,
+      marginBottom: 28,
+      marginRight: 8,
+      // No `x` scale block: the waffle declares no x channel, so it spans the frame. Declaring
+      // scale options for an absent channel is how the first version rendered an empty <g>.
+      y: { axis: null },
+      // Answered earns the colour; the shortfall is left as unfilled ground. Colour is not the
+      // only encoding (A11Y-008) — filled vs unfilled cells differ in fill AND position, and
+      // the caption carries the counts in text.
+      color: {
+        domain: ['Answered', 'No response'],
+        range: [theme.rate, theme.border],
+      },
+      marks: [
+        Plot.waffleY(rows, {
+          y: 'n',
+          fill: 'k',
+          unit: 1,
+          // rx '12%' rounded the cells into circles while the caption said "one square is one
+          // student" — the copy and the picture disagreed. 1px keeps them squares.
+          rx: 1,
+          stroke: theme.card,
+          strokeWidth: 0.5,
+          channels: { Students: 'n' },
+          tip: { format: { y: false, fill: true } },
+        }),
+      ],
+    }),
+    [rows],
+  )
+
+  if (enrolled <= 0) return <ChartEmpty note="No students enrolled in this cohort yet." />
+
+  const pct = Math.round((responded / enrolled) * 100)
+  return (
+    <div className="flex flex-col gap-2">
+      <PlotFigure spec={spec} height={height} />
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">{responded.toLocaleString()}</span> of{' '}
+        {enrolled.toLocaleString()} students answered · one square is one student ·{' '}
+        {pct >= target ? 'at or above' : `${target - pct} points under`} the {target}% target
+      </p>
+    </div>
+  )
 }
 
 export function ProgramTrendStack({
