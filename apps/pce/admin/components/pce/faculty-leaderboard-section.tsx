@@ -31,7 +31,7 @@ import {
   ChartDataTable,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { FacultyLeaderboardDots, FacultyCompareLines, FacultyResponseCompare } from '@/components/pce/analytics-plots'
+import { FacultyLeaderboardDots, FacultyCompareLines, ResponseCompareLines } from '@/components/pce/analytics-plots'
 import {
   facultyStats, facultyTermSeries, facultyResponseSeries, medianOf, benchmarks, termSeries,
   RESPONSE_TARGET,
@@ -315,7 +315,10 @@ export function FacultyLeaderboardSection({
           >
             {() => (
               <>
-                <FacultyResponseCompare rows={responseSeries} target={RESPONSE_TARGET} />
+                <ResponseCompareLines
+                  rows={responseSeries.map((r) => ({ ...r, label: r.name }))}
+                  target={RESPONSE_TARGET}
+                />
                 <ChartDataTable
                   caption="Faculty response rate by term"
                   headers={['Faculty', 'Term', 'Response rate']}

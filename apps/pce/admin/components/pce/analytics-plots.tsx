@@ -1077,12 +1077,20 @@ export function FacultyCompareLines({
    failing" was only possible one faculty member at a time.
    ════════════════════════════════════════════════════════════════════════════ */
 
-export function FacultyResponseCompare({
+export function ResponseCompareLines({
   rows,
   target = 80,
   height,
 }: {
-  rows: { facultyId: string; name: string; short: string; year: number; responseRate: number }[]
+  /**
+   * `label` is whatever the panels are — faculty on the roster chart, COURSE inside one
+   * faculty member's portfolio. The component was called `FacultyResponseCompare` and typed
+   * to `name`/`facultyId`, but nothing in it is about people: it draws "N entities' response
+   * rates by term against a target". Story 19 needs exactly that shape with course as the
+   * entity, and cloning it to change one field name is how a vocabulary rots into six
+   * near-identical charts.
+   */
+  rows: { label: string; short: string; year: number; responseRate: number }[]
   target?: number
   height?: number
 }) {
@@ -1090,9 +1098,9 @@ export function FacultyResponseCompare({
     () => [...new Map(rows.map((r) => [r.short, r.year])).entries()].sort((a, b) => a[1] - b[1]).map(([s]) => s),
     [rows],
   )
-  const names = React.useMemo(() => [...new Set(rows.map((r) => r.name))].sort(), [rows])
+  const names = React.useMemo(() => [...new Set(rows.map((r) => r.label))].sort(), [rows])
   const ghost = React.useMemo(
-    () => names.flatMap((panel) => rows.map((r) => ({ ...r, panel, series: `${panel}::${r.name}` }))),
+    () => names.flatMap((panel) => rows.map((r) => ({ ...r, panel, series: `${panel}::${r.label}` }))),
     [names, rows],
   )
 
@@ -1118,13 +1126,13 @@ export function FacultyResponseCompare({
         // The target IS the chart — a rate without its bar means nothing.
         Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
         Plot.line(rows, {
-          fy: 'name', x: 'short', y: 'responseRate', z: 'name',
+          fy: 'label', x: 'short', y: 'responseRate', z: 'label',
           stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x',
         }),
         Plot.dot(rows, {
-          fy: 'name', x: 'short', y: 'responseRate', r: 2.5,
+          fy: 'label', x: 'short', y: 'responseRate', r: 2.5,
           fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
-          channels: { Faculty: 'name', Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
+          channels: { Panel: 'label', Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
           tip: { format: { x: false, y: false, fill: false, r: false, fy: false } },
         }),
       ],
@@ -1135,62 +1143,6 @@ export function FacultyResponseCompare({
   if (!names.length) return <ChartEmpty note="No response history recorded yet." />
 
   return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Story 11 — one faculty member's response-rate trend.
-   Q4 → line + target. "Single % delta with arrow" is the RUBRIC's ❌ here: it hides
-   the path, and a drop-and-recovery looks identical to flat.
-   ════════════════════════════════════════════════════════════════════════════ */
-
-export function ResponseTrendLine({
-  rows,
-  target = 80,
-  height = 170,
-}: {
-  rows: { short: string; year: number; responseRate: number }[]
-  target?: number
-  height?: number
-}) {
-  const termOrder = React.useMemo(() => rows.map((r) => r.short), [rows])
-
-  const spec = React.useCallback(
-    (theme: PlotTheme) => ({
-      marginLeft: 36,
-      marginTop: 16,
-      marginBottom: 24,
-      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
-      y: { domain: [0, 100], label: null, ticks: 4, tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
-      marks: [
-        gridMark(theme),
-        Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4' }),
-        Plot.text([`target ${target}%`], {
-          y: target,
-          frameAnchor: 'right',
-          dy: -7,
-          dx: -2,
-          fill: theme.mutedForeground,
-          fontSize: CHART_TICK_FONT_SIZE,
-          textAnchor: 'end',
-        }),
-        Plot.areaY(rows, { x: 'short', y: 'responseRate', fill: theme.rate, fillOpacity: 0.1, curve: 'monotone-x' }),
-        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
-        Plot.dot(rows, {
-          x: 'short',
-          y: 'responseRate',
-          r: 3.5,
-          fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
-          stroke: theme.card,
-          strokeWidth: 1,
-          channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
-          tip: { format: { x: false, y: false, fill: false, r: false } },
-        }),
-      ],
-    }),
-    [rows, termOrder, target],
-  )
-
-  return <PlotFigure spec={spec} height={height} />
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

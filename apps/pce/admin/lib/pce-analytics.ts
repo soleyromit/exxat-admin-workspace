@@ -580,36 +580,6 @@ export function facultyCourseStats(facultyId: string): FacultyCourseStat[] {
 }
 
 /** A faculty member's response-rate history by term (story 11). */
-export function facultyResponseTrend(facultyId: string): { term: string; short: string; year: number; responseRate: number }[] {
-  const offs = facultyOfferings(facultyId)
-  const byTerm = new Map<string, OfferingPoint[]>()
-  offs.forEach((o) => {
-    const list = byTerm.get(o.term) ?? []
-    list.push(o)
-    byTerm.set(o.term, list)
-  })
-  return [...byTerm.entries()]
-    .map(([term, rows]) => {
-      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
-      const responded = rows.reduce((s, r) => s + r.responded, 0)
-      return {
-        term,
-        short: shortTerm(term),
-        year: termToYear(term),
-        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
-      }
-    })
-    .sort((a, b) => a.year - b.year)
-}
-
-/**
- * Every faculty member's RESPONSE RATE by term — the second half of §2.2's "Score Trends",
- * which the ref app shows as two side-by-side charts and we only had the first of.
- *
- * Score-across-faculty answered "who is rated low"; this answers "whose collection is
- * failing", which is a different problem with a different fix (a reminder, not coaching) —
- * and it was only askable one faculty member at a time.
- */
 export function facultyResponseSeries(): { facultyId: string; name: string; term: string; short: string; year: number; responseRate: number }[] {
   const byKey = new Map<string, OfferingPoint[]>()
   offeringPoints().forEach((p) => {
@@ -659,6 +629,43 @@ export function facultyHeatCells(facultyId: string): { cells: HeatCell[]; course
 }
 
 /** Every faculty member's score by term — story 9 (compared against each other over time). */
+/**
+ * Story 19's response half, BY COURSE — which is what the story actually asks for.
+ *
+ * This REPLACED a `facultyResponseTrend` that summed enrolled/responded across ALL of a
+ * faculty member's courses: a course collecting 45% and a course collecting 95% averaged to
+ * a reassuring line and neither problem was visible. Measured before deleting it — every
+ * faculty member's per-course means span ~11 points that the aggregate flattened, e.g.
+ * Patel's aggregate reads [71,70,78,74,82] while her four courses sit at 72–83.
+ *
+ * Course is the right unit because response is a property of the OFFERING, not the person:
+ * students skip a survey over its timing and workload, not over who is teaching it.
+ */
+export function facultyCourseResponseTrend(
+  facultyId: string,
+): { courseCode: string; courseName: string; term: string; short: string; year: number; responseRate: number }[] {
+  const byKey = new Map<string, OfferingPoint[]>()
+  facultyOfferings(facultyId).forEach((o) => {
+    const key = `${o.courseCode}::${o.term}`
+    byKey.set(key, [...(byKey.get(key) ?? []), o])
+  })
+  return [...byKey.values()]
+    .map((rows) => {
+      const r = rows[0]!
+      const enrolled = rows.reduce((s, x) => s + x.enrolled, 0)
+      const responded = rows.reduce((s, x) => s + x.responded, 0)
+      return {
+        courseCode: r.courseCode,
+        courseName: r.courseName,
+        term: r.term,
+        short: shortTerm(r.term),
+        year: r.year,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+      }
+    })
+    .sort((a, b) => a.year - b.year)
+}
+
 export function facultyTermSeries(): { facultyId: string; name: string; term: string; short: string; year: number; rating: number }[] {
   const points = offeringPoints()
   const byKey = new Map<string, OfferingPoint[]>()

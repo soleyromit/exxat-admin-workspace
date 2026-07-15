@@ -25,9 +25,11 @@ import {
 import {
   BenchmarkDistribution,
   CourseRankSpark,
-  ResponseTrendLine,
+  ResponseCompareLines,
 } from '@/components/pce/analytics-plots'
-import { benchmarks, facultyCourseStats, facultyResponseTrend, medianOf } from '@/lib/pce-analytics'
+import {
+  benchmarks, facultyCourseStats, facultyCourseResponseTrend, medianOf, RESPONSE_TARGET,
+} from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -49,7 +51,7 @@ export function FacultyPortfolioCharts({
   const bench = useMemo(() => benchmarks(facultyId), [facultyId])
   const courseRank = useMemo(() => facultyCourseStats(facultyId), [facultyId])
   const courseMedian = useMemo(() => medianOf(courseRank.map((c) => c.score.weighted)), [courseRank])
-  const responseTrend = useMemo(() => facultyResponseTrend(facultyId), [facultyId])
+  const courseResponse = useMemo(() => facultyCourseResponseTrend(facultyId), [facultyId])
 
   const benchLeo: ChartLeoInsight | null = avgRating != null
     ? {
@@ -223,27 +225,48 @@ export function FacultyPortfolioCharts({
         </ChartCard>
       </div>
 
-      {/* Story 11 — response-rate trend. Own data, so it is safe on both lenses. RUBRIC Q4's
-          ❌ is "single % delta with arrow — hides the path; a drop-and-recovery looks
-          identical to flat". */}
-      {responseTrend.length > 1 && (
+      {/*
+        Story 19's response half, BY COURSE — this card used to draw ONE aggregate line for
+        the whole portfolio, which is the same "average hides the problem" mistake the
+        leaderboard's spread dots exist to prevent, one level down.
+
+        The old `facultyResponseTrend` (deleted with this change) summed enrolled/responded
+        across ALL of a person's courses, so a course collecting 45% and a course collecting
+        95% averaged to a reassuring line and neither was visible. Measured on the real data
+        before deleting it: every faculty member's per-course means span ~11 points that the
+        aggregate flattened. Patel's aggregate reads [71,70,78,74,82]
+        while her courses sit at 72–83 — a calm line over a spread.
+
+        Course is the right unit because response is a property of the OFFERING, not the
+        person: students skip a survey over timing and workload, not over who is teaching.
+        Story 19 asks for trends "by course" and this is the half that wasn't.
+
+        Own data on both lenses, so no RBAC gate. RUBRIC Q4's ❌ is "single % delta with arrow
+        — hides the path"; the path is now per course.
+      */}
+      {courseResponse.length > 1 && (
         <ChartCard
           variant="normal"
-          title="Response rate over time"
-          description="Their own collection rate per term against the 80% target — the path, not a single delta."
+          title="Response rate by course"
+          description={`One panel per course against the ${RESPONSE_TARGET}% target. A portfolio-wide average would hide a course nobody answers behind one that everybody does.`}
         >
           <ChartFigure
-            label="Response rate over time"
-            summary={`Response rate per term for this faculty member against an 80% target, across ${responseTrend.length} terms.`}
-            dataLength={responseTrend.length}
+            label="Response rate by course"
+            summary={`Small multiples: one panel per course this faculty member teaches, showing its response rate by term against a ${RESPONSE_TARGET}% target.`}
+            dataLength={courseResponse.length}
           >
             {() => (
               <>
-                <ResponseTrendLine rows={responseTrend} />
+                <ResponseCompareLines
+                  rows={courseResponse.map((r) => ({ ...r, label: r.courseCode }))}
+                  target={RESPONSE_TARGET}
+                />
                 <ChartDataTable
-                  caption="Response rate by term"
-                  headers={['Term', 'Response rate']}
-                  rows={responseTrend.map((r) => [r.term, `${r.responseRate}%`])}
+                  caption="Response rate by course and term"
+                  headers={['Course', 'Term', 'Response rate']}
+                  rows={courseResponse.map((r) => [
+                    `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
+                  ])}
                 />
               </>
             )}
