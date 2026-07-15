@@ -372,6 +372,17 @@ export function ChartHeatmap({
    * be sized on BOTH axes or it stops being a grid. Omit to keep the 280px default.
    */
   height?: number
+  /**
+   * Rows visible before the plot scrolls. Above this a `dataZoom` slider appears and the y axis
+   * pans WITHIN the plot, so the column header stays put — which an overflow container around
+   * the canvas cannot do. Omit for no scrollbar.
+   *
+   * This prop shipped working but UNTYPED: it was added to the destructure and to
+   * `buildHeatmapOption`, never to the public type. `next build` did not care —
+   * `next.config.ts` sets `typescript: { ignoreBuildErrors: true }`, so a green build proves
+   * nothing about types. Only `npx tsc --noEmit` catches this class.
+   */
+  maxVisibleRows?: number
 }) {
   const resolvedHeight = height ?? DEFAULT_HEATMAP_HEIGHT
   const theme = useHeatmapTheme()

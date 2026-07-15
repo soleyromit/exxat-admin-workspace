@@ -700,6 +700,7 @@ export function facultyHeatCells(facultyId: string): { cells: HeatCell[]; course
   const offs = offeringPoints().filter((o) => o.facultyId === facultyId)
   const cells: HeatCell[] = offs.map((o) => ({
     courseCode: o.courseCode,
+    courseName: o.courseName,
     term: o.term,
     short: shortTerm(o.term),
     year: o.year,
@@ -986,6 +987,9 @@ export function courseFacultyStats(courseCode: string): CourseFacultyStat[] {
 /** Course × term matrix for the heatmap (story 4). Sparse — absent cells stay absent. */
 export interface HeatCell {
   courseCode: string
+  /** Carried so a consumer can name the course without a second lookup — `courseTermPoints`
+   *  already has it and the matrix was dropping it on the floor. */
+  courseName: string
   term: string
   short: string
   year: number
@@ -1005,6 +1009,7 @@ export function courseTermMatrix(): { cells: HeatCell[]; courses: string[]; term
   })
   const cells = ctp.map((p) => ({
     courseCode: p.courseCode,
+    courseName: p.courseName,
     term: p.term,
     short: shortTerm(p.term),
     year: p.year,

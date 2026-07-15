@@ -18,9 +18,9 @@
  * a chart without a takeaway is a banned pattern (Knaflic, via claude-practices).
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Button, ScrollRegion, type ChartConfig } from '@exxatdesignux/ui'
+import { Button, ScrollRegion, ToggleGroup, ToggleGroupItem, type ChartConfig } from '@exxatdesignux/ui'
 import {
   ChartCard,
   ChartFigure,
@@ -37,6 +37,7 @@ import {
   type DriftRow,
 } from '@/components/pce/analytics-plots'
 import { ChartHeatmap, buildChartHeatmapPoints } from '@/components/chart-heatmap'
+import { CourseTermGrid } from '@/components/pce/course-term-grid'
 import { responseFunnel } from '@/lib/pce-funnel'
 import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
 import { AnalyticsSurveyDetails } from '@/components/pce/analytics-survey-details'
@@ -85,6 +86,9 @@ const HEAT_VISIBLE_ROWS = 8
 /** Scores occupy a narrow high band; the ramp is spent there, not on 0–3 nobody scores. */
 const SCORE_HEAT_DOMAIN: readonly [number, number] = [3, 5]
 
+/** A/B for the matrix — see the toggle at the render site. */
+type HeatVariant = 'chart' | 'grid'
+
 /**
  * §2.1 calls the three Aggregate cards "the cleverest move here: they double as a preview of
  * and a table of contents for the other three tabs. Each card's three KPIs are count /
@@ -117,6 +121,7 @@ export function AnalyticsOverviewPanel() {
    * window of them and scrolls. Nothing is hidden and nothing is 1200px tall.
    */
   const heatRows = matrix.courses
+  const [heatVariant, setHeatVariant] = useState<HeatVariant>('chart')
 
   /* One lookup, then a dense rows x cols matrix. `null` is NOT a zero — it means the course ran
      no evaluation that term, which the DS heatmap now renders as empty ground. */
@@ -710,31 +715,67 @@ export function AnalyticsOverviewPanel() {
                 natural width (cols x cell + row labels) and left-aligned, rather than filling
                 the column because the column exists.
               */}
-              {/* ScrollRegion, not a bare `overflow-x-auto` div: a clipped overflow container
-                  that is not a DS primitive fails axe `scrollable-region-focusable` — it cannot
-                  be reached or panned by keyboard. The DS ships this exact wrapper for the case. */}
-              <ScrollRegion label="Course quality across terms, scroll horizontally" className="overflow-x-auto">
-                <div style={{ width: heatWidth, maxWidth: '100%' }}>
-                  <ChartHeatmap
-                    rows={heatRows}
-                    cols={matrix.terms.map(shortTerm)}
-                    points={heatPoints}
-                    config={heatConfig}
-                    activeIndex={activeIndex}
-                    peakCellIndex={heatPeakIndex}
-                    valueLabel="Course score"
+              {/* TWO VARIATIONS, one toggle — A/B for a decision Romit asked to compare rather
+                  than have argued at him. A = the DS OS ECharts heatmap. B = a tinted DataTable,
+                  which is what Mixpanel / Google Analytics / Zoho actually ship for a matrix
+                  like this. Same data, same colour ramp, same domain — so the only variable is
+                  the layout, which is the question. */}
+              <div className="mb-3 flex items-center gap-3">
+                <ToggleGroup
+                  type="single"
+                  value={heatVariant}
+                  onValueChange={(v) => v && setHeatVariant(v as HeatVariant)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ToggleGroupItem value="chart" aria-label="Show as heatmap chart">Heatmap</ToggleGroupItem>
+                  <ToggleGroupItem value="grid" aria-label="Show as tinted grid">Tinted grid</ToggleGroupItem>
+                </ToggleGroup>
+                <p className="text-xs text-muted-foreground">
+                  {heatVariant === 'chart'
+                    ? 'Variation A — DS OS heatmap. Squares read as a field; scrolls inside the plot.'
+                    : 'Variation B — DS DataTable with tinted cells. Sortable, selectable text; no canvas.'}
+                </p>
+              </div>
+
+              {heatVariant === 'chart' ? (
+                <>
+                  {/* ScrollRegion, not a bare `overflow-x-auto` div: a clipped overflow container
+                      that is not a DS primitive fails axe `scrollable-region-focusable` — it cannot
+                      be reached or panned by keyboard. The DS ships this exact wrapper for the case. */}
+                  <ScrollRegion label="Course quality across terms, scroll horizontally" className="overflow-x-auto">
+                    <div style={{ width: heatWidth, maxWidth: '100%' }}>
+                      <ChartHeatmap
+                        rows={heatRows}
+                        cols={matrix.terms.map(shortTerm)}
+                        points={heatPoints}
+                        config={heatConfig}
+                        activeIndex={activeIndex}
+                        peakCellIndex={heatPeakIndex}
+                        valueLabel="Course score"
+                        domain={SCORE_HEAT_DOMAIN}
+                        valueFormatter={fmt2}
+                        height={heatHeight}
+                        maxVisibleRows={HEAT_VISIBLE_ROWS}
+                      />
+                    </div>
+                  </ScrollRegion>
+                  {heatRows.length > HEAT_VISIBLE_ROWS && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      All {heatRows.length} evaluated courses are in the grid, weakest first —
+                      {' '}{HEAT_VISIBLE_ROWS} shown; drag the scrollbar for the rest.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="-mx-4 lg:-mx-6">
+                  <CourseTermGrid
+                    courses={heatRows}
+                    terms={matrix.terms}
+                    cells={matrix.cells}
                     domain={SCORE_HEAT_DOMAIN}
-                    valueFormatter={fmt2}
-                    height={heatHeight}
-                    maxVisibleRows={HEAT_VISIBLE_ROWS}
                   />
                 </div>
-              </ScrollRegion>
-              {heatRows.length > HEAT_VISIBLE_ROWS && (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  All {heatRows.length} evaluated courses are in the grid, weakest first —
-                  {' '}{HEAT_VISIBLE_ROWS} shown; drag the scrollbar for the rest.
-                </p>
               )}
               <ChartDataTable
                 caption="Course content score by course and term"
