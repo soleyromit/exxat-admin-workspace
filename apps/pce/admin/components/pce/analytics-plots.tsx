@@ -1117,6 +1117,23 @@ export function CourseTrendStack({
    for survives the split, which is the usual objection to faceting.
    ════════════════════════════════════════════════════════════════════════════ */
 
+/*
+  COLOUR = METRIC, WEIGHT = SUBJECT.
+
+  These lines used to draw in `brand` on the rule "brand = the subject of the view". That rule
+  cost more than it bought: the faculty-score metric renders as --chart-2 green in Overview's
+  "Program trajectory" and rendered as brand pink here, so the SAME METRIC had two colours one
+  tab apart. Spotted by looking at the two tabs side by side, which is the only way to see it.
+
+  The subject is already unambiguous without colour — it's the 2px solid line against 1px
+  ghosted peers, in its own labelled panel. Colour was doing redundant work and paying for it
+  in cross-tab consistency.
+
+  So: faculty score is --chart-2 wherever it appears. The paired response chart beside this one
+  stays --chart-3 because it is a DIFFERENT metric — you read across by panel row, not by hue.
+  `brand` is reserved for where there is a genuine subject and no metric ambiguity (the "you"
+  dot in BenchmarkDistribution).
+*/
 export function FacultyCompareLines({
   rows,
   programMean,
@@ -1170,7 +1187,7 @@ export function FacultyCompareLines({
           x: 'short',
           y: 'rating',
           z: 'name',
-          stroke: theme.brand,
+          stroke: theme.faculty,
           strokeWidth: 2,
           curve: 'monotone-x',
         }),
@@ -1179,7 +1196,7 @@ export function FacultyCompareLines({
           x: 'short',
           y: 'rating',
           r: 2.5,
-          fill: (d: { rating: number }) => (d.rating < programMean ? theme.warn : theme.brand),
+          fill: (d: { rating: number }) => (d.rating < programMean ? theme.warn : theme.faculty),
           channels: { Faculty: 'name', Term: 'short', Score: (d: { rating: number }) => fmt2(d.rating) },
           tip: { format: { x: false, y: false, fill: false, r: false, fy: false } },
         }),
