@@ -830,6 +830,75 @@ export function CohortStudentWaffle({
   )
 }
 
+/** The N above which a ranked dot plot stops being readable and becomes a wall of rows. */
+export const LARGE_ROSTER_N = 30
+
+/**
+ * The whole faculty body as one strip — the N>30 mark.
+ *
+ * `cleveland-dot.md:25` scopes the dot plot to N≤30 and hands anything larger to a strip plot,
+ * and the fixture is why that line never bit: it carried SIX faculty, so the leaderboard fit
+ * its card by accident of fixture size. Romit, 2026-07-15: a real university or cohort runs
+ * faculty "in the 30s". At 34 the dot plot is 34 labelled rows — a scrolling wall that answers
+ * "how is the faculty body doing" only if you read all of it.
+ *
+ * A strip answers that in one line: every faculty member is one tick on the score axis, and
+ * OVERLAP IS THE POINT — where ticks pile up is where the body sits, and a lone tick out left
+ * is the person to open. No names, deliberately: this is the "short crisp idea" half of the
+ * summary→expand pattern, and names arrive on expand.
+ *
+ * Amber below the median (VIZ-004 — never red), but the median rule carries the same fact
+ * positionally, so colour is not the only encoding (A11Y-008).
+ */
+export function FacultyScoreStrip({
+  faculty,
+  median,
+  height = 96,
+}: {
+  faculty: FacultyStat[]
+  median: number
+  height?: number
+}) {
+  const rows = React.useMemo(
+    () => faculty.map((f) => ({ name: f.name, score: f.score.weighted })),
+    [faculty],
+  )
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 12,
+      marginRight: 12,
+      // 26, not 10: the ticks span the full frame height, so a median label with only 10px of
+      // top margin lands ON the densest part of the strip — exactly the cluster it is naming.
+      // The label lives in the margin, above the marks.
+      marginTop: 26,
+      marginBottom: 30,
+      x: { domain: SCORE_VIEW, label: null, ticks: [3, 3.5, 4, 4.5, 5], ...axisDefaults(theme) },
+      y: { axis: null },
+      marks: [
+        Plot.ruleX([median], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.9 }),
+        Plot.text([`median ${median.toFixed(2)}`], {
+          frameAnchor: 'top-left', x: median, dy: -10, dx: 4,
+          fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
+        }),
+        Plot.tickX(rows, {
+          x: 'score',
+          stroke: (d: { score: number }) => (d.score < median ? theme.warn : theme.faculty),
+          strokeWidth: 2,
+          strokeOpacity: 0.7,
+          channels: { Faculty: 'name', Score: (d: { score: number }) => d.score.toFixed(2) },
+          tip: { format: { x: false, stroke: false } },
+        }),
+      ],
+    }),
+    [rows, median],
+  )
+
+  if (!rows.length) return <ChartEmpty note="No faculty in scope." />
+
+  return <PlotFigure spec={spec} height={height} />
+}
+
 export function ProgramTrendStack({
   series,
   responseTarget = 80,

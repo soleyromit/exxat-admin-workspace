@@ -20,7 +20,7 @@
  * Overview leaderboard: "This should be in faculty."
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
@@ -31,7 +31,10 @@ import {
   ChartDataTable,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { FacultyLeaderboardDots, FacultyCompareLines, ResponseCompareLines } from '@/components/pce/analytics-plots'
+import {
+  FacultyLeaderboardDots, FacultyCompareLines, ResponseCompareLines,
+  FacultyScoreStrip, LARGE_ROSTER_N,
+} from '@/components/pce/analytics-plots'
 import {
   facultyStats, facultyTermSeries, facultyResponseSeries, medianOf, benchmarks, termSeries,
   RESPONSE_TARGET,
@@ -40,6 +43,9 @@ import {
 const fmt2 = (v: number) => v.toFixed(2)
 
 const ALL_TERMS = '__all__'
+
+/** How many faculty the collapsed card lists — the lowest scorers, the only actionable ones. */
+const LOWEST_SHOWN = 5
 
 export function FacultyLeaderboardSection({
   term,
@@ -67,6 +73,24 @@ export function FacultyLeaderboardSection({
 
   const faculty = useMemo(() => facultyStats(term), [term])
   const median = useMemo(() => medianOf(faculty.map((f) => f.score.weighted)), [faculty])
+
+  /**
+   * Scale, and the expand pattern it forces.
+   *
+   * `LARGE_ROSTER_N` is the rubric's own N≤30 boundary for a Cleveland dot, not a number I
+   * picked. Below it nothing changes — the ranked dot plot and the full row list are still the
+   * best answer, and a roster of 8 gains nothing from an expand control. Above it the card has
+   * to summarise or it stops being a card.
+   */
+  const isLarge = faculty.length > LARGE_ROSTER_N
+  const [expanded, setExpanded] = useState(false)
+
+  /* `facultyStats` sorts best-first, so the LAST rows are the ones worth acting on. Collapsed,
+     show those — the top of a best-first list is precisely the people who need nothing. */
+  const collapsedRows = useMemo(
+    () => (isLarge && !expanded ? faculty.slice(-LOWEST_SHOWN).reverse() : faculty),
+    [faculty, isLarge, expanded],
+  )
   const series = useMemo(() => facultyTermSeries(), [])
   const responseSeries = useMemo(() => facultyResponseSeries(), [])
   const bench = useMemo(() => benchmarks(), [])
@@ -198,29 +222,55 @@ export function FacultyLeaderboardSection({
         variant="normal"
         title="Faculty leaderboard"
         description={
-          term
-            ? `${term} only. Each faculty member's class-size-weighted mean, with that term's offerings drawn behind it.`
-            : 'Each faculty member\'s class-size-weighted mean, with every one of their offerings drawn behind it — so a steady 4.2 and a volatile 4.2 stop looking identical.'
+          isLarge && !expanded
+            ? `${faculty.length} faculty${term ? ` in ${term}` : ''}. Every one is a tick — where they pile up is the body of the roster; a tick out on its own is the person to open. Expand for the ranked view.`
+            : term
+              ? `${term} only. Each faculty member's class-size-weighted mean, with that term's offerings drawn behind it.`
+              : 'Each faculty member\'s class-size-weighted mean, with every one of their offerings drawn behind it — so a steady 4.2 and a volatile 4.2 stop looking identical.'
         }
         leoInsight={leaderLeo}
       >
         <ChartFigure
           label="Faculty leaderboard"
-          summary="Ranked dot plot of faculty scores against the program median, with each faculty member's individual offering scores drawn as faint dots behind their weighted mean."
+          summary={
+            isLarge && !expanded
+              ? `Strip plot of all ${faculty.length} faculty scores against the program median of ${fmt2(median)}. The ${collapsedRows.length} lowest are listed below; expand for the full ranked view.`
+              : 'Ranked dot plot of faculty scores against the program median, with each faculty member\'s individual offering scores drawn as faint dots behind their weighted mean.'
+          }
           dataLength={faculty.length}
           leoInsight={leaderLeo}
         >
           {() => (
             <>
-              <FacultyLeaderboardDots faculty={faculty} median={median} leoAnchor={leaderAnchor} />
+              {/*
+                The summary→expand pattern, per Romit's 2026-07-15 review: a short crisp idea
+                first, then an enlarged view and a grid on expand — the monday.com widget shape.
+
+                The mark switches with N because the rubric switches with N: `cleveland-dot.md:25`
+                gives the dot plot to N≤30 and a strip to anything larger. At 34 the ranked dot
+                plot is 34 labelled rows, which is not a summary of anything — you have to read
+                all of it to learn one thing. The strip answers "how is the roster doing" in one
+                line and hands the ranked view to whoever asks for it.
+
+                Six faculty is why this never surfaced: the fixture was smaller than the rule.
+              */}
+              {isLarge && !expanded ? (
+                <FacultyScoreStrip faculty={faculty} median={median} />
+              ) : (
+                <FacultyLeaderboardDots faculty={faculty} median={median} leoAnchor={leaderAnchor} />
+              )}
 
               {/* Every aggregate is a door (§3 of the walkthrough): the leaderboard's whole
                   job is to end in "view insights → the entire view opens only for Dr. Sandra"
                   (Monil). A ranked chart you cannot click is a poster. Rows are also the
                   keyboard path to the drill-down — the plot itself is aria-hidden, so the
-                  navigable affordance has to be real DOM. */}
+                  navigable affordance has to be real DOM.
+
+                  Collapsed, the rows are the LOWEST few rather than the first few: the card's
+                  question is who needs attention, and `facultyStats` sorts best-first, so the
+                  head of the list is the people you never have to open. */}
               <ul className="mt-2 flex flex-col">
-                {faculty.map((f) => (
+                {collapsedRows.map((f) => (
                   <li
                     key={f.facultyId}
                     className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border py-1.5 last:border-b-0"
@@ -245,6 +295,29 @@ export function FacultyLeaderboardSection({
                   </li>
                 ))}
               </ul>
+
+              {/* No silent caps — the control says exactly what is being withheld and what
+                  expanding will show, so a truncated list never reads as the whole roster. */}
+              {isLarge && (
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpanded((v) => !v)}
+                    aria-expanded={expanded}
+                  >
+                    {expanded
+                      ? `Show the ${LOWEST_SHOWN} lowest only`
+                      : `Show all ${faculty.length} faculty`}
+                  </Button>
+                  {!expanded && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Showing the {collapsedRows.length} lowest of {faculty.length}. The strip
+                      above is all {faculty.length}.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <ChartDataTable
                 caption="Faculty scores against the program median"
