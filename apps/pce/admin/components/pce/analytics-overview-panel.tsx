@@ -506,7 +506,7 @@ export function AnalyticsOverviewPanel() {
       <ChartCard
         variant="normal"
         title="Course score vs faculty score"
-        description="One dot per course. Separates a course that needs redesigning from an instructor who needs support — two problems, two different fixes."
+        description="One dot per course, split by the two medians. A course scoring well says almost nothing about how its instructor scores — which is exactly why this is a quadrant and not a trend line, and why a course that needs redesigning and an instructor who needs support are two problems with two different fixes."
         leoInsight={gapLeo}
       >
         <ChartFigure

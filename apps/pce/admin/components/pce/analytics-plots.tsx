@@ -268,7 +268,20 @@ export function GapQuadrant({
     (theme: PlotTheme) => ({
       marginLeft: 44,
       marginBottom: 36,
-      marginTop: 24,
+      /*
+        A tall top margin, sized from MEASURED pixels rather than guessed — three attempts at
+        this by eye each looked plausible and each still collided.
+
+        Both top corners are contested by construction: the Leo chip and the widest-gap course
+        fight for top-LEFT, "Both strong" and the highest-scoring course fight for top-RIGHT,
+        because a corner label and the extreme point in that corner want the same pixels.
+
+        The measured layout: the chip is clamped ~15px under the SVG top and is 28px tall
+        (158–186 at the observed geometry). So the labels have to sit BELOW it, just above the
+        frame line, and the margin has to be tall enough to put the frame there. 52px does it;
+        the labels land clear of the chip and above the topmost dot's own label.
+      */
+      marginTop: 52,
       marginRight: 20,
       x: { domain: xDomain, label: 'Course content score →', labelAnchor: 'center' as const, ...axisDefaults(theme) },
       y: { domain: yDomain, label: '↑ Faculty score', labelAnchor: 'center' as const, ...axisDefaults(theme) },
@@ -280,13 +293,18 @@ export function GapQuadrant({
         Plot.ruleX([courseMean], { stroke: theme.rule, strokeDasharray: '4,4' }),
         Plot.ruleY([facultyMean], { stroke: theme.rule, strokeDasharray: '4,4' }),
 
-        // Quadrant labels — muted, so they read as scaffolding not data.
+        /*
+          Quadrant labels — muted, so they read as scaffolding not data. Top two live in the
+          band opened by marginTop (see above); bottom two sit inside the frame, where no
+          overlay competes. Verified by asserting bounding boxes don't intersect, not by eye —
+          my first two attempts at this both looked plausible and both still collided.
+        */
         Plot.text(['Faculty strong · course gap'], {
-          frameAnchor: 'top-left', dx: 6, dy: 6, fill: theme.mutedForeground,
+          frameAnchor: 'top-left', dx: 0, dy: -3, fill: theme.mutedForeground,
           fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
         }),
         Plot.text(['Both strong'], {
-          frameAnchor: 'top-right', dx: -6, dy: 6, fill: theme.mutedForeground,
+          frameAnchor: 'top-right', dx: 0, dy: -3, fill: theme.mutedForeground,
           fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
         }),
         Plot.text(['Both need attention'], {
@@ -298,16 +316,22 @@ export function GapQuadrant({
           fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
         }),
 
-        // The trend + its 95% band — "is this low for its own kind?"
-        Plot.linearRegressionY(points, {
-          x: 'courseAvg',
-          y: 'facultyAvg',
-          stroke: theme.mutedForeground,
-          strokeOpacity: 0.7,
-          fill: theme.mutedForeground,
-          fillOpacity: 0.08,
-          ci: 0.95,
-        }),
+        /*
+          NO REGRESSION LINE HERE, deliberately — it used to draw `linearRegressionY` with a
+          95% band and it argued against the card's own thesis.
+
+          Measured on this data: Pearson r = 0.114, r² = 0.013. Course-content score explains
+          1.3% of faculty-score variance. The fit was noise, so the band rendered as an
+          enormous grey hourglass that swallowed the median crosshairs — the very lines that
+          define the four quadrants — while the flat line inside it invited the reader to see a
+          trend the band itself was denying.
+
+          The deeper problem is semantic. This card exists to SEPARATE course quality from
+          instructor quality ("two problems, two different fixes"). A regression asserts that
+          one PREDICTS the other — the opposite claim. r² = 0.013 is not a missing finding, it
+          IS the finding, and the honest way to show independence is a quadrant with median
+          crosshairs, not a fitted line through a cloud.
+        */
 
         Plot.dot(points, {
           x: 'courseAvg',
