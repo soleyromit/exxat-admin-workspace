@@ -27,10 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-WORKSPACE = Path("/Users/romitsoley/Work")
+WORKSPACE = Path(__file__).resolve().parents[1]
 DESIGN_MD = WORKSPACE / "DESIGN.md"
 TRIGGERS_MD = WORKSPACE / "docs/triggers.md"
-DS_SNAPSHOT = WORKSPACE / "`node tools/ds/source.mjs --list`"
+DS_SNAPSHOT = WORKSPACE / "docs/foundations/ds-snapshot.json"
 PATTERNS_DIR = WORKSPACE / "docs/patterns"
 APPS_DIR = WORKSPACE / "apps"
 DEFAULT_OUT_BASE = WORKSPACE / "docs/exports"

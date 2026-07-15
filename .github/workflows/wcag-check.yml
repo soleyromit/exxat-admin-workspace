@@ -118,9 +118,21 @@ jobs:
         id: verify
         run: |
           echo "Checking $TARGET_URL ..."
+          # Vercel truncates+hashes branch aliases longer than the 63-char DNS
+          # label limit, so the guessed hostname below cannot resolve. Detect that
+          # up front rather than reporting it as an opaque curl failure.
+          HOST=${TARGET_URL#*://}; LABEL=${HOST%%.*}
+          if [ ${#LABEL} -gt 63 ]; then
+            echo "url_ok=false" >> $GITHUB_OUTPUT
+            echo "::warning::Preview hostname label is ${#LABEL} chars (DNS limit 63) for branch '${{ github.head_ref }}'; Vercel's real alias is truncated and cannot be guessed. Skipping WCAG check."
+            exit 0
+          fi
           # Follow redirects (-L) to get the final HTTP status, so 307→200 passes.
           # A 307 without -L means the deployment is behind auth or not yet live.
-          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20)
+          # The `|| STATUS="000"` guard is load-bearing: this step runs under `bash -e`,
+          # so a curl transport failure (DNS/timeout) aborts the step before the
+          # url_ok=false branch below can run, turning an intended skip into a hard failure.
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20) || STATUS="000"
           if [[ "$STATUS" == "200" ]]; then
             echo "url_ok=true" >> $GITHUB_OUTPUT
             echo "URL reachable (HTTP $STATUS)"
@@ -221,7 +233,15 @@ jobs:
       - name: Verify target URL is reachable
         id: verify
         run: |
-          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20)
+          echo "Checking $TARGET_URL ..."
+          # See the PCE job above for why the length guard and `|| STATUS="000"` are required.
+          HOST=${TARGET_URL#*://}; LABEL=${HOST%%.*}
+          if [ ${#LABEL} -gt 63 ]; then
+            echo "url_ok=false" >> $GITHUB_OUTPUT
+            echo "::warning::Preview hostname label is ${#LABEL} chars (DNS limit 63) for branch '${{ github.head_ref }}'; Vercel's real alias is truncated and cannot be guessed. Skipping WCAG check."
+            exit 0
+          fi
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20) || STATUS="000"
           if [[ "$STATUS" == "200" ]]; then
             echo "url_ok=true" >> $GITHUB_OUTPUT
             echo "URL reachable (HTTP $STATUS)"
