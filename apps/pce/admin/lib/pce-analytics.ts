@@ -311,6 +311,69 @@ export function termKpis(term: string): TermKpis {
   }
 }
 
+/**
+ * The same KPIs as `termKpis`, sliced by COHORT — a graduating class rather than a calendar
+ * term.
+ *
+ * The By Term tab has always had a Term|Cohort toggle, but only the term half was ever
+ * first-class: flipping to Cohort dropped you onto a fallback that reported "Overall
+ * completion / Responses / Courses" and NO SCORES AT ALL. You could not ask the one question
+ * the cohort axis exists for — "how did Class of 2027 rate what we taught them" — because
+ * both rated entities vanished when you switched.
+ *
+ * `cohort` has been on the offering grain since the scenario diversification, so this needed a
+ * derivation, not new data. Both entities kept apart (D7/D27), enrollment-weighted like every
+ * other headline here.
+ *
+ * The comparison is the PRIOR COHORT (Class of 2027 vs Class of 2026), which is the cohort
+ * analogue of term-over-term: the question is "is this class rating us differently than the
+ * one before it", not "how do they compare to a calendar term".
+ *
+ * NOT a new top-level tab. Aarti's D4 wants cohort as a co-equal axis; the accepted 2026-07-13
+ * model omits it. That IA question is still open and is Romit's to settle — this only makes
+ * the toggle that already ships behave as well as the term half beside it.
+ */
+export function cohortKpis(cohort: string): TermKpis {
+  const all = cohorts()
+  const i = all.indexOf(cohort)
+  const build = (c: string | undefined) => {
+    if (!c) return null
+    const pts = offeringPoints().filter((p) => p.cohort === c)
+    if (!pts.length) return null
+    const enrolled = pts.reduce((sum, p) => sum + p.enrolled, 0)
+    const responded = pts.reduce((sum, p) => sum + p.responded, 0)
+    const withContent = pts.filter((p) => p.courseAvg != null)
+    return {
+      courses: new Set(pts.map((p) => p.courseCode)).size,
+      courseAvg: withContent.length
+        ? round2(withContent.reduce((sum, p) => sum + p.courseAvg! * p.enrolled, 0) /
+            withContent.reduce((sum, p) => sum + p.enrolled, 0))
+        : null,
+      facultyAvg: round2(pts.reduce((sum, p) => sum + p.avgRating * p.enrolled, 0) / enrolled),
+      responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : null,
+      responded,
+      enrolled,
+    }
+  }
+  const cur = build(cohort)
+  const prev = build(i > 0 ? all[i - 1] : undefined)
+  const delta = (a: number | null | undefined, b: number | null | undefined) =>
+    a != null && b != null ? round2(a - b) : null
+
+  return {
+    term: cohort,
+    courses: cur?.courses ?? 0,
+    courseAvg: cur?.courseAvg ?? null,
+    courseDelta: delta(cur?.courseAvg, prev?.courseAvg),
+    facultyAvg: cur?.facultyAvg ?? null,
+    facultyDelta: delta(cur?.facultyAvg, prev?.facultyAvg),
+    responseRate: cur?.responseRate ?? null,
+    responseDelta: delta(cur?.responseRate, prev?.responseRate),
+    responded: cur?.responded ?? 0,
+    enrolled: cur?.enrolled ?? 0,
+  }
+}
+
 export interface TermCourseRow {
   courseCode: string
   courseName: string

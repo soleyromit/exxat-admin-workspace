@@ -35,7 +35,7 @@ import { StudentVoice } from '@/components/pce/student-voice'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import {
-  termKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
+  termKpis, cohortKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
   courseTrend, courseFacultyStats, courseStats, facultyStats, facultySurveys, termSlope,
   shortTerm, RESPONSE_TARGET,
   type TermCourseRow,
@@ -409,7 +409,13 @@ export function ByTermPanel({
    * derivations are term-keyed, and cohort as an axis is still unreconciled (Aarti D4 vs the
    * accepted July model), so it is not silently re-grained here.
    */
-  const termStats = useMemo(() => (axis === 'term' ? termKpis(value) : null), [axis, value])
+  /* Cohort is a first-class slice now, not a fallback — see `cohortKpis`. Flipping the toggle
+     used to drop you onto a score-less KPI set, so the cohort axis couldn't answer the one
+     question it exists for. Same shape either way, so everything downstream is unchanged. */
+  const termStats = useMemo(
+    () => (axis === 'term' ? termKpis(value) : cohortKpis(value)),
+    [axis, value],
+  )
   const termBreakdown = useMemo<TermBreakdownRow[]>(
     () => (axis === 'term' ? (termCourseBreakdown(value) as TermBreakdownRow[]) : []),
     [axis, value],
@@ -427,16 +433,10 @@ export function ByTermPanel({
   )
 
   const byTermKpis: MetricItem[] = useMemo(() => {
-    if (!termStats) {
-      const totalEnrolled  = termCourseRows.reduce((sum, r) => sum + r.enrolled, 0)
-      const totalResponses = termCourseRows.reduce((sum, r) => sum + Math.round(r.enrolled * r.completion / 100), 0)
-      const overallPct     = totalEnrolled > 0 ? Math.round((totalResponses / totalEnrolled) * 100) : 0
-      return [
-        { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,     delta: '', trend: 'neutral', description: `${termCourseRows.length} courses` },
-        { id: 'responses',  label: 'Responses',          value: totalResponses,        delta: '', trend: 'neutral', description: `of ${totalEnrolled} enrolled` },
-        { id: 'courses',    label: 'Courses',            value: termCourseRows.length, delta: '', trend: 'neutral', description: value },
-      ]
-    }
+    // No `!termStats` fallback any more. It was the score-less KPI set the cohort axis fell
+    // onto, and now that cohortKpis exists both branches always return a TermKpis, so the
+    // branch is unreachable. Deleted rather than left as a trap — an unreachable fallback is
+    // where the next weaker code path gets reintroduced.
     const t = termStats
     const signed = (d: number | null, suffix = '') =>
       d == null ? '' : `${d >= 0 ? '+' : ''}${suffix === '%' ? Math.round(d) : d.toFixed(2)}${suffix}`
@@ -449,14 +449,14 @@ export function ByTermPanel({
         delta: signed(t.courseDelta), trend: dir(t.courseDelta),
         // informational: an arrow tinted red on a score is banned (VIZ-004, Aarti).
         trendPolarity: 'informational',
-        description: 'content · vs prior term',
+        description: axis === 'term' ? 'content · vs prior term' : 'content · vs prior cohort',
       },
       {
         id: 'term-faculty-avg', label: 'Faculty score',
         value: t.facultyAvg != null ? t.facultyAvg.toFixed(2) : '—',
         delta: signed(t.facultyDelta), trend: dir(t.facultyDelta),
         trendPolarity: 'informational',
-        description: 'teaching · vs prior term',
+        description: axis === 'term' ? 'teaching · vs prior term' : 'teaching · vs prior cohort',
       },
       {
         id: 'term-response', label: 'Response rate',
