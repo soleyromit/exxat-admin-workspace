@@ -36,12 +36,16 @@ export function TermThemesInsight({
   surveys,
   scopeLabel,
   className,
+  minComments = 0,
 }: {
   /** The scope's surveys (already filtered to a term or cohort). */
   surveys: PceSurvey[]
   /** Rendered in the source citation, e.g. "Spring 2026". */
   scopeLabel: string
   className?: string
+  /** Below this corpus size the card yields — keyword themes over a handful of comments
+      read as noise, not insight (Romit, 2026-07-16). Student voice still shows the quotes. */
+  minComments?: number
 }) {
   const data = useMemo(() => {
     const withComments = surveys
@@ -114,7 +118,7 @@ export function TermThemesInsight({
   const [exploreTheme, setExploreTheme] = useState<string | null>(null)
   const [exploring, setExploring] = useState(false)
 
-  if (data.themes.length === 0) return null
+  if (data.themes.length === 0 || data.commentCount < minComments) return null
 
   const top = data.themes[0]
   const maxOccurrences = Math.max(1, ...data.themes.map((t) => t.occurrences))

@@ -648,12 +648,15 @@ export function facultyCourseStats(facultyId: string): FacultyCourseStat[] {
     .map(([courseCode, rows]) => {
       const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
       const responded = rows.reduce((s, r) => s + r.responded, 0)
+      const latest = rows.slice().sort((a, b) => b.year - a.year)[0]
       return {
         courseCode,
         courseName: rows[0]!.courseName,
         score: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
         terms: rows.length,
+        /** The row's door (aggregate → final node). Absent on archived offerings — fail closed. */
+        latestSurveyId: latest?.surveyId,
         trend: rows
           .slice()
           .sort((a, b) => a.year - b.year)

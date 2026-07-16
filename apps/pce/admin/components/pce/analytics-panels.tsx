@@ -1305,10 +1305,12 @@ export function ByTermPanel({
 
 /* ════════════════════ By Faculty panel ════════════════════ */
 export function ByFacultyPanel({
-  facultyId, onOpenSurvey, extraCharts,
+  facultyId, onOpenSurvey, extraCharts, heroCarriesRating = false,
 }: {
   facultyId: string
   onOpenSurvey: (surveyId: string) => void
+  /** The self dashboard's hero already shows the rating as a ScoreBullet — the tile would repeat it. */
+  heroCarriesRating?: boolean
   /** Optional viz rendered right after the KPI strip (e.g. profile radar + distribution band). */
   extraCharts?: ReactNode
 }) {
@@ -1349,14 +1351,14 @@ export function ByFacultyPanel({
     return [
       { id: 'f-courses', label: 'Courses taught', value: stat.courses, delta: '', trend: 'neutral',
         description: `${stat.offerings} offering${stat.offerings === 1 ? '' : 's'} across ${stat.terms} term${stat.terms === 1 ? '' : 's'}` },
-      { id: 'f-rating', label: 'Avg faculty rating', value: fmt2(stat.score.weighted), delta: '', trend: 'neutral',
-        description: 'weighted by class size' },
+      ...(heroCarriesRating ? [] : [{ id: 'f-rating', label: 'Avg faculty rating', value: fmt2(stat.score.weighted), delta: '', trend: 'neutral',
+        description: 'weighted by class size' }]),
       { id: 'f-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
         description: `target ${RESPONSE_TARGET}%` },
       { id: 'f-terms', label: 'Terms active', value: stat.terms, delta: '', trend: 'neutral',
         description: 'term appearances' },
     ]
-  }, [faculty, facultyId])
+  }, [faculty, facultyId, heroCarriesRating])
 
   /* A blank region is not an empty state (state-review): with real IDs a stale or
      mistyped facultyId is an expected input, and it must say so. */
@@ -1394,7 +1396,8 @@ export function ByFacultyPanel({
         Aarti's D14 puts AI summaries first at every aggregation level.
       */}
       {facultyThemeSurveys.length > 0 && (
-        <TermThemesInsight surveys={facultyThemeSurveys} scopeLabel={faculty.name} />
+        <TermThemesInsight surveys={facultyThemeSurveys}
+            minComments={10} scopeLabel={faculty.name} />
       )}
 
       <StudentVoice axis="faculty" facultyId={faculty.id} scopeLabel={faculty.name} />

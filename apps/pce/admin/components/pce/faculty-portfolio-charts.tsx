@@ -16,6 +16,7 @@
  */
 
 import { useMemo } from 'react'
+import Link from 'next/link'
 import {
   ChartCard,
   ChartFigure,
@@ -113,11 +114,17 @@ export function FacultyPortfolioCharts({
           (axe `heading-order`). Real section, no need to see it. */}
       <h2 className="sr-only">Performance</h2>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      {/* Self lens drops the standing swarm (the hero carries it), leaving one card in
+          this pair — a half-width orphan beside dead space unless the grid collapses. */}
+      <div className={`grid grid-cols-1 items-start gap-4 ${lens === 'admin' ? 'lg:grid-cols-2' : ''}`}>
         {/* Story 15 — "avg score, PERCENTILE, response rate", answered without a percentile.
             §7.3 bans percentile by name; Aarti validated the substitute ("compared to the
             department average to the university average") and cited Watermark/Anthology as
             proof faculty accept it. Peer swarm is admin-only via showPeers. */}
+        {/* Admin only: the self dashboard's HERO carries standing (two ScoreBullets vs
+            dept/university), so this card would repeat it one screen later. The swarm
+            stays for admins, where the unnamed peer distribution is the value. */}
+        {lens === 'admin' && (
         <ChartCard
           variant="normal"
           title="Standing vs benchmarks"
@@ -186,6 +193,7 @@ export function FacultyPortfolioCharts({
             }
           </ChartFigure>
         </ChartCard>
+        )}
 
         {/* Stories 16 + 19 — one component, because they are one idea: the course as the
             unit of analysis WITHIN a person. Guarded for n=1: some faculty teach a single
@@ -215,7 +223,7 @@ export function FacultyPortfolioCharts({
                     {courseRank.map((c, i) => (
                       <div
                         key={c.courseCode}
-                        className="grid grid-cols-[1.5rem_1fr_5rem_3.5rem] items-center gap-3 border-b border-border py-2 last:border-b-0"
+                        className="grid grid-cols-[1.5rem_1fr_5rem_3.5rem_1.5rem] items-center gap-3 border-b border-border py-2 last:border-b-0"
                       >
                         <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                         <div className="min-w-0">
@@ -226,6 +234,19 @@ export function FacultyPortfolioCharts({
                         <span className="text-right text-sm font-medium tabular-nums">
                           {fmt2(c.score.weighted)}
                         </span>
+                        {/* The aggregate's door (Round-3 §1.6). Archived offerings carry no
+                            surveyId — the cell stays empty rather than linking nowhere. */}
+                        {c.latestSurveyId ? (
+                          <Link
+                            href={`/results/${encodeURIComponent(`${c.latestSurveyId}:${facultyId}`)}`}
+                            aria-label={`Open latest result for ${c.courseCode}`}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
+                          </Link>
+                        ) : (
+                          <span aria-hidden="true" />
+                        )}
                       </div>
                     ))}
                   </div>

@@ -20,6 +20,8 @@ import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByFacultyPanel } from '@/components/pce/analytics-panels'
 import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
+import { ScoreBullet } from '@/components/pce/score-bullet'
+import { benchmarks, courseStats } from '@/lib/pce-analytics'
 
 // Shared by the admin "By Faculty" profile (/admin/faculty/[id]) and the faculty
 // self-view (/my-dashboard) — which is exactly why `lens` exists: the two differ by more
@@ -120,6 +122,23 @@ export function FacultyProfileDashboard({
     )
   }
 
+  /* Hero numbers — the persona's "two ratings side-by-side" with comparative context
+     (V2: "0.3 above average"). Teaching compares to dept+university (benchmarks —
+     Aarti-validated percentile substitute); course content compares to the program
+     average, since content is a property of courses, not departments. */
+  const bench = useMemo(() => benchmarks(facultyId), [facultyId])
+  const contentScore = useMemo(() => {
+    const withContent = offerings.filter(o => typeof o.courseAvg === 'number')
+    const enrolled = withContent.reduce((s, o) => s + o.enrolled, 0)
+    return enrolled > 0
+      ? +(withContent.reduce((s, o) => s + (o.courseAvg as number) * o.enrolled, 0) / enrolled).toFixed(2)
+      : null
+  }, [offerings])
+  const programContentAvg = useMemo(() => {
+    const cs = courseStats()
+    return cs.length ? +(cs.reduce((s, c) => s + c.score.weighted, 0) / cs.length).toFixed(2) : null
+  }, [])
+
   const lastWithFaculty = [...trendData].reverse().find(d => d.faculty != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
     ? (() => {
@@ -150,6 +169,32 @@ export function FacultyProfileDashboard({
   const extraCharts = (
     <>
       <FacultyPortfolioCharts facultyId={facultyId} avgRating={avgRating} lens={lens} />
+
+      {/* Trends — the longitudinal leg lives HERE when it ships, not behind its own nav slot
+          (two-surface faculty IA, 2026-07-16; Mobbin: 15Five ships Reporting inside the one
+          personal dashboard). Until then this names what is coming — never a centered blob. */}
+      {lens === 'self' && (
+        <section aria-label="Trends" className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Trends</h2>
+          <p className="text-xs text-muted-foreground">
+            Longitudinal analytics is next — your single-survey results already live under each
+            course above.
+          </p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {/* "Rating trend across terms" is NOT listed — it already ships below this
+                section. A placeholder must never promise what the page already does. */}
+            {[
+              { icon: 'fa-code-compare', title: 'Your scores vs the program average' },
+              { icon: 'fa-layer-group', title: 'Course vs teaching, scored separately' },
+            ].map((t) => (
+              <div key={t.title} className="flex items-center gap-2.5 rounded-lg border border-dashed border-border px-3 py-2.5">
+                <i className={`fa-light ${t.icon} text-sm text-muted-foreground`} aria-hidden="true" />
+                <span className="text-xs text-muted-foreground">{t.title}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ChartCard
         variant="normal"
@@ -233,6 +278,45 @@ export function FacultyProfileDashboard({
             </div>
           )}
         </div>
+        {/* The hero: both ratings side-by-side with their comparative context — the header
+            answers "how am I doing" before anything scrolls (Mobbin: Upwork/Contra lead with
+            identity + headline score; persona V2's exact ask). ScoreBullet is the
+            §7.3-safe percentile substitute — averages, never ranks. */}
+        <div className="flex shrink-0 items-start gap-8">
+          {contentScore != null && programContentAvg != null && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Course content</span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl font-semibold tabular-nums leading-none">{contentScore.toFixed(2)}</span>
+                <ScoreBullet
+                  score={contentScore}
+                  universityAvg={programContentAvg}
+                  ariaLabel={`Course content ${contentScore.toFixed(2)} of 5, program average ${programContentAvg.toFixed(2)}`}
+                />
+              </div>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {contentScore >= programContentAvg ? '+' : ''}{(contentScore - programContentAvg).toFixed(2)} vs program
+              </span>
+            </div>
+          )}
+          {avgRating != null && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Teaching</span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl font-semibold tabular-nums leading-none">{avgRating.toFixed(2)}</span>
+                <ScoreBullet
+                  score={avgRating}
+                  deptAvg={bench.department}
+                  universityAvg={bench.university}
+                  ariaLabel={`Teaching ${avgRating.toFixed(2)} of 5, department average ${bench.department.toFixed(2)}, university average ${bench.university.toFixed(2)}`}
+                />
+              </div>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {avgRating >= bench.department ? '+' : ''}{(avgRating - bench.department).toFixed(2)} vs department
+              </span>
+            </div>
+          )}
+        </div>
         {showPrismLink && (
           <Button variant="outline" size="sm" asChild>
             <a href={`${PRISM_BASE}/${faculty.id}`} target="_blank" rel="noopener noreferrer">
@@ -246,7 +330,8 @@ export function FacultyProfileDashboard({
       {/* Analytics — By Faculty design + profile radar + distribution band */}
       <div className="flex-1 overflow-auto" tabIndex={0} style={{ padding: '8px 28px 28px' }}>
         <div className="flex flex-col gap-6 max-w-4xl">
-          <ByFacultyPanel facultyId={faculty.id} onOpenSurvey={setSelectedSurveyId} extraCharts={extraCharts} />
+          <ByFacultyPanel
+        heroCarriesRating facultyId={faculty.id} onOpenSurvey={setSelectedSurveyId} extraCharts={extraCharts} />
         </div>
       </div>
 
