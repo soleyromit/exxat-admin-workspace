@@ -710,12 +710,16 @@ interface ThemeRowDatum {
   dist: [number, number, number, number, number]
 }
 
-/* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
+/* Ordered 1–5 rating ramp — ONE hue, more-is-darker (sequential is the safe
+   default for an ordered scale; the old amber low end read brown as a wide
+   solid — Romit 2026-07-16). Opacity steps over the card surface compose a
+   validated monotonic lightness ramp of --chart-2 (rel. luminance .78 → .14);
+   identity is position + gaps + legend, never color alone. */
 const RATING_SERIES = [
-  { key: 'r1', label: 'Rated 1', color: 'var(--chip-4)',  opacity: 1 },
-  { key: 'r2', label: 'Rated 2', color: 'var(--chip-4)',  opacity: 0.45 },
-  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
-  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.45 },
+  { key: 'r1', label: 'Rated 1', color: 'var(--chart-2)', opacity: 0.16 },
+  { key: 'r2', label: 'Rated 2', color: 'var(--chart-2)', opacity: 0.38 },
+  { key: 'r3', label: 'Rated 3', color: 'var(--chart-2)', opacity: 0.62 },
+  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.82 },
   { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
 ] as const
 
