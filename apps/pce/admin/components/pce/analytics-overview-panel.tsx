@@ -18,9 +18,9 @@
  * a chart without a takeaway is a banned pattern (Knaflic, via claude-practices).
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import { Button, ScrollRegion, ToggleGroup, ToggleGroupItem, type ChartConfig } from '@exxatdesignux/ui'
+import { Button } from '@exxatdesignux/ui'
 import {
   ChartCard,
   ChartFigure,
@@ -36,7 +36,6 @@ import {
   KpiSpark,
   type DriftRow,
 } from '@/components/pce/analytics-plots'
-import { ChartHeatmap, buildChartHeatmapPoints } from '@/components/chart-heatmap'
 import { CourseTermGrid } from '@/components/pce/course-term-grid'
 import { responseFunnel } from '@/lib/pce-funnel'
 import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
@@ -49,45 +48,14 @@ import {
   gapPoints,
   courseTermMatrix,
   medianOf,
-  shortTerm,
 } from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
-/**
- * Heatmap geometry — width is a design decision, not a leftover.
- *
- * A heatmap is a grid of SQUARES. Stretch 5 terms across a 1600px card and each cell becomes a
- * 300px lozenge: the eye stops reading a matrix and starts reading five unrelated bars. So the
- * figure is sized to its content (`gutter + cols x cell`) and left-aligned, and the page's width
- * is spent on whitespace instead of on distortion. This is the width question Romit raised —
- * full-width is right for a table and wrong for a grid.
- */
-const HEAT_CELL_PX = 76
-const HEAT_LABEL_GUTTER = 124
-/** Column headers sit on top (`xAxis.position: "top"`), plus the DS grid's own top/bottom. */
-const HEAT_AXIS_GUTTER = 52
 
-/**
- * Rows VISIBLE AT ONCE — a viewport, not a cap.
- *
- * This used to be a truncation ("show the 15 weakest, hide the rest behind a button"), which
- * answers the wrong question. Romit: "can't these charts have a scroll bar or expand so I can
- * explore this data more clearly?" — the data is the point; hiding it to fit a card is the
- * failure. So every course is always IN the chart, 8 are on screen, and the rest are a
- * scrollbar-drag away. Nothing is withheld and nothing is 1200px tall.
- *
- * 8 x 76px ≈ 660px: tall enough that the pattern across terms reads, short enough that the card
- * does not push the rest of the page off the screen. At the stated 10–15 course average that
- * means a short drag, not a wall.
- */
-const HEAT_VISIBLE_ROWS = 8
 
 /** Scores occupy a narrow high band; the ramp is spent there, not on 0–3 nobody scores. */
 const SCORE_HEAT_DOMAIN: readonly [number, number] = [3, 5]
-
-/** A/B for the matrix — see the toggle at the render site. */
-type HeatVariant = 'chart' | 'grid'
 
 /**
  * §2.1 calls the three Aggregate cards "the cleverest move here: they double as a preview of
@@ -121,48 +89,10 @@ export function AnalyticsOverviewPanel() {
    * window of them and scrolls. Nothing is hidden and nothing is 1200px tall.
    */
   const heatRows = matrix.courses
-  const [heatVariant, setHeatVariant] = useState<HeatVariant>('chart')
 
-  /* One lookup, then a dense rows x cols matrix. `null` is NOT a zero — it means the course ran
-     no evaluation that term, which the DS heatmap now renders as empty ground. */
-  const heatPoints = useMemo(() => {
-    const byKey = new Map(matrix.cells.map((c) => [`${c.courseCode}::${c.term}`, c.courseAvg]))
-    const grid = heatRows.map((code) =>
-      matrix.terms.map((t) => byKey.get(`${code}::${t}`) ?? null),
-    )
-    return buildChartHeatmapPoints(heatRows, matrix.terms.map(shortTerm), grid)
-  }, [heatRows, matrix.terms, matrix.cells])
 
-  /* Leo anchors on the WEAKEST cell, not the strongest. The prop is named peakCellIndex because
-     the DS's own example charts activity counts, where the peak is the story; here the lowest
-     score is. Same slot, opposite end. */
-  const heatPeakIndex = useMemo(() => {
-    let idx = 0
-    let worst = Infinity
-    heatPoints.forEach((p) => {
-      if (p.value !== null && p.value < worst) { worst = p.value; idx = p.cellIndex }
-    })
-    return idx
-  }, [heatPoints])
 
-  const heatConfig = useMemo<ChartConfig>(
-    () => ({ value: { label: 'Course score', color: 'var(--brand-color)' } }),
-    [],
-  )
 
-  /* Natural size on BOTH axes — see the note at the render site. Height follows the row count
-     for the same reason width follows the column count: a cell that is 76 wide and 14 tall is
-     not a square, and a heatmap of lozenges is just a bar chart that lies about its shape. */
-  const heatWidth = useMemo(
-    () => HEAT_LABEL_GUTTER + matrix.terms.length * HEAT_CELL_PX,
-    [matrix.terms.length],
-  )
-  /* Height follows the VIEWPORT, not the row count — the scrollbar covers the overflow. A
-     15-row grid rendered at full height was 1192px of card that shoved the page down. */
-  const heatHeight = useMemo(
-    () => HEAT_AXIS_GUTTER + Math.min(heatRows.length, HEAT_VISIBLE_ROWS) * HEAT_CELL_PX,
-    [heatRows.length],
-  )
 
   /* The chart draws the lowest N; its data table is the ACCESSIBLE EQUIVALENT of the chart,
      so it must list the same rows. A table of all 15 under a chart of 6 would mean the two
@@ -701,7 +631,7 @@ export function AnalyticsOverviewPanel() {
           dataLength={matrix.cells.length}
           leoInsight={heatLeo}
         >
-          {(activeIndex) => (
+          {() => (
             <>
               {/*
                 The DS OS heatmap (`components/chart-heatmap.tsx`, ECharts), not a hand-rolled
@@ -715,68 +645,33 @@ export function AnalyticsOverviewPanel() {
                 natural width (cols x cell + row labels) and left-aligned, rather than filling
                 the column because the column exists.
               */}
-              {/* TWO VARIATIONS, one toggle — A/B for a decision Romit asked to compare rather
-                  than have argued at him. A = the DS OS ECharts heatmap. B = a tinted DataTable,
-                  which is what Mixpanel / Google Analytics / Zoho actually ship for a matrix
-                  like this. Same data, same colour ramp, same domain — so the only variable is
-                  the layout, which is the question. */}
-              <div className="mb-3 flex items-center gap-3">
-                <ToggleGroup
-                  type="single"
-                  value={heatVariant}
-                  onValueChange={(v) => v && setHeatVariant(v as HeatVariant)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ToggleGroupItem value="chart" aria-label="Show as heatmap chart">Heatmap</ToggleGroupItem>
-                  <ToggleGroupItem value="grid" aria-label="Show as tinted grid">Tinted grid</ToggleGroupItem>
-                </ToggleGroup>
-                <p className="text-xs text-muted-foreground">
-                  {heatVariant === 'chart'
-                    ? 'Variation A — DS OS heatmap. Squares read as a field; scrolls inside the plot.'
-                    : 'Variation B — DS DataTable with tinted cells. Sortable, selectable text; no canvas.'}
-                </p>
+              {/*
+                The tinted DataTable — Romit picked it over the ECharts canvas after seeing both.
+
+                The deciding evidence was not taste. axe on identical data: the canvas reported 0
+                violations and the grid reported 34 serious color-contrast failures — and the
+                canvas's zero was FALSE. axe cannot see inside a canvas; ECharts labels are
+                painted pixels, so both variants had the same failures and only one could say so.
+                A chart that cannot be audited cannot be trusted to be accessible.
+
+                Everything else followed: row labels that cannot be dropped for lack of space, a
+                table that scrolls like a table, sortable columns, selectable text, no
+                aria-label-on-a-div, no pixel overlay covering the worst cell, and no parallel
+                sr-only table to keep in sync — the grid IS the accessible artefact.
+
+                Width still matters here, but the table solves it natively: the course column
+                takes the text it needs and the term columns are fixed, so nothing stretches into
+                lozenges the way a 5-column canvas did across a 1360px card.
+              */}
+              <div className="-mx-4 lg:-mx-6">
+                <CourseTermGrid
+                  courses={heatRows}
+                  terms={matrix.terms}
+                  cells={matrix.cells}
+                  domain={SCORE_HEAT_DOMAIN}
+                />
               </div>
 
-              {heatVariant === 'chart' ? (
-                <>
-                  {/* ScrollRegion, not a bare `overflow-x-auto` div: a clipped overflow container
-                      that is not a DS primitive fails axe `scrollable-region-focusable` — it cannot
-                      be reached or panned by keyboard. The DS ships this exact wrapper for the case. */}
-                  <ScrollRegion label="Course quality across terms, scroll horizontally" className="overflow-x-auto">
-                    <div style={{ width: heatWidth, maxWidth: '100%' }}>
-                      <ChartHeatmap
-                        rows={heatRows}
-                        cols={matrix.terms.map(shortTerm)}
-                        points={heatPoints}
-                        config={heatConfig}
-                        activeIndex={activeIndex}
-                        peakCellIndex={heatPeakIndex}
-                        valueLabel="Course score"
-                        domain={SCORE_HEAT_DOMAIN}
-                        valueFormatter={fmt2}
-                        height={heatHeight}
-                        maxVisibleRows={HEAT_VISIBLE_ROWS}
-                      />
-                    </div>
-                  </ScrollRegion>
-                  {heatRows.length > HEAT_VISIBLE_ROWS && (
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      All {heatRows.length} evaluated courses are in the grid, weakest first —
-                      {' '}{HEAT_VISIBLE_ROWS} shown; drag the scrollbar for the rest.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <div className="-mx-4 lg:-mx-6">
-                  <CourseTermGrid
-                    courses={heatRows}
-                    terms={matrix.terms}
-                    cells={matrix.cells}
-                    domain={SCORE_HEAT_DOMAIN}
-                  />
-                </div>
-              )}
               <ChartDataTable
                 caption="Course content score by course and term"
                 headers={['Course', 'Term', 'Course score', 'Faculty score']}

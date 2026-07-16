@@ -38,7 +38,9 @@
 import * as React from 'react'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
-import { heatmapCellColor, heatmapCellUsesLightText, readChartToken } from '@/lib/chart-heatmap-scale'
+import {
+  heatmapCellColor, readChartToken, contrastRatio, HEATMAP_AA_MAX_MIX,
+} from '@/lib/chart-heatmap-scale'
 import { shortTerm } from '@/lib/pce-analytics'
 
 export interface CourseTermGridRow {
@@ -64,11 +66,43 @@ export function CourseTermGrid({
   cells: { courseCode: string; term: string; courseAvg: number; courseName: string }[]
   domain: readonly [number, number]
 }) {
-  /* Resolve the ramp ends once per paint rather than per cell — `readChartToken` walks the
-     cascade, and 15 x 5 cells would do it 75 times for two values that never differ. */
-  const [brand, card] = React.useMemo(
-    () => [readChartToken('--brand-color', '#4f46e5'), readChartToken('--card', '#ffffff')],
-    [],
+  /**
+   * Tokens resolve AFTER mount, never during render.
+   *
+   * The first pass read them in a `useMemo`, which runs during render — including on the server,
+   * where there is no cascade to read. `readChartToken` dutifully returned its fallback and the
+   * whole grid painted INDIGO on a pink-brand product. It looked deliberate; it was a default.
+   *
+   * `useEffect` + MutationObserver is the pattern `useHeatmapTheme` already uses in the DS
+   * heatmap, and for the same two reasons: the token only exists post-mount, and it changes again
+   * whenever the theme class flips.
+   */
+  const [tokens, setTokens] = React.useState<{ brand: string; card: string; fg: string; pfg: string } | null>(null)
+  React.useEffect(() => {
+    const sync = () =>
+      setTokens({
+        brand: readChartToken('--brand-color', '#4f46e5'),
+        card: readChartToken('--card', '#ffffff'),
+        fg: readChartToken('--foreground', '#0a0a0a'),
+        pfg: readChartToken('--primary-foreground', '#fafafa'),
+      })
+    sync()
+    const mo = new MutationObserver(sync)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
+    return () => mo.disconnect()
+  }, [])
+  const brand = tokens?.brand ?? '#4f46e5'
+  const card = tokens?.card ?? '#ffffff'
+
+  /* PICK TEXT BY MEASURED CONTRAST, not by a mix threshold. With the ramp capped at the AA
+     ceiling this always returns the dark one — but it is computed, so a theme whose brand is pale
+     (making dark text fail at the top of the ramp) flips correctly instead of silently shipping
+     2.4:1, which is exactly how the DS threshold failed. */
+  const fg = tokens?.fg ?? '#0a0a0a'
+  const pfg = tokens?.pfg ?? '#fafafa'
+  const textOn = React.useCallback(
+    (bgHex: string) => (contrastRatio(bgHex, fg) >= contrastRatio(bgHex, pfg) ? fg : pfg),
+    [fg, pfg],
   )
 
   const byKey = React.useMemo(() => {
@@ -124,11 +158,15 @@ export function CourseTermGrid({
         if (typeof v !== 'number') return <span className="sr-only">Not evaluated</span>
         const norm = v - lo
         const span = hi - lo
-        const light = heatmapCellUsesLightText(norm, span)
-        const tint: React.CSSProperties = {
-          backgroundColor: heatmapCellColor(norm, span, brand, card),
-          color: light ? 'var(--primary-foreground)' : 'var(--foreground)',
-        }
+        /* The ramp is capped at the AA ceiling, so `--foreground` clears 4.5:1 on EVERY cell and
+           one text colour is correct throughout.
+
+           `heatmapCellUsesLightText` is deliberately not used: it picks text from a mix
+           percentage (>=52), not from contrast, so it flips to light text across a whole band
+           where light text measures 2.4:1 — the 34 axe failures this variation exposed and the
+           canvas hid. Text colour is asserted below instead of assumed. */
+        const bg = heatmapCellColor(norm, span, brand, card, HEATMAP_AA_MAX_MIX)
+        const tint: React.CSSProperties = { backgroundColor: bg, color: textOn(bg) }
         const label = `${row.courseCode} ${shortTerm(t)}: ${fmt2(v)} out of 5`
 
         /* A plain cell, not a control. The first pass made every scored cell a raw HTML button so
@@ -151,7 +189,7 @@ export function CourseTermGrid({
       },
     }))
     return [courseCol, ...termCols]
-  }, [terms, domain, brand, card])
+  }, [terms, domain, brand, card, textOn])
 
   return (
     <DataTable<CourseTermGridRow>
