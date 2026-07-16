@@ -17,6 +17,7 @@
 | `workspace` | `005-ai-first-thinking-pattern` | ADR-005 — AI-first thinking pattern for analytics surfaces | Accepted | 2026-05-08 |
 | `workspace` | `006-accommodations-shared-module` | ADR-006 — Accommodations as a shared cross-product module | Accepted | 2026-05-08 |
 | `workspace` | `007-brand-assignment-per-admin-app` | Workspace ADR-007 — Brand assignment per admin app | Accepted | 2026-05-10 |
+| `workspace` | `008-override-chart-export-menu-until-exportdrawer-grows-formats` | Override ADR-008 — ChartExportMenu stands in for ExportDrawer on analytics chart | Active | 2026-07-16 |
 | `apps/exam-management` | `001-course-architecture-master-and-offerings` | Exam Management ADR-001 — Three-concept course architecture | Accepted | 2026-05-08 |
 | `apps/exam-management` | `002-archived-question-display-and-status` | ADR-002 — Archived questions appear at end of folder list with mutable, filterab | Accepted | 2026-05-13 |
 | `apps/exam-management` | `003-all-questions-as-location-anchor` | ADR-003 — All Questions is the canonical location for archived and untagged ques | Accepted | 2026-05-13 |

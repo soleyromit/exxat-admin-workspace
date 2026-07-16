@@ -161,8 +161,14 @@ function scanDs(root: HTMLElement): DsIssue[] {
       push('raw-button', 'Unstyled <button> — use DS Button with variant + size', el);
     }
   });
-  // Native <select> — the DS Select renders a button trigger, never a native select
-  root.querySelectorAll('select').forEach(el => push('native-select', 'Native <select> on the page', el));
+  // Native <select> — the DS Select renders a button trigger, never a USABLE native select.
+  // Radix (inside the DS Select) mounts an empty, attribute-less <select> as its form bridge;
+  // flagging it blamed every tab that contains any DS Select (the phantom "DS 1", 2026-07-15).
+  // An option-less, class-less select is a library artifact, not a hand-rolled control.
+  root.querySelectorAll('select').forEach(el => {
+    if (el.options.length === 0 && !el.className) return;
+    push('native-select', 'Native <select> on the page', el);
+  });
   // Hand-rolled <table> (DS DataTable/Table carry classes/data-slot)
   root.querySelectorAll('table').forEach(el => {
     const c = typeof el.className === 'string' ? el.className : '';
@@ -186,7 +192,13 @@ function scanDs(root: HTMLElement): DsIssue[] {
   // ── TOKEN-LEVEL: inline hardcoded colors + banned tokens ───────────────────
   root.querySelectorAll<HTMLElement>('[style]').forEach(el => {
     const s = el.getAttribute('style') || '';
-    if (HEX_RE.test(s) || RGB_RE.test(s)) push('hardcoded-color', 'Hex/rgb in inline style', el);
+    /* `data-ds-computed-color` declares a RUNTIME ramp derived from DS tokens (e.g. the
+       heatmap's AA-capped brand tint, chart-heatmap-scale.ts) — the rule's target is
+       AUTHORED literals, and flagging token-derived computed values made the badge cry
+       wolf on every tab with a heat grid. The attribute is an audited allowance: anything
+       carrying it must resolve its endpoints via resolveCssColor(--token). */
+    if ((HEX_RE.test(s) || RGB_RE.test(s)) && !el.closest('[data-ds-computed-color]'))
+      push('hardcoded-color', 'Hex/rgb in inline style', el);
     if (s.includes('color-mix(in oklch')) push('banned-color-mix', 'color-mix(in oklch …) selection state', el);
   });
 
