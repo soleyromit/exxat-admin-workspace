@@ -3,6 +3,11 @@
   "buildCommand": "echo skip",
   "installCommand": "echo skip",
   "outputDirectory": "dist",
-  "ignoreCommand": "exit 1",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "ignoreCommand": "case $VERCEL_GIT_COMMIT_REF in dev|main) exit 1;; esac; P=$VERCEL_GIT_PREVIOUS_SHA; [ -z \"$P\" ] && exit 1; git cat-file -e $P 2>/dev/null || exit 1; git diff --quiet $P HEAD -- apps/exam-management/assessment-taker/ && exit 0 || exit 1",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
