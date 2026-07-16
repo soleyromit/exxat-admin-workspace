@@ -225,9 +225,13 @@ export function ChartCardActions({
      at the top right as an icon instead of a button"). ChartCard has no actions slot and its
      root isn't positioned, so the mount stamps `position:relative` on the nearest card
      surface — contained here until the DS grows a real slot. */
+  const [leoOffset, setLeoOffset] = React.useState(false)
   React.useEffect(() => {
     const card = anchorRef.current?.closest<HTMLElement>('[data-slot="card"], .rounded-lg.border')
     if (card && getComputedStyle(card).position === 'static') card.style.position = 'relative'
+    /* ChartCard's own Ask-Leo affordance also lives top-right; painting the icons over it
+       (caught on the prod screenshot, 2026-07-16) hides both. Yield the corner when present. */
+    setLeoOffset(!!card?.querySelector('[aria-label="Ask Leo about this chart"]'))
   }, [])
 
   /** Export what is on screen: the dialog's chart when open, else the card's own. */
@@ -262,7 +266,7 @@ export function ChartCardActions({
           {exportError}
         </LocalBanner>
       ) : null}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-0.5">
+      <div className={`absolute top-3 z-10 flex items-center gap-0.5 ${leoOffset ? 'right-28' : 'right-3'}`}>
         <ChartExportMenu title={title} getSvg={getSvg} table={table} onPrint={print} onError={setExportError} formats={formats} />
         {/* No detail = export-only: a fixed 6-term line gains nothing from a dialog, but it
             still has a reporting angle. Expand appears only where density earns it. */}
