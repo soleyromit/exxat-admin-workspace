@@ -680,7 +680,7 @@ function ScoreCard({
                   )}
                 </TooltipContent>
               </Tooltip>
-              {programAvg != null && <span>prog {programAvg.toFixed(2)} ┄</span>}
+              {programAvg != null && <span>Program {programAvg.toFixed(2)} ┄</span>}
             </div>
           </div>
         ) : (
@@ -694,17 +694,20 @@ function ScoreCard({
   )
 }
 
-/* ── theme strip plot ─────────────────────────────────────────────────────────
-   One row per theme on a shared 1–5 track: filled dot = this course, hollow
-   ring = program average — the GAP is the story. Strip/dot plot preferred over
-   bars (workspace viz rules); benchmark drawn ON the viz (Aarti 2026-05-08).
-   Same list-with-track anatomy as the registered ScoreLandscape hand-roll. */
+/* ── theme distribution ───────────────────────────────────────────────────────
+   One row per theme: the SAME five vertical rating columns as the question
+   breakdown, aggregated across the theme's questions (Romit 2026-07-16 —
+   one visual language page-wide; the distribution shape per theme is the
+   story), plus "Avg X · Program Y" printed at the right. */
 
 interface ThemeRowDatum {
   theme: string
   avg: number
   questions: number
   programAvg: number | null
+  /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
+   *  aggregated across the theme's questions — feeds the per-theme histogram. */
+  dist: [number, number, number, number, number]
 }
 
 /* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
@@ -715,25 +718,6 @@ const RATING_SERIES = [
   { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.45 },
   { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
 ] as const
-
-/* Shared 3–5 score window for every dot mark on this page — 1–5 rating data
-   lives between 3.5 and 5, so the full range compresses every real difference
-   to a few pixels. Dots (not bars) tolerate a zoomed domain honestly, and the
-   axis is always printed (RUBRIC v2: zoomed domain requires a visible axis). */
-const posScoreNum = (v: number) => ((Math.min(5, Math.max(3, v)) - 3) / 2) * 100
-const posScore = (v: number) => `${posScoreNum(v)}%`
-
-function ScoreAxisTicks() {
-  return (
-    <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
-      <span className="absolute left-0">3.0</span>
-      <span className="absolute left-1/4 -translate-x-1/2">3.5</span>
-      <span className="absolute left-1/2 -translate-x-1/2">4.0</span>
-      <span className="absolute left-3/4 -translate-x-1/2">4.5</span>
-      <span className="absolute right-0">5.0</span>
-    </div>
-  )
-}
 
 function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
@@ -747,48 +731,43 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — the hollow ring marks it.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the distribution leans.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
-  }
-  const gapLabel = (t: ThemeRowDatum) => {
-    if (t.programAvg == null) return null
-    const d = t.avg - t.programAvg
-    if (Math.abs(d) < 0.05) return 'at prog'
-    return `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} vs prog`
   }
   return (
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Average score per theme · filled dot = this course · ring = program average · 3–5 window${partial ? ' · partial data' : ''}`}
+      description={`Response distribution per theme, rated 1–5 · sorted by gap vs program${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Average score per question theme on a 3 to 5 window with the program average marked per theme, sorted by gap. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Response distribution per question theme across rating levels 1 to 5, with the theme average and program average printed per row, sorted by gap. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
         {() => (
           <>
             <div className="flex flex-col">
-              <div className="grid grid-cols-[minmax(160px,220px)_1fr] items-end gap-6 pb-1">
-                <span />
-                <ScoreAxisTicks />
+              <div className="grid grid-cols-[minmax(160px,220px)_auto_1fr] items-end gap-6 pb-2 border-b border-border">
+                <span className="text-xs text-muted-foreground">Theme</span>
+                <div className="flex gap-3" aria-hidden="true">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground text-right">Avg vs program</span>
               </div>
               {sorted.map((t) => {
                 const below = t.programAvg != null && t.avg < t.programAvg - 0.049
-                /* Value printed AT the mark (RUBRIC v2 Gate 5.3) — anchored to
-                   the rightmost mark, flipping to the left near the axis end. */
-                const rightMost = Math.max(posScoreNum(t.avg), posScoreNum(t.programAvg ?? t.avg))
-                const leftMost = Math.min(posScoreNum(t.avg), posScoreNum(t.programAvg ?? t.avg))
-                const flip = rightMost > 70
+                const total = t.dist.reduce((a, n) => a + n, 0)
                 return (
                   <div
                     key={t.theme}
                     role="img"
-                    aria-label={`${t.theme}: this course ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''}`}
-                    className="grid grid-cols-[minmax(160px,220px)_1fr] items-center gap-6 py-3.5 border-b border-border last:border-0"
+                    aria-label={`${t.theme}: average ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''} and ${total} rating${total !== 1 ? 's' : ''}`}
+                    className="grid grid-cols-[minmax(160px,220px)_auto_1fr] items-center gap-6 py-3 border-b border-border last:border-0"
                   >
                     <div className="min-w-0">
                       <p className="text-sm truncate">{t.theme}</p>
@@ -796,60 +775,27 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                         {t.questions} question{t.questions !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <div className="relative h-7" aria-hidden="true">
-                      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-muted" />
-                      {[0.25, 0.5, 0.75].map((f) => (
-                        <span
-                          key={f}
-                          className="absolute top-1/2 h-2.5 w-px -translate-y-1/2 bg-border"
-                          style={{ left: `${f * 100}%` }}
-                        />
-                      ))}
-                      {t.programAvg != null && (
-                        <span
-                          className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full"
-                          style={{
-                            left: `${leftMost}%`,
-                            width: `${rightMost - leftMost}%`,
-                            background: below ? 'var(--chip-4)' : 'var(--border)',
-                          }}
-                        />
-                      )}
-                      {t.programAvg != null && (
-                        <span
-                          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
-                          style={{ left: posScore(t.programAvg), borderColor: 'var(--muted-foreground)' }}
-                        />
-                      )}
+                    <MiniRatingColumns counts={[...t.dist]} total={total} />
+                    <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
+                      Avg{' '}
                       <span
-                        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                        style={{ left: posScore(t.avg), background: scoreColor(t.avg) }}
-                      />
-                      <span
-                        className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums"
-                        style={
-                          flip
-                            ? { left: `calc(${leftMost}% - 12px)`, transform: 'translate(-100%, -50%)' }
-                            : { left: `calc(${rightMost}% + 12px)` }
-                        }
+                        className="text-sm font-semibold"
+                        style={{ color: below ? 'var(--chip-4)' : 'var(--foreground)' }}
                       >
-                        <span className="font-semibold text-foreground">{t.avg.toFixed(1)}</span>
-                        {gapLabel(t) && (
-                          <span style={{ color: below ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
-                            {' '}· {gapLabel(t)}
-                          </span>
-                        )}
+                        {t.avg.toFixed(1)}
                       </span>
-                    </div>
+                      {t.programAvg != null && <> · Program {t.programAvg.toFixed(1)}</>}
+                    </p>
                   </div>
                 )
               })}
             </div>
             <ChartDataTable
               caption="Theme-wise distribution"
-              headers={['Theme', 'This course', 'Program average', 'Questions']}
+              headers={['Theme', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5', 'This course', 'Program average', 'Questions']}
               rows={sorted.map((t) => [
                 t.theme,
+                ...t.dist,
                 `${t.avg.toFixed(1)}/5`,
                 t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
                 t.questions,
@@ -930,8 +876,8 @@ function CompareText({
   return (
     <p className="text-xs tabular-nums text-right whitespace-nowrap">
       <span className="text-muted-foreground">
-        you <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
-        {programAvg != null && <> · prog {programAvg.toFixed(1)}</>}
+        You <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
+        {programAvg != null && <> · Program {programAvg.toFixed(1)}</>}
       </span>
       {gap != null && Math.abs(gap) > 0.05 && (
         <span
@@ -1023,7 +969,7 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      <div className="grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="flex gap-3" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -1042,7 +988,7 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-3 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
                 <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
@@ -1473,12 +1419,15 @@ function ResultDetail({
     for (const theme of THEME_ORDER) {
       const qs = mine.filter((x) => x.theme === theme)
       if (qs.length === 0) continue
+      const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
+      qs.forEach((x) => (x.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
       const prog = program.filter((x) => x.theme === theme)
       rows.push({
         theme,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
         questions: qs.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
+        dist,
       })
     }
     return rows
