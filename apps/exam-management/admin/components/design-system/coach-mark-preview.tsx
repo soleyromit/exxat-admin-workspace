@@ -126,7 +126,6 @@ export function CoachMarkWithOverlayPreview() {
         description: "Open column, filter, and sort controls for this hub.",
       },
     ],
-    overlayRoot: previewRootRef,
   })
 
   return (
@@ -135,7 +134,7 @@ export function CoachMarkWithOverlayPreview() {
       className="relative min-h-[280px] overflow-hidden rounded-lg border border-border bg-muted/15 p-4"
     >
       <DemoToolbar markTarget />
-      <CoachMark {...tour} />
+      <CoachMark state={tour} overlayRootRef={previewRootRef} />
     </div>
   )
 }

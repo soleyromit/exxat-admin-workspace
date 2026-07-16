@@ -24,9 +24,11 @@ import {
   Skeleton,
   ToggleGroup, ToggleGroupItem,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { usePce } from '@/components/pce/pce-state'
@@ -149,7 +151,7 @@ function TermWorkspaceInner() {
             className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
           >
             <p className="text-sm font-medium">{row.courseCode}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[220px]">{row.courseName}</p>
+            <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
           </Link>
         ),
       },
@@ -164,14 +166,23 @@ function TermWorkspaceInner() {
           if (!primary) return <span className="text-sm text-muted-foreground">—</span>
           const extra = row.instructors.length - 1
           return (
-            <div className="flex items-center gap-1.5 min-w-0">
-              <PersonIdentityCell name={primary.name} initials={primary.initials} />
-              {extra > 0 && (
-                <span className="text-xs text-muted-foreground shrink-0" title={row.instructors.slice(1).map((i) => i.name).join(', ')}>
-                  +{extra}
-                </span>
-              )}
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 min-w-0 w-fit">
+                  <PersonIdentityCell name={primary.name} initials={primary.initials} />
+                  {extra > 0 && (
+                    <span className="text-xs text-muted-foreground shrink-0">+{extra}</span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="flex flex-col gap-0.5">
+                  {row.instructors.map((i) => (
+                    <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
           )
         },
       },
@@ -244,7 +255,10 @@ function TermWorkspaceInner() {
       {
         key: 'actions',
         label: '',
-        width: 260,
+        /* Fits the widest inline case — Remind + Extend + ⋯ (~166px of buttons
+         * + 24px cell padding) — without the ~70px of dead reserved space that
+         * was forcing horizontal scroll on the course list. */
+        width: 196,
         cell: (row) => {
           const isAtRisk = LIVE(row) && row.responseRate < AT_RISK_THRESHOLD
           return (
@@ -398,9 +412,6 @@ function TermWorkspaceInner() {
             {evalWin.open} – {evalWin.close} · AY {term.academicYear}
           </p>
         </div>
-        <Button variant="default" size="default" asChild>
-          <Link href={`/surveys/push?term=${term.id}`}>Send Evaluations</Link>
-        </Button>
       </div>
 
       <div className="flex-1 px-7 py-4">

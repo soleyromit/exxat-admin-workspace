@@ -9,19 +9,15 @@ Use this after **`npm install @exxatdesignux/ui@…`** / **`pnpm add @exxatdesig
 | **`node_modules/@exxatdesignux/ui/CHANGELOG.md`** | Release notes for the installed version (and peers). |
 | **`npx --package=@exxatdesignux/ui@latest exxat-ui changelog`** | Print the changelog from the package on disk / npx extract. |
 
-## 2. Refresh playbook + shell (recommended)
-
-```bash
-npx --package=@exxatdesignux/ui@latest exxat-ui upgrade
-```
-
-Runs **`sync-extras`** (Cursor/Claude skills, rules, hooks, **`docs/exxat-ds/`**) and ports safe package-owned shell files from **`generated-starter/`** in one install-like pass. Does **not** overwrite your product routes, mock data, or hub content.
-
-Legacy (playbook only — shell port still auto-runs when needed):
+## 2. Refresh AI / pattern docs (optional but recommended)
 
 ```bash
 npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras
 ```
+
+Overwrites only **`.cursor/skills/exxat-*`**, **`.claude/skills/exxat-*`**, **`.agents/`** (Google Antigravity), **`.cursor/rules/exxat-*`**, and **`docs/exxat-ds/*.md`** (including this file). Does **not** change your app routes or product code.
+
+**Parity with dogfood:** `sync-extras` is the consumer equivalent of `pnpm sync-agent-context` in the DS monorepo — same rules, skills, patterns, and Antigravity workflows, rewritten for your app root (`./` not `apps/web/`).
 
 ## 3. Align app code with the reference template
 
@@ -29,9 +25,9 @@ The npm package includes a full Vite + React + react-router-dom reference under:
 
 **`node_modules/@exxatdesignux/ui/generated-starter/`**
 
-Use it when you need to know **what files exist**, **how shims re-export** `@exxatdesignux/ui`, or **what AGENTS / layout** patterns look for the current release. Porting is manual: diff template vs your repo and apply intentional changes (imports, new components, CSS entrypoints).
+Use it when you need to know **what files exist**, **how shims re-export** `@exxatdesignux/ui`, or **what AGENTS / layout** patterns look like for the current release. Porting is manual: diff template vs your repo and apply intentional changes (imports, new components, CSS entrypoints).
 
-> See **`perf-memory-pattern.md`** for Vite dev tuning after upgrading `@exxatdesignux/ui`.
+> **Consumer on an older stack?** See `apps/web/docs/perf-memory-pattern.md` for Vite dev tuning after upgrading `@exxatdesignux/ui`.
 
 ## 4. Dependencies
 
@@ -52,14 +48,7 @@ If the app was built before current agent rules, verify:
 | Custom hub table / trimmed Add view | **`HubTable`** + **`FULL_HUB_SUPPORTED_VIEWS`** — **`exxat-hub-supported-views.mdc`** |
 | Agent copied uploaded screenshots pixel-for-pixel | **`exxat-no-image-pixel-copy.mdc`** — images = IA only; map to blueprints + reference hubs |
 
-## 6. Agent context (after changing `.cursor/` or jobs)
-
-- [ ] Only **4** `alwaysApply: true` rules — see **`docs/exxat-ds/agent-context-architecture.md`**
-- [ ] **Cursor + Claude parity** — `.cursor/rules/` and `.claude/rules/` both have constitution + exxat rules; `.claude/skills/exxat-*` matches Cursor
-- [ ] Run **`npx exxat-ui sync-extras`** (or maintainer **`vendor:consumer-extras`** before publish)
-- [ ] **`npx exxat-ui doctor`** — confirms brief-gate, rules, skills, and job docs for both clients
-
-## 7. Still stuck?
+## 6. Still stuck?
 
 - **`npx --package=@exxatdesignux/ui@latest exxat-ui doctor`** — compares local CLI version vs npm **`latest`**.
 - **`npx --package=@exxatdesignux/ui@latest exxat-ui update`** — install commands and reminders.

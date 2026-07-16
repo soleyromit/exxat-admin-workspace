@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { EmptyState } from '@/components/empty-state'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -136,7 +137,7 @@ export default function ModerationPage() {
                             </Badge>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground truncate w-full">{survey.courseName}</span>
+                        <TruncatedText className="text-xs text-muted-foreground w-full">{survey.courseName}</TruncatedText>
                         <BulletGauge
                           responseCount={survey.responseCount}
                           enrollmentCount={survey.enrollmentCount}

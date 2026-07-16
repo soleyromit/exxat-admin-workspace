@@ -1,3 +1,8 @@
+---
+name: exxat-kpi-trends
+description: KPI trend arrows, polarity, and ChartCard miniMetrics. Prefer exxat-kpi skill for new work.
+---
+
 # Exxat DS — KPI trend arrows and polarity
 
 > **Consolidated skill:** prefer [`.cursor/skills/exxat-kpi/SKILL.md`](../exxat-kpi/SKILL.md) for new work.

@@ -14,7 +14,9 @@ import { useRegisterNavFlyoutToggle, useSidebar } from "@/components/ui/sidebar"
 import { Tip } from "@/components/ui/tip"
 import { Button } from "@/components/ui/button"
 import { LibrarySecondaryNav } from "@/components/library-secondary-nav"
+import { LearningActivitiesSecondaryNav } from "@/components/learning-activities-secondary-nav"
 import { NestedSecondaryPanelShell } from "@/components/templates/nested-secondary-panel-shell"
+import { NAV_FLYOUT_SCROLL_BODY } from "@exxatdesignux/ui/lib/nav-flyout-inset"
 import { Shortcut } from "@/components/ui/dropdown-menu"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
@@ -23,7 +25,13 @@ import {
   isLibrarySecondaryPanelVisible,
   shouldLibrarySecondaryPanelBeOpen,
 } from "@/lib/library-nav"
+import {
+  isLearningActivitiesSecondaryPanelRoute,
+  isLearningActivitiesSecondaryPanelVisible,
+  shouldLearningActivitiesSecondaryPanelBeOpen,
+} from "@/lib/learning-activities-nav"
 import { isSidebarHiddenPath } from "@/lib/focus-workflow"
+import { cn } from "@/lib/utils"
 import type { LibraryItem } from "@/lib/mock/library"
 import type { LibraryFolder } from "@/lib/mock/library-folders"
 
@@ -36,6 +44,11 @@ export type LibraryFolderBridge = {
 
 export type LibraryAccessBridge = {
   openManageAccess: () => void
+}
+
+export type LearningActivitiesFolderBridge = {
+  folders: LibraryFolder[]
+  onFoldersChange: React.Dispatch<React.SetStateAction<LibraryFolder[]>>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,6 +99,9 @@ interface SecondaryPanelContextValue {
   /** Opens the hub collaborators sheet from the secondary nav. */
   libraryAccessBridge: LibraryAccessBridge | null
   setLibraryAccessBridge: (bridge: LibraryAccessBridge | null) => void
+  /** Learning activities group tree shared with the secondary nav while the hub is mounted. */
+  learningActivitiesFolderBridge: LearningActivitiesFolderBridge | null
+  setLearningActivitiesFolderBridge: (bridge: LearningActivitiesFolderBridge | null) => void
   /**
    * Flyout stack (mobile / ≥200% zoom): temporarily hide the secondary overlay
    * so the primary sidebar underneath is reachable. Cleared by {@link openPanel}.
@@ -110,6 +126,8 @@ const SecondaryPanelContext = React.createContext<SecondaryPanelContextValue>({
   setLibraryFolderBridge: () => {},
   libraryAccessBridge: null,
   setLibraryAccessBridge: () => {},
+  learningActivitiesFolderBridge: null,
+  setLearningActivitiesFolderBridge: () => {},
   secondaryFlyoutHidden: false,
   hideSecondaryFlyout: () => {},
   showSecondaryFlyout: () => {},
@@ -128,6 +146,8 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
     React.useState<LibraryFolderBridge | null>(null)
   const [libraryAccessBridge, setLibraryAccessBridge] =
     React.useState<LibraryAccessBridge | null>(null)
+  const [learningActivitiesFolderBridge, setLearningActivitiesFolderBridge] =
+    React.useState<LearningActivitiesFolderBridge | null>(null)
   const [secondaryFlyoutHidden, setSecondaryFlyoutHidden] = React.useState(false)
   const [secondaryFlyoutVisible, setSecondaryFlyoutVisible] = React.useState(true)
   const { pathname } = useLocation()
@@ -135,6 +155,7 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
   const reflowZoom = useSidebarReflowZoom()
   const navFlyout = isMobile || reflowZoom
   const librarySecondaryPanelRoute = isLibrarySecondaryPanelRoute(pathname)
+  const learningActivitiesSecondaryPanelRoute = isLearningActivitiesSecondaryPanelRoute(pathname)
   const { setOpen, restoreSavedOpen, open: mainSidebarOpen } = useSidebar()
 
   /**
@@ -213,7 +234,7 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
     setOpen(true, { persist: false })
   }, [restoreSavedOpen, setOpen])
 
-  /** URL is source of truth for the library scope rail (avoids empty shell / stuck panel races). */
+  /** URL is source of truth for nested scope rails (avoids empty shell / stuck panel races). */
   React.useEffect(() => {
     if (isSidebarHiddenPath(pathname)) {
       if (activePanel) {
@@ -227,7 +248,13 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
       }
       return
     }
-    if (activePanel === "library") {
+    if (shouldLearningActivitiesSecondaryPanelBeOpen(pathname)) {
+      if (activePanel !== "learning-activities") {
+        openPanel("learning-activities")
+      }
+      return
+    }
+    if (activePanel === "library" || activePanel === "learning-activities") {
       closePanel({ mainSidebar: "leave" })
     }
   }, [pathname, activePanel, openPanel, closePanel])
@@ -240,7 +267,12 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
       return true
     }
 
-    if (activePanel !== "library") return false
+    if (learningActivitiesSecondaryPanelRoute && activePanel !== "learning-activities") {
+      openPanel("learning-activities")
+      return true
+    }
+
+    if (activePanel !== "library" && activePanel !== "learning-activities") return false
 
     if (secondaryFlyoutHidden) {
       if (mainSidebarOpen) {
@@ -262,6 +294,7 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
   }, [
     navFlyout,
     librarySecondaryPanelRoute,
+    learningActivitiesSecondaryPanelRoute,
     activePanel,
     secondaryFlyoutHidden,
     secondaryFlyoutVisible,
@@ -305,6 +338,8 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
       setLibraryFolderBridge,
       libraryAccessBridge,
       setLibraryAccessBridge,
+      learningActivitiesFolderBridge,
+      setLearningActivitiesFolderBridge,
       secondaryFlyoutHidden,
       hideSecondaryFlyout,
       showSecondaryFlyout,
@@ -320,6 +355,7 @@ export function SecondaryPanelProvider({ children }: { children: React.ReactNode
       collapseActiveSecondaryPanel,
       libraryFolderBridge,
       libraryAccessBridge,
+      learningActivitiesFolderBridge,
       secondaryFlyoutHidden,
       hideSecondaryFlyout,
       showSecondaryFlyout,
@@ -350,7 +386,13 @@ function SecondaryPanelFlyoutHeader({
     useSecondaryPanel()
 
   return (
-    <div className="flex flex-col gap-1 px-2 pt-2 pb-2">
+    <div
+      className={cn(
+        flyout
+          ? "flex shrink-0 flex-col gap-1 border-b border-sidebar-border px-2 pb-2 pt-1.5"
+          : "flex h-(--header-height) shrink-0 items-center justify-between gap-2 px-3",
+      )}
+    >
       {flyout ? (
         <Button
           type="button"
@@ -365,13 +407,11 @@ function SecondaryPanelFlyoutHeader({
           <span className="text-sm font-medium">Main menu</span>
         </Button>
       ) : null}
-      <div className="flex items-center justify-between gap-2 px-2">
-        <h2
-          className="text-xl font-semibold leading-tight text-sidebar-foreground font-heading"
-                 >
-          {title}
-        </h2>
-        {flyout ? (
+      {flyout ? (
+        <div className="flex items-center justify-between gap-2 px-2">
+          <h2 className="m-0 min-w-0 truncate text-xl font-semibold leading-none text-sidebar-foreground font-heading">
+            {title}
+          </h2>
           <Tip label="Close navigation" side="bottom">
             <Button
               type="button"
@@ -383,7 +423,12 @@ function SecondaryPanelFlyoutHeader({
               <i className="fa-light fa-xmark" aria-hidden="true" />
             </Button>
           </Tip>
-        ) : (
+        </div>
+      ) : (
+        <>
+          <h2 className="m-0 min-w-0 flex-1 truncate text-xl font-semibold leading-none text-sidebar-foreground font-heading">
+            {title}
+          </h2>
           <Tip label="Collapse to icons" side="bottom">
             <Button
               type="button"
@@ -395,8 +440,8 @@ function SecondaryPanelFlyoutHeader({
               <i className="fa-light fa-angles-left" aria-hidden="true" />
             </Button>
           </Tip>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }
@@ -415,7 +460,30 @@ function LibraryPanel() {
   return (
     <>
       <SecondaryPanelFlyoutHeader title="Library" flyout={navFlyout} />
-      <LibrarySecondaryNav />
+      <div className={NAV_FLYOUT_SCROLL_BODY}>
+        <LibrarySecondaryNav />
+      </div>
+    </>
+  )
+}
+
+function LearningActivitiesPanelShell() {
+  const { secondaryPanelCompact } = useSecondaryPanel()
+  const isMobile = useIsMobile()
+  const reflowZoom = useSidebarReflowZoom()
+  const navFlyout = isMobile || reflowZoom
+  const showCompactRail = secondaryPanelCompact && !navFlyout
+
+  if (showCompactRail) {
+    return <LearningActivitiesSecondaryNav />
+  }
+
+  return (
+    <>
+      <SecondaryPanelFlyoutHeader title="Learning activities" flyout={navFlyout} />
+      <div className={NAV_FLYOUT_SCROLL_BODY}>
+        <LearningActivitiesSecondaryNav />
+      </div>
     </>
   )
 }
@@ -423,6 +491,7 @@ function LibraryPanel() {
 /** Register panel components by id when a route opts into `secondaryPanel` in nav. */
 const PANELS: Record<string, React.FC> = {
   "library": LibraryPanel,
+  "learning-activities": LearningActivitiesPanelShell,
 }
 
 export function SecondaryPanel() {
@@ -439,7 +508,9 @@ export function SecondaryPanel() {
   /** Render from the route when on a scoped library hub even if `activePanel` lags (Strict Mode / nav races). */
   const panelId = isLibrarySecondaryPanelVisible(pathname, activePanel)
     ? "library"
-    : activePanel
+    : isLearningActivitiesSecondaryPanelVisible(pathname, activePanel)
+      ? "learning-activities"
+      : activePanel
   const PanelContent = panelId ? PANELS[panelId] : null
 
   const navFlyout = (isMobile || reflowZoom) && Boolean(panelId)
@@ -514,6 +585,21 @@ export function LibraryAccessBridge({ openManageAccess }: LibraryAccessBridge) {
     setLibraryAccessBridge({ openManageAccess })
     return () => setLibraryAccessBridge(null)
   }, [openManageAccess, setLibraryAccessBridge])
+
+  return null
+}
+
+/** Sync group folders into the learning activities secondary nav while the hub is mounted. */
+export function LearningActivitiesFolderBridge({
+  folders,
+  onFoldersChange,
+}: LearningActivitiesFolderBridge) {
+  const { setLearningActivitiesFolderBridge } = useSecondaryPanel()
+
+  React.useEffect(() => {
+    setLearningActivitiesFolderBridge({ folders, onFoldersChange })
+    return () => setLearningActivitiesFolderBridge(null)
+  }, [folders, onFoldersChange, setLearningActivitiesFolderBridge])
 
   return null
 }

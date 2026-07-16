@@ -48,6 +48,28 @@ libraryItem(slug) // title: "Question bank", secondaryPanel: "library"
 - Range text (`1–10 of 12`) is **visually hidden** at reflow zoom (`useSidebarReflowZoom`); keep `sr-only` for AT.
 - First/last page buttons hidden at reflow zoom in `PaginationBar` to keep one-row footer.
 
+## Hub secondary-nav parity (all hubs with `SecondaryPanel`)
+
+Every `*-secondary-nav.tsx` **MUST** share compact-rail behaviour with Question bank Library. Copy-pasting only the expanded list causes crushed labels when the primary sidebar opens.
+
+### Checklist (ship gate)
+
+| # | Requirement | How to verify |
+|---|-------------|---------------|
+| 1 | Import **`useSecondaryHubNavChrome`** — do not reimplement `secondaryPanelCompact && !navFlyout` | Grep nav file for `useIsMobile` / `useSidebarReflowZoom` — should live only in primitives |
+| 2 | **`if (showCompactRail)`** branch before expanded markup | Open primary sidebar on desktop — secondary collapses to ~48px icon rail |
+| 3 | Use **`SecondaryHubNavCompactShell`** + **`SecondaryHubIconNavRow`** | Expand chevron restores labels; icons are `size-9` with tooltips |
+| 4 | Expanded rows use **`SecondaryHubNavRow`**; section eyebrows use **`SecondaryHubNavSectionHeader`** | No local `NavRow` / `IconNavRow` duplicates |
+| 5 | Folder/tree scope in compact mode → **dropdown** (`fa-folder-tree` trigger), not truncated labels | LA groups + Library folders both use flyout menu |
+| 6 | Footer add action mirrored in compact shell (`footer` prop) | Add folder / Add group icon at rail bottom |
+| 7 | Panel registered in **`PANELS`** with same id as **`openPanel("<id>")`** | `library`, `learning-activities`, … |
+
+### Shared primitives
+
+`components/sidebar/secondary-hub-nav-primitives.tsx` — canonical implementation. **MUST NOT** fork row hit targets or compact shell markup in individual hub navs.
+
+Reference hubs: **`library-secondary-nav.tsx`**, **`learning-activities-secondary-nav.tsx`**.
+
 ## Files
 
 | File | Role |
@@ -55,8 +77,10 @@ libraryItem(slug) // title: "Question bank", secondaryPanel: "library"
 | `lib/mock/navigation.tsx` | `libraryItem()` IA |
 | `lib/library-nav.ts` | Scope helpers, `LIBRARY_PRIMARY_LIST_NAV_KEY` |
 | `components/sidebar/secondary-panel.tsx` | Provider, flyout stack, `PANELS.library` |
+| `components/sidebar/secondary-hub-nav-primitives.tsx` | Shared compact rail + nav rows (parity checklist) |
 | `components/sidebar/app-sidebar.tsx` | Collapsible + `openPanel` on `library-all` |
 | `components/library-secondary-nav.tsx` | Scope rows |
+| `components/learning-activities-secondary-nav.tsx` | Second reference hub nav |
 | `src/views/library/_layout.tsx` | Auto `openPanel("library")` on list hub paths |
 
 ## See also

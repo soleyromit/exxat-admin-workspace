@@ -227,7 +227,7 @@ const PREVIEW_SECTIONS: Record<string, DesignSystemPreviewSection[]> = {
       "Floating bar when rows are selected; Esc clears.",
     ),
   ],
-  "key-metrics": [section("variants", "Flat and card", <CatalogKeyMetricsPreview />)],
+  "key-metrics": [section("variants", "Flat, card strip, and metric cards", <CatalogKeyMetricsPreview />)],
   "page-header": [section("default", "Hub header", <CatalogPageHeaderPreview />)],
 
   // ── Table cells ─────────────────────────────────────────────────────────

@@ -1,0 +1,142 @@
+---
+description: Exxat DS — UI state that should survive reloads (column layout, filters, sort, conditional rules, page tabs, sidebar collapsed) MUST go through `@exxatdesignux/ui/lib/persisted-state` and `@exxatdesignux/ui/lib/table-state-lifecycle`, not raw `localStorage`. Auto-attaches on hub work; load explicitly when adding any "remember this on reload" behaviour.
+activation: glob
+globs: {components,lib,src}/**/*.{tsx,ts}
+---
+
+<!-- Synced from .agents/rules/exxat-persisted-state.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — persisted UI state
+
+**Authoritative narrative:** `docs/exxat-ds/persisted-state-pattern.md`.
+**Migration entry:** `docs/exxat-ds/migrations/0004-persisted-state-lift.md`.
+
+## What's in scope
+
+State that should survive a **reload** of the same browser on the same
+device. Anything else (URL-shareable filters, server-synced preferences,
+real-time multi-tab mirroring) is **not** what this rule covers.
+
+| State | Persist? | Where |
+|---|---|---|
+| Sort / search / filters / group-by on a hub table | yes | `<HubTable persistKey>` |
+| Column order / hidden / widths / pins / wrap | yes | `<HubTable persistKey>` |
+| Row height, gridlines, search-bar open, filter-bar visible | yes | `<HubTable persistKey>` |
+| Conditional rules + pagination toggle | yes | `<HubTable persistKey>` (via `extras`) |
+| View tabs (added / renamed) + active tab id | yes | `<ListPageTemplate persistKey>` |
+| Sidebar collapsed | yes | shadcn `Sidebar` cookie (kept — SSR cookie initial render) |
+| App theme: brand / contrast / text-size | yes | `useAppTheme()` (already on `localStorage`) |
+| Coach-mark dismissed | yes | `useCoachMark()` (already on `localStorage`) |
+| Per-user server-side prefs (cross-device) | NO — needs an API | _out of scope for v0.5.18_ |
+| Active filters / sort in URL (shareable) | URL not localStorage | use `useSearchParams`; not this rule |
+
+## MUST
+
+1. **Hub table state** — Every primary `<HubTable>` mount that owns
+   long-lived user arrangements **MUST** pass `persistKey` so the
+   lifecycle (sort / filters / column layout / row height / gridlines /
+   conditional rules / pagination) survives reloads. Pair with
+   `persistTabId={activeTab.id}` when the hub has multiple lifecycle
+   scopes.
+
+2. **Page tabs** — Every `<ListPageTemplate>` that lets the user **add or
+   rename view tabs** SHOULD pass `persistKey` so the arrangement
+   survives. Hubs that already manage tabs in controlled mode (parent
+   owns `tabs` / `onTabsChange` / `activeTabId`) keep doing that — the
+   `persistKey` prop is **ignored when controlled props are passed**.
+
+   **Anti-pattern:** Passing **`tabs` + `onTabsChange`** (or **`activeTabId`**
+   + **`onActiveTabChange`**) **and** expecting **`persistKey`** to restore
+   view tabs on reload — persistence is disabled in controlled mode. Prefer
+   **`persistKey` only** (uncontrolled tabs) or **`productPersistKey(product, hubKey)`**
+   when the hub does not need parent-owned tab state. Reference fix:
+   **`tokens-themes-client.tsx`** (removed controlled tab state; added
+   **`persistKey={productPersistKey(product, "tokens", …)}`**).
+
+3. **Distinct keys per consumer** — Two components that mount the same
+   shared table (e.g. `library-table.tsx` is reused by `library-client`
+   and `columns-showcase`) **MUST** use **different** `persistKey`
+   values. Same key = same `localStorage` slot = users see one hub's
+   columns leaking into another. **Reference table:**
+
+   | Consumer | `persistKey` |
+   |---|---|
+   | `library-client.tsx` (main route) | `"library"` |
+   | `library-client.tsx` (search-landing) | `"library:search"` |
+   | `tokens-themes-client.tsx` | `"tokens"` |
+   | `columns-showcase.tsx` | `"columns-showcase"` |
+
+4. **Custom state outside hubs** — Any state that should survive reloads
+   **MUST** go through `usePersistedState` from
+   `@exxatdesignux/ui/lib/persisted-state` (or the imperative
+   `getStorageItem` / `scheduleStorageWrite` helpers when working
+   outside React). **MUST NOT** call `window.localStorage` directly inside
+   DS or app code — quota guards, SSR safety, debounce, and the
+   `exxat-ds:` namespace prefix all live in one place.
+
+   ```tsx
+   // ✅ Right
+   import { usePersistedState } from "@exxatdesignux/ui"
+   const [collapsed, setCollapsed] = usePersistedState("nav:collapsed", false)
+
+   // ⛔ Wrong
+   const [collapsed, setCollapsed] = React.useState(() =>
+     localStorage.getItem("collapsed") === "true",
+   )
+   React.useEffect(() => {
+     localStorage.setItem("collapsed", String(collapsed))
+   }, [collapsed])
+   ```
+
+5. **Schema versioning** — When the shape of a persisted slice changes,
+   bump `version` in `usePersistedState` options and provide a `migrate`
+   function. Returning `undefined` from `migrate` discards the record
+   and the new default applies.
+
+6. **Settings escape hatch** — The Settings page (or equivalent) **MUST**
+   expose a "Reset preferences" affordance that calls
+   `clearAllPersistedState()`. Users discovering bad column layouts in
+   DevTools is not the answer.
+
+## MUST NOT
+
+- **Don't fork persistence per hub.** No new `lib/<hub>-persistence.ts`
+  files — extend `useTableStateLifecycle` via `extras` instead.
+- **Don't bypass the prefix.** Every key the DS writes lives under
+  `exxat-ds:`. If you're tempted to drop your own key alongside (e.g.
+  `"my-feature-foo"`), pass `"my-feature:foo"` to `usePersistedState`
+  and let the prefix happen automatically.
+- **Don't ship a parallel storage shape.** If your slice doesn't fit
+  `useTableStateLifecycle.extras`, that's a signal to extend the
+  lifecycle helper, not to write a sibling file with its own key
+  scheme.
+- **Don't share `persistKey` across two consumers** of the same shared
+  table component. Pick distinct namespaces.
+- **Don't persist URL-shareable state** (filters, sort, search) **only**
+  in localStorage. URL bookmarks are the source of truth for shareable
+  state; localStorage is for personal device-local preference. (URL
+  layer is a follow-up; until then, pick the right home for each slice.)
+
+## Where the implementation lives
+
+- **Storage primitive + `usePersistedState`:**
+  `packages/ui/src/lib/persisted-state.ts` — exported as
+  `@exxatdesignux/ui/lib/persisted-state` and re-exported from
+  `@exxatdesignux/ui` root.
+- **Hub lifecycle hook:** `packages/ui/src/lib/table-state-lifecycle.ts`
+  — exported as `@exxatdesignux/ui/lib/table-state-lifecycle`.
+- **Hub mount points:**
+  `packages/ui/src/components/data-views/hub-table.tsx` (`persistKey` /
+  `persistTabId` props) and
+  `packages/ui/src/components/templates/list-page.tsx` (`persistKey`).
+- **App-side back-compat shim:** `lib/table-state-lifecycle.ts`
+  re-exports the package's surface so existing
+  `@/lib/table-state-lifecycle` imports keep compiling.
+
+## See also
+
+- **`docs/exxat-ds/persisted-state-pattern.md`** — full inventory + behaviour
+- **`docs/exxat-ds/migrations/0004-persisted-state-lift.md`** — what changed
+- **`exxat-data-tables.md`** — `HubTable` is mandatory; `persistKey` is the persistence prop
+- **`exxat-list-page-connected-views.md`** — `useTableState.rows` is the single dataset; persistence sits on top of that hook
+- **`exxat-centralized-list-dataset.md`** — same principle, applied to data

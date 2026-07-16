@@ -2,5 +2,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --ignore-scripts",
   "buildCommand": "pnpm build",
-  "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; git fetch --depth=1 origin $VERCEL_GIT_PREVIOUS_SHA 2>/dev/null; git diff --quiet $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA -- apps/exam-management/admin/ 2>/dev/null || exit 1"
+  "ignoreCommand": "R=$VERCEL_GIT_COMMIT_REF; case $R in dev|main) exit 1;; esac; git fetch -q --depth=99 origin dev || exit 1; B=$(git merge-base FETCH_HEAD HEAD) || exit 1; git diff --quiet $B HEAD -- apps/exam-management/admin/ && exit 0 || exit 1"
 }

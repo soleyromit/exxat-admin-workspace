@@ -78,21 +78,28 @@ function askNewBrief(reason, path, cwd) {
         ? `This turn includes an uploaded image — approve only if the brief maps IA to DS (no pixel-copy).\n\n`
         : "") +
       `Approve only if a design brief has already been posted AND confirmed ` +
-      `in chat for this work. Otherwise reject and ask the agent to post the ` +
-      `brief first, then retry the file creation.`,
+      `in chat for this work, AND the agent has confirmed no existing ` +
+      `component already covers this (\`exxat-reuse-before-custom.mdc\`). ` +
+      `Otherwise reject and ask the agent to post the brief first, then retry ` +
+      `the file creation.`,
     agent_message:
       `[exxat-brief-gate] HOLD. You are about to CREATE a new design-critical ` +
       `file (${reason}: ${path}).\n\n` +
       `REQUIRED next step (do not skip):\n` +
       `  1. Load the exxat-senior-ux skill (.cursor/skills/exxat-senior-ux/SKILL.md ` +
       `or .claude/skills/exxat-senior-ux/SKILL.md).\n` +
-      `  2. Post the design brief in chat (Problem / User & frequency / Product / ` +
+      `  2. Grep the codebase for an existing component that already covers this ` +
+      `(\`.cursor/rules/exxat-reuse-before-custom.mdc\`, \`.cursor/skills/exxat-token-economy/SKILL.md\` ` +
+      `§3 primitive aliases, \`columns-showcase.tsx\` for cell renderers). A NEW file ` +
+      `is only justified when this search comes up empty — state what you searched ` +
+      `for and found when you request approval.\n` +
+      `  3. Post the design brief in chat (Problem / User & frequency / Product / ` +
       `Scope / Persona / Job-to-be-done / Pattern / Reference (repo) / ` +
       `Reference (modern) / Principles applied / Deviations / Out of scope / ` +
       `Open questions).\n` +
-      `  3. END THE TURN with "Ready to build — confirm or edit." and WAIT ` +
+      `  4. END THE TURN with "Ready to build — confirm or edit." and WAIT ` +
       `for the user's reply.\n` +
-      `  4. If a brief was already posted and confirmed earlier in this chat, ` +
+      `  5. If a brief was already posted and confirmed earlier in this chat, ` +
       `say that explicitly when requesting approval for this write.\n\n` +
       `Do NOT work around this by stuffing the new surface into an unrelated ` +
       `existing file just to avoid create-file prompts.\n\n` +

@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ExxatProductLogo, ExxatProductMark } from "@/components/exxat-product-logo"
+import { ExxatProductLogo, ExxatProductMark, ProductSwitcherMenuRowLabel } from "@/components/exxat-product-logo"
 import { useProduct, type Product } from "@/contexts/product-context"
 import { useProductSwitch } from "@/contexts/product-route-sync"
 import {
@@ -136,16 +136,11 @@ export function ProductSwitcher() {
                 aria-current={isCurrentProduct(p) ? "true" : undefined}
                 aria-label={p.label}
               >
-                <ExxatProductLogo
+                <ProductSwitcherMenuRowLabel
                   product={p.id}
-                  variant="mutedSuffix"
                   previewCustomBrand={
                     p.customIndex !== undefined ? customProducts[p.customIndex] : undefined
                   }
-                  // h-9 matches the sidebar trigger so the mark renders at the
-                  // same 32 px footprint in both contexts. Dropdown rows
-                  // accommodate the bump via `py-2` on `DropdownMenuItem`.
-                  className="h-9 w-auto shrink-0 max-w-[min(100%,240px)]"
                 />
                 {p.scope && (
                   <span

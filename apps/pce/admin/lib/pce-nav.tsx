@@ -102,9 +102,11 @@ export const NAV_ADMIN: NavLinkItem[] = [
     url: "#",
     icon:       <i className="fa-light fa-star" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-star" aria-hidden="true" />,
-    // /surveys (list) + /surveys/push (push evaluation) belong to this module.
-    // /surveys/programmatic/* defers to Programmatic Surveys (more specific).
-    activePrefixes: ["/surveys"],
+    // /surveys (list) + /surveys/push (push evaluation) belong to this module,
+    // as do the results viewer and the moderation queue (reached via buttons,
+    // no nav row of their own). /surveys/programmatic/* defers to Programmatic
+    // Surveys (more specific).
+    activePrefixes: ["/surveys", "/results", "/moderation"],
     children: [
       {
         key: "ce-dashboard",
@@ -166,8 +168,10 @@ export const NAV_ADMIN: NavLinkItem[] = [
     key: "directories",
     title: "Directory",
     // Consolidated: one Directory surface with Courses · Faculty · Students · Term
-    // sub-tabs (matches live pce-three IA). Was 4 separate child rows.
+    // sub-tabs (matches live pce-three IA). Was 4 separate child rows. Each tab is
+    // its own route, so own the whole /directory subtree to stay active across them.
     url: "/directory/courses",
+    activePrefixes: ["/directory"],
     icon:       <i className="fa-light fa-folder-open" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-folder-open" aria-hidden="true" />,
   },

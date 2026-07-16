@@ -331,9 +331,12 @@ GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = {
     # "Grandfathered hand-rolls" (2026-07-11).
     "components/command-menu.tsx",
     "components/ui/coach-mark.tsx",
-    "lib/design-system/component-docs/coach-mark.tsx",
 }
 # Previously listed:
+#   "lib/design-system/component-docs/coach-mark.tsx" — REDUNDANT 2026-07-14.
+#     scan_filename_for_ds_organism now exempts lib/design-system/component-docs/
+#     wholesale (ComponentDocSpec catalog entries document the canonical
+#     organism, never implement it), so this entry was unreachable.
 #   "components/key-metrics.tsx" — MIGRATED 2026-05-11. File deleted;
 #     vendored canonical lives at components/key-metrics/index.tsx. The two
 #     consumer pages (competency, live-monitor) now import canonical.
@@ -1543,6 +1546,13 @@ def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     if "components/data-table/" in rel:
         return []
     if "components/table-properties/" in rel:
+        return []
+    # lib/design-system/component-docs/<organism>.tsx files are ComponentDocSpec
+    # catalog entries that *document* the canonical DS organism (they import it
+    # to render live examples). Sharing the organism's name is the point — the
+    # slug drives the /design-system route. They are never implementations, so
+    # the name-collision heuristic is always a false positive here.
+    if "lib/design-system/component-docs/" in rel:
         return []
     stem = Path(rel).stem.lower()
     if stem not in DS_ORGANISM_NAMES:

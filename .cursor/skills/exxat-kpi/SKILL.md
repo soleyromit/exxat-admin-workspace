@@ -52,26 +52,6 @@ Replaces separate loads of `exxat-kpi-trends`, `exxat-kpi-max-four`, and `exxat-
 
 ---
 
-## Flat-band deep-dive (grey-box bug fix)
-
-When the flat strip renders as a grey/lavender **panel** behind the metrics, the linear wash and gap fill leaked back in. The fix:
-
-- **`flatBandStyle`** = **only** `var(--key-metrics-flat-band-radial)`; shadow **`none`**.
-- **No** `--key-metrics-flat-band-linear` in the component or the hub inline `style`.
-- Cells are **`bg-transparent`**; the grid uses **`flatMetricsHairlineClass(count, halfLayout)`** — borders only, **no** `gap-px` fill (the gap fill is what painted the grey box).
-- **4 KPIs:** verticals between 1|2|3|4 when wide; 2×2 dividers only below `@[max-width:29.99rem]` container.
-- Divider + glow tokens stay **OKLCH** (`--key-metrics-flat-divider`, `color-mix(in oklch, var(--brand-color) …)`).
-
-**MUST NOT**
-
-- Grey/lavender **panel** behind metrics (removed linear wash + gap fill).
-- Duplicate KPI **`Card`** wall for the same numbers.
-- Mute product suffix to grey in dark (`mutedSuffix` does **not** change `wordmarkColor`).
-
-Flat-band code pointers: `key-metrics.tsx` → `flatMetricsHairlineClass`, `flatBandStyle`; `apps/web/app/globals.css` → `--key-metrics-flat-*`.
-
----
-
 ## Quick polarity table
 
 | Metric | `trendPolarity` |

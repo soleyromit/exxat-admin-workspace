@@ -67,7 +67,7 @@ export function StepSurveyDesignGeneral({
                 <span className="text-sm font-semibold flex-1 flex items-center gap-2">
                   General Survey
                   <span className="text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>
-                    all recipients
+                    All recipients
                   </span>
                 </span>
 

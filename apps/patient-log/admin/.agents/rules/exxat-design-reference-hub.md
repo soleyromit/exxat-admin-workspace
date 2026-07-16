@@ -1,0 +1,50 @@
+---
+description: Design reference hub — reuse DS primitives, doc typography, no bespoke doc chrome
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-design-reference-hub.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — Design reference hub (`/design-system`)
+
+Agents editing registry docs, previews, or component-doc specs **MUST** follow this checklist before shipping.
+
+## MUST — reuse existing components
+
+| Need | Use | MUST NOT |
+|------|-----|----------|
+| Theme preview (light / dark / system) on **color-like** token doc pages | `TokensThemeSwitcher` → **`ButtonSegmentedControl`** `iconOnly` | **`Tabs`**, labeled pill rows, bespoke `RadioGroup` |
+| Theme preview on typography / radius / size doc pages | **None** — values are theme-independent | Theme switcher on non-color token docs |
+| Theme picker (settings-style, large) | **`SelectionTileGrid`** (see `settings-appearance-card.tsx`) — **unchanged** | **`Tabs`**, custom icon radio labels |
+| Segmented options (2–5 choices) | **`ViewSegmentedControl`** | **`Tabs`**, hand-rolled button groups |
+| Theme / mode / chart type | **`ViewSegmentedControl`** or **`SelectionTileGrid`** (settings) | **`Tabs`** for toolbar modes |
+| Doc body / descriptions | **`DS_DOC_*`** from `doc-typography.ts` (`text-sm` floor) | Raw `text-xs` for readable copy |
+| Code / token names in docs | **`DS_DOC_CODE_LABEL`** (`text-sm` mono) | `text-xs` for primary doc labels |
+| Live component preview | **`ComponentDocSpec`** + `design-system-previews.tsx` | `PreviewPlaceholder` skeleton when a hub reference exists |
+| Token category preview | **`DesignSystemTokenCategoryPreview`** — **primary** `Tabs` + `TabsCountBadge`; namespace groups when ≥14 tokens | Line `Tabs`, duplicate preview sections, bespoke count spans |
+
+## MUST — layout
+
+1. **Single page scroll** — see **`exxat-page-scroll-ownership.md`**. Token lists and long anatomy sections scroll with the page.
+2. **Register live previews** — add `component-docs/*.tsx` + `component-docs/index.ts`; never leave `tier: token` pages on skeleton if `hooks-index.json` has data.
+3. **Link to live hub** — registry `routeSuffix` → "Open live example" (already on `DesignSystemDocPage`).
+
+## MUST NOT
+
+- Invent **new** doc-only interaction components when `ViewSegmentedControl`, `SelectionTileGrid`, or `Button` variants cover the job.
+- Use **`text-xs`** for doc paragraph copy or token names (12px is the **floor for meta**, not body).
+- Duplicate controls (e.g. two theme switchers on one doc page).
+
+## Pre-ship checklist (design reference edits)
+
+- [ ] Preview uses an existing DS primitive (grep `components/ui/` first)
+- [ ] Typography imports from `doc-typography.ts`
+- [ ] No nested vertical scroll on doc page
+- [ ] `designSystemHasLivePreview(slug)` is true for new entries
+- [ ] `pnpm exec tsc --noEmit` in `apps/web` passes
+
+## Reference
+
+- `lib/design-system/registry-entries.ts` — inventory
+- `lib/design-system/component-docs/` — live doc specs
+- `components/settings-appearance-card.tsx` — canonical theme tiles

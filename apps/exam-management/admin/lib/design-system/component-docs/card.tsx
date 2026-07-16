@@ -136,7 +136,8 @@ export const cardComponentDoc: ComponentDocSpec = {
         { part: "LibraryBoardCard", description: "Kanban tile — library-board-view.tsx; composes ListPageBoardCard + BoardCardTwoLineBlock." },
         { part: "LibraryListRowCard", description: "List tab row — same shell, layout=\"row\"." },
         { part: "KeyMetrics variant=\"flat\"", description: "ListPageTemplate metrics slot — no Card wrapper (library-client.tsx)." },
-        { part: "KeyMetrics variant=\"card\"", description: "KPI inside Card — flat cells + glow on card surface (dashboard key-metrics tile)." },
+        { part: "KeyMetrics variant=\"card\"", description: "KPI inside one Card — hairline grid + glow on card surface (dashboard tile)." },
+        { part: "KeyMetrics variant=\"cards\"", description: "Each KPI in its own Card tile — overview grids (distinct from card strip)." },
         { part: "ChartCard", description: "Dashboard chart shell — see chart-card doc." },
       ],
     },
@@ -215,7 +216,7 @@ export const cardComponentDoc: ComponentDocSpec = {
       "Use CardMedia for photo, video, illustration, or audio — ChartCard for charts.",
       "Use CardSection subdued for inactive or secondary bands inside a card.",
       "Use interactive + Link for navigational tiles (see ListPageBoardCard).",
-      "Use KeyMetrics variant=\"card\" for KPI inside Card (dashboard key-metrics tile).",
+      "Use KeyMetrics variant=\"card\" for one dashboard KPI tile; variant=\"cards\" when each metric needs its own Card.",
       "Use KeyMetrics variant=\"flat\" on ListPageTemplate metrics — no Card wrapper.",
     ],
     dont: [

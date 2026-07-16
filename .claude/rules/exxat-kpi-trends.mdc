@@ -35,5 +35,5 @@ seeAlso:
 ## See also
 
 - **`docs/kpi-trend-pattern.md`** (app) — narrative + table of examples.
-- **`.cursor/skills/exxat-kpi/SKILL.md`** — checklist for new hubs.
+- **`.cursor/skills/exxat-kpi-trends/SKILL.md`** — checklist for new hubs.
 - **`components/key-metrics.tsx`** — `MetricTrendPolarity`, `metricTrendTone`, `metricTrendAriaQualifier`.

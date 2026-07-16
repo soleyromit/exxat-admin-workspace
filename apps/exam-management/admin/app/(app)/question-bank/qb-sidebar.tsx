@@ -13,9 +13,10 @@ import {
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Avatar, AvatarFallback,
-  useSidebar,
   LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS,
 } from '@exxatdesignux/ui'
+// One SidebarContext — see app/(app)/providers.tsx.
+import { useSidebar } from '@/components/ui/sidebar'
 import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
 

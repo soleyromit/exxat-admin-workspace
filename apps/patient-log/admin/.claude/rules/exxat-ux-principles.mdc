@@ -38,7 +38,8 @@ The record name appears in exactly one carrier — typically `PageHeader.title`
 
 ### P3. One primary action per surface
 Exactly one filled `Button`; everything else `outline` / `ghost` / `link`.
-- **Why:** Two primaries = no primary.
+- **Placement:** Action pairs (dialog footer, exam pause panel, wizard footer) — secondary `outline` **left**, filled primary **right** (`dialog-pattern.md`).
+- **Why:** Two primaries = no primary; wrong placement hides the main action.
 - **When to break:** Never. Symmetric pairs ("Approve" + "Reject") are both
   *outline* — neither is the styled "primary".
 - **Anti-pattern:** Two filled buttons in the header.

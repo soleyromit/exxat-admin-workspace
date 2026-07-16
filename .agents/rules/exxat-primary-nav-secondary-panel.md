@@ -1,0 +1,57 @@
+---
+description: Primary sidebar item opens nested SecondaryPanel (Library pattern)
+activation: glob
+globs: components/**/*.tsx
+---
+
+<!-- Synced from .agents/rules/exxat-primary-nav-secondary-panel.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — primary nav → secondary panel
+
+Some hubs expose **scoped navigation** (All / My / tree / filters) in a **nested panel** between the **icon rail** and **main content** — not as **primary nav child rows**.
+
+**Reference:** **Library** — **`lib/mock/navigation.tsx`** (`secondaryPanel: "library"`), **`components/sidebar/app-sidebar.tsx`**, **`components/sidebar/secondary-panel.tsx`**, **`components/library-secondary-nav.tsx`**, **`lib/library-nav.ts`** (URL scope). **Three-tier IA:** **`docs/exxat-ds/library-nav-ia-pattern.md`** (Question bank → Library → All questions scope).
+
+## MUST (wiring)
+
+1. **`NavLinkItem`** — On the **primary** row that should drive the panel, set **`secondaryPanel`** to a **stable string id** (e.g. **`"library"`**). Keep **`url`** pointing at the **hub route**.
+2. **`SecondaryPanel` registry** — In **`components/secondary-panel.tsx`**, add **`PANELS[id]`** → component that renders **panel chrome** (title, optional search) + **your secondary nav** list. **MUST** keep ids in sync with **`NAV_PRIMARY`**.
+3. **Auto-open on route** — The hub **`client`** (or layout slot) **MUST** mount **`*PanelActivator`** that calls **`useAutoPanel(id)`** with the **same id**, so deep links and first visit open the panel while the route is mounted (e.g. **`LibraryPanelActivator`** + **`beforeSiteHeader`** on **`LibraryClient`**).
+4. **Same-route reopen** — **`AppSidebar`** already calls **`openPanel(secondaryPanel)`** when the user clicks the primary item **again** while already on that **`url`** (prevents no-op navigation). Secondary nav rows that stay on the same path **SHOULD** call **`openPanel`** on click where **`react-router-dom` `Link`** would not fire (same **`to`**).
+5. **Flyout close vs dismiss** — On mobile / **`useSidebarReflowZoom`**, X / Esc / ⌘B on the **scope sheet** MUST call **`closeSecondaryFlyout()`** (hide sheet, keep **`activePanel`**). **MUST NOT** clear **`activePanel`** — otherwise ⌘B reopens the **primary** flyout instead of scope nav. **Main menu** (←) uses **`hideSecondaryFlyout()`** and MUST expand the active primary collapsible (e.g. Question bank) so the current child (e.g. **Library**) is visible.
+6. **Library IA** — Primary children: Library home, Search, **Library** (`/library/all`). **All questions** is **secondary only** — see **`docs/exxat-ds/library-nav-ia-pattern.md`**.
+
+## Surface elevation (brand chrome)
+
+The nested panel sits **between** the icon rail and main content. **MUST** use the three-level stack (darkest → lightest):
+
+| Level | Surface | Token |
+|-------|---------|--------|
+| **0** | Primary sidebar | `--sidebar` (= `--brand-tint` on product themes) |
+| **1** | Secondary panel | `--secondary-panel-bg` |
+| **2** | Page canvas | `--background` |
+
+- **`NestedSecondaryPanelShell`** — **`bg-[var(--secondary-panel-bg)]`**, not **`bg-sidebar`** (same as level 0).
+- **OKLCH** — light: `color-mix(in oklch, var(--background) 40%, var(--brand-tint-light) 60%)`; dark: `color-mix(in oklch, var(--card) 32%, var(--brand-tint) 68%)`. **MUST** follow **active product** (`theme-one`, `theme-prism`, `theme-custom`) — **MUST NOT** hardcode rose for all products.
+- **`ProductProvider`** — `theme-custom` only when stored accent **differs** from product default (`accentOverrideActive`).
+
+**Authoritative detail:** **`docs/exxat-ds/shell-surface-elevation-pattern.md`**.
+
+## SHOULD
+
+- Drive **hub scope** from the **URL** (**`useSearchParams`** + helpers like **`parseLibraryNav`**) so **refresh**, **share link**, and **breadcrumbs** match the secondary list.
+- Keep **panel content** **Font Awesome**-aligned with the rest of the app (**`.agents/rules/exxat-fontawesome-icons.md`**).
+
+## MUST NOT
+
+- Register a **`secondaryPanel`** id in **`NAV_PRIMARY`** **without** a **`PANELS`** entry and a matching **`useAutoPanel`** on the hub — users get a **collapsed sidebar** with **empty** panel space.
+- Use **`secondaryPanel`** for **full** app sections that deserve their **own primary nav rows** — reserve this for **one hub** + **inner scope** UI.
+
+## See also
+
+- **`./AGENTS.md` §4.6** — handbook summary.
+- **`docs/exxat-ds/library-nav-ia-pattern.md`** — Question bank / Library / All questions + flyout lifecycle.
+- **`docs/exxat-ds/shell-surface-elevation-pattern.md`** — OKLCH tokens + product theme.
+- **`.agents/rules/exxat-library-hub-header.md`** — folder-scoped library header **⋯** → **Customize folder** + client-mounted sheet.
+- **`.agents/rules/exxat-page-vs-drawer.md`** — when **drawer** vs **route**; secondary panel is **nav chrome**, not a workflow drawer.
+- **`.agents/rules/exxat-kpi-flat-band.md`** — flat KPI strip (separate from panel fill).

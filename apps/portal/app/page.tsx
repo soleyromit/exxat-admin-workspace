@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { SidebarProvider, SidebarInset, TooltipProvider, Input, Button } from '@exxatdesignux/ui'
+import { TooltipProvider, Input, Button } from '@exxatdesignux/ui'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { ProductConnectorRow } from '@/components/product-card-connector'
@@ -20,7 +21,7 @@ export default function WorkspacePage() {
         <SidebarInset>
           <SiteHeader />
           <main className="flex-1 overflow-auto p-6">
-            <div className="max-w-3xl space-y-5">
+            <div className="max-w-4xl space-y-6">
               {/* Pre-workspace Leo bar — Aarti directive: Ask Leo before entering any product */}
               <div
                 className="rounded-xl p-4 flex flex-col gap-3"

@@ -37,7 +37,7 @@ Per-product **dark** theme blocks (`.theme-one.dark`, `.theme-prism.dark`, …) 
 
 ## Product theme classes
 
-- **`theme-one`** / **`theme-prism`** / **`theme-assessment`** — built-in OKLCH brand scales in `globals.css`.
+- **`theme-one`** / **`theme-prism`** — built-in OKLCH brand scales in `globals.css`.
 - **`theme-custom`** — when user picks an accent in Settings; driven by `--custom-product-brand-color`.
 - **`ProductProvider`** — applies `theme-one` vs `theme-prism` vs `theme-custom`; accent override only when it **differs** from the product default (see `accentOverrideActive` in `contexts/product-context.tsx`).
 

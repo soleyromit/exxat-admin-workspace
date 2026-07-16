@@ -25,7 +25,8 @@ export function SidebarShell({
   headerHeight = "48px",
   defaultOpen = true,
   wrapperClassName,
-}: {
+  ...wrapperProps
+}: React.ComponentProps<"div"> & {
   children: React.ReactNode
   headerHeight?: string
   defaultOpen?: boolean
@@ -43,6 +44,7 @@ export function SidebarShell({
           "--header-height": headerHeight,
         } as React.CSSProperties
       }
+      {...wrapperProps}
     >
       {children}
     </SidebarProvider>

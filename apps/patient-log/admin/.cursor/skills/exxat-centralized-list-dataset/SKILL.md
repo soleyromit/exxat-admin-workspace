@@ -74,7 +74,7 @@ Goal: **one row model**, **one filtered bag** (`tableState.rows`), **one place f
 
 ## 7. Reference implementations
 
-- **`components/placements-client.tsx`** + **`placements-table.tsx`** — Placements pattern.
+- **`components/library-client.tsx`** + **`library-table.tsx`** — Question bank (canonical hub pattern).
 - **`components/team-client.tsx`** + **`team-table.tsx`**.
 - **`components/library-table.tsx`** — multiple **`DataListViewType`** branches sharing **`tableState`** / **`folders`** / **`items`**.
 

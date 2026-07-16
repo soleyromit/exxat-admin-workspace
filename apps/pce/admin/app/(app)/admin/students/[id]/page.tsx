@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { Avatar, AvatarFallback, KeyMetrics, Button, Badge } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { TruncatedText } from '@/components/truncated-text'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { EnrollmentStatusBadge, SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -38,7 +39,7 @@ const columns: ColumnDef<EvalRow>[] = [
     cell: (row) => (
       <div>
         <p className="text-sm font-medium">{row.courseCode}</p>
-        <p className="text-xs text-muted-foreground truncate max-w-[220px]">{row.courseName}</p>
+        <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
       </div>
     ),
   },

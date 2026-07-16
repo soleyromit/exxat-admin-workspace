@@ -47,7 +47,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarSeparator,
+  SidebarMenuSeparator,
   useRegisterNavFlyoutToggle,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -64,22 +64,25 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tip } from "@/components/ui/tip"
 import { requestOpenCommandMenu } from "@/components/command-menu"
+import { useAskLeo } from "@/components/ask-leo-context"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
+import { NotificationBell } from "@/components/notification-bell"
 import { useLocationHash } from "@/hooks/use-location-hash"
 import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
 import { useSidebarDrillInWidth } from "@/hooks/use-sidebar-drill-in-width"
 import { useProduct, type Product } from "@/contexts/product-context"
+import { useShellLayout, showsProductInSidebar } from "@/contexts/shell-layout-context"
 import { useProductSwitch } from "@/contexts/product-route-sync"
 import { productSlug } from "@/stores/app-store"
 import { isListedCustomProduct } from "@/stores/app-store"
-import { NavUser } from "./nav-user"
 import { useSecondaryPanel } from "./secondary-panel"
+import { NavUser } from "./nav-user"
 import { SidebarDrillIn } from "./sidebar-drill-in"
 import { LeoSidebarDrillInPanel } from "./leo-sidebar-drill-in-panel"
 import { DesignSystemSidebarDrillInPanel } from "./design-system-sidebar-drill-in-panel"
 import { SidebarDrillInResizeHandle } from "./sidebar-drill-in-resize-handle"
-import { ExxatProductLogo, ExxatProductMark } from "@/components/exxat-product-logo"
+import { ExxatProductLogo, ExxatProductMark, ProductSwitcherMenuRowLabel } from "@/components/exxat-product-logo"
 import { motionHeaderEnter } from "@/lib/motion-ui"
 import { customProductBrandConfig, productBrandLabel } from "@/lib/product-brand"
 import { isProductRefHidden, type ProductRef } from "@/lib/product-ref"
@@ -99,12 +102,12 @@ import {
   NAV_PROGRAM_DEFAULT,
   NAV_QUICK_ACTIONS,
   NAV_SCHOOLS,
+  NAV_USER,
   NAV_SITE_DEFAULT,
   NAV_LOCATION_DEFAULT,
   NAV_SITES,
   NAV_SECONDARY,
   getSecondaryNavForProduct,
-  NAV_USER,
   type NavDrillInConfig,
   type NavLinkItem,
   type NavSecondaryItem,
@@ -805,16 +808,19 @@ function NavLinkItems({ items, pathname }: { items: NavLinkItem[]; pathname: str
   )
 }
 
-/** Expanded sidebar: Ask Leo (labeled) + Search / Notifications icon-only in one row. */
+/**
+ * Classic sidebar (`sidebar-classic`): Ask Leo + Search + Notifications at the
+ * top of primary nav; Settings / Help + profile in `SidebarFooter`.
+ * Utility-bar layouts move these actions to `UtilityBarSlot` instead.
+ */
+
+/** Expanded classic sidebar: Ask Leo (labeled) + Search / Notifications icon-only in one row. */
 function SidebarQuickActions({ pathname }: { pathname: string }) {
   const { state, isMobile } = useSidebar()
   const mod = useModKeyLabel()
-  const { product } = useProduct()
-  const leoHref = `/${productSlug(product)}/leo`
-  const isOnLeoLanding = pathname === leoHref || pathname.startsWith(`${leoHref}/`)
+  const { setOpen, open: askLeoPanelOpen } = useAskLeo()
   const askLeo = NAV_QUICK_ACTIONS.find((item) => item.opensAskLeo)
   const search = NAV_QUICK_ACTIONS.find((item) => item.opensCommandMenu)
-  const notifications = NAV_QUICK_ACTIONS.find((item) => item.key === "notifications")
 
   if (state === "collapsed" && !isMobile) {
     return (
@@ -826,7 +832,7 @@ function SidebarQuickActions({ pathname }: { pathname: string }) {
     )
   }
 
-  if (!askLeo || !search || !notifications) {
+  if (!askLeo || !search) {
     return <SidebarNavSecondaryItems items={NAV_QUICK_ACTIONS} pathname={pathname} />
   }
 
@@ -848,17 +854,16 @@ function SidebarQuickActions({ pathname }: { pathname: string }) {
         className="flex w-full min-w-0 items-center gap-0.5"
       >
         <SidebarMenuButton
-          asChild
-          isActive={isOnLeoLanding}
+          type="button"
+          isActive={askLeoPanelOpen}
           tooltip={askLeo.title}
           className="min-h-8 min-w-0 flex-1 justify-start"
+          onClick={() => setOpen(true)}
         >
-          <Link to={leoHref} aria-current={isOnLeoLanding ? "page" : undefined}>
-            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-              {askLeo.icon}
-            </span>
-            <SidebarNavLabel>{askLeo.title}</SidebarNavLabel>
-          </Link>
+          <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+            {askLeo.icon}
+          </span>
+          <SidebarNavLabel>{askLeo.title}</SidebarNavLabel>
         </SidebarMenuButton>
 
         <SidebarMenuButton
@@ -874,18 +879,7 @@ function SidebarQuickActions({ pathname }: { pathname: string }) {
         </SidebarMenuButton>
         <Shortcut keys={`${mod}K`} onInvoke={requestOpenCommandMenu} />
 
-        <SidebarMenuButton
-          asChild
-          tooltip={notifications.title}
-          aria-label="Notifications"
-          className="!size-8 !min-h-8 !max-h-8 !w-8 !min-w-8 !max-w-8 aspect-square shrink-0 justify-center gap-0 p-0"
-        >
-          <Link to={notifications.url}>
-            <span className="flex size-4 items-center justify-center" aria-hidden="true">
-              {notifications.icon}
-            </span>
-          </Link>
-        </SidebarMenuButton>
+        <NotificationBell className="!size-8 !min-h-8 !max-h-8 !w-8 shrink-0" />
       </div>
     </SidebarMenuItem>
   )
@@ -904,17 +898,33 @@ function SidebarNavSecondaryItems({
 }) {
   const mod = useModKeyLabel()
   const locationHash = useLocationHash()
-  const { product } = useProduct()
-  const leoHref = `/${productSlug(product)}/leo`
-  // Active when on the Leo landing route for the current product (drop the
-  // ⌘⌥K hint — that shortcut opens the side-panel Sheet, not the route; per
-  // `exxat-kbd-shortcuts.mdc` Rule 1, Kbd hints must match the click action).
-  const isOnLeoLanding = pathname === leoHref || pathname.startsWith(`${leoHref}/`)
+  const { setOpen, open: askLeoPanelOpen } = useAskLeo()
   const { dismissNavFlyout, state, isMobile } = useSidebar()
   const iconRailCollapsed = iconOnly || (state === "collapsed" && !isMobile)
   return (
     <>
       {items.map((item) => {
+        if (item.key === "notifications") {
+          return (
+            <SidebarMenuItem key={item.key}>
+              <div
+                className={cn(
+                  "flex w-full items-center",
+                  iconRailCollapsed ? "justify-center" : "px-0",
+                )}
+              >
+                <NotificationBell
+                  className={cn(
+                    iconRailCollapsed
+                      ? "!size-8"
+                      : "min-h-8 w-full justify-start gap-2 px-2",
+                  )}
+                />
+              </div>
+            </SidebarMenuItem>
+          )
+        }
+
         const pathOnly = navUrlPath(item.url)
         const linkActive =
           !item.opensCommandMenu &&
@@ -946,21 +956,19 @@ function SidebarNavSecondaryItems({
                 ) : null}
               </SidebarMenuButton>
             ) : item.opensAskLeo ? (
-              // Ask Leo is a route destination (per-product `/<slug>/leo`) —
-              // the Sheet (`AskLeoSidebar`) remains the fast quick-ask path
-              // for ⌘⌥K and inline KPI/chart triggers. See `views/leo.tsx`.
-              <SidebarMenuButton asChild isActive={isOnLeoLanding} tooltip={item.title}>
-                <Link
-                  to={leoHref}
-                  aria-current={isOnLeoLanding ? "page" : undefined}
-                  {...(iconRailCollapsed ? { "aria-label": item.title } : {})}
-                  onClick={() => dismissNavFlyout()}
-                >
-                  <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
-                    {item.icon}
-                  </span>
-                  {!iconOnly ? <SidebarNavLabel>{item.title}</SidebarNavLabel> : null}
-                </Link>
+              <SidebarMenuButton
+                type="button"
+                tooltip={item.title}
+                isActive={askLeoPanelOpen}
+                onClick={() => {
+                  setOpen(true)
+                  dismissNavFlyout()
+                }}
+              >
+                <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
+                  {item.icon}
+                </span>
+                {!iconOnly ? <SidebarNavLabel>{item.title}</SidebarNavLabel> : null}
               </SidebarMenuButton>
             ) : (
               <SidebarMenuButton asChild isActive={linkActive} tooltip={item.title}>
@@ -1100,7 +1108,7 @@ function TeamSwitcherInner({
                 "py-2 text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
                 /* `size=lg` is `h-12` + `overflow-hidden` — two lines + avatar need more height */
                 (state === "expanded" || isMobile) &&
-                  "h-auto min-h-12 !overflow-visible items-center [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:text-clip",
+                  "h-auto min-h-12 !overflow-visible items-center",
                 "group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center",
                 /* Icon rail: default is `size-8` + `p-2` (~16px inner) — clips 32px avatars; center logo without chevron */
                 "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!min-h-9 group-data-[collapsible=icon]:!max-h-9 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:overflow-visible",
@@ -1125,14 +1133,12 @@ function TeamSwitcherInner({
               </Avatar>
               <div
                 className={cn(
-                  "grid min-w-0 flex-1 content-center text-start text-sm leading-snug",
+                  "flex min-w-0 flex-1 flex-col justify-center text-start text-sm leading-snug",
                   "group-data-[collapsible=icon]:hidden",
                 )}
               >
-                <span className="break-words font-medium whitespace-normal">{child.name}</span>
-                <span className="break-words text-xs text-muted-foreground whitespace-normal">
-                  {parent.name}
-                </span>
+                <span className="min-w-0 font-medium">{child.name}</span>
+                <span className="min-w-0 text-xs text-muted-foreground">{parent.name}</span>
               </div>
               {(state === "expanded" || isMobile) && (
                 <span
@@ -1180,13 +1186,7 @@ function TeamSwitcherInner({
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground leading-tight">
-                    {scope.childNoun}
-                  </p>
-                  <p className="mt-0.5 text-xs font-semibold leading-snug">
-                    {child.name}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{parent.name}</p>
+                  <p className="text-xs font-semibold leading-snug">{parent.name}</p>
                 </div>
                 <span className="shrink-0 pt-0.5 text-xs font-medium text-brand">Change</span>
               </button>
@@ -1372,13 +1372,11 @@ function ProductLogoButton() {
             {/* Same adaptive lock-up as the trigger; the dropdown row is
                 wider, so the cascade settles to Lock-up A in the typical
                 case and only steps down for very long custom suffixes. */}
-            <ExxatProductLogo
+            <ProductSwitcherMenuRowLabel
               product={p.id}
-              variant="sidebar"
               previewCustomBrand={
                 p.customIndex !== undefined ? customProducts[p.customIndex] : undefined
               }
-              className="min-w-0 flex-1"
             />
             {p.scope && (
               <span
@@ -1562,6 +1560,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
   const { isMobile, open, setOpen } = useSidebar()
   const reflowZoom = useSidebarReflowZoom()
   const { activePanel, focusShellSupersedesPrimarySidebar } = useSecondaryPanel()
+  const { variant: shellLayoutVariant } = useShellLayout()
   const { product, customProducts, activeCustomIndex } = useProduct()
   // Per Rule 5 of the multi-product routing pattern: each product registers
   // its own primary nav. AppSidebar selects from the registry based on the
@@ -1572,19 +1571,26 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
     customProducts,
     activeCustomIndex,
   )
+  const isClassicSidebar = shellLayoutVariant === "sidebar-classic"
   const secondaryNav = getSecondaryNavForProduct(product)
 
   // Feed custom-product nav URLs into the active-state helper so links like
-  // `/<custom-slug>/dashboard` actually win the longest-prefix match. The
-  // sync is idempotent on URL signature, so re-renders without a real
-  // change are a no-op.
+  // `/<custom-slug>/program-details` win longest-prefix matching. The tenant
+  // registry stub (dashboard + library + placements) is not the full Prism IA
+  // shown in the sidebar — merge every configured custom product's primary tree.
   React.useMemo(() => {
     const extras: string[] = []
+    for (let i = 0; i < customProducts.length; i++) {
+      extras.push(
+        ...collectNavUrls(
+          getPrimaryNavForProduct("exxat-custom", customProducts, i),
+        ),
+      )
+    }
     for (const cp of customProducts) {
       const slug = customProductSlugFromSuffix(cp.suffix)
-      const nav = primaryNavLinksForSlug(slug)
-      if (!nav?.length) continue
-      extras.push(...collectNavUrls(nav))
+      const registered = primaryNavLinksForSlug(slug)
+      if (registered?.length) extras.push(...collectNavUrls(registered))
     }
     syncCustomNavUrls(extras)
   }, [customProducts])
@@ -1677,14 +1683,19 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
   }
 
   return (
-    <Sidebar collapsible="icon" className={cn("pt-1", className)} {...props}>
+    <Sidebar
+      collapsible="icon"
+      className={className}
+      {...props}
+    >
       {/*
         Scroll ownership:
-        - Desktop / normal height: primary rail scrolls in `SidebarContent`; Settings,
-          Help, and profile stay pinned in `SidebarFooter` below the scroll port.
+        - Desktop / normal height: primary rail scrolls in `SidebarContent`.
+          Settings, Help, and profile no longer live here — they moved to the
+          shell UtilityBarSlot (`apps/web/components/utility-bar-slot.tsx`).
         - Reflow / zoom / short viewport (`reflowZoom`): one scroll column on `<nav>`
-          so utilities + profile scroll with the rail (WCAG 1.4.10).
-        - Drill-in: footer hidden; section pane owns the full height.
+          (WCAG 1.4.10).
+        - Drill-in: section pane owns the full height.
       */}
       <nav
         aria-label="Application"
@@ -1737,10 +1748,14 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
                   )}
                   <SidebarHeaderStack>
                     <SidebarMenu className="gap-0.5">
-                      <SidebarMenuItem>
-                        <ProductLogoButton />
-                      </SidebarMenuItem>
-                      <SidebarSeparator className="mx-0 my-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+                      {showsProductInSidebar(shellLayoutVariant) ? (
+                        <>
+                          <SidebarMenuItem>
+                            <ProductLogoButton />
+                          </SidebarMenuItem>
+                          <SidebarMenuSeparator className="mx-0 my-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+                        </>
+                      ) : null}
                       <TeamSwitcher />
                     </SidebarMenu>
                   </SidebarHeaderStack>
@@ -1749,7 +1764,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
                 <SidebarGroup className="py-2" role="group" aria-label="Primary">
                   <SidebarGroupContent>
                     <SidebarMenu className="gap-0.5">
-                      <SidebarQuickActions pathname={pathname} />
+                      {isClassicSidebar ? <SidebarQuickActions pathname={pathname} /> : null}
                       <NavPrimaryPreamble items={primaryNavLayout.preamble} pathname={pathname} />
                     </SidebarMenu>
                   </SidebarGroupContent>
@@ -1796,9 +1811,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
           )}
         </SidebarContent>
 
-        {/* Settings + Help + profile — pinned below the scroll port on desktop;
-            scroll with the rail at reflow / zoom. Hidden while drilled in. */}
-        {!isDrilledIn && (
+        {isClassicSidebar && !isDrilledIn ? (
           <SidebarFooter className="shrink-0 border-t border-sidebar-border bg-sidebar">
             <SidebarGroup className="py-2" role="group" aria-label="Utilities">
               <SidebarGroupContent>
@@ -1809,7 +1822,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
             </SidebarGroup>
             <NavUser user={NAV_USER} />
           </SidebarFooter>
-        )}
+        ) : null}
         {showDrillInResize ? (
           <SidebarDrillInResizeHandle
             className="-end-px"

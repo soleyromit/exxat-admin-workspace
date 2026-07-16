@@ -69,7 +69,7 @@ function AnalyticsInner() {
         <Button size="sm" asChild>
           <Link href="/surveys/push">
             <i className="fa-light fa-paper-plane" aria-hidden="true" />
-            Send Evaluations
+            Set up Evaluations
           </Link>
         </Button>
       </div>

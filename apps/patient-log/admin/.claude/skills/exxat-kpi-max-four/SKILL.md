@@ -1,3 +1,8 @@
+---
+name: exxat-kpi-max-four
+description: KPI strip max-four rule for KeyMetrics on hubs and dashboards. Prefer exxat-kpi skill for new work.
+---
+
 # Exxat DS — KPI strip (max four)
 
 > **Consolidated skill:** prefer [`.cursor/skills/exxat-kpi/SKILL.md`](../exxat-kpi/SKILL.md) for new work.

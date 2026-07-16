@@ -18,16 +18,71 @@ import {
 
 const PRISM_BASE = 'https://app.exxat.com/prism/dpt'
 
-/** The three evaluatee dimensions an admin can choose to evaluate. */
-export type Criterion = 'students' | 'instructor' | 'coordinator'
+/**
+ * The evaluatee dimensions an admin can choose to evaluate. Sourced from the
+ * Prism role universe (~40–50 in production, narrowed per program in Settings);
+ * this is the subset the mock data can actually resolve a person for.
+ *
+ * NOT every role applies to every course type — a Placement Faculty on a
+ * classroom course is *not applicable*, which is different from *missing*. That
+ * distinction lives in CRITERION_BY_TYPE, which is Partial per delivery mode.
+ */
+export type Criterion =
+  | 'students'
+  | 'instructor'
+  | 'coordinator'
+  | 'teachingAssistant'
+  | 'labAssistant'
+  | 'guestLecturer'
+  | 'courseDirector'
+  | 'siteCoordinator'
+  | 'preceptor'
+  | 'academicAdvisor'
 
-export const ALL_CRITERIA: Criterion[] = ['students', 'instructor', 'coordinator']
+export const ALL_CRITERIA: Criterion[] = [
+  'students', 'instructor', 'coordinator', 'teachingAssistant', 'labAssistant',
+  'guestLecturer', 'courseDirector', 'siteCoordinator', 'preceptor', 'academicAdvisor',
+]
 
-/** Labels for the "What to evaluate" toggles (generic; per-course label lives in CRITERION_BY_TYPE). */
+/** The fixed top-level categories a role sits under (settled: no custom groups). */
+export type CriterionGroup = 'Course' | 'Faculty'
+
+export const CRITERION_GROUP_ORDER: readonly CriterionGroup[] = ['Course', 'Faculty']
+
+export const CRITERION_GROUP: Record<Criterion, CriterionGroup> = {
+  students: 'Course',
+  instructor: 'Faculty',
+  coordinator: 'Faculty',
+  teachingAssistant: 'Faculty',
+  labAssistant: 'Faculty',
+  guestLecturer: 'Faculty',
+  courseDirector: 'Faculty',
+  siteCoordinator: 'Faculty',
+  preceptor: 'Faculty',
+  academicAdvisor: 'Faculty',
+}
+
+/**
+ * Criteria that resolve to a *person* in Prism. These share one "Faculty" column
+ * and one "Add faculty" CTA rather than a column + button per role: the role set
+ * is drawn from the Prism universe (~40–50 roles, narrowed per program in
+ * Settings), so a column-per-role table does not survive a program that evaluates
+ * more than a handful. The specific role stays legible inside the cell.
+ */
+export const FACULTY_CRITERIA: Criterion[] = ALL_CRITERIA.filter(c => CRITERION_GROUP[c] === 'Faculty')
+
+/** Labels for the "What to evaluate" picker (generic; per-course label lives in CRITERION_BY_TYPE). */
 export const CRITERION_TOGGLE_LABEL: Record<Criterion, string> = {
   students: 'Course',
   instructor: 'Instructor',
   coordinator: 'Course Coordinator',
+  teachingAssistant: 'Teaching Assistant',
+  labAssistant: 'Lab Assistant',
+  guestLecturer: 'Guest Lecturer',
+  courseDirector: 'Course Director',
+  siteCoordinator: 'Site Coordinator',
+  preceptor: 'Preceptor',
+  academicAdvisor: 'Academic Advisor',
 }
 
 interface CriterionResolver {
@@ -54,21 +109,57 @@ function facultyName(id?: string | null): string | null {
  * coordinator (empty collaborators) reads as an instructor gap — intentional: the two evaluatee
  * roles are distinct, matching the prototype's separate Instructor / Coordinator columns.
  */
-export const CRITERION_BY_TYPE: Record<DeliveryMode, Record<Criterion, CriterionResolver>> = {
+const roster: CriterionResolver = {
+  label: 'Students',
+  resolve: (o) => (o.enrolledCount > 0 ? `${o.enrolledCount} students` : null),
+  prismTarget: 'roster',
+}
+
+/** Shared across every delivery mode — a director/advisor is not type-specific. */
+const courseDirector: CriterionResolver = {
+  label: 'Course Director',
+  resolve: (o) => facultyName(o.collaboratorIds[2]),
+  prismTarget: 'course-director',
+}
+const academicAdvisor: CriterionResolver = {
+  label: 'Academic Advisor',
+  resolve: (o) => facultyName(o.collaboratorIds[3]),
+  prismTarget: 'academic-advisor',
+}
+const teachingAssistant: CriterionResolver = {
+  label: 'Teaching Assistant',
+  resolve: (o) => facultyName(o.labTaIds?.[0]),
+  prismTarget: 'teaching-assistant',
+}
+const guestLecturer: CriterionResolver = {
+  label: 'Guest Lecturer',
+  resolve: (o) => facultyName(o.collaboratorIds[1]),
+  prismTarget: 'guest-lecturer',
+}
+
+export const CRITERION_BY_TYPE: Record<DeliveryMode, Partial<Record<Criterion, CriterionResolver>>> = {
   classroom: {
-    students: { label: 'Students', resolve: (o) => (o.enrolledCount > 0 ? `${o.enrolledCount} students` : null), prismTarget: 'roster' },
+    students: roster,
     instructor: { label: 'Instructor', resolve: (o) => facultyName(o.collaboratorIds[0]), prismTarget: 'instructor' },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
+    teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
+    // no labAssistant / siteCoordinator / preceptor — not applicable to a lecture
   },
   lab: {
-    students: { label: 'Students', resolve: (o) => (o.enrolledCount > 0 ? `${o.enrolledCount} students` : null), prismTarget: 'roster' },
+    students: roster,
     instructor: { label: 'Lab Instructor', resolve: (o) => facultyName(o.collaboratorIds[0] ?? o.labTaIds?.[0]), prismTarget: 'lab-instructor' },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
+    labAssistant: { label: 'Lab Assistant', resolve: (o) => facultyName(o.labTaIds?.[1]), prismTarget: 'lab-assistant' },
+    teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
   },
   practice: {
-    students: { label: 'Students', resolve: (o) => (o.enrolledCount > 0 ? `${o.enrolledCount} students` : null), prismTarget: 'roster' },
+    students: roster,
     instructor: { label: 'Placement Faculty', resolve: (o) => facultyName(o.placementFacultyIds?.[0]), prismTarget: 'placement-faculty' },
     coordinator: { label: 'Clinical Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'clinical-coordinator' },
+    siteCoordinator: { label: 'Site Coordinator', resolve: (o) => facultyName(o.placementFacultyIds?.[1]), prismTarget: 'site-coordinator' },
+    preceptor: { label: 'Preceptor', resolve: (o) => facultyName(o.placementFacultyIds?.[2]), prismTarget: 'preceptor' },
+    courseDirector, academicAdvisor,
+    // no labAssistant / teachingAssistant / guestLecturer on a placement
   },
 }
 
@@ -95,8 +186,19 @@ export interface CourseReadiness {
 
 /** `https://app.exxat.com/prism/dpt/offerings/{id}?add={target}` — matches the existing PRISM_BASE pattern. */
 export function prismAddHref(o: CourseOffering, c: Criterion): string {
-  const target = CRITERION_BY_TYPE[deliveryModeOf(o)][c].prismTarget
+  // Falls back to the offering's faculty area when the role does not apply to
+  // this course type — the link still lands somewhere useful.
+  const target = CRITERION_BY_TYPE[deliveryModeOf(o)][c]?.prismTarget ?? 'faculty'
   return `${PRISM_BASE}/offerings/${o.id}?add=${target}`
+}
+
+/**
+ * One deep-link to the offering's faculty area, covering every missing faculty
+ * role at once. A course missing both an instructor and a coordinator is one
+ * trip to Prism, not two new tabs.
+ */
+export function prismAddFacultyHref(o: CourseOffering): string {
+  return `${PRISM_BASE}/offerings/${o.id}?add=faculty`
 }
 
 export function courseLabelOf(o: CourseOffering): string {
@@ -104,8 +206,10 @@ export function courseLabelOf(o: CourseOffering): string {
   return mc ? `${mc.code} – ${mc.name}` : o.masterCourseId
 }
 
-function cellFor(o: CourseOffering, mode: DeliveryMode, c: Criterion): CellReadiness {
+/** `undefined` = the role does not apply to this course type (≠ a gap). */
+function cellFor(o: CourseOffering, mode: DeliveryMode, c: Criterion): CellReadiness | undefined {
   const spec = CRITERION_BY_TYPE[mode][c]
+  if (!spec) return undefined
   const value = spec.resolve(o)
   const ok = value != null
   return { ok, value, label: spec.label, prismHref: ok ? null : prismAddHref(o, c) }
@@ -119,6 +223,8 @@ export function deriveReadiness(offerings: CourseOffering[], criteria: Criterion
     let hasGap = false
     for (const c of criteria) {
       const cell = cellFor(o, mode, c)
+      // Evaluating "Lab Assistant" must not flag every lecture as incomplete.
+      if (!cell) continue
       cells[c] = cell
       if (!cell.ok) hasGap = true
     }

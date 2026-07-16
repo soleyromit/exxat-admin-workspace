@@ -22,6 +22,7 @@ import {
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
+import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -281,7 +282,7 @@ function buildTermColumns(onNudge: (row: CourseTermRow) => void): ColumnDef<Cour
       cell: (row) => (
         <div>
           <p className="text-sm font-medium">{row.courseCode}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[200px]">{row.courseName}</p>
+          <TruncatedText className="text-xs text-muted-foreground max-w-[200px]">{row.courseName}</TruncatedText>
         </div>
       ),
     },
@@ -330,7 +331,7 @@ const facultyOfferingColumns: ColumnDef<FacultyOfferingRow>[] = [
     cell: (row) => (
       <div className="min-w-0">
         <p className="text-sm font-medium">{row.courseCode}</p>
-        <p className="text-xs text-muted-foreground truncate max-w-[160px]">{row.courseName}</p>
+        <TruncatedText className="text-xs text-muted-foreground max-w-[160px]">{row.courseName}</TruncatedText>
       </div>
     ),
   },

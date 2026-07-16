@@ -46,5 +46,5 @@ Use when the work is **primary**, **long**, **multi-step**, or deserves its **ow
 
 ## See also
 
-- **`.cursor/rules/exxat-drawer-vs-dialog.mdc`**, **`.cursor/skills/exxat-overlays/SKILL.md`**
+- **`.cursor/rules/exxat-drawer-vs-dialog.mdc`**, **`.cursor/skills/exxat-drawer-vs-dialog/SKILL.md`**
 - **`exxat-no-toast.mdc`** — use dialog/banner/inline, not toasts, for outcomes that need acknowledgment.

@@ -124,10 +124,11 @@ function TermSetupInner() {
     t => t.status === 'active' && (!t.surveyType || t.surveyType === 'course_evaluation'),
   )
 
-  /* ?phase=readiness — the dashboard's "Add missing info" enters at step 2. */
-  const [step, setStep] = useState<WizardStep>(
-    params?.get('phase') === 'readiness' ? 2 : 1,
-  )
+  /* ?phase=readiness — the dashboard's "Add missing info" enters at step 2
+   * (Course readiness). The term already exists, so Term details is dropped
+   * from the flow entirely rather than shown as a completed step behind us. */
+  const enteredAtReadiness = params?.get('phase') === 'readiness'
+  const [step, setStep] = useState<WizardStep>(enteredAtReadiness ? 2 : 1)
 
   // ── Step 1 — term details (seeded from the discovered upcoming term).
   //    Term + Academic year are DROPDOWNS (live reference: pce-three
@@ -159,7 +160,8 @@ function TermSetupInner() {
   // ── Step 2 — Courses & Evaluatees (scope LOCKED to the step-1 term) ───────
   const ceSeason = season
   const [ceCohorts, setCeCohorts] = useState<string[]>([])
-  const [ceCriteria, setCeCriteria] = useState<Criterion[]>([])
+  // Course + Instructor pre-selected — the common evaluation targets.
+  const [ceCriteria, setCeCriteria] = useState<Criterion[]>(['students', 'instructor'])
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
 
   const ceScopeTerm = useMemo(() => resolveTerm(ceSeason, academicYear), [ceSeason, academicYear])
@@ -307,7 +309,7 @@ function TermSetupInner() {
           currentStep={currentStepNum}
           completedUpTo={completedUpTo}
           onStepClick={(n) => n < currentStepNum && setStep(n as WizardStep)}
-          steps={STEPS}
+          steps={enteredAtReadiness ? STEPS.filter((s) => s.n !== 1) : STEPS}
         />
       )}
 
@@ -431,7 +433,13 @@ function TermSetupInner() {
                     </div>
                   </div>
                   <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
-                    <Button variant="outline" size="sm" onClick={() => setStep(1)}>Back</Button>
+                    {enteredAtReadiness ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/course-evaluation/dashboard">Cancel</Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => setStep(1)}>Back</Button>
+                    )}
                     <Button variant="default" size="sm" onClick={saveTermOnly}>Save term</Button>
                   </div>
                 </>
