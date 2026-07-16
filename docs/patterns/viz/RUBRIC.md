@@ -115,7 +115,7 @@ Honesty check: the v1 rubric approved all of these. v2 verdicts:
 | `BulletScore` (list card, 112px track, 10px dots) | PD test (Δpx 5.6 < mark 10) · legend-adjacency | **Replace**: `4.65/5` + `+0.4 vs prog` delta chip |
 | `TrendSpark` (64px sparkline) | Gate 5.2 min size · Gate 3 (< 96px) | **Replace**: `↑ 0.25 vs Sp25` chip, or widen to ≥ 96px with endpoint labels |
 | `CompareDots` (15rem col, you/median/prog) | PD test · Gate 5.5 (4th vocabulary) | **Replace**: printed `you 3.7 · prog 3.7` + one signed-gap chip |
-| Theme dot plot (~600px track) | Gate 5.2 (10px ring vs dot) · Gate 5.3 (numbers far right) | **Keep form, fix render**: ≥ 12px marks, values printed at the marks, gap chip inline |
+| Theme distribution | — | **Designer decision (Romit)**: per-theme vertical rating histograms — the same five-column form as the question rows, aggregated per theme, "Avg X · Program Y" printed at right. A dot plot (even with fixed marks/labels) was tried and rejected; one visual language page-wide beats a second comparison form |
 | `ScoreCard` slope (208px, 2 points) | passes PD (Δpx ≈ 9/0.1) | **Keep**: add endpoint value labels on the SVG |
 | Per-question rating distribution | — | **Designer decision (Romit)**: the vertical per-rating mini-histogram is intentionally retained — the SHAPE (skew, bimodality) is the story a single favorable-share bar hides. A consolidation to a two-tone bar was tried and reverted. Consolidating a designer-chosen form requires approval, whatever the rubric says |
 | AI-verdict-first ordering, gap-sorted rows, collapsed-header previews | — | **Keep** — narrative layer passed |
