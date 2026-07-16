@@ -707,7 +707,14 @@ interface ThemeRowDatum {
   programAvg: number | null
 }
 
-const RATING_LABELS = ['Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5'] as const
+/* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
+const RATING_SERIES = [
+  { key: 'r1', label: 'Rated 1', color: 'var(--chip-4)',  opacity: 1 },
+  { key: 'r2', label: 'Rated 2', color: 'var(--chip-4)',  opacity: 0.45 },
+  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
+  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.45 },
+  { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
+] as const
 
 /* Shared 3–5 score window for every dot mark on this page — 1–5 rating data
    lives between 3.5 and 5, so the full range compresses every real difference
@@ -881,53 +888,30 @@ function favorableShare(counts: number[] | undefined, total: number | undefined)
   return ((counts[3] ?? 0) + (counts[4] ?? 0)) / total
 }
 
-/* One two-tone favorable-share bar per question — solid fills only (RUBRIC v2
-   Gate 5.7: alpha-stepped series read as empty track). The favorable share is
-   the story (Datawrapper's case against diverging bars); the full five-level
-   breakdown lives on hover and in the data table. */
-function LikertBar({ counts, total }: { counts: number[]; total: number }) {
-  const share = favorableShare(counts, total)
-  const fav = Math.round(share * 100)
+/* Per-question rating distribution — five VERTICAL mini columns, one per
+   rating level (Romit, 2026-07-16: intentionally kept — the histogram SHAPE
+   per question, skew/bimodality, is the story a single favorable-share bar
+   would hide). Count above, share below; scale header printed once. */
+function MiniRatingColumns({ counts, total }: { counts: number[]; total: number }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          className="flex items-center gap-2"
-          role="img"
-          aria-label={`${fav} percent rated 4 or 5 of ${total} responses`}
-        >
-          <div className="flex h-2.5 w-40 shrink-0 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
-            {share > 0 && (
+    <div className="flex items-end gap-3" aria-hidden="true">
+      {RATING_SERIES.map((s, i) => {
+        const n = counts[i] ?? 0
+        const share = total > 0 ? n / total : 0
+        return (
+          <div key={s.key} className="flex flex-col items-center gap-0.5 w-8">
+            <span className="text-xs tabular-nums text-muted-foreground">{n}</span>
+            <div className="relative h-10 w-5 rounded-sm bg-muted overflow-hidden">
               <div
-                className="h-full rounded-[1px]"
-                style={{ width: `${share * 100}%`, background: 'var(--chart-2)' }}
+                className="absolute inset-x-0 bottom-0 rounded-sm"
+                style={{ height: `${Math.max(share * 100, n > 0 ? 8 : 0)}%`, background: s.color, opacity: s.opacity }}
               />
-            )}
-            {share < 1 && (
-              <div
-                className="h-full rounded-[1px]"
-                style={{ width: `${(1 - share) * 100}%`, background: 'var(--border)' }}
-              />
-            )}
+            </div>
+            <span className="text-xs tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span>
           </div>
-          <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-            {fav}% rated 4–5
-          </span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="flex flex-col gap-0.5 tabular-nums">
-          {RATING_LABELS.map((label, i) => {
-            const n = counts[i] ?? 0
-            return (
-              <p key={label}>
-                {label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
-              </p>
-            )
-          }).reverse()}
-        </div>
-      </TooltipContent>
-    </Tooltip>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1041,7 +1025,11 @@ function QuestionBreakdownTable({
     <div className="flex flex-col">
       <div className="grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <span className="text-xs text-muted-foreground">Rating mix</span>
+        <div className="flex gap-3" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
+          ))}
+        </div>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => (
@@ -1057,7 +1045,7 @@ function QuestionBreakdownTable({
                 className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-center gap-6 py-3 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <LikertBar counts={r.counts ?? []} total={r.total ?? 0} />
+                <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
                 <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
