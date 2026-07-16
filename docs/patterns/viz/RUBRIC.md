@@ -39,7 +39,7 @@ Match the user's question. If it matches none, ask Romit before generating.
 | 3 | Gaps across two dimensions? | heatmap · small multiples | grid of progress bars |
 | 4 | How is X changing over time? | line · sparkline (≥ 96px) · slope (2 points) · cumulative area | % delta arrow alone |
 | 5 | Cohort A vs cohort B? | paired slope · distribution overlay · grouped bar (N≤10) | two big numbers |
-| 6 | Ordered-scale share (Likert/sentiment)? | 100% stacked bar (favorable-share story) · diverging stacked (neutral-midpoint story) | pie/donut |
+| 6 | Ordered-scale share (Likert/sentiment)? | **vertical per-rating mini-histogram** when the distribution SHAPE is the story (skew/bimodality — designer-chosen for PCE question breakdown, Romit 2026-07-16) · 100% stacked bar (favorable-share story) · diverging stacked (neutral-midpoint story) | pie/donut |
 
 ## Gate 2 — Perceivable-Difference test (PD test) — **new, hard gate**
 
@@ -117,7 +117,7 @@ Honesty check: the v1 rubric approved all of these. v2 verdicts:
 | `CompareDots` (15rem col, you/median/prog) | PD test · Gate 5.5 (4th vocabulary) | **Replace**: printed `you 3.7 · prog 3.7` + one signed-gap chip |
 | Theme dot plot (~600px track) | Gate 5.2 (10px ring vs dot) · Gate 5.3 (numbers far right) | **Keep form, fix render**: ≥ 12px marks, values printed at the marks, gap chip inline |
 | `ScoreCard` slope (208px, 2 points) | passes PD (Δpx ≈ 9/0.1) | **Keep**: add endpoint value labels on the SVG |
-| `LikertBar` (0.45-alpha segments) | Gate 5.7 solid marks · Gate 5.6 (counts hover-only is OK, but favorable split must read) | **Keep form, fix render**: two-tone solid split (favorable vs not) or 5 solid steps |
+| Per-question rating distribution | — | **Designer decision (Romit)**: the vertical per-rating mini-histogram is intentionally retained — the SHAPE (skew, bimodality) is the story a single favorable-share bar hides. A consolidation to a two-tone bar was tried and reverted. Consolidating a designer-chosen form requires approval, whatever the rubric says |
 | AI-verdict-first ordering, gap-sorted rows, collapsed-header previews | — | **Keep** — narrative layer passed |
 
 ## Color discipline (binds VIZ-003/004 — unchanged)
