@@ -719,6 +719,43 @@ const RATING_SERIES = [
   { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
 ] as const
 
+/* Thick horizontal 100%-stacked bar per theme (Romit 2026-07-16): rating
+   segments 1→5 left to right in the Likert palette; counts + shares on hover
+   and in the data table; legend in the header row. */
+function ThemeStackedBar({ dist, total }: { dist: ThemeRowDatum['dist']; total: number }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex h-6 w-full gap-0.5 overflow-hidden rounded-md" aria-hidden="true">
+          {RATING_SERIES.map((s, i) => {
+            const n = dist[i] ?? 0
+            if (n === 0 || total === 0) return null
+            return (
+              <div
+                key={s.key}
+                className="h-full rounded-[2px]"
+                style={{ width: `${(n / total) * 100}%`, background: s.color, opacity: s.opacity }}
+              />
+            )
+          })}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex flex-col gap-0.5 tabular-nums">
+          {RATING_SERIES.map((s, i) => {
+            const n = dist[i] ?? 0
+            return (
+              <p key={s.key}>
+                {s.label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
+              </p>
+            )
+          }).reverse()}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
   /* Sort by gap vs program, worst first — the deficit IS the story (Culture
@@ -750,11 +787,18 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
         {() => (
           <>
             <div className="flex flex-col">
-              <div className="grid grid-cols-[minmax(160px,220px)_auto_1fr] items-end gap-6 pb-2 border-b border-border">
+              <div className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-end gap-6 pb-2 border-b border-border">
                 <span className="text-xs text-muted-foreground">Theme</span>
-                <div className="flex gap-3" aria-hidden="true">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                  {RATING_SERIES.map((s, i) => (
+                    <span key={s.key} className="inline-flex items-center gap-1">
+                      <span
+                        className="inline-block size-2.5 rounded-[2px]"
+                        style={{ background: s.color, opacity: s.opacity }}
+                        aria-hidden="true"
+                      />
+                      {i + 1}
+                    </span>
                   ))}
                 </div>
                 <span className="text-xs text-muted-foreground text-right">Avg vs program</span>
@@ -767,7 +811,7 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                     key={t.theme}
                     role="img"
                     aria-label={`${t.theme}: average ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''} and ${total} rating${total !== 1 ? 's' : ''}`}
-                    className="grid grid-cols-[minmax(160px,220px)_auto_1fr] items-center gap-6 py-3 border-b border-border last:border-0"
+                    className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-center gap-6 py-3 border-b border-border last:border-0"
                   >
                     <div className="min-w-0">
                       <p className="text-sm truncate">{t.theme}</p>
@@ -775,7 +819,7 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                         {t.questions} question{t.questions !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <MiniRatingColumns counts={[...t.dist]} total={total} />
+                    <ThemeStackedBar dist={t.dist} total={total} />
                     <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
                       Avg{' '}
                       <span
