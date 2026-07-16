@@ -131,17 +131,21 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           WANT_ENV: 'Preview – exxat-pce-admin'
+          STATUS_CTX: 'Vercel – exxat-pce-admin'
         run: |
-          # Resolve the newest commit on this PR that Vercel actually deployed for
-          # WANT_ENV, then take that deployment's environment_url.
-          #
-          # Why walk back instead of just using the head SHA: a build skipped by the
-          # Ignored Build Step creates NO GitHub deployment at all (verified — on a
-          # .github-only push, 6 of 7 projects skipped and only the one that built had
-          # a deployment object). The preview alias still serves the last real build,
-          # so that build is exactly what a reviewer sees and exactly what we must scan.
-          # Head-SHA-only lookup would go blind precisely when a build is skipped.
-          resolve_url() {  # $1 = sha -> echoes url, or nothing
+          # Ask Vercel what it did instead of guessing on a timer.
+          # Vercel publishes a commit status per project; a build skipped by the
+          # Ignored Build Step reports exactly "Canceled by Ignored Build Step" and
+          # creates NO GitHub deployment object. An earlier version of this step
+          # inferred "skipped" from a 60s timeout, then walked back and scanned a
+          # STALE preview — reporting violations that were already fixed on head.
+          # Timers are what this file is being cured of; wait on the real signal.
+          status_of() {  # -> "<state>|<description>"
+            gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/statuses" \
+              --jq '[.[]|select(.context==env.STATUS_CTX)]|max_by(.created_at)|"\(.state)|\(.description)"' \
+              2>/dev/null || true
+          }
+          resolve_url() {  # $1 = sha -> url, or nothing
             local id
             id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$1&per_page=100" \
                   --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
@@ -150,38 +154,43 @@ jobs:
               --jq '[.[]|select(.state=="success")][0].environment_url // empty' 2>/dev/null || true
           }
 
-          # Give the head SHA a chance first — it may still be building.
-          for i in $(seq 1 24); do
+          SKIPPED=no
+          for i in $(seq 1 60); do
+            S=$(status_of); STATE=${S%%|*}; DESC=${S#*|}
+            case "$STATE" in
+              pending|"" ) sleep 15; continue ;;
+              success)
+                case "$DESC" in
+                  *"Ignored Build Step"*|*"Canceled"*) SKIPPED=yes ;;
+                esac
+                break ;;
+              failure|error)
+                echo "::warning::$STATUS_CTX reports '$DESC' — nothing to scan, skipping."
+                echo "TARGET_URL=" >> $GITHUB_ENV; exit 0 ;;
+              *) sleep 15 ;;
+            esac
+          done
+
+          if [ "$SKIPPED" = no ]; then
             URL=$(resolve_url "$SHA")
             if [ -n "$URL" ]; then
               echo "TARGET_URL=$URL" >> $GITHUB_ENV
               echo "Resolved '$WANT_ENV' at head $SHA -> $URL"
               exit 0
             fi
-            ID=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&per_page=100" \
-                  --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
-            if [ -n "$ID" ]; then
-              STATE=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
-                      --jq '[.[]][0].state // "none"' 2>/dev/null || echo none)
-              case "$STATE" in failure|error)
-                echo "::warning::'$WANT_ENV' deployment $STATE at head — skipping."
-                echo "TARGET_URL=" >> $GITHUB_ENV; exit 0 ;;
-              esac
-              sleep 15; continue
-            fi
-            # No deployment object for the head SHA after a grace period => it was
-            # skipped by the Ignored Build Step. Fall back to older commits.
-            [ "$i" -ge 4 ] && break
-            sleep 15
-          done
+            echo "::warning::$STATUS_CTX built but no deployment url surfaced; falling back."
+          else
+            echo "$STATUS_CTX skipped this commit (app unchanged) — the alias still serves the last build."
+          fi
 
-          echo "Head SHA has no deployment for '$WANT_ENV' (build skipped); walking back."
+          # Head genuinely has no build of its own: scan whatever the alias serves,
+          # i.e. the newest commit on this PR that Vercel actually deployed.
           for S in $(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/commits?per_page=100" \
                       --jq '[.[].sha]|reverse|.[]' 2>/dev/null || true); do
             URL=$(resolve_url "$S")
             if [ -n "$URL" ]; then
               echo "TARGET_URL=$URL" >> $GITHUB_ENV
-              echo "Resolved '$WANT_ENV' at $S -> $URL (head build was skipped)"
+              echo "Resolved '$WANT_ENV' at $S -> $URL (head not built)"
               exit 0
             fi
           done
@@ -321,17 +330,21 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           WANT_ENV: 'Preview – exxat-exam-management-admin'
+          STATUS_CTX: 'Vercel – exxat-exam-management-admin'
         run: |
-          # Resolve the newest commit on this PR that Vercel actually deployed for
-          # WANT_ENV, then take that deployment's environment_url.
-          #
-          # Why walk back instead of just using the head SHA: a build skipped by the
-          # Ignored Build Step creates NO GitHub deployment at all (verified — on a
-          # .github-only push, 6 of 7 projects skipped and only the one that built had
-          # a deployment object). The preview alias still serves the last real build,
-          # so that build is exactly what a reviewer sees and exactly what we must scan.
-          # Head-SHA-only lookup would go blind precisely when a build is skipped.
-          resolve_url() {  # $1 = sha -> echoes url, or nothing
+          # Ask Vercel what it did instead of guessing on a timer.
+          # Vercel publishes a commit status per project; a build skipped by the
+          # Ignored Build Step reports exactly "Canceled by Ignored Build Step" and
+          # creates NO GitHub deployment object. An earlier version of this step
+          # inferred "skipped" from a 60s timeout, then walked back and scanned a
+          # STALE preview — reporting violations that were already fixed on head.
+          # Timers are what this file is being cured of; wait on the real signal.
+          status_of() {  # -> "<state>|<description>"
+            gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/statuses" \
+              --jq '[.[]|select(.context==env.STATUS_CTX)]|max_by(.created_at)|"\(.state)|\(.description)"' \
+              2>/dev/null || true
+          }
+          resolve_url() {  # $1 = sha -> url, or nothing
             local id
             id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$1&per_page=100" \
                   --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
@@ -340,38 +353,43 @@ jobs:
               --jq '[.[]|select(.state=="success")][0].environment_url // empty' 2>/dev/null || true
           }
 
-          # Give the head SHA a chance first — it may still be building.
-          for i in $(seq 1 24); do
+          SKIPPED=no
+          for i in $(seq 1 60); do
+            S=$(status_of); STATE=${S%%|*}; DESC=${S#*|}
+            case "$STATE" in
+              pending|"" ) sleep 15; continue ;;
+              success)
+                case "$DESC" in
+                  *"Ignored Build Step"*|*"Canceled"*) SKIPPED=yes ;;
+                esac
+                break ;;
+              failure|error)
+                echo "::warning::$STATUS_CTX reports '$DESC' — nothing to scan, skipping."
+                echo "TARGET_URL=" >> $GITHUB_ENV; exit 0 ;;
+              *) sleep 15 ;;
+            esac
+          done
+
+          if [ "$SKIPPED" = no ]; then
             URL=$(resolve_url "$SHA")
             if [ -n "$URL" ]; then
               echo "TARGET_URL=$URL" >> $GITHUB_ENV
               echo "Resolved '$WANT_ENV' at head $SHA -> $URL"
               exit 0
             fi
-            ID=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&per_page=100" \
-                  --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
-            if [ -n "$ID" ]; then
-              STATE=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
-                      --jq '[.[]][0].state // "none"' 2>/dev/null || echo none)
-              case "$STATE" in failure|error)
-                echo "::warning::'$WANT_ENV' deployment $STATE at head — skipping."
-                echo "TARGET_URL=" >> $GITHUB_ENV; exit 0 ;;
-              esac
-              sleep 15; continue
-            fi
-            # No deployment object for the head SHA after a grace period => it was
-            # skipped by the Ignored Build Step. Fall back to older commits.
-            [ "$i" -ge 4 ] && break
-            sleep 15
-          done
+            echo "::warning::$STATUS_CTX built but no deployment url surfaced; falling back."
+          else
+            echo "$STATUS_CTX skipped this commit (app unchanged) — the alias still serves the last build."
+          fi
 
-          echo "Head SHA has no deployment for '$WANT_ENV' (build skipped); walking back."
+          # Head genuinely has no build of its own: scan whatever the alias serves,
+          # i.e. the newest commit on this PR that Vercel actually deployed.
           for S in $(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/commits?per_page=100" \
                       --jq '[.[].sha]|reverse|.[]' 2>/dev/null || true); do
             URL=$(resolve_url "$S")
             if [ -n "$URL" ]; then
               echo "TARGET_URL=$URL" >> $GITHUB_ENV
-              echo "Resolved '$WANT_ENV' at $S -> $URL (head build was skipped)"
+              echo "Resolved '$WANT_ENV' at $S -> $URL (head not built)"
               exit 0
             fi
           done
