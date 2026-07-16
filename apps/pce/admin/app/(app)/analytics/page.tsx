@@ -237,7 +237,15 @@ function AnalyticsInner() {
               )}
             </div>
 
-            <ByTermPanel axis={axis} value={scopeLabel} onOpenSurvey={setSelectedSurveyId} onNudge={setNudgeTarget} />
+            <ByTermPanel
+              axis={axis}
+              value={scopeLabel}
+              onOpenSurvey={setSelectedSurveyId}
+              onNudge={setNudgeTarget}
+              /* The attention table names courses; naming without a door was the last dead-end
+                 on the tab. Row → By Course, scoped to that course. */
+              onSelectCourse={(code) => setScope({ tab: 'course', courseCode: code })}
+            />
           </div>
         </TabsContent>
 

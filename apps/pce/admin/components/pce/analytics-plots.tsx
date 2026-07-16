@@ -731,11 +731,13 @@ export const LARGE_ROSTER_N = 30
 export function FacultyScoreStrip({
   faculty,
   median,
-  height = 96,
+  height = 132,
+  leoAnchor,
 }: {
   faculty: FacultyStat[]
   median: number
   height?: number
+  leoAnchor?: { x: unknown; y: unknown }
 }) {
   const rows = React.useMemo(
     () => faculty.map((f) => ({ name: f.name, score: f.score.weighted })),
@@ -759,14 +761,28 @@ export function FacultyScoreStrip({
           frameAnchor: 'top-left', x: median, dy: -10, dx: 4,
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
         }),
-        Plot.tickX(rows, {
-          x: 'score',
-          stroke: (d: { score: number }) => (d.score < median ? theme.warn : theme.faculty),
-          strokeWidth: 2,
-          strokeOpacity: 0.7,
-          channels: { Faculty: 'name', Score: (d: { score: number }) => d.score.toFixed(2) },
-          tip: { format: { x: false, stroke: false } },
-        }),
+        /* A dodged swarm, not a barcode. 34 full-height ticks read as a glitch ("this viz is
+           ugly" — Romit 2026-07-15): overlapping ticks hide people and pile-ups melt into one
+           thick line. Dots dodged into a swarm keep the same axis and the same amber/teal
+           split, but density becomes visible STACKING — and it is the vocabulary
+           BenchmarkDistribution already speaks one card down, so the tab's two distribution
+           charts finally match. */
+        Plot.dot(
+          rows,
+          Plot.dodgeY(
+            { anchor: 'middle' },
+            {
+              x: 'score',
+              r: 4.5,
+              fill: (d: { score: number }) => (d.score < median ? theme.warn : theme.faculty),
+              fillOpacity: 0.85,
+              stroke: theme.card,
+              strokeWidth: 1,
+              channels: { Faculty: 'name', Score: (d: { score: number }) => d.score.toFixed(2) },
+              tip: { format: { x: false, y: false, fill: false, r: false } },
+            },
+          ),
+        ),
       ],
     }),
     [rows, median],
@@ -774,7 +790,7 @@ export function FacultyScoreStrip({
 
   if (!rows.length) return <ChartEmpty note="No faculty in scope." />
 
-  return <PlotFigure spec={spec} height={height} />
+  return <PlotFigure spec={spec} height={height} leoAnchor={leoAnchor} leoFamily="scatter" />
 }
 
 export function ProgramTrendStack({
@@ -905,6 +921,12 @@ export function ProgramTrendStack({
     [rateRows, termOrder, responseTarget],
   )
 
+  // Blank axes read as a rendering failure, not as an empty state — guard like every other
+  // multi-term chart in this file (state-review 2026-07-15; this was the one outlier).
+  if (!series.length || !scoreRows.length) {
+    return <ChartEmpty note="Not enough term history to show a trajectory yet." />
+  }
+
   // ChartCard's shell is `h-full`, so in a 50/50 row this card stretches to the taller one
   // beside it. Spend that height on the plots rather than leaving it blank under them.
   return (
@@ -993,19 +1015,21 @@ export function Slopegraph({
           },
           tip: { format: { x: false, y: false, fill: false, r: false } },
         }),
-        // Both ends labelled — a slopegraph with one label is a mystery.
+        // Both ends labelled — a slopegraph with one label is a mystery. Labels are DODGED:
+        // several courses land within a few px of each other on either rail (Sp 26 saw
+        // "+0.87" and "+0.75" overprint into a smear — caught on the 2026-07-15 tab walk).
         Plot.text(
-          points.filter((p) => p.side === fromLabel),
+          dodgeLabelY(points.filter((p) => p.side === fromLabel), (d) => d.value, domain, height ?? Math.max(260, rows.length * 26 + 60)),
           {
-            x: 'side', y: 'value', text: 'code', textAnchor: 'end', dx: -8,
+            x: 'side', y: 'labelY', text: 'code', textAnchor: 'end', dx: -8,
             fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE,
           },
         ),
         Plot.text(
-          points.filter((p) => p.side === toLabel),
+          dodgeLabelY(points.filter((p) => p.side === toLabel), (d) => d.value, domain, height ?? Math.max(260, rows.length * 26 + 60)),
           {
             x: 'side',
-            y: 'value',
+            y: 'labelY',
             text: (d: { code: string; delta: number }) =>
               Math.abs(d.delta) > MOVED
                 ? `${d.code}  ${d.delta >= 0 ? '+' : ''}${fmt2(d.delta)}`
@@ -1019,7 +1043,7 @@ export function Slopegraph({
         ),
       ],
     }),
-    [points, domain, fromLabel, toLabel],
+    [points, domain, fromLabel, toLabel, height, rows.length],
   )
 
   if (rows.length < 2) {
@@ -1169,14 +1193,51 @@ export function CourseTrendStack({
   `brand` is reserved for where there is a genuine subject and no metric ambiguity (the "you"
   dot in BenchmarkDistribution).
 */
+
+/**
+ * Nudge end-labels apart vertically. Plot.text has no collision handling, and movers often
+ * finish within a few px of each other (all three low collectors end at ~45% — the labels
+ * overprinted into a smear). Sort top-down, then push each label down to keep a minimum gap,
+ * expressed in data units derived from the pixel height it will render at.
+ */
+function dodgeLabelY<T>(
+  ends: T[],
+  y: (d: T) => number,
+  domain: readonly [number, number],
+  heightPx: number,
+  labelPx = 15,
+): (T & { labelY: number })[] {
+  const span = Math.abs(domain[1] - domain[0])
+  const minGap = (span * labelPx) / Math.max(heightPx - 40, 1)
+  let prev = Infinity
+  return [...ends]
+    .sort((a, b) => y(b) - y(a))
+    .map((d) => {
+      const ly = Math.min(y(d), prev - minGap)
+      prev = ly
+      return { ...d, labelY: ly }
+    })
+}
+
 export function FacultyCompareLines({
   rows,
   programMean,
   height,
+  mode = 'facets',
+  highlight = [],
 }: {
   rows: { facultyId: string; name: string; short: string; year: number; rating: number }[]
   programMean: number
   height?: number
+  /**
+   * 'facets' is the original one-panel-per-entity layout (height grows N×76 — a wall at 34).
+   * 'shared' is the card layout: ONE axis, every entity ghosted, only `highlight` drawn solid
+   * and end-labelled. Same component, same data, different density — extending rather than
+   * cloning, per the note on ResponseCompareLines below.
+   */
+  mode?: 'facets' | 'shared'
+  /** Entity names to draw solid + label in shared mode. Everyone else stays ghost context. */
+  highlight?: string[]
 }) {
   const termOrder = React.useMemo(
     () => [...new Map(rows.map((r) => [r.short, r.year])).entries()].sort((a, b) => a[1] - b[1]).map(([s]) => s),
@@ -1184,6 +1245,53 @@ export function FacultyCompareLines({
   )
 
   const names = React.useMemo(() => [...new Set(rows.map((r) => r.name))].sort(), [rows])
+
+  const hlSet = React.useMemo(() => new Set(highlight), [highlight])
+  const hlRows = React.useMemo(() => rows.filter((r) => hlSet.has(r.name)), [rows, hlSet])
+  /** Last point of each highlighted line — where its name + score hang. */
+  const hlEnds = React.useMemo(() => {
+    const last = new Map<string, (typeof rows)[number]>()
+    for (const r of hlRows) {
+      const prev = last.get(r.name)
+      if (!prev || r.year > prev.year) last.set(r.name, r)
+    }
+    return [...last.values()]
+  }, [hlRows])
+
+  const sharedSpec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 34,
+      marginTop: 12,
+      marginBottom: 26,
+      marginRight: 132,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      y: { domain: SCORE_VIEW, label: null, ticks: [3.5, 4.0, 4.5], ...axisDefaults(theme) },
+      marks: [
+        gridMark(theme),
+        // The pack. One z per faculty so lines don't join across people.
+        Plot.line(rows, {
+          x: 'short', y: 'rating', z: 'name',
+          stroke: theme.border, strokeWidth: 1, strokeOpacity: 0.7, curve: 'monotone-x',
+        }),
+        Plot.ruleY([programMean], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
+        // The movers — ink only where there is news.
+        Plot.line(hlRows, {
+          x: 'short', y: 'rating', z: 'name',
+          stroke: theme.faculty, strokeWidth: 2, curve: 'monotone-x',
+        }),
+        Plot.dot(hlEnds, {
+          x: 'short', y: 'rating', r: 3,
+          fill: (d: { rating: number }) => (d.rating < programMean ? theme.warn : theme.faculty),
+        }),
+        Plot.text(dodgeLabelY(hlEnds, (d) => d.rating, SCORE_VIEW, height ?? 220), {
+          x: 'short', y: 'labelY',
+          text: (d: { name: string; rating: number }) => `${d.name.replace(/^Dr\.\s*/, '')} ${fmt2(d.rating)}`,
+          dx: 8, textAnchor: 'start', fill: theme.ink, fontSize: CHART_TICK_FONT_SIZE,
+        }),
+      ],
+    }),
+    [rows, hlRows, hlEnds, termOrder, programMean, height],
+  )
 
   /** Every row re-emitted under each panel — the grey context layer. */
   const ghost = React.useMemo(
@@ -1242,6 +1350,13 @@ export function FacultyCompareLines({
 
   if (!names.length) return <ChartEmpty note="No faculty scores recorded across terms yet." />
 
+  // One term = one x position = no line segments; a shared plot of floating dots reads as
+  // broken. The facet layout tolerates a single column; the shared one needs a real axis.
+  if (mode === 'shared' && termOrder.length < 2) {
+    return <ChartEmpty note="Needs at least two terms of data to draw trends." />
+  }
+  if (mode === 'shared') return <PlotFigure spec={sharedSpec} height={height ?? 220} />
+
   return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
 }
 
@@ -1260,6 +1375,8 @@ export function ResponseCompareLines({
   rows,
   target = 80,
   height,
+  mode = 'facets',
+  highlight = [],
 }: {
   /**
    * `label` is whatever the panels are — faculty on the roster chart, COURSE inside one
@@ -1272,6 +1389,9 @@ export function ResponseCompareLines({
   rows: { label: string; short: string; year: number; responseRate: number }[]
   target?: number
   height?: number
+  /** Same contract as FacultyCompareLines: 'shared' = one axis, ghosts + highlighted movers. */
+  mode?: 'facets' | 'shared'
+  highlight?: string[]
 }) {
   const termOrder = React.useMemo(
     () => [...new Map(rows.map((r) => [r.short, r.year])).entries()].sort((a, b) => a[1] - b[1]).map(([s]) => s),
@@ -1281,6 +1401,51 @@ export function ResponseCompareLines({
   const ghost = React.useMemo(
     () => names.flatMap((panel) => rows.map((r) => ({ ...r, panel, series: `${panel}::${r.label}` }))),
     [names, rows],
+  )
+
+  const hlSet = React.useMemo(() => new Set(highlight), [highlight])
+  const hlRows = React.useMemo(() => rows.filter((r) => hlSet.has(r.label)), [rows, hlSet])
+  const hlEnds = React.useMemo(() => {
+    const last = new Map<string, (typeof rows)[number]>()
+    for (const r of hlRows) {
+      const prev = last.get(r.label)
+      if (!prev || r.year > prev.year) last.set(r.label, r)
+    }
+    return [...last.values()]
+  }, [hlRows])
+
+  const sharedSpec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 40,
+      marginTop: 12,
+      marginBottom: 26,
+      marginRight: 132,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      y: { domain: [45, 100], label: null, ticks: [50, 80], tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
+      marks: [
+        gridMark(theme),
+        Plot.line(rows, {
+          x: 'short', y: 'responseRate', z: 'label',
+          stroke: theme.border, strokeWidth: 1, strokeOpacity: 0.7, curve: 'monotone-x',
+        }),
+        // The target IS the chart — a rate without its bar means nothing.
+        Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
+        Plot.line(hlRows, {
+          x: 'short', y: 'responseRate', z: 'label',
+          stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x',
+        }),
+        Plot.dot(hlEnds, {
+          x: 'short', y: 'responseRate', r: 3,
+          fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
+        }),
+        Plot.text(dodgeLabelY(hlEnds, (d) => d.responseRate, [45, 100], height ?? 220), {
+          x: 'short', y: 'labelY',
+          text: (d: { label: string; responseRate: number }) => `${d.label.replace(/^Dr\.\s*/, '')} ${d.responseRate}%`,
+          dx: 8, textAnchor: 'start', fill: theme.ink, fontSize: CHART_TICK_FONT_SIZE,
+        }),
+      ],
+    }),
+    [rows, hlRows, hlEnds, termOrder, target, height],
   )
 
   const spec = React.useCallback(
@@ -1320,6 +1485,11 @@ export function ResponseCompareLines({
   )
 
   if (!names.length) return <ChartEmpty note="No response history recorded yet." />
+
+  if (mode === 'shared' && termOrder.length < 2) {
+    return <ChartEmpty note="Needs at least two terms of data to draw trends." />
+  }
+  if (mode === 'shared') return <PlotFigure spec={sharedSpec} height={height ?? 220} />
 
   return <PlotFigure spec={spec} height={height ?? Math.max(260, names.length * 76 + 44)} />
 }

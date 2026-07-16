@@ -30,6 +30,7 @@ import {
 import {
   benchmarks, facultyCourseStats, facultyCourseResponseTrend, medianOf, RESPONSE_TARGET,
 } from '@/lib/pce-analytics'
+import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -158,6 +159,28 @@ export function FacultyPortfolioCharts({
                       ['University average', fmt2(bench.university)],
                     ]}
                   />
+                  <ChartCardActions
+                    title="Standing vs benchmarks"
+                    description="This faculty member's mean against the unnamed peer distribution and both benchmarks, larger."
+                    detail={
+                      <BenchmarkDistribution
+                        distribution={bench.distribution}
+                        value={avgRating}
+                        department={bench.department}
+                        university={bench.university}
+                        showPeers={lens === 'admin'}
+                        height={420}
+                      />
+                    }
+                    table={{
+                      headers: ['Measure', 'Score'],
+                      rows: [
+                        ['This faculty', fmt2(avgRating)],
+                        ['Department average', fmt2(bench.department)],
+                        ['University average', fmt2(bench.university)],
+                      ],
+                    }}
+                  />
                 </>
               )
             }
@@ -218,6 +241,21 @@ export function FacultyPortfolioCharts({
                       `${c.responseRate}%`,
                     ])}
                   />
+                  {/* Rows already carry their own sparks — export is the missing door here. */}
+                  <ChartCardActions
+                    title="Courses taught"
+                    table={{
+                      headers: ['Rank', 'Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
+                      rows: courseRank.map((c, i) => [
+                        i + 1,
+                        `${c.courseCode} — ${c.courseName}`,
+                        fmt2(c.score.weighted),
+                        fmt2(c.score.simple),
+                        c.terms,
+                        `${c.responseRate}%`,
+                      ]),
+                    }}
+                  />
                 </>
               )
             }
@@ -248,28 +286,64 @@ export function FacultyPortfolioCharts({
         <ChartCard
           variant="normal"
           title="Response rate by course"
-          description={`One panel per course against the ${RESPONSE_TARGET}% target. A portfolio-wide average would hide a course nobody answers behind one that everybody does.`}
+          /* Shared axis, not facets — the sibling-coverage miss the verification review caught:
+             every other ResponseCompareLines call site was converted to the card contract and
+             this one still grew 76px per course. One faculty member's courses are ≤5 series,
+             exactly the ≤5-series shape the small-multiples pattern excludes anyway. */
+          description={`Response rate per course · target ${RESPONSE_TARGET}% · lowest labelled`}
         >
           <ChartFigure
             label="Response rate by course"
-            summary={`Small multiples: one panel per course this faculty member teaches, showing its response rate by term against a ${RESPONSE_TARGET}% target.`}
+            summary={`All of this faculty member's courses' response rates by term on one shared axis against a ${RESPONSE_TARGET}% target; the lowest course is highlighted.`}
             dataLength={courseResponse.length}
           >
-            {() => (
-              <>
-                <ResponseCompareLines
-                  rows={courseResponse.map((r) => ({ ...r, label: r.courseCode }))}
-                  target={RESPONSE_TARGET}
-                />
-                <ChartDataTable
-                  caption="Response rate by course and term"
-                  headers={['Course', 'Term', 'Response rate']}
-                  rows={courseResponse.map((r) => [
-                    `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
-                  ])}
-                />
-              </>
-            )}
+            {() => {
+              const byCourse = new Map<string, number>()
+              for (const r of courseResponse) {
+                const prev = byCourse.get(r.courseCode)
+                if (prev == null || r.responseRate < prev) byCourse.set(r.courseCode, r.responseRate)
+              }
+              const lowest = [...byCourse.entries()].sort((a, b) => a[1] - b[1]).slice(0, 2).map(([c]) => c)
+              const rows = courseResponse.map((r) => ({ ...r, label: r.courseCode }))
+              const table = {
+                headers: ['Course', 'Term', 'Response rate'],
+                rows: courseResponse.map((r) => [
+                  `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
+                ] as (string | number)[]),
+              }
+              return (
+                <>
+                  <ResponseCompareLines
+                    mode="shared"
+                    rows={rows}
+                    target={RESPONSE_TARGET}
+                    highlight={lowest}
+                    height={CHART_CARD_PLOT_PX}
+                  />
+                  <ChartDataTable
+                    caption="Response rate by course and term"
+                    headers={['Course', 'Term', 'Response rate']}
+                    rows={courseResponse.map((r) => [
+                      `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
+                    ])}
+                  />
+                  <ChartCardActions
+                    title="Response rate by course"
+                    description={`Response rate by term for each course, against the ${RESPONSE_TARGET}% target.`}
+                    detail={
+                      <ResponseCompareLines
+                        mode="shared"
+                        rows={rows}
+                        target={RESPONSE_TARGET}
+                        highlight={lowest}
+                        height={380}
+                      />
+                    }
+                    table={table}
+                  />
+                </>
+              )
+            }}
           </ChartFigure>
         </ChartCard>
       )}

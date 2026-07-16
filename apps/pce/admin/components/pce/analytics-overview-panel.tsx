@@ -34,6 +34,9 @@ import {
   CourseRankDots,
   COURSE_RANK_LIMIT,
   KpiSpark,
+  FacultyCompareLines,
+  FacultyScoreStrip,
+  ProgramResponseTrend,
   type DriftRow,
 } from '@/components/pce/analytics-plots'
 import { CourseTermGrid } from '@/components/pce/course-term-grid'
@@ -44,11 +47,15 @@ import {
   programSummary,
   termSeries,
   facultyStats,
+  facultyTermSeries,
   courseStats,
   gapPoints,
   courseTermMatrix,
   medianOf,
+  RESPONSE_TARGET,
 } from '@/lib/pce-analytics'
+import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
+import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -88,7 +95,9 @@ export function AnalyticsOverviewPanel() {
    * in the grid now, always, ordered weakest-first by `courseTermMatrix`; the chart shows a
    * window of them and scrolls. Nothing is hidden and nothing is 1200px tall.
    */
-  const heatRows = matrix.courses
+  /* Card = the worst band only; the FULL grid lives behind Expand. `courseTermMatrix` orders
+     weakest-first, so the slice IS the worst 5 — nothing is hidden, it moved one click down. */
+  const heatRows = matrix.courses.slice(0, 5)
 
 
 
@@ -257,6 +266,19 @@ export function AnalyticsOverviewPanel() {
     [courses],
   )
 
+  /* The card draws the 5 largest moves; every arrow still exists behind Expand. 34 arrows at
+     32px each was a 1,100px card — §2.1's reference for this rank row is a 5-row list. Null
+     drift is excluded outright: a fake flat arrow reads "no change" when it means "no data". */
+  const driftMovers = useMemo(
+    () =>
+      facultyDriftRows
+        .filter((r): r is DriftRow & { drift: number } => r.drift != null)
+        .sort((a, b) => Math.abs(b.drift) - Math.abs(a.drift))
+        .slice(0, 5),
+    [facultyDriftRows],
+  )
+  const facSeries = useMemo(() => facultyTermSeries(), [])
+
   const facultyDriftLeo: ChartLeoInsight | null = useMemo(() => {
     const movers = facultyDriftRows.filter((r) => r.drift != null) as (DriftRow & { drift: number })[]
     if (!movers.length) return null
@@ -341,6 +363,17 @@ export function AnalyticsOverviewPanel() {
           {/* seriesIndex 1 = --chart-2 = the "Faculty" line in Program trajectory below.
               One metric, one colour, down the whole tab. */}
           <KpiSpark points={summary.facultySpark} seriesIndex={1} />
+          {/* Steep's metric-detail shape (Mobbin 2026-07-15): the tile's ONE number, decomposed
+              by its natural segment. This mean is 34 people — the strip IS the breakdown. */}
+          <ChartCardActions
+            title="Average faculty score"
+            description={`The ${fmt2(summary.facultyScore.weighted)} mean, decomposed: every faculty member as a tick against the ${fmt2(summary.facultyMedian)} median.`}
+            detail={faculty.length ? <FacultyScoreStrip faculty={faculty} median={summary.facultyMedian} height={200} /> : <p className="py-8 text-center text-sm text-muted-foreground">No faculty data yet.</p>}
+            table={{
+              headers: ['Faculty', 'Weighted score', 'Offerings'],
+              rows: faculty.map((f) => [f.name, fmt2(f.score.weighted), f.offerings]),
+            }}
+          />
         </ChartCard>
 
         <ChartCard
@@ -358,6 +391,15 @@ export function AnalyticsOverviewPanel() {
         >
           {/* seriesIndex 0 = --chart-1 = the "Course content" line below. */}
           <KpiSpark points={summary.courseSpark} seriesIndex={0} />
+          <ChartCardActions
+            title="Average course score"
+            description={`The mean decomposed: all ${courses.length} courses ranked against the ${fmt2(courseMedian)} median.`}
+            detail={courses.length ? <CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} /> : <p className="py-8 text-center text-sm text-muted-foreground">No course data yet.</p>}
+            table={{
+              headers: ['Course', 'Weighted score', 'Terms'],
+              rows: courses.map((c) => [`${c.courseCode} — ${c.courseName}`, fmt2(c.score.weighted), c.terms]),
+            }}
+          />
         </ChartCard>
 
         <ChartCard
@@ -379,6 +421,20 @@ export function AnalyticsOverviewPanel() {
           <KpiSpark
             points={summary.responseSpark}
             {...(summary.responseRate < 80 ? { tone: 'warn' as const } : { seriesIndex: 2 })}
+          />
+          <ChartCardActions
+            title="Overall response rate"
+            description={`Response rate by term against the ${RESPONSE_TARGET}% target — the trend behind the tile's number.`}
+            detail={series.length ? <ProgramResponseTrend series={series} target={RESPONSE_TARGET} height={420} /> : <p className="py-8 text-center text-sm text-muted-foreground">No term history yet.</p>}
+            table={{
+              headers: ['Term', 'Response rate', 'Responded', 'Enrolled'],
+              rows: series.map((t) => [
+                t.term,
+                t.responseRate != null ? `${t.responseRate}%` : '—',
+                t.responded,
+                t.enrolled,
+              ]),
+            }}
           />
         </ChartCard>
       </div>
@@ -409,7 +465,7 @@ export function AnalyticsOverviewPanel() {
              arrow and the Leo do the flagging, and "5 of 6 are holding or improving" is
              genuinely the news here — filtering to the one faller would hide it. */
           title="Which way each faculty is moving"
-          description="Each arrow runs from a faculty member's own three-year mean to their one-year mean, so the axis is the change itself — not the score. Amber is a fall; this says nothing about who is lowest."
+          description={`The ${driftMovers.length} largest moves of ${facultyDriftRows.length} faculty · 3-year mean → 1-year mean`}
           leoInsight={facultyDriftLeo}
         >
           <ChartFigure
@@ -421,8 +477,14 @@ export function AnalyticsOverviewPanel() {
             {() => (
               <>
                 <DriftDumbbell
-                  rows={facultyDriftRows}
+                  rows={driftMovers}
                   emptyNote="No faculty has offerings in both the 1-year and 3-year windows yet."
+                  /* Leo pins to the biggest FALL's endpoint — a plot annotation, not a header
+                     button (DS OS chart-leo-spotting). */
+                  leoAnchor={(() => {
+                    const worst = driftMovers.find((m) => m.drift < 0) ?? driftMovers[0]
+                    return worst && worst.avg1y != null ? { x: worst.avg1y, y: worst.label } : undefined
+                  })()}
                 />
                 <ChartDataTable
                   caption="Faculty score change, three-year mean to one-year mean"
@@ -434,11 +496,67 @@ export function AnalyticsOverviewPanel() {
                     r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
                   ])}
                 />
-                <div className="mt-2 flex justify-end">
+                {/* The dialog traces the trend BEHIND the drift — an arrow says a person moved;
+                    the explorer shows the actual trajectory the two windows summarised. */}
+                <ChartCardActions
+                  title="Which way each faculty is moving"
+                  description="Every faculty member's score by term. Select a person to trace the trajectory behind their 1-year vs 3-year change."
+                  detail={
+                    <EntityTrendExplorer
+                      entityNoun="faculty"
+                      entities={faculty.map((f) => ({
+                        id: f.facultyId,
+                        label: f.name,
+                        value: f.drift != null ? `${f.drift >= 0 ? '+' : ''}${fmt2(f.drift)}` : '—',
+                        sortValue: f.drift ?? Number.POSITIVE_INFINITY,
+                        trend: f.drift == null ? null : f.drift < -0.05 ? 'down' : f.drift > 0.05 ? 'up' : 'flat',
+                      }))}
+                      renderChart={(selected) =>
+                        selected ? (
+                          /* Depth: the trajectory BEHIND the selected person's arrow. */
+                          <FacultyCompareLines
+                            mode="shared"
+                            rows={facSeries}
+                            programMean={summary.facultyMedian}
+                            highlight={[selected]}
+                            height={380}
+                          />
+                        ) : (
+                          /* Correlation rule: the dialog leads with the CARD's viz — every
+                             arrow, sorted by drift — not a different chart. Selecting a person
+                             is what earns the deeper trajectory view. */
+                          <DriftDumbbell
+                            rows={facultyDriftRows}
+                            height={Math.max(260, facultyDriftRows.length * 32 + 40)}
+                            emptyNote="No faculty has offerings in both windows yet."
+                          />
+                        )
+                      }
+                      table={{
+                        headers: ['Faculty', '3-year mean', '1-year mean', 'Change'],
+                        rows: facultyDriftRows.map((r) => [
+                          r.label,
+                          r.avg3y != null ? fmt2(r.avg3y) : '—',
+                          r.avg1y != null ? fmt2(r.avg1y) : '—',
+                          r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
+                        ]),
+                      }}
+                    />
+                  }
+                  table={{
+                    headers: ['Faculty', '3-year mean', '1-year mean', 'Change'],
+                    rows: facultyDriftRows.map((r) => [
+                      r.label,
+                      r.avg3y != null ? fmt2(r.avg3y) : '—',
+                      r.avg1y != null ? fmt2(r.avg1y) : '—',
+                      r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
+                    ]),
+                  }}
+                >
                   <Button asChild variant="outline" size="sm">
                     <Link href="/analytics?tab=faculty">Open By Faculty</Link>
                   </Button>
-                </div>
+                </ChartCardActions>
               </>
             )}
           </ChartFigure>
@@ -447,7 +565,7 @@ export function AnalyticsOverviewPanel() {
         <ChartCard
           variant="normal"
           title="Courses scoring lowest"
-          description={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} weakest of ${courses.length}, worst first, against the program median — every offering behind each course drawn as a faint dot. Amber is below the median; this says nothing about who is falling. Open By Course for the full list.`}
+          description={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} weakest of ${courses.length}, worst first, vs the program median`}
           leoInsight={courseDriftLeo}
         >
           <ChartFigure
@@ -473,11 +591,25 @@ export function AnalyticsOverviewPanel() {
                     `${c.responseRate}%`,
                   ])}
                 />
-                <div className="mt-2 flex justify-end">
+                <ChartCardActions
+                  title="Courses scoring lowest"
+                  description={`All ${courses.length} courses ranked against the ${fmt2(courseMedian)} program median, every offering behind each mean.`}
+                  detail={<CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} />}
+                  table={{
+                    headers: ['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
+                    rows: courses.map((c) => [
+                      `${c.courseCode} — ${c.courseName}`,
+                      fmt2(c.score.weighted),
+                      fmt2(c.score.simple),
+                      c.terms,
+                      `${c.responseRate}%`,
+                    ]),
+                  }}
+                >
                   <Button asChild variant="outline" size="sm">
                     <Link href="/analytics?tab=course">Open By Course</Link>
                   </Button>
-                </div>
+                </ChartCardActions>
               </>
             )}
           </ChartFigure>
@@ -495,7 +627,7 @@ export function AnalyticsOverviewPanel() {
       <ChartCard
         variant="normal"
         title="Program trajectory"
-        description="Scores and response rate share a term axis — a dip in both at once is a sampling problem, not a quality one."
+        description="Scores and response rate by term"
         leoInsight={trendLeo}
       >
         <ChartFigure
@@ -520,6 +652,22 @@ export function AnalyticsOverviewPanel() {
                   s.enrolled,
                 ])}
               />
+              <ChartCardActions
+                title="Program trajectory"
+                description="Scores and response rate by term, larger."
+                detail={<ProgramTrendStack series={series} />}
+                table={{
+                  headers: ['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled'],
+                  rows: series.map((s) => [
+                    s.term,
+                    s.courseAvg != null ? fmt2(s.courseAvg) : '—',
+                    s.facultyAvg != null ? fmt2(s.facultyAvg) : '—',
+                    s.responseRate != null ? `${s.responseRate}%` : '—',
+                    s.responded,
+                    s.enrolled,
+                  ]),
+                }}
+              />
             </>
           )}
         </ChartFigure>
@@ -529,7 +677,7 @@ export function AnalyticsOverviewPanel() {
       <ChartCard
         variant="normal"
         title="Course score vs faculty score"
-        description="One dot per course, split by the two medians. A course scoring well says almost nothing about how its instructor scores — which is exactly why this is a quadrant and not a trend line, and why a course that needs redesigning and an instructor who needs support are two problems with two different fixes."
+        description="One dot per course, split at the program means"
         leoInsight={gapLeo}
       >
         <ChartFigure
@@ -545,6 +693,7 @@ export function AnalyticsOverviewPanel() {
                 courseMean={courseMean}
                 facultyMean={facultyMean}
                 leoAnchor={anchorGap}
+                height={CHART_CARD_PLOT_PX}
               />
               <ChartDataTable
                 caption="Course score versus faculty score, by course"
@@ -556,6 +705,29 @@ export function AnalyticsOverviewPanel() {
                   fmt2(g.facultyAvg),
                   g.enrolled,
                 ])}
+              />
+              <ChartCardActions
+                title="Course score vs faculty score"
+                description="Each dot is one course, sized by enrolment, split at the program means. Off-diagonal courses are the finding."
+                detail={
+                  <GapQuadrant
+                    points={gaps}
+                    courseMean={courseMean}
+                    facultyMean={facultyMean}
+                    leoAnchor={anchorGap}
+                    height={480}
+                  />
+                }
+                table={{
+                  headers: ['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled'],
+                  rows: gaps.map((g) => [
+                    `${g.courseCode} — ${g.courseName}`,
+                    g.terms,
+                    fmt2(g.courseAvg),
+                    fmt2(g.facultyAvg),
+                    g.enrolled,
+                  ]),
+                }}
               />
             </>
           )}
@@ -607,6 +779,20 @@ export function AnalyticsOverviewPanel() {
                   ['Completed', funnel.counts.completed, 0],
                 ]}
               />
+              <ChartCardActions
+                title="Where responses are lost"
+                description="The response funnel, larger."
+                detail={<ResponseFunnelSankey funnel={funnel} />}
+                table={{
+                  headers: ['Stage', 'Students', 'Lost after this stage'],
+                  rows: [
+                    ['Invited', funnel.counts.invited, funnel.counts.invited - funnel.counts.opened],
+                    ['Opened', funnel.counts.opened, funnel.counts.opened - funnel.counts.started],
+                    ['Started', funnel.counts.started, funnel.counts.started - funnel.counts.completed],
+                    ['Completed', funnel.counts.completed, 0],
+                  ],
+                }}
+              />
             </>
           )}
         </ChartFigure>
@@ -622,7 +808,7 @@ export function AnalyticsOverviewPanel() {
       <ChartCard
         variant="normal"
         title="Course quality across terms"
-        description={`Content scores for ${matrix.courses.length} of ${courses.length} courses across ${matrix.terms.length} terms. Worst-scoring band at the top; blank cells are terms a course was not evaluated — absence is an accreditation signal, not a rendering gap.`}
+        description={`The 5 weakest of ${matrix.courses.length} courses × ${matrix.terms.length} terms · blank = not evaluated`}
         leoInsight={heatLeo}
       >
         <ChartFigure
@@ -681,6 +867,33 @@ export function AnalyticsOverviewPanel() {
                   fmt2(c.courseAvg),
                   c.facultyAvg != null ? fmt2(c.facultyAvg) : '—',
                 ])}
+              />
+              <ChartCardActions
+                title="Course quality across terms"
+                description={`All ${matrix.courses.length} courses across ${matrix.terms.length} terms, weakest first. The tinted grid IS the accessible artefact — sortable, selectable, screen-readable.`}
+                detail={
+                  /* Deliberately NOT paginated (verification-review flagged the count claim):
+                     this is a matrix, not a register — paginating a heatmap severs the row-to-row
+                     comparison that is its whole point. Density is bounded by the dialog's own
+                     70vh scroll region, and the grid IS the accessible table. */
+                  <div className="-mx-1">
+                    <CourseTermGrid
+                      courses={matrix.courses}
+                      terms={matrix.terms}
+                      cells={matrix.cells}
+                      domain={SCORE_HEAT_DOMAIN}
+                    />
+                  </div>
+                }
+                table={{
+                  headers: ['Course', 'Term', 'Course score', 'Faculty score'],
+                  rows: matrix.cells.map((c) => [
+                    c.courseCode,
+                    c.term,
+                    fmt2(c.courseAvg),
+                    c.facultyAvg != null ? fmt2(c.facultyAvg) : '—',
+                  ]),
+                }}
               />
             </>
           )}

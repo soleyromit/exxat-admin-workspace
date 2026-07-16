@@ -166,6 +166,8 @@ export function CourseTermGrid({
            where light text measures 2.4:1 — the 34 axe failures this variation exposed and the
            canvas hid. Text colour is asserted below instead of assumed. */
         const bg = heatmapCellColor(norm, span, brand, card, HEATMAP_AA_MAX_MIX)
+        // data-ds-computed-color: this rgb is DERIVED from --brand-color/--card at runtime
+        // with an AA-capped mix — a token ramp, not an authored literal (see dev-review-hud).
         const tint: React.CSSProperties = { backgroundColor: bg, color: textOn(bg) }
         const label = `${row.courseCode} ${shortTerm(t)}: ${fmt2(v)} out of 5`
 
@@ -179,6 +181,7 @@ export function CourseTermGrid({
            If the cell should become a door, it becomes one in BOTH variations, on DS Button. */
         return (
           <div
+            data-ds-computed-color=""
             className="flex h-9 w-full items-center justify-center rounded-md text-sm font-semibold tabular-nums"
             style={tint}
             aria-label={label}

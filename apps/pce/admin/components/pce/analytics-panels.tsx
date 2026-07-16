@@ -16,7 +16,7 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
-import { BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell } from 'recharts'
+import { XAxis, YAxis, LineChart, Line, CartesianGrid } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
   ChartLeoPlotInsightOverlay,
@@ -28,7 +28,8 @@ import {
 } from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
-import { DataTable } from '@/components/data-table'
+import { DataTablePaginated } from '@/components/data-table/pagination'
+import { ChartCardActions } from '@/components/pce/chart-card-actions'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
@@ -337,11 +338,13 @@ const courseOfferingColumnsFor = (facultyMedian: number): ColumnDef<CourseOfferi
 
 /* ════════════════════ By Term panel ════════════════════ */
 export function ByTermPanel({
-  axis = 'term', value, onOpenSurvey, onNudge,
+  axis = 'term', value, onOpenSurvey, onNudge, onSelectCourse,
 }: {
   axis?: 'term' | 'cohort'
   value: string
   onOpenSurvey: (surveyId: string) => void
+  /** Attention-table rows drill into the named course (By Course tab). */
+  onSelectCourse?: (courseCode: string) => void
   onNudge: (t: NudgeTarget) => void
 }) {
   const { surveys } = usePce()
@@ -796,6 +799,11 @@ export function ByTermPanel({
         >
           {(activeIndex) => (
             <>
+              {programTrendData.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No term history yet — the trend appears once a second term closes.
+                </p>
+              ) : (
               <div className="relative w-full">
                 <ChartContainer config={programTrendConfig} className="w-full" style={{ height: 168 }}>
                   <LineChart accessibilityLayer data={programTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
@@ -810,10 +818,22 @@ export function ByTermPanel({
                 </ChartContainer>
                 <ChartLeoPlotInsightOverlay data={programTrendData} xDataKey="term" />
               </div>
+              )}
               <ChartDataTable
                 caption="Program trend"
                 headers={['Term', 'Course avg', 'Faculty avg']}
                 rows={programTrendData.map(d => [d.term, d.courseAvg.toFixed(2), d.facultyAvg != null ? d.facultyAvg.toFixed(2) : '—'])}
+              />
+              <ChartCardActions
+                title="Program trend"
+                table={{
+                  headers: ['Term', 'Course score', 'Faculty score'],
+                  rows: programTrendData.map((t) => [
+                    t.term,
+                    t.courseAvg.toFixed(2),
+                    t.facultyAvg != null ? t.facultyAvg.toFixed(2) : '—',
+                  ]),
+                }}
               />
 
               {/* §2.4 — the per-term delta chip row, and the doc singles it out as "the one
@@ -882,6 +902,24 @@ export function ByTermPanel({
                   .filter(t => t.responseRate != null)
                   .map(t => [t.term, `${t.responseRate}%`])}
               />
+              <ChartCardActions
+                title="Response rate by term"
+                description="Response rate against the target, larger."
+                detail={
+                  <ProgramResponseTrend
+                    series={termSeriesData}
+                    target={RESPONSE_TARGET}
+                    scopedTerm={axis === 'term' ? value : undefined}
+                    height={420}
+                  />
+                }
+                table={{
+                  headers: ['Term', 'Response rate'],
+                  rows: termSeriesData
+                    .filter((t) => t.responseRate != null)
+                    .map((t) => [t.term, `${t.responseRate}%`]),
+                }}
+              />
             </>
           )}
         </ChartFigure>
@@ -899,7 +937,7 @@ export function ByTermPanel({
           <ChartCard
             variant="normal"
             title={`Who answered — ${value}`}
-            description="One square is one student. A class of 38 and a class of 371 read differently here; under a percentage they look identical."
+            description="One square is one student"
           >
             <ChartFigure
               label={`Students who answered in ${value}`}
@@ -922,6 +960,17 @@ export function ByTermPanel({
                       ['Enrolled', termStats.enrolled],
                     ]}
                   />
+                  <ChartCardActions
+                    title={`Who answered — ${value}`}
+                    table={{
+                      headers: ['Status', 'Students'],
+                      rows: [
+                        ['Responded', termStats.responded],
+                        ['Did not respond', termStats.enrolled - termStats.responded],
+                        ['Enrolled', termStats.enrolled],
+                      ],
+                    }}
+                  />
                 </>
               )}
             </ChartFigure>
@@ -936,7 +985,7 @@ export function ByTermPanel({
                  evaluated on (7). Two panels, one title, two numbers is how a reader concludes
                  the page is broken. The title names the metric; the table names the worklist. */
               title={`Course scores — ${value}`}
-              description={`All ${cohortCourses.length} courses this class has been evaluated on, ranked by content score against the class's own median. Content, not teaching — they are scored separately (D27).`}
+              description={`The lowest of ${cohortCourses.length} courses, ranked · content score`}
             >
               <ChartFigure
                 label={`Courses in ${value} ranked by content score`}
@@ -948,7 +997,6 @@ export function ByTermPanel({
                     <CourseRankDots
                       courses={cohortCourses}
                       median={cohortMedians.course}
-                      limit={cohortCourses.length}
                     />
                     <ChartDataTable
                       caption={`Courses in ${value}`}
@@ -959,6 +1007,26 @@ export function ByTermPanel({
                         `${c.responseRate}%`,
                       ])}
                     />
+                    <ChartCardActions
+                      title={`Course scores — ${value}`}
+                      description={`All ${cohortCourses.length} courses this class was evaluated on, ranked.`}
+                      detail={
+                        <CourseRankDots
+                          courses={cohortCourses}
+                          median={cohortMedians.course}
+                          limit={cohortCourses.length}
+                          height={Math.max(260, cohortCourses.length * 32 + 40)}
+                        />
+                      }
+                      table={{
+                        headers: ['Course', 'Content score', 'Response rate'],
+                        rows: cohortCourses.map((c) => [
+                          `${c.courseCode} — ${c.courseName}`,
+                          c.score.weighted.toFixed(2),
+                          `${c.responseRate}%`,
+                        ]),
+                      }}
+                    />
                   </>
                 )}
               </ChartFigure>
@@ -967,7 +1035,7 @@ export function ByTermPanel({
             <ChartCard
               variant="normal"
               title={`Teaching scores — ${value}`}
-              description={`The ${cohortFaculty.length} people who taught this class, against the class's own median. Each grey dot is one offering — a wide spread is a person whose result depends on the course.`}
+              description={`${cohortFaculty.length} faculty · vs the class median`}
             >
               <ChartFigure
                 label={`Faculty who taught ${value}`}
@@ -977,7 +1045,7 @@ export function ByTermPanel({
                 {() => (
                   <>
                     <FacultyLeaderboardDots
-                      faculty={cohortFaculty}
+                      faculty={cohortFaculty.slice(0, 6)}
                       median={cohortMedians.faculty}
                     />
                     <ChartDataTable
@@ -989,6 +1057,26 @@ export function ByTermPanel({
                         f.courses,
                         `${f.responseRate}%`,
                       ])}
+                    />
+                    <ChartCardActions
+                      title={`Teaching scores — ${value}`}
+                      description={`All ${cohortFaculty.length} faculty who taught this class, ranked.`}
+                      detail={
+                        <FacultyLeaderboardDots
+                          faculty={cohortFaculty}
+                          median={cohortMedians.faculty}
+                          height={Math.max(260, cohortFaculty.length * 34 + 40)}
+                        />
+                      }
+                      table={{
+                        headers: ['Faculty', 'Teaching score', 'Courses', 'Response rate'],
+                        rows: cohortFaculty.map((f) => [
+                          f.name,
+                          f.score.weighted.toFixed(2),
+                          f.courses,
+                          `${f.responseRate}%`,
+                        ]),
+                      }}
                     />
                   </>
                 )}
@@ -1007,7 +1095,7 @@ export function ByTermPanel({
           <ChartCard
             variant="normal"
             title={termSlopeData ? `What moved — ${termSlopeData.from} → ${value}` : `What moved — ${value}`}
-            description="One line per course, previous term to this one. Crossing lines are courses that swapped places; a flat line is a course that held."
+            description="Previous term to this one · crossings are rank swaps"
             leoInsight={termSlopeLeo}
           >
             <ChartFigure
@@ -1027,8 +1115,13 @@ export function ByTermPanel({
                   </p>
                 ) : (
                   <>
+                    {/* Card = the 5 biggest moves either way; every course behind Expand.
+                        A slope per course grows 26px/row — the contract says the data does
+                        not size the card. */}
                     <Slopegraph
-                      rows={termSlopeData.rows}
+                      rows={[...termSlopeData.rows]
+                        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+                        .slice(0, 5)}
                       fromLabel={shortTerm(termSlopeData.from)}
                       toLabel={shortTerm(value)}
                     />
@@ -1042,6 +1135,26 @@ export function ByTermPanel({
                         `${r.delta >= 0 ? '+' : ''}${r.delta.toFixed(2)}`,
                       ])}
                     />
+                    <ChartCardActions
+                      title="What moved"
+                      description={`Every course's content score, ${termSlopeData.from} to ${value}.`}
+                      detail={
+                        <Slopegraph
+                          rows={termSlopeData.rows}
+                          fromLabel={shortTerm(termSlopeData.from)}
+                          toLabel={shortTerm(value)}
+                        />
+                      }
+                      table={{
+                        headers: ['Course', termSlopeData.from, value, 'Change'],
+                        rows: termSlopeData.rows.map((r) => [
+                          `${r.courseCode} — ${r.courseName}`,
+                          r.from.toFixed(2),
+                          r.to.toFixed(2),
+                          `${r.delta >= 0 ? '+' : ''}${r.delta.toFixed(2)}`,
+                        ]),
+                      }}
+                    />
                   </>
                 )
               }
@@ -1051,7 +1164,7 @@ export function ByTermPanel({
           <ChartCard
             variant="normal"
             title={`Content vs teaching — ${value}`}
-            description="One dot per course this term. Separates a course that needs redesigning from an instructor who needs support."
+            description="One dot per course · split at the scope means"
             leoInsight={termGapLeo}
           >
             <ChartFigure
@@ -1076,6 +1189,26 @@ export function ByTermPanel({
                       g.facultyAvg.toFixed(2),
                       g.enrolled,
                     ])}
+                  />
+                  <ChartCardActions
+                    title={`Content vs teaching — ${value}`}
+                    description="Each dot is one course in this scope, split at the scope means."
+                    detail={
+                      <GapQuadrant
+                        points={termGaps}
+                        courseMean={termGapMeans.course}
+                        facultyMean={termGapMeans.faculty}
+                        height={480}
+                      />
+                    }
+                    table={{
+                      headers: ['Course', 'Course score', 'Faculty score'],
+                      rows: termGaps.map((g) => [
+                        `${g.courseCode} — ${g.courseName}`,
+                        g.courseAvg.toFixed(2),
+                        g.facultyAvg.toFixed(2),
+                      ]),
+                    }}
                   />
                 </>
               )}
@@ -1111,7 +1244,9 @@ export function ByTermPanel({
             separately — they rarely fail together, and the fix differs.
           </p>
           <div className="-mx-4 lg:-mx-6">
-            <DataTable<TermBreakdownRow>
+            <DataTablePaginated<TermBreakdownRow>
+              pagination={{ pageSize: 10 }}
+              onRowClick={onSelectCourse ? (row) => onSelectCourse(String(row.courseCode)) : undefined}
               data={termBreakdown}
               columns={termBreakdownColumns}
               getRowId={(row) => row.courseCode}
@@ -1136,7 +1271,8 @@ export function ByTermPanel({
         </p>
         {/* -mx cancels the DataTable's own mx-4/6 so its border aligns flush with the KPIs/charts above */}
         <div className="-mx-4 lg:-mx-6">
-          <DataTable<CourseTermRow>
+          <DataTablePaginated<CourseTermRow>
+            pagination={{ pageSize: 10 }}
             data={termCourseRows}
             columns={termColumns}
             getRowId={(row) => row.id}
@@ -1222,7 +1358,19 @@ export function ByFacultyPanel({
     ]
   }, [faculty, facultyId])
 
-  if (!faculty) return null
+  /* A blank region is not an empty state (state-review): with real IDs a stale or
+     mistyped facultyId is an expected input, and it must say so. */
+  if (!faculty) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-10 text-center">
+        <i className="fa-light fa-user-slash text-2xl text-muted-foreground" aria-hidden="true" />
+        <p className="text-sm font-medium">Faculty member not found</p>
+        <p className="text-xs text-muted-foreground">
+          They may have been removed, or the link is out of date. Pick a person from the list above.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -1272,7 +1420,8 @@ export function ByFacultyPanel({
           Rows with <i className="fa-light fa-chevron-right" aria-hidden="true" /> have evaluation data — click to open the card.
         </p>
         <div className="-mx-4 lg:-mx-6">
-          <DataTable<FacultyOfferingRow>
+          <DataTablePaginated<FacultyOfferingRow>
+            pagination={{ pageSize: 10 }}
             data={offerings}
             columns={facultyOfferingCols}
             getRowId={(row) => `${row.facultyId}-${row.term}-${row.courseCode}`}
@@ -1504,7 +1653,7 @@ export function ByCoursePanel({
           <ChartCard
             variant="normal"
             title={`Score trend — ${courseCode}`}
-            description="Content and teaching move independently — that separation is the whole point of the tab. Response rate shares the term axis below."
+            description="Content, teaching and response rate by term"
             leoInsight={courseTrendLeo}
           >
             <ChartFigure
@@ -1526,6 +1675,21 @@ export function ByCoursePanel({
                       `${d.responseRate}%`,
                       d.faculty.join(', '),
                     ])}
+                  />
+                  <ChartCardActions
+                    title={`Score trend — ${courseCode}`}
+                    description="Content and teaching scores by term for this course, larger."
+                    detail={<CourseTrendStack rows={courseTrendRows} />}
+                    table={{
+                      headers: ['Term', 'Content', 'Teaching', 'Response rate', 'Faculty'],
+                      rows: courseTrendRows.map((d) => [
+                        d.term,
+                        d.courseAvg != null ? d.courseAvg.toFixed(2) : '—',
+                        d.facultyAvg.toFixed(2),
+                        `${d.responseRate}%`,
+                        d.faculty.join(', '),
+                      ]),
+                    }}
                   />
                 </>
               )}
@@ -1553,7 +1717,10 @@ export function ByCoursePanel({
           >
             {() => (
               <>
-                <FacultyLeaderboardDots faculty={courseFacultyAsStats} median={courseFacultyMedian} />
+                <FacultyLeaderboardDots
+                  faculty={courseFacultyAsStats.slice(0, 6)}
+                  median={courseFacultyMedian}
+                />
 
                 {/* Same row treatment as the By Faculty leaderboard, deliberately — one
                     ranked-list grammar, not two. Monil's job ends in "view insights → the
@@ -1598,6 +1765,27 @@ export function ByCoursePanel({
                     `${f.responseRate}%`,
                   ])}
                 />
+                <ChartCardActions
+                  title={`Who taught ${courseCode}`}
+                  description={`All ${courseFacultyAsStats.length} instructors of ${courseCode}, ranked.`}
+                  detail={
+                    <FacultyLeaderboardDots
+                      faculty={courseFacultyAsStats}
+                      median={courseFacultyMedian}
+                      height={Math.max(260, courseFacultyAsStats.length * 34 + 40)}
+                    />
+                  }
+                  table={{
+                    headers: ['Faculty', 'Score', 'Simple mean', 'Terms', 'Response rate'],
+                    rows: courseFaculty.map((f) => [
+                      f.name,
+                      f.score.weighted.toFixed(2),
+                      f.score.simple.toFixed(2),
+                      f.terms,
+                      `${f.responseRate}%`,
+                    ]),
+                  }}
+                />
               </>
             )}
           </ChartFigure>
@@ -1608,7 +1796,8 @@ export function ByCoursePanel({
         <h2 className="text-sm font-semibold">Offerings of {courseCode}</h2>
         <p className="text-xs text-muted-foreground">Click any row to open the Evaluation Card for that term.</p>
         <div className="-mx-4 lg:-mx-6">
-          <DataTable<CourseOfferingRow>
+          <DataTablePaginated<CourseOfferingRow>
+            pagination={{ pageSize: 10 }}
             data={courseOfferings}
             columns={courseOfferingCols}
             getRowId={(row) => `${row.courseCode}-${row.term}-${row.facultyId}`}

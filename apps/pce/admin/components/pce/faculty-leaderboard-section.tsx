@@ -20,7 +20,7 @@
  * Overview leaderboard: "This should be in faculty."
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Button, ScrollRegion,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
@@ -39,6 +39,8 @@ import {
   facultyStats, facultyTermSeries, facultyResponseSeries, medianOf, benchmarks, termSeries,
   RESPONSE_TARGET,
 } from '@/lib/pce-analytics'
+import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
+import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -46,9 +48,6 @@ const ALL_TERMS = '__all__'
 
 /** How many faculty the collapsed card lists — the lowest scorers, the only actionable ones. */
 const LOWEST_SHOWN = 5
-
-/** ~8 rows. Enough to read a run of the roster without the card header leaving the screen. */
-const EXPANDED_LIST_MAX_H = 420
 
 export function FacultyLeaderboardSection({
   term,
@@ -86,16 +85,54 @@ export function FacultyLeaderboardSection({
    * to summarise or it stops being a card.
    */
   const isLarge = faculty.length > LARGE_ROSTER_N
-  const [expanded, setExpanded] = useState(false)
 
-  /* `facultyStats` sorts best-first, so the LAST rows are the ones worth acting on. Collapsed,
-     show those — the top of a best-first list is precisely the people who need nothing. */
+  /* `facultyStats` sorts best-first, so the LAST rows are the ones worth acting on. The card
+     always shows those; the full roster lives behind Expand like every sibling card. */
   const collapsedRows = useMemo(
-    () => (isLarge && !expanded ? faculty.slice(-LOWEST_SHOWN).reverse() : faculty),
-    [faculty, isLarge, expanded],
+    () => (isLarge ? faculty.slice(-LOWEST_SHOWN).reverse() : faculty),
+    [faculty, isLarge],
   )
   const series = useMemo(() => facultyTermSeries(), [])
   const responseSeries = useMemo(() => facultyResponseSeries(), [])
+
+  /* Movers — who the trend cards NAME (decided with Romit, 2026-07-15: highlight-spaghetti).
+   *
+   * The cards render every faculty member on one shared axis as ghost context; ink and a label
+   * go only to the 3 largest moves. The previous design faceted one 76px panel per person
+   * (34 people → a 2,600px wall), then "fixed" it by slicing to 5 — which answered nothing.
+   * Null drift never counts as a move: a fake flat line is worse than absence.
+   */
+  const scoreMovers = useMemo(() => {
+    return faculty
+      .filter((f) => f.drift != null)
+      .sort((a, b) => Math.abs(b.drift as number) - Math.abs(a.drift as number))
+      .slice(0, 3)
+      .map((f) => f.name)
+  }, [faculty])
+
+  const driftCounts = useMemo(() => {
+    const d = faculty.map((f) => f.drift).filter((v): v is number => v != null)
+    return {
+      falling: d.filter((v) => v < -0.05).length,
+      rising: d.filter((v) => v > 0.05).length,
+      steady: d.filter((v) => Math.abs(v) <= 0.05).length,
+    }
+  }, [faculty])
+
+  /** Latest response rate per faculty; the 3 lowest get the ink on the response card. */
+  const latestResponse = useMemo(() => {
+    const latest = new Map<string, { year: number; rate: number }>()
+    for (const r of responseSeries) {
+      const prev = latest.get(r.name)
+      if (!prev || r.year > prev.year) latest.set(r.name, { year: r.year, rate: r.responseRate })
+    }
+    return latest
+  }, [responseSeries])
+  const responseMovers = useMemo(
+    () => [...latestResponse.entries()].sort((a, b) => a[1].rate - b[1].rate).slice(0, 3).map(([n]) => n),
+    [latestResponse],
+  )
+
   const bench = useMemo(() => benchmarks(), [])
 
   /* ── Story 10 — the leaderboard, as a dot plot with each person's spread behind them. ── */
@@ -203,6 +240,9 @@ export function FacultyLeaderboardSection({
         <Select
           value={term ?? ALL_TERMS}
           onValueChange={(v) => onTermChange?.(v === ALL_TERMS ? undefined : v)}
+          /* An enabled dropdown whose only option is "All terms" promises a choice that
+             doesn't exist (state-review) — disable until there is data to scope to. */
+          disabled={termOptions.length === 0}
         >
           <SelectTrigger id="leaderboard-term" className="h-8 w-44 text-sm" aria-label="Scope the leaderboard to a term">
             <SelectValue />
@@ -224,19 +264,13 @@ export function FacultyLeaderboardSection({
       <ChartCard
         variant="normal"
         title="Faculty leaderboard"
-        description={
-          isLarge && !expanded
-            ? `${faculty.length} faculty${term ? ` in ${term}` : ''}. Every one is a tick — where they pile up is the body of the roster; a tick out on its own is the person to open. Expand for the ranked view.`
-            : term
-              ? `${term} only. Each faculty member's class-size-weighted mean, with that term's offerings drawn behind it.`
-              : 'Each faculty member\'s class-size-weighted mean, with every one of their offerings drawn behind it — so a steady 4.2 and a volatile 4.2 stop looking identical.'
-        }
+        description={`${faculty.length} faculty${term ? ` · ${term}` : ''} · vs the ${fmt2(median)} median`}
         leoInsight={leaderLeo}
       >
         <ChartFigure
           label="Faculty leaderboard"
           summary={
-            isLarge && !expanded
+            isLarge
               ? `Strip plot of all ${faculty.length} faculty scores against the program median of ${fmt2(median)}. The ${collapsedRows.length} lowest are listed below; expand for the full ranked view.`
               : 'Ranked dot plot of faculty scores against the program median, with each faculty member\'s individual offering scores drawn as faint dots behind their weighted mean.'
           }
@@ -257,8 +291,14 @@ export function FacultyLeaderboardSection({
 
                 Six faculty is why this never surfaced: the fixture was smaller than the rule.
               */}
-              {isLarge && !expanded ? (
-                <FacultyScoreStrip faculty={faculty} median={median} />
+              {!faculty.length ? (
+                /* A term can have enrollment but no closed CE surveys — the chart and roster
+                   would both render empty with no explanation (state-review round 2). */
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No faculty evaluated in {term ?? 'any term'} yet.
+                </p>
+              ) : isLarge ? (
+                <FacultyScoreStrip faculty={faculty} median={median} leoAnchor={leaderAnchor} />
               ) : (
                 <FacultyLeaderboardDots faculty={faculty} median={median} leoAnchor={leaderAnchor} />
               )}
@@ -283,7 +323,6 @@ export function FacultyLeaderboardSection({
               <ScrollRegion
                 label={`All ${faculty.length} faculty, ranked`}
                 className="mt-2"
-                style={expanded ? { maxHeight: EXPANDED_LIST_MAX_H, overflowY: 'auto' } : undefined}
               >
               <ul className="flex flex-col">
                 {collapsedRows.map((f) => (
@@ -313,30 +352,42 @@ export function FacultyLeaderboardSection({
               </ul>
               </ScrollRegion>
 
-              {/* No silent caps — the control says exactly what is being withheld and what
-                  expanding will show, so a truncated list never reads as the whole roster.
-                  Expanded, the roster SCROLLS rather than growing the page to 2889px: the point
-                  of expanding is to explore the list, not to lose the chart above it off the top
-                  of the screen. */}
+              {/* No silent caps — the caption says what is withheld; Expand shows it. The old
+                  in-place "Show all 34" toggle was the ONE card on the surface with a different
+                  expand grammar than its siblings (correlation review, 2026-07-15) — the dialog
+                  leads with the same ranked dot plot, denser, per the correlation rule. */}
               {isLarge && (
-                <div className="mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpanded((v) => !v)}
-                    aria-expanded={expanded}
-                  >
-                    {expanded
-                      ? `Show the ${LOWEST_SHOWN} lowest only`
-                      : `Show all ${faculty.length} faculty`}
-                  </Button>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {expanded
-                      ? `All ${faculty.length} faculty, ranked best first — scroll the list.`
-                      : `Showing the ${collapsedRows.length} lowest of ${faculty.length}. The strip above is all ${faculty.length}.`}
-                  </p>
-                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Showing the {collapsedRows.length} lowest of {faculty.length}. The strip above
+                  is all {faculty.length} — Expand for the full ranked list.
+                </p>
               )}
+              <ChartCardActions
+                title="Faculty leaderboard"
+                description={
+                  faculty.length
+                    ? `All ${faculty.length} faculty ranked against the ${fmt2(median)} median — every offering behind each mean as a faint dot.`
+                    : 'No faculty evaluated in this scope yet.'
+                }
+                detail={
+                  <FacultyLeaderboardDots
+                    faculty={faculty}
+                    median={median}
+                    height={Math.max(260, faculty.length * 34 + 40)}
+                  />
+                }
+                table={{
+                  headers: ['Faculty', 'Weighted score', 'Simple mean', 'Offerings', 'Courses', 'Response rate'],
+                  rows: faculty.map((f) => [
+                    f.name,
+                    fmt2(f.score.weighted),
+                    fmt2(f.score.simple),
+                    f.offerings,
+                    f.courses,
+                    `${f.responseRate}%`,
+                  ]),
+                }}
+              />
 
               <ChartDataTable
                 caption="Faculty scores against the program median"
@@ -371,22 +422,62 @@ export function FacultyLeaderboardSection({
         <ChartCard
           variant="normal"
           title="Scores over time"
-          description="One panel per faculty member, every peer ghosted behind them, all on the same axis. A break in a line is a term they did not teach."
+          description={`${driftCounts.falling} falling · ${driftCounts.steady} steady · ${driftCounts.rising} rising · biggest moves labelled`}
           leoInsight={compareLeo}
         >
           <ChartFigure
             label="Faculty scores over time"
-            summary="Small multiples: one panel per faculty member showing their score by term against a dashed program-mean reference line, with all other faculty drawn faintly behind for context."
+            summary="All faculty scores by term on one shared axis against a dashed program-mean reference line; the largest movers are highlighted and labelled."
             dataLength={series.length}
             leoInsight={compareLeo}
           >
             {() => (
               <>
-                <FacultyCompareLines rows={series} programMean={bench.university} />
+                <FacultyCompareLines
+                  mode="shared"
+                  rows={series}
+                  programMean={bench.university}
+                  highlight={scoreMovers}
+                  height={CHART_CARD_PLOT_PX}
+                />
                 <ChartDataTable
                   caption="Faculty score by term"
                   headers={['Faculty', 'Term', 'Score']}
                   rows={series.map((s) => [s.name, s.term, fmt2(s.rating)])}
+                />
+                <ChartCardActions
+                  title="Scores over time"
+                  description={`Every faculty member's score by term against the ${fmt2(bench.university)} program mean. Select a person to trace their line.`}
+                  detail={
+                    <EntityTrendExplorer
+                      entityNoun="faculty"
+                      entities={faculty.map((f) => ({
+                        id: f.facultyId,
+                        label: f.name,
+                        value: fmt2(f.score.weighted),
+                        sortValue: f.score.weighted,
+                        trend:
+                          f.drift == null ? null : f.drift < -0.05 ? 'down' : f.drift > 0.05 ? 'up' : 'flat',
+                      }))}
+                      renderChart={(selected) => (
+                        <FacultyCompareLines
+                          mode="shared"
+                          rows={series}
+                          programMean={bench.university}
+                          highlight={selected ? [selected] : scoreMovers}
+                          height={380}
+                        />
+                      )}
+                      table={{
+                        headers: ['Faculty', 'Term', 'Score'],
+                        rows: series.map((s) => [s.name, s.term, fmt2(s.rating)]),
+                      }}
+                    />
+                  }
+                  table={{
+                    headers: ['Faculty', 'Term', 'Score'],
+                    rows: series.map((s) => [s.name, s.term, fmt2(s.rating)]),
+                  }}
                 />
               </>
             )}
@@ -396,25 +487,61 @@ export function FacultyLeaderboardSection({
         <ChartCard
           variant="normal"
           title="Response rate over time"
-          description={`The same six people, same order — read across. A low rate is a collection problem, not a teaching one, and the fix is a reminder rather than a conversation.`}
+          description={`The ${responseMovers.length} lowest collection rates labelled · target ${RESPONSE_TARGET}%`}
           leoInsight={responseLeo}
         >
           <ChartFigure
             label="Faculty response rate over time"
-            summary={`Small multiples: one panel per faculty member showing their response rate by term against a ${RESPONSE_TARGET}% target, with all other faculty drawn faintly behind for context.`}
+            summary={`All faculty response rates by term on one shared axis against a ${RESPONSE_TARGET}% target; the lowest collectors are highlighted and labelled.`}
             dataLength={responseSeries.length}
             leoInsight={responseLeo}
           >
             {() => (
               <>
                 <ResponseCompareLines
+                  mode="shared"
                   rows={responseSeries.map((r) => ({ ...r, label: r.name }))}
                   target={RESPONSE_TARGET}
+                  highlight={responseMovers}
+                  height={CHART_CARD_PLOT_PX}
                 />
                 <ChartDataTable
                   caption="Faculty response rate by term"
                   headers={['Faculty', 'Term', 'Response rate']}
                   rows={responseSeries.map((r) => [r.name, r.term, `${r.responseRate}%`])}
+                />
+                <ChartCardActions
+                  title="Response rate over time"
+                  description={`Every faculty member's response rate by term against the ${RESPONSE_TARGET}% target. Select a person to trace their line.`}
+                  detail={
+                    <EntityTrendExplorer
+                      entityNoun="faculty"
+                      entities={[...latestResponse.entries()].map(([name, v]) => ({
+                        id: name,
+                        label: name,
+                        value: `${v.rate}%`,
+                        sortValue: v.rate,
+                        trend: v.rate < RESPONSE_TARGET ? 'down' : 'flat',
+                      }))}
+                      renderChart={(selected) => (
+                        <ResponseCompareLines
+                          mode="shared"
+                          rows={responseSeries.map((r) => ({ ...r, label: r.name }))}
+                          target={RESPONSE_TARGET}
+                          highlight={selected ? [selected] : responseMovers}
+                          height={380}
+                        />
+                      )}
+                      table={{
+                        headers: ['Faculty', 'Term', 'Response rate'],
+                        rows: responseSeries.map((r) => [r.name, r.term, `${r.responseRate}%`]),
+                      }}
+                    />
+                  }
+                  table={{
+                    headers: ['Faculty', 'Term', 'Response rate'],
+                    rows: responseSeries.map((r) => [r.name, r.term, `${r.responseRate}%`]),
+                  }}
                 />
               </>
             )}

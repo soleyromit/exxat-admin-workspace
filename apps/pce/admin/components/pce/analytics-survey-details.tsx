@@ -32,7 +32,7 @@
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { DataTable, Avatar, AvatarFallback, StatusBadge } from '@exxatdesignux/ui'
+import { DataTablePaginated, Avatar, AvatarFallback, StatusBadge } from '@exxatdesignux/ui'
 import type { ColumnDef } from '@exxatdesignux/ui'
 import { TruncatedText } from '@/components/truncated-text'
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
@@ -192,8 +192,7 @@ export function AnalyticsSurveyDetails() {
     <div className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold">Every offering</h2>
       <p className="text-xs text-muted-foreground">
-        The raw grain behind every chart above — one row per course, term and instructor, newest
-        first. {linkable} of {rows.length} have a survey result to open.
+        One row per course, term and instructor · {linkable} of {rows.length} open a result
         {suppressed > 0 && (
           <> {suppressed} {suppressed === 1 ? 'is' : 'are'} suppressed below the anonymity
           threshold and show no score — {MINIMUM_THRESHOLD} responses by default, though a
@@ -201,9 +200,14 @@ export function AnalyticsSurveyDetails() {
         )}
       </p>
       <div className="-mx-4 lg:-mx-6">
-        <DataTable<Row>
+        {/* Paginated, not the full 106-row scroll. This is the funnel's `raw` step (§2.1) — a
+            register you look things up in, so it has to stay reachable; but a dashboard shows a
+            page of it, not all of it. `DataTablePaginated` is the DS primitive for exactly this;
+            10 rows matches the §2.1 reference (22 rows) far better than rendering every row. */}
+        <DataTablePaginated<Row>
           data={rows}
           columns={columns}
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50, 100] }}
           getRowId={(row) => row.id}
           searchable
           toolbarSlot={() => null}

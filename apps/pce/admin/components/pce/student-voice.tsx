@@ -31,8 +31,10 @@
  */
 
 import { useMemo, useState } from 'react'
+import { VoiceExplorerDialog } from '@/components/pce/voice-explorer'
+import { SENTIMENT_COLOR, SENTIMENT_LABEL } from '@/lib/pce-sentiment'
 import Link from 'next/link'
-import { Badge, Button } from '@exxatdesignux/ui'
+import { Button } from '@exxatdesignux/ui'
 import {
   MOCK_RESPONSES,
   MOCK_SURVEYS,
@@ -42,20 +44,6 @@ import {
 } from '@/lib/pce-mock-data'
 
 type Sentiment = ResponseComment['sentiment']
-
-/** Sentiment palette — positive teal, concern amber, neutral muted. NEVER red (VIZ-004). */
-const SENTIMENT_COLOR: Record<Sentiment, string> = {
-  positive: 'var(--chart-2)',
-  concern: 'var(--chart-4)',
-  neutral: 'var(--muted-foreground)',
-}
-
-/** The reader-facing word. "Constructive", not "negative" — these are people's colleagues. */
-const SENTIMENT_LABEL: Record<Sentiment, string> = {
-  positive: 'Positive',
-  concern: 'Constructive',
-  neutral: 'Neutral',
-}
 
 const FILTERS: (Sentiment | 'all')[] = ['all', 'positive', 'concern', 'neutral']
 
@@ -92,6 +80,7 @@ export function StudentVoice({
   scopeLabel: string
 }) {
   const [filter, setFilter] = useState<Sentiment | 'all'>('all')
+  const [exploring, setExploring] = useState(false)
 
   const comments = useMemo<VoiceComment[]>(() => {
     const scoped = MOCK_SURVEYS.filter(
@@ -152,12 +141,6 @@ export function StudentVoice({
         <h3 className="text-sm font-semibold">Student voice</h3>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {axis === 'faculty'
-          ? 'What students said about the person first, then about the material they taught. Scores say a 3.58 happened; these say why.'
-          : 'What students said about the course first, then about whoever taught it. The same comments a faculty review reads in the opposite order.'}
-      </p>
-
       {/* Sentiment chips with counts — §2.3's "All (32) / Positive (13) / Constructive (16)". */}
       <div className="flex flex-wrap gap-1.5">
         {FILTERS.map((f) => {
@@ -206,9 +189,16 @@ export function StudentVoice({
                 </div>
               ))}
               {items.length > SAMPLE_PER_SECTION && (
-                <p className="text-xs text-muted-foreground">
+                /* This used to be a dead-end count. A "+N more" that goes nowhere is an unmet
+                   promise — it now opens the explorer, filtered corpus and all. */
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="self-start px-0"
+                  onClick={() => setExploring(true)}
+                >
                   + {items.length - SAMPLE_PER_SECTION} more in {SECTION_LABELS[section].toLowerCase()}
-                </p>
+                </Button>
               )}
             </div>
           ))}
@@ -216,10 +206,21 @@ export function StudentVoice({
       )}
 
       {/* Provenance — the AI lane must cite its source (ai-layer.md). */}
-      <p className="text-xs text-muted-foreground">
-        Based on {counts.all} open-text responses · {scopeLabel} · sampled as evidence, not a
-        complete transcript.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          {counts.all} open-text responses · {scopeLabel} · sampled
+        </p>
+        <Button variant="outline" size="sm" onClick={() => setExploring(true)}>
+          Explore all {counts.all}
+        </Button>
+      </div>
+
+      <VoiceExplorerDialog
+        open={exploring}
+        onOpenChange={setExploring}
+        scopeLabel={scopeLabel}
+        comments={comments}
+      />
     </section>
   )
 }

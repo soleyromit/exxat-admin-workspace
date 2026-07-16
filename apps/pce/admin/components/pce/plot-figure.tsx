@@ -299,9 +299,14 @@ export function PlotFigure({
     }
 
     // Resolve the Leo anchor through the live scales — a real data point, not a guess.
-    if (leoAnchor && xScale?.apply && yScale?.apply) {
+    // Charts with `y:{axis:null}` (the dodged swarm) have no y scale to resolve through;
+    // the x position is still exact, and the pill sits at the swarm's vertical band instead
+    // of detaching into the card header (Leo is a plot annotation, not a button — DS OS).
+    if (leoAnchor && xScale?.apply) {
       const px = xScale.apply(leoAnchor.x as never) as number | undefined
-      const py = yScale.apply(leoAnchor.y as never) as number | undefined
+      const py = yScale?.apply
+        ? (yScale.apply(leoAnchor.y as never) as number | undefined)
+        : height * 0.42
       setLeoPos(
         Number.isFinite(px) && Number.isFinite(py)
           ? { x: px as number, y: py as number }

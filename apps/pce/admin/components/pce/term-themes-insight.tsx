@@ -13,17 +13,17 @@
 // var(--muted-foreground). Mobbin: Gorgias comment highlights (theme +
 // evidence quote + drill).
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Button } from '@exxatdesignux/ui'
+import { VoiceExplorerDialog, type VoiceExplorerComment } from '@/components/pce/voice-explorer'
+import { SENTIMENT_COLOR } from '@/lib/pce-sentiment'
 import Link from 'next/link'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { deriveTermThemes, type ThemeComment, type ThemeSentiment, type TermThemeRow } from '@/lib/pce-themes'
 import { MOCK_RESPONSES, type PceSurvey } from '@/lib/pce-mock-data'
 
 function SentimentDot({ sentiment }: { sentiment: ThemeSentiment }) {
-  const color =
-    sentiment === 'positive' ? 'var(--chart-2)' :
-    sentiment === 'concern'  ? 'var(--chart-4)' :
-    'var(--muted-foreground)'
+  const color = SENTIMENT_COLOR[sentiment]
   return (
     <span
       aria-hidden="true"
@@ -86,10 +86,23 @@ export function TermThemesInsight({
     }
     // surveyId lookup so chips can deep-link each course to its result.
     const surveyIdByCode = new Map(withComments.map((x) => [x.survey.courseCode, x.survey.id]))
+    // The explorer's corpus — same joins the quotes chips already rely on.
+    const explorerComments: VoiceExplorerComment[] = withComments.flatMap((x) =>
+      x.resp.comments.map((c) => ({
+        text: c.text,
+        section: c.section,
+        sentiment: c.sentiment,
+        courseCode: x.survey.courseCode,
+        courseName: x.survey.courseName,
+        term: x.survey.term,
+        surveyId: x.survey.id,
+      })),
+    )
     return {
       themes,
       quote,
       surveyIdByCode,
+      explorerComments,
       commentCount: withComments.reduce((n, x) => n + x.resp.comments.length, 0),
       // Distinct courses, not surveys — three terms of one course is one course.
       courseCount: byCourse.size,
@@ -98,9 +111,13 @@ export function TermThemesInsight({
 
   // No open-text responses in scope yet — no card (the AI lane never shows
   // an empty shell; it appears once there is something to summarize).
+  const [exploreTheme, setExploreTheme] = useState<string | null>(null)
+  const [exploring, setExploring] = useState(false)
+
   if (data.themes.length === 0) return null
 
   const top = data.themes[0]
+  const maxOccurrences = Math.max(1, ...data.themes.map((t) => t.occurrences))
 
   return (
     <AiInsightCard
@@ -137,13 +154,45 @@ export function TermThemesInsight({
                     </span>
                   ))}
                 </span>
-                <span className="ms-auto shrink-0 tabular-nums text-muted-foreground">
-                  {t.occurrences}
+                <span className="ms-auto flex shrink-0 items-center gap-2">
+                  {/* Occurrence bar — a keyword COUNT, deterministic, so a magnitude bar is
+                      honest here; sentiment stays a dot and never colours the bar (ADR-005). */}
+                  <span aria-hidden="true" className="h-1 w-16 rounded-full bg-muted">
+                    <span
+                      className="block h-1 rounded-full bg-muted-foreground/50"
+                      style={{ width: `${Math.round((t.occurrences / maxOccurrences) * 100)}%` }}
+                    />
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto px-0 tabular-nums"
+                    aria-label={`Explore ${t.occurrences} comments matching ${t.label}`}
+                    onClick={() => {
+                      setExploreTheme(t.label)
+                      setExploring(true)
+                    }}
+                  >
+                    {t.occurrences}
+                  </Button>
                 </span>
               </div>
             ))}
           </div>
+
+          <VoiceExplorerDialog
+            open={exploring}
+            onOpenChange={setExploring}
+            scopeLabel={scopeLabel}
+            comments={data.explorerComments}
+            defaultTheme={exploreTheme}
+          />
         </div>
+      }
+      actions={
+        <Button variant="outline" size="sm" onClick={() => { setExploreTheme(null); setExploring(true) }}>
+          Explore
+        </Button>
       }
     />
   )
