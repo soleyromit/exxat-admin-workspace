@@ -102,74 +102,47 @@ function ResultStatusBadge({ r }: { r: EvalResult }) {
   return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} />
 }
 
-/* ── list-card micro viz (faculty cards) ──────────────────────────────────────
-   Score vs program as two DOTS on a shared 3–5 window — point marks tolerate a
-   zoomed domain where bars would lie (RUBRIC: bullet-not-progress-bar; Few's
-   bullet spec). The 0–5 full range compressed every real difference to ~3px. */
+/* ── list-card score cluster (RUBRIC v2 Gate 0 + 3) ───────────────────────────
+   Row slots get NUMBERS, not marks: the previous 112px dot track rendered 0.1
+   differences at 5.6px under 10px dots — fails the Perceivable-Difference
+   test. The score number is the primary encoding; trend and benchmark arrive
+   as signed delta chips (self-describing, no legend needed). */
 
-const pos35 = (v: number) => `${((Math.min(5, Math.max(3, v)) - 3) / 2) * 100}%`
-
-function BulletScore({ value, benchmark }: { value: number; benchmark: number | null }) {
+function DeltaChip({ delta, vs }: { delta: number; vs: string }) {
+  const up = delta >= 0
   return (
-    <div
-      role="img"
-      aria-label={`Score ${value.toFixed(2)} of 5${benchmark != null ? `, program average ${benchmark.toFixed(2)}` : ''}`}
-      className="relative h-6 w-28 shrink-0"
+    <Badge
+      variant="secondary"
+      className="font-normal tabular-nums"
+      style={{ color: up ? 'var(--chart-2)' : 'var(--chip-4)' }}
     >
-      <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted" />
-      {benchmark != null && (
-        <span
-          className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
-          style={{ left: pos35(benchmark), borderColor: 'var(--muted-foreground)' }}
-        />
-      )}
-      <span
-        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ left: pos35(value), background: scoreColor(value) }}
-      />
-    </div>
+      <i className={`fa-light ${up ? 'fa-arrow-up' : 'fa-arrow-down'}`} aria-hidden="true" />
+      {Math.abs(delta).toFixed(2)} {vs}
+    </Badge>
   )
 }
 
-/* Term-over-term sparkline on the SAME fixed 3–5 window across every card
-   (Few: comparable sparklines share one featured range) + last-step delta. */
-function TrendSpark({ trend }: { trend: EvalResult['trend'] }) {
-  // Fixed-width slot even when empty — the bullet and score columns must
-  // align down the card list for scanning.
-  if (trend.length < 2) return <div className="w-[108px] shrink-0" aria-hidden="true" />
-  const w = 64
-  const h = 20
-  const pad = 3
-  const x = (i: number) => pad + (i / (trend.length - 1)) * (w - pad * 2)
-  const y = (v: number) => h - pad - ((Math.min(5, Math.max(3, v)) - 3) / 2) * (h - pad * 2)
-  const last = trend[trend.length - 1]
-  const prev = trend[trend.length - 2]
-  const delta = last.value - prev.value
+function FacultyScoreCluster({ r, benchmark }: { r: EvalResult; benchmark: number | null }) {
+  if (r.status !== 'available' || r.avgScore == null) return null
+  const prev = r.trend.length >= 2 ? r.trend[r.trend.length - 2] : null
+  const termDelta = prev ? r.avgScore - prev.value : null
+  const progDelta = benchmark != null ? r.avgScore - benchmark : null
   return (
-    <div
-      role="img"
-      aria-label={`Score trend across ${trend.length} offerings: ${delta >= 0 ? 'up' : 'down'} ${Math.abs(delta).toFixed(2)} since ${prev.term}`}
-      className="flex w-[108px] shrink-0 items-center gap-1.5"
-    >
-      <svg width={w} height={h} aria-hidden="true" className="shrink-0">
-        <polyline
-          points={trend.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')}
-          fill="none"
-          stroke="var(--muted-foreground)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx={x(trend.length - 1)} cy={y(last.value)} r="2.5" fill={scoreColor(last.value)} />
-      </svg>
+    <>
+      {termDelta != null && Math.abs(termDelta) > 0.05 && prev && (
+        <DeltaChip delta={termDelta} vs={`vs ${prev.term}`} />
+      )}
+      {progDelta != null && Math.abs(progDelta) > 0.05 && (
+        <DeltaChip delta={progDelta} vs="vs program" />
+      )}
       <span
-        className="inline-flex items-center gap-1 text-xs tabular-nums"
-        style={{ color: delta >= 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
+        className="text-sm font-semibold tabular-nums w-16 text-right"
+        style={{ color: scoreColor(r.avgScore) }}
       >
-        <i className={`fa-light ${delta >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`} aria-hidden="true" />
-        {Math.abs(delta).toFixed(2)}
+        {r.avgScore.toFixed(2)}
+        <span className="text-xs font-normal text-muted-foreground">/5</span>
       </span>
-    </div>
+    </>
   )
 }
 
@@ -403,8 +376,6 @@ function FacultyResults({
       ),
     [results],
   )
-  const anyViz = rows.some((r) => r.status === 'available' && r.avgScore != null)
-
   return (
     <>
       <SiteHeader title="My Results" />
@@ -414,22 +385,6 @@ function FacultyResults({
       />
       <div className="flex-1 px-7 py-4">
         <div className="flex flex-col gap-2 max-w-3xl">
-          {anyViz && (
-            <p className="text-xs text-muted-foreground mb-1">
-              <span
-                className="inline-block size-2 rounded-full align-middle me-1"
-                style={{ background: 'var(--chart-2)' }}
-                aria-hidden="true"
-              />
-              your score ·{' '}
-              <span
-                className="inline-block size-2 rounded-full border-2 bg-card align-middle me-1"
-                style={{ borderColor: 'var(--muted-foreground)' }}
-                aria-hidden="true"
-              />
-              program average · trend across offerings, 3–5 scale
-            </p>
-          )}
           <DataRowList<EvalResult>
             rows={rows}
             getRowId={(r) => r.id}
@@ -451,19 +406,9 @@ function FacultyResults({
                     {r.responses}/{r.enrolled} responded ({r.responseRate}%)
                   </p>
                 </div>
-                <div className="shrink-0 flex items-center gap-4">
+                <div className="shrink-0 flex items-center gap-2">
                   {r.status === 'available' && r.avgScore != null ? (
-                    <>
-                      <TrendSpark trend={r.trend} />
-                      <BulletScore value={r.avgScore} benchmark={benchmarks.get(r.program) ?? null} />
-                      <span
-                        className="text-sm font-semibold tabular-nums w-12 text-right"
-                        style={{ color: scoreColor(r.avgScore) }}
-                      >
-                        {r.avgScore.toFixed(1)}
-                        <span className="text-xs font-normal text-muted-foreground">/5</span>
-                      </span>
-                    </>
+                    <FacultyScoreCluster r={r} benchmark={benchmarks.get(r.program) ?? null} />
                   ) : r.status === 'locked' ? (
                     <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
                       Review Pending

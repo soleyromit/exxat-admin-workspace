@@ -580,7 +580,7 @@ function ScoreCard({
   )
   /* Slope geometry — two time points on a shared 3–5 window (a full line chart
      is overkill for two points; the direction IS the message). */
-  const yFor = (v: number) => 40 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 36
+  const yFor = (v: number) => 52 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 34
   /* One narrative line, trend only — the badge already owns the program gap. */
   const trendPhrase = (() => {
     if (value == null || !prior) return null
@@ -623,7 +623,7 @@ function ScoreCard({
             role="img"
             aria-label={`${title} moved from ${prior.avg.toFixed(2)} in ${prior.term} to ${value.toFixed(2)} this term${programAvg != null ? `; program average ${programAvg.toFixed(2)}` : ''}`}
           >
-            <svg viewBox="0 0 208 44" className="w-52 h-11" aria-hidden="true">
+            <svg viewBox="0 0 208 58" className="w-52 h-[58px]" aria-hidden="true">
               {programAvg != null && (
                 <line
                   x1="12"
@@ -646,12 +646,23 @@ function ScoreCard({
               />
               <circle cx="12" cy={yFor(prior.avg)} r="3" fill="var(--muted-foreground)" />
               <circle cx="196" cy={yFor(value)} r="3.5" fill={scoreColor(value)} />
+              {/* Prior value printed AT the mark (RUBRIC v2 Gate 5.3); the hero
+                  number directly above labels the current endpoint. */}
+              <text
+                x="12"
+                y={yFor(prior.avg) - 8}
+                fontSize="12"
+                fill="var(--muted-foreground)"
+                className="tabular-nums"
+              >
+                {prior.avg.toFixed(2)}
+              </text>
             </svg>
             <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="underline decoration-dotted underline-offset-2 cursor-help">
-                    {prior.term} · {prior.avg.toFixed(2)}
+                    {prior.term}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -696,19 +707,14 @@ interface ThemeRowDatum {
   programAvg: number | null
 }
 
-/* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
-const RATING_SERIES = [
-  { key: 'r1', label: 'Rated 1', color: 'var(--chip-4)',  opacity: 1 },
-  { key: 'r2', label: 'Rated 2', color: 'var(--chip-4)',  opacity: 0.45 },
-  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
-  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.45 },
-  { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
-] as const
+const RATING_LABELS = ['Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5'] as const
 
 /* Shared 3–5 score window for every dot mark on this page — 1–5 rating data
    lives between 3.5 and 5, so the full range compresses every real difference
-   to a few pixels. Dots (not bars) tolerate a zoomed domain honestly. */
-const posScore = (v: number) => `${((Math.min(5, Math.max(3, v)) - 3) / 2) * 100}%`
+   to a few pixels. Dots (not bars) tolerate a zoomed domain honestly, and the
+   axis is always printed (RUBRIC v2: zoomed domain requires a visible axis). */
+const posScoreNum = (v: number) => ((Math.min(5, Math.max(3, v)) - 3) / 2) * 100
+const posScore = (v: number) => `${posScoreNum(v)}%`
 
 function ScoreAxisTicks() {
   return (
@@ -741,8 +747,8 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
   const gapLabel = (t: ThemeRowDatum) => {
     if (t.programAvg == null) return null
     const d = t.avg - t.programAvg
-    if (Math.abs(d) < 0.05) return 'at program'
-    return `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} vs program`
+    if (Math.abs(d) < 0.05) return 'at prog'
+    return `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} vs prog`
   }
   return (
     <ChartCard
@@ -759,19 +765,23 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
         {() => (
           <>
             <div className="flex flex-col">
-              <div className="grid grid-cols-[minmax(160px,220px)_1fr_5.5rem] items-end gap-6 pb-1">
+              <div className="grid grid-cols-[minmax(160px,220px)_1fr] items-end gap-6 pb-1">
                 <span />
                 <ScoreAxisTicks />
-                <span />
               </div>
               {sorted.map((t) => {
                 const below = t.programAvg != null && t.avg < t.programAvg - 0.049
+                /* Value printed AT the mark (RUBRIC v2 Gate 5.3) — anchored to
+                   the rightmost mark, flipping to the left near the axis end. */
+                const rightMost = Math.max(posScoreNum(t.avg), posScoreNum(t.programAvg ?? t.avg))
+                const leftMost = Math.min(posScoreNum(t.avg), posScoreNum(t.programAvg ?? t.avg))
+                const flip = rightMost > 70
                 return (
                   <div
                     key={t.theme}
                     role="img"
                     aria-label={`${t.theme}: this course ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''}`}
-                    className="grid grid-cols-[minmax(160px,220px)_1fr_5.5rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                    className="grid grid-cols-[minmax(160px,220px)_1fr] items-center gap-6 py-3.5 border-b border-border last:border-0"
                   >
                     <div className="min-w-0">
                       <p className="text-sm truncate">{t.theme}</p>
@@ -779,12 +789,12 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                         {t.questions} question{t.questions !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <div className="relative h-6" aria-hidden="true">
+                    <div className="relative h-7" aria-hidden="true">
                       <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-muted" />
                       {[0.25, 0.5, 0.75].map((f) => (
                         <span
                           key={f}
-                          className="absolute top-1/2 h-2 w-px -translate-y-1/2 bg-border"
+                          className="absolute top-1/2 h-2.5 w-px -translate-y-1/2 bg-border"
                           style={{ left: `${f * 100}%` }}
                         />
                       ))}
@@ -792,36 +802,37 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                         <span
                           className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full"
                           style={{
-                            left: `min(${posScore(t.avg)}, ${posScore(t.programAvg)})`,
-                            width: `calc(max(${posScore(t.avg)}, ${posScore(t.programAvg)}) - min(${posScore(t.avg)}, ${posScore(t.programAvg)}))`,
+                            left: `${leftMost}%`,
+                            width: `${rightMost - leftMost}%`,
                             background: below ? 'var(--chip-4)' : 'var(--border)',
                           }}
                         />
                       )}
                       {t.programAvg != null && (
                         <span
-                          className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
+                          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
                           style={{ left: posScore(t.programAvg), borderColor: 'var(--muted-foreground)' }}
                         />
                       )}
                       <span
-                        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
                         style={{ left: posScore(t.avg), background: scoreColor(t.avg) }}
                       />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm tabular-nums font-semibold">
-                        {t.avg.toFixed(1)}
-                        <span className="text-xs text-muted-foreground font-normal"> /5</span>
-                      </p>
-                      {gapLabel(t) && (
-                        <p
-                          className="text-xs tabular-nums"
-                          style={{ color: below ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
-                        >
-                          {gapLabel(t)}
-                        </p>
-                      )}
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums"
+                        style={
+                          flip
+                            ? { left: `calc(${leftMost}% - 12px)`, transform: 'translate(-100%, -50%)' }
+                            : { left: `calc(${rightMost}% + 12px)` }
+                        }
+                      >
+                        <span className="font-semibold text-foreground">{t.avg.toFixed(1)}</span>
+                        {gapLabel(t) && (
+                          <span style={{ color: below ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
+                            {' '}· {gapLabel(t)}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 )
@@ -870,11 +881,13 @@ function favorableShare(counts: number[] | undefined, total: number | undefined)
   return ((counts[3] ?? 0) + (counts[4] ?? 0)) / total
 }
 
-/* One 100%-stacked Likert bar per question — the favorable share is the story
-   (Datawrapper's case against diverging bars); per-rating counts live on
-   hover and in the data table, not printed ten times per row. */
+/* One two-tone favorable-share bar per question — solid fills only (RUBRIC v2
+   Gate 5.7: alpha-stepped series read as empty track). The favorable share is
+   the story (Datawrapper's case against diverging bars); the full five-level
+   breakdown lives on hover and in the data table. */
 function LikertBar({ counts, total }: { counts: number[]; total: number }) {
-  const fav = Math.round(favorableShare(counts, total) * 100)
+  const share = favorableShare(counts, total)
+  const fav = Math.round(share * 100)
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -884,17 +897,18 @@ function LikertBar({ counts, total }: { counts: number[]; total: number }) {
           aria-label={`${fav} percent rated 4 or 5 of ${total} responses`}
         >
           <div className="flex h-2.5 w-40 shrink-0 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
-            {RATING_SERIES.map((s, i) => {
-              const n = counts[i] ?? 0
-              if (n === 0 || total === 0) return null
-              return (
-                <div
-                  key={s.key}
-                  className="h-full rounded-[1px]"
-                  style={{ width: `${(n / total) * 100}%`, background: s.color, opacity: s.opacity }}
-                />
-              )
-            })}
+            {share > 0 && (
+              <div
+                className="h-full rounded-[1px]"
+                style={{ width: `${share * 100}%`, background: 'var(--chart-2)' }}
+              />
+            )}
+            {share < 1 && (
+              <div
+                className="h-full rounded-[1px]"
+                style={{ width: `${(1 - share) * 100}%`, background: 'var(--border)' }}
+              />
+            )}
           </div>
           <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
             {fav}% rated 4–5
@@ -903,11 +917,11 @@ function LikertBar({ counts, total }: { counts: number[]; total: number }) {
       </TooltipTrigger>
       <TooltipContent>
         <div className="flex flex-col gap-0.5 tabular-nums">
-          {RATING_SERIES.map((s, i) => {
+          {RATING_LABELS.map((label, i) => {
             const n = counts[i] ?? 0
             return (
-              <p key={s.key}>
-                {s.label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
+              <p key={label}>
+                {label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
               </p>
             )
           }).reverse()}
@@ -917,55 +931,33 @@ function LikertBar({ counts, total }: { counts: number[]; total: number }) {
   )
 }
 
-/* You / median / program as point marks on the shared 3–5 window — one row of
-   dots replaces three near-identical full-range bars. */
-function CompareDots({
+/* You vs program as PRINTED numbers + one signed-gap figure (RUBRIC v2 Gate 0:
+   in a ~10rem cell the deltas the reader must act on render smaller than any
+   mark could be — numbers state it better). Median stays in the data table. */
+function CompareText({
   avg,
-  median,
   programAvg,
 }: {
   avg: number | null | undefined
-  median: number | null | undefined
   programAvg: number | null | undefined
 }) {
+  if (avg == null) return <span className="text-xs text-muted-foreground text-right block">—</span>
+  const gap = programAvg != null ? avg - programAvg : null
   return (
-    <div
-      className="flex flex-col gap-1"
-      role="img"
-      aria-label={`Your average ${avg != null ? avg.toFixed(1) : 'not available'}, median ${median != null ? median.toFixed(1) : 'not available'}, program average ${programAvg != null ? programAvg.toFixed(1) : 'not available'}, on a 3 to 5 window`}
-    >
-      <div className="relative h-6" aria-hidden="true">
-        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-muted" />
-        {[0.25, 0.5, 0.75].map((f) => (
-          <span
-            key={f}
-            className="absolute top-1/2 h-2 w-px -translate-y-1/2 bg-border"
-            style={{ left: `${f * 100}%` }}
-          />
-        ))}
-        {median != null && (
-          <span
-            className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ left: posScore(median), background: 'var(--foreground)' }}
-          />
-        )}
-        {programAvg != null && (
-          <span
-            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
-            style={{ left: posScore(programAvg), borderColor: 'var(--muted-foreground)' }}
-          />
-        )}
-        {avg != null && (
-          <span
-            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ left: posScore(avg), background: scoreColor(avg) }}
-          />
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground tabular-nums">
-        you {avg != null ? avg.toFixed(1) : '—'} · prog {programAvg != null ? programAvg.toFixed(1) : '—'}
-      </p>
-    </div>
+    <p className="text-xs tabular-nums text-right whitespace-nowrap">
+      <span className="text-muted-foreground">
+        you <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
+        {programAvg != null && <> · prog {programAvg.toFixed(1)}</>}
+      </span>
+      {gap != null && Math.abs(gap) > 0.05 && (
+        <span
+          className="font-medium"
+          style={{ color: gap > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
+        >
+          {' '}({gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)})
+        </span>
+      )}
+    </p>
   )
 }
 
@@ -1047,10 +1039,10 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      <div className="grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <span className="text-xs text-muted-foreground">Rating mix</span>
-        <span className="text-xs text-muted-foreground">You vs program · 3–5</span>
+        <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => (
         <Fragment key={group}>
@@ -1062,11 +1054,11 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_11rem] items-center gap-6 py-3 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
                 <LikertBar counts={r.counts ?? []} total={r.total ?? 0} />
-                <CompareDots avg={r.avg} median={r.median} programAvg={r.programAvg} />
+                <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
               <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
