@@ -203,7 +203,10 @@ function FacultyScopeSelector({
   setScope: (v: string) => void
   isPD: boolean
 }) {
-  if (instructors.length <= 1) {
+  // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
+  // affordance) — a faculty viewer keeps their own identity row and can never
+  // scope the Faculty Performance signal onto a colleague's instructor block.
+  if (!isPD || instructors.length <= 1) {
     const f = instructors[0]
     if (!f) return null
     return (
@@ -212,7 +215,7 @@ function FacultyScopeSelector({
         <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
         {isPD && (
           <StatusBadge
-            label={f.releasedToFaculty ? 'Released' : 'In review'}
+            label={f.releasedToFaculty ? 'Released' : 'Pending release'}
             tone={f.releasedToFaculty ? 'neutral' : 'warning'}
           />
         )}

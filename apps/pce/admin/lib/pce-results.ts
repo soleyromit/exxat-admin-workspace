@@ -89,16 +89,16 @@ export function resultGates(survey: PceSurvey): {
   return { gradesSubmitted, isSuppressed, releasedToFaculty, status }
 }
 
-/** DS StatusBadge mapping — unified vocabulary (2026-07-08): the spec's
- *  "Review Pending"/"Results Available" strings collapse into the same set the
- *  hub and dashboard use, so one state never wears three names. */
+/** DS StatusBadge mapping — ST-14 spec vocabulary (Romit, 2026-07-16): list
+ *  badges carry the spec's exact strings so they agree with the detail-page
+ *  gate titles ("Review Pending") — one state never wears two names. */
 export const RESULT_STATUS_BADGE: Record<
   ResultDisplayStatus,
   { label: string; tone: 'success' | 'warning' | 'neutral'; icon: string }
 > = {
-  available:  { label: 'Available', tone: 'success', icon: 'fa-circle-check' },
-  locked:     { label: 'In review', tone: 'warning', icon: 'fa-hourglass-half' },
-  suppressed: { label: 'Draft',     tone: 'neutral', icon: 'fa-pen-ruler' },
+  available:  { label: 'Results Available', tone: 'success', icon: 'fa-circle-check' },
+  locked:     { label: 'Review Pending',    tone: 'warning', icon: 'fa-hourglass-half' },
+  suppressed: { label: 'Draft',             tone: 'neutral', icon: 'fa-pen-ruler' },
 }
 
 /** One result row per instructor of ONE survey — no status filter. Powers the

@@ -41,6 +41,7 @@ import {
   type EvalResult,
 } from '@/lib/pce-results'
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
+import { withFrom } from '@/lib/pce-nav-origin'
 
 type ResultRow = EvalResult & { termRank: number } & Record<string, unknown>
 
@@ -256,13 +257,13 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-40 text-sm" aria-label="Filter by status">
+              <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="locked">In review</SelectItem>
+                <SelectItem value="available">Results Available</SelectItem>
+                <SelectItem value="locked">Review Pending</SelectItem>
                 <SelectItem value="suppressed">Draft</SelectItem>
               </SelectContent>
             </Select>
@@ -296,7 +297,7 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
               showQueryControls={false}
               defaultSort={{ key: 'term', dir: 'desc' }}
               pagination={{ pageSize: 10 }}
-              onRowClick={(row) => router.push(`/results/${encodeURIComponent(row.id)}`)}
+              onRowClick={(row) => router.push(withFrom(`/results/${encodeURIComponent(row.id)}`, 'results'))}
               emptyState={
                 <div className="flex flex-col items-center gap-2 py-8">
                   <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
@@ -339,7 +340,7 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
             getRowId={(r) => r.id}
             renderRow={(r) => (
               <Link
-                href={`/results/${encodeURIComponent(r.id)}`}
+                href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
                 className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
               >
                 <div className="flex-1 min-w-0">
@@ -365,7 +366,7 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
                     </span>
                   ) : r.status === 'locked' ? (
                     <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
-                      In review
+                      Review Pending
                     </span>
                   ) : (
                     <span className="text-xs text-muted-foreground">Draft</span>
