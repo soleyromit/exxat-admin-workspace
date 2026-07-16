@@ -86,13 +86,9 @@ jobs:
     if: needs.detect.outputs.pce_changed == 'true'
     runs-on: ubuntu-latest
     env:
+      # push/schedule only; PR previews are resolved at runtime below.
       TARGET_URL: >-
-        ${{
-          github.event_name == 'pull_request'
-          && format('https://exxat-pce-admin-tau-git-{0}-soleyromits-projects.vercel.app',
-               github.head_ref)
-          || (github.ref_name == 'main' && vars.PCE_ADMIN_PROD_URL || vars.PCE_ADMIN_DEV_URL)
-        }}
+        ${{ github.ref_name == 'main' && vars.PCE_ADMIN_PROD_URL || vars.PCE_ADMIN_DEV_URL }}
       VISUAL_CHECK_OUT_DIR: /tmp/visual-check/pce
       WCAG_PRODUCT: pce-admin
 
@@ -113,6 +109,52 @@ jobs:
       - name: Wait for Vercel deployment
         if: github.event_name == 'push'
         run: sleep 90
+
+      # Resolve the preview URL from Vercel's OWN GitHub deployment rather than
+      # guessing the hostname. The guess was broken three ways at once:
+      #   1. WRONG PROJECT (PCE) — it targeted `exxat-pce-admin-tau`, which serves 404
+      #      on every route. `exxat-pce-admin` is the project that actually serves PCE.
+      #   2. DNS — `exxat-pce-admin-tau-git-<branch>-soleyromits-projects` is 67 chars
+      #      even for a short branch, and the DNS label limit is 63, so it cannot
+      #      resolve. `exxat-exam-management-admin-git-…` is 75, leaving room for a
+      #      10-character branch name.
+      #   3. RACE — a fixed `sleep 90` is a coin flip against Vercel.
+      # Net effect: this job reported PASS while EVERY scan step was SKIPPED, on every
+      # PR. A PCE route (/moderation) returned 500 the whole time and no gate saw it —
+      # even though /moderation is in the scan list. A gate that cannot fail is worse
+      # than no gate: it is where a real failure hides.
+      # `environment_url` is what Vercel actually deployed. No guess, no race.
+      - name: Resolve preview URL from Vercel's deployment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          WANT_ENV: 'Preview – exxat-pce-admin'
+        run: |
+          for i in $(seq 1 40); do
+            ID=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&per_page=100" \
+                  --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
+            if [ -n "$ID" ]; then
+              URL=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
+                    --jq '[.[]|select(.state=="success")][0].environment_url // empty' 2>/dev/null || true)
+              if [ -n "$URL" ]; then
+                echo "TARGET_URL=$URL" >> $GITHUB_ENV
+                echo "Resolved '$WANT_ENV' -> $URL"
+                exit 0
+              fi
+              STATE=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
+                      --jq '[.[]][0].state // "none"' 2>/dev/null || echo none)
+              case "$STATE" in
+                failure|error)
+                  echo "::warning::'$WANT_ENV' deployment $STATE — nothing to scan, skipping."
+                  echo "TARGET_URL=" >> $GITHUB_ENV
+                  exit 0 ;;
+              esac
+            fi
+            sleep 15
+          done
+          echo "::warning::Timed out waiting for '$WANT_ENV' to deploy — skipping WCAG."
+          echo "TARGET_URL=" >> $GITHUB_ENV
 
       - name: Verify target URL is reachable
         id: verify
@@ -203,13 +245,9 @@ jobs:
     if: needs.detect.outputs.em_changed == 'true'
     runs-on: ubuntu-latest
     env:
+      # push/schedule only; PR previews are resolved at runtime below.
       TARGET_URL: >-
-        ${{
-          github.event_name == 'pull_request'
-          && format('https://exxat-exam-management-admin-git-{0}-soleyromits-projects.vercel.app',
-               github.head_ref)
-          || (github.ref_name == 'main' && vars.EM_ADMIN_PROD_URL || vars.EM_ADMIN_DEV_URL)
-        }}
+        ${{ github.ref_name == 'main' && vars.EM_ADMIN_PROD_URL || vars.EM_ADMIN_DEV_URL }}
       VISUAL_CHECK_OUT_DIR: /tmp/visual-check/em
       WCAG_PRODUCT: em-admin
 
@@ -229,6 +267,52 @@ jobs:
       - name: Wait for Vercel deployment
         if: github.event_name == 'push'
         run: sleep 90
+
+      # Resolve the preview URL from Vercel's OWN GitHub deployment rather than
+      # guessing the hostname. The guess was broken three ways at once:
+      #   1. WRONG PROJECT (PCE) — it targeted `exxat-pce-admin-tau`, which serves 404
+      #      on every route. `exxat-pce-admin` is the project that actually serves PCE.
+      #   2. DNS — `exxat-pce-admin-tau-git-<branch>-soleyromits-projects` is 67 chars
+      #      even for a short branch, and the DNS label limit is 63, so it cannot
+      #      resolve. `exxat-exam-management-admin-git-…` is 75, leaving room for a
+      #      10-character branch name.
+      #   3. RACE — a fixed `sleep 90` is a coin flip against Vercel.
+      # Net effect: this job reported PASS while EVERY scan step was SKIPPED, on every
+      # PR. A PCE route (/moderation) returned 500 the whole time and no gate saw it —
+      # even though /moderation is in the scan list. A gate that cannot fail is worse
+      # than no gate: it is where a real failure hides.
+      # `environment_url` is what Vercel actually deployed. No guess, no race.
+      - name: Resolve preview URL from Vercel's deployment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          WANT_ENV: 'Preview – exxat-exam-management-admin'
+        run: |
+          for i in $(seq 1 40); do
+            ID=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&per_page=100" \
+                  --jq '[.[]|select(.environment==env.WANT_ENV)][0].id // empty' 2>/dev/null || true)
+            if [ -n "$ID" ]; then
+              URL=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
+                    --jq '[.[]|select(.state=="success")][0].environment_url // empty' 2>/dev/null || true)
+              if [ -n "$URL" ]; then
+                echo "TARGET_URL=$URL" >> $GITHUB_ENV
+                echo "Resolved '$WANT_ENV' -> $URL"
+                exit 0
+              fi
+              STATE=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$ID/statuses" \
+                      --jq '[.[]][0].state // "none"' 2>/dev/null || echo none)
+              case "$STATE" in
+                failure|error)
+                  echo "::warning::'$WANT_ENV' deployment $STATE — nothing to scan, skipping."
+                  echo "TARGET_URL=" >> $GITHUB_ENV
+                  exit 0 ;;
+              esac
+            fi
+            sleep 15
+          done
+          echo "::warning::Timed out waiting for '$WANT_ENV' to deploy — skipping WCAG."
+          echo "TARGET_URL=" >> $GITHUB_ENV
 
       - name: Verify target URL is reachable
         id: verify
