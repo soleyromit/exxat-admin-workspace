@@ -406,3 +406,23 @@ When Romit identifies a mistake in this product, the correction is logged to:
 - Claude's memory system (feedback type)
 
 View all PCE corrections: `__updates('pce', 'corrections')` in browser DevTools console.
+
+## Faculty IA — two surfaces, two contracts (2026-07-16, Romit)
+
+Every faculty surface must name the ONE question it answers. A new nav slot is only earned by
+a new question — not by a new chart.
+
+| Surface | Contract (the question) | Time horizon | May contain | Must NOT contain |
+|---|---|---|---|---|
+| **My Surveys** | *What needs me right now?* | this term | lifecycle table (Collecting / Pending / Results / Scheduled), live response gauges, QR, extend, links into results | trends, benchmarks, any chart that isn't actionable today (Mobbin: Google Classroom "To review", Uxcel Assignments — ops queues carry zero analytics) |
+| **My Dashboard** | *How am I doing?* | lifetime → across terms | standing (two ratings, benchmarks, themes, reflection), and the **Trends section** — the landing zone for longitudinal analytics when it ships (Mobbin: 15Five ships Reporting inside the one personal dashboard; Upwork/Contra lead with identity + one headline score) | peer names, peer scores, rankings (§7.3) |
+
+Retired by this IA: **My Results** (duplicated the table's "Results available" group — a nav
+item pointing at a subset of another nav item) and the **Analytics slot** (a coming-soon page
+holding primary navigation; `/my-analytics` now redirects to the dashboard). Single-survey
+analytics is the RESULT page — Monil's "final node" — reached from either surface, never a
+third destination.
+
+Known hierarchy gap (next design pass): the dashboard opens on four equal KPI tiles; every
+self-view reference (Upwork, Contra) leads with identity + ONE headline score + its benchmark
+delta. The persona's "two ratings side-by-side" earns the hero, not a tile among four.

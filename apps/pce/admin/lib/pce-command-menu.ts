@@ -35,7 +35,6 @@ const PAGE_ROUTES = [
   // role toggle shipped. Labelled "My …" to match their nav rows.
   { id: "page-my-surveys",        label: "My Surveys",                           keywords: "faculty my courses assigned live status qr extend close date", href: "/my-surveys", icon: "fa-light fa-paper-plane" },
   { id: "page-my-dashboard",      label: "My Dashboard",                         keywords: "faculty self view own performance", href: "/my-dashboard", icon: "fa-light fa-chart-mixed" },
-  { id: "page-my-analytics",      label: "My Analytics",                         keywords: "faculty analytics trend longitudinal coming soon", href: "/my-analytics", icon: "fa-light fa-chart-line" },
   { id: "page-analytics-ce",      label: "Analytics — Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
   { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
   { id: "page-email-templates",   label: "Email Templates",                      href: "/admin/email-templates",     icon: "fa-light fa-envelope" },

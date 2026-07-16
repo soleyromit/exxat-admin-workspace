@@ -196,20 +196,6 @@ export const NAV_FACULTY: NavLinkItem[] = [
     icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
   },
-  {
-    key: "my-results",
-    title: "My Results",
-    url: "/results",
-    icon:       <i className="fa-light fa-square-poll-vertical" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-square-poll-vertical" aria-hidden="true" />,
-  },
-  {
-    key: "my-analytics",
-    title: "Analytics",
-    url: "/my-analytics",
-    icon:       <i className="fa-light fa-chart-line" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-chart-line" aria-hidden="true" />,
-  },
 ]
 
 export const NAV_SECONDARY: NavSecondaryItem[] = [
