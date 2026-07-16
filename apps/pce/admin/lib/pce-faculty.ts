@@ -251,7 +251,6 @@ export function facultyResultStatus<
 export const FACULTY_ROUTE_PREFIXES = [
   '/my-surveys',
   '/my-dashboard',
-  '/my-analytics',
   '/results',
   '/settings',
   '/help',

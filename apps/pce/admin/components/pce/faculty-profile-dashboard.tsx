@@ -113,15 +113,6 @@ export function FacultyProfileDashboard({
     })
   }, [offerings])
 
-  if (!faculty) {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center gap-2">
-        <i className="fa-light fa-user-slash text-3xl text-muted-foreground" aria-hidden="true" />
-        <p className="text-sm text-muted-foreground">Faculty not found</p>
-      </div>
-    )
-  }
-
   /* Hero numbers — the persona's "two ratings side-by-side" with comparative context
      (V2: "0.3 above average"). Teaching compares to dept+university (benchmarks —
      Aarti-validated percentile substitute); course content compares to the program
@@ -134,10 +125,24 @@ export function FacultyProfileDashboard({
       ? +(withContent.reduce((s, o) => s + (o.courseAvg as number) * o.enrolled, 0) / enrolled).toFixed(2)
       : null
   }, [offerings])
+  /* Enrollment-weighted like contentScore — the delta subtracts like from like
+     (student-exposure comparison, not course-unit mean; verification-review 2026-07-16). */
   const programContentAvg = useMemo(() => {
     const cs = courseStats()
-    return cs.length ? +(cs.reduce((s, c) => s + c.score.weighted, 0) / cs.length).toFixed(2) : null
+    const enrolled = cs.reduce((s, c) => s + c.enrolled, 0)
+    return enrolled > 0
+      ? +(cs.reduce((s, c) => s + c.score.weighted * c.enrolled, 0) / enrolled).toFixed(2)
+      : null
   }, [])
+
+  if (!faculty) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center gap-2">
+        <i className="fa-light fa-user-slash text-3xl text-muted-foreground" aria-hidden="true" />
+        <p className="text-sm text-muted-foreground">Faculty not found</p>
+      </div>
+    )
+  }
 
   const lastWithFaculty = [...trendData].reverse().find(d => d.faculty != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
@@ -211,7 +216,7 @@ export function FacultyProfileDashboard({
             <>
               <div className="relative w-full">
                 <ChartContainer config={trendChartConfig} className="h-52 w-full text-xs">
-                  <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                  <ComposedChart accessibilityLayer data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
                     <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />

@@ -624,6 +624,10 @@ export interface FacultyCourseStat {
   courseName: string
   score: DualMean
   responseRate: number
+  /** Total students enrolled across this faculty's offerings of the course. */
+  enrolled: number
+  /** Latest offering's survey — the row's door. Absent on archived offerings. */
+  latestSurveyId?: string
   terms: number
   /** Per-term trend for this course, oldest first — the row sparkline (story 19). */
   trend: { term: string; short: string; year: number; rating: number; responseRate: number }[]
@@ -654,6 +658,7 @@ export function facultyCourseStats(facultyId: string): FacultyCourseStat[] {
         courseName: rows[0]!.courseName,
         score: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        enrolled,
         terms: rows.length,
         /** The row's door (aggregate → final node). Absent on archived offerings — fail closed. */
         latestSurveyId: latest?.surveyId,
@@ -814,6 +819,8 @@ export function facultyTermSeries(): { facultyId: string; name: string; term: st
 export interface CourseStat {
   courseCode: string
   courseName: string
+  /** Total students enrolled across this course's offerings. */
+  enrolled: number
   /**
    * The COURSE-CONTENT score — how the course itself was rated.
    *
@@ -880,6 +887,8 @@ export function courseStats(term?: string, cohort?: string): CourseStat[] {
           : dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
         facultyScore: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        /** Total students behind this course's scores — for enrollment-weighted program means. */
+        enrolled,
         terms: new Set(rows.map((r) => r.term)).size,
         avg1y,
         avg3y,

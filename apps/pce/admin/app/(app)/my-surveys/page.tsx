@@ -221,6 +221,7 @@ export default function MySurveysPage() {
             columns={columns}
             getRowId={(row) => row.id}
             searchable
+            emptyState={<span>No surveys match your search in {term}.</span>}
             defaultGroupBy="group"
             groupLabels={FACULTY_GROUP_LABEL}
             groupOrder={FACULTY_GROUP_ORDER as unknown as string[]}

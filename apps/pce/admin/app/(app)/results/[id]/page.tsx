@@ -255,7 +255,7 @@ function FacultyScopeSelector({
           <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
             <span
               aria-hidden="true"
-              className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
+              className="flex size-5 shrink-0 items-center justify-center rounded-full text-[12px] font-medium"
               style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
             >
               {f.facultyInitials}
@@ -1258,6 +1258,9 @@ function ResultDetail({
   const [remindOpen, setRemindOpen] = useState(false)
   const [extendOpen, setExtendOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  /* Release must acknowledge itself — the button vanishing is not feedback.
+     Spec (line 17): toast on release → LocalBanner state flip. */
+  const [releasedName, setReleasedName] = useState<string | null>(null)
   function copySurveyLink() {
     void navigator.clipboard.writeText(`${window.location.origin}/s/${survey.id}`)
     setLinkCopied(true)
@@ -1600,7 +1603,14 @@ function ResultDetail({
             {!inCollection && (
               <>
                 {isPD && !scopedFaculty.releasedToFaculty && (
-                  <Button variant="outline" size="sm" onClick={onRelease}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRelease()
+                      setReleasedName(facultyScope === 'all' ? 'Faculty' : scopedFaculty.facultyName)
+                    }}
+                  >
                     {facultyScope === 'all'
                       ? 'Enable faculty access'
                       : `Enable access for ${scopedFaculty.facultyName}`}
@@ -1642,6 +1652,16 @@ function ResultDetail({
 
       <div className="flex-1 px-7 py-4">
         <div className="flex flex-col gap-4">
+          {releasedName && (
+            <LocalBanner
+              variant="success"
+              title="Faculty access enabled"
+              dismissible
+              onDismiss={() => setReleasedName(null)}
+            >
+              {releasedName === 'Faculty' ? 'Faculty' : releasedName} can now view these results.
+            </LocalBanner>
+          )}
           {/* Identity strip — the faculty SCOPE control (live) or the result
               owner (finished). Status chip lives beside the title now. */}
           <div className="flex items-center gap-3 flex-wrap">
