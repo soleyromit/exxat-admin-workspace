@@ -168,3 +168,91 @@ export function rateColor(pct: number): string {
 export function scoreColor(avg: number): string {
   return avg >= 4.2 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--foreground)' : 'var(--chip-4)'
 }
+
+/** Mean of the scored results, or null when nothing has a score yet. */
+function meanScore(results: EvalResult[]): number | null {
+  const scored = results.filter((r): r is EvalResult & { avgScore: number } => r.avgScore !== null)
+  if (scored.length === 0) return null
+  return scored.reduce((sum, r) => sum + r.avgScore, 0) / scored.length
+}
+
+export interface FacultyBenchmarks {
+  /** The faculty member's own mean score across their results. */
+  score: number | null
+  /**
+   * Mean across every faculty in `program` ("department average").
+   * Null when the comparison would be degenerate — see `facultyBenchmarks`.
+   */
+  deptAvg: number | null
+  /** Mean across every faculty in every program ("university average"). */
+  universityAvg: number | null
+  /**
+   * Program the department average is scoped to — the faculty's PRIMARY program
+   * (where they have the most scored results), not an arbitrary first hit.
+   * Null when the faculty has no results.
+   */
+  program: string | null
+  /** Distinct faculty with scored results in `program`, including this one. */
+  deptFacultyCount: number
+  /** Results that fed `score`. Callers use this for the n-of-total disclosure. */
+  sampleSize: number
+}
+
+/**
+ * Score + the two nested benchmarks behind `ScoreBullet` (VIZ-PATTERN-003).
+ *
+ * This is the percentile substitute. `course-evaluation.md` §7.3 bans
+ * peer-comparison metrics faculty-side ("'you're at the 60th percentile' …
+ * reverse-encodes peer rank"), while §7.3 explicitly ALLOWS "department average,
+ * university average, threshold" — and Aarti validated exactly this framing (A5).
+ * So these two averages are safe in both the admin lens and the faculty
+ * self-view; a percentile would not be.
+ *
+ * Suppressed results are intentionally INCLUDED: N=5 suppression governs whether
+ * an individual result is shown, not whether it feeds an aggregate — the PD
+ * aggregate view sees data the faculty self-view suppresses.
+ *
+ * NOTE: unweighted mean. The enrollment-weighted vs simple-mean question is open
+ * with Aarti (`2026-06-22-evaluations-dashboard-consolidation.md` §4) and blocks
+ * any RANKING. It does not block this: a bullet states one score against two
+ * averages, it does not order people. If the weighting decision lands, change it
+ * here and both the bullet and its callers follow.
+ */
+export function facultyBenchmarks(
+  results: EvalResult[],
+  facultyId: string,
+): FacultyBenchmarks {
+  const own = results.filter((r) => r.facultyId === facultyId)
+
+  // Faculty can teach across programs — MOCK_FACULTY has one in both DPT and
+  // PharmD — so `own[0].program` would make the department average depend on
+  // array order. Scope to the PRIMARY program: most scored results, with an
+  // alphabetical tie-break so the result is deterministic.
+  const scoredOwn = own.filter((r) => r.avgScore !== null)
+  const perProgram = new Map<string, number>()
+  for (const r of scoredOwn) perProgram.set(r.program, (perProgram.get(r.program) ?? 0) + 1)
+  const program =
+    [...perProgram.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ??
+    own[0]?.program ??
+    null
+
+  const deptResults = program === null ? [] : results.filter((r) => r.program === program)
+  const deptFacultyCount = new Set(
+    deptResults.filter((r) => r.avgScore !== null).map((r) => r.facultyId),
+  ).size
+
+  // A "department average" drawn from this person alone is not a comparison —
+  // it is their own score wearing a benchmark's clothes, and on a surface
+  // governed by §7.3 that is actively misleading. Withhold it; the caller hides
+  // the marker and falls back to the university average.
+  const deptAvg = deptFacultyCount >= 2 ? meanScore(deptResults) : null
+
+  return {
+    score: meanScore(own),
+    deptAvg,
+    universityAvg: meanScore(results),
+    program,
+    deptFacultyCount,
+    sampleSize: scoredOwn.length,
+  }
+}
