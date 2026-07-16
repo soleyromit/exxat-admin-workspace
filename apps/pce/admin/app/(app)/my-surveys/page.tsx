@@ -24,13 +24,14 @@
  */
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Button,
-  DataRowList,
   PageHeader,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -71,14 +72,125 @@ export default function MySurveysPage() {
     [surveys, facultyId, term],
   )
 
-  const grouped = useMemo(() => {
-    const g = new Map<FacultyGroup, PceSurvey[]>()
-    for (const s of mine) {
-      const k = groupOf(s)
-      g.set(k, [...(g.get(k) ?? []), s])
-    }
-    return g
-  }, [mine])
+  const router = useRouter()
+
+  /* One table, grouped by lifecycle — Romit (2026-07-16): "most of the row based should be
+     a datatable instead of status based rows." The Apr-21 lifecycle groups survive as the
+     table's grouping; the sentence-headline layer moved into the per-row columns (the
+     nearest deadline is each row's Closes cell). */
+  interface FacultyRow extends Record<string, unknown> {
+    id: string
+    survey: PceSurvey
+    group: FacultyGroup
+    courseCode: string
+    status: string
+    responseRate: number
+    when: string
+  }
+  const rows = useMemo<FacultyRow[]>(
+    () =>
+      mine.map((s) => ({
+        id: s.id,
+        survey: s,
+        group: groupOf(s),
+        courseCode: s.courseCode,
+        status: s.status,
+        responseRate: s.responseRate,
+        when: groupOf(s) === 'scheduled' ? (s.openDate ?? '') : (s.deadline ?? ''),
+      })),
+    [mine],
+  )
+
+  const columns = useMemo<ColumnDef<FacultyRow>[]>(
+    () => [
+      {
+        key: 'courseCode', label: 'Course', sortable: true,
+        cell: (row) => {
+          const role = myRoleOn(row.survey, facultyId ?? '')
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">
+                {row.survey.courseCode} — {row.survey.courseName}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {row.survey.term}
+                {row.survey.cohort ? ` · ${row.survey.cohort}` : ''}
+                {role ? ` · You’re the ${role === 'coordinator' ? 'course coordinator' : 'instructor'}` : ''}
+              </p>
+            </div>
+          )
+        },
+      },
+      {
+        key: 'status', label: 'Status', sortable: true, width: 150,
+        cell: (row) => <SurveyStatusBadge status={row.survey.status} />,
+      },
+      {
+        key: 'responseRate', label: 'Response', sortable: true, width: 190,
+        cell: (row) =>
+          row.group === 'live' ? (
+            <ResponseProgressCell
+              rate={row.survey.responseRate}
+              responseCount={row.survey.responseCount}
+              enrollmentCount={row.survey.enrollmentCount}
+              target={RESPONSE_TARGET}
+              detail="full"
+            />
+          ) : row.group === 'scheduled' ? (
+            <span className="text-xs text-muted-foreground">—</span>
+          ) : (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {row.survey.responseCount} of {row.survey.enrollmentCount} · {row.survey.responseRate}%
+            </span>
+          ),
+      },
+      {
+        key: 'when', label: 'Closes / opens', sortable: true, width: 130,
+        cell: (row) => (
+          <span className="text-sm text-muted-foreground">
+            {row.group === 'scheduled'
+              ? row.survey.openDate
+                ? `Opens ${row.survey.openDate}`
+                : 'Not open yet'
+              : row.survey.deadline || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'actions', label: '', resizable: false, width: 300,
+        cell: (row) => {
+          const live = row.group === 'live'
+          return (
+            <div className="flex items-center justify-end gap-2">
+              {row.group === 'pending_release' && (
+                <span className="text-xs text-muted-foreground">Waiting on your program admin</span>
+              )}
+              {live && (
+                /* Icon + explicit label — Romit 2026-07-16: "QR code can have an icon and
+                   can be explicit as label 'Show QR Code'". */
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setQrSurvey(row.survey) }}>
+                  <i className="fa-light fa-qrcode" aria-hidden="true" />
+                  Show QR Code
+                </Button>
+              )}
+              {live && canExtend(row.survey, facultyId ?? '') && (
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setExtendSurvey(row.survey) }}>
+                  Extend close date
+                </Button>
+              )}
+              {row.group === 'results' && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  View result
+                  <i className="fa-light fa-chevron-right" aria-hidden="true" />
+                </span>
+              )}
+            </div>
+          )
+        },
+      },
+    ],
+    [facultyId],
+  )
 
   const termSelect = (
     <Select value={term} onValueChange={setTerm}>
@@ -101,44 +213,25 @@ export default function MySurveysPage() {
       />
 
       <div className="flex-1 overflow-auto px-7 py-4">
-        {/* max-w-5xl, not 3xl: a row here carries title + badge + gauge + up to two
-            actions. At 3xl (the simpler My Results width) the title wrapped to two
-            lines and pushed the badge under it, while ~700px sat empty to the right. */}
-        <div className="flex flex-col gap-8 max-w-5xl">
-          {mine.length === 0 ? (
-            <EmptyFaculty term={term} linked={!!facultyId} />
-          ) : (
-            FACULTY_GROUP_ORDER.map((group) => {
-              const rows = grouped.get(group)
-              if (!rows || rows.length === 0) return null
-              return (
-                <section key={group} aria-label={FACULTY_GROUP_LABEL[group]}>
-                  <h2 className="text-sm font-medium">{FACULTY_GROUP_LABEL[group]}</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-                    {groupHeadline(group, rows)}
-                  </p>
-                  <DataRowList<PceSurvey>
-                    rows={rows}
-                    getRowId={(s) => s.id}
-                    renderRow={(s) =>
-                      group === 'results' ? (
-                        <ResultRow survey={s} />
-                      ) : (
-                        <StatusRow
-                          survey={s}
-                          group={group}
-                          facultyId={facultyId ?? ''}
-                          onShowQr={() => setQrSurvey(s)}
-                          onExtend={() => setExtendSurvey(s)}
-                        />
-                      )
-                    }
-                  />
-                </section>
-              )
-            })
-          )}
-        </div>
+        {mine.length === 0 ? (
+          <EmptyFaculty term={term} linked={!!facultyId} />
+        ) : (
+          <DataTable<FacultyRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            searchable
+            defaultGroupBy="group"
+            groupLabels={FACULTY_GROUP_LABEL}
+            groupOrder={FACULTY_GROUP_ORDER as unknown as string[]}
+            onRowClick={(row) => {
+              if (row.group === 'results') {
+                router.push(`/results/${encodeURIComponent(`${row.survey.id}:${facultyId ?? ''}`)}`)
+              }
+            }}
+            toolbarSlot={() => null}
+          />
+        )}
       </div>
 
       <SurveyQrDialog
@@ -161,149 +254,12 @@ export default function MySurveysPage() {
   )
 }
 
-/* ── Group headlines ──────────────────────────────────────────────────────
- * A count is a claim without evidence — each heading is a full sentence that
- * names scope + the nearest deadline, so the row list below is the proof.
- */
-function groupHeadline(group: FacultyGroup, rows: PceSurvey[]): string {
-  const n = rows.length
-  const courses = `${n} ${n === 1 ? 'course' : 'courses'}`
-  if (group === 'live') {
-    const soonest = rows
-      .map((s) => ({ s, d: daysUntil(s.deadline) }))
-      .filter((x): x is { s: PceSurvey; d: number } => x.d !== null)
-      .sort((a, b) => a.d - b.d)[0]
-    const tail = soonest
-      ? soonest.d < 0
-        ? ` · ${soonest.s.courseCode} is past its close date`
-        : soonest.d === 0
-          ? ` · ${soonest.s.courseCode} closes today`
-          : ` · ${soonest.s.courseCode} closes in ${soonest.d} ${soonest.d === 1 ? 'day' : 'days'}`
-      : ''
-    return `${courses} still collecting responses${tail}.`
-  }
-  if (group === 'pending_release') {
-    return `${courses} closed — your program admin reviews comments before results reach you.`
-  }
-  if (group === 'results') {
-    return `${courses} with results you can open.`
-  }
-  return `${courses} not open to students yet.`
-}
 
 /* ── Rows ─────────────────────────────────────────────────────────────────── */
 
-/** Truncating title + badge that never wraps under it — the settled card title
- *  anatomy (term triptych: truncating title left, StatusBadge holding its line).
- *
- *  `role` rides the meta line because it describes MY relationship to this course,
- *  which is identity, not action. It also quietly explains why a coordinator's row
- *  offers "Extend close date" and an instructor's doesn't. It was briefly a
- *  "Coordinator only" note in the action column — sat next to "Show QR" and read
- *  as if it gated the QR button, which is false: any assigned faculty can show
- *  the code. */
-function CourseIdentity({ survey, role }: { survey: PceSurvey; role: FacultyCourseRole }) {
-  return (
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {survey.courseCode} — {survey.courseName}
-        </p>
-        <div className="shrink-0">
-          <SurveyStatusBadge status={survey.status} />
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-        {survey.term}
-        {survey.academicYear ? ` · AY ${survey.academicYear}` : ''}
-        {survey.cohort ? ` · ${survey.cohort}` : ''}
-        {role ? ` · You’re the ${role === 'coordinator' ? 'course coordinator' : 'instructor'}` : ''}
-      </p>
-    </div>
-  )
-}
 
 /** Live / pending / scheduled — carries actions, so it is NOT a link. */
-function StatusRow({
-  survey,
-  group,
-  facultyId,
-  onShowQr,
-  onExtend,
-}: {
-  survey: PceSurvey
-  group: FacultyGroup
-  facultyId: string
-  onShowQr: () => void
-  onExtend: () => void
-}) {
-  const live = group === 'live'
-  const showExtend = live && canExtend(survey, facultyId)
-  const role = myRoleOn(survey, facultyId)
 
-  return (
-    <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 mb-2">
-      <CourseIdentity survey={survey} role={role} />
-
-      {live && (
-        <div className="shrink-0 w-44">
-          <ResponseProgressCell
-            rate={survey.responseRate}
-            responseCount={survey.responseCount}
-            enrollmentCount={survey.enrollmentCount}
-            target={RESPONSE_TARGET}
-            detail="full"
-          />
-        </div>
-      )}
-
-      {/* Fixed width + justify-end so the gauge column lines up down the list —
-          with an auto-width action area, a row with two buttons pushed its gauge
-          left of its neighbour's and the column read as ragged. */}
-      <div className="shrink-0 w-[248px] flex items-center justify-end gap-2">
-        {group === 'pending_release' && (
-          <span className="text-xs text-muted-foreground">Waiting on your program admin</span>
-        )}
-        {group === 'scheduled' && (
-          <span className="text-xs text-muted-foreground">
-            {survey.openDate ? `Opens ${survey.openDate}` : 'Not open yet'}
-          </span>
-        )}
-        {live && (
-          <Button variant="outline" size="sm" onClick={onShowQr}>
-            Show QR
-          </Button>
-        )}
-        {showExtend && (
-          <Button variant="outline" size="sm" onClick={onExtend}>
-            Extend close date
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/** Released — the whole row opens the result, so it carries no buttons.
- *  Result id is `${surveyId}:${facultyId}` (courseOffering × faculty) and the
- *  terminal re-checks access; this link is navigation, never authorisation. */
-function ResultRow({ survey }: { survey: PceSurvey }) {
-  const { user } = usePce()
-  const resultId = `${survey.id}:${user.facultyId}`
-  const role = myRoleOn(survey, user.facultyId ?? '')
-  return (
-    <Link
-      href={`/results/${encodeURIComponent(resultId)}`}
-      className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 mb-2 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      <CourseIdentity survey={survey} role={role} />
-      <p className="shrink-0 text-xs text-muted-foreground tabular-nums">
-        {survey.responseCount} of {survey.enrollmentCount} responded · {survey.responseRate}%
-      </p>
-      <i className="fa-light fa-chevron-right text-muted-foreground shrink-0" aria-hidden="true" />
-    </Link>
-  )
-}
 
 /* ── States ───────────────────────────────────────────────────────────────── */
 
