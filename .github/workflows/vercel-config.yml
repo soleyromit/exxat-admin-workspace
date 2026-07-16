@@ -1,32 +1,50 @@
 name: Vercel config
 
-# Validates every apps/**/vercel.json BEFORE Vercel sees it.
+# Validates Vercel's two repo-level config files BEFORE Vercel sees them.
+# Both bugs below were invisible locally and only ever surfaced as a failed
+# deployment email — which is the whole reason this workflow exists.
 #
-# WHY this exists — 2026-07-15. A perfectly correct ignoreCommand was pushed that
-# happened to be 270 characters. Vercel's `ignoreCommand` has an UNDOCUMENTED
-# 256-character limit, so vercel.json failed schema validation:
+# 1. apps/**/vercel.json — 2026-07-15. A perfectly correct ignoreCommand was
+#    pushed that happened to be 270 characters. Vercel's `ignoreCommand` has an
+#    UNDOCUMENTED 256-character limit, so vercel.json failed schema validation:
 #
-#   The `vercel.json` schema validation failed with the following message:
-#   `ignoreCommand` should NOT be longer than 256 characters
+#      The `vercel.json` schema validation failed with the following message:
+#      `ignoreCommand` should NOT be longer than 256 characters
 #
-# A schema failure is not a build failure — it errors the deployment at 0ms,
-# before any build step runs. All 7 Vercel projects watch this one repo, so a
-# single push turned into 7 "deployment failed" emails, with a log that says
-# nothing about length. Nothing in the repo could catch it: `typecheck.yml` only
-# triggers on apps/**/*.ts{,x}, tsconfig, package.json and lockfiles, so no
-# workflow ever looked at a vercel.json.
+#    A schema failure is not a build failure — it errors the deployment at 0ms,
+#    before any build step runs. All 7 Vercel projects watch this one repo, so a
+#    single push turned into 7 "deployment failed" emails, with a log that says
+#    nothing about length.
 #
-# Cheap check, no toolchain, runs in seconds. Keep it that way.
+# 2. .vercelignore — 2026-07-15. It listed four tracked components that live
+#    Next code imports. Vercel deletes ignored files at clone time, so every PCE
+#    deployment died with "Module not found: @/components/library-*" while
+#    `pnpm build` passed on every developer machine — .vercelignore is inert
+#    outside Vercel. Months of red with no local signal.
+#
+# Note the path filters include apps/**/*.ts{,x}: the .vercelignore check walks
+# the Next module graph, so ADDING AN IMPORT can break it without touching either
+# config file. Both checks are pure-python, no toolchain, seconds. Keep it that way.
 
 on:
   pull_request:
     paths:
       - 'apps/**/vercel.json'
+      - 'apps/**/*.ts'
+      - 'apps/**/*.tsx'
+      - '.vercelignore'
+      - 'scripts/check-vercel-json.py'
+      - 'scripts/check-vercelignore.py'
       - '.github/workflows/vercel-config.yml'
   push:
     branches: [dev, main]
     paths:
       - 'apps/**/vercel.json'
+      - 'apps/**/*.ts'
+      - 'apps/**/*.tsx'
+      - '.vercelignore'
+      - 'scripts/check-vercel-json.py'
+      - 'scripts/check-vercelignore.py'
       - '.github/workflows/vercel-config.yml'
 
 jobs:
@@ -36,5 +54,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate schema limits
+      - name: Validate vercel.json schema limits
         run: python3 scripts/check-vercel-json.py
+
+      - name: Validate .vercelignore deletes nothing the build imports
+        run: python3 scripts/check-vercelignore.py
