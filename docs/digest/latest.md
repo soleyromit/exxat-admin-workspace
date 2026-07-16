@@ -40,22 +40,22 @@
 
 | Product | File | Title | Last updated |
 |---|---|---|---|
-| `exam-management` | `aarti-perspective` | Aarti's Perspective — Exam Management | 2026-07-16 |
-| `exam-management` | `ai-layer` | Exam Management — AI Layer | 2026-07-16 |
-| `exam-management` | `experience-principles` | Exam Management — Experience Principles | 2026-07-16 |
-| `exam-management` | `use-cases` | Exam Management — Use Cases | 2026-07-16 |
-| `exam-management` | `vishaka-perspective` | Vishaka's Perspective — Exam Management | 2026-07-16 |
-| `exam-management` | `vision` | Exam Management — Vision | 2026-07-16 |
-| `patient-log` | `ai-layer` | Patient Log — AI Layer | 2026-07-16 |
-| `patient-log` | `experience-principles` | Patient Log — Experience Principles | 2026-07-16 |
-| `patient-log` | `use-cases` | Patient Log — Use Cases | 2026-07-16 |
-| `patient-log` | `vision` | Patient Log — Vision | 2026-07-16 |
-| `pce` | `aarti-perspective` | Aarti's Perspective — PCE / CFE | 2026-07-16 |
-| `pce` | `ai-layer` | PCE / CFE — AI Layer | 2026-07-16 |
-| `pce` | `experience-principles` | PCE / CFE — Experience Principles | 2026-07-16 |
-| `pce` | `use-cases` | PCE / CFE — Use Cases | 2026-07-16 |
-| `pce` | `vishaka-perspective` | Vishaka's Perspective — PCE / CFE | 2026-07-16 |
-| `pce` | `vision` | PCE / CFE — Vision | 2026-07-16 |
+| `exam-management` | `aarti-perspective` | Aarti's Perspective — Exam Management | 2026-07-14 |
+| `exam-management` | `ai-layer` | Exam Management — AI Layer | 2026-07-14 |
+| `exam-management` | `experience-principles` | Exam Management — Experience Principles | 2026-07-14 |
+| `exam-management` | `use-cases` | Exam Management — Use Cases | 2026-07-14 |
+| `exam-management` | `vishaka-perspective` | Vishaka's Perspective — Exam Management | 2026-07-14 |
+| `exam-management` | `vision` | Exam Management — Vision | 2026-07-14 |
+| `patient-log` | `ai-layer` | Patient Log — AI Layer | 2026-07-14 |
+| `patient-log` | `experience-principles` | Patient Log — Experience Principles | 2026-07-14 |
+| `patient-log` | `use-cases` | Patient Log — Use Cases | 2026-07-14 |
+| `patient-log` | `vision` | Patient Log — Vision | 2026-07-14 |
+| `pce` | `aarti-perspective` | Aarti's Perspective — PCE / CFE | 2026-07-14 |
+| `pce` | `ai-layer` | PCE / CFE — AI Layer | 2026-07-14 |
+| `pce` | `experience-principles` | PCE / CFE — Experience Principles | 2026-07-14 |
+| `pce` | `use-cases` | PCE / CFE — Use Cases | 2026-07-14 |
+| `pce` | `vishaka-perspective` | Vishaka's Perspective — PCE / CFE | 2026-07-14 |
+| `pce` | `vision` | PCE / CFE — Vision | 2026-07-14 |
 
 ## Patterns by category
 

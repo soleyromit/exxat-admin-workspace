@@ -14,6 +14,7 @@ import type {
   PceTemplate,
   ProgramTerm,
   SurveyStatus,
+  UserRole,
   TemplateSection,
   TemplateQuestion,
   PceTemplateSection,
@@ -160,8 +161,30 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
+  // ── Role (admin ⇄ faculty view) ───────────────────────────────────────────
+  // Persisted for the same reason the demo account is: a refresh silently
+  // dropping a faculty member back into the admin view is a lie about who you
+  // are, and it made the faculty surfaces feel broken. Same hydration guard —
+  // SSR + first client render use the seeded role, a stored choice applies
+  // post-mount — so the server and first client tree always agree.
+  const ROLE_STORAGE_KEY = 'pce.role'
+
   const toggleRole = useCallback(() => {
-    setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
+    setUser(u => {
+      const role: UserRole = u.role === 'admin' ? 'faculty' : 'admin'
+      if (typeof window !== 'undefined') {
+        try { window.localStorage.setItem(ROLE_STORAGE_KEY, role) } catch { /* ignore */ }
+      }
+      return { ...u, role }
+    })
+  }, [])
+
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(ROLE_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored === 'faculty' || stored === 'admin') {
+      setUser(u => (u.role === stored ? u : { ...u, role: stored as UserRole }))
+    }
   }, [])
 
   const releaseSurvey = useCallback((id: string) => {
