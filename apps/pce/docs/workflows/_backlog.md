@@ -366,6 +366,19 @@ Source: `docs/research/meetings/2026-07-14-post-course-survey-cadence-vishaka-da
 | T114 | Dashboard: design all 4 term-card scenarios | Admin | Dashboard prototype | P1 — DESIGN-REVIEW | D_PCE_0714B_03. Scenario 1: empty state (nothing configured). Scenario 2: current term only (no last, no upcoming). Scenario 3: current + last (no upcoming). Scenario 4: all three terms present. Currently only scenario 4 exists in prototype. |
 | T115 | Clinical term edge case: investigate PA program data + propose dashboard handling | Admin | Dashboard term cards | P1 — RESEARCH FLAG | D_PCE_0714B_04. PA programs define a year-long "clinical term" spanning the full academic year — it always appears as the current term. Vishaka to ask Carol (PA admin) how they collect course evals for clinical courses. Monil to run data query: how many PA programs have a clinical term defined. No design change until investigation complete. |
 
+## Phase 1 design tasks — added 2026-07-15 (DS analytics chart strategy + scope sync — Monil)
+
+Source: `docs/research/meetings/2026-07-15-ds-analytics-chart-strategy-monil.md` (Granola `1e018244`)
+
+> Monil + Romit sync Jul 15. DS chart catalog rule hardened. Analytics surface-first pattern (summary → expand). Export capability confirmed. Assessment scope handed to product team; Romit = course evaluation only. Portal landing page ownership + DS update. Cohere booth planning.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T116 | Course evaluation analytics — surface-first chart pattern: compact summary tile visible by default; double-click/expand reveals full chart + grid data | Admin | PCE analytics (all chart surfaces) | P1 — DESIGN-REVIEW | D_PCE_0715_01, D_PCE_0715_02. DS catalog is first chart source; observable plot for advanced viz (Sankey, heatmap, four-quadrant, range/median comparisons) when DS chart doesn't cover the scenario. Do not show full 30+ item charts without a summary/expand affordance. Romit: "primary information should be at the surface level." No code equivalent yet. |
+| T117 | Course evaluation analytics — export capability: PNG/PDF chart export + raw data export per chart | Admin | PCE analytics | P1 — DESIGN-REVIEW | D_PCE_0715_03, D_PCE_0715_04. Required for all analytics chart surfaces. Users combine Exxat analytics data with external tools (influx, Excel). Production chart library = high charts (Monil to get key from Wina). Observable plot is for prototype exploration only. |
+| T118 | Portal landing page — DS update + replace labels with new marketing product names from Kunal infographic | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0715_01, D_PORTAL_0715_02. Remove unnecessary components added to existing build. Replace current product labels with marketing names from Kunal's email infographic. Align with Aarti + Kunal before involving marketing team on colors/branding. Marketing team owns content + colors within experience framework Romit defines. |
+| T119 | Cohere conference booth plan (September) — prepare initial strategy for Monday's call | — | Planning | P1 | D_MISC_0715_01. Options: usability testing, feedback collection, product demo showcase. Romit to share draft plan before next Monday placeholder call with Monil. |
+
 ---
 
 ## Open product questions
