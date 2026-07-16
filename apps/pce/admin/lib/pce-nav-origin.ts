@@ -35,8 +35,12 @@ const DEFAULT_ORIGIN: ResultsOrigin = {
   label: 'Dashboard', href: '/course-evaluation/dashboard', trail: [DASHBOARD], from: null,
 }
 
-/** `term:<id>` → that term's workspace · `my-surveys` · `analytics` · else Dashboard. */
+/** `results` → the hub · `term:<id>` → that term's workspace · `my-surveys` ·
+ *  `analytics` · else Dashboard. */
 export function resolveResultsOrigin(from: string | null): ResultsOrigin {
+  if (from === 'results') {
+    return { label: 'Results', href: '/results', trail: [{ label: 'Results', href: '/results' }], from }
+  }
   if (from?.startsWith('term:')) {
     const term = termsOrdered.find((t) => t.id === from.slice('term:'.length))
     if (term) {

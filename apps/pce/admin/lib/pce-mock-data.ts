@@ -1183,6 +1183,14 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   { id: 'mon13', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I',  term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 68, responseCount: 37, enrollmentCount: 55, minimumThreshold: 40, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
   { id: 'mon14', courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 37, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
 
+  // Faculty-persona gate demos (ST-14/15): the faculty toggle keeps facultyId f1
+  // (Patel), so she needs OWN rows in every gate state — DPT-504/mon13 belong to
+  // Kim and gate 1 blocks cross-faculty access.
+  // grades not submitted → locked "Review Pending" reachable as faculty.
+  { id: 'mon15', courseCode: 'DPT-560', courseName: 'Clinical Reasoning Seminar',           term: 'Spring 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',   gradesSubmitted: false, instructors: [INSTRUCTORS.patel], responseRate: 76, responseCount: 38, enrollmentCount: 50, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+  // below minimumThreshold → suppressed "Draft" reachable as faculty.
+  { id: 'mon16', courseCode: 'DPT-565', courseName: 'Evidence-Based Practice Seminar',      term: 'Spring 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',   instructors: [INSTRUCTORS.patel], responseRate: 25, responseCount: 3, enrollmentCount: 12, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+
   // Programmatic (institutional) surveys with real response data — feed the
   // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
   { id: 'pg1', courseCode: 'End-of-Program Satisfaction — Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
