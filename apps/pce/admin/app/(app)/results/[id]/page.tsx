@@ -73,7 +73,7 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
-import { BarChart, ComposedChart, Bar, LabelList, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
@@ -566,17 +566,32 @@ function ScoreCard({
   title,
   value,
   programAvg,
-  prior,
+  priors,
 }: {
   title: string
   value: number | null
   programAvg: number | null
-  prior: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] } | null
+  priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
 }) {
   const delta = value != null && programAvg != null ? value - programAvg : null
+  const prior = priors.length > 0 ? priors[priors.length - 1] : null
   const actionItems = [...(prior?.actionItems ?? [])].sort(
     (a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9),
   )
+  /* Slope geometry — two time points on a shared 3–5 window (a full line chart
+     is overkill for two points; the direction IS the message). */
+  const yFor = (v: number) => 40 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 36
+  /* One narrative line, trend only — the badge already owns the program gap. */
+  const trendPhrase = (() => {
+    if (value == null || !prior) return null
+    const best = Math.max(...priors.map((p) => p.avg))
+    if (value >= best) {
+      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}.`
+    }
+    const d = value - prior.avg
+    if (Math.abs(d) <= 0.05) return `Holding steady since ${prior.term}.`
+    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} from ${prior.term}.`
+  })()
   return (
     <Card>
       <CardContent className="pt-6 flex flex-col gap-2">
@@ -603,15 +618,40 @@ function ScoreCard({
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
-          {prior && (
-            <>
-              {' · '}
+        {prior && value != null ? (
+          <div
+            role="img"
+            aria-label={`${title} moved from ${prior.avg.toFixed(2)} in ${prior.term} to ${value.toFixed(2)} this term${programAvg != null ? `; program average ${programAvg.toFixed(2)}` : ''}`}
+          >
+            <svg viewBox="0 0 208 44" className="w-52 h-11" aria-hidden="true">
+              {programAvg != null && (
+                <line
+                  x1="12"
+                  x2="196"
+                  y1={yFor(programAvg)}
+                  y2={yFor(programAvg)}
+                  stroke="var(--border)"
+                  strokeWidth="1.5"
+                  strokeDasharray="3 4"
+                />
+              )}
+              <line
+                x1="12"
+                x2="196"
+                y1={yFor(prior.avg)}
+                y2={yFor(value)}
+                stroke="var(--foreground)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy={yFor(prior.avg)} r="3" fill="var(--muted-foreground)" />
+              <circle cx="196" cy={yFor(value)} r="3.5" fill={scoreColor(value)} />
+            </svg>
+            <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="underline decoration-dotted underline-offset-2 cursor-help">
-                    {prior.term}: {prior.avg.toFixed(2)}
+                    {prior.term} · {prior.avg.toFixed(2)}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -629,9 +669,15 @@ function ScoreCard({
                   )}
                 </TooltipContent>
               </Tooltip>
-            </>
-          )}
-        </p>
+              {programAvg != null && <span>prog {programAvg.toFixed(2)} ┄</span>}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
+          </p>
+        )}
+        {trendPhrase && <p className="text-xs text-muted-foreground">{trendPhrase}</p>}
       </CardContent>
     </Card>
   )
@@ -648,8 +694,6 @@ interface ThemeRowDatum {
   avg: number
   questions: number
   programAvg: number | null
-  /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5. */
-  dist: [number, number, number, number, number]
 }
 
 /* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
@@ -661,81 +705,132 @@ const RATING_SERIES = [
   { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
 ] as const
 
-const ratingMixConfig: ChartConfig = Object.fromEntries(
-  RATING_SERIES.map((s) => [s.key, { label: s.label, color: s.color }]),
-) as ChartConfig
+/* Shared 3–5 score window for every dot mark on this page — 1–5 rating data
+   lives between 3.5 and 5, so the full range compresses every real difference
+   to a few pixels. Dots (not bars) tolerate a zoomed domain honestly. */
+const posScore = (v: number) => `${((Math.min(5, Math.max(3, v)) - 3) / 2) * 100}%`
+
+function ScoreAxisTicks() {
+  return (
+    <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+      <span className="absolute left-0">3.0</span>
+      <span className="absolute left-1/4 -translate-x-1/2">3.5</span>
+      <span className="absolute left-1/2 -translate-x-1/2">4.0</span>
+      <span className="absolute left-3/4 -translate-x-1/2">4.5</span>
+      <span className="absolute right-0">5.0</span>
+    </div>
+  )
+}
 
 function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
-  /* Dovetail-themes row anatomy: quiet thin value line + printed score as the
-     hero (Hotjar results). Amber only below threshold — no color spray. */
-  const fill = (avg: number) => (avg >= 3.7 ? 'var(--chart-2)' : 'var(--chip-4)')
-  const pct = (v: number) => `${(Math.min(5, Math.max(0, v)) / 5) * 100}%`
+  /* Sort by gap vs program, worst first — the deficit IS the story (Culture
+     Amp delta framing); themes without a benchmark sink to the end. */
+  const gapKey = (t: ThemeRowDatum) =>
+    t.programAvg != null ? t.avg - t.programAvg : Number.POSITIVE_INFINITY
+  const sorted = [...themes].sort((a, b) => gapKey(a) - gapKey(b) || a.avg - b.avg)
   const weakest = [...themes].sort((a, b) => a.avg - b.avg)[0]
   const themeLeo: ChartLeoInsight = {
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — the tick marks it on the line.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — the hollow ring marks it.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
+  }
+  const gapLabel = (t: ThemeRowDatum) => {
+    if (t.programAvg == null) return null
+    const d = t.avg - t.programAvg
+    if (Math.abs(d) < 0.05) return 'at program'
+    return `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} vs program`
   }
   return (
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Average score per theme, out of 5 · tick = program average${partial ? ' · partial data' : ''}`}
+      description={`Average score per theme · filled dot = this course · ring = program average · 3–5 window${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Average score per question theme on a 1 to 5 scale with the program average marked per theme. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Average score per question theme on a 3 to 5 window with the program average marked per theme, sorted by gap. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
         {() => (
           <>
             <div className="flex flex-col">
-              {themes.map((t) => (
-                <div
-                  key={t.theme}
-                  role="img"
-                  aria-label={`${t.theme}: this course ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''}`}
-                  className="grid grid-cols-[minmax(160px,220px)_1fr_4.5rem] items-center gap-6 py-3.5 border-b border-border last:border-0"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm truncate">{t.theme}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.questions} question{t.questions !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <div className="relative h-1.5 rounded-full bg-muted" aria-hidden="true">
-                    <div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: pct(t.avg), background: fill(t.avg) }}
-                    />
-                    {t.programAvg != null && (
+              <div className="grid grid-cols-[minmax(160px,220px)_1fr_5.5rem] items-end gap-6 pb-1">
+                <span />
+                <ScoreAxisTicks />
+                <span />
+              </div>
+              {sorted.map((t) => {
+                const below = t.programAvg != null && t.avg < t.programAvg - 0.049
+                return (
+                  <div
+                    key={t.theme}
+                    role="img"
+                    aria-label={`${t.theme}: this course ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''}`}
+                    className="grid grid-cols-[minmax(160px,220px)_1fr_5.5rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm truncate">{t.theme}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.questions} question{t.questions !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="relative h-6" aria-hidden="true">
+                      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-muted" />
+                      {[0.25, 0.5, 0.75].map((f) => (
+                        <span
+                          key={f}
+                          className="absolute top-1/2 h-2 w-px -translate-y-1/2 bg-border"
+                          style={{ left: `${f * 100}%` }}
+                        />
+                      ))}
+                      {t.programAvg != null && (
+                        <span
+                          className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full"
+                          style={{
+                            left: `min(${posScore(t.avg)}, ${posScore(t.programAvg)})`,
+                            width: `calc(max(${posScore(t.avg)}, ${posScore(t.programAvg)}) - min(${posScore(t.avg)}, ${posScore(t.programAvg)}))`,
+                            background: below ? 'var(--chip-4)' : 'var(--border)',
+                          }}
+                        />
+                      )}
+                      {t.programAvg != null && (
+                        <span
+                          className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
+                          style={{ left: posScore(t.programAvg), borderColor: 'var(--muted-foreground)' }}
+                        />
+                      )}
                       <span
-                        className="absolute -top-1 -bottom-1 w-0.5 rounded-full"
-                        style={{ left: pct(t.programAvg), background: 'var(--foreground)' }}
+                        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        style={{ left: posScore(t.avg), background: scoreColor(t.avg) }}
                       />
-                    )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm tabular-nums font-semibold">
+                        {t.avg.toFixed(1)}
+                        <span className="text-xs text-muted-foreground font-normal"> /5</span>
+                      </p>
+                      {gapLabel(t) && (
+                        <p
+                          className="text-xs tabular-nums"
+                          style={{ color: below ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
+                        >
+                          {gapLabel(t)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm tabular-nums font-semibold">
-                      {t.avg.toFixed(1)}
-                      <span className="text-xs text-muted-foreground font-normal"> /5</span>
-                    </p>
-                    {t.programAvg != null && (
-                      <p className="text-xs text-muted-foreground tabular-nums">prog {t.programAvg.toFixed(1)}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <ChartDataTable
               caption="Theme-wise distribution"
               headers={['Theme', 'This course', 'Program average', 'Questions']}
-              rows={themes.map((t) => [
+              rows={sorted.map((t) => [
                 t.theme,
                 `${t.avg.toFixed(1)}/5`,
                 t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
@@ -768,44 +863,108 @@ interface BreakdownRow {
   freeTextCount?: number
 }
 
-function MiniRatingColumns({ counts, total }: { counts: number[]; total: number }) {
+/** % of responses rated 4 or 5 — the favorable share that orders and labels
+ *  each question row. */
+function favorableShare(counts: number[] | undefined, total: number | undefined): number {
+  if (!counts || !total) return 0
+  return ((counts[3] ?? 0) + (counts[4] ?? 0)) / total
+}
+
+/* One 100%-stacked Likert bar per question — the favorable share is the story
+   (Datawrapper's case against diverging bars); per-rating counts live on
+   hover and in the data table, not printed ten times per row. */
+function LikertBar({ counts, total }: { counts: number[]; total: number }) {
+  const fav = Math.round(favorableShare(counts, total) * 100)
   return (
-    <div className="flex items-end gap-3" aria-hidden="true">
-      {RATING_SERIES.map((s, i) => {
-        const n = counts[i] ?? 0
-        const share = total > 0 ? n / total : 0
-        return (
-          <div key={s.key} className="flex flex-col items-center gap-0.5 w-8">
-            <span className="text-xs tabular-nums text-muted-foreground">{n}</span>
-            <div className="relative h-10 w-5 rounded-sm bg-muted overflow-hidden">
-              <div
-                className="absolute inset-x-0 bottom-0 rounded-sm"
-                style={{ height: `${Math.max(share * 100, n > 0 ? 8 : 0)}%`, background: s.color, opacity: s.opacity }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className="flex items-center gap-2"
+          role="img"
+          aria-label={`${fav} percent rated 4 or 5 of ${total} responses`}
+        >
+          <div className="flex h-2.5 w-40 shrink-0 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+            {RATING_SERIES.map((s, i) => {
+              const n = counts[i] ?? 0
+              if (n === 0 || total === 0) return null
+              return (
+                <div
+                  key={s.key}
+                  className="h-full rounded-[1px]"
+                  style={{ width: `${(n / total) * 100}%`, background: s.color, opacity: s.opacity }}
+                />
+              )
+            })}
           </div>
-        )
-      })}
-    </div>
+          <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+            {fav}% rated 4–5
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex flex-col gap-0.5 tabular-nums">
+          {RATING_SERIES.map((s, i) => {
+            const n = counts[i] ?? 0
+            return (
+              <p key={s.key}>
+                {s.label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
+              </p>
+            )
+          }).reverse()}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
-function ScoreMiniBar({ label, value, color }: { label: string; value: number | null | undefined; color: string }) {
+/* You / median / program as point marks on the shared 3–5 window — one row of
+   dots replaces three near-identical full-range bars. */
+function CompareDots({
+  avg,
+  median,
+  programAvg,
+}: {
+  avg: number | null | undefined
+  median: number | null | undefined
+  programAvg: number | null | undefined
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground w-14 shrink-0">{label}</span>
-      <div className="relative h-1.5 w-24 rounded-full bg-muted" aria-hidden="true">
-        {value != null && (
-          <div
-            className="absolute inset-y-0 left-0 rounded-full"
-            style={{ width: `${(Math.min(5, Math.max(0, value)) / 5) * 100}%`, background: color }}
+    <div
+      className="flex flex-col gap-1"
+      role="img"
+      aria-label={`Your average ${avg != null ? avg.toFixed(1) : 'not available'}, median ${median != null ? median.toFixed(1) : 'not available'}, program average ${programAvg != null ? programAvg.toFixed(1) : 'not available'}, on a 3 to 5 window`}
+    >
+      <div className="relative h-6" aria-hidden="true">
+        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-muted" />
+        {[0.25, 0.5, 0.75].map((f) => (
+          <span
+            key={f}
+            className="absolute top-1/2 h-2 w-px -translate-y-1/2 bg-border"
+            style={{ left: `${f * 100}%` }}
+          />
+        ))}
+        {median != null && (
+          <span
+            className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ left: posScore(median), background: 'var(--foreground)' }}
+          />
+        )}
+        {programAvg != null && (
+          <span
+            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-card"
+            style={{ left: posScore(programAvg), borderColor: 'var(--muted-foreground)' }}
+          />
+        )}
+        {avg != null && (
+          <span
+            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ left: posScore(avg), background: scoreColor(avg) }}
           />
         )}
       </div>
-      <span className="text-xs tabular-nums font-medium w-7 text-right">
-        {value != null ? value.toFixed(1) : '—'}
-      </span>
+      <p className="text-xs text-muted-foreground tabular-nums">
+        you {avg != null ? avg.toFixed(1) : '—'} · prog {programAvg != null ? programAvg.toFixed(1) : '—'}
+      </p>
     </div>
   )
 }
@@ -876,44 +1035,43 @@ function QuestionBreakdownTable({
 }) {
   if (rows.length === 0) return null
   const groups = [...new Set(rows.map((r) => r.group))]
+  /* Within each group: lowest favorable share first (the fix-first order);
+     free-text rows keep the tail. */
+  const orderedFor = (group: string) =>
+    rows
+      .filter((r) => r.group === group)
+      .sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'freeText' ? 1 : -1
+        if (a.kind === 'freeText') return 0
+        return favorableShare(a.counts, a.total) - favorableShare(b.counts, b.total)
+      })
   return (
     <div className="flex flex-col">
-      {/* Column header + the 1–5 scale, printed once */}
       <div className="grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <div className="flex gap-3" aria-hidden="true">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
-          ))}
-        </div>
-        <span className="text-xs text-muted-foreground">Scores</span>
+        <span className="text-xs text-muted-foreground">Rating mix</span>
+        <span className="text-xs text-muted-foreground">You vs program · 3–5</span>
       </div>
       {groups.map((group) => (
         <Fragment key={group}>
           <div className="bg-muted/50 -mx-6 px-6 py-1.5 border-b border-border">
             <span className="text-xs font-medium text-muted-foreground">{group}</span>
           </div>
-          {rows
-            .filter((r) => r.group === group)
-            .map((r) =>
-              r.kind === 'rated' ? (
-                <div
-                  key={r.id}
-                  id={`question-${r.id}`}
-                  className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-center gap-6 py-3 border-b border-border last:border-0"
-                >
-                  <p className="text-sm min-w-0">{r.label}</p>
-                  <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
-                  <div className="flex flex-col gap-1" role="img" aria-label={`Your average ${r.avg?.toFixed(1)}, median ${r.median?.toFixed(1)}, program average ${r.programAvg != null ? r.programAvg.toFixed(1) : 'not available'}`}>
-                    <ScoreMiniBar label="Your avg" value={r.avg} color="var(--chart-2)" />
-                    <ScoreMiniBar label="Median" value={r.median} color="var(--foreground)" />
-                    <ScoreMiniBar label="Prog avg" value={r.programAvg} color="var(--border-control-35)" />
-                  </div>
-                </div>
-              ) : (
-                <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
-              ),
-            )}
+          {orderedFor(group).map((r) =>
+            r.kind === 'rated' ? (
+              <div
+                key={r.id}
+                id={`question-${r.id}`}
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-center gap-6 py-3 border-b border-border last:border-0"
+              >
+                <p className="text-sm min-w-0">{r.label}</p>
+                <LikertBar counts={r.counts ?? []} total={r.total ?? 0} />
+                <CompareDots avg={r.avg} median={r.median} programAvg={r.programAvg} />
+              </div>
+            ) : (
+              <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
+            ),
+          )}
         </Fragment>
       ))}
       <ChartDataTable
@@ -1335,15 +1493,12 @@ function ResultDetail({
     for (const theme of THEME_ORDER) {
       const qs = mine.filter((x) => x.theme === theme)
       if (qs.length === 0) continue
-      const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
-      qs.forEach((x) => (x.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
       const prog = program.filter((x) => x.theme === theme)
       rows.push({
         theme,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
         questions: qs.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
-        dist,
       })
     }
     return rows
@@ -1406,6 +1561,16 @@ function ResultDetail({
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
   const concernThemes = aiThemes.filter((t) => t.sentiment === 'concern')
+  /* Collapsed-state preview — the card says something before it's expanded
+     (Hotjar's sentiment-quote row): counts + one representative quote, a
+     constructive one first since that's the actionable read. */
+  const sentimentCounts = {
+    positive: visibleComments.filter((c) => c.sentiment === 'positive').length,
+    concern: visibleComments.filter((c) => c.sentiment === 'concern').length,
+    neutral: visibleComments.filter((c) => c.sentiment === 'neutral').length,
+  }
+  const previewQuote =
+    visibleComments.find((c) => c.sentiment === 'concern') ?? visibleComments[0] ?? null
 
   const RECOMMENDATION: Record<string, string> = {
     Pacing: 'Revisit the weekly cadence — students flagged pacing; consider spreading the heaviest units.',
@@ -1426,6 +1591,10 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* Release feedback — the header comment's promised LocalBanner state flip
+     (toast banned); success must be announced, not inferred from a button
+     disappearing. */
+  const [releaseSuccess, setReleaseSuccess] = useState(false)
   function goTo(id: string, expand?: 'questions' | 'comments') {
     const wasClosed =
       (expand === 'questions' && !qbOpen) || (expand === 'comments' && !qualOpen)
@@ -1576,7 +1745,14 @@ function ResultDetail({
             {!inCollection && (
               <>
                 {isPD && !scopedFaculty.releasedToFaculty && (
-                  <Button variant="outline" size="sm" onClick={onRelease}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRelease()
+                      setReleaseSuccess(true)
+                    }}
+                  >
                     {facultyScope === 'all'
                       ? 'Enable faculty access'
                       : `Enable access for ${scopedFaculty.facultyName}`}
@@ -1671,18 +1847,69 @@ function ResultDetail({
                     </span>
                   </div>
                 )}
+                {releaseSuccess && (
+                  <LocalBanner
+                    variant="success"
+                    title="Faculty access enabled"
+                    dismissible
+                    onDismiss={() => setReleaseSuccess(false)}
+                  >
+                    Results for {result.courseCode} are now visible to faculty.
+                  </LocalBanner>
+                )}
+                {/* The verdict leads (Aarti 2026-05-08: AI themes inline, never a
+                    separate "click here for insights" section at the bottom). */}
+                {ownerInsights && aiThemes.length > 0 && (
+                  <AiInsightCard
+                    source={`${visibleComments.length} open-text response${visibleComments.length !== 1 ? 's' : ''} · ${aiThemes.length} theme${aiThemes.length !== 1 ? 's' : ''} identified`}
+                    body={
+                      <div className="flex flex-col gap-3">
+                        <p className="text-sm">
+                          Students most often mentioned{' '}
+                          <strong>{topThemes[0]?.label.toLowerCase()}</strong>
+                          {concernThemes.length > 0
+                            ? ` — ${concernThemes.length} theme${concernThemes.length !== 1 ? 's carry' : ' carries'} concerns.`
+                            : ' — feedback is broadly positive.'}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {topThemes.map((t) => (
+                            <span
+                              key={t.label}
+                              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
+                              style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
+                            >
+                              <SentimentDot sentiment={t.sentiment} />
+                              {t.label}
+                              <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    }
+                  />
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ScoreCard
                     title="Course Content"
                     value={courseAvg}
                     programAvg={programCourseAvg}
-                    prior={prior ? { term: prior.term, avg: prior.courseAvg, actionItems: prior.actionItems } : null}
+                    priors={(survey.priorOfferings ?? []).map((p) => ({
+                      term: p.term,
+                      avg: p.courseAvg,
+                      actionItems: p.actionItems,
+                    }))}
                   />
                   <ScoreCard
                     title="Faculty Performance"
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
-                    prior={prior && prior.facultyAvg != null ? { term: prior.term, avg: prior.facultyAvg, actionItems: prior.actionItems } : null}
+                    priors={(survey.priorOfferings ?? [])
+                      .filter((p) => p.facultyAvg != null)
+                      .map((p) => ({
+                        term: p.term,
+                        avg: p.facultyAvg as number,
+                        actionItems: p.actionItems,
+                      }))}
                   />
                 </div>
               </div>
@@ -1703,7 +1930,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · your / median / program comparison
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · rating mix + you vs program
                         </CardDescription>
                         <CardAction>
                           <i
@@ -1735,10 +1962,12 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Qualitative feedback</CardTitle>
                         <CardDescription>
                           {visibleComments.length} student comment{visibleComments.length !== 1 ? 's' : ''}
-                          {concernThemes.length > 0
-                            ? ` · ${concernThemes.length} theme${concernThemes.length !== 1 ? 's' : ''} with concerns`
-                            : ''}
-                          {ownerInsights ? ' · AI summary and themes' : ''}
+                          {sentimentCounts.positive > 0 ? ` · ${sentimentCounts.positive} positive` : ''}
+                          {sentimentCounts.concern > 0 ? ` · ${sentimentCounts.concern} constructive` : ''}
+                          {sentimentCounts.neutral > 0 ? ` · ${sentimentCounts.neutral} neutral` : ''}
+                          {previewQuote ? (
+                            <span className="block italic truncate">&ldquo;{previewQuote.text}&rdquo;</span>
+                          ) : null}
                         </CardDescription>
                         <CardAction>
                           <i
@@ -1753,41 +1982,6 @@ function ResultDetail({
                         <p className="text-xs text-muted-foreground">
                           Anonymized responses — individual authorship cannot be identified.
                         </p>
-                        {ownerInsights && aiThemes.length > 0 && (
-                          <AiInsightCard
-                            source={`${visibleComments.length} open-text response${visibleComments.length !== 1 ? 's' : ''} · ${aiThemes.length} theme${aiThemes.length !== 1 ? 's' : ''} identified`}
-                            body={
-                              <div className="flex flex-col gap-3">
-                                <p className="text-sm">
-                                  Students most often mentioned{' '}
-                                  <strong>{topThemes[0]?.label.toLowerCase()}</strong>
-                                  {concernThemes.length > 0
-                                    ? ` — ${concernThemes.length} theme${concernThemes.length !== 1 ? 's carry' : ' carries'} concerns.`
-                                    : ' — feedback is broadly positive.'}
-                                </p>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                                    What students are saying
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {topThemes.map((t) => (
-                                      <span
-                                        key={t.label}
-                                        className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
-                                        style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
-                                      >
-                                        <SentimentDot sentiment={t.sentiment} />
-                                        {t.label}
-                                        <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            }
-                          />
-                        )}
-
                         <CommentList
                           title="Course related comments"
                           comments={courseComments}

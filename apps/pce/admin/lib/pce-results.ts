@@ -50,6 +50,9 @@ export interface EvalResult {
   status: ResultDisplayStatus
   /** True when 2+ results share courseCode + term (multi-faculty offering). */
   coTaught: boolean
+  /** Prior offerings plus this one as a single overall series (mean of course
+   *  and faculty averages per term) — powers the list-card sparkline. */
+  trend: { term: string; value: number }[]
 }
 
 /** Surveys that have finished collecting — the only ones that produce results. */
@@ -107,6 +110,11 @@ export function deriveResultsForSurvey(s: PceSurvey): EvalResult[] {
   const gates = resultGates(s)
   const avgScore = avgScoreFor(s.id)
   const coTaught = s.instructors.length > 1
+  const priorPoints = (s.priorOfferings ?? []).map((p) => ({
+    term: p.term,
+    value: p.facultyAvg != null ? (p.courseAvg + p.facultyAvg) / 2 : p.courseAvg,
+  }))
+  const trend = avgScore != null ? [...priorPoints, { term: s.term, value: avgScore }] : priorPoints
   return s.instructors.map((i) => {
     const directory = MOCK_FACULTY.find((f) => f.id === i.id)
     return {
@@ -127,8 +135,20 @@ export function deriveResultsForSurvey(s: PceSurvey): EvalResult[] {
       avgScore,
       ...gates,
       coTaught,
+      trend,
     }
   })
+}
+
+/** Mean available score per program — the list-card benchmark tick. */
+export function programScoreBenchmarks(results: EvalResult[]): Map<string, number> {
+  const acc = new Map<string, { sum: number; n: number }>()
+  for (const r of results) {
+    if (r.status !== 'available' || r.avgScore == null) continue
+    const cur = acc.get(r.program) ?? { sum: 0, n: 0 }
+    acc.set(r.program, { sum: cur.sum + r.avgScore, n: cur.n + 1 })
+  }
+  return new Map([...acc].map(([program, v]) => [program, v.sum / v.n]))
 }
 
 /** One result per (finished survey × instructor). */
