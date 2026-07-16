@@ -710,16 +710,17 @@ interface ThemeRowDatum {
   dist: [number, number, number, number, number]
 }
 
-/* Ordered 1–5 rating ramp — ONE hue, more-is-darker (sequential is the safe
-   default for an ordered scale; the old amber low end read brown as a wide
-   solid — Romit 2026-07-16). Opacity steps over the card surface compose a
-   validated monotonic lightness ramp of --chart-2 (rel. luminance .78 → .14);
-   identity is position + gaps + legend, never color alone. */
+/* Diverging Likert palette from the DS chart tokens (Romit 2026-07-16):
+   warm low → neutral mid → cool high. 1 = --chart-5 orange, 2 = its tint,
+   3 = --border (the neutral midpoint is meant to be quiet), 4 = --chart-2
+   tint, 5 = --chart-2 teal — teal stays "good" page-wide. Composited pairs
+   validated: worst adjacent ΔE 15.9 normal / 14.7 CVD (chip-4 amber was
+   rejected — reads brown as a wide solid; mono-teal ramp rejected as flat). */
 const RATING_SERIES = [
-  { key: 'r1', label: 'Rated 1', color: 'var(--chart-2)', opacity: 0.16 },
-  { key: 'r2', label: 'Rated 2', color: 'var(--chart-2)', opacity: 0.38 },
-  { key: 'r3', label: 'Rated 3', color: 'var(--chart-2)', opacity: 0.62 },
-  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.82 },
+  { key: 'r1', label: 'Rated 1', color: 'var(--chart-5)', opacity: 1 },
+  { key: 'r2', label: 'Rated 2', color: 'var(--chart-5)', opacity: 0.5 },
+  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
+  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.5 },
   { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
 ] as const
 
