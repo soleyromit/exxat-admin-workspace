@@ -197,12 +197,30 @@ function FacultyScopeSelector({
   scope,
   setScope,
   isPD,
+  selfFacultyId,
 }: {
   instructors: EvalResult[]
   scope: 'all' | string
   setScope: (v: string) => void
   isPD: boolean
+  selfFacultyId?: string
 }) {
+  /* §7.3 — faculty never see peer scores. On a co-taught course the switcher is the
+     door to a colleague's numbers, so for non-admins it collapses to the self identity
+     and the scope is pinned by the caller. */
+  if (!isPD && instructors.length > 1) {
+    const self = instructors.find((f) => f.facultyId === selfFacultyId) ?? instructors[0]
+    if (!self) return null
+    return (
+      <div className="flex items-center gap-2">
+        <AvatarInitials initials={self.facultyInitials} className="size-7 text-xs" decorative />
+        <span className="text-sm font-semibold text-foreground">{self.facultyName}</span>
+        <span className="text-xs text-muted-foreground">
+          Co-taught · your results only
+        </span>
+      </div>
+    )
+  }
   if (instructors.length <= 1) {
     const f = instructors[0]
     if (!f) return null
@@ -1088,7 +1106,11 @@ function ResultDetailPageInner() {
      no derived result — "View results" on a live row lands on the locked
      message instead of a dead not-found. */
   if (!result || !survey) {
-    const liveSurvey = surveys.find((s) => s.id === rawId)
+    /* A composite `surveyId:facultyId` deep-link to a survey still collecting has no
+       derived result — strip the faculty suffix so it reaches the collecting gate
+       instead of dead-ending at not-found. */
+    const surveyPart = rawId.includes(':') ? rawId.slice(0, rawId.indexOf(':')) : rawId
+    const liveSurvey = surveys.find((s) => s.id === rawId || s.id === surveyPart)
     if (liveSurvey) {
       // PDs get the REAL layout with partial data (no placeholder — Romit
       // 2026-07-09); faculty keep the read-only collection gate (not released).
@@ -1215,7 +1237,7 @@ function ResultDetail({
   setExportKind: (k: 'pdf' | 'csv') => void
 }) {
   const origin = useResultsOrigin()
-  const { surveys } = usePce()
+  const { surveys, user } = usePce()
   const results = useMemo(() => deriveResults(surveys), [surveys])
   /* Live: one identity per instructor (name + email from the directory). */
   const liveFacultyRows = useMemo(
@@ -1225,7 +1247,12 @@ function ResultDetail({
 
   /* Report scope — live overviews/reports can be per-faculty (Romit): 'all'
    * or a single instructorId; the chips in the identity strip drive it. */
-  const [facultyScope, setFacultyScope] = useState<'all' | string>('all')
+  /* Admin opens on the whole course; faculty open — and stay — on themselves. The scope
+     state is what every tab below reads, so pinning only the selector chrome would still
+     pool a colleague's numbers into the charts (§7.3). */
+  const [facultyScope, setFacultyScope] = useState<'all' | string>(() =>
+    user.role === 'admin' ? 'all' : (user.facultyId ?? 'all'),
+  )
 
   /* Ops actions — the full set from the evaluations table (Romit 2026-07-09) */
   const [remindOpen, setRemindOpen] = useState(false)
@@ -1620,9 +1647,10 @@ function ResultDetail({
           <div className="flex items-center gap-3 flex-wrap">
             <FacultyScopeSelector
               instructors={inCollection ? liveFacultyRows : [result, ...siblings]}
-              scope={facultyScope}
-              setScope={setFacultyScope}
+              scope={isPD ? facultyScope : (user.facultyId ?? facultyScope)}
+              setScope={isPD ? setFacultyScope : () => {}}
               isPD={isPD}
+              selfFacultyId={user.facultyId ?? undefined}
             />
           </div>
 
