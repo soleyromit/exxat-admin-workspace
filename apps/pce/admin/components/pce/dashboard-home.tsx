@@ -134,15 +134,32 @@ function TermMetaLine({
   )
 }
 
-/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status). */
-function DaysLeftIndicator({ daysLeft, urgent }: { daysLeft: number; urgent: boolean }) {
+/** Countdown — plain text + clock, NOT a badge (it's a fact, not a status).
+ *
+ * Sits TOP-RIGHT inside the sub-card, opposite the heading (Romit,
+ * 2026-07-14). Top-right is a fixed anchor: "8 days left" and "Starts in
+ * 41 days" land in the same place regardless of length, and the CTA keeps
+ * its own row instead of being pushed down by a stacked countdown.
+ *
+ * `mode` carries the two readings — a window closing vs. a term approaching.
+ * Both are sentence case: "8 days left" opens on a digit, so only "Starts"
+ * shows the capital, and a lowercase twin would read as a broken fragment. */
+function CountdownIndicator({
+  days, urgent, mode,
+}: {
+  days: number
+  urgent: boolean
+  mode: 'left' | 'starts'
+}) {
   return (
     <span
       className="flex shrink-0 items-center gap-1.5 text-xs font-medium tabular-nums"
       style={{ color: urgent ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
     >
       <i className="fa-light fa-clock" aria-hidden="true" />
-      {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+      {mode === 'left'
+        ? `${days} ${days === 1 ? 'day' : 'days'} left`
+        : `Starts in ${days} ${days === 1 ? 'day' : 'days'}`}
     </span>
   )
 }
@@ -205,21 +222,9 @@ function CurrentTermCard({
           termId={term.id}
           badge={<StatusBadge label={POSITION_BADGE.current.label} tone={POSITION_BADGE.current.tone} />}
         />
-        <TermMetaLine
-          term={term}
-          /* Countdown is a TERM-level fact → it sits in the meta line next to
-           * the window (high in hierarchy, width-independent), never buried
-           * under a CTA inside the reminder block. */
-          trailing={
-            snap.daysLeft != null ? (
-              /* Separator wraps WITH its unit — never a dangling dot. */
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                {'· '}
-                <DaysLeftIndicator daysLeft={snap.daysLeft} urgent={urgent} />
-              </span>
-            ) : undefined
-          }
-        />
+        {/* No countdown here — it belongs with the action it qualifies, inside
+            the sub-card below (Romit, 2026-07-14). */}
+        <TermMetaLine term={term} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {noCourses ? (
@@ -263,6 +268,13 @@ function CurrentTermCard({
             </>
           )}
         </div>
+        {/* Countdown is a term-level date fact stated in the card body — the
+            upcoming card carries it as a "Starts in" row for the same reason.
+            Inside the alert it stole width and wrapped the heading; in the
+            meta line it floated free of anything it qualified. */}
+        {snap.daysLeft != null && (
+          <CountdownIndicator days={snap.daysLeft} urgent={urgent} mode="left" />
+        )}
         {atRisk.length > 0 && (
           /* Student-first framing (Romit: the goal is students filling the
            * evaluation — lead with who still needs to act, not course rates).
@@ -279,6 +291,8 @@ function CurrentTermCard({
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {/* Heading gets the full width — the countdown sits above as a
+                  card-level fact, so it can't wrap this to two lines. */}
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">
                   {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
@@ -288,8 +302,6 @@ function CurrentTermCard({
                   {term.lastReminderSentAt ? ` · last reminded ${daysAgo(term.lastReminderSentAt)}d ago` : ''}
                 </p>
               </div>
-              {/* Just the action — the countdown now lives in the meta line
-                  (a term-level fact), so it isn't stacked under the CTA. */}
               <Button variant="outline" size="sm" asChild className="self-start">
                 <Link href={`/surveys/remind?from=term:${term.id}`}>Send reminders</Link>
               </Button>
@@ -397,6 +409,17 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
       value: dated && !noSetup ? `${win.open.replace(/, \d{4}$/, '')} – ${win.close}` : 'Not set yet',
       icon: 'fa-calendar-check',
     },
+    /* The countdown is a DATE FACT — it belongs with Term dates / Survey dates,
+       not inside the alert, where it stole width and wrapped the heading
+       (Romit, 2026-07-14). Only when dated; otherwise there's nothing to
+       count down to and "Term dates: Not set yet" already says so. */
+    ...(startsIn != null
+      ? [{
+          label: 'Starts in',
+          value: `${startsIn} ${startsIn === 1 ? 'day' : 'days'}`,
+          icon: 'fa-clock',
+        }]
+      : []),
   ]
   return (
     <Card>
@@ -412,13 +435,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
              line stays to the AY + countdown so it never reads "window not
              set · starts in Nd", which conflated two facts. */
           hideWindow
-          /* Countdown is a term-level fact → always in the meta line (matches
-             the current card), never inside a body block. */
-          trailing={
-            dated
-              ? <span className="whitespace-nowrap tabular-nums">· starts in {startsIn}d</span>
-              : undefined
-          }
+          /* No countdown here — it sits with the action inside the sub-card
+             below, matching the current card (Romit, 2026-07-14). */
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -465,6 +483,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {/* Heading gets the full width — the countdown lives in the rows
+                  above as a date fact, so it can't wrap this to two lines. */}
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">
                   {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
@@ -473,7 +493,6 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                   Missing faculty or student rosters
                 </p>
               </div>
-              {/* Just the action — the countdown lives in the meta line. */}
               <Button variant="outline" size="sm" asChild className="self-start">
                 <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
               </Button>
