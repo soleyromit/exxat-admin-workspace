@@ -105,10 +105,34 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
-      # Give Vercel ~90s to finish deploying before we check
+      # Wait for Vercel's OWN status instead of a blind sleep.
+      # `sleep 90` from job start is a coin flip: on the #43 merge it expired before
+      # the dev alias flipped, so the scan hit the PREVIOUS build and reported 4
+      # criticals that the merge had just fixed — plus "(1 failed)", because
+      # /moderation was still 500 on that stale build. A timer cannot know when a
+      # deployment lands; the commit status does.
       - name: Wait for Vercel deployment
         if: github.event_name == 'push'
-        run: sleep 90
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          STATUS_CTX: 'Vercel – exxat-pce-admin'
+        run: |
+          for i in $(seq 1 60); do
+            S=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/statuses" \
+                 --jq '[.[]|select(.context==env.STATUS_CTX)]|max_by(.created_at)|.state // "none"' \
+                 2>/dev/null || echo none)
+            case "$S" in
+              success)
+                echo "$STATUS_CTX: success — letting the alias settle."
+                sleep 20; exit 0 ;;
+              failure|error)
+                echo "::warning::$STATUS_CTX reports $S; scanning whatever the alias serves."
+                exit 0 ;;
+            esac
+            sleep 15
+          done
+          echo "::warning::Timed out waiting for $STATUS_CTX; scanning whatever the alias serves." 
 
       # Resolve the preview URL from Vercel's OWN GitHub deployment rather than
       # guessing the hostname. The guess was broken three ways at once:
@@ -305,9 +329,34 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
+      # Wait for Vercel's OWN status instead of a blind sleep.
+      # `sleep 90` from job start is a coin flip: on the #43 merge it expired before
+      # the dev alias flipped, so the scan hit the PREVIOUS build and reported 4
+      # criticals that the merge had just fixed — plus "(1 failed)", because
+      # /moderation was still 500 on that stale build. A timer cannot know when a
+      # deployment lands; the commit status does.
       - name: Wait for Vercel deployment
         if: github.event_name == 'push'
-        run: sleep 90
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          STATUS_CTX: 'Vercel – exxat-exam-management-admin'
+        run: |
+          for i in $(seq 1 60); do
+            S=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/statuses" \
+                 --jq '[.[]|select(.context==env.STATUS_CTX)]|max_by(.created_at)|.state // "none"' \
+                 2>/dev/null || echo none)
+            case "$S" in
+              success)
+                echo "$STATUS_CTX: success — letting the alias settle."
+                sleep 20; exit 0 ;;
+              failure|error)
+                echo "::warning::$STATUS_CTX reports $S; scanning whatever the alias serves."
+                exit 0 ;;
+            esac
+            sleep 15
+          done
+          echo "::warning::Timed out waiting for $STATUS_CTX; scanning whatever the alias serves." 
 
       # Resolve the preview URL from Vercel's OWN GitHub deployment rather than
       # guessing the hostname. The guess was broken three ways at once:
