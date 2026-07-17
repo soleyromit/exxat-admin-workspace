@@ -19,9 +19,8 @@
 //   Spec's red coding → amber (aarti_no_red).
 //
 // DS OS: PageHeader · LocalBanner · Tabs · Card · Collapsible · StatusBadge ·
-// PersonIdentityCell · ExportDrawer. Composes existing QuestionChartBlock
-// (distribution + median/program benchmarks) and AiInsightCard. Theme viz is
-// a strip/dot plot vs program benchmark (bars are last resort — viz rules).
+// PersonIdentityCell · ExportDrawer. AI insight card removed (Romit
+// 2026-07-17). Theme viz: per-theme stacked rating bars (shared rating-viz).
 // Mobbin: Zoom survey results (tabs + per-question) · Dovetail (themes) ·
 // Gorgias (comments + download).
 // ============================================================================
@@ -81,10 +80,9 @@ import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
-import { deriveThemes, type ThemeSentiment } from '@/lib/pce-themes'
+import { deriveThemes } from '@/lib/pce-themes'
 import {
   MOCK_RESPONSES,
   MOCK_SURVEY_QUESTION_DATA,
@@ -442,19 +440,6 @@ const SENTIMENT_FILTERS = [
   { key: 'neutral', label: 'Neutral' },
 ] as const
 type SentimentFilter = (typeof SENTIMENT_FILTERS)[number]['key']
-
-function SentimentDot({ sentiment }: { sentiment: ThemeSentiment }) {
-  const color =
-    sentiment === 'positive' ? 'var(--chart-2)' :
-    sentiment === 'concern' ? 'var(--chart-4)' :
-    'var(--muted-foreground)'
-  return (
-    <span
-      aria-hidden="true"
-      style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }}
-    />
-  )
-}
 
 /** Indexed comment — index refers to the position in responses.comments,
  *  which is what hiddenComments[surveyId] stores. */
@@ -1748,37 +1733,8 @@ function ResultDetail({
                     Results for {result.courseCode} are now visible to faculty.
                   </LocalBanner>
                 )}
-                {/* The verdict leads (Aarti 2026-05-08: AI themes inline, never a
-                    separate "click here for insights" section at the bottom). */}
-                {ownerInsights && aiThemes.length > 0 && (
-                  <AiInsightCard
-                    source={`${visibleComments.length} open-text response${visibleComments.length !== 1 ? 's' : ''} · ${aiThemes.length} theme${aiThemes.length !== 1 ? 's' : ''} identified`}
-                    body={
-                      <div className="flex flex-col gap-3">
-                        <p className="text-sm">
-                          Students most often mentioned{' '}
-                          <strong>{topThemes[0]?.label.toLowerCase()}</strong>
-                          {concernThemes.length > 0
-                            ? ` — ${concernThemes.length} theme${concernThemes.length !== 1 ? 's carry' : ' carries'} concerns.`
-                            : ' — feedback is broadly positive.'}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {topThemes.map((t) => (
-                            <span
-                              key={t.label}
-                              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
-                              style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
-                            >
-                              <SentimentDot sentiment={t.sentiment} />
-                              {t.label}
-                              <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    }
-                  />
-                )}
+                {/* AI insight card removed (Romit 2026-07-17) — themes remain
+                    reachable via the Qualitative feedback section. */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ScoreCard
                     title="Course Content"
