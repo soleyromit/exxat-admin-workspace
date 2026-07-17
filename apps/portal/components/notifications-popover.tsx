@@ -47,9 +47,8 @@ export function NotificationsPopover() {
           <i className="fa-light fa-bell text-base" aria-hidden="true" />
           {unread > 0 && (
             <Badge
-              variant="default"
-              className="rounded absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] leading-none flex items-center justify-center"
-              style={{ backgroundColor: 'var(--destructive)', color: 'white', border: 'none' }}
+              variant="destructive"
+              className="rounded absolute -top-1 -right-1 h-4 min-w-4 px-1 text-xs leading-none flex items-center justify-center"
             >
               {unread}
             </Badge>
@@ -65,6 +64,12 @@ export function NotificationsPopover() {
         </div>
         <Separator />
         <div className="overflow-y-auto" style={{ maxHeight: 360 }}>
+          {NOTIFICATIONS.length === 0 && (
+            <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+              <i className="fa-light fa-bell-slash text-2xl text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">You&apos;re all caught up.</p>
+            </div>
+          )}
           {NOTIFICATIONS.map((n, i) => (
             <div key={n.id}>
               <div

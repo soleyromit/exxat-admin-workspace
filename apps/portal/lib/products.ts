@@ -42,6 +42,9 @@ export type Product =
       comingSoon?: never
       subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
       accountManager: { name: string; email: string }
+      worksWith?: string[]
+      /** Display names of program staff with access — drives the avatar rail. */
+      team?: string[]
     }
   | {
       id: string
@@ -62,7 +65,12 @@ export type Product =
       extra?: never
       subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
       accountManager: { name: string; email: string }
+      worksWith?: string[]
+      team?: string[]
     }
+
+/** Sales inbox for connect/express-interest CTAs — the sales pipeline itself is offline; the portal only surfaces the CTA. */
+export const SALES_EMAIL = 'sales@exxat.com'
 
 export const PRODUCTS: Product[] = [
   {
@@ -183,6 +191,8 @@ export const PRODUCTS: Product[] = [
     },
     subscriptionStatus: 'active',
     accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
+    worksWith: ['compliance-management'],
+    team: ['Dana Whitfield', 'Marcus Lee', 'Elena Torres', 'James Park', 'Aisha Patel', 'Noah Brooks'],
   },
   {
     id: 'pce',
@@ -257,6 +267,7 @@ export const PRODUCTS: Product[] = [
     studentUrl: process.env.NEXT_PUBLIC_PCE_STUDENT_URL ?? 'http://localhost:3006',
     subscriptionStatus: 'active',
     accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
+    team: ['Nora Blake', 'Sam Rivera', 'Grace Chen', 'Tom Okafor'],
   },
   {
     id: 'clinical-experiential-education',
@@ -279,6 +290,7 @@ export const PRODUCTS: Product[] = [
     comingSoon: true,
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
+    worksWith: ['compliance-management'],
   },
   {
     id: 'curriculum-mapping',
@@ -323,6 +335,7 @@ export const PRODUCTS: Product[] = [
     comingSoon: true,
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
+    worksWith: ['exam-management', 'clinical-experiential-education'],
   },
   {
     id: 'accreditation-management',

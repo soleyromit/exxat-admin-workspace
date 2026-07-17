@@ -1,8 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@exxatdesignux/ui'
+import {
+  Button,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@exxatdesignux/ui'
+import { stockPortraitUrl } from '@/lib/stock-portrait'
+import { initialsFromDisplayName } from '@/lib/initials-from-name'
 import type { Product } from '@/lib/products'
+
+const MAX_FACES = 4
 
 const STATUS_META: Record<Product['subscriptionStatus'], { label: string; color: string }> = {
   active: { label: 'Active', color: 'var(--brand-color)' },
@@ -44,6 +55,26 @@ export function ProductConnectorRow({ product }: { product: Product }) {
           <span className="text-sm text-muted-foreground truncate">{product.description}</span>
         </Link>
       </div>
+
+      {/* Access rail — who on the program team uses this product */}
+      {product.team && product.team.length > 0 && (
+        <div
+          className="relative z-10 hidden shrink-0 lg:block"
+          aria-label={`${product.team.length} people have access`}
+        >
+          <AvatarGroup>
+            {product.team.slice(0, MAX_FACES).map((name) => (
+              <Avatar key={name} size="sm" insetBorder>
+                <AvatarImage src={stockPortraitUrl(name)} alt="" />
+                <AvatarFallback>{initialsFromDisplayName(name)}</AvatarFallback>
+              </Avatar>
+            ))}
+            {product.team.length > MAX_FACES && (
+              <AvatarGroupCount>+{product.team.length - MAX_FACES}</AvatarGroupCount>
+            )}
+          </AvatarGroup>
+        </div>
+      )}
 
       {/* Right cluster — sits above the stretched link */}
       <div className="relative z-10 flex items-center gap-3 shrink-0">

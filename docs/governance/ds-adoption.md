@@ -89,6 +89,11 @@ When a product genuinely needs a custom component that overlaps a DS organism, a
 | `components/design-system/data-display-previews.tsx` (exam-management, patient-log, pce — Design OS shell) | n/a | DataTable (raw `<Table>` rule) | In-app DS documentation page that intentionally renders the raw `Table` primitive to demonstrate it. It documents the component; it is not product list UI. Allowlisted 2026-07-11 in `DOCUMENTED_HAND_ROLLS`. |
 | `apps/pce/admin/components/pce/micro-trend.tsx` + `apps/exam-management/admin/components/micro-trend.tsx` | ~190 each (identical) | Chart sparkline | Shared inline-SVG sparkline primitive (line + optional area-fill + optional last-point dot + optional reference line). Extracted 2026-05-11 from PCE's `trend-sparkline.tsx` and exam-management's `TrendRow` per chart depth audit. Used by PCE's TrendSparkline wrapper (`trend-sparkline.tsx`, ~110 LoC) and exam-management's TrendRow (curricular-loop-diagram.tsx l.797, ~70 LoC). Both vendors are byte-identical (audit-verified). Upstream candidate: when DS publishes `<MicroTrend>` in `packages/ui/src`, both vendors should delete + import; flag Himanshu when ready. |
 
+### Portal
+| File | Lines | Mirrors DS organism | Justification (with date + commit) |
+|---|---|---|---|
+| `apps/portal/components/product-detail-rail.tsx` | ~110 | None (marketplace detail rail) | Portal-specific marketplace-style rail on `/product/[id]`: subscription status (DS `StatusBadge`), account-manager identity (DS `AvatarInitials`), connect-with-sales CTA (DS `Button asChild` mailto), and "works with" product-link tile strip (no DS organism covers a product-link nav list; not `FilterChipGroup` — that is single-select filtering, not navigation). All atoms imported from `@exxatdesignux/ui`; gradient tiles use `--product-*` tokens only. ds-adoption-reviewer verdict 2026-07-17: rail = documented hand-roll, pieces = IMPORT. |
+
 ### PCE
 | File | Lines | Mirrors DS organism | Justification (with date + commit) |
 |---|---|---|---|

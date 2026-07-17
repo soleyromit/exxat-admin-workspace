@@ -10,8 +10,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  StatusBadge,
 } from '@exxatdesignux/ui'
-import { StatusBadge, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import type { Product } from '@/lib/products'
 
 function ProductHeader({ colorKey, icon, muted }: { colorKey: string; icon: string; muted?: boolean }) {
@@ -24,7 +24,7 @@ function ProductHeader({ colorKey, icon, muted }: { colorKey: string; icon: stri
     >
       <div
         className="flex h-14 w-14 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: 'color-mix(in oklch, var(--background) 25%, transparent)' }}
+        style={{ backgroundColor: 'var(--product-icon-backdrop)' }}
       >
         <i
           className={`fa-light ${icon} text-2xl`}
@@ -43,7 +43,7 @@ export function ProductCard({ product }: { product: Product }) {
         <ProductHeader colorKey={product.colorKey} icon={product.icon} muted />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-4 pb-4">
           <CardTitle className="text-base text-muted-foreground">{product.name}</CardTitle>
-          <StatusBadge label="Coming Soon" icon="fa-clock" tint={STATUS_TINT_NEUTRAL} />
+          <StatusBadge label="Coming Soon" tone="neutral" icon="fa-clock" size="md" />
         </CardHeader>
       </Card>
     )

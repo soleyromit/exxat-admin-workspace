@@ -117,6 +117,80 @@ export function FaasIllustration() {
   )
 }
 
+export function ClinicalIllustration() {
+  return (
+    <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      {/* Rotation route between sites */}
+      <path d="M 24 92 C 56 92 52 40 88 40 C 116 40 112 78 138 78" stroke="currentColor" strokeWidth="3.5" strokeDasharray="1 9" strokeLinecap="round" opacity="0.45" fill="none" />
+      {/* Site location pins along the route */}
+      <circle cx="24" cy="86" r="13" fill="currentColor" opacity="0.22" />
+      <path d="M 24 100 L 17 86 A 13 13 0 1 1 31 86 Z" fill="currentColor" opacity="0.22" />
+      <circle cx="24" cy="85" r="5" fill="currentColor" opacity="0.5" />
+      <circle cx="88" cy="34" r="11" fill="currentColor" opacity="0.18" />
+      <path d="M 88 46 L 82 34 A 11 11 0 1 1 94 34 Z" fill="currentColor" opacity="0.18" />
+      <circle cx="88" cy="33" r="4" fill="currentColor" opacity="0.45" />
+      {/* Destination clinic cross */}
+      <rect x="124" y="64" width="28" height="28" rx="6" fill="currentColor" opacity="0.22" />
+      <rect x="134" y="70" width="8" height="16" rx="2" fill="currentColor" opacity="0.5" />
+      <rect x="130" y="74" width="16" height="8" rx="2" fill="currentColor" opacity="0.5" />
+    </svg>
+  )
+}
+
+export function CurriculumIllustration() {
+  return (
+    <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      {/* Mapping edges */}
+      <path d="M 40 32 L 84 60 M 40 60 L 84 60 M 40 88 L 84 60 M 84 60 L 124 44 M 84 60 L 124 76" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity="0.3" />
+      {/* Course nodes (left column) */}
+      <rect x="22" y="24" width="20" height="16" rx="5" fill="currentColor" opacity="0.22" />
+      <rect x="22" y="52" width="20" height="16" rx="5" fill="currentColor" opacity="0.32" />
+      <rect x="22" y="80" width="20" height="16" rx="5" fill="currentColor" opacity="0.22" />
+      {/* Hub node */}
+      <circle cx="84" cy="60" r="12" fill="currentColor" opacity="0.45" />
+      {/* Standard nodes (right) */}
+      <rect x="120" y="34" width="22" height="18" rx="9" fill="currentColor" opacity="0.28" />
+      <rect x="120" y="66" width="22" height="18" rx="9" fill="currentColor" opacity="0.28" />
+    </svg>
+  )
+}
+
+export function ComplianceIllustration() {
+  return (
+    <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      {/* Shield */}
+      <path d="M 58 18 L 88 26 L 88 62 C 88 82 74 94 58 100 C 42 94 28 82 28 62 L 28 26 Z" fill="currentColor" opacity="0.2" />
+      <path d="M 44 58 L 54 68 L 74 46" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" fill="none" />
+      {/* Requirement checklist rows */}
+      <rect x="102" y="30" width="8" height="8" rx="2.5" fill="currentColor" opacity="0.5" />
+      <rect x="116" y="31.5" width="26" height="5" rx="2.5" fill="currentColor" opacity="0.3" />
+      <rect x="102" y="52" width="8" height="8" rx="2.5" fill="currentColor" opacity="0.5" />
+      <rect x="116" y="53.5" width="34" height="5" rx="2.5" fill="currentColor" opacity="0.3" />
+      <rect x="102" y="74" width="8" height="8" rx="2.5" fill="currentColor" opacity="0.28" />
+      <rect x="116" y="75.5" width="22" height="5" rx="2.5" fill="currentColor" opacity="0.18" />
+    </svg>
+  )
+}
+
+export function AccreditationIllustration() {
+  return (
+    <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      {/* Self-study document */}
+      <rect x="28" y="16" width="62" height="86" rx="6" fill="currentColor" opacity="0.18" />
+      <rect x="40" y="32" width="38" height="4" rx="2" fill="currentColor" opacity="0.45" />
+      <rect x="40" y="44" width="30" height="4" rx="2" fill="currentColor" opacity="0.3" />
+      <rect x="40" y="56" width="34" height="4" rx="2" fill="currentColor" opacity="0.3" />
+      <rect x="40" y="68" width="26" height="4" rx="2" fill="currentColor" opacity="0.3" />
+      {/* Award seal overlapping the document */}
+      <circle cx="106" cy="74" r="20" fill="currentColor" opacity="0.28" />
+      <circle cx="106" cy="74" r="12" fill="currentColor" opacity="0.4" />
+      {/* Ribbon tails */}
+      <polygon points="96,90 92,110 102,102 106,110 106,92" fill="currentColor" opacity="0.32" />
+      <polygon points="116,90 120,110 110,102 106,110 106,92" fill="currentColor" opacity="0.24" />
+    </svg>
+  )
+}
+
 export const ILLUSTRATIONS: Record<string, React.FC> = {
   em:   ExamIllustration,
   pce:  PceIllustration,
@@ -124,4 +198,8 @@ export const ILLUSTRATIONS: Record<string, React.FC> = {
   sc:   SkillsIllustration,
   lc:   LearningContractsIllustration,
   faas: FaasIllustration,
+  cee:  ClinicalIllustration,
+  cm:   CurriculumIllustration,
+  cmp:  ComplianceIllustration,
+  am:   AccreditationIllustration,
 }
