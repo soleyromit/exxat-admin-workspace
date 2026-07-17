@@ -41,6 +41,9 @@ export function resolveResultsOrigin(from: string | null): ResultsOrigin {
   if (from === 'results') {
     return { label: 'Results', href: '/results', trail: [{ label: 'Results', href: '/results' }], from }
   }
+  if (from === 'my-dashboard') {
+    return { label: 'My Dashboard', href: '/my-dashboard', trail: [{ label: 'My Dashboard', href: '/my-dashboard' }], from }
+  }
   if (from?.startsWith('term:')) {
     const term = termsOrdered.find((t) => t.id === from.slice('term:'.length))
     if (term) {
