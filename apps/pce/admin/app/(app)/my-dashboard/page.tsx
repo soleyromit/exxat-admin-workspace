@@ -101,18 +101,20 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
           <div className="absolute inset-0 flex">
             {data.map((d) => (
               <div key={d.term} className="relative flex-1">
-                {/* Cohort range column */}
+                {/* Cohort range column — slim teal tint (Romit-picked V2) */}
                 <div
-                  className="absolute left-1/2 w-9 -translate-x-1/2 rounded-full bg-muted"
+                  className="absolute left-1/2 w-2 -translate-x-1/2 rounded-sm"
                   style={{
                     bottom: `${pos(d.min) * 100}%`,
                     height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
+                    background: 'var(--chart-2)',
+                    opacity: 0.15,
                   }}
                 />
                 {/* Median notch */}
                 <div
-                  className="absolute left-1/2 h-0.5 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground"
-                  style={{ top: `${(1 - pos(d.median)) * 100}%` }}
+                  className="absolute left-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--chart-3)' }}
                 />
                 {/* Your dot + value at the mark */}
                 {d.faculty != null && (
