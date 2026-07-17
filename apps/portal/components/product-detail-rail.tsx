@@ -155,7 +155,7 @@ export function ProductDetailRail({ product }: { product: Product }) {
                           }}
                         >
                           <i
-                            className={`fa-light ${p.icon} text-xs`}
+                            className={`fa-solid ${p.icon} text-xs`}
                             aria-hidden="true"
                             style={{ color: `var(--product-${p.colorKey}-icon)` }}
                           />

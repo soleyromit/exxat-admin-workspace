@@ -137,7 +137,11 @@ export default function ProductDetailPage({ id }: { id: string }) {
                 color: `var(--product-${product.colorKey}-icon)`,
               }}
             >
-              {Illustration && <div className="absolute inset-0"><Illustration /></div>}
+              {Illustration && (
+                <div className="absolute right-[12%] top-6 w-80">
+                  <Illustration />
+                </div>
+              )}
             </div>
 
             <div className="relative mx-auto max-w-4xl px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-10">
@@ -152,7 +156,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   }}
                 >
                   <i
-                    className={`fa-light ${product.icon} text-2xl`}
+                    className={`fa-solid ${product.icon} text-2xl`}
                     aria-hidden="true"
                     style={{ color: `var(--product-${product.colorKey}-icon)` }}
                   />

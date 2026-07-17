@@ -63,13 +63,17 @@ function SpotlightCard({ product }: { product: Product }) {
           </div>
         </CardContent>
         <div
-          className="relative h-32 shrink-0 sm:h-auto sm:w-64"
+          className="relative h-32 shrink-0 overflow-hidden sm:h-auto sm:w-64"
           style={{
             background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
             color: `var(--product-${product.colorKey}-icon)`,
           }}
         >
-          {Illustration && <div className="absolute inset-0"><Illustration /></div>}
+          {Illustration && (
+            <div className="absolute left-1/2 top-1/2 w-56 -translate-x-1/2 -translate-y-1/2">
+              <Illustration />
+            </div>
+          )}
         </div>
       </div>
     </Card>
@@ -82,21 +86,23 @@ function ExploreCard({ product }: { product: Product }) {
   return (
     <Card className="group relative overflow-hidden transition-shadow hover:shadow-md">
       <div
-        className="relative flex h-28 items-center justify-center"
+        className="relative flex h-28 items-center justify-center overflow-hidden"
         style={{
           background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
           color: `var(--product-${product.colorKey}-icon)`,
         }}
       >
         {Illustration ? (
-          <div className="absolute inset-0"><Illustration /></div>
+          <div className="absolute left-1/2 top-4 w-52 -translate-x-1/2">
+            <Illustration />
+          </div>
         ) : (
           <div
             className="flex h-14 w-14 items-center justify-center rounded-xl"
             style={{ backgroundColor: 'var(--product-icon-backdrop)' }}
           >
             <i
-              className={`fa-light ${product.icon} text-2xl`}
+              className={`fa-solid ${product.icon} text-2xl`}
               aria-hidden="true"
               style={{ color: `var(--product-${product.colorKey}-icon)` }}
             />

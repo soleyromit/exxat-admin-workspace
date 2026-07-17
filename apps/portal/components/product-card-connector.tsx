@@ -39,7 +39,7 @@ export function ProductConnectorRow({ product }: { product: Product }) {
         }}
       >
         <i
-          className={`fa-light ${product.icon} text-base`}
+          className={`fa-solid ${product.icon} text-base`}
           aria-hidden="true"
           style={{ color: `var(--product-${product.colorKey}-icon)` }}
         />
