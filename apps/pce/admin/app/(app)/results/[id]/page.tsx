@@ -19,9 +19,8 @@
 //   Spec's red coding → amber (aarti_no_red).
 //
 // DS OS: PageHeader · LocalBanner · Tabs · Card · Collapsible · StatusBadge ·
-// PersonIdentityCell · ExportDrawer. Composes existing QuestionChartBlock
-// (distribution + median/program benchmarks) and AiInsightCard. Theme viz is
-// a strip/dot plot vs program benchmark (bars are last resort — viz rules).
+// PersonIdentityCell · ExportDrawer. AI insight card removed (Romit
+// 2026-07-17). Theme viz: per-theme stacked rating bars (shared rating-viz).
 // Mobbin: Zoom survey results (tabs + per-question) · Dovetail (themes) ·
 // Gorgias (comments + download).
 // ============================================================================
@@ -73,17 +72,17 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
-import { BarChart, ComposedChart, Bar, LabelList, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
+import { MiniRatingColumns, RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { AiInsightCard } from '@/components/pce/ai-insight-card'
-import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
+import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
-import { deriveThemes, type ThemeSentiment } from '@/lib/pce-themes'
+import { deriveThemes } from '@/lib/pce-themes'
 import {
   MOCK_RESPONSES,
   MOCK_SURVEY_QUESTION_DATA,
@@ -187,6 +186,39 @@ function FacultySwitcher({ siblings }: { siblings: EvalResult[] }) {
   )
 }
 
+/** Split-survey offering cross-links — pills for the sibling surveys of the
+ *  SAME course offering (e.g. Course vs Instructor evaluation), each keeping
+ *  its own status; a gated sibling carries its state inline so the divergence
+ *  is visible from either page (Romit 2026-07-17). */
+function OfferingSurveySwitcher({ current, siblings }: { current: EvalResult; siblings: EvalResult[] }) {
+  const origin = useResultsOrigin()
+  if (siblings.length === 0) return null
+  return (
+    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Surveys for this course offering">
+      <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-medium text-foreground">
+        {current.evalScope ? EVAL_SCOPE_LABEL[current.evalScope] : 'Evaluation'}
+      </span>
+      {siblings.map((s) => {
+        const state = facultyFacingState(s)
+        return (
+          <Link
+            key={s.id}
+            href={withFrom(`/results/${encodeURIComponent(s.id)}`, origin.from)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {s.evalScope ? EVAL_SCOPE_LABEL[s.evalScope] : 'Evaluation'}
+            {state !== 'score' && (
+              <span style={{ color: state === 'review-pending' ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
+                · {state === 'review-pending' ? 'Review Pending' : 'Draft'}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
 /** Faculty scope selector — for a co-taught course, a segmented control that
  *  scopes Overview / Reports to the whole course ("All faculty") or one
  *  instructor. The selected option IS the current view (clear active state);
@@ -203,7 +235,10 @@ function FacultyScopeSelector({
   setScope: (v: string) => void
   isPD: boolean
 }) {
-  if (instructors.length <= 1) {
+  // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
+  // affordance) — a faculty viewer keeps their own identity row and can never
+  // scope the Faculty Performance signal onto a colleague's instructor block.
+  if (!isPD || instructors.length <= 1) {
     const f = instructors[0]
     if (!f) return null
     return (
@@ -212,7 +247,7 @@ function FacultyScopeSelector({
         <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
         {isPD && (
           <StatusBadge
-            label={f.releasedToFaculty ? 'Released' : 'In review'}
+            label={f.releasedToFaculty ? 'Released' : 'Pending release'}
             tone={f.releasedToFaculty ? 'neutral' : 'warning'}
           />
         )}
@@ -263,6 +298,8 @@ function StatusResultScreen({
   siblings = [],
   facultyName,
   facultyInitials,
+  currentResult,
+  offeringSiblings = [],
 }: {
   survey: PceSurvey
   isPD: boolean
@@ -271,6 +308,8 @@ function StatusResultScreen({
   siblings?: EvalResult[]
   facultyName?: string
   facultyInitials?: string
+  currentResult?: EvalResult
+  offeringSiblings?: EvalResult[]
 }) {
   const origin = useResultsOrigin()
   const [remindOpen, setRemindOpen] = useState(false)
@@ -337,6 +376,12 @@ function StatusResultScreen({
             )}
             {isPD && <FacultySwitcher siblings={siblings} />}
           </div>
+
+          {/* Split-survey offering — the sibling survey may already be
+              available while this one is gated; make the jump visible. */}
+          {currentResult && offeringSiblings.length > 0 && (
+            <OfferingSurveySwitcher current={currentResult} siblings={offeringSiblings} />
+          )}
 
           <GateScreen
             icon={copy.icon}
@@ -438,19 +483,6 @@ const SENTIMENT_FILTERS = [
   { key: 'neutral', label: 'Neutral' },
 ] as const
 type SentimentFilter = (typeof SENTIMENT_FILTERS)[number]['key']
-
-function SentimentDot({ sentiment }: { sentiment: ThemeSentiment }) {
-  const color =
-    sentiment === 'positive' ? 'var(--chart-2)' :
-    sentiment === 'concern' ? 'var(--chart-4)' :
-    'var(--muted-foreground)'
-  return (
-    <span
-      aria-hidden="true"
-      style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }}
-    />
-  )
-}
 
 /** Indexed comment — index refers to the position in responses.comments,
  *  which is what hiddenComments[surveyId] stores. */
@@ -563,17 +595,32 @@ function ScoreCard({
   title,
   value,
   programAvg,
-  prior,
+  priors,
 }: {
   title: string
   value: number | null
   programAvg: number | null
-  prior: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] } | null
+  priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
 }) {
   const delta = value != null && programAvg != null ? value - programAvg : null
+  const prior = priors.length > 0 ? priors[priors.length - 1] : null
   const actionItems = [...(prior?.actionItems ?? [])].sort(
     (a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9),
   )
+  /* Slope geometry — two time points on a shared 3–5 window (a full line chart
+     is overkill for two points; the direction IS the message). */
+  const yFor = (v: number) => 52 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 34
+  /* One narrative line, trend only — the badge already owns the program gap. */
+  const trendPhrase = (() => {
+    if (value == null || !prior) return null
+    const best = Math.max(...priors.map((p) => p.avg))
+    if (value >= best) {
+      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}.`
+    }
+    const d = value - prior.avg
+    if (Math.abs(d) <= 0.05) return `Holding steady since ${prior.term}.`
+    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} from ${prior.term}.`
+  })()
   return (
     <Card>
       <CardContent className="pt-6 flex flex-col gap-2">
@@ -600,15 +647,51 @@ function ScoreCard({
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
-          {prior && (
-            <>
-              {' · '}
+        {prior && value != null ? (
+          <div
+            role="img"
+            aria-label={`${title} moved from ${prior.avg.toFixed(2)} in ${prior.term} to ${value.toFixed(2)} this term${programAvg != null ? `; program average ${programAvg.toFixed(2)}` : ''}`}
+          >
+            <svg viewBox="0 0 208 58" className="w-52 h-[58px]" aria-hidden="true">
+              {programAvg != null && (
+                <line
+                  x1="12"
+                  x2="196"
+                  y1={yFor(programAvg)}
+                  y2={yFor(programAvg)}
+                  stroke="var(--border)"
+                  strokeWidth="1.5"
+                  strokeDasharray="3 4"
+                />
+              )}
+              <line
+                x1="12"
+                x2="196"
+                y1={yFor(prior.avg)}
+                y2={yFor(value)}
+                stroke="var(--foreground)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy={yFor(prior.avg)} r="3" fill="var(--muted-foreground)" />
+              <circle cx="196" cy={yFor(value)} r="3.5" fill={scoreColor(value)} />
+              {/* Prior value printed AT the mark (RUBRIC v2 Gate 5.3); the hero
+                  number directly above labels the current endpoint. */}
+              <text
+                x="12"
+                y={yFor(prior.avg) - 8}
+                fontSize="12"
+                fill="var(--muted-foreground)"
+                className="tabular-nums"
+              >
+                {prior.avg.toFixed(2)}
+              </text>
+            </svg>
+            <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="underline decoration-dotted underline-offset-2 cursor-help">
-                    {prior.term}: {prior.avg.toFixed(2)}
+                    {prior.term}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -626,54 +709,94 @@ function ScoreCard({
                   )}
                 </TooltipContent>
               </Tooltip>
-            </>
+              {programAvg != null && <span>Program {programAvg.toFixed(2)} ┄</span>}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
+          </p>
+        )}
+        {trendPhrase && <p className="text-xs text-muted-foreground">{trendPhrase}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Response rate as a peer KPI card beside the two score cards (Romit
+ *  2026-07-17) — hero %, delta chip vs the 70% target, count caption. */
+function ResponseRateCard({
+  rate,
+  responses,
+  enrolled,
+}: {
+  rate: number
+  responses: number
+  enrolled: number
+}) {
+  const delta = rate - 70
+  return (
+    <Card>
+      <CardContent className="pt-6 flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground">Response Rate</p>
+        <div className="flex items-end gap-2 flex-wrap">
+          <span
+            className="font-heading text-3xl font-semibold tabular-nums leading-none"
+            style={{ color: rateColor(rate) }}
+          >
+            {rate}%
+          </span>
+          {Math.abs(delta) >= 1 && (
+            <Badge
+              variant="secondary"
+              className="font-normal tabular-nums"
+              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
+            >
+              <i
+                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
+                aria-hidden="true"
+              />
+              {Math.abs(delta)} pts vs 70% target
+            </Badge>
           )}
+        </div>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {responses} of {enrolled} students responded
         </p>
       </CardContent>
     </Card>
   )
 }
 
-/* ── theme strip plot ─────────────────────────────────────────────────────────
-   One row per theme on a shared 1–5 track: filled dot = this course, hollow
-   ring = program average — the GAP is the story. Strip/dot plot preferred over
-   bars (workspace viz rules); benchmark drawn ON the viz (Aarti 2026-05-08).
-   Same list-with-track anatomy as the registered ScoreLandscape hand-roll. */
+/* ── theme distribution ───────────────────────────────────────────────────────
+   One row per theme: the SAME five vertical rating columns as the question
+   breakdown, aggregated across the theme's questions (Romit 2026-07-16 —
+   one visual language page-wide; the distribution shape per theme is the
+   story), plus "Avg X · Program Y" printed at the right. */
 
 interface ThemeRowDatum {
   theme: string
   avg: number
   questions: number
   programAvg: number | null
-  /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5. */
+  /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
+   *  aggregated across the theme's questions — feeds the per-theme histogram. */
   dist: [number, number, number, number, number]
 }
 
-/* Likert diverging palette — amber = low, neutral = middle, teal = high (no red). */
-const RATING_SERIES = [
-  { key: 'r1', label: 'Rated 1', color: 'var(--chip-4)',  opacity: 1 },
-  { key: 'r2', label: 'Rated 2', color: 'var(--chip-4)',  opacity: 0.45 },
-  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
-  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.45 },
-  { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
-] as const
-
-const ratingMixConfig: ChartConfig = Object.fromEntries(
-  RATING_SERIES.map((s) => [s.key, { label: s.label, color: s.color }]),
-) as ChartConfig
-
 function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
-  /* Dovetail-themes row anatomy: quiet thin value line + printed score as the
-     hero (Hotjar results). Amber only below threshold — no color spray. */
-  const fill = (avg: number) => (avg >= 3.7 ? 'var(--chart-2)' : 'var(--chip-4)')
-  const pct = (v: number) => `${(Math.min(5, Math.max(0, v)) / 5) * 100}%`
+  /* Sort by gap vs program, worst first — the deficit IS the story (Culture
+     Amp delta framing); themes without a benchmark sink to the end. */
+  const gapKey = (t: ThemeRowDatum) =>
+    t.programAvg != null ? t.avg - t.programAvg : Number.POSITIVE_INFINITY
+  const sorted = [...themes].sort((a, b) => gapKey(a) - gapKey(b) || a.avg - b.avg)
   const weakest = [...themes].sort((a, b) => a.avg - b.avg)[0]
   const themeLeo: ChartLeoInsight = {
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — the tick marks it on the line.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the distribution leans.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
   }
@@ -681,59 +804,59 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Average score per theme, out of 5 · tick = program average${partial ? ' · partial data' : ''}`}
+      description={`Response distribution per theme, rated 1–5 · sorted by gap vs program${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Average score per question theme on a 1 to 5 scale with the program average marked per theme. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Response distribution per question theme across rating levels 1 to 5, with the theme average and program average printed per row, sorted by gap. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
         {() => (
           <>
             <div className="flex flex-col">
-              {themes.map((t) => (
-                <div
-                  key={t.theme}
-                  role="img"
-                  aria-label={`${t.theme}: this course ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''}`}
-                  className="grid grid-cols-[minmax(160px,220px)_1fr_4.5rem] items-center gap-6 py-3.5 border-b border-border last:border-0"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm truncate">{t.theme}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.questions} question{t.questions !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <div className="relative h-1.5 rounded-full bg-muted" aria-hidden="true">
-                    <div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: pct(t.avg), background: fill(t.avg) }}
-                    />
-                    {t.programAvg != null && (
+              <div className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-end gap-6 pb-2 border-b border-border">
+                <span className="text-xs text-muted-foreground">Theme</span>
+                <RatingLegend />
+                <span className="text-xs text-muted-foreground text-right">Avg vs program</span>
+              </div>
+              {sorted.map((t) => {
+                const below = t.programAvg != null && t.avg < t.programAvg - 0.049
+                const total = t.dist.reduce((a, n) => a + n, 0)
+                return (
+                  <div
+                    key={t.theme}
+                    role="img"
+                    aria-label={`${t.theme}: average ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''} and ${total} rating${total !== 1 ? 's' : ''}`}
+                    className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-center gap-6 py-3 border-b border-border last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm truncate">{t.theme}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.questions} question{t.questions !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <RatingStackedBar counts={[...t.dist]} total={total} />
+                    <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
+                      Avg{' '}
                       <span
-                        className="absolute -top-1 -bottom-1 w-0.5 rounded-full"
-                        style={{ left: pct(t.programAvg), background: 'var(--foreground)' }}
-                      />
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm tabular-nums font-semibold">
-                      {t.avg.toFixed(1)}
-                      <span className="text-xs text-muted-foreground font-normal"> /5</span>
+                        className="text-sm font-semibold"
+                        style={{ color: below ? 'var(--chip-4)' : 'var(--foreground)' }}
+                      >
+                        {t.avg.toFixed(1)}
+                      </span>
+                      {t.programAvg != null && <> · Program {t.programAvg.toFixed(1)}</>}
                     </p>
-                    {t.programAvg != null && (
-                      <p className="text-xs text-muted-foreground tabular-nums">prog {t.programAvg.toFixed(1)}</p>
-                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <ChartDataTable
               caption="Theme-wise distribution"
-              headers={['Theme', 'This course', 'Program average', 'Questions']}
-              rows={themes.map((t) => [
+              headers={['Theme', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5', 'This course', 'Program average', 'Questions']}
+              rows={sorted.map((t) => [
                 t.theme,
+                ...t.dist,
                 `${t.avg.toFixed(1)}/5`,
                 t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
                 t.questions,
@@ -765,45 +888,41 @@ interface BreakdownRow {
   freeTextCount?: number
 }
 
-function MiniRatingColumns({ counts, total }: { counts: number[]; total: number }) {
-  return (
-    <div className="flex items-end gap-3" aria-hidden="true">
-      {RATING_SERIES.map((s, i) => {
-        const n = counts[i] ?? 0
-        const share = total > 0 ? n / total : 0
-        return (
-          <div key={s.key} className="flex flex-col items-center gap-0.5 w-8">
-            <span className="text-xs tabular-nums text-muted-foreground">{n}</span>
-            <div className="relative h-10 w-5 rounded-sm bg-muted overflow-hidden">
-              <div
-                className="absolute inset-x-0 bottom-0 rounded-sm"
-                style={{ height: `${Math.max(share * 100, n > 0 ? 8 : 0)}%`, background: s.color, opacity: s.opacity }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span>
-          </div>
-        )
-      })}
-    </div>
-  )
+/** % of responses rated 4 or 5 — the favorable share that orders and labels
+ *  each question row. */
+function favorableShare(counts: number[] | undefined, total: number | undefined): number {
+  if (!counts || !total) return 0
+  return ((counts[3] ?? 0) + (counts[4] ?? 0)) / total
 }
 
-function ScoreMiniBar({ label, value, color }: { label: string; value: number | null | undefined; color: string }) {
+
+/* You vs program as PRINTED numbers + one signed-gap figure (RUBRIC v2 Gate 0:
+   in a ~10rem cell the deltas the reader must act on render smaller than any
+   mark could be — numbers state it better). Median stays in the data table. */
+function CompareText({
+  avg,
+  programAvg,
+}: {
+  avg: number | null | undefined
+  programAvg: number | null | undefined
+}) {
+  if (avg == null) return <span className="text-xs text-muted-foreground text-right block">—</span>
+  const gap = programAvg != null ? avg - programAvg : null
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground w-14 shrink-0">{label}</span>
-      <div className="relative h-1.5 w-24 rounded-full bg-muted" aria-hidden="true">
-        {value != null && (
-          <div
-            className="absolute inset-y-0 left-0 rounded-full"
-            style={{ width: `${(Math.min(5, Math.max(0, value)) / 5) * 100}%`, background: color }}
-          />
-        )}
-      </div>
-      <span className="text-xs tabular-nums font-medium w-7 text-right">
-        {value != null ? value.toFixed(1) : '—'}
+    <p className="text-xs tabular-nums text-right whitespace-nowrap">
+      <span className="text-muted-foreground">
+        You <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
+        {programAvg != null && <> · Program {programAvg.toFixed(1)}</>}
       </span>
-    </div>
+      {gap != null && Math.abs(gap) > 0.05 && (
+        <span
+          className="font-medium"
+          style={{ color: gap > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
+        >
+          {' '}({gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)})
+        </span>
+      )}
+    </p>
   )
 }
 
@@ -873,44 +992,47 @@ function QuestionBreakdownTable({
 }) {
   if (rows.length === 0) return null
   const groups = [...new Set(rows.map((r) => r.group))]
+  /* Within each group: lowest favorable share first (the fix-first order);
+     free-text rows keep the tail. */
+  const orderedFor = (group: string) =>
+    rows
+      .filter((r) => r.group === group)
+      .sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'freeText' ? 1 : -1
+        if (a.kind === 'freeText') return 0
+        return favorableShare(a.counts, a.total) - favorableShare(b.counts, b.total)
+      })
   return (
     <div className="flex flex-col">
-      {/* Column header + the 1–5 scale, printed once */}
-      <div className="grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="flex gap-3" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
             <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">Scores</span>
+        <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => (
         <Fragment key={group}>
           <div className="bg-muted/50 -mx-6 px-6 py-1.5 border-b border-border">
             <span className="text-xs font-medium text-muted-foreground">{group}</span>
           </div>
-          {rows
-            .filter((r) => r.group === group)
-            .map((r) =>
-              r.kind === 'rated' ? (
-                <div
-                  key={r.id}
-                  id={`question-${r.id}`}
-                  className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_15rem] items-center gap-6 py-3 border-b border-border last:border-0"
-                >
-                  <p className="text-sm min-w-0">{r.label}</p>
-                  <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
-                  <div className="flex flex-col gap-1" role="img" aria-label={`Your average ${r.avg?.toFixed(1)}, median ${r.median?.toFixed(1)}, program average ${r.programAvg != null ? r.programAvg.toFixed(1) : 'not available'}`}>
-                    <ScoreMiniBar label="Your avg" value={r.avg} color="var(--chart-2)" />
-                    <ScoreMiniBar label="Median" value={r.median} color="var(--foreground)" />
-                    <ScoreMiniBar label="Prog avg" value={r.programAvg} color="var(--border-control-35)" />
-                  </div>
-                </div>
-              ) : (
-                <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
-              ),
-            )}
+          {orderedFor(group).map((r) =>
+            r.kind === 'rated' ? (
+              <div
+                key={r.id}
+                id={`question-${r.id}`}
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-3 border-b border-border last:border-0"
+              >
+                <p className="text-sm min-w-0">{r.label}</p>
+                <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
+                <CompareText avg={r.avg} programAvg={r.programAvg} />
+              </div>
+            ) : (
+              <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
+            ),
+          )}
         </Fragment>
       ))}
       <ChartDataTable
@@ -1148,10 +1270,24 @@ function ResultDetailPageInner() {
     )
   }
 
-  /* Co-taught siblings — shared by every state's switcher (one page contract) */
+  /* Co-taught siblings — OTHER faculty on the same course + term. Same-faculty
+     rows are split-survey siblings, not co-teachers (offering model). */
   const siblings = results.filter(
-    (r) => r.courseCode === result.courseCode && r.term === result.term && r.id !== result.id,
+    (r) =>
+      r.courseCode === result.courseCode &&
+      r.term === result.term &&
+      r.id !== result.id &&
+      r.facultyId !== result.facultyId,
   )
+  /* Split-survey siblings — same offering, same faculty, different survey. */
+  const offeringSiblings = result.offeringId
+    ? results.filter(
+        (r) =>
+          r.offeringId === result.offeringId &&
+          r.facultyId === result.facultyId &&
+          r.id !== result.id,
+      )
+    : []
   const gateProps = {
     survey,
     isPD,
@@ -1159,6 +1295,8 @@ function ResultDetailPageInner() {
     siblings,
     facultyName: result.facultyName,
     facultyInitials: result.facultyInitials,
+    currentResult: result,
+    offeringSiblings,
   }
 
   /* Gate 2 — locked: grades not submitted (every role). Same collection-status
@@ -1179,6 +1317,7 @@ function ResultDetailPageInner() {
   }
 
   return <ResultDetail result={result} survey={survey} isPD={isPD} isOwner={isOwner}
+    offeringSiblings={offeringSiblings}
     hiddenIdx={hiddenComments[survey.id] ?? []} onRelease={() => releaseSurvey(survey.id)}
     templates={templates} exportOpen={exportOpen} setExportOpen={setExportOpen}
     exportKind={exportKind} setExportKind={setExportKind} />
@@ -1192,6 +1331,7 @@ function ResultDetail({
   isPD,
   isOwner,
   inCollection = false,
+  offeringSiblings = [],
   hiddenIdx,
   onRelease,
   templates,
@@ -1204,6 +1344,7 @@ function ResultDetail({
   survey: PceSurvey
   isPD: boolean
   isOwner: boolean
+  offeringSiblings?: EvalResult[]
   /** Live evaluation — partial data, ops actions primary, no release flow yet. */
   inCollection?: boolean
   hiddenIdx: number[]
@@ -1313,19 +1454,26 @@ function ResultDetail({
     const collect = (
       data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
       allowInstructor: (id: string) => boolean,
+      parts: { course: boolean; faculty: boolean } = { course: true, faculty: true },
     ): ThemedQ[] => {
       const qs: ThemedQ[] = []
-      for (const scores of Object.values(data.sectionScores))
-        for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
-      for (const b of data.instructorBlocks ?? []) {
-        if (!allowInstructor(b.instructorId)) continue
-        for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
-      }
+      if (parts.course)
+        for (const scores of Object.values(data.sectionScores))
+          for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
+      if (parts.faculty)
+        for (const b of data.instructorBlocks ?? []) {
+          if (!allowInstructor(b.instructorId)) continue
+          for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
+        }
       return qs
     }
-    /* Scope follows the faculty selector: 'all' = whole course, else one instructor. */
-    const mine = collect(qData, (id) =>
-      survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope),
+    /* Scope follows the faculty selector: 'all' = whole course, else one
+       instructor — and the survey's evalScope on a split offering (a Course
+       survey never shows instructor questions, and vice versa). */
+    const mine = collect(
+      qData,
+      (id) => survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope),
+      { course: result.evalScope !== 'instructor', faculty: result.evalScope !== 'course' },
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
     const rows: ThemeRowDatum[] = []
@@ -1363,9 +1511,10 @@ function ResultDetail({
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
 
-  /* Question breakdown groups — Course vs Faculty (spec grouping) */
-  const courseSections = sections.filter((s) => !s.roleSetId)
-  const facultySections = sections.filter((s) => !!s.roleSetId)
+  /* Question breakdown groups — Course vs Faculty (spec grouping); a split
+     offering's survey only shows its own half. */
+  const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => !s.roleSetId)
+  const facultySections = result.evalScope === 'course' ? [] : sections.filter((s) => !!s.roleSetId)
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
@@ -1403,6 +1552,16 @@ function ResultDetail({
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
   const concernThemes = aiThemes.filter((t) => t.sentiment === 'concern')
+  /* Collapsed-state preview — the card says something before it's expanded
+     (Hotjar's sentiment-quote row): counts + one representative quote, a
+     constructive one first since that's the actionable read. */
+  const sentimentCounts = {
+    positive: visibleComments.filter((c) => c.sentiment === 'positive').length,
+    concern: visibleComments.filter((c) => c.sentiment === 'concern').length,
+    neutral: visibleComments.filter((c) => c.sentiment === 'neutral').length,
+  }
+  const previewQuote =
+    visibleComments.find((c) => c.sentiment === 'concern') ?? visibleComments[0] ?? null
 
   const RECOMMENDATION: Record<string, string> = {
     Pacing: 'Revisit the weekly cadence — students flagged pacing; consider spreading the heaviest units.',
@@ -1423,6 +1582,10 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* Release feedback — the header comment's promised LocalBanner state flip
+     (toast banned); success must be announced, not inferred from a button
+     disappearing. */
+  const [releaseSuccess, setReleaseSuccess] = useState(false)
   function goTo(id: string, expand?: 'questions' | 'comments') {
     const wasClosed =
       (expand === 'questions' && !qbOpen) || (expand === 'comments' && !qualOpen)
@@ -1573,7 +1736,14 @@ function ResultDetail({
             {!inCollection && (
               <>
                 {isPD && !scopedFaculty.releasedToFaculty && (
-                  <Button variant="outline" size="sm" onClick={onRelease}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRelease()
+                      setReleaseSuccess(true)
+                    }}
+                  >
                     {facultyScope === 'all'
                       ? 'Enable faculty access'
                       : `Enable access for ${scopedFaculty.facultyName}`}
@@ -1582,11 +1752,17 @@ function ResultDetail({
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
                 </Button>
+                {/* PD-only: /analytics is an ungated admin surface with
+                    program-wide data — faculty must not land there (scope
+                    flag 2026-07-16; faculty longitudinal view is a separate
+                    surface pending integration). */}
+                {isPD && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
                     View Longitudinal Insights
                   </Link>
                 </Button>
+                )}
                 {isPD && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1626,6 +1802,11 @@ function ResultDetail({
             />
           </div>
 
+          {/* Split-survey offering — sibling surveys keep their own statuses */}
+          {offeringSiblings.length > 0 && (
+            <OfferingSurveySwitcher current={result} siblings={offeringSiblings} />
+          )}
+
 
           <Tabs defaultValue="overview" className="flex flex-col gap-4">
             <div className="border-b border-border">
@@ -1657,29 +1838,52 @@ function ResultDetail({
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="text-sm font-semibold text-foreground">Scores</h3>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      Response rate{' '}
-                      <span className="font-semibold" style={{ color: rateColor(result.responseRate) }}>
-                        {result.responseRate}%
-                      </span>
-                      {' · '}{result.responses} of {result.enrolled} students responded
-                    </span>
-                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">Scores</h3>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {releaseSuccess && (
+                  <LocalBanner
+                    variant="success"
+                    title="Faculty access enabled"
+                    dismissible
+                    onDismiss={() => setReleaseSuccess(false)}
+                  >
+                    Results for {result.courseCode} are now visible to faculty.
+                  </LocalBanner>
+                )}
+                {/* AI insight card removed (Romit 2026-07-17) — themes remain
+                    reachable via the Qualitative feedback section. */}
+                <div className={`grid grid-cols-1 gap-4 ${result.evalScope ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                  {result.evalScope !== 'instructor' && (
                   <ScoreCard
                     title="Course Content"
                     value={courseAvg}
                     programAvg={programCourseAvg}
-                    prior={prior ? { term: prior.term, avg: prior.courseAvg, actionItems: prior.actionItems } : null}
+                    priors={(survey.priorOfferings ?? []).map((p) => ({
+                      term: p.term,
+                      avg: p.courseAvg,
+                      actionItems: p.actionItems,
+                    }))}
                   />
+                  )}
+                  {result.evalScope !== 'course' && (
                   <ScoreCard
                     title="Faculty Performance"
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
-                    prior={prior && prior.facultyAvg != null ? { term: prior.term, avg: prior.facultyAvg, actionItems: prior.actionItems } : null}
+                    priors={(survey.priorOfferings ?? [])
+                      .filter((p) => p.facultyAvg != null)
+                      .map((p) => ({
+                        term: p.term,
+                        avg: p.facultyAvg as number,
+                        actionItems: p.actionItems,
+                      }))}
+                  />
+                  )}
+                  {/* Response rate as a peer KPI card (Romit 2026-07-17) */}
+                  <ResponseRateCard
+                    rate={result.responseRate}
+                    responses={result.responses}
+                    enrolled={result.enrolled}
                   />
                 </div>
               </div>
@@ -1700,7 +1904,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · your / median / program comparison
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · rating mix + you vs program
                         </CardDescription>
                         <CardAction>
                           <i
@@ -1732,10 +1936,12 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Qualitative feedback</CardTitle>
                         <CardDescription>
                           {visibleComments.length} student comment{visibleComments.length !== 1 ? 's' : ''}
-                          {concernThemes.length > 0
-                            ? ` · ${concernThemes.length} theme${concernThemes.length !== 1 ? 's' : ''} with concerns`
-                            : ''}
-                          {ownerInsights ? ' · AI summary and themes' : ''}
+                          {sentimentCounts.positive > 0 ? ` · ${sentimentCounts.positive} positive` : ''}
+                          {sentimentCounts.concern > 0 ? ` · ${sentimentCounts.concern} constructive` : ''}
+                          {sentimentCounts.neutral > 0 ? ` · ${sentimentCounts.neutral} neutral` : ''}
+                          {previewQuote ? (
+                            <span className="block italic truncate">&ldquo;{previewQuote.text}&rdquo;</span>
+                          ) : null}
                         </CardDescription>
                         <CardAction>
                           <i
@@ -1750,41 +1956,6 @@ function ResultDetail({
                         <p className="text-xs text-muted-foreground">
                           Anonymized responses — individual authorship cannot be identified.
                         </p>
-                        {ownerInsights && aiThemes.length > 0 && (
-                          <AiInsightCard
-                            source={`${visibleComments.length} open-text response${visibleComments.length !== 1 ? 's' : ''} · ${aiThemes.length} theme${aiThemes.length !== 1 ? 's' : ''} identified`}
-                            body={
-                              <div className="flex flex-col gap-3">
-                                <p className="text-sm">
-                                  Students most often mentioned{' '}
-                                  <strong>{topThemes[0]?.label.toLowerCase()}</strong>
-                                  {concernThemes.length > 0
-                                    ? ` — ${concernThemes.length} theme${concernThemes.length !== 1 ? 's carry' : ' carries'} concerns.`
-                                    : ' — feedback is broadly positive.'}
-                                </p>
-                                <div>
-                                  <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                                    What students are saying
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {topThemes.map((t) => (
-                                      <span
-                                        key={t.label}
-                                        className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
-                                        style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
-                                      >
-                                        <SentimentDot sentiment={t.sentiment} />
-                                        {t.label}
-                                        <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            }
-                          />
-                        )}
-
                         <CommentList
                           title="Course related comments"
                           comments={courseComments}
@@ -1892,6 +2063,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Full Survey Report</CardTitle>
                     <CardDescription>
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
                       Complete results including scores, question breakdown, and student comments.
                     </CardDescription>
                   </CardHeader>
@@ -1912,6 +2084,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Raw Responses</CardTitle>
                     <CardDescription>
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
                       Export all anonymized responses as a spreadsheet for further analysis.
                     </CardDescription>
                   </CardHeader>
