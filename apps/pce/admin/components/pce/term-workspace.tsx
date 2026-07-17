@@ -48,6 +48,7 @@ import {
   type SurveyStatus,
 } from '@/lib/pce-mock-data'
 import { evaluationsFor } from '@/lib/pce-evaluations'
+import { withFrom } from '@/lib/pce-nav-origin'
 
 /* One row = one evaluation TYPE of one offering (Course Material / Faculty and
  * other roles / General). Rows group by course so each offering is a collapsible
@@ -100,8 +101,10 @@ function TermWorkspaceInner() {
   const { surveys } = usePce()
 
   const term = termsOrdered.find((t) => t.id === params?.termId)
-  /* Origin param so /results/[id] breadcrumbs back HERE, not the Results hub. */
-  const fromQ = term ? `?from=${encodeURIComponent(`term:${term.id}`)}` : ''
+  /* Canonical results origin (pce-nav-origin) so /results/[id] breadcrumbs back
+   * HERE, not the Results hub. Built with withFrom(), same as every other
+   * entry link — never a hand-rolled query string. */
+  const fromOrigin = term ? `term:${term.id}` : null
 
   const [moderationId, setModerationId] = useState<string | null>(null)
   const [evalView, setEvalView] = useState<'table' | 'board'>('table')
@@ -184,15 +187,14 @@ function TermWorkspaceInner() {
 
   /* ── table columns — one row per evaluation TYPE, grouped by offering ── */
   const columns: ColumnDef<EvalRow>[] = useMemo(() => {
-    /* Remind carries the evaluation type so the wizard can scope to just that
-     * type's non-responders (wizard-side filtering is the follow-up); origin
-     * routes it back here. */
-    const remindHref = (surveyId: string, type: EvaluationType) =>
-      `/surveys/remind?ids=${surveyId}&evalType=${type}${fromQ ? `&${fromQ.slice(1)}` : ''}`
-    /* Results link carries the row's evaluation type so /results can scope to it
-     * (per-type results view is the follow-up). */
-    const resultsHref = (surveyId: string, type: EvaluationType) =>
-      `/results/${surveyId}?evalType=${type}${fromQ ? `&${fromQ.slice(1)}` : ''}`
+    /* Existing remind contract (surveys/remind reads ?ids + ?from only). Per-type
+     * reminder targeting will extend THIS route when the wizard supports it —
+     * not a dead param shipped early. */
+    const remindHref = (surveyId: string) =>
+      `/surveys/remind?ids=${surveyId}${fromOrigin ? `&from=${encodeURIComponent(fromOrigin)}` : ''}`
+    /* Canonical results link (pce-nav-origin.withFrom). Offering-level today; a
+     * per-type results view would extend /results and this href together. */
+    const resultsHref = (surveyId: string) => withFrom(`/results/${surveyId}`, fromOrigin)
     return [
       {
         key: 'typeLabel',
@@ -306,7 +308,7 @@ function TermWorkspaceInner() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.surveyId, row.evaluationType)) }}
+                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.surveyId)) }}
                   aria-label={`Send a reminder for ${label}`}
                 >
                   Remind
@@ -315,7 +317,7 @@ function TermWorkspaceInner() {
               {isFinished(row.status) && (
                 <Button variant="outline" size="sm" asChild>
                   <Link
-                    href={resultsHref(row.surveyId, row.evaluationType)}
+                    href={resultsHref(row.surveyId)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`View results for ${label}`}
                   >
@@ -335,7 +337,7 @@ function TermWorkspaceInner() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onSelect={() => router.push(resultsHref(row.surveyId, row.evaluationType))}>
+                  <DropdownMenuItem onSelect={() => router.push(resultsHref(row.surveyId))}>
                     View results
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.surveyId}/preview`)}>
@@ -347,7 +349,7 @@ function TermWorkspaceInner() {
                     </DropdownMenuItem>
                   )}
                   {isLive(row.status) && !atRisk && (
-                    <DropdownMenuItem onSelect={() => router.push(remindHref(row.surveyId, row.evaluationType))}>
+                    <DropdownMenuItem onSelect={() => router.push(remindHref(row.surveyId))}>
                       Send reminder
                     </DropdownMenuItem>
                   )}
@@ -358,7 +360,7 @@ function TermWorkspaceInner() {
         },
       },
     ]
-  }, [router, facultyOptions, fromQ])
+  }, [router, facultyOptions, fromOrigin])
 
   if (!term) {
     return (
@@ -492,11 +494,7 @@ function TermWorkspaceInner() {
                   pagination={{ pageSize: 12 }}
                   edgeInset={false}
                   stickyHeader={false}
-                  onRowClick={(row) =>
-                    router.push(
-                      `/results/${row.surveyId}?evalType=${row.evaluationType}${fromQ ? `&${fromQ.slice(1)}` : ''}`,
-                    )
-                  }
+                  onRowClick={(row) => router.push(withFrom(`/results/${row.surveyId}`, fromOrigin))}
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />

@@ -32,6 +32,7 @@ import {
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
+import { withFrom } from '@/lib/pce-nav-origin'
 import {
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
   EVALUATION_TYPE_LABEL,
@@ -187,10 +188,9 @@ export function TermEvaluationsBoard({
   surveys: PceSurvey[]
   termId: string
 }) {
-  /* Origin param so /results/[id] breadcrumbs back to this term workspace;
-   * evalType carries the card's evaluation type for later per-type results. */
-  const resultsHref = (s: PceSurvey, e: EvaluationInstance) =>
-    `/results/${s.id}?evalType=${e.type}&from=${encodeURIComponent(`term:${termId}`)}`
+  /* Canonical results link (pce-nav-origin.withFrom) — breadcrumbs back to this
+   * term workspace. Offering-level today; per-type results is a future route. */
+  const resultsHref = (s: PceSurvey) => withFrom(`/results/${s.id}`, `term:${termId}`)
   const rows = useMemo<BoardRow[]>(() => {
     const surveyRows: BoardRow[] = surveys.flatMap(s =>
       evaluationsFor(s).map(e => ({ key: `s-${s.id}-${e.type}`, kind: 'survey' as const, s, e })))
@@ -246,7 +246,7 @@ export function TermEvaluationsBoard({
         renderCard={row =>
           row.kind === 'setup'
             ? <SetupBoardCard o={row.o} termId={termId} />
-            : <SurveyBoardCard s={row.s} e={row.e} href={resultsHref(row.s, row.e)} />
+            : <SurveyBoardCard s={row.s} e={row.e} href={resultsHref(row.s)} />
         }
       />
     </div>
