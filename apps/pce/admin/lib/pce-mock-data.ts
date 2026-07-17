@@ -491,7 +491,7 @@ export const MOCK_PROGRAMS: PceProgram[] = [
 ]
 
 export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
-  // mon2 — DPT-611 midpoint check-in (backs freeTextCounts.q11 = 2; the
+  // mon2 — DPT-611 midpoint check-in (backs freeTextCounts.q11 = 6; the
   // per-question sheet must be able to show every response it counts)
   {
     id: 'otr-mon2-1',
