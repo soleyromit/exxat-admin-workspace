@@ -271,7 +271,7 @@ function FacultyScopeSelector({
           <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
             <span
               aria-hidden="true"
-              className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
+              className="flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-medium leading-none"
               style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
             >
               {f.facultyInitials}
