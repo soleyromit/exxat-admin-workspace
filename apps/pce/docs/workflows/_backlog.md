@@ -379,6 +379,27 @@ Source: `docs/research/meetings/2026-07-15-ds-analytics-chart-strategy-monil.md`
 | T118 | Portal landing page — DS update + replace labels with new marketing product names from Kunal infographic | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0715_01, D_PORTAL_0715_02. Remove unnecessary components added to existing build. Replace current product labels with marketing names from Kunal's email infographic. Align with Aarti + Kunal before involving marketing team on colors/branding. Marketing team owns content + colors within experience framework Romit defines. |
 | T119 | Cohere conference booth plan (September) — prepare initial strategy for Monday's call | — | Planning | P1 | D_MISC_0715_01. Options: usability testing, feedback collection, product demo showcase. Romit to share draft plan before next Monday placeholder call with Monil. |
 
+## Phase 1 design tasks — added 2026-07-16 (Course eval sync — Vishal)
+
+Source: `docs/research/meetings/2026-07-16-course-eval-sync-vishal.md` (Granola `b1b6d7fb`)
+
+> Vishal + Romit status sync Jul 16. Priority confirmed: rows 19–21 (T19, T20, T21) are active focus. Requirements for rows 23–32 incoming Jul 17 EOD. DS compliance mandate reinforced — Himanshu + Vinay building shared components across exam-management and PCE. Engineering continues independently; UI alignment applied retroactively before Cohere.
+
+### Updates to existing tasks (Jul 16)
+
+| # | Update |
+|---|---|
+| T19 | **ACTIVE PRIORITY** (confirmed Jul 16). Vishal: "focus on row 19, 20 and 21. Because we are going in that order." Course detail is the current design focus alongside T20 + T21. D_PCE_0716_01. |
+| T20 | **ACTIVE PRIORITY** (confirmed Jul 16). Faculty self-view is the current design focus alongside T19 + T21. D_PCE_0716_01. |
+| T21 | **ACTIVE PRIORITY** (confirmed Jul 16). Course distribution viz is the current design focus alongside T19 + T20. D_PCE_0716_01. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T120 | Rows 23–32 design scope — await + start design once Vishal shares requirements | Admin | PCE (PRD rows 23–32) | P1 — BLOCKED pending requirements from Vishal (due Jul 17 EOD) | D_PCE_0716_02. Vishal: "by tomorrow end of the day I will also have enough requirement captured in the document for you to start this section 23 to 32." Do not start until requirements land. |
+| T121 | Review Aarti + Vishaka course evaluation meeting recording (Vishal to share) | Design | Research | P1 — ACTION ITEM | D_PCE_0716_06. Recording covers analytics workflows, which metrics to keep or drop, and broader course eval decisions. Review when received — informs T100, T116, T117. Vishal: "That will give you overall understanding of the solution." |
+
 ---
 
 ## Open product questions
