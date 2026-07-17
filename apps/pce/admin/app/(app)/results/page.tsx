@@ -17,6 +17,11 @@ import { useRouter } from 'next/navigation'
 import {
   PageHeader,
   Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -38,8 +43,12 @@ import {
   rateColor,
   scoreColor,
   programScoreBenchmarks,
+  groupByOffering,
+  facultyFacingState,
+  EVAL_SCOPE_LABEL,
   RESULT_STATUS_BADGE,
   type EvalResult,
+  type OfferingGroup,
 } from '@/lib/pce-results'
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
@@ -100,6 +109,18 @@ function ScorePill({ r, decimals = 2 }: { r: EvalResult; decimals?: number }) {
 function ResultStatusBadge({ r }: { r: EvalResult }) {
   const s = RESULT_STATUS_BADGE[r.status]
   return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} />
+}
+
+/** Offering-level badge for split-survey offerings — mixed visibility across
+ *  the offering's surveys derives "Partially available" (never stored). */
+const OFFERING_BADGE: Record<
+  OfferingGroup['offeringState'],
+  { label: string; tone: 'success' | 'warning' | 'neutral' | 'info'; icon: string }
+> = {
+  available: RESULT_STATUS_BADGE.available,
+  partial: { label: 'Partially available', tone: 'info', icon: 'fa-circle-half-stroke' },
+  'review-pending': RESULT_STATUS_BADGE.locked,
+  draft: RESULT_STATUS_BADGE.suppressed,
 }
 
 /* ── list-card score cluster (RUBRIC v2 Gate 0 + 3) ───────────────────────────
@@ -196,6 +217,11 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
           <div className="min-w-0">
             <p className="text-sm font-medium flex items-center gap-2">
               {row.courseCode}
+              {row.evalScope && (
+                <Badge variant="secondary" className="font-normal text-xs">
+                  {row.evalScope === 'course' ? 'Course' : 'Instructor'}
+                </Badge>
+              )}
               {row.coTaught && (
                 <Badge variant="secondary" className="font-normal text-xs">
                   Co-taught
@@ -376,6 +402,11 @@ function FacultyResults({
       ),
     [results],
   )
+  const groups = useMemo(() => {
+    const g = groupByOffering(rows)
+    return g.sort((a, b) => (TERM_RANK.get(b.term) ?? -1) - (TERM_RANK.get(a.term) ?? -1))
+  }, [rows])
+
   return (
     <>
       <SiteHeader title="My Results" />
@@ -385,41 +416,98 @@ function FacultyResults({
       />
       <div className="flex-1 px-7 py-4">
         <div className="flex flex-col gap-2 max-w-3xl">
-          <DataRowList<EvalResult>
-            rows={rows}
-            getRowId={(r) => r.id}
-            renderRow={(r) => (
-              <Link
-                href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
-                className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                    {r.courseCode} — {r.courseName}
-                    <ResultStatusBadge r={r} />
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {r.term}
-                    {r.academicYear ? ` · AY ${r.academicYear}` : ''} · {r.program}
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                    {r.responses}/{r.enrolled} responded ({r.responseRate}%)
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center gap-2">
-                  {r.status === 'available' && r.avgScore != null ? (
-                    <FacultyScoreCluster r={r} benchmark={benchmarks.get(r.program) ?? null} />
-                  ) : r.status === 'locked' ? (
-                    <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
-                      Review Pending
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Draft</span>
-                  )}
-                  <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
-                </div>
-              </Link>
-            )}
+          <DataRowList<OfferingGroup>
+            rows={groups}
+            getRowId={(g) => g.key}
+            renderRow={(g) =>
+              g.rows.length === 1 ? (
+                (() => {
+                  const r = g.rows[0]
+                  return (
+                    <Link
+                      href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
+                      className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                          {r.courseCode} — {r.courseName}
+                          <ResultStatusBadge r={r} />
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {r.term}
+                          {r.academicYear ? ` · AY ${r.academicYear}` : ''} · {r.program}
+                        </p>
+                        <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                          {r.responses}/{r.enrolled} responded ({r.responseRate}%)
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2">
+                        {r.status === 'available' && r.avgScore != null ? (
+                          <FacultyScoreCluster r={r} benchmark={benchmarks.get(r.program) ?? null} />
+                        ) : r.status === 'locked' ? (
+                          <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
+                            Review Pending
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Draft</span>
+                        )}
+                        <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
+                      </div>
+                    </Link>
+                  )
+                })()
+              ) : (
+                /* Split-survey offering — one DS Card, one row per survey,
+                   each with its OWN status (statuses genuinely diverge). */
+                <Card className="mb-2 gap-2 py-3">
+                  <CardHeader className="px-4">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                      {g.courseCode} — {g.courseName}
+                      <StatusBadge {...OFFERING_BADGE[g.offeringState]} />
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {g.term}
+                      {g.academicYear ? ` · AY ${g.academicYear}` : ''} · {g.program}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-4 pt-0 flex flex-col">
+                    {g.rows.map((r) => {
+                      const state = facultyFacingState(r)
+                      return (
+                        <Link
+                          key={r.id}
+                          href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
+                          className="flex items-center gap-4 py-2 border-t border-border rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:bg-muted/40 -mx-2 px-2"
+                        >
+                          <span className="flex-1 min-w-0 text-sm truncate">
+                            {r.evalScope ? EVAL_SCOPE_LABEL[r.evalScope] : 'Evaluation'}
+                          </span>
+                          <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                            {r.responses}/{r.enrolled} ({r.responseRate}%)
+                          </span>
+                          {state === 'score' && r.avgScore != null ? (
+                            <span
+                              className="text-sm font-semibold tabular-nums w-16 text-right"
+                              style={{ color: scoreColor(r.avgScore) }}
+                            >
+                              {r.avgScore.toFixed(2)}
+                              <span className="text-xs font-normal text-muted-foreground">/5</span>
+                            </span>
+                          ) : state === 'review-pending' ? (
+                            <span className="text-xs w-24 text-right" style={{ color: 'var(--chip-4)' }}>
+                              Review Pending
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground w-24 text-right">Draft</span>
+                          )}
+                          <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      )
+                    })}
+                  </CardContent>
+                </Card>
+              )
+            }
             emptyState={
               <div className="flex flex-col items-center gap-2 py-12 rounded-lg border border-dashed border-border bg-muted/25">
                 <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />

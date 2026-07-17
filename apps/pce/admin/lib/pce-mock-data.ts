@@ -307,6 +307,13 @@ export interface PceSurvey {
   closedAt?: string
   /** 'course_evaluation' | 'programmatic'. */
   surveyType?: SurveyType
+  /** FK → the course offering (students/faculty/course tied to it). Multiple
+   *  surveys may share one offering — e.g. a Course survey and an Instructor
+   *  survey with independently diverging statuses (Romit 2026-07-17). */
+  offeringId?: string
+  /** What this survey evaluates when an offering splits its surveys:
+   *  'course' | 'instructor'. Absent = combined (single survey covers both). */
+  evalScope?: 'course' | 'instructor'
   /** YYYY-MM-DD — date the survey opens for student responses. */
   openDate?: string
   /** Academic year string, e.g. '2025–2026'. */
@@ -1191,6 +1198,12 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // below minimumThreshold → suppressed "Draft" reachable as faculty.
   { id: 'mon16', courseCode: 'DPT-565', courseName: 'Evidence-Based Practice Seminar',      term: 'Spring 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',   instructors: [INSTRUCTORS.patel], responseRate: 25, responseCount: 3, enrollmentCount: 12, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
 
+  // ── Split-survey offering (Romit 2026-07-17): ONE course offering, TWO
+  //    surveys with independently diverging statuses — Course survey released,
+  //    Instructor survey still pending review → "Partially available". ──
+  { id: 'off508c', offeringId: 'co-dpt508-sp26', evalScope: 'course',     courseCode: 'DPT-508', courseName: 'Clinical Biomechanics', term: 'Spring 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'released',       instructors: [INSTRUCTORS.patel], responseRate: 80, responseCount: 40, enrollmentCount: 50, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', releasedAt: 'Jun 6, 2026', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'off508i', offeringId: 'co-dpt508-sp26', evalScope: 'instructor', courseCode: 'DPT-508', courseName: 'Clinical Biomechanics', term: 'Spring 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'pending_review', instructors: [INSTRUCTORS.patel], responseRate: 76, responseCount: 38, enrollmentCount: 50, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+
   // Programmatic (institutional) surveys with real response data — feed the
   // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
   { id: 'pg1', courseCode: 'End-of-Program Satisfaction — Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
@@ -1200,6 +1213,22 @@ export const MOCK_SURVEYS: PceSurvey[] = [
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [
+  // ── Split-survey offering DPT-508 — separate score records per survey ──
+  {
+    surveyId: 'off508c',
+    sectionScores: [{ section: 'course_content', avg: 4.3, count: 40 }],
+    comments: [
+      { section: 'course_content', text: 'The biomechanics labs made the lecture content click.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Would help to get the lab handouts a day earlier.', sentiment: 'concern' },
+    ],
+  },
+  {
+    surveyId: 'off508i',
+    sectionScores: [{ section: 'faculty_performance', avg: 4.5, count: 38 }],
+    comments: [
+      { section: 'faculty_performance', text: 'Dr. Patel makes difficult material approachable.', sentiment: 'positive' },
+    ],
+  },
   // ── Live surveys — partial data so "View results" shows the real layout ──
   {
     surveyId: 'mon1',

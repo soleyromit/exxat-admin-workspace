@@ -80,7 +80,7 @@ import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
+import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { deriveThemes } from '@/lib/pce-themes'
 import {
@@ -186,6 +186,39 @@ function FacultySwitcher({ siblings }: { siblings: EvalResult[] }) {
   )
 }
 
+/** Split-survey offering cross-links — pills for the sibling surveys of the
+ *  SAME course offering (e.g. Course vs Instructor evaluation), each keeping
+ *  its own status; a gated sibling carries its state inline so the divergence
+ *  is visible from either page (Romit 2026-07-17). */
+function OfferingSurveySwitcher({ current, siblings }: { current: EvalResult; siblings: EvalResult[] }) {
+  const origin = useResultsOrigin()
+  if (siblings.length === 0) return null
+  return (
+    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Surveys for this course offering">
+      <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-medium text-foreground">
+        {current.evalScope ? EVAL_SCOPE_LABEL[current.evalScope] : 'Evaluation'}
+      </span>
+      {siblings.map((s) => {
+        const state = facultyFacingState(s)
+        return (
+          <Link
+            key={s.id}
+            href={withFrom(`/results/${encodeURIComponent(s.id)}`, origin.from)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {s.evalScope ? EVAL_SCOPE_LABEL[s.evalScope] : 'Evaluation'}
+            {state !== 'score' && (
+              <span style={{ color: state === 'review-pending' ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
+                · {state === 'review-pending' ? 'Review Pending' : 'Draft'}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
 /** Faculty scope selector — for a co-taught course, a segmented control that
  *  scopes Overview / Reports to the whole course ("All faculty") or one
  *  instructor. The selected option IS the current view (clear active state);
@@ -265,6 +298,8 @@ function StatusResultScreen({
   siblings = [],
   facultyName,
   facultyInitials,
+  currentResult,
+  offeringSiblings = [],
 }: {
   survey: PceSurvey
   isPD: boolean
@@ -273,6 +308,8 @@ function StatusResultScreen({
   siblings?: EvalResult[]
   facultyName?: string
   facultyInitials?: string
+  currentResult?: EvalResult
+  offeringSiblings?: EvalResult[]
 }) {
   const origin = useResultsOrigin()
   const [remindOpen, setRemindOpen] = useState(false)
@@ -339,6 +376,12 @@ function StatusResultScreen({
             )}
             {isPD && <FacultySwitcher siblings={siblings} />}
           </div>
+
+          {/* Split-survey offering — the sibling survey may already be
+              available while this one is gated; make the jump visible. */}
+          {currentResult && offeringSiblings.length > 0 && (
+            <OfferingSurveySwitcher current={currentResult} siblings={offeringSiblings} />
+          )}
 
           <GateScreen
             icon={copy.icon}
@@ -675,6 +718,51 @@ function ScoreCard({
           </p>
         )}
         {trendPhrase && <p className="text-xs text-muted-foreground">{trendPhrase}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Response rate as a peer KPI card beside the two score cards (Romit
+ *  2026-07-17) — hero %, delta chip vs the 70% target, count caption. */
+function ResponseRateCard({
+  rate,
+  responses,
+  enrolled,
+}: {
+  rate: number
+  responses: number
+  enrolled: number
+}) {
+  const delta = rate - 70
+  return (
+    <Card>
+      <CardContent className="pt-6 flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground">Response Rate</p>
+        <div className="flex items-end gap-2 flex-wrap">
+          <span
+            className="font-heading text-3xl font-semibold tabular-nums leading-none"
+            style={{ color: rateColor(rate) }}
+          >
+            {rate}%
+          </span>
+          {Math.abs(delta) >= 1 && (
+            <Badge
+              variant="secondary"
+              className="font-normal tabular-nums"
+              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
+            >
+              <i
+                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
+                aria-hidden="true"
+              />
+              {Math.abs(delta)} pts vs 70% target
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {responses} of {enrolled} students responded
+        </p>
       </CardContent>
     </Card>
   )
@@ -1182,10 +1270,24 @@ function ResultDetailPageInner() {
     )
   }
 
-  /* Co-taught siblings — shared by every state's switcher (one page contract) */
+  /* Co-taught siblings — OTHER faculty on the same course + term. Same-faculty
+     rows are split-survey siblings, not co-teachers (offering model). */
   const siblings = results.filter(
-    (r) => r.courseCode === result.courseCode && r.term === result.term && r.id !== result.id,
+    (r) =>
+      r.courseCode === result.courseCode &&
+      r.term === result.term &&
+      r.id !== result.id &&
+      r.facultyId !== result.facultyId,
   )
+  /* Split-survey siblings — same offering, same faculty, different survey. */
+  const offeringSiblings = result.offeringId
+    ? results.filter(
+        (r) =>
+          r.offeringId === result.offeringId &&
+          r.facultyId === result.facultyId &&
+          r.id !== result.id,
+      )
+    : []
   const gateProps = {
     survey,
     isPD,
@@ -1193,6 +1295,8 @@ function ResultDetailPageInner() {
     siblings,
     facultyName: result.facultyName,
     facultyInitials: result.facultyInitials,
+    currentResult: result,
+    offeringSiblings,
   }
 
   /* Gate 2 — locked: grades not submitted (every role). Same collection-status
@@ -1213,6 +1317,7 @@ function ResultDetailPageInner() {
   }
 
   return <ResultDetail result={result} survey={survey} isPD={isPD} isOwner={isOwner}
+    offeringSiblings={offeringSiblings}
     hiddenIdx={hiddenComments[survey.id] ?? []} onRelease={() => releaseSurvey(survey.id)}
     templates={templates} exportOpen={exportOpen} setExportOpen={setExportOpen}
     exportKind={exportKind} setExportKind={setExportKind} />
@@ -1226,6 +1331,7 @@ function ResultDetail({
   isPD,
   isOwner,
   inCollection = false,
+  offeringSiblings = [],
   hiddenIdx,
   onRelease,
   templates,
@@ -1238,6 +1344,7 @@ function ResultDetail({
   survey: PceSurvey
   isPD: boolean
   isOwner: boolean
+  offeringSiblings?: EvalResult[]
   /** Live evaluation — partial data, ops actions primary, no release flow yet. */
   inCollection?: boolean
   hiddenIdx: number[]
@@ -1347,19 +1454,26 @@ function ResultDetail({
     const collect = (
       data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
       allowInstructor: (id: string) => boolean,
+      parts: { course: boolean; faculty: boolean } = { course: true, faculty: true },
     ): ThemedQ[] => {
       const qs: ThemedQ[] = []
-      for (const scores of Object.values(data.sectionScores))
-        for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
-      for (const b of data.instructorBlocks ?? []) {
-        if (!allowInstructor(b.instructorId)) continue
-        for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
-      }
+      if (parts.course)
+        for (const scores of Object.values(data.sectionScores))
+          for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
+      if (parts.faculty)
+        for (const b of data.instructorBlocks ?? []) {
+          if (!allowInstructor(b.instructorId)) continue
+          for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
+        }
       return qs
     }
-    /* Scope follows the faculty selector: 'all' = whole course, else one instructor. */
-    const mine = collect(qData, (id) =>
-      survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope),
+    /* Scope follows the faculty selector: 'all' = whole course, else one
+       instructor — and the survey's evalScope on a split offering (a Course
+       survey never shows instructor questions, and vice versa). */
+    const mine = collect(
+      qData,
+      (id) => survey.instructors.some((i) => i.id === id) && (facultyScope === 'all' || id === facultyScope),
+      { course: result.evalScope !== 'instructor', faculty: result.evalScope !== 'course' },
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
     const rows: ThemeRowDatum[] = []
@@ -1397,9 +1511,10 @@ function ResultDetail({
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
 
-  /* Question breakdown groups — Course vs Faculty (spec grouping) */
-  const courseSections = sections.filter((s) => !s.roleSetId)
-  const facultySections = sections.filter((s) => !!s.roleSetId)
+  /* Question breakdown groups — Course vs Faculty (spec grouping); a split
+     offering's survey only shows its own half. */
+  const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => !s.roleSetId)
+  const facultySections = result.evalScope === 'course' ? [] : sections.filter((s) => !!s.roleSetId)
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
@@ -1681,6 +1796,11 @@ function ResultDetail({
             />
           </div>
 
+          {/* Split-survey offering — sibling surveys keep their own statuses */}
+          {offeringSiblings.length > 0 && (
+            <OfferingSurveySwitcher current={result} siblings={offeringSiblings} />
+          )}
+
 
           <Tabs defaultValue="overview" className="flex flex-col gap-4">
             <div className="border-b border-border">
@@ -1712,16 +1832,7 @@ function ResultDetail({
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="text-sm font-semibold text-foreground">Scores</h3>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      Response rate{' '}
-                      <span className="font-semibold" style={{ color: rateColor(result.responseRate) }}>
-                        {result.responseRate}%
-                      </span>
-                      {' · '}{result.responses} of {result.enrolled} students responded
-                    </span>
-                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">Scores</h3>
                 )}
                 {releaseSuccess && (
                   <LocalBanner
@@ -1735,7 +1846,8 @@ function ResultDetail({
                 )}
                 {/* AI insight card removed (Romit 2026-07-17) — themes remain
                     reachable via the Qualitative feedback section. */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`grid grid-cols-1 gap-4 ${result.evalScope ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                  {result.evalScope !== 'instructor' && (
                   <ScoreCard
                     title="Course Content"
                     value={courseAvg}
@@ -1746,6 +1858,8 @@ function ResultDetail({
                       actionItems: p.actionItems,
                     }))}
                   />
+                  )}
+                  {result.evalScope !== 'course' && (
                   <ScoreCard
                     title="Faculty Performance"
                     value={facultyAvg}
@@ -1757,6 +1871,13 @@ function ResultDetail({
                         avg: p.facultyAvg as number,
                         actionItems: p.actionItems,
                       }))}
+                  />
+                  )}
+                  {/* Response rate as a peer KPI card (Romit 2026-07-17) */}
+                  <ResponseRateCard
+                    rate={result.responseRate}
+                    responses={result.responses}
+                    enrolled={result.enrolled}
                   />
                 </div>
               </div>
@@ -1936,6 +2057,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Full Survey Report</CardTitle>
                     <CardDescription>
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
                       Complete results including scores, question breakdown, and student comments.
                     </CardDescription>
                   </CardHeader>
@@ -1956,6 +2078,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Raw Responses</CardTitle>
                     <CardDescription>
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
                       Export all anonymized responses as a spreadsheet for further analysis.
                     </CardDescription>
                   </CardHeader>

@@ -53,6 +53,81 @@ export interface EvalResult {
   /** Prior offerings plus this one as a single overall series (mean of course
    *  and faculty averages per term) — powers the list-card sparkline. */
   trend: { term: string; value: number }[]
+  /** FK → course offering; multiple surveys may share it (split evaluations). */
+  offeringId?: string
+  /** 'course' | 'instructor' when the offering splits its surveys. */
+  evalScope?: 'course' | 'instructor'
+}
+
+/** Display label per split-survey scope. */
+export const EVAL_SCOPE_LABEL: Record<'course' | 'instructor', string> = {
+  course: 'Course evaluation',
+  instructor: 'Instructor evaluation',
+}
+
+/** Grouping key: real offering FK when present, else offering identity. */
+export function offeringKeyOf(r: EvalResult): string {
+  return r.offeringId ?? `${r.courseCode}|${r.term}|${r.facultyId}`
+}
+
+/** What THIS viewer-facing row shows a faculty member: score visible, or a
+ *  gate. Mirrors the detail-page gate order (locked → suppressed → release). */
+export type FacultyFacingState = 'score' | 'review-pending' | 'draft'
+export function facultyFacingState(r: EvalResult): FacultyFacingState {
+  if (r.status === 'locked') return 'review-pending'
+  if (r.status === 'suppressed') return 'draft'
+  if (!r.releasedToFaculty) return 'review-pending'
+  return 'score'
+}
+
+export interface OfferingGroup {
+  key: string
+  courseCode: string
+  courseName: string
+  term: string
+  academicYear?: string
+  program: string
+  rows: EvalResult[]
+  /** 'available' | 'partial' | 'review-pending' | 'draft' for the whole offering. */
+  offeringState: 'available' | 'partial' | 'review-pending' | 'draft'
+}
+
+/** Group one faculty member's results into course offerings. Single-survey
+ *  offerings stay single-row groups; split offerings derive a combined state —
+ *  mixed visibility → 'partial' ("Partially available"). */
+export function groupByOffering(rows: EvalResult[]): OfferingGroup[] {
+  const map = new Map<string, EvalResult[]>()
+  for (const r of rows) {
+    const k = offeringKeyOf(r)
+    map.set(k, [...(map.get(k) ?? []), r])
+  }
+  return [...map.entries()].map(([key, group]) => {
+    const states = new Set(group.map(facultyFacingState))
+    const offeringState: OfferingGroup['offeringState'] =
+      states.size > 1
+        ? 'partial'
+        : states.has('score')
+          ? 'available'
+          : states.has('review-pending')
+            ? 'review-pending'
+            : 'draft'
+    // Course survey first, then instructor, then combined rows.
+    const rank = { course: 0, instructor: 1 } as Record<string, number>
+    const sorted = [...group].sort(
+      (a, b) => (rank[a.evalScope ?? ''] ?? 2) - (rank[b.evalScope ?? ''] ?? 2),
+    )
+    const first = sorted[0]
+    return {
+      key,
+      courseCode: first.courseCode,
+      courseName: first.courseName,
+      term: first.term,
+      academicYear: first.academicYear,
+      program: first.program,
+      rows: sorted,
+      offeringState,
+    }
+  })
 }
 
 /** Surveys that have finished collecting — the only ones that produce results. */
@@ -136,6 +211,8 @@ export function deriveResultsForSurvey(s: PceSurvey): EvalResult[] {
       ...gates,
       coTaught,
       trend,
+      offeringId: s.offeringId,
+      evalScope: s.evalScope,
     }
   })
 }
@@ -158,13 +235,17 @@ export function deriveResults(surveys: PceSurvey[] = MOCK_SURVEYS): EvalResult[]
     .filter((s) => !s.surveyType || s.surveyType === 'course_evaluation')
     .flatMap(deriveResultsForSurvey)
 
-  // Co-taught: 2+ results share courseCode + term (spec ST-14).
-  const byOffering = new Map<string, number>()
+  // Co-taught: 2+ DISTINCT faculty share courseCode + term (spec ST-14).
+  // Counting rows would false-positive on split-survey offerings, where one
+  // instructor produces multiple rows for the same course + term.
+  const byOffering = new Map<string, Set<string>>()
   for (const r of rows) {
     const k = `${r.courseCode}|${r.term}`
-    byOffering.set(k, (byOffering.get(k) ?? 0) + 1)
+    const set = byOffering.get(k) ?? new Set<string>()
+    set.add(r.facultyId)
+    byOffering.set(k, set)
   }
-  return rows.map((r) => ({ ...r, coTaught: (byOffering.get(`${r.courseCode}|${r.term}`) ?? 0) > 1 }))
+  return rows.map((r) => ({ ...r, coTaught: (byOffering.get(`${r.courseCode}|${r.term}`)?.size ?? 0) > 1 }))
 }
 
 /** ST-14 scoping: PD sees the program table; faculty see only their own rows. */

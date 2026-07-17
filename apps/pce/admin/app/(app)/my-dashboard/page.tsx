@@ -33,7 +33,7 @@ import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, MOCK_RESPONSES, MOCK_SURVEY_QUESTION_DATA } from '@/lib/pce-mock-data'
-import { deriveResults, programScoreBenchmarks } from '@/lib/pce-results'
+import { deriveResults, programScoreBenchmarks, offeringKeyOf } from '@/lib/pce-results'
 import { deriveThemes, type ThemeComment } from '@/lib/pce-themes'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
@@ -190,7 +190,7 @@ export default function MyDashboardPage() {
       id: 'avg', label: 'Avg rating',
       value: avgScore != null ? `${avgScore.toFixed(2)}/5` : '—',
       delta: '', trend: 'neutral',
-      description: `${scored.length} released course${scored.length !== 1 ? 's' : ''}`,
+      description: (() => { const n = new Set(scored.map(offeringKeyOf)).size; return `${n} released course${n !== 1 ? 's' : ''}` })(),
     },
     {
       id: 'vs-program', label: 'Vs program average',
