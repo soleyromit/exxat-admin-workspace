@@ -162,7 +162,7 @@ export function CourseManagementDialog({
                   }}
                 >
                   <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                    <AvatarFallback style={{ fontSize: 11, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                    <AvatarFallback style={{ fontSize: 12, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                       {f.initials}
                     </AvatarFallback>
                   </Avatar>
@@ -215,7 +215,7 @@ export function CourseManagementDialog({
                   }}
                 >
                   <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                    <AvatarFallback style={{ fontSize: 11, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                    <AvatarFallback style={{ fontSize: 12, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                       {f.initials}
                     </AvatarFallback>
                   </Avatar>
@@ -273,7 +273,7 @@ export function CourseManagementDialog({
                     }}
                   >
                     <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                      <AvatarFallback style={{ fontSize: 11, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                      <AvatarFallback style={{ fontSize: 12, fontWeight: 600, backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                         {initials}
                       </AvatarFallback>
                     </Avatar>

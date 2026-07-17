@@ -269,13 +269,15 @@ function FacultyScopeSelector({
         </ToggleGroupItem>
         {instructors.map((f) => (
           <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-            <span
-              aria-hidden="true"
-              className="flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-medium leading-none"
-              style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-            >
-              {f.facultyInitials}
-            </span>
+            {/* DS floor: initials never render in a disc under size-6 (24px) —
+                two 12px caps physically exceed a 20px circle's chord. */}
+            <AvatarInitials
+              initials={f.facultyInitials}
+              size="sm"
+              className="shrink-0"
+              fallbackClassName="text-xs font-medium"
+              decorative
+            />
             {f.facultyName}
           </ToggleGroupItem>
         ))}

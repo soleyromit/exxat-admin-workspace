@@ -120,7 +120,7 @@ export function CountdownView({ selectedTermName, termSurveys, facultyForTerm, a
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 10 }}>{f.initials}</AvatarFallback>
+                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>{f.initials}</AvatarFallback>
                   </Avatar>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{f.name.split(' ').pop()}</span>
                 </div>
