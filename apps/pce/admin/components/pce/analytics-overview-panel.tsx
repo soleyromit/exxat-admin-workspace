@@ -654,8 +654,8 @@ export function AnalyticsOverviewPanel() {
               />
               <ChartCardActions
                 title="Program trajectory"
-                description="Scores and response rate by term, larger."
-                detail={<ProgramTrendStack series={series} />}
+                description="Scores and response rate by term — every point labelled with its exact value."
+                detail={<ProgramTrendStack series={series} detail />}
                 table={{
                   headers: ['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled'],
                   rows: series.map((s) => [
@@ -781,8 +781,8 @@ export function AnalyticsOverviewPanel() {
               />
               <ChartCardActions
                 title="Where responses are lost"
-                description="The response funnel, larger."
-                detail={<ResponseFunnelSankey funnel={funnel} />}
+                description="The response funnel at full height — stage counts and losses read without hovering."
+                detail={<ResponseFunnelSankey funnel={funnel} height={520} />}
                 table={{
                   headers: ['Stage', 'Students', 'Lost after this stage'],
                   rows: [

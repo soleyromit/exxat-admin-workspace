@@ -796,9 +796,17 @@ export function FacultyScoreStrip({
 export function ProgramTrendStack({
   series,
   responseTarget = 80,
+  detail = false,
 }: {
   series: TermSeriesPoint[]
   responseTarget?: number
+  /**
+   * Expanded-dialog mode. The card and its Expand dialog must not show the SAME plot at the
+   * SAME size — the dialog earns its click with height and with every value labelled in
+   * place (Romit, 2026-07-17: "if I see the same minimum info in the dialog, expanding makes
+   * no sense"). Density for a fixed-length term series is exact values, not more marks.
+   */
+  detail?: boolean
 }) {
   const scoreRows = React.useMemo(
     () =>
@@ -870,9 +878,26 @@ export function ProgramTrendStack({
           channels: { Term: 'term', Metric: 'metric', Score: (d: { value: number }) => fmt2(d.value) },
           tip: { format: { x: false, y: false, fill: false } },
         }),
+        // Detail mode labels every point in place — the dialog's added value over the card.
+        // Opposing dy per series, same reason as the end-labels: the two lines track closely.
+        ...(detail
+          ? (['Faculty', 'Course content'] as const).map((metric) =>
+              Plot.text(
+                scoreRows.filter((r) => r.metric === metric),
+                {
+                  x: 'term',
+                  y: 'value',
+                  text: (d: { value: number }) => fmt2(d.value),
+                  fill: 'metric',
+                  dy: metric === 'Faculty' ? -12 : 14,
+                  fontSize: CHART_TICK_FONT_SIZE,
+                },
+              ),
+            )
+          : []),
       ],
     }),
-    [scoreRows, termOrder, scoreDomain],
+    [scoreRows, termOrder, scoreDomain, detail],
   )
 
   const rateSpec = React.useCallback(
@@ -916,9 +941,21 @@ export function ProgramTrendStack({
           channels: { Term: 'term', 'Response rate': (d: { value: number }) => `${d.value}%` },
           tip: { format: { x: false, y: false, fill: false } },
         }),
+        ...(detail
+          ? [
+              Plot.text(rateRows, {
+                x: 'term',
+                y: 'value',
+                text: (d: { value: number }) => `${d.value}%`,
+                fill: (d: { value: number }) => (d.value < responseTarget ? theme.warn : theme.rate),
+                dy: -12,
+                fontSize: CHART_TICK_FONT_SIZE,
+              }),
+            ]
+          : []),
       ],
     }),
-    [rateRows, termOrder, responseTarget],
+    [rateRows, termOrder, responseTarget, detail],
   )
 
   // Blank axes read as a rendering failure, not as an empty state — guard like every other
@@ -931,8 +968,8 @@ export function ProgramTrendStack({
   // beside it. Spend that height on the plots rather than leaving it blank under them.
   return (
     <div className="flex flex-col">
-      <PlotFigure spec={scoreSpec} height={196} />
-      <PlotFigure spec={rateSpec} height={124} />
+      <PlotFigure spec={scoreSpec} height={detail ? 340 : 196} />
+      <PlotFigure spec={rateSpec} height={detail ? 180 : 124} />
     </div>
   )
 }
@@ -1065,9 +1102,12 @@ export function Slopegraph({
 export function CourseTrendStack({
   rows,
   responseTarget = 80,
+  detail = false,
 }: {
   rows: { short: string; year: number; courseAvg: number | null; facultyAvg: number; responseRate: number }[]
   responseTarget?: number
+  /** Expanded-dialog mode — taller plots + every point labelled (see ProgramTrendStack). */
+  detail?: boolean
 }) {
   const termOrder = React.useMemo(() => rows.map((r) => r.short), [rows])
 
@@ -1114,9 +1154,24 @@ export function CourseTrendStack({
             },
           ),
         ),
+        ...(detail
+          ? (['Faculty', 'Course content'] as const).map((metric) =>
+              Plot.text(
+                scoreRows.filter((r) => r.metric === metric),
+                {
+                  x: 'term',
+                  y: 'value',
+                  text: (d: { value: number }) => fmt2(d.value),
+                  fill: 'metric',
+                  dy: metric === 'Faculty' ? -12 : 14,
+                  fontSize: CHART_TICK_FONT_SIZE,
+                },
+              ),
+            )
+          : []),
       ],
     }),
-    [scoreRows, termOrder, scoreDomain],
+    [scoreRows, termOrder, scoreDomain, detail],
   )
 
   const rateSpec = React.useCallback(
@@ -1144,17 +1199,30 @@ export function CourseTrendStack({
           channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
           tip: { format: { x: false, y: false, fill: false, r: false } },
         }),
+        ...(detail
+          ? [
+              Plot.text(rows, {
+                x: 'short',
+                y: 'responseRate',
+                text: (d: { responseRate: number }) => `${d.responseRate}%`,
+                fill: (d: { responseRate: number }) =>
+                  d.responseRate < responseTarget ? theme.warn : theme.rate,
+                dy: -12,
+                fontSize: CHART_TICK_FONT_SIZE,
+              }),
+            ]
+          : []),
       ],
     }),
-    [rows, termOrder, responseTarget],
+    [rows, termOrder, responseTarget, detail],
   )
 
   if (rows.length < 2) return <ChartEmpty note="One term of history — a trend needs at least two." />
 
   return (
     <div className="flex flex-col">
-      <PlotFigure spec={scoreSpec} height={172} />
-      <PlotFigure spec={rateSpec} height={116} />
+      <PlotFigure spec={scoreSpec} height={detail ? 340 : 172} />
+      <PlotFigure spec={rateSpec} height={detail ? 180 : 116} />
     </div>
   )
 }

@@ -1681,8 +1681,8 @@ export function ByCoursePanel({
                   />
                   <ChartCardActions
                     title={`Score trend — ${courseCode}`}
-                    description="Content and teaching scores by term for this course, larger."
-                    detail={<CourseTrendStack rows={courseTrendRows} />}
+                    description="Content and teaching scores by term — every point labelled with its exact value."
+                    detail={<CourseTrendStack rows={courseTrendRows} detail />}
                     table={{
                       headers: ['Term', 'Content', 'Teaching', 'Response rate', 'Faculty'],
                       rows: courseTrendRows.map((d) => [
