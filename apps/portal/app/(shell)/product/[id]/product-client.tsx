@@ -143,7 +143,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   <img
                     src={product.screenshot}
                     alt={`${product.name} admin interface preview`}
-                    className="w-full rounded-t-xl border border-border shadow-lg"
+                    className="w-full rounded-t-xl border border-border"
                   />
                 </div>
               ) : (
@@ -184,7 +184,8 @@ export default function ProductDetailPage({ id }: { id: string }) {
                     </Badge>
                   )}
                 </div>
-                {!product.comingSoon && (
+                {/* Suppressed for not-subscribed products too — the rail's Connect-with-sales owns primary there. */}
+                {!product.comingSoon && product.subscriptionStatus !== 'not-subscribed' && (
                   <Button asChild variant="default" size="sm" className="shrink-0">
                     <a href={product.adminUrl} target="_blank" rel="noreferrer">
                       Open Admin
