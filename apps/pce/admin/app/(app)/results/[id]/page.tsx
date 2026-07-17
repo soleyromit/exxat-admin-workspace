@@ -402,7 +402,15 @@ function FacultyScopeSelector({
         </ToggleGroupItem>
         {instructors.map((f) => (
           <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-            <AvatarInitials initials={f.facultyInitials} className="size-5 text-xs shrink-0" decorative />
+            {/* DS floor: initials never render in a disc under size-6 (24px) —
+                two 12px caps physically exceed a 20px circle's chord. */}
+            <AvatarInitials
+              initials={f.facultyInitials}
+              size="sm"
+              className="shrink-0"
+              fallbackClassName="text-xs font-medium"
+              decorative
+            />
             {f.facultyName}
           </ToggleGroupItem>
         ))}
@@ -703,7 +711,7 @@ function CommentList({
           is aria-level 2, heading order must not skip (axe heading-order). */}
       <div className="flex items-center gap-2 pb-1.5 border-b border-border min-w-0">
         {person ? (
-          <AvatarInitials initials={person.initials} className="size-6 text-xs" decorative />
+          <AvatarInitials initials={person.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
         ) : icon ? (
           <i className={`fa-light ${icon} text-xs text-muted-foreground`} aria-hidden="true" />
         ) : null}
@@ -875,7 +883,10 @@ function ScoreCard({
             <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted underline-offset-2 cursor-help">
+                  <span
+                    tabIndex={0}
+                    className="underline decoration-dotted underline-offset-2 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
                     {prior.term}
                   </span>
                 </TooltipTrigger>
@@ -1283,7 +1294,7 @@ function QuestionBreakdownTable({
                         className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-1.5 ps-5"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <AvatarInitials initials={f.initials} className="size-6 text-xs" decorative />
+                          <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
                           <span className="text-xs text-muted-foreground truncate">{f.name}</span>
                         </div>
                         <MiniRatingColumns counts={f.counts} total={f.total} />
@@ -1851,10 +1862,15 @@ function ResultDetail({
     (c) => !survey.instructors.some((i) => i.id === commentSubjectId(c)),
   )
   const visibleComments = allComments.filter((c) => !hiddenIdx.includes(c.index))
+  /* What THIS viewer can see — moderators also see hidden comments. Card
+     description, filter counts and section lists must all draw from this one
+     pool so no two numbers on the card disagree. (Themes/recommendations stay
+     on visibleComments: they describe what faculty will read.) */
+  const viewerComments = isPD ? allComments : visibleComments
   const commentTypeCounts = {
-    course: visibleComments.filter((c) => c.section === 'course_content').length,
-    faculty: visibleComments.filter((c) => c.section === 'faculty_performance').length,
-    general: visibleComments.filter((c) => c.section === 'course_director').length,
+    course: viewerComments.filter((c) => c.section === 'course_content').length,
+    faculty: viewerComments.filter((c) => c.section === 'faculty_performance').length,
+    general: viewerComments.filter((c) => c.section === 'course_director').length,
   }
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
@@ -1863,7 +1879,7 @@ function ResultDetail({
      (Hotjar's sentiment-quote row): per-type counts + one representative
      quote, a constructive one first since that's the actionable read. */
   const previewQuote =
-    visibleComments.find((c) => c.sentiment === 'concern') ?? visibleComments[0] ?? null
+    viewerComments.find((c) => c.sentiment === 'concern') ?? viewerComments[0] ?? null
 
   const RECOMMENDATION: Record<string, string> = {
     Pacing: 'Revisit the weekly cadence — students flagged pacing; consider spreading the heaviest units.',
@@ -1888,8 +1904,8 @@ function ResultDetail({
   const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
   const qualCountFor = (f: SentimentFilter) =>
     f === 'all'
-      ? visibleComments.length
-      : visibleComments.filter((c) => (c.sentiment ?? 'neutral') === f).length
+      ? viewerComments.length
+      : viewerComments.filter((c) => (c.sentiment ?? 'neutral') === f).length
   /* Release feedback — the header comment's promised LocalBanner state flip
      (toast banned); success must be announced, not inferred from a button
      disappearing. */
@@ -2311,7 +2327,7 @@ function ResultDetail({
                       <CardHeader>
                         <CardTitle className="text-sm" aria-level={2}>Qualitative feedback</CardTitle>
                         <CardDescription>
-                          {visibleComments.length} student comment{visibleComments.length !== 1 ? 's' : ''}
+                          {viewerComments.length} student comment{viewerComments.length !== 1 ? 's' : ''}
                           {commentTypeCounts.course > 0 ? ` · ${commentTypeCounts.course} course` : ''}
                           {commentTypeCounts.faculty > 0 ? ` · ${commentTypeCounts.faculty} faculty` : ''}
                           {commentTypeCounts.general > 0 ? ` · ${commentTypeCounts.general} general` : ''}
