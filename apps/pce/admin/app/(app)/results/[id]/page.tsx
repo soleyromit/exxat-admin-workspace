@@ -2298,13 +2298,13 @@ function ResultDetail({
               <div id="scores" className="scroll-mt-16 flex flex-col gap-2">
                 {inCollection ? (
                   <div className="flex items-baseline gap-2">
-                    <h3 className="text-sm font-semibold text-foreground">Early signal</h3>
+                    <h2 className="text-sm font-semibold text-foreground">Early signal</h2>
                     <span className="text-xs text-muted-foreground">
                       Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far — expect movement until close
                     </span>
                   </div>
                 ) : (
-                  <h3 className="text-sm font-semibold text-foreground">Scores</h3>
+                  <h2 className="text-sm font-semibold text-foreground">Scores</h2>
                 )}
                 {releaseSuccess && (
                   <LocalBanner
