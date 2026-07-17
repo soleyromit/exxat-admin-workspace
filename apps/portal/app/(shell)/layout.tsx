@@ -1,6 +1,6 @@
 'use client'
 
-import { TooltipProvider } from '@exxatdesignux/ui'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 
