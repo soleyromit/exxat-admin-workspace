@@ -60,13 +60,11 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   ExportDrawer,
-  Sheet,
-  SheetClose,
-  SheetDescription,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  FloatingSheetPanel,
+  FloatingSheetPanelBody,
+  FloatingSheetPanelContent,
+  FloatingSheetPanelHeader,
+  ToggleSwitch,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -91,11 +89,16 @@ import {
   MOCK_PROGRAM_TERMS,
   medianFromDistribution,
   programAvgForQuestion,
+  EVALUATION_TYPE_LABEL,
+  EVALUATION_TYPE_ICON,
+  EVALUATION_TYPE_ORDER,
+  type EvaluationType,
   type PceSurvey,
   type PriorOffering,
   type ResponseComment,
   type PceTemplateSection,
 } from '@/lib/pce-mock-data'
+import { evaluationsFor } from '@/lib/pce-evaluations'
 
 /* ── shared bits ──────────────────────────────────────────────────────────── */
 
@@ -214,6 +217,131 @@ function OfferingSurveySwitcher({ current, siblings }: { current: EvalResult; si
               </span>
             )}
           </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Per-evaluation-type summary strip (Romit 2026-07-17 critique): the offering
+ *  runs SEVERAL evaluation types on their own clocks, so the detail must
+ *  answer "which types, how did each do" at a glance — status + avg + count
+ *  per type. A type on THIS survey jumps to its question group; a type on a
+ *  split-offering sibling survey links there, its score/state carried inline
+ *  so the divergence is visible without navigating. */
+function EvaluationSummaryStrip({
+  survey,
+  result,
+  siblings,
+  courseAvg,
+  facultyAvg,
+  facultyLabel,
+  hasCourse,
+  onGo,
+}: {
+  survey: PceSurvey
+  result: EvalResult
+  siblings: EvalResult[]
+  courseAvg: number | null
+  facultyAvg: number | null
+  /** Names line on the Faculty chip — one instructor's name or "N instructors". */
+  facultyLabel: string | null
+  /** False for a faculty-only template — no Course chip to show. */
+  hasCourse: boolean
+  onGo: (anchorId: string) => void
+}) {
+  const origin = useResultsOrigin()
+  const SCOPE_TO_TYPE: Record<'course' | 'instructor', EvaluationType> = {
+    course: 'course_material',
+    instructor: 'faculty_roles',
+  }
+  const siblingByType = new Map(
+    siblings.filter((s) => s.evalScope).map((s) => [SCOPE_TO_TYPE[s.evalScope!], s]),
+  )
+  const instances = new Map(evaluationsFor(survey).map((e) => [e.type, e]))
+  const currentType = result.evalScope ? SCOPE_TO_TYPE[result.evalScope] : null
+
+  /* One chip per type the offering actually runs: on this survey (merged, or
+     the current half of a split) or on a sibling survey. */
+  const chips = EVALUATION_TYPE_ORDER.filter(
+    (t) =>
+      (currentType === null || currentType === t || siblingByType.has(t)) &&
+      (t !== 'course_material' || hasCourse || siblingByType.has(t)),
+  )
+
+  const chipInner = (type: EvaluationType) => {
+    const sibling = currentType !== null && currentType !== type ? siblingByType.get(type) : undefined
+    const isFaculty = type === 'faculty_roles'
+    const avg = sibling ? sibling.avgScore : isFaculty ? facultyAvg : courseAvg
+    const inst = instances.get(type)
+    const responses = sibling ? sibling.responses : inst?.responseCount ?? survey.responseCount
+    const enrolled = sibling ? sibling.enrolled : inst?.enrollmentCount ?? survey.enrollmentCount
+    const state = sibling ? facultyFacingState(sibling) : 'score'
+    const gated = state !== 'score'
+    return (
+      <>
+        <span className="flex items-center gap-1.5 min-w-0">
+          <i className={`fa-light ${EVALUATION_TYPE_ICON[type]} text-xs text-muted-foreground`} aria-hidden="true" />
+          <span className="text-xs font-medium text-foreground whitespace-nowrap">
+            {EVALUATION_TYPE_LABEL[type]} evaluation
+          </span>
+          {isFaculty && facultyLabel && !sibling && (
+            <span className="text-xs text-muted-foreground truncate">· {facultyLabel}</span>
+          )}
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+          {sibling ? (
+            <StatusBadge
+              label={RESULT_STATUS_BADGE[state === 'review-pending' ? 'locked' : state === 'draft' ? 'suppressed' : 'available'].label}
+              tone={RESULT_STATUS_BADGE[state === 'review-pending' ? 'locked' : state === 'draft' ? 'suppressed' : 'available'].tone}
+            />
+          ) : inst ? (
+            <SurveyStatusBadgeOS status={inst.status} />
+          ) : null}
+          {!gated && avg != null && (
+            <span>
+              Avg <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
+            </span>
+          )}
+          {!gated && <span>· {responses} of {enrolled}</span>}
+        </span>
+      </>
+    )
+  }
+
+  const chipClass =
+    'flex items-center gap-3 rounded-lg border border-border px-3 py-2 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+
+  if (chips.length < 2 && currentType === null) return null
+  return (
+    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Evaluation types for this course offering">
+      {chips.map((type) => {
+        const sibling = currentType !== null && currentType !== type ? siblingByType.get(type) : undefined
+        if (sibling) {
+          return (
+            <Link
+              key={type}
+              href={withFrom(`/results/${encodeURIComponent(sibling.id)}`, origin.from)}
+              className={chipClass}
+            >
+              {chipInner(type)}
+            </Link>
+          )
+        }
+        const active = currentType === type
+        return (
+          <a
+            key={type}
+            href="#"
+            aria-current={active ? 'true' : undefined}
+            onClick={(e) => {
+              e.preventDefault()
+              onGo(type === 'course_material' ? 'group-course' : 'group-faculty')
+            }}
+            className={`${chipClass} ${active ? 'bg-muted/40' : ''}`}
+          >
+            {chipInner(type)}
+          </a>
         )
       })}
     </div>
@@ -492,19 +620,64 @@ interface IndexedComment extends ResponseComment {
   surveyIdForToggle: string
 }
 
+/** Shared sentiment filter — ONE instance per surface (card top / sheet top),
+ *  never repeated per section: the filter must not outweigh the content it
+ *  filters (Hotjar's single filter row over the whole response list). */
+function SentimentFilterGroup({
+  value,
+  onChange,
+  countFor,
+  label,
+}: {
+  value: SentimentFilter
+  onChange: (f: SentimentFilter) => void
+  countFor: (f: SentimentFilter) => number
+  label: string
+}) {
+  return (
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(v) => v && onChange(v as SentimentFilter)}
+      variant="outline"
+      size="sm"
+      aria-label={label}
+    >
+      {SENTIMENT_FILTERS.map((f) => (
+        <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
+          {f.label} ({countFor(f.key)})
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
+}
+
+/** How many comments each section shows before "Show all" — keeps a
+ *  high-volume section scannable without a nested scrollbar. */
+const COMMENTS_PREVIEW_COUNT = 6
+
 function CommentList({
   title,
+  icon,
+  person,
   comments,
   hiddenIdx,
   canModerate,
+  filter,
 }: {
   title: string
+  /** Evaluation-type glyph for the group header (course / faculty / general). */
+  icon?: string
+  /** Attributed instructor — renders an avatar so "about whom" is unmissable. */
+  person?: { name: string; initials: string }
   comments: IndexedComment[]
   hiddenIdx: number[]
   canModerate: boolean
+  /** Owned by the surface — ONE filter governs every section (PR #53). */
+  filter: SentimentFilter
 }) {
   const { toggleHideComment } = usePce()
-  const [filter, setFilter] = useState<SentimentFilter>('all')
+  const [showAll, setShowAll] = useState(false)
 
   const visibleToRole = canModerate
     ? comments
@@ -514,73 +687,80 @@ function CommentList({
       ? visibleToRole
       : visibleToRole.filter((c) => (c.sentiment ?? 'neutral') === filter)
   const hiddenCount = comments.filter((c) => hiddenIdx.includes(c.index)).length
+  const shown = showAll ? filtered : filtered.slice(0, COMMENTS_PREVIEW_COUNT)
 
   if (comments.length === 0) return null
 
-  const countFor = (f: SentimentFilter) =>
-    f === 'all'
-      ? visibleToRole.length
-      : visibleToRole.filter((c) => (c.sentiment ?? 'neutral') === f).length
-
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h4 className="text-sm font-medium flex items-center gap-2">
-          {title}
-          {canModerate && hiddenCount > 0 && (
-            <StatusBadge label={`${hiddenCount} hidden from faculty`} tone="neutral" />
-          )}
-        </h4>
-        <ToggleGroup
-          type="single"
-          value={filter}
-          onValueChange={(v) => v && setFilter(v as SentimentFilter)}
-          variant="outline"
-          size="sm"
-          aria-label={`Filter ${title.toLowerCase()} by sentiment`}
-        >
-          {SENTIMENT_FILTERS.map((f) => (
-            <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
-              {f.label} ({countFor(f.key)})
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+    <section className="flex flex-col" aria-label={title}>
+      {/* Section header: provenance identity (type glyph or instructor avatar)
+          + counts only. Hidden count is quiet meta for the moderator — status
+          chips stay down on the rows they describe. h3: the card title above
+          is aria-level 2, heading order must not skip (axe heading-order). */}
+      <div className="flex items-center gap-2 pb-1.5 border-b border-border min-w-0">
+        {person ? (
+          <AvatarInitials initials={person.initials} className="size-6 text-xs" decorative />
+        ) : icon ? (
+          <i className={`fa-light ${icon} text-xs text-muted-foreground`} aria-hidden="true" />
+        ) : null}
+        <h3 className="text-sm font-medium truncate">{title}</h3>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {visibleToRole.length}
+          {canModerate && hiddenCount > 0 && <> · {hiddenCount} hidden from faculty</>}
+        </span>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-2">No {title.toLowerCase()} match this filter.</p>
+        <p className="text-sm text-muted-foreground py-3">No comments match this filter.</p>
       ) : (
-        <div className="flex flex-col max-h-96 overflow-y-auto">
-          {filtered.map((c) => {
+        <div className="flex flex-col">
+          {shown.map((c) => {
             const isHidden = hiddenIdx.includes(c.index)
             const chip = SENTIMENT_CHIP[c.sentiment ?? 'neutral']
+            const switchId = `comment-visible-${c.surveyIdForToggle}-${c.index}`
             return (
-              <div key={c.index} className="flex flex-col gap-2 py-3 border-b border-border last:border-0">
-                {/* Quote first — the comment is the content; chips and controls
-                    stay on a meta line so the text reads uninterrupted.
-                    De-emphasis via the AA-calibrated token, never opacity. */}
-                <p className={`text-sm leading-relaxed ${isHidden ? 'text-muted-foreground' : ''}`}>
-                  &ldquo;{c.text}&rdquo;
-                </p>
-                <div className="flex items-center gap-2">
-                  <StatusBadge label={chip.label} tone={chip.tone} />
-                  {isHidden && <StatusBadge label="Hidden from faculty" tone="neutral" />}
-                  {canModerate && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="ms-auto shrink-0"
-                      onClick={() => toggleHideComment(c.surveyIdForToggle, c.index)}
-                    >
-                      {isHidden ? 'Unhide' : 'Hide from faculty'}
-                    </Button>
-                  )}
+              <div
+                key={c.index}
+                className="flex items-start gap-6 py-3 border-b border-border last:border-0"
+              >
+                {/* Quote first — the comment is the content; the sentiment chip
+                    annotates beneath. De-emphasis via the AA-calibrated token,
+                    never opacity. */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <p className={`text-sm leading-relaxed ${isHidden ? 'text-muted-foreground' : ''}`}>
+                    &ldquo;{c.text}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge label={chip.label} tone={chip.tone} />
+                  </div>
                 </div>
+                {/* Moderation is a stateful control, not a chip-shaped button:
+                    the switch carries BOTH the current visibility and the
+                    action (PR #53 — "Hide doesn't look actionable"). */}
+                {canModerate && (
+                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    <label htmlFor={switchId} className="text-xs text-muted-foreground">
+                      Visible to faculty
+                    </label>
+                    <ToggleSwitch
+                      id={switchId}
+                      checked={!isHidden}
+                      onChange={() => toggleHideComment(c.surveyIdForToggle, c.index)}
+                    />
+                  </div>
+                )}
               </div>
             )
           })}
+          {filtered.length > COMMENTS_PREVIEW_COUNT && (
+            <div className="pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowAll((s) => !s)}>
+                {showAll ? 'Show fewer' : `Show all ${filtered.length} comments`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -882,6 +1062,21 @@ interface BreakdownRow {
   programAvg?: number | null
   counts?: number[]
   total?: number
+  /** Multi-instructor course, "All faculty" scope: the per-instructor split of
+   *  this faculty question — the aggregate row above stays the summary. */
+  perFaculty?: { facultyId: string; name: string; initials: string; avg: number; counts: number[]; total: number }[]
+}
+
+/** Band + context metadata per question group — the provenance callout
+ *  (which evaluation type, about whom) that the bare group key can't carry. */
+interface GroupMeta {
+  icon: string
+  label: string
+  /** Faculty band only — instructor name(s) the questions are about. */
+  sub?: string
+  anchorId: string
+  /** One-line provenance for the written-responses sheet. */
+  contextLine: string
 }
 
 /** % of responses rated 4 or 5 — the favorable share that orders and labels
@@ -922,68 +1117,92 @@ function CompareText({
   )
 }
 
-/** Free-text row — a one-line preview shows the work inline (not just a
- *  count); the full anonymized list opens in a sheet. Count comes from the
- *  actual response records so the sheet can always back what the row claims. */
-function WrittenResponsesRow({ row, surveyId }: { row: BreakdownRow; surveyId: string }) {
+/** Free-text row — Sprig's question-first block (PR #53 anatomy): question as
+ *  the heading, a count + sentiment meta line, TWO preview quotes inline, and
+ *  the full anonymized list in a FloatingSheetPanel whose subtitle carries the
+ *  evaluation-type provenance. Count comes from the actual response records so
+ *  the sheet can always back what the row claims. */
+function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; surveyId: string; context?: string }) {
   const responses = MOCK_OPEN_TEXT_RESPONSES.filter(
     (x) => x.surveyId === surveyId && x.questionText === row.label,
   )
   const count = responses.length
+  const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState<SentimentFilter>('all')
+  const filtered =
+    filter === 'all' ? responses : responses.filter((x) => (x.sentiment ?? 'neutral') === filter)
+  const countFor = (f: SentimentFilter) =>
+    f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
+  const positives = countFor('positive')
+  const concerns = countFor('concern')
+  const previews = responses.slice(0, 2)
   return (
     <div
       id={`question-${row.id}`}
-      className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto] items-center gap-6 py-3 border-b border-border last:border-0"
+      className="scroll-mt-16 flex flex-col gap-2 py-3 border-b border-border last:border-0"
     >
-      <div className="min-w-0 flex flex-col gap-1">
-        <p className="text-sm">{row.label}</p>
+      <div className="flex items-start justify-between gap-6">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <p className="text-sm">{row.label}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {count === 0
+              ? 'Written responses — none yet'
+              : `${count} written response${count !== 1 ? 's' : ''}`}
+            {positives > 0 && <> · {positives} positive</>}
+            {concerns > 0 && <> · {concerns} constructive</>}
+          </p>
+        </div>
         {count > 0 && (
-          <p className="text-sm text-muted-foreground truncate">&ldquo;{responses[0].text}&rdquo;</p>
-        )}
-      </div>
-      {count === 0 ? (
-        <span className="justify-self-end text-sm text-muted-foreground">No responses yet</span>
-      ) : (
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className="justify-self-end">
-            View {count} response{count !== 1 ? 's' : ''}
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => setOpen(true)}>
+            View all {count}
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
           </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          showOverlay={false}
-          showCloseButton={false}
-          className="w-[480px] sm:max-w-[480px] flex flex-col gap-0 p-0"
-        >
-          <SheetHeader className="px-6 py-5 border-b border-border">
-            <SheetTitle className="text-sm font-semibold leading-snug">{row.label}</SheetTitle>
-            <SheetDescription className="text-sm text-muted-foreground">
-              {count} written response{count !== 1 ? 's' : ''} · anonymized
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto px-6">
-            {/* Same row anatomy as the qualitative-feedback card — quote
-                first, sentiment chip on the meta line beneath. */}
-            {responses.map((x) => {
-              const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
-              return (
-                <div key={x.id} className="flex flex-col gap-2 py-3 border-b border-border last:border-0">
-                  <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
-                  {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
-                </div>
-              )
-            })}
-          </div>
-          <div className="px-6 py-4 border-t border-border flex justify-end shrink-0">
-            <SheetClose asChild>
-              <Button variant="outline" size="sm">Close</Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
-      )}
+        )}
+      </div>
+      {previews.map((x) => (
+        <p key={x.id} className="text-sm text-muted-foreground truncate">
+          &ldquo;{x.text}&rdquo;
+        </p>
+      ))}
+      <FloatingSheetPanel open={open} onOpenChange={setOpen}>
+        <FloatingSheetPanelContent>
+          <FloatingSheetPanelHeader
+            title={row.label}
+            subtitle={`${count} written response${count !== 1 ? 's' : ''} · anonymized${context ? ` · ${context}` : ''}`}
+            onClose={() => setOpen(false)}
+          />
+          <FloatingSheetPanelBody className="flex flex-col gap-4">
+            <SentimentFilterGroup
+              value={filter}
+              onChange={setFilter}
+              countFor={countFor}
+              label={`Filter responses to “${row.label}” by sentiment`}
+            />
+            <div className="flex flex-col">
+              {filtered.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3">
+                  No responses match this filter.
+                </p>
+              ) : (
+                /* Same row anatomy as the qualitative-feedback card — quote
+                   first, sentiment chip on the meta line beneath. */
+                filtered.map((x) => {
+                  const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
+                  return (
+                    <div
+                      key={x.id}
+                      className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
+                    >
+                      <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
+                      {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </FloatingSheetPanelBody>
+        </FloatingSheetPanelContent>
+      </FloatingSheetPanel>
     </div>
   )
 }
@@ -991,9 +1210,11 @@ function WrittenResponsesRow({ row, surveyId }: { row: BreakdownRow; surveyId: s
 function QuestionBreakdownTable({
   rows,
   surveyId,
+  groupMeta,
 }: {
   rows: BreakdownRow[]
   surveyId: string
+  groupMeta: Record<string, GroupMeta>
 }) {
   if (rows.length === 0) return null
   const groups = [...new Set(rows.map((r) => r.group))]
@@ -1018,40 +1239,83 @@ function QuestionBreakdownTable({
         </div>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
-      {groups.map((group) => (
+      {groups.map((group) => {
+        const meta = groupMeta[group]
+        return (
         <Fragment key={group}>
-          <div className="bg-muted/50 -mx-6 px-6 py-1.5 border-b border-border">
-            <span className="text-xs font-medium text-muted-foreground">{group}</span>
+          {/* Provenance band — WHICH evaluation these questions belong to, and
+              (faculty) about WHOM. Foreground label: this is the callout. */}
+          <div
+            id={meta?.anchorId}
+            className="scroll-mt-16 bg-muted/50 -mx-6 px-6 py-2 border-b border-border flex items-center gap-2 flex-wrap"
+          >
+            {meta && <i className={`fa-light ${meta.icon} text-xs text-muted-foreground`} aria-hidden="true" />}
+            <span className="text-xs font-medium text-foreground">{meta?.label ?? group}</span>
+            {meta?.sub && <span className="text-xs text-muted-foreground">· {meta.sub}</span>}
           </div>
           {orderedFor(group).map((r) =>
             r.kind === 'rated' ? (
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                className="scroll-mt-16 border-b border-border last:border-0"
               >
-                <p className="text-sm min-w-0">{r.label}</p>
-                <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
-                <CompareText avg={r.avg} programAvg={r.programAvg} />
+                <div className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-3">
+                  <p className="text-sm min-w-0">{r.label}</p>
+                  <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
+                  <CompareText avg={r.avg} programAvg={r.programAvg} />
+                </div>
+                {/* Per-instructor split — the aggregate above stays the summary;
+                    each named row shows whose teaching the ratings describe. */}
+                {r.perFaculty && r.perFaculty.length > 0 && (
+                  <div className="flex flex-col pb-2">
+                    {r.perFaculty.map((f) => (
+                      <div
+                        key={f.facultyId}
+                        className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-1.5 ps-5"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <AvatarInitials initials={f.initials} className="size-6 text-xs" decorative />
+                          <span className="text-xs text-muted-foreground truncate">{f.name}</span>
+                        </div>
+                        <MiniRatingColumns counts={f.counts} total={f.total} />
+                        <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
+                          Avg <span className="font-semibold text-foreground">{f.avg.toFixed(1)}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} />
+              <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} context={meta?.contextLine} />
             ),
           )}
         </Fragment>
-      ))}
+        )
+      })}
       <ChartDataTable
         caption="Question breakdown"
         headers={['Question', 'Group', 'Average', 'Median', 'Program average', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5']}
         rows={rows
           .filter((r) => r.kind === 'rated')
-          .map((r) => [
-            r.label,
-            r.group,
-            r.avg != null ? r.avg.toFixed(1) : '—',
-            r.median != null ? r.median.toFixed(1) : '—',
-            r.programAvg != null ? r.programAvg.toFixed(1) : '—',
-            ...(r.counts ?? [0, 0, 0, 0, 0]),
+          .flatMap((r) => [
+            [
+              r.label,
+              r.group,
+              r.avg != null ? r.avg.toFixed(1) : '—',
+              r.median != null ? r.median.toFixed(1) : '—',
+              r.programAvg != null ? r.programAvg.toFixed(1) : '—',
+              ...(r.counts ?? [0, 0, 0, 0, 0]),
+            ],
+            ...(r.perFaculty ?? []).map((f) => [
+              `${r.label} — ${f.name}`,
+              r.group,
+              f.avg.toFixed(1),
+              '—',
+              '—',
+              ...f.counts,
+            ]),
           ])}
       />
     </div>
@@ -1373,6 +1637,18 @@ function ResultDetail({
    * or a single instructorId; the chips in the identity strip drive it. */
   const [facultyScope, setFacultyScope] = useState<'all' | string>('all')
 
+  /* Whose faculty data the page currently shows — a picked instructor, the
+   * sole instructor, or (multi-instructor, 'all') nobody nameable. Drives the
+   * Faculty Performance card title, the question-group band, comment-group
+   * headers, and the summary strip (Romit 2026-07-17: every faculty-scoped
+   * surface must SAY whose data it is). */
+  const scopedInstructor =
+    facultyScope !== 'all' ? survey.instructors.find((i) => i.id === facultyScope) ?? null : null
+  const soleInstructor = survey.instructors.length === 1 ? survey.instructors[0] : null
+  const scopedFacultyName = scopedInstructor?.name ?? soleInstructor?.name ?? null
+  const facultyChipLabel =
+    scopedFacultyName ?? (survey.instructors.length > 1 ? `${survey.instructors.length} instructors` : null)
+
   /* Ops actions — the full set from the evaluations table (Romit 2026-07-09) */
   const [remindOpen, setRemindOpen] = useState(false)
   const [extendOpen, setExtendOpen] = useState(false)
@@ -1555,19 +1831,29 @@ function ResultDetail({
     surveyIdForToggle: survey.id,
   })) as IndexedComment[]
   const courseComments = allComments.filter((c) => c.section === 'course_content')
-  const facultyComments = allComments.filter((c) => c.section !== 'course_content')
+  const generalComments = allComments.filter((c) => c.section === 'course_director')
+  const facultyComments = allComments.filter((c) => c.section === 'faculty_performance')
+  /* Subject attribution — explicit facultyId, else the sole instructor. The
+     subject is who the comment is ABOUT; authorship stays anonymous. */
+  const commentSubjectId = (c: IndexedComment) => c.facultyId ?? soleInstructor?.id ?? null
+  const facultyCommentGroups = survey.instructors
+    .map((i) => ({ instructor: i, comments: facultyComments.filter((c) => commentSubjectId(c) === i.id) }))
+    .filter((g) => g.comments.length > 0)
+  const unattributedFacultyComments = facultyComments.filter(
+    (c) => !survey.instructors.some((i) => i.id === commentSubjectId(c)),
+  )
   const visibleComments = allComments.filter((c) => !hiddenIdx.includes(c.index))
+  const commentTypeCounts = {
+    course: visibleComments.filter((c) => c.section === 'course_content').length,
+    faculty: visibleComments.filter((c) => c.section === 'faculty_performance').length,
+    general: visibleComments.filter((c) => c.section === 'course_director').length,
+  }
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
   const concernThemes = aiThemes.filter((t) => t.sentiment === 'concern')
   /* Collapsed-state preview — the card says something before it's expanded
-     (Hotjar's sentiment-quote row): counts + one representative quote, a
-     constructive one first since that's the actionable read. */
-  const sentimentCounts = {
-    positive: visibleComments.filter((c) => c.sentiment === 'positive').length,
-    concern: visibleComments.filter((c) => c.sentiment === 'concern').length,
-    neutral: visibleComments.filter((c) => c.sentiment === 'neutral').length,
-  }
+     (Hotjar's sentiment-quote row): per-type counts + one representative
+     quote, a constructive one first since that's the actionable read. */
   const previewQuote =
     visibleComments.find((c) => c.sentiment === 'concern') ?? visibleComments[0] ?? null
 
@@ -1590,6 +1876,12 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* ONE sentiment filter governs every comment section (PR #53 anatomy). */
+  const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
+  const qualCountFor = (f: SentimentFilter) =>
+    f === 'all'
+      ? visibleComments.length
+      : visibleComments.filter((c) => (c.sentiment ?? 'neutral') === f).length
   /* Release feedback — the header comment's promised LocalBanner state flip
      (toast banned); success must be announced, not inferred from a button
      disappearing. */
@@ -1607,13 +1899,23 @@ function ResultDetail({
       wasClosed ? 320 : 30,
     )
   }
-  const questionIndex = useMemo(
+  /* Rail index mirrors the table's provenance: questions nested under their
+     evaluation-type group, numbering restarting per group. */
+  const questionIndexGroups = useMemo(
     () =>
-      [...courseSections, ...facultySections].flatMap((section) =>
-        section.questions
-          .filter((q) => q.answerType !== 'title')
-          .map((q) => ({ id: q.id, label: q.text })),
-      ),
+      [
+        { key: 'Course' as const, sections: courseSections },
+        { key: 'Faculty' as const, sections: facultySections },
+      ]
+        .map((g) => ({
+          key: g.key,
+          items: g.sections.flatMap((section) =>
+            section.questions
+              .filter((q) => q.answerType !== 'title')
+              .map((q) => ({ id: q.id, label: q.text })),
+          ),
+        }))
+        .filter((g) => g.items.length > 0),
     [courseSections, facultySections],
   )
 
@@ -1640,6 +1942,28 @@ function ResultDetail({
           const score = scoreFor(section.subjectKey, q.id, group.faculty)
           if (!score) continue
           const counts = score.distribution ?? [0, 0, 0, 0, 0]
+          /* Multi-instructor + "All faculty": name each instructor's block so
+             the aggregate never hides whose teaching a rating describes.
+             ≤3 instructors render inline (Romit-approved brief); beyond that
+             the scope selector is the per-person path. */
+          let perFaculty: BreakdownRow['perFaculty']
+          if (group.faculty && facultyScope === 'all' && survey.instructors.length > 1 && survey.instructors.length <= 3) {
+            const split = (qData.instructorBlocks ?? []).flatMap((b) => {
+              const inst = survey.instructors.find((i) => i.id === b.instructorId)
+              const hit = inst ? b.scores.find((x) => x.questionId === q.id) : undefined
+              if (!inst || !hit) return []
+              const c = hit.distribution ?? [0, 0, 0, 0, 0]
+              return [{
+                facultyId: inst.id,
+                name: inst.name,
+                initials: inst.initials,
+                avg: hit.avg,
+                counts: c,
+                total: c.reduce((a, b) => a + b, 0),
+              }]
+            })
+            if (split.length > 1) perFaculty = split
+          }
           out.push({
             id: q.id,
             label: q.text,
@@ -1650,6 +1974,7 @@ function ResultDetail({
             programAvg: programAvgForQuestion(q.id),
             counts,
             total: counts.reduce((a, b) => a + b, 0),
+            perFaculty,
           })
         }
       }
@@ -1657,6 +1982,28 @@ function ResultDetail({
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, survey.instructors])
+
+  /* Question-group provenance — band label + icon + "about whom" per group,
+     shared with the written-responses sheet and the anchor rail. */
+  const groupMeta: Record<string, GroupMeta> = {
+    Course: {
+      icon: EVALUATION_TYPE_ICON.course_material,
+      label: 'Course evaluation',
+      anchorId: 'group-course',
+      contextLine: 'Course evaluation',
+    },
+    Faculty: {
+      icon: EVALUATION_TYPE_ICON.faculty_roles,
+      label: 'Faculty evaluation',
+      sub:
+        scopedFacultyName ??
+        (survey.instructors.length > 1
+          ? `${survey.instructors.length} instructors${survey.instructors.length <= 3 ? ' — per-instructor scores below' : ''}`
+          : undefined),
+      anchorId: 'group-faculty',
+      contextLine: `Faculty evaluation${scopedFacultyName ? ` — ${scopedFacultyName}` : ''}`,
+    },
+  }
 
   /* Closed Loop Timeline — last term's logged concerns vs this term's themes.
      Spec gate: owner AND not a Faculty role; with E2 option B that resolves to
@@ -1809,11 +2156,19 @@ function ResultDetail({
             />
           </div>
 
-          {/* Split-survey offering — sibling surveys keep their own statuses */}
-          {offeringSiblings.length > 0 && (
-            <OfferingSurveySwitcher current={result} siblings={offeringSiblings} />
-          )}
-
+          {/* Per-evaluation-type summary — which types this offering runs,
+              each with its own status + avg + count; split siblings link out
+              with their state inline (replaces the bare switcher pills). */}
+          <EvaluationSummaryStrip
+            survey={survey}
+            result={result}
+            siblings={offeringSiblings}
+            courseAvg={templateHasCourse ? courseAvg : null}
+            facultyAvg={facultyAvg}
+            facultyLabel={facultyChipLabel}
+            hasCourse={templateHasCourse && result.evalScope !== 'instructor'}
+            onGo={(anchorId) => goTo(anchorId, 'questions')}
+          />
 
           <Tabs defaultValue="overview" className="flex flex-col gap-4">
             <div className="border-b border-border">
@@ -1874,7 +2229,7 @@ function ResultDetail({
                   )}
                   {result.evalScope !== 'course' && (
                   <ScoreCard
-                    title="Faculty Performance"
+                    title={scopedFacultyName ? `Faculty Performance — ${scopedFacultyName}` : 'Faculty Performance'}
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
                     priors={(survey.priorOfferings ?? [])
@@ -1923,7 +2278,7 @@ function ResultDetail({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0">
-                        <QuestionBreakdownTable rows={breakdownRows} surveyId={survey.id} />
+                        <QuestionBreakdownTable rows={breakdownRows} surveyId={survey.id} groupMeta={groupMeta} />
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
@@ -1943,9 +2298,9 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Qualitative feedback</CardTitle>
                         <CardDescription>
                           {visibleComments.length} student comment{visibleComments.length !== 1 ? 's' : ''}
-                          {sentimentCounts.positive > 0 ? ` · ${sentimentCounts.positive} positive` : ''}
-                          {sentimentCounts.concern > 0 ? ` · ${sentimentCounts.concern} constructive` : ''}
-                          {sentimentCounts.neutral > 0 ? ` · ${sentimentCounts.neutral} neutral` : ''}
+                          {commentTypeCounts.course > 0 ? ` · ${commentTypeCounts.course} course` : ''}
+                          {commentTypeCounts.faculty > 0 ? ` · ${commentTypeCounts.faculty} faculty` : ''}
+                          {commentTypeCounts.general > 0 ? ` · ${commentTypeCounts.general} general` : ''}
                           {previewQuote ? (
                             <span className="block italic truncate">&ldquo;{previewQuote.text}&rdquo;</span>
                           ) : null}
@@ -1960,25 +2315,62 @@ function ResultDetail({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 flex flex-col gap-5">
-                        <p className="text-xs text-muted-foreground">
-                          Anonymized responses — individual authorship cannot be identified.
-                        </p>
+                        {/* One filter row governs every section; the trust note
+                            rides the same line as quiet meta instead of
+                            stacking another full-width row. */}
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <SentimentFilterGroup
+                            value={qualFilter}
+                            onChange={setQualFilter}
+                            countFor={qualCountFor}
+                            label="Filter student comments by sentiment"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Anonymized — individual authorship cannot be identified.
+                          </p>
+                        </div>
+                        {/* One group per evaluation type; faculty comments
+                            further split per instructor (avatar header) so
+                            "about whom" is never ambiguous. */}
                         <CommentList
-                          title="Course related comments"
+                          title="Course evaluation"
+                          icon={EVALUATION_TYPE_ICON.course_material}
                           comments={courseComments}
                           hiddenIdx={hiddenIdx}
                           canModerate={isPD}
+                          filter={qualFilter}
                         />
+                        {facultyCommentGroups.map((g) => (
+                          <CommentList
+                            key={g.instructor.id}
+                            title={`About ${g.instructor.name}`}
+                            person={{ name: g.instructor.name, initials: g.instructor.initials }}
+                            comments={g.comments}
+                            hiddenIdx={hiddenIdx}
+                            canModerate={isPD}
+                            filter={qualFilter}
+                          />
+                        ))}
                         <CommentList
-                          title="Faculty related comments"
-                          comments={facultyComments}
+                          title="Faculty evaluation — not attributed to one instructor"
+                          icon={EVALUATION_TYPE_ICON.faculty_roles}
+                          comments={unattributedFacultyComments}
                           hiddenIdx={hiddenIdx}
                           canModerate={isPD}
+                          filter={qualFilter}
+                        />
+                        <CommentList
+                          title="General"
+                          icon="fa-comments"
+                          comments={generalComments}
+                          hiddenIdx={hiddenIdx}
+                          canModerate={isPD}
+                          filter={qualFilter}
                         />
 
                         {ownerInsights && recommendations.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h4>
+                            <h3 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h3>
                             <ol className="flex flex-col gap-1.5 list-decimal ml-4">
                               {recommendations.map((r) => (
                                 <li key={r} className="text-sm text-muted-foreground">
@@ -2041,13 +2433,25 @@ function ResultDetail({
                   <>
                     <AnchorLink label="Question breakdown" onGo={() => goTo('questions', 'questions')} />
                     <div className="flex flex-col gap-0.5 max-h-64 overflow-y-auto border-s border-border ms-2 ps-2 my-0.5">
-                      {questionIndex.map((q, i) => (
-                        <AnchorLink
-                          key={q.id}
-                          label={`${i + 1}. ${q.label}`}
-                          small
-                          onGo={() => goTo(`question-${q.id}`, 'questions')}
-                        />
+                      {questionIndexGroups.map((g) => (
+                        <Fragment key={g.key}>
+                          <AnchorLink
+                            label={
+                              g.key === 'Faculty' && scopedFacultyName
+                                ? `Faculty evaluation — ${scopedFacultyName}`
+                                : groupMeta[g.key]?.label ?? g.key
+                            }
+                            onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
+                          />
+                          {g.items.map((q, i) => (
+                            <AnchorLink
+                              key={q.id}
+                              label={`${i + 1}. ${q.label}`}
+                              small
+                              onGo={() => goTo(`question-${q.id}`, 'questions')}
+                            />
+                          ))}
+                        </Fragment>
                       ))}
                     </div>
                   </>

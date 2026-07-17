@@ -327,6 +327,12 @@ export interface PceSurvey {
    *  `evaluationsFor()` derives them. The offering-level `status`/`responseCount`
    *  above stay as the roll-up so KPIs, board and results are unaffected. */
   evaluations?: EvaluationInstance[]
+  /** FK → course offering; multiple surveys may share it (split evaluations,
+   *  one survey per evaluation type). */
+  offeringId?: string
+  /** 'course' | 'instructor' when the offering splits its surveys —
+   *  lib/pce-results.ts reads both onto the derived EvalResult. */
+  evalScope?: 'course' | 'instructor'
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number
@@ -384,6 +390,11 @@ export interface ResponseComment {
   section: TemplateSection
   text: string
   sentiment: 'positive' | 'neutral' | 'concern'
+  /** Faculty member the comment is ABOUT (the subject, never the author —
+   *  responses stay anonymous). Only meaningful on faculty_performance
+   *  comments of multi-instructor offerings; unset there = not attributable
+   *  to one instructor. Single-instructor offerings derive it. */
+  facultyId?: string
 }
 
 export interface PceResponse {
@@ -1240,7 +1251,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
     comments: [
       { section: 'course_content', text: 'The msk labs build on each other really well so far.', sentiment: 'positive' },
       { section: 'course_content', text: 'Reading load feels heavy for the middle weeks.', sentiment: 'concern' },
-      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f4' },
     ],
   },
   {
@@ -1260,9 +1271,9 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', avg: 4.3, count: 34 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive' },
-      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern' },
-      { section: 'faculty_performance', text: 'Very approachable during office hours and always available.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Very approachable during office hours and always available.', sentiment: 'positive', facultyId: 'f1' },
       { section: 'course_content', text: 'Course materials were well-structured and easy to follow.', sentiment: 'positive' },
       { section: 'course_content', text: 'Some lab sessions felt rushed.', sentiment: 'concern' },
       { section: 'course_content', text: 'The gap between lecture content and exam difficulty was significant.', sentiment: 'concern' },
