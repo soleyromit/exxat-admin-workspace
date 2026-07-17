@@ -160,8 +160,26 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
+  // ── Role toggle — persisted like the demo account (SSR + first client
+  //    render stay on the default admin role so hydration matches; the stored
+  //    choice applies post-mount). Without this, any full page load silently
+  //    dropped the user back to Admin view. ──
+  const ROLE_STORAGE_KEY = 'pce.role'
   const toggleRole = useCallback(() => {
-    setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
+    setUser(u => {
+      const role = u.role === 'admin' ? ('faculty' as const) : ('admin' as const)
+      if (typeof window !== 'undefined') {
+        try { window.localStorage.setItem(ROLE_STORAGE_KEY, role) } catch { /* ignore */ }
+      }
+      return { ...u, role }
+    })
+  }, [])
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(ROLE_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored === 'faculty' || stored === 'admin') {
+      setUser(u => (u.role === stored ? u : { ...u, role: stored }))
+    }
   }, [])
 
   const releaseSurvey = useCallback((id: string) => {
