@@ -53,7 +53,7 @@ import {
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
 
-type ResultRow = EvalResult & { termRank: number } & Record<string, unknown>
+type ResultRow = EvalResult & { termRank: number; members: EvalResult[] } & Record<string, unknown>
 
 /** Chronological rank for Term-desc default sort ("Fall 2025" strings don't sort). */
 const TERM_RANK = new Map(
@@ -202,10 +202,30 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
   )
   const anyFilter = facultyFilter !== 'all' || termFilter !== 'all' || statusFilter !== 'all'
 
-  const rows: ResultRow[] = useMemo(
-    () => filtered.map((r) => ({ ...r, termRank: TERM_RANK.get(r.term) ?? -1 }) as ResultRow),
-    [filtered],
-  )
+  /* One table row per OFFERING × faculty (Romit 2026-07-17): a split
+     offering's surveys merge into a single row with stacked per-survey
+     values and kind-labeled status chips. Filters run per survey first, so
+     filtering by status narrows the merged row to its matching surveys. */
+  const rows: ResultRow[] = useMemo(() => {
+    const map = new Map<string, EvalResult[]>()
+    for (const r of filtered) {
+      const k = `${r.offeringId ?? `${r.courseCode}|${r.term}`}|${r.facultyId}`
+      map.set(k, [...(map.get(k) ?? []), r])
+    }
+    const rank = { course: 0, instructor: 1 } as Record<string, number>
+    return [...map.values()].map((group) => {
+      const members = [...group].sort(
+        (a, b) => (rank[a.evalScope ?? ''] ?? 2) - (rank[b.evalScope ?? ''] ?? 2),
+      )
+      const lead = members.find((m) => m.status === 'available' && m.avgScore != null) ?? members[0]
+      return {
+        ...members[0],
+        avgScore: lead.avgScore,
+        members,
+        termRank: TERM_RANK.get(members[0].term) ?? -1,
+      } as ResultRow
+    })
+  }, [filtered])
 
   const columns: ColumnDef<ResultRow>[] = useMemo(
     () => [
@@ -217,11 +237,6 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
           <div className="min-w-0">
             <p className="text-sm font-medium flex items-center gap-2">
               {row.courseCode}
-              {row.evalScope && (
-                <Badge variant="secondary" className="font-normal text-xs">
-                  {row.evalScope === 'course' ? 'Course' : 'Instructor'}
-                </Badge>
-              )}
               {row.coTaught && (
                 <Badge variant="secondary" className="font-normal text-xs">
                   Co-taught
@@ -260,9 +275,15 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
         key: 'responseRate',
         label: 'Responses',
         sortable: true,
-        width: 110,
+        width: 120,
         header: () => <span className="block text-right">Responses</span>,
-        cell: (row) => <ResponsesCell r={row} />,
+        cell: (row) => (
+          <div className="flex flex-col gap-1.5 items-end">
+            {(row.members as EvalResult[]).map((m) => (
+              <ResponsesCell key={m.id} r={m} />
+            ))}
+          </div>
+        ),
       },
       {
         key: 'avgScore',
@@ -271,19 +292,36 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
         width: 110,
         header: () => <span className="block text-right">Avg Score</span>,
         cell: (row) => (
-          <div className="text-right">
-            <ScorePill r={row} />
+          <div className="flex flex-col gap-2 items-end text-right">
+            {(row.members as EvalResult[]).map((m) => (
+              <ScorePill key={m.id} r={m} />
+            ))}
           </div>
         ),
       },
       {
         key: 'status',
         label: 'Status',
-        width: 190,
+        width: 230,
         header: () => <span className="block text-right">Status</span>,
         cell: (row) => (
-          <div className="flex justify-end">
-            <ResultStatusBadge r={row} />
+          <div className="flex flex-col gap-1.5 items-end">
+            {(row.members as EvalResult[]).map((m) => (
+              <span key={m.id} className="inline-flex items-center gap-2">
+                {m.evalScope && (
+                  <span className="text-xs text-muted-foreground">
+                    {m.evalScope === 'course' ? 'Course' : 'Instructor'}
+                  </span>
+                )}
+                {/* Split rows surface the RELEASE divergence to the PD — an
+                    available-but-unreleased survey reads "Pending release". */}
+                {m.evalScope && m.status === 'available' && !m.releasedToFaculty ? (
+                  <StatusBadge label="Pending release" tone="warning" icon="fa-hourglass-half" />
+                ) : (
+                  <ResultStatusBadge r={m} />
+                )}
+              </span>
+            ))}
           </div>
         ),
       },
