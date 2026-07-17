@@ -7,19 +7,18 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  Avatar,
-  AvatarFallback,
+  AvatarInitials,
   Separator,
   Button,
   Checkbox,
+  StatusBadge,
 } from '@exxatdesignux/ui'
-import { StatusBadge, STATUS_TINT_SUCCESS, STATUS_TINT_WARNING, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import { PRODUCTS } from '@/lib/products'
 
-const SUBSCRIPTION_BADGE: Record<'active' | 'trial' | 'not-subscribed', { label: string; icon: string; tint: typeof STATUS_TINT_SUCCESS }> = {
-  'active':         { label: 'Active',        icon: 'fa-circle-check', tint: STATUS_TINT_SUCCESS },
-  'trial':          { label: 'Trial',         icon: 'fa-clock',        tint: STATUS_TINT_WARNING },
-  'not-subscribed': { label: 'Not subscribed', icon: 'fa-box-archive',  tint: STATUS_TINT_NEUTRAL },
+const SUBSCRIPTION_BADGE: Record<'active' | 'trial' | 'not-subscribed', { label: string; tone: 'success' | 'warning' | 'neutral' }> = {
+  'active':         { label: 'Active',         tone: 'success' },
+  'trial':          { label: 'Trial',          tone: 'warning' },
+  'not-subscribed': { label: 'Not subscribed', tone: 'neutral' },
 }
 
 type ProfileSheetProps = {
@@ -42,9 +41,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
         <div className="flex flex-col gap-4 px-4 pb-4 overflow-y-auto flex-1">
           {/* User info */}
           <div className="flex items-center gap-3 pt-1">
-            <Avatar className="h-12 w-12 rounded-lg">
-              <AvatarFallback className="rounded-lg text-sm font-semibold">RS</AvatarFallback>
-            </Avatar>
+            <AvatarInitials initials="RS" size="lg" shape="rounded-lg" decorative={false} />
             <div className="flex flex-col gap-0.5">
               <span className="text-sm font-semibold">Romit Soley</span>
               <span className="text-xs text-muted-foreground">Product Designer II</span>
@@ -56,7 +53,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
 
           {/* Subscriptions */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="text-sm font-medium text-foreground">
               Subscriptions
             </p>
             {PRODUCTS.map(product => (
@@ -71,7 +68,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
 
           {/* Notifications */}
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="text-sm font-medium text-foreground">
               Notifications
             </p>
             <label className="flex items-center gap-2.5 cursor-pointer">

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Link } from "@/lib/router-compat"
+import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 import {

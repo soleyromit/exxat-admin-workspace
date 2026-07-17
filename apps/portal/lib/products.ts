@@ -42,6 +42,7 @@ export type Product =
       comingSoon?: never
       subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
       accountManager: { name: string; email: string }
+      worksWith?: string[]
     }
   | {
       id: string
@@ -62,7 +63,11 @@ export type Product =
       extra?: never
       subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
       accountManager: { name: string; email: string }
+      worksWith?: string[]
     }
+
+/** Sales inbox for connect/express-interest CTAs — the sales pipeline itself is offline; the portal only surfaces the CTA. */
+export const SALES_EMAIL = 'sales@exxat.com'
 
 export const PRODUCTS: Product[] = [
   {
@@ -183,6 +188,7 @@ export const PRODUCTS: Product[] = [
     },
     subscriptionStatus: 'active',
     accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
+    worksWith: ['compliance-management'],
   },
   {
     id: 'pce',
@@ -279,6 +285,7 @@ export const PRODUCTS: Product[] = [
     comingSoon: true,
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
+    worksWith: ['compliance-management'],
   },
   {
     id: 'curriculum-mapping',
@@ -323,6 +330,7 @@ export const PRODUCTS: Product[] = [
     comingSoon: true,
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
+    worksWith: ['exam-management', 'clinical-experiential-education'],
   },
   {
     id: 'accreditation-management',

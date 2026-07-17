@@ -1,11 +1,7 @@
 'use client'
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import {
-  SidebarProvider,
-  SidebarInset,
-  TooltipProvider,
   Button,
   Badge,
   Card,
@@ -15,14 +11,9 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from '@exxatdesignux/ui'
-import { AppSidebar } from '@/components/app-sidebar'
+import { SiteHeader } from '@/components/site-header'
+import { ProductDetailRail } from '@/components/product-detail-rail'
 import { PRODUCTS } from '@/lib/products'
 import { ILLUSTRATIONS } from '@/lib/illustrations'
 import type { Resource, ReleaseNote, RoadmapItem } from '@/lib/products'
@@ -133,38 +124,12 @@ export default function ProductDetailPage({ id }: { id: string }) {
   ]
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-
-          {/* Breadcrumb header */}
-          <header
-            className="flex h-12 shrink-0 items-center gap-3 px-4"
-            style={{ borderBottom: '1px solid var(--border)' }}
-          >
-            <Button asChild variant="ghost" size="icon-sm">
-              <Link href="/">
-                <i className="fa-light fa-arrow-left" aria-hidden="true" />
-              </Link>
-            </Button>
-            <Separator orientation="vertical" className="h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link href="/">Workspace</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{product.name}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
-
-          <main className="flex-1 overflow-auto">
+    <>
+      <SiteHeader
+        breadcrumbs={[{ label: 'Workspace', href: '/' }]}
+        title={product.name}
+      />
+      <main className="flex-1 overflow-auto">
 
             {/* Hero */}
             <div
@@ -178,12 +143,13 @@ export default function ProductDetailPage({ id }: { id: string }) {
               {Illustration && <div className="absolute inset-0"><Illustration /></div>}
             </div>
 
-            <div className="relative max-w-2xl mx-auto px-6">
+            <div className="relative mx-auto max-w-4xl px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-10">
+            <div className="min-w-0">
 
               {/* Floating icon — overlaps hero seam only, button is below */}
               <div className="-mt-7 mb-4">
                 <div
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl ring-4 ring-background"
+                  className="flex h-14 w-14 items-center justify-center rounded-xl border-4 border-background"
                   style={{
                     background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
                   }}
@@ -199,7 +165,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
               {/* Name + CTA on same row, fully in content area */}
               <div className="flex items-start justify-between gap-4 mb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg font-semibold">{product.name}</h1>
+                  <h1 className="font-heading text-2xl font-semibold">{product.name}</h1>
                   {product.comingSoon && (
                     <Badge variant="secondary" className="rounded text-xs">Coming Soon</Badge>
                   )}
@@ -301,8 +267,12 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {product.universities.length === 0 && product.comingSoon && (
                     <div className="flex flex-col items-center gap-2 py-10 text-center">
                       <i className="fa-light fa-building-columns text-3xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm text-muted-foreground">Institutions will appear here once this product launches.</p>
+                      <h2 className="text-sm font-medium">Not launched yet</h2>
+                      <p className="text-xs text-muted-foreground">Institutions will appear here once this product launches.</p>
                     </div>
+                  )}
+                  {product.universities.length === 0 && !product.comingSoon && (
+                    <p className="text-xs text-muted-foreground">No institutions are using this product yet.</p>
                   )}
                 </TabsContent>
 
@@ -315,7 +285,8 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   ) : (
                     <div className="flex flex-col items-center gap-2 py-10 text-center">
                       <i className="fa-light fa-screen-users text-3xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm text-muted-foreground">No resources available yet.</p>
+                      <h2 className="text-sm font-medium">No resources yet</h2>
+                      <p className="text-xs text-muted-foreground">Webinars, videos, and docs will be added as they become available.</p>
                     </div>
                   )}
                 </TabsContent>
@@ -325,7 +296,8 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {product.roadmap.length === 0 && product.releaseNotes.length === 0 && (
                     <div className="flex flex-col items-center gap-2 py-10 text-center">
                       <i className="fa-light fa-rocket text-3xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm text-muted-foreground">Release notes will appear here at launch.</p>
+                      <h2 className="text-sm font-medium">Nothing here yet</h2>
+                      <p className="text-xs text-muted-foreground">Release notes and roadmap updates will appear here at launch.</p>
                     </div>
                   )}
 
@@ -355,9 +327,13 @@ export default function ProductDetailPage({ id }: { id: string }) {
               </Tabs>
 
             </div>
+
+            <aside aria-label="Product information" className="pb-10 lg:pt-8">
+              <ProductDetailRail product={product} />
+            </aside>
+
+            </div>
           </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+    </>
   )
 }
