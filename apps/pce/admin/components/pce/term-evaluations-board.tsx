@@ -31,15 +31,20 @@ import {
 } from '@/components/data-views/list-page-board-template'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
+import { evaluationsFor } from '@/lib/pce-evaluations'
 import {
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
-  type PceSurvey,
+  EVALUATION_TYPE_LABEL,
+  type PceSurvey, type EvaluationInstance,
 } from '@/lib/pce-mock-data'
 
 type SetupCard = { id: string; code: string; name: string; facultyName: string | null }
 
+/* One card = one evaluation TYPE of one offering, so the board and the table
+ * agree on the same per-type statuses (a course with three divergent types
+ * appears as three cards across the lifecycle columns). */
 type BoardRow =
-  | { key: string; kind: 'survey'; s: PceSurvey }
+  | { key: string; kind: 'survey'; s: PceSurvey; e: EvaluationInstance }
   | { key: string; kind: 'setup'; o: SetupCard }
 
 type ColumnId = 'no_survey' | 'scheduled' | 'live' | 'pending' | 'released'
@@ -67,7 +72,7 @@ const COLUMNS: { id: ColumnId; label: string }[] = [
 ]
 
 function columnOf(row: BoardRow): ColumnId {
-  return row.kind === 'setup' ? 'no_survey' : SURVEY_COLUMN[row.s.status]
+  return row.kind === 'setup' ? 'no_survey' : SURVEY_COLUMN[row.e.status]
 }
 
 function fmtIsoShort(iso?: string): string | null {
@@ -83,12 +88,14 @@ function primaryInstructor(s: PceSurvey) {
 
 /* ── cards ──────────────────────────────────────────────────────────────── */
 
-function SurveyBoardCard({ s, href }: { s: PceSurvey; href: string }) {
+function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; href: string }) {
   const instructor = primaryInstructor(s)
   const extra = s.instructors.length - 1
-  const col = SURVEY_COLUMN[s.status]
+  const col = SURVEY_COLUMN[e.status]
   const opens = fmtIsoShort(s.openDate)
   const showGauge = col === 'live' || col === 'pending' || col === 'released'
+  /* Faculty is only meaningful on the Faculty-and-other-roles card. */
+  const showInstructor = e.type === 'faculty_roles' && instructor != null
   return (
     /* Stretched-link card (WCAG 2.1.1 — a div onClick is not keyboard
      * operable): the overlay anchor makes the whole card one tab stop with
@@ -97,7 +104,7 @@ function SurveyBoardCard({ s, href }: { s: PceSurvey; href: string }) {
     <ListPageBoardCard className="relative w-full">
       <Link
         href={href}
-        aria-label={`Open results for ${s.courseCode}`}
+        aria-label={`Open results for ${s.courseCode} — ${EVALUATION_TYPE_LABEL[e.type]}`}
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       <ListPageBoardCardHeader>
@@ -108,11 +115,12 @@ function SurveyBoardCard({ s, href }: { s: PceSurvey; href: string }) {
               <span className="line-clamp-2">{s.courseName}</span>
             </span>
           )}
-          trailing={instructor ? <ListPageBoardCardAvatar initials={instructor.initials} /> : undefined}
+          trailing={showInstructor && instructor ? <ListPageBoardCardAvatar initials={instructor.initials} /> : undefined}
         />
       </ListPageBoardCardHeader>
       <ListPageBoardCardBody>
-        {instructor && (
+        <ListPageBoardCardSecondary>{EVALUATION_TYPE_LABEL[e.type]}</ListPageBoardCardSecondary>
+        {showInstructor && instructor && (
           <BoardCardTwoLineBlock
             iconClass="fa-user"
             line1={extra > 0 ? `${instructor.name} +${extra}` : instructor.name}
@@ -120,15 +128,15 @@ function SurveyBoardCard({ s, href }: { s: PceSurvey; href: string }) {
           />
         )}
         {col === 'scheduled' && (
-          s.status === 'draft'
+          e.status === 'draft'
             ? <ListPageBoardCardSecondary>Draft — not scheduled yet</ListPageBoardCardSecondary>
-            : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={s.deadline ? `Closes ${s.deadline}` : undefined} />
+            : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={e.deadline ? `Closes ${e.deadline}` : undefined} />
         )}
         {showGauge && (
           <ResponseProgressCell
-            rate={s.responseRate}
-            responseCount={s.responseCount}
-            enrollmentCount={s.enrollmentCount}
+            rate={e.responseRate}
+            responseCount={e.responseCount}
+            enrollmentCount={e.enrollmentCount}
             target={RESPONSE_TARGET}
             className="w-full max-w-none"
           />
@@ -179,11 +187,13 @@ export function TermEvaluationsBoard({
   surveys: PceSurvey[]
   termId: string
 }) {
-  /* Origin param so /results/[id] breadcrumbs back to this term workspace. */
-  const resultsHref = (s: PceSurvey) =>
-    `/results/${s.id}?from=${encodeURIComponent(`term:${termId}`)}`
+  /* Origin param so /results/[id] breadcrumbs back to this term workspace;
+   * evalType carries the card's evaluation type for later per-type results. */
+  const resultsHref = (s: PceSurvey, e: EvaluationInstance) =>
+    `/results/${s.id}?evalType=${e.type}&from=${encodeURIComponent(`term:${termId}`)}`
   const rows = useMemo<BoardRow[]>(() => {
-    const surveyRows: BoardRow[] = surveys.map(s => ({ key: `s-${s.id}`, kind: 'survey', s }))
+    const surveyRows: BoardRow[] = surveys.flatMap(s =>
+      evaluationsFor(s).map(e => ({ key: `s-${s.id}-${e.type}`, kind: 'survey' as const, s, e })))
     /* Offerings in this term without ANY evaluation. Unlike coverageFor(),
      * drafts count here — a draft card already sits in the Scheduled column,
      * so listing the course under "No survey configured" too would duplicate it. */
@@ -236,7 +246,7 @@ export function TermEvaluationsBoard({
         renderCard={row =>
           row.kind === 'setup'
             ? <SetupBoardCard o={row.o} termId={termId} />
-            : <SurveyBoardCard s={row.s} href={resultsHref(row.s)} />
+            : <SurveyBoardCard s={row.s} e={row.e} href={resultsHref(row.s, row.e)} />
         }
       />
     </div>

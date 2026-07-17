@@ -31,7 +31,6 @@ import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
-import { EditEndDateDialog } from '@/components/pce/pce-modals'
 import { ModerationSheet } from '@/components/pce/moderation-sheet'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { TermEvaluationsBoard } from '@/components/pce/term-evaluations-board'
@@ -104,7 +103,6 @@ function TermWorkspaceInner() {
   /* Origin param so /results/[id] breadcrumbs back HERE, not the Results hub. */
   const fromQ = term ? `?from=${encodeURIComponent(`term:${term.id}`)}` : ''
 
-  const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
   const [moderationId, setModerationId] = useState<string | null>(null)
   const [evalView, setEvalView] = useState<'table' | 'board'>('table')
 
@@ -191,6 +189,10 @@ function TermWorkspaceInner() {
      * routes it back here. */
     const remindHref = (surveyId: string, type: EvaluationType) =>
       `/surveys/remind?ids=${surveyId}&evalType=${type}${fromQ ? `&${fromQ.slice(1)}` : ''}`
+    /* Results link carries the row's evaluation type so /results can scope to it
+     * (per-type results view is the follow-up). */
+    const resultsHref = (surveyId: string, type: EvaluationType) =>
+      `/results/${surveyId}?evalType=${type}${fromQ ? `&${fromQ.slice(1)}` : ''}`
     return [
       {
         key: 'typeLabel',
@@ -310,20 +312,10 @@ function TermWorkspaceInner() {
                   Remind
                 </Button>
               )}
-              {atRisk && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey]) }}
-                  aria-label={`Extend the evaluation window for ${label}`}
-                >
-                  Extend
-                </Button>
-              )}
               {isFinished(row.status) && (
                 <Button variant="outline" size="sm" asChild>
                   <Link
-                    href={`/results/${row.surveyId}${fromQ}`}
+                    href={resultsHref(row.surveyId, row.evaluationType)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`View results for ${label}`}
                   >
@@ -343,7 +335,7 @@ function TermWorkspaceInner() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onSelect={() => router.push(`/results/${row.surveyId}${fromQ}`)}>
+                  <DropdownMenuItem onSelect={() => router.push(resultsHref(row.surveyId, row.evaluationType))}>
                     View results
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.surveyId}/preview`)}>
@@ -357,11 +349,6 @@ function TermWorkspaceInner() {
                   {isLive(row.status) && !atRisk && (
                     <DropdownMenuItem onSelect={() => router.push(remindHref(row.surveyId, row.evaluationType))}>
                       Send reminder
-                    </DropdownMenuItem>
-                  )}
-                  {isLive(row.status) && !atRisk && (
-                    <DropdownMenuItem onSelect={() => setExtendTargets([row.survey])}>
-                      Edit end date
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -505,7 +492,11 @@ function TermWorkspaceInner() {
                   pagination={{ pageSize: 12 }}
                   edgeInset={false}
                   stickyHeader={false}
-                  onRowClick={(row) => router.push(`/results/${row.surveyId}${fromQ}`)}
+                  onRowClick={(row) =>
+                    router.push(
+                      `/results/${row.surveyId}?evalType=${row.evaluationType}${fromQ ? `&${fromQ.slice(1)}` : ''}`,
+                    )
+                  }
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />
@@ -521,11 +512,6 @@ function TermWorkspaceInner() {
       </div>
 
       {/* Dialogs */}
-      <EditEndDateDialog
-        open={extendTargets.length > 0}
-        onOpenChange={(v) => !v && setExtendTargets([])}
-        surveys={extendTargets}
-      />
       <ModerationSheet surveyId={moderationId} onClose={() => setModerationId(null)} />
     </div>
   )
