@@ -329,14 +329,17 @@ function EvaluationSummaryStrip({
           )
         }
         const active = currentType === type
+        const anchorId = type === 'course_material' ? 'group-course' : 'group-faculty'
         return (
+          /* Real fragment href — an in-page jump IS a link; onClick still owns
+             the expand-then-scroll choreography (collapsible must open first). */
           <a
             key={type}
-            href="#"
+            href={`#${anchorId}`}
             aria-current={active ? 'true' : undefined}
             onClick={(e) => {
               e.preventDefault()
-              onGo(type === 'course_material' ? 'group-course' : 'group-faculty')
+              onGo(anchorId)
             }}
             className={`${chipClass} ${active ? 'bg-muted/40' : ''}`}
           >
@@ -672,6 +675,13 @@ function CommentList({
 }) {
   const { toggleHideComment } = usePce()
   const [showAll, setShowAll] = useState(false)
+  /* Re-truncate when the surface-level filter changes — an expanded "Show all"
+     must not survive into a different filtered set (derive-from-props reset). */
+  const [prevFilter, setPrevFilter] = useState(filter)
+  if (prevFilter !== filter) {
+    setPrevFilter(filter)
+    setShowAll(false)
+  }
 
   const visibleToRole = canModerate
     ? comments
@@ -704,7 +714,11 @@ function CommentList({
         </span>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-3">No comments match this filter.</p>
+        /* filter === 'all' + zero visible = comments exist but are withheld
+           (moderator hid them) — don't blame the sentiment filter for it. */
+        <p className="text-sm text-muted-foreground py-3">
+          {filter === 'all' ? 'No comments available.' : 'No comments match this filter.'}
+        </p>
       ) : (
         <div className="flex flex-col">
           {shown.map((c) => {
@@ -1992,7 +2006,13 @@ function ResultDetail({
       sub:
         scopedFacultyName ??
         (survey.instructors.length > 1
-          ? `${survey.instructors.length} instructors${survey.instructors.length <= 3 ? ' — per-instructor scores below' : ''}`
+          ? `${survey.instructors.length} instructors${
+              survey.instructors.length <= 3
+                ? ' — per-instructor scores below'
+                : isPD
+                  ? ' — use the instructor selector above for per-person scores'
+                  : ''
+            }`
           : undefined),
       anchorId: 'group-faculty',
       contextLine: `Faculty evaluation${scopedFacultyName ? ` — ${scopedFacultyName}` : ''}`,
