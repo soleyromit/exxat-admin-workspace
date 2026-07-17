@@ -399,13 +399,7 @@ function FacultyScopeSelector({
         </ToggleGroupItem>
         {instructors.map((f) => (
           <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-            <span
-              aria-hidden="true"
-              className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium"
-              style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-            >
-              {f.facultyInitials}
-            </span>
+            <AvatarInitials initials={f.facultyInitials} className="size-5 text-xs shrink-0" decorative />
             {f.facultyName}
           </ToggleGroupItem>
         ))}
