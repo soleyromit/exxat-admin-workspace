@@ -15,6 +15,14 @@ import {
 } from '@/lib/list-status-badges'
 
 // ── CourseOffering status ─────────────────────────────────────────────────────
+/** AI sentiment chips — one vocabulary for every comment / written-response
+ *  surface ('concern' renders amber "Constructive", never red). */
+export const SENTIMENT_CHIP = {
+  positive: { label: 'Positive', tone: 'success' },
+  concern: { label: 'Constructive', tone: 'warning' },
+  neutral: { label: 'Neutral', tone: 'neutral' },
+} as const satisfies Record<string, { label: string; tone: StatusBadgeTone }>
+
 export const OFFERING_STATUS_BADGE: Record<string, { tint: StatusTint; icon: string; label: string }> = {
   planned:   { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar-days', label: 'Planned'   },
   active:    { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',  label: 'Active'    },

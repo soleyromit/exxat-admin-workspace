@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
-  Button, LocalBanner,
+  Button, LocalBanner, StatusBadge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
@@ -12,6 +12,7 @@ import type { SubjectKey } from '@/lib/pce-mock-data'
 
 const SUBJECT_LABELS: Record<SubjectKey, string> = {
   course_content:     'Course Content',
+  faculty:            'Faculty',
   course_instructor:  'Course Instructor',
   course_coordinator: 'Course Coordinator',
   teaching_assistant: 'Teaching Assistant',
@@ -120,12 +121,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
                           <p className="text-xs text-muted-foreground">{response.questionText}</p>
                           <p className="text-sm leading-relaxed">{response.text}</p>
                           {isHidden && (
-                            <span
-                              className="text-xs font-medium self-start px-2 py-0.5 rounded-md"
-                              style={{ backgroundColor: 'var(--muted)', color: 'var(--chart-4)' }}
-                            >
-                              Hidden from faculty
-                            </span>
+                            <StatusBadge label="Hidden from faculty" tone="neutral" className="self-start" />
                           )}
                         </div>
 

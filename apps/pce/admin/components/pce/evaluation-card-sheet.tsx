@@ -3,14 +3,16 @@
 import { useMemo } from 'react'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-  KeyMetrics, Badge,
+  KeyMetrics, Badge, StatusBadge,
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import {
   MOCK_SURVEYS, MOCK_SURVEY_QUESTION_DATA, MOCK_RESPONSES, MOCK_FACULTY, MOCK_TEMPLATES,
+  MOCK_OPEN_TEXT_RESPONSES,
 } from '@/lib/pce-mock-data'
 import type { QuestionScore, TemplateQuestion } from '@/lib/pce-mock-data'
+import { SENTIMENT_CHIP } from '@/components/pce/pce-badges'
 
 const tierColor = (avg: number) =>
   avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
@@ -111,7 +113,11 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
         text: q.text,
         isFreeText: q.answerType === 'free_text',
         score: scores.find(s => s.questionId === q.id),
-        freeTextCount: qData?.freeTextCounts?.[q.id],
+        // Count from the actual records — never claim responses the
+        // written-responses surfaces can't show.
+        freeTextCount: MOCK_OPEN_TEXT_RESPONSES.filter(
+          r => r.surveyId === surveyId && r.questionText === q.text,
+        ).length,
       }))
 
     return tSections.flatMap(section => {
@@ -241,7 +247,9 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
                                   {r.isFreeText ? (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                                       <i className="fa-light fa-message-lines" aria-hidden="true" />
-                                      {r.freeTextCount ?? 0} written response{(r.freeTextCount ?? 0) !== 1 ? 's' : ''}
+                                      {(r.freeTextCount ?? 0) === 0
+                                        ? 'No responses yet'
+                                        : `${r.freeTextCount} written response${r.freeTextCount !== 1 ? 's' : ''}`}
                                     </p>
                                   ) : r.score ? (
                                     <DistBar score={r.score} />
@@ -268,21 +276,17 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
                   <section aria-labelledby="ec-comments-heading">
                     <h3 id="ec-comments-heading" className="text-sm font-semibold mb-3">Comments</h3>
                     <div className="flex flex-col gap-2.5">
-                      {response!.comments.map((c, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span
-                            className="mt-[5px] w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{
-                              backgroundColor:
-                                c.sentiment === 'positive' ? 'var(--chart-2)' :
-                                c.sentiment === 'concern'  ? 'var(--chart-4)' :
-                                'var(--muted-foreground)',
-                            }}
-                            aria-hidden="true"
-                          />
-                          <p className="text-sm leading-snug">{c.text}</p>
-                        </div>
-                      ))}
+                      {/* Same anatomy as the results-page comment list —
+                          quote first, sentiment chip beneath. */}
+                      {response!.comments.map((c, i) => {
+                        const chip = c.sentiment ? SENTIMENT_CHIP[c.sentiment] : null
+                        return (
+                          <div key={i} className="flex flex-col gap-1.5">
+                            <p className="text-sm leading-snug">&ldquo;{c.text}&rdquo;</p>
+                            {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
+                          </div>
+                        )
+                      })}
                     </div>
                   </section>
                 )}
