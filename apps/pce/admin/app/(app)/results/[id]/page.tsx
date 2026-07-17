@@ -1270,6 +1270,125 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
+/* ── question dot strip ───────────────────────────────────────────────────────
+   Level + comparison mark for dense question rows (Cleveland dot strip — ref
+   Midjourney survey results; dataviz form table "before/after per item →
+   dumbbell"): p25–p75 band = consensus, dot = course avg (amber when below
+   program — no red), tick = program benchmark. Multi-instructor questions
+   plot one initialed hollow dot per instructor INSTEAD of the aggregate dot
+   (the right-hand numbers keep the aggregate) — replacing the former
+   per-instructor sub-rows. Distribution SHAPE stays the theme strip's job;
+   exact counts live in the row aria-label + ChartDataTable. */
+
+/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
+function ratingQuantile(counts: number[], total: number, q: number): number {
+  if (total <= 0) return 3
+  const target = q * total
+  let cum = 0
+  for (let i = 0; i < 5; i++) {
+    const c = counts[i] ?? 0
+    if (c > 0 && cum + c >= target) {
+      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
+    }
+    cum += c
+  }
+  return 5
+}
+
+function QuestionDotStrip({
+  avg,
+  programAvg,
+  counts,
+  total,
+  perFaculty,
+}: {
+  avg?: number
+  programAvg?: number | null
+  counts: number[]
+  total: number
+  perFaculty?: BreakdownRow['perFaculty']
+}) {
+  const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+  const p25 = ratingQuantile(counts, total, 0.25)
+  const p75 = ratingQuantile(counts, total, 0.75)
+  const dots = (perFaculty ?? [])
+    .map((f) => ({ ...f, pos: x(f.avg) }))
+    .sort((a, b) => a.pos - b.pos)
+  /* Initials of near-coincident dots nudge apart so both stay readable. */
+  const labelPos: number[] = []
+  dots.forEach((d, i) => {
+    let p = d.pos
+    if (i > 0 && p - labelPos[i - 1] < 7) p = labelPos[i - 1] + 7
+    labelPos.push(Math.min(100, p))
+  })
+  const below = avg != null && programAvg != null && avg < programAvg - 0.05
+  return (
+    <div className="w-full min-w-0" aria-hidden="true">
+      {dots.length > 0 && (
+        <div className="relative h-4">
+          {dots.map((d, i) => (
+            <span
+              key={d.facultyId}
+              className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground"
+              style={{ left: `${labelPos[i]}%` }}
+            >
+              {d.initials}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="relative h-6">
+        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+        {[1, 2, 3, 4, 5].map((n) => (
+          <span
+            key={n}
+            className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border"
+            style={{ left: `${x(n)}%` }}
+          />
+        ))}
+        {total > 0 && (
+          <div
+            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
+            style={{
+              left: `${x(p25)}%`,
+              width: `${Math.max(1.5, x(p75) - x(p25))}%`,
+              background: 'var(--border-control-35)',
+            }}
+          />
+        )}
+        {programAvg != null && (
+          <span
+            className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
+          />
+        )}
+        {dots.length > 0
+          ? dots.map((d) => (
+              <span
+                key={d.facultyId}
+                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+                style={{
+                  left: `${d.pos}%`,
+                  borderColor: 'var(--foreground)',
+                  background: 'var(--card)',
+                }}
+              />
+            ))
+          : avg != null && (
+              <span
+                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  left: `${x(avg)}%`,
+                  background: below ? 'var(--chip-4)' : 'var(--foreground)',
+                  boxShadow: '0 0 0 2px var(--card)',
+                }}
+              />
+            )}
+      </div>
+    </div>
+  )
+}
+
 function QuestionBreakdownTable({
   rows,
   surveyId,
@@ -1293,12 +1412,36 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* Same rating vocabulary as the theme strip above — ONE visual
-          language page-wide (RUBRIC v2: the five mini columns rendered
-          near-identical fills at row height; proportional widths read). */}
+      {/* Division of labor by form: the theme strip owns distribution SHAPE
+          (stacked bars, 4 rows); question rows own LEVEL vs benchmark — a
+          Cleveland dot strip per row (30 stacked bars read as texture). */}
+      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
+          Course avg
+        </span>
+        {rows.some((r) => r.perFaculty?.length) && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-full border-2 bg-card" style={{ borderColor: 'var(--foreground)' }} aria-hidden="true" />
+            Instructor (initials)
+          </span>
+        )}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
+          Program
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-5 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
+          Middle 50% of ratings
+        </span>
+      </div>
       <div className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <RatingLegend />
+        <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n}>{n}</span>
+          ))}
+        </div>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => {
@@ -1320,40 +1463,23 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                className="scroll-mt-16 border-b border-border last:border-0"
+                role="img"
+                aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                  r.perFaculty && r.perFaculty.length > 0
+                    ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
+                    : ''
+                }`}
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-3 border-b border-border last:border-0"
               >
-                <div
-                  role="img"
-                  aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}`}
-                  className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-3"
-                >
-                  <p className="text-sm min-w-0">{r.label}</p>
-                  <RatingStackedBar counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
-                  <CompareText avg={r.avg} programAvg={r.programAvg} />
-                </div>
-                {/* Per-instructor split — the aggregate above stays the summary;
-                    each named row shows whose teaching the ratings describe. */}
-                {r.perFaculty && r.perFaculty.length > 0 && (
-                  <div className="flex flex-col pb-2">
-                    {r.perFaculty.map((f) => (
-                      <div
-                        key={f.facultyId}
-                        role="img"
-                        aria-label={`${f.name}: average ${f.avg.toFixed(1)} of 5 from ${f.total} rating${f.total !== 1 ? 's' : ''}`}
-                        className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-1.5 ps-5"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
-                          <span className="text-xs text-muted-foreground truncate">{f.name}</span>
-                        </div>
-                        <RatingStackedBar counts={f.counts} total={f.total} />
-                        <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
-                          Avg <span className="font-semibold text-foreground">{f.avg.toFixed(1)}</span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <p className="text-sm min-w-0">{r.label}</p>
+                <QuestionDotStrip
+                  avg={r.avg}
+                  programAvg={r.programAvg}
+                  counts={r.counts ?? [0, 0, 0, 0, 0]}
+                  total={r.total ?? 0}
+                  perFaculty={r.perFaculty}
+                />
+                <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
               <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} context={meta?.contextLine} />
@@ -2088,7 +2214,7 @@ function ResultDetail({
         (survey.instructors.length > 1
           ? `${survey.instructors.length} instructors${
               survey.instructors.length <= 3
-                ? ' — per-instructor scores below'
+                ? ' — one dot per instructor'
                 : isPD
                   ? ' — use the instructor selector above for per-person scores'
                   : ''
@@ -2376,7 +2502,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · rating mix + you vs program
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · score vs program on a 1–5 scale
                         </CardDescription>
                         <CardAction>
                           <i
