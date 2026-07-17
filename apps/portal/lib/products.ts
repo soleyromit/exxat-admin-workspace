@@ -38,6 +38,8 @@ export type Product =
       roadmap: RoadmapItem[]
       adminUrl: string
       studentUrl: string
+      /** Public path to a real admin-UI capture — drives the detail hero for launched products. */
+      screenshot?: string
       extra?: { label: string; url: string }
       comingSoon?: never
       subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
@@ -187,6 +189,7 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_ADMIN_URL ?? 'http://localhost:3001',
     studentUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_STUDENT_URL ?? 'http://localhost:3002',
+    screenshot: '/screenshots/em-admin.jpg',
     extra: {
       label: 'Assessment Taker',
       url: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_TAKER_URL ?? 'http://localhost:5174',
@@ -267,6 +270,7 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_PCE_ADMIN_URL ?? 'http://localhost:3005',
     studentUrl: process.env.NEXT_PUBLIC_PCE_STUDENT_URL ?? 'http://localhost:3006',
+    screenshot: '/screenshots/pce-admin.jpg',
     subscriptionStatus: 'active',
     accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
     team: ['Nora Blake', 'Sam Rivera', 'Grace Chen', 'Tom Okafor'],

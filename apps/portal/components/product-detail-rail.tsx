@@ -48,11 +48,16 @@ export function ProductDetailRail({ product }: { product: Product }) {
             <StatusBadge label={badge.label} tone={badge.tone} icon={badge.icon} size="md" />
           </div>
           {product.subscriptionStatus === 'not-subscribed' && (
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <a href={`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(`Interested in ${product.name}`)}`}>
-                Connect with sales
-              </a>
-            </Button>
+            <div className="flex flex-col gap-1.5">
+              <Button asChild variant="default" size="sm" className="w-full">
+                <a href={`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(`Interested in ${product.name}`)}`}>
+                  Connect with sales
+                </a>
+              </Button>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Pricing, rollout planning, and a guided demo for your program.
+              </p>
+            </div>
           )}
         </div>
 
@@ -88,21 +93,30 @@ export function ProductDetailRail({ product }: { product: Product }) {
 
         <Separator />
 
-        <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-foreground">Account manager</h2>
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-sm font-medium text-foreground">Your account manager</h2>
           <div className="flex items-center gap-2.5">
             <Avatar size="sm" insetBorder>
               <AvatarFallback>{initialsFromDisplayName(manager.name)}</AvatarFallback>
             </Avatar>
             <div className="flex min-w-0 flex-col">
               <span className="text-sm font-medium leading-snug">{manager.name}</span>
-              <a
-                href={`mailto:${manager.email}`}
-                className="truncate rounded-sm text-xs text-muted-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {manager.email}
-              </a>
+              <span className="truncate text-xs text-muted-foreground">{manager.email}</span>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button asChild variant="outline" size="sm">
+              <a href={`mailto:${manager.email}?subject=${encodeURIComponent(`${product.name} — question`)}`}>
+                Email
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={`mailto:${manager.email}?subject=${encodeURIComponent(`Meeting request — ${product.name}`)}&body=${encodeURIComponent('Hi, could we set up a time to talk through ' + product.name + ' for our program?')}`}
+              >
+                Book a meeting
+              </a>
+            </Button>
           </div>
         </div>
 

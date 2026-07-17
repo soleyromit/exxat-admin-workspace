@@ -137,10 +137,21 @@ export default function ProductDetailPage({ id }: { id: string }) {
                 color: `var(--product-${product.colorKey}-icon)`,
               }}
             >
-              {Illustration && (
-                <div className="absolute right-[12%] top-6 w-80">
-                  <Illustration />
+              {!product.comingSoon && product.screenshot ? (
+                /* Launched products show the real admin UI rising from the hero. */
+                <div className="absolute bottom-0 right-[6%] top-9 w-[52%] min-w-80">
+                  <img
+                    src={product.screenshot}
+                    alt={`${product.name} admin interface preview`}
+                    className="w-full rounded-t-xl border border-border shadow-lg"
+                  />
                 </div>
+              ) : (
+                Illustration && (
+                  <div className="absolute right-[12%] top-6 w-80">
+                    <Illustration />
+                  </div>
+                )
               )}
             </div>
 

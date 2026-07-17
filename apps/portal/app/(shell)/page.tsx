@@ -52,7 +52,7 @@ function SpotlightCard({ product }: { product: Product }) {
             ))}
           </ul>
           <div className="relative z-10 mt-auto flex items-center gap-2 pt-1">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="default" size="sm">
               <Link href={`/product/${product.id}`}>Learn more</Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
