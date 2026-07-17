@@ -1,6 +1,7 @@
+'use client'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Badge, Button } from '@exxat/ds/packages/ui/src'
+import { Badge, Button } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'

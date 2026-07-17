@@ -49,9 +49,9 @@ export function QBToggle({
         boxSizing: 'border-box',
       }}
       onFocus={e => {
-        if (!disabled) e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in oklch, var(--brand-color) 25%, transparent)'
+        if (!disabled) e.currentTarget.style.outline = '2px solid var(--ring)'
       }}
-      onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
+      onBlur={e => { e.currentTarget.style.outline = 'none' }}
     >
       <span style={{
         display: 'block',

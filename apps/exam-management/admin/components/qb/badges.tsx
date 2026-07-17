@@ -1,4 +1,4 @@
-import { Badge } from '@exxat/ds/packages/ui/src'
+import { Badge, StatusBadge } from '@exxatdesignux/ui'
 import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
 // ── Status Badge — pill + colored border + icon ───────────────────────────────
@@ -8,7 +8,7 @@ const STATUS_MAP: Record<QStatus, { bg: string; fg: string; border: string; icon
   'Archived': { bg: 'var(--qb-status-archived-bg)', fg: 'var(--qb-status-archived-fg)', border: 'var(--qb-status-archived-fg)',  icon: 'fa-box-archive'  },
 }
 
-export function StatusBadge({ status }: { status: QStatus }) {
+export function QBStatusBadge({ status }: { status: QStatus }) {
   const s = STATUS_MAP[status]
   if (!s) return null
   return (
@@ -25,11 +25,16 @@ export function StatusBadge({ status }: { status: QStatus }) {
 
 // ── Type Badge — neutral muted text + icon ────────────────────────────────────
 const TYPE_ICONS: Record<QType, string> = {
-  'MCQ':        'fa-list-ul',
-  'Fill blank': 'fa-input-text',
-  'Hotspot':    'fa-crosshairs',
-  'Ordering':   'fa-arrow-up-arrow-down',
-  'Matching':   'fa-arrows-left-right-to-line',
+  'MCQ':               'fa-list-ul',
+  'MSQ':               'fa-list-check',
+  'Fill blank':        'fa-input-text',
+  'Hotspot':           'fa-crosshairs',
+  'Ordering':          'fa-arrow-up-arrow-down',
+  'Matching':          'fa-arrows-left-right-to-line',
+  'True/False':        'fa-toggle-large-on',
+  'Short Answer':      'fa-text',
+  'Extended Matching': 'fa-table-list',
+  'Essay':             'fa-pen-line',
 }
 
 export function TypeBadge({ type }: { type: QType }) {

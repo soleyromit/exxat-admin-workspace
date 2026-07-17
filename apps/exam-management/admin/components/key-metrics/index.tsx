@@ -1,15 +1,16 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 "use client"
 
 /**
  * KeyMetrics — WCAG 2.1 AA reusable KPI panel
  *
- * Vendored from exxat-ds/apps/web/components/key-metrics.tsx (2026-05-11)
+ * Vendored from @exxatdesignux/ui — vendored from DS web app: key-metrics.tsx (2026-05-11)
  * per docs/governance/component-depth-audits/key-metrics.md. First PCE consumer:
  * apps/pce/admin/app/(app)/analytics/page.tsx.
  *
  * Diffs vs canonical:
- *   • All `@/components/ui/*` imports rewired to `@exxat/ds/packages/ui/src`
- *   • `@/lib/utils` rewired to `@exxat/ds/packages/ui/src` (cn re-exported there)
+ *   • All `@/components/ui/*` imports rewired to `@exxatdesignux/ui`
+ *   • `@/lib/utils` rewired to `@exxatdesignux/ui` (cn re-exported there)
  *   • `useAskLeo` + `AskLeoShortcutKbds` stubbed locally — PCE has no Ask Leo
  *     provider yet. Stub yields no-op toggle and renders nothing for the kbd
  *     hint. When PCE adopts an Ask Leo provider, swap the stubs for real
@@ -46,7 +47,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 
 /* ── Ask Leo stubs ─────────────────────────────────────────────────────────
  * PCE has no Ask Leo provider yet. These are no-op shims so KeyMetrics
@@ -206,6 +207,9 @@ function MetricCell({
   const isDown     = trend === "down"
   const isInteractive = !!(href || onClick)
   const isHero     = metricVariant === "hero"
+  // No comparison delta → render no trend chip (avoids a meaningless "—" glyph
+  // beside KPIs that have no period-over-period value).
+  const hasTrend   = isUp || isDown || String(delta ?? "").trim() !== ""
 
   const inner = (
     <>
@@ -245,22 +249,26 @@ function MetricCell({
           {value}
         </span>
 
-        {/* Trend chip — icon + text, never colour-only (WCAG 1.4.1) */}
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 font-medium leading-none",
-            dense ? "text-xs sm:text-xs" : "text-xs sm:text-sm",
-            isUp   && "text-chart-2",
-            isDown && "text-destructive",
-            !isUp && !isDown && "text-muted-foreground"
-          )}
-          aria-label={`${isUp ? "up" : isDown ? "down" : "no change"} ${delta}`}
-        >
-          {isUp   && <i className="fa-light fa-arrow-trend-up text-[0.8rem]"   aria-hidden="true" />}
-          {isDown && <i className="fa-light fa-arrow-trend-down text-[0.8rem]" aria-hidden="true" />}
-          {!isUp && !isDown && <i className="fa-light fa-minus text-[0.8rem]"  aria-hidden="true" />}
-          <span>{delta}</span>
-        </span>
+        {/* Trend chip — icon + text, never colour-only (WCAG 1.4.1). Omitted
+            entirely when there is no comparison delta. */}
+        {hasTrend && (
+          <span
+            role="img"
+            className={cn(
+              "inline-flex items-center gap-1 font-medium leading-none",
+              dense ? "text-xs sm:text-xs" : "text-xs sm:text-sm",
+              isUp   && "text-chart-2",
+              isDown && "text-destructive",
+              !isUp && !isDown && "text-muted-foreground"
+            )}
+            aria-label={`${isUp ? "up" : isDown ? "down" : "no change"} ${delta}`}
+          >
+            {isUp   && <i className="fa-light fa-arrow-trend-up text-[0.8rem]"   aria-hidden="true" />}
+            {isDown && <i className="fa-light fa-arrow-trend-down text-[0.8rem]" aria-hidden="true" />}
+            {!isUp && !isDown && <i className="fa-light fa-minus text-[0.8rem]"  aria-hidden="true" />}
+            <span>{delta}</span>
+          </span>
+        )}
       </div>
     </>
   )
@@ -411,7 +419,7 @@ function InsightBadge({
       )}
       aria-hidden="true"
     >
-      <i className={`fa-light ${styles.icon}`} />
+      <i className={`fa-light ${styles.icon}`} aria-hidden="true" />
     </span>
   )
 }

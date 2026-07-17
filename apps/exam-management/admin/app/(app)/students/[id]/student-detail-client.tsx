@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEntryPoint } from '@/lib/use-entry-point'
+import { useFacultySession } from '@/lib/faculty-session'
 import { recordView } from '@/lib/recently-viewed'
 import {
   Button, Badge, Avatar, AvatarFallback,
@@ -32,14 +33,15 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Label,
-} from '@exxat/ds/packages/ui/src'
+  Card, CardContent,
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SiteHeader } from '@/components/site-header'
 import { StubButton } from '@/components/stub-button'
 import { allStudents, type ExtendedStudent, type StudentIntervention } from '@/lib/student-mock-data'
 import { courseOfferingRows } from '@/lib/course-mock-data'
-import { facultyAccommodations } from '@/lib/faculty-mock-data'
+import { facultyAccommodations, facultyListRows } from '@/lib/faculty-mock-data'
 
 // ── Shared standing badge (same colours as list page) ─────────────────────────
 
@@ -47,7 +49,7 @@ function StandingBadge({ status, label }: { status: string; label: string }) {
   const style =
     status === 'good-standing'   ? { bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' } :
     status === 'needs-attention' ? { bg: 'var(--standing-warning-bg)', fg: 'var(--standing-warning-fg)' } :
-                                   { bg: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', fg: 'var(--destructive)' }
+                                   { bg: 'var(--muted)', fg: 'var(--destructive)' }
   return (
     <Badge
       variant="secondary"
@@ -61,29 +63,29 @@ function StandingBadge({ status, label }: { status: string; label: string }) {
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
 
-function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: boolean }) {
+function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
+  student: ExtendedStudent
+  isPrism: boolean
+  isAdmin: boolean
+  onViewCourses: () => void
+}) {
   const activeInterventions = student.interventions.filter(i => i.isActive)
   const intervTypeLabel: Record<StudentIntervention['type'], string> = {
     advising: 'Advising', 'early-alert': 'Early Alert',
     'academic-support': 'Academic Support', tutoring: 'Tutoring', referral: 'Referral',
   }
-  const standingIcon =
-    student.academicStanding.status === 'good-standing'   ? 'fa-circle-check' :
-    student.academicStanding.status === 'needs-attention' ? 'fa-triangle-exclamation' :
-                                                            'fa-circle-xmark'
-  const standingBg =
-    student.academicStanding.status === 'good-standing'   ? 'var(--qb-status-saved-bg)' :
-    student.academicStanding.status === 'needs-attention' ? 'var(--standing-warning-bg)' :
-                                                            'color-mix(in oklch, var(--destructive) 10%, var(--background))'
-  const standingFg =
-    student.academicStanding.status === 'good-standing'   ? 'var(--qb-status-saved-fg)' :
-    student.academicStanding.status === 'needs-attention' ? 'var(--standing-warning-fg)' :
-                                                            'var(--destructive)'
-
   // Exam activity aggregates — Vishaka May 14: "# courses, # exams, completion status"
   const coursesCount    = student.courseEnrollments.length
   const examsCompleted  = student.courseEnrollments.reduce((s, c) => s + c.completedAssessments, 0)
   const examsInProgress = student.courseEnrollments.filter(c => c.status === 'in-progress').length
+
+  // Avg score across all enrolled courses (Aarti May 19: outcome mode — "Spelling Bee" engagement stats)
+  const allScores = student.enrolledCourseIds
+    .map(id => student.avgScore[id])
+    .filter((s): s is number => s != null)
+  const avgScore = allScores.length > 0
+    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+    : null
 
   // Show up to 4 courses in the compact list; full list lives in Courses tab
   const previewCourses = student.courseEnrollments.slice(0, 4)
@@ -113,7 +115,7 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
                 {previewCourses.map(enr => {
                   const cfg = COURSE_STATUS_CONFIG[enr.status as keyof typeof COURSE_STATUS_CONFIG]
                   return (
-                    <div key={enr.courseId} className="flex items-center gap-3">
+                    <div key={enr.offeringId} className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{enr.courseName}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{enr.term}</p>
@@ -135,11 +137,11 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
                   )
                 })}
               </div>
-              {/* "View all" stub — prototype; tab switching wired via Tabs component above */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="mt-3 px-0 h-auto text-xs text-muted-foreground gap-1 hover:text-foreground hover:bg-transparent"
+                onClick={onViewCourses}
               >
                 View all {coursesCount} courses
                 <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 10 }} />
@@ -148,38 +150,139 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
           )}
         </section>
 
+        {/* Engagement callout — Aarti May 19: outcome mode, "Spelling Bee" personal stats */}
+        {examsCompleted > 0 && (
+          <div
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{
+              backgroundColor: 'var(--brand-tint)',
+              border: '1px solid var(--brand-tint)',
+            }}
+          >
+            <i className="fa-light fa-star shrink-0" aria-hidden="true"
+              style={{ fontSize: 16, color: 'var(--brand-color)' }} />
+            <p className="text-sm text-foreground">
+              <strong style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
+                {student.firstName}
+              </strong>
+              {' has completed '}
+              <strong>{examsCompleted}</strong>
+              {' exam'}
+              {examsCompleted !== 1 ? 's' : ''}
+              {' across '}
+              <strong>{coursesCount}</strong>
+              {' course'}
+              {coursesCount !== 1 ? 's' : ''}
+              {avgScore != null && (
+                <>{' with an average score of '}
+                  <strong style={{
+                    color: avgScore >= 80 ? 'var(--qb-status-saved-fg)'
+                      : avgScore < 65 ? 'var(--standing-warning-fg)'
+                      : 'var(--brand-color)',
+                  }}>
+                    {avgScore}%
+                  </strong>
+                </>
+              )}
+              {'.'}
+            </p>
+          </div>
+        )}
+
         {/* Section 2 — Exam Activity (Vishaka May 14: "this student was part of N courses
             and N exams, and across all of them, this is how the student has performed") */}
         <section aria-labelledby="exam-activity-heading" className="rounded-xl border border-border bg-card p-5">
           <h2 id="exam-activity-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">
             Exam Activity
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([
-              { label: 'Courses',        value: coursesCount,    icon: 'fa-graduation-cap' },
-              { label: 'Exams completed', value: examsCompleted, icon: 'fa-circle-check' },
-              { label: 'In progress',    value: examsInProgress, icon: 'fa-clock-rotate-left' },
-            ] as const).map(m => (
-              <div
-                key={m.label}
-                className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-3"
-                style={{ backgroundColor: 'var(--muted)' }}
-              >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-md"
-                  style={{ backgroundColor: 'var(--background)' }}>
-                  <i className={`fa-light ${m.icon}`} aria-hidden="true"
-                    style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+              { label: 'Courses',         value: coursesCount,                                      icon: 'fa-graduation-cap' },
+              { label: 'Exams completed', value: examsCompleted,                                    icon: 'fa-circle-check' },
+              { label: 'In progress',     value: examsInProgress,                                   icon: 'fa-clock-rotate-left' },
+              { label: 'Avg score',       value: avgScore != null ? `${avgScore}%` : '—',           icon: 'fa-chart-simple' },
+            ] as const).map(m => {
+              const scoreColor = m.label === 'Avg score' && avgScore != null
+                ? avgScore >= 80 ? 'var(--qb-status-saved-fg)'
+                : avgScore < 65  ? 'var(--standing-warning-fg)'
+                :                  'var(--brand-color)'
+                : undefined
+              return (
+                <div
+                  key={m.label}
+                  className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-3"
+                  style={{ backgroundColor: 'var(--muted)' }}
+                >
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                    style={{ backgroundColor: 'var(--background)' }}>
+                    <i className={`fa-light ${m.icon}`} aria-hidden="true"
+                      style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold leading-none tabular-nums"
+                      style={{ color: scoreColor ?? 'var(--foreground)' }}>{m.value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{m.label}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-base font-bold text-foreground leading-none tabular-nums">{m.value}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{m.label}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
-        {/* Section 3 — Active Interventions (Aarti: "only call it out if there is an active one") */}
+        {/* Section 3 — Performance Snapshot (strip plots mirroring Assessments tab) */}
+        {student.competencyPerformance.length > 0 && (
+          <section aria-labelledby="perf-snapshot-heading" className="rounded-xl border border-border bg-card p-5">
+            <h2 id="perf-snapshot-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">
+              Performance Snapshot
+            </h2>
+            <div className="flex flex-col gap-4">
+              {student.competencyPerformance.map(cp => {
+                const fgColor =
+                  cp.avgScore >= 80 ? 'var(--qb-status-saved-fg)' :
+                  cp.avgScore < 65  ? 'var(--standing-warning-fg)' :
+                                      'var(--brand-color)'
+                const pct = `${cp.avgScore}%`
+                return (
+                  <div key={cp.area} className="flex items-center gap-3">
+                    <span className="text-sm text-foreground w-44 shrink-0 truncate">{cp.area}</span>
+                    <div className="flex-1 relative" role="img" aria-label={`${cp.area}: ${cp.avgScore}%`}>
+                      <div className="rounded-full" style={{ height: 2, backgroundColor: 'var(--border)', position: 'relative' }}>
+                        {/* Threshold tick at 65% */}
+                        <div style={{
+                          position: 'absolute', left: '65%', top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 1, height: 8,
+                          backgroundColor: 'var(--muted-foreground)',
+                          opacity: 0.4,
+                        }} />
+                        {/* Score dot */}
+                        <div style={{
+                          position: 'absolute',
+                          left: pct, top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 10, height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: fgColor,
+                          border: '2px solid var(--background)',
+                          boxShadow: `0 0 0 1px ${fgColor}`,
+                        }} />
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums shrink-0 w-10 text-right"
+                      style={{ color: fgColor }}>
+                      {cp.avgScore}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              Based on {student.courseEnrollments.reduce((n, e) => n + e.completedAssessments, 0)} completed assessments
+            </p>
+          </section>
+        )}
+
+        {/* Section 4 — Active Interventions (Aarti: "only call it out if there is an active one") */}
         {activeInterventions.length > 0 && (
           <section aria-labelledby="interventions-heading" className="rounded-xl border border-border bg-card p-5">
             <h2 id="interventions-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Active Interventions</h2>
@@ -187,7 +290,7 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
               {activeInterventions.map(iv => (
                 <div key={iv.id} className="flex gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
-                    style={{ backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))' }}>
+                    style={{ backgroundColor: 'var(--muted)' }}>
                     <i className="fa-light fa-flag" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -209,27 +312,7 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
           </section>
         )}
 
-        {/* Section 4 — Academic Standing (demoted — Vishaka May 14: "not even GPA is
-            important in exam management; that should stay with the student profile") */}
-        <section aria-labelledby="standing-heading" className="rounded-xl border border-border bg-card p-5">
-          <h2 id="standing-heading" className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Academic Standing</h2>
-          <div className="flex items-start gap-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: standingBg }}>
-              <i className={`fa-light ${standingIcon}`} aria-hidden="true" style={{ fontSize: 18, color: standingFg }} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{student.academicStanding.label}</p>
-              {student.academicStanding.detail && (
-                <p className="text-sm text-muted-foreground mt-0.5">{student.academicStanding.detail}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Since {new Date(student.academicStanding.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5 — Annotations / notes (always rendered — Aarti: "notes" are a core
+        {/* Section 4 — Annotations / notes (always rendered — Aarti: "notes" are a core
             detail field; empty state shows add affordance rather than hiding the section) */}
         <section aria-labelledby="annotations-heading" className="rounded-xl border border-border bg-card p-5">
           <h2 id="annotations-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Annotations &amp; Notes</h2>
@@ -290,12 +373,39 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
           </Button>
         </section>
 
+        {/* Accommodations preview */}
+        {(() => {
+          const accs = facultyAccommodations.filter(a => a.studentId === student.id)
+          if (accs.length === 0) return null
+          return (
+            <section aria-labelledby="acc-preview-heading" className="rounded-xl border border-border bg-card p-5">
+              <h2 id="acc-preview-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">
+                Accommodations
+              </h2>
+              <div className="flex flex-col gap-2">
+                {accs.slice(0, 3).map(acc => (
+                  <div key={acc.id} className="flex items-start gap-2">
+                    <i className="fa-light fa-universal-access mt-0.5 shrink-0" aria-hidden="true"
+                      style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground">{acc.detail}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {acc.courseId.replace('course-', '').toUpperCase()} · {acc.approvedBy}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })()}
+
         {/* Full Prism profile fallback — Aarti: "put a link, open in a new tab" */}
         {isPrism && (
-          <div className="rounded-xl border border-border p-4 flex items-start gap-3"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
-            <i className="fa-light fa-arrow-up-right-from-square mt-0.5" aria-hidden="true"
-              style={{ fontSize: 13, color: 'var(--brand-color)', flexShrink: 0 }} />
+          <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <CardContent className="flex items-start gap-3 p-4">
+            <i className="fa-light fa-arrow-up-right-from-square mt-0.5 text-sm shrink-0" aria-hidden="true"
+              style={{ color: 'var(--brand-color)' }} />
             <div>
               <p className="text-sm font-medium text-foreground">Full student profile</p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -310,10 +420,11 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
                 style={{ color: 'var(--brand-color)' }}
               >
                 View in Prism
-                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
+                <i className="fa-light fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
               </a>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
@@ -324,7 +435,7 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
 
 const COURSE_STATUS_CONFIG = {
   completed:     { label: 'Completed',   icon: 'fa-circle-check', bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
-  'in-progress': { label: 'In Progress', icon: 'fa-spinner',      bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
+  'in-progress': { label: 'In Progress', icon: 'fa-spinner',      bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
   upcoming:      { label: 'Upcoming',    icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
@@ -337,94 +448,109 @@ interface CourseEnrollmentRow extends Record<string, unknown> {
   grade: string | null
   completedAssessments: number
   assessmentCount: number
+  avgExamScore: number | null
+}
+
+const TERM_ORDER: Record<string, number> = {
+  'Spring 2026': 0, 'Fall 2026': 1, 'Fall 2025': 2, 'Spring 2025': 3, 'Fall 2024': 4,
 }
 
 const COURSE_COLUMNS: ColumnDef<CourseEnrollmentRow>[] = [
   {
     key: 'courseName',
     label: 'Course',
-    sortable: true,
-    width: 240,
+    width: 280,
+    sortable: false,
     cell: (row) => (
       <div>
-        <Link href={`/courses/${row.id as string}`}
-          className="text-sm font-medium hover:underline"
-          style={{ color: 'var(--brand-color)' }}>
-          {row.courseName as string}
-        </Link>
+        <p className="text-sm font-medium text-foreground truncate">{row.courseName as string}</p>
         <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{row.courseCode as string}</p>
       </div>
     ),
   },
   {
-    key: 'term',
-    label: 'Term',
-    sortable: true,
-    width: 120,
-    cell: (row) => <span className="text-sm text-muted-foreground whitespace-nowrap">{row.term}</span>,
+    key: 'avgExamScore',
+    label: 'Avg Score',
+    width: 100,
+    sortable: false,
+    cell: (row) => {
+      const score = row.avgExamScore as number | null
+      const status = row.status as string
+      if (score == null || status === 'upcoming') return <span className="text-sm text-muted-foreground">—</span>
+      const color = score >= 80 ? 'var(--qb-status-saved-fg)' : score < 65 ? 'var(--standing-warning-fg)' : 'var(--brand-color)'
+      return <span className="text-sm font-semibold tabular-nums" style={{ color }}>{score}%</span>
+    },
   },
   {
-    key: 'status',
-    label: 'Status',
-    sortable: true,
+    key: 'assessments',
+    label: 'Assessments',
     width: 140,
+    sortable: false,
     cell: (row) => {
-      const cfg = COURSE_STATUS_CONFIG[row.status]
+      if ((row.status as string) === 'upcoming') return <span className="text-sm text-muted-foreground">Upcoming</span>
       return (
-        <Badge variant="secondary" className="rounded-full text-[10px] font-semibold gap-1 px-2"
-          style={{ backgroundColor: cfg.bg, color: cfg.fg }}>
-          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
-          {cfg.label}
-        </Badge>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {row.completedAssessments as number}/{row.assessmentCount as number} exams
+        </span>
       )
     },
   },
   {
     key: 'grade',
     label: 'Grade',
+    width: 90,
     sortable: false,
-    width: 110,
-    // Grade is from LMS — Vishaka: course grades are NOT saved in exam management
-    cell: (row) => (
-      <span className="text-sm font-medium text-foreground">
-        {row.grade ?? '—'}
-        <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
-      </span>
-    ),
+    cell: (row) => {
+      if (!row.grade) return <span className="text-sm text-muted-foreground">—</span>
+      return (
+        <span className="text-sm font-semibold text-foreground tabular-nums">
+          {row.grade as string}
+          <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
+        </span>
+      )
+    },
   },
   {
-    key: 'assessmentCount',
-    label: 'Assessments',
+    key: 'status',
+    label: 'Status',
+    width: 130,
     sortable: false,
-    width: 140,
-    cell: (row) => (
-      <span className="text-sm text-muted-foreground">
-        {row.completedAssessments}/{row.assessmentCount} completed
-      </span>
-    ),
+    cell: (row) => {
+      const cfg = COURSE_STATUS_CONFIG[row.status as keyof typeof COURSE_STATUS_CONFIG]
+      return (
+        <Badge
+          variant="secondary"
+          className="rounded-full text-[10px] font-semibold gap-1 px-2"
+          style={{ backgroundColor: cfg.bg, color: cfg.fg }}
+        >
+          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
+          {cfg.label}
+        </Badge>
+      )
+    },
   },
 ]
 
-function CoursesTab({ student }: { student: ExtendedStudent }) {
+function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrolled: () => void }) {
   const router = useRouter()
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [selectedOfferingId, setSelectedOfferingId] = useState('')
   const [enrolled, setEnrolled] = useState(false)
 
-  // Only show ongoing/upcoming offerings not already enrolled
-  const enrolledIds = new Set(student.courseEnrollments.map(e => e.courseId))
+  const enrolledIds = new Set(student.courseEnrollments.map(e => e.offeringId))
   const availableOfferings = courseOfferingRows.filter(
-    o => (o.status === 'ongoing' || o.status === 'upcoming') && !enrolledIds.has(o.id)
+    o => (o.status === 'active' || o.status === 'upcoming') && !enrolledIds.has(o.id)
   )
 
   function handleEnroll() {
     if (!selectedOfferingId) return
     setEnrolled(true)
+    onEnrolled()
     setTimeout(() => { setEnrolled(false); setEnrollOpen(false); setSelectedOfferingId('') }, 1200)
   }
 
   const rows: CourseEnrollmentRow[] = student.courseEnrollments.map(enr => ({
-    id: enr.courseId,
+    id: enr.offeringId,
     courseName: enr.courseName,
     courseCode: enr.courseCode,
     term: enr.term,
@@ -432,30 +558,25 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
     grade: enr.grade ?? null,
     completedAssessments: enr.completedAssessments,
     assessmentCount: enr.assessmentCount,
+    avgExamScore: enr.avgExamScore ?? null,
   }))
+
+  const byTerm = rows.reduce((acc, row) => {
+    if (!acc[row.term]) acc[row.term] = []
+    acc[row.term].push(row)
+    return acc
+  }, {} as Record<string, CourseEnrollmentRow[]>)
+
+  const sortedTerms = Object.keys(byTerm).sort(
+    (a, b) => (TERM_ORDER[a] ?? 99) - (TERM_ORDER[b] ?? 99)
+  )
+
+  const [activeTerm, setActiveTerm] = useState(() => sortedTerms[0] ?? '')
 
   return (
     <>
-      <DataTable<CourseEnrollmentRow>
-        data={rows}
-        columns={COURSE_COLUMNS}
-        getRowId={(row) => row.id}
-        selectable={false}
-        searchable={false}
-        showQueryControls={false}
-        onRowClick={(row) => router.push(`/courses/offerings/${row.id as string}`)}
-        toolbarSlot={() => (
-          <>
-            <span className="text-xs text-muted-foreground">
-              {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
-            </span>
-            <Button size="sm" onClick={() => setEnrollOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Enroll in Course
-            </Button>
-          </>
-        )}
-        emptyState={
+      <div className="flex flex-col flex-1 min-h-0">
+        {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <i className="fa-light fa-graduation-cap text-muted-foreground text-xl" aria-hidden="true" />
@@ -467,8 +588,78 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
               Enroll in Course
             </Button>
           </div>
-        }
-      />
+        ) : (
+          <Tabs
+            orientation="vertical"
+            value={activeTerm}
+            onValueChange={setActiveTerm}
+            className="flex flex-1 min-h-0 gap-0"
+            style={{
+              backgroundImage: 'linear-gradient(to right, transparent 11rem, var(--border) 11rem, var(--border) calc(11rem + 1px), transparent calc(11rem + 1px))',
+            }}
+          >
+            {/* Custom vertical nav — DS tokens, no trigger height constraints */}
+            <nav
+              aria-label="Select term"
+              className="w-44 shrink-0 py-2 px-2 flex flex-col gap-0.5"
+            >
+              {sortedTerms.map(term => {
+                const isActive = activeTerm === term
+                return (
+                  <Button
+                    key={term}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveTerm(term)}
+                    className="w-full flex items-center justify-between rounded-md px-3 py-2 text-sm text-left transition-colors h-auto"
+                    style={{
+                      backgroundColor: isActive ? 'var(--brand-tint)' : 'transparent',
+                      color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      fontWeight: isActive ? 500 : 400,
+                    }}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <span>{term}</span>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+                    >
+                      {byTerm[term].length}
+                    </Badge>
+                  </Button>
+                )
+              })}
+            </nav>
+
+
+            {/* Per-term content */}
+            {sortedTerms.map(term => (
+              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0 flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
+                  <span className="text-xs text-muted-foreground">
+                    {byTerm[term].length} course{byTerm[term].length !== 1 ? 's' : ''} · {term}
+                  </span>
+                  <Button size="sm" onClick={() => setEnrollOpen(true)}>
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Enroll in Course
+                  </Button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-auto">
+                  <DataTable<CourseEnrollmentRow>
+                    data={byTerm[term]}
+                    columns={COURSE_COLUMNS}
+                    getRowId={(row) => row.id}
+                    selectable={false}
+                    searchable={false}
+                    showQueryControls={false}
+                    onRowClick={(row) => router.push(`/courses/offerings/${row.id}`)}
+                  />
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
+      </div>
 
       {/* Enroll in Course sheet */}
       <Sheet open={enrollOpen} onOpenChange={setEnrollOpen}>
@@ -538,7 +729,7 @@ function AssessmentsTab({ student }: { student: ExtendedStudent }) {
         ].map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card px-4 py-4 flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}>
+              style={{ backgroundColor: 'var(--brand-tint)' }}>
               <i className={`fa-light ${m.icon}`} aria-hidden="true" style={{ fontSize: 15, color: 'var(--brand-color)' }} />
             </div>
             <div>
@@ -555,41 +746,103 @@ function AssessmentsTab({ student }: { student: ExtendedStudent }) {
           <h2 id="competency-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">
             Competency Performance
           </h2>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             {student.competencyPerformance.map(cp => {
+              // Amber for below 65, success-green for 80+, brand for in-between
+              // Never use --destructive for scores (Aarti: no red in score viz)
               const fgColor =
                 cp.avgScore >= 80 ? 'var(--qb-status-saved-fg)' :
-                cp.avgScore < 65  ? 'var(--destructive)' :
-                                    'var(--standing-warning-fg)'
+                cp.avgScore < 65  ? 'var(--standing-warning-fg)' :
+                                    'var(--brand-color)'
               const trendIcon =
                 cp.trend === 'improving' ? 'fa-arrow-trend-up' :
                 cp.trend === 'declining' ? 'fa-arrow-trend-down' : 'fa-minus'
+              const pct = `${cp.avgScore}%`
 
               return (
                 <div key={cp.area} className="flex items-center gap-3">
-                  <span className="text-sm text-foreground w-52 shrink-0 truncate" id={`comp-${cp.area.replace(/\s/g, '-')}`}>
+                  <span
+                    className="text-sm text-foreground shrink-0 truncate"
+                    id={`comp-${cp.area.replace(/\s/g, '-')}`}
+                    style={{ width: 200 }}
+                  >
                     {cp.area}
                   </span>
-                  {/* Accessible progress bar — role + aria values */}
+                  {/* Strip plot — dot on a horizontal line, no filled bar */}
                   <div
-                    role="progressbar"
-                    aria-valuenow={cp.avgScore}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-labelledby={`comp-${cp.area.replace(/\s/g, '-')}`}
-                    className="flex-1 rounded-full bg-muted h-1.5 overflow-hidden"
+                    className="flex-1 relative"
+                    role="img"
+                    aria-label={`${cp.area}: ${cp.avgScore}%`}
                   >
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${cp.avgScore}%`, backgroundColor: fgColor }} />
+                    <div
+                      className="rounded-full"
+                      style={{ height: 2, backgroundColor: 'var(--border)', position: 'relative' }}
+                    >
+                      {/* Threshold marker at 65% */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: '65%',
+                          top: -3,
+                          width: 1,
+                          height: 8,
+                          backgroundColor: 'var(--border)',
+                          opacity: 0.6,
+                        }}
+                        aria-hidden="true"
+                      />
+                      {/* Score dot */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: pct,
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: fgColor,
+                          border: '2px solid var(--background)',
+                          boxShadow: `0 0 0 1px ${fgColor}`,
+                        }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1" aria-hidden="true">
+                      <span className="text-[9px] text-muted-foreground">0%</span>
+                      <span className="text-[9px] text-muted-foreground" style={{ marginLeft: '60%' }}>65</span>
+                      <span className="text-[9px] text-muted-foreground">100%</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium tabular-nums w-10 text-right" style={{ color: fgColor }}>
+                  <span
+                    className="text-sm font-semibold tabular-nums shrink-0"
+                    style={{ width: 36, textAlign: 'right', color: fgColor }}
+                  >
                     {cp.avgScore.toFixed(0)}%
                   </span>
-                  <i className={`fa-light ${trendIcon}`} aria-label={cp.trend}
-                    style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  <i
+                    className={`fa-light ${trendIcon} shrink-0`}
+                    aria-label={cp.trend}
+                    style={{ fontSize: 11, color: 'var(--muted-foreground)' }}
+                  />
                 </div>
               )
             })}
+          </div>
+          {/* Legend */}
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--standing-warning-fg)' }} aria-hidden="true" />
+              Below 65%
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--qb-status-saved-fg)' }} aria-hidden="true" />
+              80%+ strong
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 1, height: 10, backgroundColor: 'var(--border)' }} aria-hidden="true" />
+              65% threshold
+            </div>
           </div>
         </section>
       )}
@@ -682,9 +935,17 @@ function AccommodationsTab({ student }: { student: ExtendedStudent }) {
 
 export default function StudentDetailClient({ studentId }: { studentId: string }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [hasNewEnrollment, setHasNewEnrollment] = useState(false)
+
+  function handleTabChange(tab: string) {
+    setActiveTab(tab)
+    if (tab === 'courses') setHasNewEnrollment(false)
+  }
   const student = allStudents.find(s => s.id === studentId)
   const entryPoint = useEntryPoint()
   const isPrism = entryPoint === 'prism'
+  const { role, hydrated } = useFacultySession()
+  const isAdmin = !hydrated || role === 'admin'
 
   useEffect(() => {
     if (!student) return
@@ -714,29 +975,28 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
 
   const initials = `${student.firstName[0]}${student.lastName[0]}`
   const accsCount = facultyAccommodations.filter(a => a.studentId === student.id).length
+  const advisorFaculty = facultyListRows.find(f => f.fullName === student.advisor)
 
   return (
     <>
-      <SiteHeader title={`${student.firstName} ${student.lastName}`} />
+      <SiteHeader
+        title={`${student.firstName} ${student.lastName}`}
+        breadcrumbs={[
+          { label: 'Students', href: '/students' },
+          { label: `${student.firstName} ${student.lastName}` },
+        ]}
+      />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
 
         {/* ── Header strip ───────────────────────────────────────────────── */}
         <div className="border-b border-border bg-card px-6 py-5">
-          {/* Back nav — DS Button asChild wrapping Link (fix: was raw <button>) */}
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mb-4 px-0 h-auto" asChild>
-            <Link href="/students">
-              <i className="fa-light fa-chevron-left" aria-hidden="true" style={{ fontSize: 10 }} />
-              Students
-            </Link>
-          </Button>
-
           <div className="flex items-start gap-4 flex-wrap">
             {/* Decorative avatar — aria-hidden; name is in the h1 */}
             <Avatar style={{ width: 52, height: 52, flexShrink: 0 }} aria-hidden="true">
               <AvatarFallback
                 className="text-base font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >
@@ -752,7 +1012,9 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
                 >
                   {student.firstName} {student.lastName}
                 </h1>
-                <StandingBadge status={student.academicStanding.status} label={student.academicStanding.label} />
+                {isAdmin && (
+                  <StandingBadge status={student.academicStanding.status} label={student.academicStanding.label} />
+                )}
                 {isPrism && (
                   <Badge variant="secondary" className="rounded text-[11px] font-semibold px-2 py-0.5"
                     style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
@@ -768,7 +1030,17 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
                 <Separator orientation="vertical" style={{ height: 12 }} />
                 <span>{student.program}</span>
                 <Separator orientation="vertical" style={{ height: 12 }} />
-                <span>Advisor: {student.advisor}</span>
+                {advisorFaculty ? (
+                  <Link
+                    href={`/faculty/${advisorFaculty.id}`}
+                    className="hover:underline"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    Advisor: {student.advisor}
+                  </Link>
+                ) : (
+                  <span>Advisor: {student.advisor}</span>
+                )}
               </div>
             </div>
           </div>
@@ -776,34 +1048,48 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
             <div className="border-b border-border px-6 bg-card">
               <TabsList variant="line">
-                {([
-                  { value: 'overview',        label: 'Overview',        icon: 'fa-circle-info' },
-                  { value: 'courses',         label: 'Courses',         icon: 'fa-graduation-cap', count: student.courseEnrollments.length },
-                  { value: 'assessments',     label: 'Assessments',     icon: 'fa-file-check' },
-                  { value: 'accommodations',  label: 'Accommodations',  icon: 'fa-universal-access', count: accsCount },
-                ] as const).map(tab => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                  >
-                    <i className={`fa-light ${tab.icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
-                    {tab.label}
-                    {'count' in tab && tab.count !== undefined && tab.count > 0 && (
-                      <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                        {tab.count}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                ))}
+                <TabsTrigger value="overview">
+                  <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="courses">
+                  <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Courses
+                  {student.courseEnrollments.length > 0 && (
+                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                      {student.courseEnrollments.length}
+                    </Badge>
+                  )}
+                  {hasNewEnrollment && (
+                    <span
+                      className="size-2 rounded-full shrink-0"
+                      style={{ backgroundColor: 'var(--destructive)' }}
+                      aria-label="New enrollment pending review"
+                    />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="assessments">
+                  <i className="fa-light fa-file-check" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Assessments
+                </TabsTrigger>
+                <TabsTrigger value="accommodations">
+                  <i className="fa-light fa-universal-access" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Accommodations
+                  {accsCount > 0 && (
+                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                      {accsCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </div>
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
-              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} /></TabsContent>
-              <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} /></TabsContent>
+              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} onViewCourses={() => handleTabChange('courses')} /></TabsContent>
+              <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} onEnrolled={() => setHasNewEnrollment(true)} /></TabsContent>
               <TabsContent value="assessments"    className="mt-0 outline-none"><AssessmentsTab    student={student} /></TabsContent>
               <TabsContent value="accommodations" className="mt-0 outline-none"><AccommodationsTab student={student} /></TabsContent>
             </div>

@@ -8,21 +8,20 @@
  * Tabs sit between PageHeader and the scrollable tab-content region.
  *
  * Tabs:
- *   1. Assessments (default) — list with approval-workflow states + reviewer panel (Aarti May 7)
- *   2. Questions             — course-scoped QB view with p-biserial, difficulty, Bloom's
- *   3. Students              — roster with per-course performance + bottom-20% flag
- *   4. Accommodations        — read-only, approver attribution
- *   5. Mapping               — curricular matrix (objectives × assessments)
- *   6. Faculty               — faculty associated with this course
+ *   1. Overview (default)  — KPI strip + Course Objectives (curricular loop)
+ *   2. Questions           — filtered question list with embedded psychometrics
+ *   3. Assessments         — list with approval-workflow states + reviewer panel
+ *   4. Students            — roster with per-course performance + bottom-20% flag
+ *   5. Accommodations      — read-only, approver attribution
  */
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Button, Tabs, TabsList, TabsTrigger, TabsContent,
+  Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
@@ -36,13 +35,14 @@ import { AccessLevelChip, StatusPill } from '@/components/faculty-ui-kit'
 
 import { OverviewTab } from './tabs/overview-tab'
 import { AssessmentsTab } from './tabs/assessments-tab'
-import { QuestionsTab } from './tabs/questions-tab'
 import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
 import { FacultyTab } from './tabs/faculty-tab'
-import { CreateAssessmentModal } from '@/components/create-assessment-modal'
+import { QuestionBankTab } from './tabs/question-bank-tab'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
+
+const IS_LMS_ACTIVE = false
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter()
@@ -77,6 +77,13 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     () => courseObjectives.filter(o => o.courseId === courseId),
     [courseId]
   )
+
+  // Tab count badges — Aarti May 19
+  const studentsCount = facultyStudents.filter(s => s.enrolledCourseIds?.includes(courseId)).length
+  const assessmentsCount = ALL_ASSESSMENTS.filter(a => a.courseId === courseId).length
+  // facultyListRows is not in scope here; FacultyTab manages its own data internally.
+  // Real count would come from a shared faculty-by-course query. Using 0 until that data is lifted.
+  const facultyCount = 0
 
   if (!hydrated) return null
 
@@ -142,6 +149,29 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   const headerActions = (
     <div className="flex items-center gap-2">
+      {/* LMS integration chip — Vishaka May 19 */}
+      {IS_LMS_ACTIVE ? (
+        <Badge
+          variant="secondary"
+          className="rounded-full gap-1.5 text-xs shrink-0"
+          style={{
+            backgroundColor: 'var(--brand-tint)',
+            color: 'var(--brand-color)',
+          }}
+        >
+          <i className="fa-light fa-link" aria-hidden="true" />
+          Linked to Canvas
+        </Badge>
+      ) : (
+        <Badge
+          variant="secondary"
+          className="rounded-full gap-1.5 text-xs shrink-0"
+          style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+        >
+          <i className="fa-light fa-unlink" aria-hidden="true" />
+          No LMS linked
+        </Badge>
+      )}
       {accessLevel && <AccessLevelChip level={accessLevel} />}
       {liveCount > 0 && (
         <Tip label={`${liveCount} ${liveCount === 1 ? 'assessment' : 'assessments'} in progress now`}>
@@ -151,7 +181,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             className="gap-2"
             onClick={() => {
               const id = courseAssessments.find(a => reviewByAssessment.get(a.id)?.state === 'in-progress')?.id
-              if (id) router.push(`/assessments/${id}/monitor`)
+              if (id) router.push(`/assessment-builder?id=${id}&view=monitor`)
             }}
           >
             <span className="inline-block size-1.5 rounded-full bg-chart-1 [animation:pulse-soft_1.6s_ease-in-out_infinite]" aria-hidden="true" />
@@ -168,6 +198,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     <>
       <SiteHeader title={course.name} breadcrumbs={breadcrumbs} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+        <h1 className="sr-only">{course.name}</h1>
         <PageHeader
           title={course.name}
           subtitle={subtitle}
@@ -183,20 +214,20 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
               <TabsTrigger value="assessments" className="gap-2">
                 <i className="fa-light fa-clipboard-list text-xs" aria-hidden="true" />
                 Assessments
-                {(pendingReview > 0 || liveCount > 0) && (
-                  <span className="text-muted-foreground text-xs font-normal">
-                    {courseAssessments.length}
-                  </span>
+                {assessmentsCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {assessmentsCount}
+                  </Badge>
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="questions" className="gap-2">
-                <i className="fa-light fa-book-open text-xs" aria-hidden="true" />
-                Questions
               </TabsTrigger>
               <TabsTrigger value="students" className="gap-2">
                 <i className="fa-light fa-users text-xs" aria-hidden="true" />
                 Students
-                <span className="text-muted-foreground text-xs font-normal">{courseStudents.length}</span>
+                {studentsCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {studentsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="accommodations" className="gap-2">
                 <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
@@ -216,6 +247,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
               <TabsTrigger value="faculty" className="gap-2">
                 <i className="fa-light fa-chalkboard-user text-xs" aria-hidden="true" />
                 Faculty
+                {facultyCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {facultyCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="question-bank" className="gap-2">
+                <i className="fa-light fa-books" aria-hidden="true" style={{ fontSize: 13 }} />
+                Question Bank
               </TabsTrigger>
             </TabsList>
           </div>
@@ -227,10 +267,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 reviewByAssessment={reviewByAssessment}
                 isViewer={isViewer}
                 courseId={courseId}
+                onNewAssessment={() => router.push(`/assessment-builder?new=1&courseId=${courseId}`)}
               />
-            </TabsContent>
-            <TabsContent value="questions" className="m-0">
-              <QuestionsTab courseId={courseId} isViewer={isViewer} />
             </TabsContent>
             <TabsContent value="students" className="m-0">
               <StudentsTab
@@ -258,6 +296,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             <TabsContent value="faculty" className="m-0">
               <FacultyTab courseId={courseId} />
             </TabsContent>
+            <TabsContent value="question-bank" className="mt-0 outline-none">
+              <QuestionBankTab courseId={courseId} />
+            </TabsContent>
           </div>
         </Tabs>
       </div>
@@ -265,8 +306,13 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   )
 }
 
-function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: string }) {
-  const [modalOpen, setModalOpen] = useState(false)
+function PrimaryAction({
+  isViewer, courseId,
+}: {
+  isViewer: boolean
+  courseId: string
+}) {
+  const router = useRouter()
   if (isViewer) {
     return (
       <Tip label="Read-only access — you can't create assessments in this course.">
@@ -277,17 +323,11 @@ function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: st
       </Tip>
     )
   }
+
   return (
-    <>
-      <Button size="sm" className="gap-2" onClick={() => setModalOpen(true)}>
-        <i className="fa-light fa-plus" aria-hidden="true" />
-        New assessment
-      </Button>
-      <CreateAssessmentModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        courseId={courseId}
-      />
-    </>
+    <Button variant="default" size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder?new=1&courseId=${courseId}`)}>
+      <i className="fa-light fa-plus" aria-hidden="true" />
+      New assessment
+    </Button>
   )
 }
