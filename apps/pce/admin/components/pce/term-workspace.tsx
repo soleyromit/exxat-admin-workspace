@@ -17,7 +17,6 @@ import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Badge,
   Button,
   KeyMetrics,
   PersonIdentityCell,
@@ -28,7 +27,6 @@ import {
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
-import { TruncatedText } from '@/components/truncated-text'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { usePce } from '@/components/pce/pce-state'
@@ -42,10 +40,40 @@ import {
   RESPONSE_TARGET, LIVE, FINISHED,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
-import type { PceSurvey } from '@/lib/pce-mock-data'
+import {
+  EVALUATION_TYPE_LABEL,
+  EVALUATION_TYPE_ICON,
+  type PceSurvey,
+  type EvaluationType,
+  type EvaluationInstance,
+  type SurveyStatus,
+} from '@/lib/pce-mock-data'
+import { evaluationsFor } from '@/lib/pce-evaluations'
 
-type SurveyRow = PceSurvey & Record<string, unknown>
+/* One row = one evaluation TYPE of one offering (Course Material / Faculty and
+ * other roles / General). Rows group by course so each offering is a collapsible
+ * header with its three typed rows beneath — one status per type. */
+type EvalRow = {
+  id: string
+  surveyId: string
+  courseCode: string
+  courseName: string
+  evaluationType: EvaluationType
+  typeLabel: string
+  status: SurveyStatus
+  responseRate: number
+  responseCount: number
+  enrollmentCount: number
+  deadline: string
+  faculty: string
+  survey: PceSurvey
+} & Record<string, unknown>
 
+/* Per-type lifecycle predicates (LIVE/FINISHED in pce-term-metrics take a whole
+ * PceSurvey; here we test a single evaluation instance's status). */
+const isLive = (st: SurveyStatus) => st === 'active' || st === 'collecting'
+const isFinished = (st: SurveyStatus) =>
+  st === 'pending_review' || st === 'closed' || st === 'released'
 
 function primaryInstructorName(s: PceSurvey): string {
   return (s.instructors.find((i) => i.role === 'primary') ?? s.instructors[0])?.name ?? ''
@@ -55,18 +83,6 @@ function primaryInstructorName(s: PceSurvey): string {
 const STATUS_ORDER: Record<string, number> = {
   active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
 }
-
-/* Legacy survey courseType → display label (matches the push wizard's
- * Courses & Evaluatees type vocabulary). */
-const COURSE_TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom based',
-  clinical: 'Practice based',
-}
-
-const COURSE_TYPE_FILTER_OPTIONS = [
-  { value: 'didactic', label: 'Classroom based' },
-  { value: 'clinical', label: 'Practice based' },
-]
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'draft',          label: 'Draft' },
@@ -112,17 +128,53 @@ function TermWorkspaceInner() {
   const responsesCollected = termSurveys.reduce((s, x) => s + x.responseCount, 0)
   const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
 
-  const tableRows: SurveyRow[] = useMemo(
-    () =>
-      [...termSurveys]
-        .sort(
-          (a, b) =>
-            (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) ||
-            a.responseRate - b.responseRate,
-        )
-        .map((s) => ({ ...s, faculty: primaryInstructorName(s) }) as SurveyRow),
-    [termSurveys],
-  )
+  /* Flatten to one row per (offering × evaluation type). Offerings are ordered
+   * needs-attention-first by their most-urgent type, then lowest response; the
+   * three type rows stay in canonical order within each offering. */
+  const tableRows: EvalRow[] = useMemo(() => {
+    const withEvals = termSurveys.map((s) => ({ s, evals: evaluationsFor(s) }))
+    const priority = (evals: EvaluationInstance[]) => ({
+      minStatus: Math.min(...evals.map((e) => STATUS_ORDER[e.status] ?? 9)),
+      minRate: Math.min(...evals.map((e) => e.responseRate)),
+    })
+    return [...withEvals]
+      .sort((a, b) => {
+        const pa = priority(a.evals)
+        const pb = priority(b.evals)
+        return pa.minStatus - pb.minStatus || pa.minRate - pb.minRate
+      })
+      .flatMap(({ s, evals }) =>
+        evals.map(
+          (e): EvalRow => ({
+            id: `${s.id}:${e.type}`,
+            surveyId: s.id,
+            courseCode: s.courseCode,
+            courseName: s.courseName,
+            evaluationType: e.type,
+            typeLabel: EVALUATION_TYPE_LABEL[e.type],
+            status: e.status,
+            responseRate: e.responseRate,
+            responseCount: e.responseCount,
+            enrollmentCount: e.enrollmentCount,
+            deadline: e.deadline,
+            faculty: primaryInstructorName(s),
+            survey: s,
+          }),
+        ),
+      )
+  }, [termSurveys])
+
+  /* Group header = the offering; order = first appearance (already sorted). */
+  const groupLabels = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const s of termSurveys) m[s.courseCode] = `${s.courseCode} · ${s.courseName}`
+    return m
+  }, [termSurveys])
+  const groupOrder = useMemo(() => {
+    const seen: string[] = []
+    for (const r of tableRows) if (!seen.includes(r.courseCode)) seen.push(r.courseCode)
+    return seen
+  }, [tableRows])
 
   const facultyOptions = useMemo(
     () =>
@@ -132,39 +184,43 @@ function TermWorkspaceInner() {
     [termSurveys],
   )
 
-  /* ── table columns (canonical course-evaluation worklist) ── */
-  const columns: ColumnDef<SurveyRow>[] = useMemo(() => {
-    /* Remind opens the send-reminders wizard (all live courses listed, this row
-     * pre-checked), carrying the origin so it routes back here. */
-    const remindHref = (ids: string) =>
-      `/surveys/remind?ids=${ids}${fromQ ? `&${fromQ.slice(1)}` : ''}`
+  /* ── table columns — one row per evaluation TYPE, grouped by offering ── */
+  const columns: ColumnDef<EvalRow>[] = useMemo(() => {
+    /* Remind carries the evaluation type so the wizard can scope to just that
+     * type's non-responders (wizard-side filtering is the follow-up); origin
+     * routes it back here. */
+    const remindHref = (surveyId: string, type: EvaluationType) =>
+      `/surveys/remind?ids=${surveyId}&evalType=${type}${fromQ ? `&${fromQ.slice(1)}` : ''}`
     return [
       {
-        key: 'courseCode',
-        label: 'Course',
-        sortable: true,
-        filter: { type: 'text', icon: 'fa-book' },
+        key: 'typeLabel',
+        label: 'Evaluation',
+        sortable: false,
+        filter: { type: 'text', icon: 'fa-list-check' },
         cell: (row) => (
-          <Link
-            href={`/results/${row.id}${fromQ}`}
-            onClick={(e) => e.stopPropagation()}
-            className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
-          >
-            <p className="text-sm font-medium">{row.courseCode}</p>
-            <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2">
+            <i
+              className={`fa-light ${EVALUATION_TYPE_ICON[row.evaluationType]} text-muted-foreground`}
+              aria-hidden="true"
+            />
+            <span className="text-sm font-medium">{row.typeLabel}</span>
+          </div>
         ),
       },
       {
         key: 'faculty',
         label: 'Faculty',
         width: 190,
-        sortable: true,
+        sortable: false,
         filter: { type: 'select', icon: 'fa-user', options: facultyOptions },
+        /* Faculty only reads on the Faculty-and-other-roles row — the people the
+         * type evaluates. Course Material / General are course-level. */
         cell: (row) => {
-          const primary = row.instructors.find((i) => i.role === 'primary') ?? row.instructors[0]
+          if (row.evaluationType !== 'faculty_roles')
+            return <span className="text-sm text-muted-foreground">—</span>
+          const primary = row.survey.instructors.find((i) => i.role === 'primary') ?? row.survey.instructors[0]
           if (!primary) return <span className="text-sm text-muted-foreground">—</span>
-          const extra = row.instructors.length - 1
+          const extra = row.survey.instructors.length - 1
           return (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -177,7 +233,7 @@ function TermWorkspaceInner() {
               </TooltipTrigger>
               <TooltipContent>
                 <div className="flex flex-col gap-0.5">
-                  {row.instructors.map((i) => (
+                  {row.survey.instructors.map((i) => (
                     <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
                   ))}
                 </div>
@@ -187,25 +243,10 @@ function TermWorkspaceInner() {
         },
       },
       {
-        key: 'courseType',
-        label: 'Type',
-        sortable: true,
-        width: 150,
-        filter: { type: 'select', icon: 'fa-shapes', options: COURSE_TYPE_FILTER_OPTIONS },
-        cell: (row) =>
-          row.courseType ? (
-            <Badge variant="outline" className="font-normal whitespace-nowrap">
-              {COURSE_TYPE_LABEL[row.courseType] ?? row.courseType}
-            </Badge>
-          ) : (
-            <span className="text-sm text-muted-foreground">—</span>
-          ),
-      },
-      {
         key: 'status',
         label: 'Status',
         sortable: true,
-        width: 140,
+        width: 150,
         filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
         cell: (row) => <SurveyStatusBadgeOS status={row.status} />,
       },
@@ -215,9 +256,7 @@ function TermWorkspaceInner() {
         sortable: true,
         width: 200,
         cell: (row) =>
-          row.responseCount > 0 || LIVE(row) ? (
-            /* Pending-first stat (Romit pick, Jul 10 — no bar): the actionable
-             * number leads; the rate line names the target status in words. */
+          row.responseCount > 0 || isLive(row.status) ? (
             <ResponseProgressCell
               rate={row.responseRate}
               responseCount={row.responseCount}
@@ -236,7 +275,7 @@ function TermWorkspaceInner() {
         filter: { type: 'text', icon: 'fa-calendar-day' },
         cell: (row) => {
           const d = row.deadline ? daysUntil(row.deadline) : null
-          if (LIVE(row) && d != null) {
+          if (isLive(row.status) && d != null) {
             return (
               <div>
                 <p className="text-sm tabular-nums">{row.deadline}</p>
@@ -255,40 +294,38 @@ function TermWorkspaceInner() {
       {
         key: 'actions',
         label: '',
-        /* Fits the widest inline case — Remind + Extend + ⋯ (~166px of buttons
-         * + 24px cell padding) — without the ~70px of dead reserved space that
-         * was forcing horizontal scroll on the course list. */
         width: 196,
         cell: (row) => {
-          const isAtRisk = LIVE(row) && row.responseRate < AT_RISK_THRESHOLD
+          const atRisk = isLive(row.status) && row.responseRate < AT_RISK_THRESHOLD
+          const label = `${row.typeLabel} · ${row.courseCode}`
           return (
             <div className="flex items-center justify-end gap-1">
-              {isAtRisk && (
+              {atRisk && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.id)) }}
-                  aria-label={`Send a reminder for ${row.courseCode}`}
+                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.surveyId, row.evaluationType)) }}
+                  aria-label={`Send a reminder for ${label}`}
                 >
                   Remind
                 </Button>
               )}
-              {isAtRisk && (
+              {atRisk && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row]) }}
-                  aria-label={`Extend the evaluation window for ${row.courseCode}`}
+                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey]) }}
+                  aria-label={`Extend the evaluation window for ${label}`}
                 >
                   Extend
                 </Button>
               )}
-              {FINISHED(row) && (
+              {isFinished(row.status) && (
                 <Button variant="outline" size="sm" asChild>
                   <Link
-                    href={`/results/${row.id}${fromQ}`}
+                    href={`/results/${row.surveyId}${fromQ}`}
                     onClick={(e) => e.stopPropagation()}
-                    aria-label={`View results for ${row.courseCode}`}
+                    aria-label={`View results for ${label}`}
                   >
                     View results
                   </Link>
@@ -299,31 +336,31 @@ function TermWorkspaceInner() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`More actions for ${row.courseCode}`}
+                    aria-label={`More actions for ${label}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <i className="fa-light fa-ellipsis" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onSelect={() => router.push(`/results/${row.id}${fromQ}`)}>
+                  <DropdownMenuItem onSelect={() => router.push(`/results/${row.surveyId}${fromQ}`)}>
                     View results
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.id}/preview`)}>
+                  <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.surveyId}/preview`)}>
                     Preview form
                   </DropdownMenuItem>
-                  {row.status === 'pending_review' && (
-                    <DropdownMenuItem onSelect={() => setModerationId(row.id)}>
+                  {isFinished(row.status) && row.status !== 'released' && (
+                    <DropdownMenuItem onSelect={() => setModerationId(row.surveyId)}>
                       Review responses
                     </DropdownMenuItem>
                   )}
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => router.push(remindHref(row.id))}>
+                  {isLive(row.status) && !atRisk && (
+                    <DropdownMenuItem onSelect={() => router.push(remindHref(row.surveyId, row.evaluationType))}>
                       Send reminder
                     </DropdownMenuItem>
                   )}
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => setExtendTargets([row])}>
+                  {isLive(row.status) && !atRisk && (
+                    <DropdownMenuItem onSelect={() => setExtendTargets([row.survey])}>
                       Edit end date
                     </DropdownMenuItem>
                   )}
@@ -458,15 +495,17 @@ function TermWorkspaceInner() {
               {evalView === 'board' ? (
                 <TermEvaluationsBoard surveys={termSurveys} termId={term.id} />
               ) : (
-                <DataTablePaginated<SurveyRow>
+                <DataTablePaginated<EvalRow>
                   data={tableRows}
                   columns={columns}
                   getRowId={(row) => row.id}
-                  selectable
-                  pagination={{ pageSize: 10 }}
+                  defaultGroupBy="courseCode"
+                  groupLabels={groupLabels}
+                  groupOrder={groupOrder}
+                  pagination={{ pageSize: 12 }}
                   edgeInset={false}
                   stickyHeader={false}
-                  onRowClick={(row) => router.push(`/results/${row.id}${fromQ}`)}
+                  onRowClick={(row) => router.push(`/results/${row.surveyId}${fromQ}`)}
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />

@@ -3,6 +3,33 @@ export type TemplateSection = 'course_content' | 'faculty_performance' | 'course
 export type UserRole = 'admin' | 'faculty'
 export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
 export type SurveyType = 'course_evaluation' | 'programmatic'
+
+// ── Evaluation types ──────────────────────────────────────────────────────────
+// A single course offering is evaluated along MORE THAN ONE type at setup, and
+// each type runs on its own clock — so one offering can show three different
+// statuses at once (Romit, 2026-07-17). Order = the canonical setup order.
+export type EvaluationType = 'course_material' | 'faculty_roles' | 'general'
+export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles', 'general']
+export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
+  course_material: 'Course Material',
+  faculty_roles:   'Faculty and other roles',
+  general:         'General',
+}
+export const EVALUATION_TYPE_ICON: Record<EvaluationType, string> = {
+  course_material: 'fa-book-open',
+  faculty_roles:   'fa-chalkboard-user',
+  general:         'fa-clipboard-list',
+}
+/** One evaluation type's own lifecycle + response tracking within an offering. */
+export interface EvaluationInstance {
+  type: EvaluationType
+  status: SurveyStatus
+  responseRate: number
+  responseCount: number
+  enrollmentCount: number
+  deadline: string
+}
+
 // Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
@@ -297,6 +324,11 @@ export interface PceSurvey {
   priorOfferings?: PriorOffering[]
   templateId: string
   status: SurveyStatus
+  /** Per-evaluation-type breakdown (Course Material / Faculty and other roles /
+   *  General) — each carries its own status + response tracking. When absent,
+   *  `evaluationsFor()` derives them. The offering-level `status`/`responseCount`
+   *  above stay as the roll-up so KPIs, board and results are unaffected. */
+  evaluations?: EvaluationInstance[]
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number
