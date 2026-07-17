@@ -21,23 +21,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  chartTooltipKeyboardSyncProps,
   KeyMetrics,
   StatusBadge,
 } from '@exxatdesignux/ui'
-import type { ChartConfig, MetricItem } from '@exxatdesignux/ui'
-import {
-  Area, CartesianGrid, ComposedChart, LabelList, Line, XAxis, YAxis,
-} from 'recharts'
+import type { MetricItem } from '@exxatdesignux/ui'
 import {
   ChartCard, ChartFigure, ChartDataTable,
-  ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
-import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
@@ -52,11 +43,109 @@ const TERM_ORDER = [
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
 
-const trendChartConfig: ChartConfig = {
-  range:   { label: 'Faculty range', color: 'var(--border)' },
-  median:  { label: 'Median',        color: 'var(--muted-foreground)' },
-  faculty: { label: 'You',           color: 'var(--chart-2)' },
+interface TrajectoryDatum {
+  term: string
+  min: number
+  range: number
+  median: number
+  faculty: number | null
 }
+
+/* Hand-rolled standing-per-term plot on the shared 3–5 window: soft cohort
+   range columns + median notch + your value-labeled dot, dots joined by a
+   hairline. Position marks on a printed axis (RUBRIC v2), no library default. */
+function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
+  const pos = (v: number) => (Math.min(5, Math.max(3, v)) - 3) / 2
+  const n = data.length
+  const points = data
+    .map((d, i) => (d.faculty != null ? `${((i + 0.5) / n) * 100},${(1 - pos(d.faculty)) * 100}` : null))
+    .filter(Boolean)
+    .join(' ')
+  return (
+    <div
+      role="img"
+      aria-label={`Your rating per term inside the full faculty range. ${data
+        .filter((d) => d.faculty != null)
+        .map((d) => `${d.term}: you ${d.faculty!.toFixed(2)}, median ${d.median.toFixed(2)}`)
+        .join('; ')}.`}
+      className="w-full"
+    >
+      <div className="flex gap-3" aria-hidden="true">
+        {/* Printed axis — 3.0–5.0 window */}
+        <div className="relative h-60 w-7 shrink-0 text-xs text-muted-foreground tabular-nums">
+          {[5, 4.5, 4, 3.5, 3].map((v) => (
+            <span key={v} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - pos(v)) * 100}%` }}>
+              {v.toFixed(1)}
+            </span>
+          ))}
+        </div>
+        <div className="relative h-60 flex-1">
+          {[5, 4.5, 4, 3.5, 3].map((v) => (
+            <div
+              key={v}
+              className="absolute inset-x-0 border-t border-dashed border-border"
+              style={{ top: `${(1 - pos(v)) * 100}%` }}
+            />
+          ))}
+          {/* Hairline trajectory between your dots */}
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polyline
+              points={points}
+              fill="none"
+              stroke="var(--chart-2)"
+              strokeWidth="1.5"
+              strokeOpacity="0.45"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <div className="absolute inset-0 flex">
+            {data.map((d) => (
+              <div key={d.term} className="relative flex-1">
+                {/* Cohort range column */}
+                <div
+                  className="absolute left-1/2 w-9 -translate-x-1/2 rounded-full bg-muted"
+                  style={{
+                    bottom: `${pos(d.min) * 100}%`,
+                    height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
+                  }}
+                />
+                {/* Median notch */}
+                <div
+                  className="absolute left-1/2 h-0.5 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground"
+                  style={{ top: `${(1 - pos(d.median)) * 100}%` }}
+                />
+                {/* Your dot + value at the mark */}
+                {d.faculty != null && (
+                  <>
+                    <div
+                      className="absolute left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card"
+                      style={{ top: `${(1 - pos(d.faculty)) * 100}%`, background: 'var(--chart-2)' }}
+                    />
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium tabular-nums text-foreground"
+                      style={{ top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)` }}
+                    >
+                      {d.faculty.toFixed(2)}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Term labels */}
+      <div className="ms-10 flex" aria-hidden="true">
+        {data.map((d) => (
+          <span key={d.term} className="flex-1 pt-2 text-center text-xs text-muted-foreground">
+            {d.term}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const LOOP_BADGE: Record<'resolved' | 'improved' | 'persistent', { label: string; tone: 'success' | 'info' | 'warning' }> = {
   resolved:   { label: 'Resolved',   tone: 'success' },
   improved:   { label: 'Improved',   tone: 'info' },
@@ -272,7 +361,6 @@ export default function MyDashboardPage() {
             `${lastWithFaculty.term}: own ${lastWithFaculty.faculty!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
             `Band spans ${lastWithFaculty.min.toFixed(2)}–${(lastWithFaculty.min + lastWithFaculty.range).toFixed(2)} this term.`,
           ],
-          anchor: { xValue: lastWithFaculty.term, yDataKeys: ['faculty'] },
         }
       })()
     : null
@@ -311,52 +399,33 @@ export default function MyDashboardPage() {
         <div className="flex flex-col gap-6 max-w-4xl">
           <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={kpis} />
 
-          {/* Trajectory — the hero. Full width, your points value-labeled at
-              the marks (RUBRIC v2 Gate 5.3), cohort band + median as context. */}
+          {/* Trajectory — hand-rolled per-term standing plot (not a library
+              default): each term is a soft cohort-range column with a median
+              notch; your value-labeled dot shows where you sat, a hairline
+              connects the dots for direction. */}
           <ChartCard
             variant="normal"
             title="Rating over time"
-            description="Your average per term · grey band = full faculty range · dashed = median"
+            description="Where you sat in the faculty range each term · column = full range · notch = median"
             leoInsight={bandLeo}
           >
             <ChartFigure
               label="Rating over time"
-              summary="Your rating per term plotted inside the full faculty distribution band, with the median as a dashed line."
+              summary="Your rating per term shown as a dot inside the full faculty range column, with the median notched per term."
               dataLength={trendData.length}
             >
-              {(activeIndex) => (
+              {() => (
                 <>
-                  <div className="relative w-full">
-                    <ChartContainer config={trendChartConfig} className="h-64 w-full text-xs">
-                      <ComposedChart data={trendData} margin={{ top: 20, right: 12, bottom: 0, left: -16 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                        <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                        <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                        <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                        <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-                        <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
-                        <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-                        <Line dataKey="faculty" stroke="var(--chart-2)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-2)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false}>
-                          <LabelList
-                            dataKey="faculty"
-                            position="top"
-                            offset={10}
-                            formatter={(v: number | null) => (v != null ? v.toFixed(2) : '')}
-                            style={{ fill: 'var(--foreground)', fontSize: 12 }}
-                            className="tabular-nums"
-                          />
-                        </Line>
-                      </ComposedChart>
-                    </ChartContainer>
-                    <ChartLeoPlotInsightOverlay
-                      data={trendData.map(({ term: t, faculty: f, median }) => ({ term: t, faculty: f, median }))}
-                      xDataKey="term"
-                    />
-                  </div>
+                  <TrajectoryPlot data={trendData} />
                   <ChartDataTable
                     caption="Rating over time"
-                    headers={['Term', 'You', 'Median']}
-                    rows={trendData.map((d) => [d.term, d.faculty != null ? d.faculty.toFixed(2) : '—', d.median.toFixed(2)])}
+                    headers={['Term', 'You', 'Median', 'Faculty range']}
+                    rows={trendData.map((d) => [
+                      d.term,
+                      d.faculty != null ? d.faculty.toFixed(2) : '—',
+                      d.median.toFixed(2),
+                      `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
+                    ])}
                   />
                 </>
               )}
