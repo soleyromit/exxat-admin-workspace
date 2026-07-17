@@ -60,12 +60,11 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   ExportDrawer,
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  FloatingSheetPanel,
+  FloatingSheetPanelBody,
+  FloatingSheetPanelContent,
+  FloatingSheetPanelHeader,
+  ToggleSwitch,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -81,7 +80,7 @@ import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
 import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
-import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
+import { SurveyStatusBadgeOS, SENTIMENT_CHIP } from '@/components/pce/pce-badges'
 import { deriveThemes } from '@/lib/pce-themes'
 import {
   MOCK_RESPONSES,
@@ -491,19 +490,57 @@ interface IndexedComment extends ResponseComment {
   surveyIdForToggle: string
 }
 
+/** Shared sentiment filter — ONE instance per surface (card top / sheet top),
+ *  never repeated per section: the filter must not outweigh the content it
+ *  filters (Hotjar's single filter row over the whole response list). */
+function SentimentFilterGroup({
+  value,
+  onChange,
+  countFor,
+  label,
+}: {
+  value: SentimentFilter
+  onChange: (f: SentimentFilter) => void
+  countFor: (f: SentimentFilter) => number
+  label: string
+}) {
+  return (
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(v) => v && onChange(v as SentimentFilter)}
+      variant="outline"
+      size="sm"
+      aria-label={label}
+    >
+      {SENTIMENT_FILTERS.map((f) => (
+        <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
+          {f.label} ({countFor(f.key)})
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
+}
+
+/** How many comments each section shows before "Show all" — keeps a
+ *  high-volume section scannable without a nested scrollbar. */
+const COMMENTS_PREVIEW_COUNT = 6
+
 function CommentList({
   title,
   comments,
   hiddenIdx,
   canModerate,
+  filter,
 }: {
   title: string
   comments: IndexedComment[]
   hiddenIdx: number[]
   canModerate: boolean
+  filter: SentimentFilter
 }) {
   const { toggleHideComment } = usePce()
-  const [filter, setFilter] = useState<SentimentFilter>('all')
+  const [showAll, setShowAll] = useState(false)
 
   const visibleToRole = canModerate
     ? comments
@@ -513,77 +550,80 @@ function CommentList({
       ? visibleToRole
       : visibleToRole.filter((c) => (c.sentiment ?? 'neutral') === filter)
   const hiddenCount = comments.filter((c) => hiddenIdx.includes(c.index)).length
+  const shown = showAll ? filtered : filtered.slice(0, COMMENTS_PREVIEW_COUNT)
 
   if (comments.length === 0) return null
 
-  const countFor = (f: SentimentFilter) =>
-    f === 'all'
-      ? visibleToRole.length
-      : visibleToRole.filter((c) => (c.sentiment ?? 'neutral') === f).length
-
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h4 className="text-sm font-medium flex items-center gap-2">
-          {title}
-          {canModerate && hiddenCount > 0 && (
-            <StatusBadge label={`${hiddenCount} hidden from faculty`} tone="neutral" />
-          )}
-        </h4>
-        <ToggleGroup
-          type="single"
-          value={filter}
-          onValueChange={(v) => v && setFilter(v as SentimentFilter)}
-          variant="outline"
-          size="sm"
-          aria-label={`Filter ${title.toLowerCase()} by sentiment`}
-        >
-          {SENTIMENT_FILTERS.map((f) => (
-            <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
-              {f.label} ({countFor(f.key)})
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+    <section className="flex flex-col" aria-label={title}>
+      {/* Section header: identity + counts only. Hidden count is quiet meta
+          for the moderator — status chips stay down on the rows they describe. */}
+      {/* h3: the card title above is aria-level 2 — heading order must not
+          skip a level (axe heading-order). */}
+      <div className="flex items-baseline gap-2 pb-1.5 border-b border-border">
+        <h3 className="text-sm font-medium">{title}</h3>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {visibleToRole.length}
+          {canModerate && hiddenCount > 0 && <> · {hiddenCount} hidden from faculty</>}
+        </span>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-2">No {title.toLowerCase()} match this filter.</p>
+        <p className="text-sm text-muted-foreground py-3">
+          No {title.toLowerCase()} match this filter.
+        </p>
       ) : (
-        <div className="flex flex-col max-h-96 overflow-y-auto">
-          {filtered.map((c) => {
+        <div className="flex flex-col">
+          {shown.map((c) => {
             const isHidden = hiddenIdx.includes(c.index)
-            const s = c.sentiment ?? 'neutral'
-            const chip =
-              s === 'positive'
-                ? { label: 'Positive', tone: 'success' as const }
-                : s === 'concern'
-                  ? { label: 'Constructive', tone: 'warning' as const }
-                  : { label: 'Neutral', tone: 'neutral' as const }
+            const chip = SENTIMENT_CHIP[c.sentiment ?? 'neutral']
+            const switchId = `comment-visible-${c.surveyIdForToggle}-${c.index}`
             return (
               <div
                 key={c.index}
-                className="flex items-start gap-3 py-2.5 border-b border-border last:border-0"
+                className="flex items-start gap-6 py-3 border-b border-border last:border-0"
               >
-                {/* De-emphasis via the AA-calibrated token, never opacity (contrast) */}
-                <p className={`text-sm flex-1 min-w-0 italic border-s-2 border-border ps-3 ${isHidden ? 'text-muted-foreground line-through decoration-border' : ''}`}>
-                  &ldquo;{c.text}&rdquo;
-                </p>
-                <StatusBadge label={chip.label} tone={chip.tone} />
+                {/* Quote first — the comment is the content; the sentiment chip
+                    annotates beneath. De-emphasis via the AA-calibrated token,
+                    never opacity. */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <p className={`text-sm leading-relaxed ${isHidden ? 'text-muted-foreground' : ''}`}>
+                    &ldquo;{c.text}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge label={chip.label} tone={chip.tone} />
+                  </div>
+                </div>
+                {/* Moderation is a stateful control, not a chip-shaped button:
+                    the switch carries BOTH the current visibility and the
+                    action, so no status badge sits beside an action (Romit
+                    2026-07-17 — "Hide doesn't look actionable"). */}
                 {canModerate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
-                    onClick={() => toggleHideComment(c.surveyIdForToggle, c.index)}
-                  >
-                    {isHidden ? 'Unhide' : 'Hide'}
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    <label htmlFor={switchId} className="text-xs text-muted-foreground">
+                      Visible to faculty
+                    </label>
+                    <ToggleSwitch
+                      id={switchId}
+                      checked={!isHidden}
+                      onChange={() => toggleHideComment(c.surveyIdForToggle, c.index)}
+                    />
+                  </div>
                 )}
               </div>
             )
           })}
+          {filtered.length > COMMENTS_PREVIEW_COUNT && (
+            <div className="pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowAll((s) => !s)}>
+                {showAll
+                  ? 'Show fewer'
+                  : `Show all ${filtered.length} comments`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -885,7 +925,6 @@ interface BreakdownRow {
   programAvg?: number | null
   counts?: number[]
   total?: number
-  freeTextCount?: number
 }
 
 /** % of responses rated 4 or 5 — the favorable share that orders and labels
@@ -926,59 +965,92 @@ function CompareText({
   )
 }
 
-/** Free-text row — the written responses open immediately in a sheet
- *  (scrollable list, no page scroll needed to read the feedback). */
+/** Free-text row — Sprig's question-first block: question as the heading, a
+ *  count + sentiment meta line, and TWO preview quotes that show the work
+ *  inline. Any volume scales: previews stay fixed, the full anonymized list
+ *  opens in the floating sheet. Count comes from the actual response records
+ *  so the sheet can always back what the row claims. */
 function WrittenResponsesRow({ row, surveyId }: { row: BreakdownRow; surveyId: string }) {
   const responses = MOCK_OPEN_TEXT_RESPONSES.filter(
     (x) => x.surveyId === surveyId && x.questionText === row.label,
   )
-  const count = row.freeTextCount ?? responses.length
+  const count = responses.length
+  const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState<SentimentFilter>('all')
+  const filtered =
+    filter === 'all' ? responses : responses.filter((x) => (x.sentiment ?? 'neutral') === filter)
+  const countFor = (f: SentimentFilter) =>
+    f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
+  const positives = countFor('positive')
+  const concerns = countFor('concern')
+  const previews = responses.slice(0, 2)
   return (
     <div
       id={`question-${row.id}`}
-      className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto] items-center gap-6 py-3 border-b border-border last:border-0"
+      className="scroll-mt-16 flex flex-col gap-2 py-3 border-b border-border last:border-0"
     >
-      <p className="text-sm min-w-0 text-muted-foreground">{row.label}</p>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="sm" className="justify-self-end text-muted-foreground hover:text-foreground">
-            {count} written response{count !== 1 ? 's' : ''}
+      <div className="flex items-start justify-between gap-6">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <p className="text-sm">{row.label}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {count === 0
+              ? 'Written responses — none yet'
+              : `${count} written response${count !== 1 ? 's' : ''}`}
+            {positives > 0 && <> · {positives} positive</>}
+            {concerns > 0 && <> · {concerns} constructive</>}
+          </p>
+        </div>
+        {count > 0 && (
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => setOpen(true)}>
+            View all {count}
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
           </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          showOverlay={false}
-          showCloseButton={false}
-          className="w-[480px] sm:max-w-[480px] flex flex-col gap-0 p-0"
-        >
-          <SheetHeader className="px-6 py-5 border-b border-border">
-            <SheetTitle className="text-sm font-semibold leading-snug">{row.label}</SheetTitle>
-            <p className="text-sm text-muted-foreground">
-              {count} written response{count !== 1 ? 's' : ''} · anonymized
-            </p>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto px-6">
-            {responses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-                <i className="fa-light fa-comment-lines text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm text-muted-foreground">No responses yet.</p>
-              </div>
-            ) : (
-              responses.map((x) => (
-                <p key={x.id} className="py-3 text-sm border-b border-border last:border-0">
-                  {x.text}
+        )}
+      </div>
+      {previews.map((x) => (
+        <p key={x.id} className="text-sm text-muted-foreground truncate">
+          &ldquo;{x.text}&rdquo;
+        </p>
+      ))}
+      <FloatingSheetPanel open={open} onOpenChange={setOpen}>
+        <FloatingSheetPanelContent>
+          <FloatingSheetPanelHeader
+            title={row.label}
+            subtitle={`${count} written response${count !== 1 ? 's' : ''} · anonymized`}
+            onClose={() => setOpen(false)}
+          />
+          <FloatingSheetPanelBody className="flex flex-col gap-4">
+            <SentimentFilterGroup
+              value={filter}
+              onChange={setFilter}
+              countFor={countFor}
+              label={`Filter responses to “${row.label}” by sentiment`}
+            />
+            <div className="flex flex-col">
+              {filtered.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3">
+                  No responses match this filter.
                 </p>
-              ))
-            )}
-          </div>
-          <div className="px-6 py-4 border-t border-border flex justify-end shrink-0">
-            <SheetClose asChild>
-              <Button variant="outline" size="sm">Close</Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
+              ) : (
+                /* Same row anatomy as the qualitative-feedback card — quote
+                   first, sentiment chip on the meta line beneath. */
+                filtered.map((x) => {
+                  const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
+                  return (
+                    <div
+                      key={x.id}
+                      className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
+                    >
+                      <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
+                      {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </FloatingSheetPanelBody>
+        </FloatingSheetPanelContent>
+      </FloatingSheetPanel>
     </div>
   )
 }
@@ -1401,6 +1473,9 @@ function ResultDetail({
 
   /* Score cards — this course vs program, plus prior term */
   const courseAvg = responses?.sectionScores.find((s) => s.section === 'course_content')?.avg ?? null
+  /* A faculty-only template (e.g. midterm check-in) has no course questions —
+   * a permanent em-dash Course Content card would be noise, so skip it. */
+  const templateHasCourse = sections.length === 0 || sections.some((sec) => !sec.roleSetId)
   const sectionFacultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
   /* The Faculty Performance signal follows the faculty scope selector —
    * averaged from the scoped instructor block(s) ('all' = whole course);
@@ -1582,6 +1657,15 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* ONE sentiment filter for the whole qualitative card (course + faculty
+     sections) — counts reflect what THIS viewer can see (moderators also see
+     hidden comments). */
+  const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
+  const viewerComments = isPD ? allComments : visibleComments
+  const qualCountFor = (f: SentimentFilter) =>
+    f === 'all'
+      ? viewerComments.length
+      : viewerComments.filter((c) => (c.sentiment ?? 'neutral') === f).length
   /* Release feedback — the header comment's promised LocalBanner state flip
      (toast banned); success must be announced, not inferred from a button
      disappearing. */
@@ -1626,7 +1710,6 @@ function ResultDetail({
               label: q.text,
               group: group.label,
               kind: 'freeText',
-              freeTextCount: qData.freeTextCounts[q.id] ?? 0,
             })
             continue
           }
@@ -1852,8 +1935,8 @@ function ResultDetail({
                 )}
                 {/* AI insight card removed (Romit 2026-07-17) — themes remain
                     reachable via the Qualitative feedback section. */}
-                <div className={`grid grid-cols-1 gap-4 ${result.evalScope ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                  {result.evalScope !== 'instructor' && (
+                <div className={`grid grid-cols-1 gap-4 ${result.evalScope || !templateHasCourse ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                  {result.evalScope !== 'instructor' && templateHasCourse && (
                   <ScoreCard
                     title="Course Content"
                     value={courseAvg}
@@ -1953,25 +2036,38 @@ function ResultDetail({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 flex flex-col gap-5">
-                        <p className="text-xs text-muted-foreground">
-                          Anonymized responses — individual authorship cannot be identified.
-                        </p>
+                        {/* One filter row governs both sections; the trust note
+                            rides the same line as quiet meta instead of
+                            stacking another full-width row. */}
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <SentimentFilterGroup
+                            value={qualFilter}
+                            onChange={setQualFilter}
+                            countFor={qualCountFor}
+                            label="Filter student comments by sentiment"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Anonymized — individual authorship cannot be identified.
+                          </p>
+                        </div>
                         <CommentList
                           title="Course related comments"
                           comments={courseComments}
                           hiddenIdx={hiddenIdx}
                           canModerate={isPD}
+                          filter={qualFilter}
                         />
                         <CommentList
                           title="Faculty related comments"
                           comments={facultyComments}
                           hiddenIdx={hiddenIdx}
                           canModerate={isPD}
+                          filter={qualFilter}
                         />
 
                         {ownerInsights && recommendations.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h4>
+                            <h3 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h3>
                             <ol className="flex flex-col gap-1.5 list-decimal ml-4">
                               {recommendations.map((r) => (
                                 <li key={r} className="text-sm text-muted-foreground">
