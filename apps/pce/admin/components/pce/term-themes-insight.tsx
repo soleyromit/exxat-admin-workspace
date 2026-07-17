@@ -77,7 +77,9 @@ export function TermThemesInsight({
       quote,
       surveyIdByCode,
       commentCount: withComments.reduce((n, x) => n + x.resp.comments.length, 0),
-      courseCount: withComments.length,
+      // Distinct courses, not survey entries — a course with three surveys in scope is
+      // still ONE course, and the citation said "across 3 courses" for a single-course scope.
+      courseCount: new Set(withComments.map((x) => x.survey.courseCode)).size,
     }
   }, [surveys])
 

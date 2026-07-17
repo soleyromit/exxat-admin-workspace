@@ -106,7 +106,7 @@ export default function ProgrammaticAnalyticsPage() {
       <SiteHeader title="Dashboard" />
 
       <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           Dashboard
         </h1>
         <Button variant="outline" size="sm">

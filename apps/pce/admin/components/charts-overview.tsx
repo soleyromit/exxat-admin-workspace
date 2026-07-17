@@ -102,7 +102,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { AskLeoButton } from "@/components/ask-leo-button"
 import {
   Tooltip,
   TooltipContent,
@@ -396,13 +395,10 @@ function ChartCardHeader({
           <CardDescription className="mt-0.5">{description}</CardDescription>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Reveal on card hover/focus — pointer-events guarded so the hidden button is not reachable */}
-          <span className="pointer-events-none opacity-0 transition-opacity duration-150 group-hover/card:pointer-events-auto group-hover/card:opacity-100 group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 inline-flex">
-            <AskLeoButton
-              iconOnly={isSelector}
-              ariaLabel="Ask Leo about this chart"
-            />
-          </span>
+          {/* Per-chart Ask Leo button removed (Romit, 2026-07-17): it opened the generic Leo
+              sidebar with no chart context, so on the analytics surface it was a dead
+              affordance. The DATA-DERIVED Leo insight (ChartLeoInsightOverlay pill + popover)
+              stays — that is the chart's real Leo signature. */}
           {isSelector && filterOptions && onFilter && (
             <Select value={filter || filterOptions[0]?.value} onValueChange={(v) => onFilter(v)}>
               <SelectTrigger
