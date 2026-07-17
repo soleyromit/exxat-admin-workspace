@@ -1109,6 +1109,27 @@ interface BreakdownRow {
   perFaculty?: { facultyId: string; name: string; initials: string; avg: number; counts: number[]; total: number }[]
 }
 
+/** Section → evaluation-type classifier. Builder templates mark faculty
+ *  sections with roleSetId; richer/legacy templates encode the same thing in
+ *  subjectKey (course_instructor, lab_instructor, …). course_director is the
+ *  General bucket ("Overall Experience"). Keying on roleSetId alone lumped
+ *  every tmplrich section under Course — the exact mis-attribution of the
+ *  2026-07-17 critique. */
+const FACULTY_SUBJECT_KEYS = new Set([
+  'faculty',
+  'course_instructor',
+  'course_coordinator',
+  'teaching_assistant',
+  'lab_instructor',
+  'preceptor',
+  'clinical_supervisor',
+])
+function sectionGroupOf(s: PceTemplateSection): 'Course' | 'Faculty' | 'General' {
+  if (s.roleSetId || FACULTY_SUBJECT_KEYS.has(s.subjectKey)) return 'Faculty'
+  if (s.subjectKey === 'course_director') return 'General'
+  return 'Course'
+}
+
 /** Band + context metadata per question group — the provenance callout
  *  (which evaluation type, about whom) that the bare group key can't carry. */
 interface GroupMeta {
@@ -1726,7 +1747,7 @@ function ResultDetail({
   const courseAvg = responses?.sectionScores.find((s) => s.section === 'course_content')?.avg ?? null
   /* A faculty-only template (e.g. midterm check-in) has no course questions —
    * a permanent em-dash Course Content card would be noise, so skip it. */
-  const templateHasCourse = sections.length === 0 || sections.some((sec) => !sec.roleSetId)
+  const templateHasCourse = sections.length === 0 || sections.some((sec) => sectionGroupOf(sec) !== 'Faculty')
   const sectionFacultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
   /* The Faculty Performance signal follows the faculty scope selector —
    * averaged from the scoped instructor block(s) ('all' = whole course);
@@ -1846,10 +1867,12 @@ function ResultDetail({
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
 
-  /* Question breakdown groups — Course vs Faculty (spec grouping); a split
-     offering's survey only shows its own half. */
-  const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => !s.roleSetId)
-  const facultySections = result.evalScope === 'course' ? [] : sections.filter((s) => !!s.roleSetId)
+  /* Question breakdown groups — Course / Faculty / General via the section
+     classifier (roleSetId OR subjectKey); a split offering's survey only shows
+     its own half (General rides with the course half). */
+  const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Course')
+  const facultySections = result.evalScope === 'course' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Faculty')
+  const generalSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'General')
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
@@ -1861,7 +1884,9 @@ function ResultDetail({
         .filter((b) => allowed(b.instructorId))
         .map((b) => b.scores.find((q) => q.questionId === questionId))
         .filter((q): q is NonNullable<typeof q> => !!q)
-      if (hits.length === 0) return undefined
+      /* Faculty-group sections without per-instructor blocks (labs, TAs) are
+         scored at section level — fall back rather than dropping the row. */
+      if (hits.length === 0) return qData.sectionScores[subjectKey]?.find((q) => q.questionId === questionId)
       if (hits.length === 1) return hits[0]
       const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
       hits.forEach((h) => (h.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
@@ -1962,6 +1987,7 @@ function ResultDetail({
       [
         { key: 'Course' as const, sections: courseSections },
         { key: 'Faculty' as const, sections: facultySections },
+        { key: 'General' as const, sections: generalSections },
       ]
         .map((g) => ({
           key: g.key,
@@ -1972,7 +1998,7 @@ function ResultDetail({
           ),
         }))
         .filter((g) => g.items.length > 0),
-    [courseSections, facultySections],
+    [courseSections, facultySections, generalSections],
   )
 
   /* Question breakdown rows — rated + free-text, in template order. */
@@ -1982,6 +2008,7 @@ function ResultDetail({
     for (const group of [
       { label: 'Course', list: courseSections, faculty: false },
       { label: 'Faculty', list: facultySections, faculty: true },
+      { label: 'General', list: generalSections, faculty: false },
     ]) {
       for (const section of group.list) {
         for (const q of section.questions) {
@@ -2037,7 +2064,7 @@ function ResultDetail({
     }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, survey.instructors])
+  }, [qData, courseSections, facultySections, generalSections, result.facultyId, inCollection, facultyScope, survey.instructors])
 
   /* Question-group provenance — band label + icon + "about whom" per group,
      shared with the written-responses sheet and the anchor rail. */
@@ -2064,6 +2091,12 @@ function ResultDetail({
           : undefined),
       anchorId: 'group-faculty',
       contextLine: `Faculty evaluation${scopedFacultyName ? ` — ${scopedFacultyName}` : ''}`,
+    },
+    General: {
+      icon: 'fa-comments',
+      label: 'General',
+      anchorId: 'group-general',
+      contextLine: 'General',
     },
   }
 
