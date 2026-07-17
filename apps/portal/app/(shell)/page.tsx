@@ -1,7 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { Card, CardContent, Button, StatusBadge } from '@exxatdesignux/ui'
+import {
+  Card,
+  CardContent,
+  Button,
+  StatusBadge,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from '@exxatdesignux/ui'
+import { stockPortraitUrl } from '@/lib/stock-portrait'
+import { initialsFromDisplayName } from '@/lib/initials-from-name'
 import { SiteHeader } from '@/components/site-header'
 import { NotificationsPopover } from '@/components/notifications-popover'
 import { ProductConnectorRow } from '@/components/product-card-connector'
@@ -49,12 +59,19 @@ function ExploreCard({ product }: { product: Product }) {
         <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {product.description}
         </p>
-        <div className="relative z-10 mt-1">
+        <div className="relative z-10 mt-1 flex items-center justify-between gap-3">
           <Button asChild variant="outline" size="sm">
             <a href={interestHref} aria-label={`Express interest in ${product.name}`}>
               Express interest
             </a>
           </Button>
+          <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <Avatar size="sm" insetBorder>
+              <AvatarImage src={stockPortraitUrl(product.accountManager.name)} alt="" />
+              <AvatarFallback>{initialsFromDisplayName(product.accountManager.name)}</AvatarFallback>
+            </Avatar>
+            <span className="truncate">{product.accountManager.name}</span>
+          </span>
         </div>
       </CardContent>
     </Card>

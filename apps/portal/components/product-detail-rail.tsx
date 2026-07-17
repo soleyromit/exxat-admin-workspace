@@ -1,7 +1,7 @@
 'use client'
 
 // DS adoption: documented hand-roll — see docs/governance/ds-adoption.md § portal.
-// StatusBadge, AvatarInitials, Button, Card: imported from @exxatdesignux/ui.
+// StatusBadge, Avatar suite (AvatarGroup faces), Button, Card: imported from @exxatdesignux/ui.
 // "Works with" tile strip: no DS organism; product-specific portal pattern.
 
 import Link from 'next/link'
@@ -11,8 +11,13 @@ import {
   Button,
   Separator,
   StatusBadge,
-  AvatarInitials,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
 } from '@exxatdesignux/ui'
+import { stockPortraitUrl } from '@/lib/stock-portrait'
 import { PRODUCTS, SALES_EMAIL, type Product } from '@/lib/products'
 import { initialsFromDisplayName } from '@/lib/initials-from-name'
 
@@ -54,7 +59,10 @@ export function ProductDetailRail({ product }: { product: Product }) {
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-foreground">Account manager</h2>
           <div className="flex items-center gap-2.5">
-            <AvatarInitials size="sm" initials={initialsFromDisplayName(manager.name)} />
+            <Avatar size="sm" insetBorder>
+              <AvatarImage src={stockPortraitUrl(manager.name)} alt="" />
+              <AvatarFallback>{initialsFromDisplayName(manager.name)}</AvatarFallback>
+            </Avatar>
             <div className="flex min-w-0 flex-col">
               <span className="text-sm font-medium leading-snug">{manager.name}</span>
               <a
@@ -66,6 +74,32 @@ export function ProductDetailRail({ product }: { product: Product }) {
             </div>
           </div>
         </div>
+
+        {product.team && product.team.length > 0 && (
+          <>
+            <Separator />
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-foreground">People with access</h2>
+              <div
+                className="flex items-center gap-2"
+                aria-label={`${product.team.length} people have access`}
+              >
+                <AvatarGroup>
+                  {product.team.slice(0, 4).map((name) => (
+                    <Avatar key={name} size="sm" insetBorder>
+                      <AvatarImage src={stockPortraitUrl(name)} alt="" />
+                      <AvatarFallback>{initialsFromDisplayName(name)}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {product.team.length > 4 && (
+                    <AvatarGroupCount>+{product.team.length - 4}</AvatarGroupCount>
+                  )}
+                </AvatarGroup>
+                <span className="text-xs text-muted-foreground">{product.team.length} people</span>
+              </div>
+            </div>
+          </>
+        )}
 
         {worksWith.length > 0 && (
           <>
