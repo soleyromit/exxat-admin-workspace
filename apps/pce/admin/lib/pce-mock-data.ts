@@ -8,17 +8,15 @@ export type SurveyType = 'course_evaluation' | 'programmatic'
 // A single course offering is evaluated along MORE THAN ONE type at setup, and
 // each type runs on its own clock — so one offering can show three different
 // statuses at once (Romit, 2026-07-17). Order = the canonical setup order.
-export type EvaluationType = 'course_material' | 'faculty_roles' | 'general'
-export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles', 'general']
+export type EvaluationType = 'course_material' | 'faculty_roles'
+export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles']
 export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
-  course_material: 'Course Material',
-  faculty_roles:   'Faculty and other roles',
-  general:         'General',
+  course_material: 'Course',
+  faculty_roles:   'Faculty',
 }
 export const EVALUATION_TYPE_ICON: Record<EvaluationType, string> = {
   course_material: 'fa-book-open',
   faculty_roles:   'fa-chalkboard-user',
-  general:         'fa-clipboard-list',
 }
 /** One evaluation type's own lifecycle + response tracking within an offering. */
 export interface EvaluationInstance {

@@ -53,17 +53,14 @@ const OVERRIDES: Record<string, EvaluationInstance[]> = {
   s1: [
     inst('course_material', 'pending_review', 50, 92, 'Apr 30, 2026'),
     inst('faculty_roles',   'active',         50, 61, 'May 7, 2026'),
-    inst('general',         'scheduled',      50,  0, 'May 14, 2026'),
   ],
   s2: [
     inst('course_material', 'released',       48, 88, 'Apr 18, 2026'),
     inst('faculty_roles',   'pending_review', 48, 79, 'Apr 25, 2026'),
-    inst('general',         'active',         48, 44, 'May 2, 2026'),
   ],
   s3: [
     inst('course_material', 'active',         46, 57, 'May 5, 2026'),
-    inst('faculty_roles',   'active',         46, 39, 'May 5, 2026'),
-    inst('general',         'draft',          46,  0, 'May 12, 2026'),
+    inst('faculty_roles',   'collecting',     46, 39, 'May 5, 2026'),
   ],
 }
 
@@ -82,9 +79,8 @@ function derive(s: PceSurvey): EvaluationInstance[] {
   const deadline = s.deadline
   const enroll = s.enrollmentCount
   return [
-    inst('course_material', s.status, enroll, s.responseRate,      deadline),
-    inst('faculty_roles',   s.status, enroll, s.responseRate - 7,  deadline),
-    inst('general',         s.status, enroll, s.responseRate - 13, deadline),
+    inst('course_material', s.status, enroll, s.responseRate,     deadline),
+    inst('faculty_roles',   s.status, enroll, s.responseRate - 7, deadline),
   ]
 }
 
