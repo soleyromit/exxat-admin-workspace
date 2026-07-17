@@ -75,6 +75,7 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
+import { MiniRatingColumns, RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
@@ -710,57 +711,6 @@ interface ThemeRowDatum {
   dist: [number, number, number, number, number]
 }
 
-/* Diverging Likert palette from the DS chart tokens (Romit 2026-07-16):
-   warm low → neutral mid → cool high. 1 = --chart-5 orange, 2 = its tint,
-   3 = --border (the neutral midpoint is meant to be quiet), 4 = --chart-2
-   tint, 5 = --chart-2 teal — teal stays "good" page-wide. Composited pairs
-   validated: worst adjacent ΔE 15.9 normal / 14.7 CVD (chip-4 amber was
-   rejected — reads brown as a wide solid; mono-teal ramp rejected as flat). */
-const RATING_SERIES = [
-  { key: 'r1', label: 'Rated 1', color: 'var(--chart-5)', opacity: 1 },
-  { key: 'r2', label: 'Rated 2', color: 'var(--chart-5)', opacity: 0.5 },
-  { key: 'r3', label: 'Rated 3', color: 'var(--border)',  opacity: 1 },
-  { key: 'r4', label: 'Rated 4', color: 'var(--chart-2)', opacity: 0.5 },
-  { key: 'r5', label: 'Rated 5', color: 'var(--chart-2)', opacity: 1 },
-] as const
-
-/* Thick horizontal 100%-stacked bar per theme (Romit 2026-07-16): rating
-   segments 1→5 left to right in the Likert palette; counts + shares on hover
-   and in the data table; legend in the header row. */
-function ThemeStackedBar({ dist, total }: { dist: ThemeRowDatum['dist']; total: number }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex h-6 w-full gap-0.5 overflow-hidden rounded-md" aria-hidden="true">
-          {RATING_SERIES.map((s, i) => {
-            const n = dist[i] ?? 0
-            if (n === 0 || total === 0) return null
-            return (
-              <div
-                key={s.key}
-                className="h-full rounded-[2px]"
-                style={{ width: `${(n / total) * 100}%`, background: s.color, opacity: s.opacity }}
-              />
-            )
-          })}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="flex flex-col gap-0.5 tabular-nums">
-          {RATING_SERIES.map((s, i) => {
-            const n = dist[i] ?? 0
-            return (
-              <p key={s.key}>
-                {s.label}: {n} ({total > 0 ? Math.round((n / total) * 100) : 0}%)
-              </p>
-            )
-          }).reverse()}
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
 function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
   /* Sort by gap vs program, worst first — the deficit IS the story (Culture
@@ -794,18 +744,7 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
             <div className="flex flex-col">
               <div className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-end gap-6 pb-2 border-b border-border">
                 <span className="text-xs text-muted-foreground">Theme</span>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-                  {RATING_SERIES.map((s, i) => (
-                    <span key={s.key} className="inline-flex items-center gap-1">
-                      <span
-                        className="inline-block size-2.5 rounded-[2px]"
-                        style={{ background: s.color, opacity: s.opacity }}
-                        aria-hidden="true"
-                      />
-                      {i + 1}
-                    </span>
-                  ))}
-                </div>
+                <RatingLegend />
                 <span className="text-xs text-muted-foreground text-right">Avg vs program</span>
               </div>
               {sorted.map((t) => {
@@ -824,7 +763,7 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
                         {t.questions} question{t.questions !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <ThemeStackedBar dist={t.dist} total={total} />
+                    <RatingStackedBar counts={[...t.dist]} total={total} />
                     <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
                       Avg{' '}
                       <span
@@ -883,32 +822,6 @@ function favorableShare(counts: number[] | undefined, total: number | undefined)
   return ((counts[3] ?? 0) + (counts[4] ?? 0)) / total
 }
 
-/* Per-question rating distribution — five VERTICAL mini columns, one per
-   rating level (Romit, 2026-07-16: intentionally kept — the histogram SHAPE
-   per question, skew/bimodality, is the story a single favorable-share bar
-   would hide). Count above, share below; scale header printed once. */
-function MiniRatingColumns({ counts, total }: { counts: number[]; total: number }) {
-  return (
-    <div className="flex items-end gap-3" aria-hidden="true">
-      {RATING_SERIES.map((s, i) => {
-        const n = counts[i] ?? 0
-        const share = total > 0 ? n / total : 0
-        return (
-          <div key={s.key} className="flex flex-col items-center gap-0.5 w-8">
-            <span className="text-xs tabular-nums text-muted-foreground">{n}</span>
-            <div className="relative h-10 w-5 rounded-sm bg-muted overflow-hidden">
-              <div
-                className="absolute inset-x-0 bottom-0 rounded-sm"
-                style={{ height: `${Math.max(share * 100, n > 0 ? 8 : 0)}%`, background: s.color, opacity: s.opacity }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 /* You vs program as PRINTED numbers + one signed-gap figure (RUBRIC v2 Gate 0:
    in a ~10rem cell the deltas the reader must act on render smaller than any

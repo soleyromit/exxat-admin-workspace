@@ -30,8 +30,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { ChartConfig, MetricItem } from '@exxatdesignux/ui'
 import {
-  Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  Area, CartesianGrid, ComposedChart, LabelList, Line, XAxis, YAxis,
 } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
@@ -42,37 +41,22 @@ import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
-import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, MOCK_RESPONSES } from '@/lib/pce-mock-data'
+import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, MOCK_RESPONSES, MOCK_SURVEY_QUESTION_DATA } from '@/lib/pce-mock-data'
 import { deriveResults, programScoreBenchmarks } from '@/lib/pce-results'
 import { deriveThemes, type ThemeComment } from '@/lib/pce-themes'
 import { withFrom } from '@/lib/pce-nav-origin'
+import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
 
 const TERM_ORDER = [
   'Spring 2022', 'Fall 2022', 'Spring 2023', 'Fall 2023',
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
 
-// Derive section scores from avgRating with deterministic per-section variance
-function sectionScores(facultyId: string, avgRating: number) {
-  const seed = facultyId.charCodeAt(facultyId.length - 1)
-  const offsets = [0.2, -0.1, 0.3, -0.2, 0.1]
-  const sections = ['Delivery', 'Preparation', 'Accessibility', 'Communication', 'Fairness']
-  return sections.map((name, i) => ({
-    name,
-    score: Math.min(5, Math.max(1, +(avgRating + offsets[(i + seed) % offsets.length]).toFixed(1))),
-    fullMark: 5,
-  }))
-}
-
 const trendChartConfig: ChartConfig = {
   range:   { label: 'Faculty range', color: 'var(--border)' },
   median:  { label: 'Median',        color: 'var(--muted-foreground)' },
   faculty: { label: 'You',           color: 'var(--chart-2)' },
 }
-const radarChartConfig: ChartConfig = {
-  score: { label: 'Score', color: 'var(--chart-2)' },
-}
-
 const LOOP_BADGE: Record<'resolved' | 'improved' | 'persistent', { label: string; tone: 'success' | 'info' | 'warning' }> = {
   resolved:   { label: 'Resolved',   tone: 'success' },
   improved:   { label: 'Improved',   tone: 'info' },
@@ -142,12 +126,7 @@ export default function MyDashboardPage() {
     () => MOCK_FACULTY_OFFERINGS.filter((o) => o.facultyId === facultyId),
     [facultyId],
   )
-  const totalEnrolled = offerings.reduce((s, o) => s + o.enrolled, 0)
-  const avgRating = totalEnrolled > 0
-    ? +(offerings.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / totalEnrolled).toFixed(2)
-    : null
-
-  const trendData = useMemo(() => {
+    const trendData = useMemo(() => {
     const termsWithData = TERM_ORDER.filter((t) => MOCK_FACULTY_OFFERINGS.some((o) => o.term === t))
     return termsWithData.map((term) => {
       const scores = MOCK_FACULTY_OFFERINGS.filter((o) => o.term === term).map((o) => o.avgRating)
@@ -168,10 +147,6 @@ export default function MyDashboardPage() {
     })
   }, [offerings])
 
-  const radarData = useMemo(
-    () => (avgRating !== null ? sectionScores(facultyId, avgRating) : []),
-    [facultyId, avgRating],
-  )
 
   /* ── Follow-ups — feedback-loop concerns across own courses (Romit) ─────── */
   const followUps = useMemo(() => {
@@ -209,6 +184,63 @@ export default function MyDashboardPage() {
     return rows.sort((a, b) => rank[a.status] - rank[b.status]).slice(0, 6)
   }, [surveys, facultyId, hiddenComments])
 
+  /* ── Rating mix by term — every rating this faculty received, aggregated
+     from real per-question distributions (replaces the admin radar, whose
+     "dimensions" were synthetic seeded offsets). ─────────────────────────── */
+  const mixByTerm = useMemo(() => {
+    const acc = new Map<string, { counts: number[]; courses: Set<string> }>()
+    for (const s of surveys) {
+      if (!s.instructors.some((i) => i.id === facultyId)) continue
+      const qd = MOCK_SURVEY_QUESTION_DATA.find((d) => d.surveyId === s.id)
+      if (!qd) continue
+      const counts = [0, 0, 0, 0, 0]
+      for (const arr of Object.values(qd.sectionScores)) {
+        for (const q of arr) (q.distribution ?? []).forEach((n, i) => { if (i < 5) counts[i] += n })
+      }
+      for (const b of qd.instructorBlocks ?? []) {
+        if (b.instructorId !== facultyId) continue
+        for (const q of b.scores) (q.distribution ?? []).forEach((n, i) => { if (i < 5) counts[i] += n })
+      }
+      if (counts.every((n) => n === 0)) continue
+      const cur = acc.get(s.term) ?? { counts: [0, 0, 0, 0, 0], courses: new Set<string>() }
+      counts.forEach((n, i) => { cur.counts[i] += n })
+      cur.courses.add(s.courseCode)
+      acc.set(s.term, cur)
+    }
+    return [...acc.entries()]
+      .sort((a, b) => TERM_ORDER.indexOf(b[0]) - TERM_ORDER.indexOf(a[0]))
+      .map(([term, v]) => {
+        const total = v.counts.reduce((a, n) => a + n, 0)
+        return {
+          term,
+          counts: v.counts,
+          total,
+          courses: v.courses.size,
+          avg: total ? v.counts.reduce((a, n, i) => a + n * (i + 1), 0) / total : 0,
+        }
+      })
+  }, [surveys, facultyId])
+
+  const favShare = (row: { counts: number[]; total: number }) =>
+    row.total ? ((row.counts[3] ?? 0) + (row.counts[4] ?? 0)) / row.total : 0
+
+  const mixLeo: ChartLeoInsight | null =
+    mixByTerm.length >= 2
+      ? (() => {
+          const [latest, prev] = mixByTerm
+          const pts = Math.round((favShare(latest) - favShare(prev)) * 100)
+          return {
+            headline:
+              pts === 0
+                ? `Favorable share held steady vs ${prev.term}`
+                : `Favorable share ${pts > 0 ? 'up' : 'down'} ${Math.abs(pts)} point${Math.abs(pts) !== 1 ? 's' : ''} vs ${prev.term}`,
+            explanation: `${Math.round(favShare(latest) * 100)}% of ${latest.total} ratings in ${latest.term} were 4 or 5.`,
+            kind: pts < 0 ? 'dip' : 'trend',
+            delta: { value: `${pts >= 0 ? '+' : ''}${pts}`, label: 'pts favorable' },
+          }
+        })()
+      : null
+
   if (!faculty) {
     return (
       <>
@@ -221,26 +253,7 @@ export default function MyDashboardPage() {
     )
   }
 
-  /* ── Leo insights ────────────────────────────────────────────────────────── */
-  const weakest = radarData.length ? radarData.reduce((a, b) => (b.score < a.score ? b : a)) : null
-  const strongest = radarData.length ? radarData.reduce((a, b) => (b.score > a.score ? b : a)) : null
-  const radarLeo: ChartLeoInsight | null = weakest && strongest
-    ? {
-        headline:
-          weakest.score < 3.7
-            ? `${weakest.name} is the weakest dimension at ${weakest.score.toFixed(1)}/5`
-            : `${strongest.name} is the strongest dimension at ${strongest.score.toFixed(1)}/5`,
-        explanation:
-          weakest.score < 3.7
-            ? `The other dimensions hold up — targeted feedback on ${weakest.name.toLowerCase()} would move the overall rating fastest.`
-            : 'All dimensions sit at or above the 3.7 tier — a balanced profile.',
-        kind: weakest.score < 3.7 ? 'anomaly' : 'trend',
-        delta: { value: (strongest.score - weakest.score).toFixed(1), label: 'spread across dimensions' },
-        bullets: radarData.map((d) => `${d.name}: ${d.score.toFixed(1)}/5.`),
-      }
-    : null
-
-  const lastWithFaculty = [...trendData].reverse().find((d) => d.faculty != null) ?? null
+    const lastWithFaculty = [...trendData].reverse().find((d) => d.faculty != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
     ? (() => {
         const diff = +(lastWithFaculty.faculty! - lastWithFaculty.median).toFixed(2)
@@ -298,75 +311,115 @@ export default function MyDashboardPage() {
         <div className="flex flex-col gap-6 max-w-4xl">
           <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={kpis} />
 
-          {/* Trajectory + dimensions */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ChartCard
-              variant="normal"
-              title="Rating over time"
-              description="Within full faculty distribution · ● you · ─ ─ median"
-              leoInsight={bandLeo}
+          {/* Trajectory — the hero. Full width, your points value-labeled at
+              the marks (RUBRIC v2 Gate 5.3), cohort band + median as context. */}
+          <ChartCard
+            variant="normal"
+            title="Rating over time"
+            description="Your average per term · grey band = full faculty range · dashed = median"
+            leoInsight={bandLeo}
+          >
+            <ChartFigure
+              label="Rating over time"
+              summary="Your rating per term plotted inside the full faculty distribution band, with the median as a dashed line."
+              dataLength={trendData.length}
             >
-              <ChartFigure
-                label="Rating over time"
-                summary="Your rating per term plotted inside the full faculty distribution band, with the median as a dashed line."
-                dataLength={trendData.length}
-              >
-                {(activeIndex) => (
-                  <>
-                    <div className="relative w-full">
-                      <ChartContainer config={trendChartConfig} className="h-52 w-full text-xs">
-                        <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                          <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                          <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                          <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                          <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-                          <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
-                          <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-                          <Line dataKey="faculty" stroke="var(--chart-2)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-2)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false} />
-                        </ComposedChart>
-                      </ChartContainer>
-                      <ChartLeoPlotInsightOverlay
-                        data={trendData.map(({ term: t, faculty: f, median }) => ({ term: t, faculty: f, median }))}
-                        xDataKey="term"
-                      />
-                    </div>
-                    <ChartDataTable
-                      caption="Rating over time"
-                      headers={['Term', 'You', 'Median']}
-                      rows={trendData.map((d) => [d.term, d.faculty != null ? d.faculty.toFixed(2) : '—', d.median.toFixed(2)])}
-                    />
-                  </>
-                )}
-              </ChartFigure>
-            </ChartCard>
-
-            <ChartCard variant="normal" title="Score by section" description="Survey dimension breakdown" leoInsight={radarLeo}>
-              <ChartFigure
-                label="Score by section"
-                summary={`Radar chart of survey dimensions: ${radarData.map((d) => `${d.name} ${d.score.toFixed(1)}`).join(', ')} out of 5.`}
-                dataLength={radarData.length}
-              >
-                {(activeIndex) => (
-                  <>
-                    <ChartContainer config={radarChartConfig} className="h-52 w-full text-xs">
-                      <RadarChart data={radarData} outerRadius="75%">
-                        <PolarGrid stroke="var(--border)" />
-                        <PolarAngleAxis dataKey="name" tick={CHART_AXIS_TICK} />
+              {(activeIndex) => (
+                <>
+                  <div className="relative w-full">
+                    <ChartContainer config={trendChartConfig} className="h-64 w-full text-xs">
+                      <ComposedChart data={trendData} margin={{ top: 20, right: 12, bottom: 0, left: -16 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                        <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
+                        <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
                         <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                        <Radar dataKey="score" stroke="var(--chart-2)" fill="var(--chart-2)" fillOpacity={0.15} strokeWidth={2} dot={{ r: 3, fill: 'var(--chart-2)' }} isAnimationActive={false} />
-                      </RadarChart>
+                        <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
+                        <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
+                        <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+                        <Line dataKey="faculty" stroke="var(--chart-2)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-2)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false}>
+                          <LabelList
+                            dataKey="faculty"
+                            position="top"
+                            offset={10}
+                            formatter={(v: number | null) => (v != null ? v.toFixed(2) : '')}
+                            style={{ fill: 'var(--foreground)', fontSize: 12 }}
+                            className="tabular-nums"
+                          />
+                        </Line>
+                      </ComposedChart>
                     </ChartContainer>
-                    <ChartDataTable
-                      caption="Score by section"
-                      headers={['Dimension', 'Score']}
-                      rows={radarData.map((d) => [d.name, `${d.score.toFixed(1)}/5`])}
+                    <ChartLeoPlotInsightOverlay
+                      data={trendData.map(({ term: t, faculty: f, median }) => ({ term: t, faculty: f, median }))}
+                      xDataKey="term"
                     />
-                  </>
-                )}
-              </ChartFigure>
-            </ChartCard>
-          </div>
+                  </div>
+                  <ChartDataTable
+                    caption="Rating over time"
+                    headers={['Term', 'You', 'Median']}
+                    rows={trendData.map((d) => [d.term, d.faculty != null ? d.faculty.toFixed(2) : '—', d.median.toFixed(2)])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+
+          {/* Rating mix by term — the faculty-purpose distribution view: the
+              SAME stacked-bar form as the results detail, aggregated across
+              every rating this faculty received per term. Replaces the admin
+              radar (which drew synthetic seeded data). */}
+          <ChartCard
+            variant="normal"
+            title="Rating mix by term"
+            description="Every rating your students gave, per term · rated 1–5"
+            leoInsight={mixLeo}
+          >
+            <ChartFigure
+              label="Rating mix by term"
+              summary={`Distribution of all ratings you received per term. ${mixByTerm.length ? `Latest term favorable share ${Math.round(favShare(mixByTerm[0]) * 100)} percent.` : ''}`}
+              dataLength={mixByTerm.length}
+            >
+              {() => (
+                <>
+                  <div className="flex flex-col">
+                    <div className="grid grid-cols-[minmax(120px,180px)_1fr_auto] items-end gap-6 pb-2 border-b border-border">
+                      <span className="text-xs text-muted-foreground">Term</span>
+                      <RatingLegend />
+                      <span className="text-xs text-muted-foreground text-right">Avg</span>
+                    </div>
+                    {mixByTerm.map((row) => (
+                      <div
+                        key={row.term}
+                        role="img"
+                        aria-label={`${row.term}: average ${row.avg.toFixed(1)} of 5 from ${row.total} ratings across ${row.courses} course${row.courses !== 1 ? 's' : ''}`}
+                        className="grid grid-cols-[minmax(120px,180px)_1fr_auto] items-center gap-6 py-3 border-b border-border last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm truncate">{row.term}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {row.courses} course{row.courses !== 1 ? 's' : ''} · {row.total} ratings
+                          </p>
+                        </div>
+                        <RatingStackedBar counts={row.counts} total={row.total} />
+                        <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
+                          Avg <span className="text-sm font-semibold text-foreground">{row.avg.toFixed(1)}</span>
+                        </p>
+                      </div>
+                    ))}
+                    {mixByTerm.length === 0 && (
+                      <p className="text-sm text-muted-foreground py-3">
+                        No rating data yet — the mix appears once your evaluations collect responses.
+                      </p>
+                    )}
+                  </div>
+                  <ChartDataTable
+                    caption="Rating mix by term"
+                    headers={['Term', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5', 'Average', 'Courses']}
+                    rows={mixByTerm.map((row) => [row.term, ...row.counts, row.avg.toFixed(2), row.courses])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
 
           {/* Collecting now — live evaluations (never shown on /results) */}
           <Card>
