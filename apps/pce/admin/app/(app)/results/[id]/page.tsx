@@ -730,7 +730,10 @@ function ScoreCard({
             <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted underline-offset-2 cursor-help">
+                  <span
+                tabIndex={0}
+                className="underline decoration-dotted underline-offset-2 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
                     {prior.term}
                   </span>
                 </TooltipTrigger>
@@ -1624,6 +1627,11 @@ function ResultDetail({
   const courseComments = allComments.filter((c) => c.section === 'course_content')
   const facultyComments = allComments.filter((c) => c.section !== 'course_content')
   const visibleComments = allComments.filter((c) => !hiddenIdx.includes(c.index))
+  /* What THIS viewer can see — moderators also see hidden comments. Card
+     description, filter counts and section lists must all draw from this one
+     pool so no two numbers on the card disagree. (Themes/recommendations stay
+     on visibleComments: they describe what faculty will read.) */
+  const viewerComments = isPD ? allComments : visibleComments
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
   const concernThemes = aiThemes.filter((t) => t.sentiment === 'concern')
@@ -1631,12 +1639,12 @@ function ResultDetail({
      (Hotjar's sentiment-quote row): counts + one representative quote, a
      constructive one first since that's the actionable read. */
   const sentimentCounts = {
-    positive: visibleComments.filter((c) => c.sentiment === 'positive').length,
-    concern: visibleComments.filter((c) => c.sentiment === 'concern').length,
-    neutral: visibleComments.filter((c) => c.sentiment === 'neutral').length,
+    positive: viewerComments.filter((c) => c.sentiment === 'positive').length,
+    concern: viewerComments.filter((c) => c.sentiment === 'concern').length,
+    neutral: viewerComments.filter((c) => c.sentiment === 'neutral').length,
   }
   const previewQuote =
-    visibleComments.find((c) => c.sentiment === 'concern') ?? visibleComments[0] ?? null
+    viewerComments.find((c) => c.sentiment === 'concern') ?? viewerComments[0] ?? null
 
   const RECOMMENDATION: Record<string, string> = {
     Pacing: 'Revisit the weekly cadence — students flagged pacing; consider spreading the heaviest units.',
@@ -1658,10 +1666,8 @@ function ResultDetail({
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
   /* ONE sentiment filter for the whole qualitative card (course + faculty
-     sections) — counts reflect what THIS viewer can see (moderators also see
-     hidden comments). */
+     sections) — counts from the shared viewerComments pool above. */
   const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
-  const viewerComments = isPD ? allComments : visibleComments
   const qualCountFor = (f: SentimentFilter) =>
     f === 'all'
       ? viewerComments.length
@@ -2018,7 +2024,7 @@ function ResultDetail({
                       <CardHeader>
                         <CardTitle className="text-sm" aria-level={2}>Qualitative feedback</CardTitle>
                         <CardDescription>
-                          {visibleComments.length} student comment{visibleComments.length !== 1 ? 's' : ''}
+                          {viewerComments.length} student comment{viewerComments.length !== 1 ? 's' : ''}
                           {sentimentCounts.positive > 0 ? ` · ${sentimentCounts.positive} positive` : ''}
                           {sentimentCounts.concern > 0 ? ` · ${sentimentCounts.concern} constructive` : ''}
                           {sentimentCounts.neutral > 0 ? ` · ${sentimentCounts.neutral} neutral` : ''}
