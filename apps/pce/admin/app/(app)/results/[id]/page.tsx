@@ -1752,11 +1752,17 @@ function ResultDetail({
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
                 </Button>
+                {/* PD-only: /analytics is an ungated admin surface with
+                    program-wide data — faculty must not land there (scope
+                    flag 2026-07-16; faculty longitudinal view is a separate
+                    surface pending integration). */}
+                {isPD && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
                     View Longitudinal Insights
                   </Link>
                 </Button>
+                )}
                 {isPD && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

@@ -150,7 +150,14 @@ function TermWorkspaceInner() {
             onClick={(e) => e.stopPropagation()}
             className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
           >
-            <p className="text-sm font-medium">{row.courseCode}</p>
+            <p className="text-sm font-medium">
+              {row.courseCode}
+              {row.evalScope && (
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                  · {row.evalScope === 'course' ? 'Course' : 'Instructor'}
+                </span>
+              )}
+            </p>
             <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
           </Link>
         ),

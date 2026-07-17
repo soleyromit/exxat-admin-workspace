@@ -138,6 +138,16 @@ DOCUMENTED_HAND_ROLLS = {
     "components/pce/trend-sparkline.tsx",
     "components/pce/response-gauge.tsx",
     "components/pce/ai-insight-card.tsx",
+    # Analytics restore triage 2026-07-17 (Romit): three false-positive gates.
+    #  - chart-card-actions: ChartExportMenu is a per-chart SVG/PNG/CSV/print
+    #    download menu — ExportDrawer is a tabular-data drawer, wrong fit.
+    #  - voice-explorer: an explorer Dialog (comment browser), not an export
+    #    sheet; the export keywords come from its quote-download affordance.
+    #  - chart-heatmap-scale: hex literals are no-DOM FALLBACKS inside
+    #    token-first readChartToken color math, not styling.
+    "components/pce/chart-card-actions.tsx",
+    "components/pce/voice-explorer.tsx",
+    "lib/chart-heatmap-scale.ts",
     # Internal dev / utility surfaces — NOT shipped product UI (triage 2026-06-15):
     #  - dev-review-hud: in-DOM conformance overlay; its <button>s + #hex are dev chrome.
     #  - brand-color-picker: swatch <button>s and hex values are intrinsic to a color picker.

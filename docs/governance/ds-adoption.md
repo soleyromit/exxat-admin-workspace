@@ -83,6 +83,13 @@ The `ds-adoption-reviewer` subagent automates steps 1-5. It MUST be invoked befo
 
 When a product genuinely needs a custom component that overlaps a DS organism, add it here with the reason. Audit script ignores files in this list.
 
+### PCE analytics restore (2026-07-17)
+| File | Mirrors DS organism | Justification |
+|---|---|---|
+| `apps/pce/admin/components/pce/chart-card-actions.tsx` | ExportDrawer | `ChartExportMenu` downloads the CHART itself (SVG/PNG/CSV of the plotted table, print). ExportDrawer is a tabular-data export drawer (format selector, column picker, async progress) with no chart/SVG semantics — migration would degrade the feature. Allowlisted in `DOCUMENTED_HAND_ROLLS`. |
+| `apps/pce/admin/components/pce/voice-explorer.tsx` | ExportDrawer | Rule misfire: the flagged Dialog is the Student Voice comment EXPLORER, not an export sheet; export keywords come from its quote-download affordance. Allowlisted in `DOCUMENTED_HAND_ROLLS`. |
+| `apps/pce/admin/lib/chart-heatmap-scale.ts` | hex-literal rule | Hex values are no-DOM fallbacks inside token-first `readChartToken` color math (`readChartToken("--brand-color", "#4f46e5")`), not styling. Allowlisted in `DOCUMENTED_HAND_ROLLS`. |
+
 ### Cross-product (vendored twice, identical implementation)
 | File | Lines | Mirrors DS organism | Justification |
 |---|---|---|---|
