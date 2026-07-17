@@ -113,6 +113,50 @@
   --product-am-icon: oklch(0.44 0.14 340);
 }
 
+/* Dark theme — deep saturated gradients; icon tokens flip light so
+   currentColor vignette accents stay legible on the dark washes. */
+.dark {
+  --product-em-from: oklch(0.26 0.07 280);
+  --product-em-to:   oklch(0.18 0.11 277);
+  --product-em-icon: oklch(0.80 0.11 277);
+
+  --product-pce-from: oklch(0.25 0.05 185);
+  --product-pce-to:   oklch(0.17 0.08 182);
+  --product-pce-icon: oklch(0.78 0.09 182);
+
+  --product-pl-from: oklch(0.27 0.06 72);
+  --product-pl-to:   oklch(0.19 0.09 68);
+  --product-pl-icon: oklch(0.80 0.11 66);
+
+  --product-sc-from: oklch(0.25 0.05 145);
+  --product-sc-to:   oklch(0.17 0.08 143);
+  --product-sc-icon: oklch(0.78 0.10 143);
+
+  --product-lc-from: oklch(0.26 0.05 345);
+  --product-lc-to:   oklch(0.18 0.08 342);
+  --product-lc-icon: oklch(0.80 0.10 342);
+
+  --product-faas-from: oklch(0.27 0.008 270);
+  --product-faas-to:   oklch(0.20 0.012 268);
+  --product-faas-icon: oklch(0.72 0.01 268);
+
+  --product-cee-from: oklch(0.25 0.06 245);
+  --product-cee-to:   oklch(0.17 0.10 245);
+  --product-cee-icon: oklch(0.78 0.10 245);
+
+  --product-cm-from: oklch(0.27 0.06 75);
+  --product-cm-to:   oklch(0.19 0.09 72);
+  --product-cm-icon: oklch(0.80 0.11 70);
+
+  --product-cmp-from: oklch(0.25 0.05 150);
+  --product-cmp-to:   oklch(0.17 0.09 148);
+  --product-cmp-icon: oklch(0.78 0.10 148);
+
+  --product-am-from: oklch(0.26 0.05 340);
+  --product-am-to:   oklch(0.18 0.09 340);
+  --product-am-icon: oklch(0.80 0.10 340);
+}
+
 /* Sidebar background token */
 :root {
   --sidebar: var(--brand-tint);
