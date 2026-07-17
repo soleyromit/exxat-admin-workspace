@@ -60,6 +60,8 @@ export type Product =
       releaseNotes: ReleaseNote[]
       roadmap: RoadmapItem[]
       comingSoon: true
+      /** Target launch window shown on Explore cards — keeps "Coming soon" specific per product. */
+      expectedLaunch?: string
       adminUrl?: never
       studentUrl?: never
       extra?: never
@@ -191,7 +193,7 @@ export const PRODUCTS: Product[] = [
     },
     subscriptionStatus: 'active',
     accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
-    worksWith: ['compliance-management'],
+    worksWith: ['compliance-management', 'clinical-experiential-education'],
     team: ['Dana Whitfield', 'Marcus Lee', 'Elena Torres', 'James Park', 'Aisha Patel', 'Noah Brooks'],
   },
   {
@@ -288,9 +290,10 @@ export const PRODUCTS: Product[] = [
     roadmap: [],
     releaseNotes: [],
     comingSoon: true,
+    expectedLaunch: 'Q3 2026',
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
-    worksWith: ['compliance-management'],
+    worksWith: ['compliance-management', 'exam-management'],
   },
   {
     id: 'curriculum-mapping',
@@ -311,6 +314,7 @@ export const PRODUCTS: Product[] = [
     roadmap: [],
     releaseNotes: [],
     comingSoon: true,
+    expectedLaunch: 'Q4 2026',
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
   },
@@ -333,6 +337,7 @@ export const PRODUCTS: Product[] = [
     roadmap: [],
     releaseNotes: [],
     comingSoon: true,
+    expectedLaunch: 'Q4 2026',
     subscriptionStatus: 'not-subscribed',
     accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
     worksWith: ['exam-management', 'clinical-experiential-education'],
@@ -356,7 +361,8 @@ export const PRODUCTS: Product[] = [
     roadmap: [],
     releaseNotes: [],
     comingSoon: true,
+    expectedLaunch: 'Q1 2027',
     subscriptionStatus: 'not-subscribed',
-    accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
+    accountManager: { name: 'Daniel Osei', email: 'daniel.osei@exxat.com' },
   },
 ]

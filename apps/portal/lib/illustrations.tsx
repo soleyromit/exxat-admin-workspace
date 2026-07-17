@@ -120,19 +120,17 @@ export function FaasIllustration() {
 export function ClinicalIllustration() {
   return (
     <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      {/* Rotation route between sites */}
-      <path d="M 24 92 C 56 92 52 40 88 40 C 116 40 112 78 138 78" stroke="currentColor" strokeWidth="3.5" strokeDasharray="1 9" strokeLinecap="round" opacity="0.45" fill="none" />
-      {/* Site location pins along the route */}
-      <circle cx="24" cy="86" r="13" fill="currentColor" opacity="0.22" />
-      <path d="M 24 100 L 17 86 A 13 13 0 1 1 31 86 Z" fill="currentColor" opacity="0.22" />
-      <circle cx="24" cy="85" r="5" fill="currentColor" opacity="0.5" />
-      <circle cx="88" cy="34" r="11" fill="currentColor" opacity="0.18" />
-      <path d="M 88 46 L 82 34 A 11 11 0 1 1 94 34 Z" fill="currentColor" opacity="0.18" />
-      <circle cx="88" cy="33" r="4" fill="currentColor" opacity="0.45" />
+      {/* Rotation route between sites — longer dashes + higher opacity so the path reads at card size */}
+      <path d="M 24 92 C 56 92 52 40 88 40 C 116 40 112 78 138 78" stroke="currentColor" strokeWidth="3.5" strokeDasharray="7 7" strokeLinecap="round" opacity="0.55" fill="none" />
+      {/* Site location pins — outlined teardrops with solid centers, not filled washes */}
+      <path d="M 24 100 L 15 84 A 12.5 12.5 0 1 1 33 84 Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" opacity="0.5" fill="none" />
+      <circle cx="24" cy="82" r="4.5" fill="currentColor" opacity="0.6" />
+      <path d="M 88 46 L 81 33 A 10 10 0 1 1 95 33 Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" opacity="0.42" fill="none" />
+      <circle cx="88" cy="31" r="3.5" fill="currentColor" opacity="0.55" />
       {/* Destination clinic cross */}
-      <rect x="124" y="64" width="28" height="28" rx="6" fill="currentColor" opacity="0.22" />
-      <rect x="134" y="70" width="8" height="16" rx="2" fill="currentColor" opacity="0.5" />
-      <rect x="130" y="74" width="16" height="8" rx="2" fill="currentColor" opacity="0.5" />
+      <rect x="124" y="64" width="28" height="28" rx="6" fill="currentColor" opacity="0.24" />
+      <rect x="134" y="70" width="8" height="16" rx="2" fill="currentColor" opacity="0.6" />
+      <rect x="130" y="74" width="16" height="8" rx="2" fill="currentColor" opacity="0.6" />
     </svg>
   )
 }

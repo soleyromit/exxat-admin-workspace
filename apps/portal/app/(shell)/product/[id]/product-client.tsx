@@ -13,6 +13,7 @@ import {
   TabsContent,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { NotificationsPopover } from '@/components/notifications-popover'
 import { ProductDetailRail } from '@/components/product-detail-rail'
 import { PRODUCTS } from '@/lib/products'
 import { ILLUSTRATIONS } from '@/lib/illustrations'
@@ -118,16 +119,13 @@ export default function ProductDetailPage({ id }: { id: string }) {
 
   const Illustration = ILLUSTRATIONS[product.colorKey]
 
-  const surfaces = product.comingSoon ? [] : [
-    { label: 'Admin',   url: product.adminUrl,   icon: 'fa-shield-halved' },
-    { label: 'Student', url: product.studentUrl, icon: 'fa-user'          },
-  ]
-
   return (
     <>
+      {/* Back variant — the serif <h1> below carries the page identity (SiteHeader API guidance). */}
       <SiteHeader
-        breadcrumbs={[{ label: 'Workspace', href: '/' }]}
-        title={product.name}
+        back={{ label: 'Workspace', href: '/' }}
+        documentTitle={product.name}
+        trailing={<NotificationsPopover />}
       />
       <main className="flex-1 overflow-auto">
 
@@ -137,7 +135,6 @@ export default function ProductDetailPage({ id }: { id: string }) {
               style={{
                 background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
                 color: `var(--product-${product.colorKey}-icon)`,
-                opacity: product.comingSoon ? 0.55 : 1,
               }}
             >
               {Illustration && <div className="absolute inset-0"><Illustration /></div>}
@@ -167,7 +164,9 @@ export default function ProductDetailPage({ id }: { id: string }) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="font-heading text-2xl font-semibold">{product.name}</h1>
                   {product.comingSoon && (
-                    <Badge variant="secondary" className="rounded text-xs">Coming Soon</Badge>
+                    <Badge variant="secondary" className="rounded text-xs">
+                      {product.expectedLaunch ? `Coming ${product.expectedLaunch}` : 'Coming soon'}
+                    </Badge>
                   )}
                 </div>
                 {!product.comingSoon && (
@@ -186,6 +185,12 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   <Badge variant="secondary" className="rounded text-xs">v{product.version}</Badge>
                 )}
                 <Badge variant="secondary" className="rounded text-xs">{product.category}</Badge>
+                {product.universities.length > 0 && (
+                  <Badge variant="secondary" className="rounded text-xs">
+                    <i className="fa-light fa-building-columns me-1" aria-hidden="true" />
+                    Used by {product.universities.length} institutions
+                  </Badge>
+                )}
               </div>
 
               {/* Tabs */}
@@ -196,7 +201,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                     <TabsTrigger value="resources">
                       Resources{product.resources.length > 0 && ` (${product.resources.length})`}
                     </TabsTrigger>
-                    <TabsTrigger value="whats-new">What's New</TabsTrigger>
+                    <TabsTrigger value="whats-new">What's new</TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -204,9 +209,12 @@ export default function ProductDetailPage({ id }: { id: string }) {
                 <TabsContent value="overview" className="flex flex-col gap-6">
 
                   {/* Features */}
+                  {product.features.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No features listed yet.</p>
+                  )}
                   {product.features.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      <h2 className="text-sm font-medium text-foreground">Key Features</h2>
+                      <h2 className="text-sm font-medium text-foreground">Key features</h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-8">
                         {product.features.map((feature, i) => (
                           <div key={i} className="flex items-start gap-2.5">
@@ -222,36 +230,12 @@ export default function ProductDetailPage({ id }: { id: string }) {
                     </div>
                   )}
 
-                  {/* Surfaces — compact buttons */}
-                  {surfaces.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="flex flex-col gap-2">
-                        <h2 className="text-sm font-medium text-foreground">Open In</h2>
-                        <div className="flex flex-wrap gap-2">
-                          {surfaces.map((s) => (
-                            <Button key={s.label} asChild variant="outline" size="sm">
-                              <a href={s.url} target="_blank" rel="noreferrer">
-                                <i className={`fa-light ${s.icon}`} aria-hidden="true" />
-                                {s.label}
-                                <i className="fa-light fa-arrow-up-right" aria-hidden="true" />
-                              </a>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
                   {/* Institutions */}
                   {product.universities.length > 0 && (
                     <>
                       <Separator />
                       <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <h2 className="text-sm font-medium text-foreground">Institutions Using This</h2>
-                          <span className="text-xs tabular-nums text-muted-foreground">{product.universities.length}</span>
-                        </div>
+                        <h2 className="text-sm font-medium text-foreground">Institutions using this</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
                           {product.universities.map((uni, i) => (
                             <div key={i} className="flex items-center gap-2">
@@ -272,7 +256,11 @@ export default function ProductDetailPage({ id }: { id: string }) {
                     </div>
                   )}
                   {product.universities.length === 0 && !product.comingSoon && (
-                    <p className="text-xs text-muted-foreground">No institutions are using this product yet.</p>
+                    <div className="flex flex-col items-center gap-2 py-10 text-center">
+                      <i className="fa-light fa-building-columns text-3xl text-muted-foreground" aria-hidden="true" />
+                      <h2 className="text-sm font-medium">No institutions yet</h2>
+                      <p className="text-xs text-muted-foreground">Adoption will appear here as programs come on board.</p>
+                    </div>
                   )}
                 </TabsContent>
 
@@ -315,7 +303,7 @@ export default function ProductDetailPage({ id }: { id: string }) {
                   {product.releaseNotes.length > 0 && (
                     <>
                       {product.roadmap.length > 0 && <Separator className="mb-5" />}
-                      <h2 className="text-sm font-medium text-foreground mb-3">Release History</h2>
+                      <h2 className="text-sm font-medium text-foreground mb-3">Release history</h2>
                       <div className="flex flex-col">
                         {product.releaseNotes.map((release, i) => (
                           <ReleaseNoteSection key={i} release={release} />

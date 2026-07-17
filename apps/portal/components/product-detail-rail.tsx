@@ -18,6 +18,8 @@ import {
   AvatarGroupCount,
 } from '@exxatdesignux/ui'
 import { stockPortraitUrl } from '@/lib/stock-portrait'
+// AM avatars render initials only (no stock portrait) — per the Jul 17 portal decision,
+// and because name→portrait hashing produced mismatched faces for named contacts.
 import { PRODUCTS, SALES_EMAIL, type Product } from '@/lib/products'
 import { initialsFromDisplayName } from '@/lib/initials-from-name'
 
@@ -54,20 +56,49 @@ export function ProductDetailRail({ product }: { product: Product }) {
           )}
         </div>
 
+        {!product.comingSoon && (
+          <>
+            <Separator />
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-sm font-medium text-foreground">Open in</h2>
+              <ul className="flex flex-col gap-1">
+                {[
+                  { label: 'Admin', url: product.adminUrl, icon: 'fa-shield-halved' },
+                  { label: 'Student', url: product.studentUrl, icon: 'fa-user' },
+                ].map((surface) => (
+                  <li key={surface.label}>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2.5 px-1.5"
+                    >
+                      <a href={surface.url} target="_blank" rel="noreferrer">
+                        <i className={`fa-light ${surface.icon} text-xs text-muted-foreground`} aria-hidden="true" />
+                        <span className="truncate">{surface.label}</span>
+                        <i className="fa-light fa-arrow-up-right ms-auto text-xs text-muted-foreground" aria-hidden="true" />
+                      </a>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+
         <Separator />
 
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-foreground">Account manager</h2>
           <div className="flex items-center gap-2.5">
             <Avatar size="sm" insetBorder>
-              <AvatarImage src={stockPortraitUrl(manager.name)} alt="" />
               <AvatarFallback>{initialsFromDisplayName(manager.name)}</AvatarFallback>
             </Avatar>
             <div className="flex min-w-0 flex-col">
               <span className="text-sm font-medium leading-snug">{manager.name}</span>
               <a
                 href={`mailto:${manager.email}`}
-                className="truncate text-xs text-muted-foreground hover:underline"
+                className="truncate rounded-sm text-xs text-muted-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {manager.email}
               </a>
@@ -81,6 +112,7 @@ export function ProductDetailRail({ product }: { product: Product }) {
             <div className="flex flex-col gap-2">
               <h2 className="text-sm font-medium text-foreground">People with access</h2>
               <div
+                role="group"
                 className="flex items-center gap-2"
                 aria-label={`${product.team.length} people have access`}
               >

@@ -6,24 +6,81 @@ import {
   CardContent,
   Button,
   StatusBadge,
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
 } from '@exxatdesignux/ui'
-import { stockPortraitUrl } from '@/lib/stock-portrait'
-import { initialsFromDisplayName } from '@/lib/initials-from-name'
 import { SiteHeader } from '@/components/site-header'
 import { NotificationsPopover } from '@/components/notifications-popover'
 import { ProductConnectorRow } from '@/components/product-card-connector'
 import { PRODUCTS, SALES_EMAIL, type Product } from '@/lib/products'
 import { ILLUSTRATIONS } from '@/lib/illustrations'
 
-function ExploreCard({ product }: { product: Product }) {
+function interestHref(product: Product) {
+  return `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(`Interest in ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to learn more about ${product.name} for our program.`)}`
+}
+
+function launchLabel(product: Product) {
+  return product.comingSoon && product.expectedLaunch
+    ? `Coming ${product.expectedLaunch}`
+    : 'Coming soon'
+}
+
+/** Wide feature card for the nearest-launch Explore product — breaks the grid so the section has a lead story. */
+function SpotlightCard({ product }: { product: Product }) {
   const Illustration = ILLUSTRATIONS[product.colorKey]
-  const interestHref = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(`Interest in ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to learn more about ${product.name} for our program.`)}`
 
   return (
-    <Card className="group relative overflow-hidden">
+    <Card className="group relative overflow-hidden transition-shadow hover:shadow-md sm:col-span-2">
+      <div className="flex flex-col sm:flex-row">
+        <CardContent className="flex min-w-0 flex-1 flex-col gap-3 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/product/${product.id}`}
+              className="min-w-0 rounded-sm before:absolute before:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="text-lg font-semibold leading-snug group-hover:underline underline-offset-4">
+                {product.name}
+              </span>
+            </Link>
+            <StatusBadge label={launchLabel(product)} tone="neutral" />
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">{product.description}</p>
+          <ul className="flex flex-col gap-1.5">
+            {product.features.slice(0, 3).map((feature) => (
+              <li key={feature} className="flex items-start gap-2">
+                <i className="fa-light fa-circle-check text-xs mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm leading-snug">{feature}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="relative z-10 mt-auto flex items-center gap-2 pt-1">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/product/${product.id}`}>Learn more</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <a href={interestHref(product)} aria-label={`Express interest in ${product.name}`}>
+                Express interest
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+        <div
+          className="relative h-32 shrink-0 sm:h-auto sm:w-64"
+          style={{
+            background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
+            color: `var(--product-${product.colorKey}-icon)`,
+          }}
+        >
+          {Illustration && <div className="absolute inset-0"><Illustration /></div>}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function ExploreCard({ product }: { product: Product }) {
+  const Illustration = ILLUSTRATIONS[product.colorKey]
+
+  return (
+    <Card className="group relative overflow-hidden transition-shadow hover:shadow-md">
       <div
         className="relative flex h-28 items-center justify-center"
         style={{
@@ -52,26 +109,24 @@ function ExploreCard({ product }: { product: Product }) {
             href={`/product/${product.id}`}
             className="min-w-0 rounded-sm before:absolute before:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="text-sm font-semibold leading-snug">{product.name}</span>
+            <span className="text-sm font-semibold leading-snug group-hover:underline underline-offset-4">
+              {product.name}
+            </span>
           </Link>
-          <StatusBadge label="Coming soon" tone="neutral" />
+          <StatusBadge label={launchLabel(product)} tone="neutral" />
         </div>
         <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {product.description}
         </p>
-        <div className="relative z-10 mt-1 flex items-center justify-between gap-3">
+        <div className="relative z-10 mt-1 flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
-            <a href={interestHref} aria-label={`Express interest in ${product.name}`}>
+            <Link href={`/product/${product.id}`}>Learn more</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <a href={interestHref(product)} aria-label={`Express interest in ${product.name}`}>
               Express interest
             </a>
           </Button>
-          <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <Avatar size="sm" insetBorder>
-              <AvatarImage src={stockPortraitUrl(product.accountManager.name)} alt="" />
-              <AvatarFallback>{initialsFromDisplayName(product.accountManager.name)}</AvatarFallback>
-            </Avatar>
-            <span className="truncate">{product.accountManager.name}</span>
-          </span>
         </div>
       </CardContent>
     </Card>
@@ -80,7 +135,7 @@ function ExploreCard({ product }: { product: Product }) {
 
 export default function WorkspacePage() {
   const yourProducts = PRODUCTS.filter((p) => !p.comingSoon)
-  const explore = PRODUCTS.filter((p) => p.comingSoon)
+  const [spotlight, ...explore] = PRODUCTS.filter((p) => p.comingSoon)
 
   return (
     <>
@@ -94,30 +149,60 @@ export default function WorkspacePage() {
             </p>
           </div>
 
-          {yourProducts.length > 0 && (
-            <section aria-labelledby="your-products-heading" className="flex flex-col gap-3">
-              <h2 id="your-products-heading" className="text-sm font-medium text-foreground">
-                Your products
-              </h2>
+          {yourProducts.length === 0 && !spotlight && (
+            <section className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/25 px-6 py-10 text-center">
+              <i className="fa-light fa-grid-2 text-3xl text-muted-foreground" aria-hidden="true" />
+              <h2 className="text-sm font-medium">No products yet</h2>
+              <p className="text-xs text-muted-foreground">
+                Your workspace has no Exxat products set up. Our team can help you get started.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-1">
+                <a href={`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('Getting started with Exxat')}`}>
+                  Talk to sales
+                </a>
+              </Button>
+            </section>
+          )}
+
+          {(yourProducts.length > 0 || spotlight) && (
+          <section aria-labelledby="your-products-heading" className="flex flex-col gap-3">
+            <h2 id="your-products-heading" className="text-sm font-semibold text-foreground">
+              Your products
+            </h2>
+            {yourProducts.length > 0 ? (
               <Card className="divide-y divide-border overflow-hidden">
                 {yourProducts.map((product) => (
                   <ProductConnectorRow key={product.id} product={product} />
                 ))}
               </Card>
-            </section>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-muted/25 px-5 py-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  You're not subscribed to any products yet — explore what Exxat offers below.
+                </p>
+              </div>
+            )}
+          </section>
           )}
 
-          {explore.length > 0 && (
+          {spotlight ? (
             <section aria-labelledby="explore-heading" className="flex flex-col gap-3">
-              <h2 id="explore-heading" className="text-sm font-medium text-foreground">
+              <h2 id="explore-heading" className="text-sm font-semibold text-foreground">
                 Explore Exxat
               </h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <SpotlightCard product={spotlight} />
                 {explore.map((product) => (
                   <ExploreCard key={product.id} product={product} />
                 ))}
               </div>
             </section>
+          ) : (
+            yourProducts.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                You're using every Exxat product. New products will appear here as they're announced.
+              </p>
+            )
           )}
         </div>
       </main>

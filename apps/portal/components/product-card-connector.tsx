@@ -52,13 +52,14 @@ export function ProductConnectorRow({ product }: { product: Product }) {
           className="flex flex-col gap-0.5 rounded-sm before:absolute before:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="text-base font-medium leading-tight text-foreground">{product.name}</span>
-          <span className="text-sm text-muted-foreground truncate">{product.description}</span>
+          <span className="text-sm text-muted-foreground line-clamp-2">{product.description}</span>
         </Link>
       </div>
 
       {/* Access rail — who on the program team uses this product */}
       {product.team && product.team.length > 0 && (
         <div
+          role="group"
           className="relative z-10 hidden shrink-0 lg:block"
           aria-label={`${product.team.length} people have access`}
         >
