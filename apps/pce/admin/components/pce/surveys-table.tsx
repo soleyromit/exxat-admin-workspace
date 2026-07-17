@@ -309,7 +309,10 @@ export function SurveysTable({
           onClick={(e) => e.stopPropagation()}
         >
           <span className="text-sm font-semibold">{row.survey.courseCode}</span>
-          <span className="text-xs text-muted-foreground">{row.survey.courseName}</span>
+          <span className="text-xs text-muted-foreground">
+            {row.survey.courseName}
+            {row.survey.evalScope ? ` · ${row.survey.evalScope === 'course' ? 'Course evaluation' : 'Instructor evaluation'}` : ''}
+          </span>
         </Link>
       ),
     },
