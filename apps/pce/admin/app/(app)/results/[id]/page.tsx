@@ -73,7 +73,7 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { MiniRatingColumns, RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
@@ -1293,13 +1293,12 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      <div className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-end gap-6 pb-2 border-b border-border">
+      {/* Same rating vocabulary as the theme strip above — ONE visual
+          language page-wide (RUBRIC v2: the five mini columns rendered
+          near-identical fills at row height; proportional widths read). */}
+      <div className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <div className="flex gap-3" aria-hidden="true">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <span key={n} className="w-8 text-center text-xs text-muted-foreground tabular-nums">{n}</span>
-          ))}
-        </div>
+        <RatingLegend />
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => {
@@ -1323,9 +1322,13 @@ function QuestionBreakdownTable({
                 id={`question-${r.id}`}
                 className="scroll-mt-16 border-b border-border last:border-0"
               >
-                <div className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-3">
+                <div
+                  role="img"
+                  aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}`}
+                  className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-3"
+                >
                   <p className="text-sm min-w-0">{r.label}</p>
-                  <MiniRatingColumns counts={r.counts ?? []} total={r.total ?? 0} />
+                  <RatingStackedBar counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
                   <CompareText avg={r.avg} programAvg={r.programAvg} />
                 </div>
                 {/* Per-instructor split — the aggregate above stays the summary;
@@ -1335,13 +1338,15 @@ function QuestionBreakdownTable({
                     {r.perFaculty.map((f) => (
                       <div
                         key={f.facultyId}
-                        className="grid grid-cols-[minmax(200px,1fr)_auto_12rem] items-center gap-6 py-1.5 ps-5"
+                        role="img"
+                        aria-label={`${f.name}: average ${f.avg.toFixed(1)} of 5 from ${f.total} rating${f.total !== 1 ? 's' : ''}`}
+                        className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-1.5 ps-5"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
                           <span className="text-xs text-muted-foreground truncate">{f.name}</span>
                         </div>
-                        <MiniRatingColumns counts={f.counts} total={f.total} />
+                        <RatingStackedBar counts={f.counts} total={f.total} />
                         <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
                           Avg <span className="font-semibold text-foreground">{f.avg.toFixed(1)}</span>
                         </p>
