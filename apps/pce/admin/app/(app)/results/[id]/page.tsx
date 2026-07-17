@@ -786,11 +786,20 @@ const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
 function ScoreCard({
   title,
+  icon,
+  statusBadge,
+  responseMeta,
   value,
   programAvg,
   priors,
 }: {
   title: string
+  /** Evaluation-type glyph — ties the card to its type without a second row. */
+  icon?: string
+  /** Per-type status (each type runs on its own clock — Romit 2026-07-17). */
+  statusBadge?: React.ReactNode
+  /** Per-type collection count, e.g. "46 of 50". */
+  responseMeta?: string
   value: number | null
   programAvg: number | null
   priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
@@ -817,7 +826,21 @@ function ScoreCard({
   return (
     <Card>
       <CardContent className="pt-6 flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground">{title}</p>
+        {/* Type identity + per-type status live ON the summary they describe —
+            not in a separate chip row above the tabs (hierarchy: one control
+            row, then content; Romit 2026-07-17 crowding critique). */}
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
+            {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
+            <span className="truncate">{title}</span>
+          </p>
+          {(statusBadge || responseMeta) && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+              {statusBadge}
+              {responseMeta && <span>{responseMeta}</span>}
+            </span>
+          )}
+        </div>
         <div className="flex items-end gap-2 flex-wrap">
           <span
             className="font-heading text-3xl font-semibold tabular-nums leading-none"
@@ -1733,6 +1756,15 @@ function ResultDetail({
   }, [])
   const prior = survey.priorOfferings?.at(-1) ?? null
 
+  /* Per-type lifecycle — each evaluation type runs on its own clock; its
+     status + collection count ride the matching score card header. */
+  const evalInstances = useMemo(
+    () => new Map(evaluationsFor(survey).map((e) => [e.type, e])),
+    [survey],
+  )
+  const courseInst = evalInstances.get('course_material')
+  const facultyInst = evalInstances.get('faculty_roles')
+
   /* Theme strip rows — one per template section with question data, each
      carrying the PROGRAM average for the same theme (benchmark on the viz) */
   const themes = useMemo((): ThemeRowDatum[] => {
@@ -2186,19 +2218,23 @@ function ResultDetail({
             />
           </div>
 
-          {/* Per-evaluation-type summary — which types this offering runs,
-              each with its own status + avg + count; split siblings link out
-              with their state inline (replaces the bare switcher pills). */}
-          <EvaluationSummaryStrip
-            survey={survey}
-            result={result}
-            siblings={offeringSiblings}
-            courseAvg={templateHasCourse ? courseAvg : null}
-            facultyAvg={facultyAvg}
-            facultyLabel={facultyChipLabel}
-            hasCourse={templateHasCourse && result.evalScope !== 'instructor'}
-            onGo={(anchorId) => goTo(anchorId, 'questions')}
-          />
+          {/* Split offerings ONLY — the strip's real job is cross-survey
+              navigation with sibling state inline. On a merged survey the
+              per-type summary lives on the score cards instead (a second pill
+              row under the scope selector read as one crowded filter cluster —
+              Romit 2026-07-17). */}
+          {offeringSiblings.length > 0 && (
+            <EvaluationSummaryStrip
+              survey={survey}
+              result={result}
+              siblings={offeringSiblings}
+              courseAvg={templateHasCourse ? courseAvg : null}
+              facultyAvg={facultyAvg}
+              facultyLabel={facultyChipLabel}
+              hasCourse={templateHasCourse && result.evalScope !== 'instructor'}
+              onGo={(anchorId) => goTo(anchorId, 'questions')}
+            />
+          )}
 
           <Tabs defaultValue="overview" className="flex flex-col gap-4">
             <div className="border-b border-border">
@@ -2248,6 +2284,9 @@ function ResultDetail({
                   {result.evalScope !== 'instructor' && templateHasCourse && (
                   <ScoreCard
                     title="Course Content"
+                    icon={EVALUATION_TYPE_ICON.course_material}
+                    statusBadge={courseInst ? <SurveyStatusBadgeOS status={courseInst.status} /> : undefined}
+                    responseMeta={courseInst ? `${courseInst.responseCount} of ${courseInst.enrollmentCount}` : undefined}
                     value={courseAvg}
                     programAvg={programCourseAvg}
                     priors={(survey.priorOfferings ?? []).map((p) => ({
@@ -2260,6 +2299,9 @@ function ResultDetail({
                   {result.evalScope !== 'course' && (
                   <ScoreCard
                     title={scopedFacultyName ? `Faculty Performance — ${scopedFacultyName}` : 'Faculty Performance'}
+                    icon={EVALUATION_TYPE_ICON.faculty_roles}
+                    statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} /> : undefined}
+                    responseMeta={facultyInst ? `${facultyInst.responseCount} of ${facultyInst.enrollmentCount}` : undefined}
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
                     priors={(survey.priorOfferings ?? [])
