@@ -73,7 +73,7 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import { RATING_SERIES, RatingLegend } from '@/components/pce/rating-viz'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
@@ -999,11 +999,13 @@ interface ThemeRowDatum {
   questions: number
   programAvg: number | null
   /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
-   *  aggregated across the theme's questions — feeds the per-theme histogram. */
+   *  aggregated across the theme's questions — feeds the composition panel. */
   dist: [number, number, number, number, number]
+  /** Per-instructor average within this theme (scope-aware) — benchmark panel. */
+  instructors: { id: string; initials: string; name: string; avg: number }[]
 }
 
-function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
+function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
   if (themes.length === 0) return null
   /* Sort by gap vs program, worst first — the deficit IS the story (Culture
      Amp delta framing); themes without a benchmark sink to the end. */
@@ -1015,70 +1017,196 @@ function ThemeStripPlot({ themes, partial }: { themes: ThemeRowDatum[]; partial?
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the distribution leans.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the mix leans.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
+  }
+  const instructors = [...new Map(sorted.flatMap((t) => t.instructors).map((fi) => [fi.id, fi])).values()]
+  const data = sorted.map((t) => {
+    const total = t.dist.reduce((a, n) => a + n, 0)
+    const row: Record<string, unknown> = {
+      theme: t.theme,
+      avg: +t.avg.toFixed(2),
+      programAvg: t.programAvg != null ? +t.programAvg.toFixed(2) : null,
+      total,
+    }
+    RATING_SERIES.forEach((s, i) => {
+      row[s.key] = total ? +((((t.dist[i] ?? 0) / total) * 100).toFixed(1)) : 0
+    })
+    t.instructors.forEach((fi) => {
+      row[`fi_${fi.id}`] = +fi.avg.toFixed(2)
+    })
+    return row
+  })
+  const compConfig: ChartConfig = Object.fromEntries(
+    RATING_SERIES.map((s) => [s.key, { label: s.label, color: s.color }]),
+  )
+  const benchConfig: ChartConfig = {
+    avg: { label: 'Course avg', color: 'var(--foreground)' },
+    programAvg: { label: 'Program', color: 'var(--muted-foreground)' },
+    ...Object.fromEntries(
+      instructors.map((fi) => [`fi_${fi.id}`, { label: fi.name, color: 'var(--muted-foreground)' }]),
+    ),
   }
   return (
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Response distribution per theme, rated 1–5 · sorted by gap vs program${partial ? ' · partial data' : ''}`}
+      description={`Rating composition per theme · course vs program${instructors.length > 0 ? ' vs instructor' : ''} beneath · sorted by gap${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Response distribution per question theme across rating levels 1 to 5, with the theme average and program average printed per row, sorted by gap. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Rating composition per question theme with a benchmark panel beneath showing course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''} on a 1 to 5 scale. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
-        {() => (
+        {(activeIndex) => (
           <>
-            <div className="flex flex-col">
-              <div className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-end gap-6 pb-2 border-b border-border">
-                <span className="text-xs text-muted-foreground">Theme</span>
-                <RatingLegend />
-                <span className="text-xs text-muted-foreground text-right">Avg vs program</span>
-              </div>
-              {sorted.map((t) => {
-                const below = t.programAvg != null && t.avg < t.programAvg - 0.049
-                const total = t.dist.reduce((a, n) => a + n, 0)
-                return (
-                  <div
-                    key={t.theme}
-                    role="img"
-                    aria-label={`${t.theme}: average ${t.avg.toFixed(1)} of 5${t.programAvg != null ? `, program average ${t.programAvg.toFixed(1)}` : ''}, from ${t.questions} question${t.questions !== 1 ? 's' : ''} and ${total} rating${total !== 1 ? 's' : ''}`}
-                    className="grid grid-cols-[minmax(160px,220px)_1fr_auto] items-center gap-6 py-3 border-b border-border last:border-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm truncate">{t.theme}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t.questions} question{t.questions !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <RatingStackedBar counts={[...t.dist]} total={total} />
-                    <p className="text-xs text-muted-foreground tabular-nums text-right whitespace-nowrap">
-                      Avg{' '}
-                      <span
-                        className="text-sm font-semibold"
-                        style={{ color: below ? 'var(--chip-4)' : 'var(--foreground)' }}
-                      >
-                        {t.avg.toFixed(1)}
-                      </span>
-                      {t.programAvg != null && <> · Program {t.programAvg.toFixed(1)}</>}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
+            {/* Composition panel — DS composition family: stacked rating mix */}
+            <RatingLegend />
+            <ChartContainer config={compConfig} className="h-44 w-full">
+              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={false} height={4} />
+                <YAxis
+                  domain={[0, 100]}
+                  ticks={[0, 50, 100]}
+                  tickFormatter={(v: number) => `${v}%`}
+                  width={44}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={CHART_AXIS_TICK}
+                />
+                <ChartTooltip
+                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
+                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
+                  cursor={{ fill: 'var(--muted)', fillOpacity: 0.4 }}
+                  content={
+                    <ChartTooltipContent
+                      formatter={(v: unknown, name: unknown) => [
+                        `${v as number}% `,
+                        compConfig[name as string]?.label ?? String(name),
+                      ]}
+                    />
+                  }
+                />
+                {RATING_SERIES.map((s) => (
+                  <Bar
+                    key={s.key}
+                    dataKey={s.key}
+                    stackId="mix"
+                    fill={s.color}
+                    fillOpacity={s.opacity}
+                    maxBarSize={72}
+                    isAnimationActive={false}
+                  />
+                ))}
+              </ComposedChart>
+            </ChartContainer>
+            {/* Benchmark panel — same themes on an honest 1–5 axis */}
+            <ChartContainer config={benchConfig} className="h-32 w-full">
+              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={CHART_AXIS_TICK} interval={0} />
+                <YAxis
+                  domain={[3, 5]}
+                  ticks={[3, 4, 5]}
+                  width={44}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={CHART_AXIS_TICK}
+                />
+                <ChartTooltip
+                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
+                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
+                  cursor={{ stroke: 'var(--border)' }}
+                  content={<ChartTooltipContent />}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="programAvg"
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="4 3"
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="avg"
+                  stroke="transparent"
+                  isAnimationActive={false}
+                  dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) => {
+                    const below =
+                      p.payload?.programAvg != null &&
+                      (p.payload.avg as number) < (p.payload.programAvg as number) - 0.05
+                    return (
+                      <circle
+                        key={`avg-${p.index}`}
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={4.5}
+                        fill={below ? 'var(--chip-4)' : 'var(--foreground)'}
+                        stroke="var(--card)"
+                        strokeWidth={2}
+                      />
+                    )
+                  }}
+                />
+                {instructors.map((fi) => (
+                  <Line
+                    key={fi.id}
+                    type="monotone"
+                    dataKey={`fi_${fi.id}`}
+                    stroke="transparent"
+                    isAnimationActive={false}
+                    dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) =>
+                      p.payload?.[`fi_${fi.id}`] == null ? (
+                        <g key={`fi-${fi.id}-${p.index}`} />
+                      ) : (
+                        <circle
+                          key={`fi-${fi.id}-${p.index}`}
+                          cx={p.cx}
+                          cy={p.cy}
+                          r={3.5}
+                          fill="var(--card)"
+                          stroke="var(--muted-foreground)"
+                          strokeWidth={1.5}
+                        />
+                      )
+                    }
+                  />
+                ))}
+              </ComposedChart>
+            </ChartContainer>
+            <p className="text-xs text-muted-foreground">
+              Top: share of responses per rating. Bottom: ● course avg (amber = below program) ·
+              ┄ program{instructors.length > 0 ? ' · ○ instructor (hover for names)' : ''}.
+            </p>
             <ChartDataTable
               caption="Theme-wise distribution"
-              headers={['Theme', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5', 'This course', 'Program average', 'Questions']}
+              headers={[
+                'Theme',
+                'Rated 1',
+                'Rated 2',
+                'Rated 3',
+                'Rated 4',
+                'Rated 5',
+                'This course',
+                'Program average',
+                'Questions',
+                ...instructors.map((fi) => fi.name),
+              ]}
               rows={sorted.map((t) => [
                 t.theme,
                 ...t.dist,
                 `${t.avg.toFixed(1)}/5`,
                 t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
                 t.questions,
+                ...instructors.map((fi) => {
+                  const hit = t.instructors.find((x) => x.id === fi.id)
+                  return hit ? `${hit.avg.toFixed(1)}/5` : '—'
+                }),
               ])}
             />
           </>
@@ -1294,7 +1422,11 @@ function ratingQuantile(counts: number[], total: number, q: number): number {
   return 5
 }
 
-function RangeStrip({
+/** DS-catalog boxplot anatomy (localhost:4000 → Chart → Statistical →
+ *  Boxplot: brand IQR box, foreground whiskers with end caps, median line),
+ *  laid horizontal at row height, plus the two benchmark marks: program tick
+ *  and the average dot (amber below program). */
+function QuestionBoxplot({
   counts,
   total,
   avg,
@@ -1306,14 +1438,16 @@ function RangeStrip({
   programAvg?: number | null
 }) {
   const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
-  if (total <= 0) return <div className="h-5" aria-hidden="true" />
+  if (total <= 0) return <div className="h-6" aria-hidden="true" />
   const lowest = counts.findIndex((c) => c > 0) + 1
   const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
   const p25 = ratingQuantile(counts, total, 0.25)
+  const median = ratingQuantile(counts, total, 0.5)
   const p75 = ratingQuantile(counts, total, 0.75)
   const below = avg != null && programAvg != null && avg < programAvg - 0.05
   return (
-    <div className="relative h-5 w-full min-w-0" aria-hidden="true">
+    <div className="relative h-6 w-full min-w-0" aria-hidden="true">
+      {/* 1–5 axis */}
       <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
       {[1, 2, 3, 4, 5].map((n) => (
         <span
@@ -1322,32 +1456,41 @@ function RangeStrip({
           style={{ left: `${x(n)}%` }}
         />
       ))}
-      {/* full span of responses — lightest ink */}
+      {/* whisker min→max with end caps (DS: foreground stroke) */}
       <div
-        className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full"
-        style={{
-          left: `${x(lowest)}%`,
-          width: `${Math.max(1.5, x(highest) - x(lowest))}%`,
-          background: 'var(--border)',
-        }}
+        className="absolute top-1/2 h-px -translate-y-1/2"
+        style={{ left: `${x(lowest)}%`, width: `${Math.max(1, x(highest) - x(lowest))}%`, background: 'var(--muted-foreground)' }}
       />
-      {/* middle 50% — mid ink, still clearly context under the dot */}
+      {[lowest, highest].map((v, i) => (
+        <span
+          key={i}
+          className="absolute top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2"
+          style={{ left: `${x(v)}%`, background: 'var(--muted-foreground)' }}
+        />
+      ))}
+      {/* IQR box — brand fill per the DS boxplot spec */}
       <div
-        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
+        className="absolute top-1/2 h-3 -translate-y-1/2 rounded-[3px]"
         style={{
           left: `${x(p25)}%`,
-          width: `${Math.max(1.5, x(p75) - x(p25))}%`,
-          background: 'var(--border-control-35)',
+          width: `${Math.max(2, x(p75) - x(p25))}%`,
+          background: 'var(--brand-color)',
+          opacity: 0.42,
         }}
       />
-      {/* program reference — the ONE tick species on the strip */}
+      {/* median line */}
+      <span
+        className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ left: `${x(median)}%`, background: 'var(--brand-color)' }}
+      />
+      {/* program reference tick */}
       {programAvg != null && (
         <span
-          className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
         />
       )}
-      {/* average — amber when below program (You vs program IN the viz) */}
+      {/* average — amber when below program */}
       {avg != null && (
         <span
           className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
@@ -1385,12 +1528,16 @@ function QuestionBreakdownTable({
           nothing else to identify (chips and numbers are literal). */}
       <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-1 w-5 rounded-full" style={{ background: 'var(--border)' }} aria-hidden="true" />
-          Range of ratings
+          <span className="inline-flex items-center" aria-hidden="true">
+            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
+            <span className="h-2.5 w-4 rounded-[3px]" style={{ background: 'var(--brand-color)', opacity: 0.42 }} />
+            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
+          </span>
+          Box = middle 50% · whiskers = full range
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-4 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
-          Middle 50%
+          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
+          Median
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
@@ -1451,7 +1598,7 @@ function QuestionBreakdownTable({
                 className="scroll-mt-16 grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <RangeStrip
+                <QuestionBoxplot
                   counts={r.counts ?? [0, 0, 0, 0, 0]}
                   total={r.total ?? 0}
                   avg={r.avg}
@@ -1959,6 +2106,16 @@ function ResultDetail({
       { course: result.evalScope !== 'instructor', faculty: result.evalScope !== 'course' },
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
+    /* Per-instructor themed questions (scope-aware) — the benchmark panel. */
+    const allowedInstructors = survey.instructors.filter(
+      (i) => facultyScope === 'all' || i.id === facultyScope,
+    )
+    const perInstructorThemed = allowedInstructors.map((inst) => ({
+      inst,
+      qs: (qData.instructorBlocks ?? [])
+        .filter((b) => b.instructorId === inst.id)
+        .flatMap((b) => b.scores.map((q) => ({ theme: classify(q.questionId, true), avg: q.avg }))),
+    }))
     const rows: ThemeRowDatum[] = []
     for (const theme of THEME_ORDER) {
       const qs = mine.filter((x) => x.theme === theme)
@@ -1966,12 +2123,25 @@ function ResultDetail({
       const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
       qs.forEach((x) => (x.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
       const prog = program.filter((x) => x.theme === theme)
+      const instructors = perInstructorThemed
+        .map(({ inst, qs: iqs }) => {
+          const mineTheme = iqs.filter((x) => x.theme === theme)
+          if (mineTheme.length === 0) return null
+          return {
+            id: inst.id,
+            initials: inst.initials,
+            name: inst.name,
+            avg: mineTheme.reduce((a, x) => a + x.avg, 0) / mineTheme.length,
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x != null)
       rows.push({
         theme,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
         questions: qs.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
         dist,
+        instructors,
       })
     }
     return rows
@@ -2483,7 +2653,7 @@ function ResultDetail({
               </div>
 
               <div id="themes" className="scroll-mt-16">
-                <ThemeStripPlot themes={themes} partial={inCollection} />
+                <ThemeCompositionChart themes={themes} partial={inCollection} />
               </div>
 
               {/* Question breakdown — collapsed by default (spec); controlled
