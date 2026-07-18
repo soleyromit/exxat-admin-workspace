@@ -2694,10 +2694,14 @@ function ResultDetail({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={copySurveyLink}>
+                      <i className="fa-light fa-link" aria-hidden="true" />
                       {linkCopied ? 'Link copied' : 'Copy survey link'}
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                      <Link href={`/surveys/${survey.id}/preview`}>
+                        <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                        Preview form
+                      </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -2739,7 +2743,10 @@ function ResultDetail({
                     <DropdownMenuContent align="end">
                       {showEnable && (
                         <DropdownMenuItem asChild>
-                          <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                          <Link href={`/surveys/${survey.id}/preview`}>
+                            <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                            Preview form
+                          </Link>
                         </DropdownMenuItem>
                       )}
                       {/* PD-only: /analytics is an ungated admin surface with
@@ -2747,16 +2754,20 @@ function ResultDetail({
                           (scope flag 2026-07-16). */}
                       <DropdownMenuItem asChild>
                         <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                          <i className="fa-light fa-chart-line" aria-hidden="true" />
                           View Longitudinal Insights
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={copySurveyLink}>
+                        <i className="fa-light fa-link" aria-hidden="true" />
                         {linkCopied ? 'Link copied' : 'Copy survey link'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setRemindOpen(true)}>
+                        <i className="fa-light fa-bell" aria-hidden="true" />
                         Send reminder
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setExtendOpen(true)}>
+                        <i className="fa-light fa-calendar-plus" aria-hidden="true" />
                         Extend close date
                       </DropdownMenuItem>
                     </DropdownMenuContent>
