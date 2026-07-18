@@ -1294,13 +1294,24 @@ function ratingQuantile(counts: number[], total: number, q: number): number {
   return 5
 }
 
-function RangeStrip({ counts, total, avg }: { counts: number[]; total: number; avg?: number }) {
+function RangeStrip({
+  counts,
+  total,
+  avg,
+  programAvg,
+}: {
+  counts: number[]
+  total: number
+  avg?: number
+  programAvg?: number | null
+}) {
   const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
   if (total <= 0) return <div className="h-5" aria-hidden="true" />
   const lowest = counts.findIndex((c) => c > 0) + 1
   const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
   const p25 = ratingQuantile(counts, total, 0.25)
   const p75 = ratingQuantile(counts, total, 0.75)
+  const below = avg != null && programAvg != null && avg < programAvg - 0.05
   return (
     <div className="relative h-5 w-full min-w-0" aria-hidden="true">
       <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
@@ -1329,11 +1340,18 @@ function RangeStrip({ counts, total, avg }: { counts: number[]; total: number; a
           background: 'var(--border-control-35)',
         }}
       />
-      {/* average */}
+      {/* program reference — the ONE tick species on the strip */}
+      {programAvg != null && (
+        <span
+          className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
+        />
+      )}
+      {/* average — amber when below program (You vs program IN the viz) */}
       {avg != null && (
         <span
           className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
-          style={{ left: `${x(avg)}%`, background: 'var(--foreground)' }}
+          style={{ left: `${x(avg)}%`, background: below ? 'var(--chip-4)' : 'var(--foreground)' }}
         />
       )}
     </div>
@@ -1377,9 +1395,15 @@ function QuestionBreakdownTable({
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
           Average
+          <span className="size-2 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
+          below program
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
+          Program
         </span>
       </div>
-      <div className="grid grid-cols-[minmax(180px,1fr)_11rem_9rem_5rem_12rem] items-end gap-4 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-end gap-4 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -1389,7 +1413,6 @@ function QuestionBreakdownTable({
         <span className="text-xs text-muted-foreground text-right">
           {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
         </span>
-        <span className="text-xs text-muted-foreground text-right">n · fav %</span>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => {
@@ -1425,31 +1448,33 @@ function QuestionBreakdownTable({
                     ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
                     : ''
                 }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(180px,1fr)_11rem_9rem_5rem_12rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <RangeStrip counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} avg={r.avg} />
-                {/* Per-instructor score chips — literal initials + number,
-                    warning tone when below program. Self-describing; no
-                    legend, nothing to learn. */}
-                <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                  {(r.perFaculty ?? []).map((f) => (
-                    <StatusBadge
-                      key={f.facultyId}
-                      label={`${f.initials} ${f.avg.toFixed(1)}`}
-                      tone={
-                        r.programAvg != null && f.avg < r.programAvg - 0.05
-                          ? 'warning'
-                          : 'neutral'
-                      }
-                    />
-                  ))}
+                <RangeStrip
+                  counts={r.counts ?? [0, 0, 0, 0, 0]}
+                  total={r.total ?? 0}
+                  avg={r.avg}
+                  programAvg={r.programAvg}
+                />
+                {/* Per-instructor: real avatar + score, amber when below
+                    program. Self-describing; nothing to learn. */}
+                <div className="flex items-center justify-end gap-2.5 flex-wrap">
+                  {(r.perFaculty ?? []).map((f) => {
+                    const fBelow = r.programAvg != null && f.avg < r.programAvg - 0.05
+                    return (
+                      <span key={f.facultyId} className="inline-flex items-center gap-1">
+                        <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
+                        <span
+                          className="text-xs font-medium tabular-nums"
+                          style={{ color: fBelow ? 'var(--chip-4)' : 'var(--foreground)' }}
+                        >
+                          {f.avg.toFixed(1)}
+                        </span>
+                      </span>
+                    )
+                  })}
                 </div>
-                <p className="text-xs tabular-nums text-right whitespace-nowrap text-muted-foreground">
-                  {(r.total ?? 0) > 0
-                    ? `${r.total} · ${Math.round(favorableShare(r.counts, r.total) * 100)}%`
-                    : '—'}
-                </p>
                 <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
