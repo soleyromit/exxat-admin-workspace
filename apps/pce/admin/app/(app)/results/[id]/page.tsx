@@ -51,7 +51,6 @@ import {
   DropdownMenuTrigger,
   LocalBanner,
   StatusBadge,
-  AvatarInitials,
   PersonIdentityCell,
   Popover,
   PopoverContent,
@@ -143,18 +142,11 @@ function GateScreen({
           </p>
         ))}
       </div>
-      {children ?? <GateBackButton />}
+      {/* No default "Back to" CTA — the breadcrumb is the single way-back
+          (P1; UX-audit B1, 2026-07-18). Gates with real interventions pass
+          them as children. */}
+      {children}
     </div>
-  )
-}
-
-/** Default gate CTA — returns to the list the user actually came from. */
-function GateBackButton() {
-  const origin = useResultsOrigin()
-  return (
-    <Button variant="outline" size="sm" asChild>
-      <Link href={origin.href}>Back to {origin.label}</Link>
-    </Button>
   )
 }
 
@@ -695,7 +687,7 @@ function CommentList({
   /** Evaluation-type glyph for the group header (course / faculty / general). */
   icon?: string
   /** Attributed instructor — renders an avatar so "about whom" is unmissable. */
-  person?: { name: string; initials: string }
+  person?: { name: string; initials: string; avatarUrl?: string }
   comments: IndexedComment[]
   hiddenIdx: number[]
   canModerate: boolean
@@ -732,7 +724,12 @@ function CommentList({
           is aria-level 2, heading order must not skip (axe heading-order). */}
       <div className="flex items-center gap-2 pb-1.5 border-b border-border min-w-0">
         {person ? (
-          <AvatarInitials initials={person.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
+          /* Photo identity — same treatment as every other mark on the page
+             (UX-audit I2); initials remain the fallback. */
+          <Avatar className="size-6 shrink-0">
+            <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+            <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+          </Avatar>
         ) : icon ? (
           <i className={`fa-light ${icon} text-xs text-muted-foreground`} aria-hidden="true" />
         ) : null}
@@ -864,7 +861,9 @@ function ScoreTile({
           </span>
         )}
       </div>
-      <div className="text-xs text-muted-foreground leading-snug line-clamp-2 tabular-nums">
+      {/* min-h-8 = two caption lines — keeps the three tiles' baselines level
+          when captions wrap 2/1/1 (UX-audit N2). */}
+      <div className="min-h-8 text-xs text-muted-foreground leading-snug line-clamp-2 tabular-nums">
         {caption}
       </div>
     </div>
@@ -1078,7 +1077,7 @@ function ThemeBoxplotChart({
                 return (
                   <div
                     key={t.theme}
-                    className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-center gap-6 py-1.5 border-b border-border last:border-0"
+                    className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-center gap-6 py-2.5 border-b border-border last:border-0"
                   >
                     <div className="min-w-0 flex flex-col gap-0.5">
                       <p className="text-sm">{t.theme}</p>
@@ -1700,7 +1699,7 @@ function QuestionBreakdownTable({
     <div className="flex flex-col">
       {/* No legend (round 5: "a lot of legends which isn't required") —
           values ride the marks and the popovers explain on click. */}
-      <div className="grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -1729,7 +1728,7 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                className="scroll-mt-16 grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">
                   {r.label}
@@ -3018,7 +3017,7 @@ function ResultDetail({
                           <CommentList
                             key={g.instructor.id}
                             title={`About ${g.instructor.name}`}
-                            person={{ name: g.instructor.name, initials: g.instructor.initials }}
+                            person={{ name: g.instructor.name, initials: g.instructor.initials, avatarUrl: g.instructor.avatarUrl }}
                             comments={g.comments}
                             hiddenIdx={hiddenIdx}
                             canModerate={isPD}
@@ -3043,9 +3042,19 @@ function ResultDetail({
                         />
 
                         {ownerInsights && recommendations.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h3>
-                            <ol className="flex flex-col gap-1.5 list-decimal ml-4">
+                          /* AI-lane identity (UX-audit I4): the Leo sparkle +
+                             quiet inset — same lane marking as chart insights,
+                             without the chart overlay machinery. */
+                          <div className="rounded-lg border border-border bg-muted/25 p-3 flex flex-col gap-1.5">
+                            <h3 className="text-sm font-medium flex items-center gap-1.5">
+                              <i
+                                className="fa-light fa-sparkles text-xs"
+                                aria-hidden="true"
+                                style={{ color: 'var(--brand-color)' }}
+                              />
+                              Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}
+                            </h3>
+                            <ol className="flex flex-col gap-1.5 list-decimal ms-5">
                               {recommendations.map((r) => (
                                 <li key={r} className="text-sm text-muted-foreground">
                                   {r}

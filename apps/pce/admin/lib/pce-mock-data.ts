@@ -1084,12 +1084,15 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
 ]
 
 const INSTRUCTORS: Record<string, PceInstructor> = {
-  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg' },
-  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest',   avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
-  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg' },
-  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/men/11.jpg' },
-  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/65.jpg' },
-  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/men/75.jpg' },
+  /* Portraits vendored to /public/portraits (UX-audit I1: external hosts
+     flake mid-demo; the fallback initials appearing in a review capture was
+     exactly that failure). */
+  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', avatarUrl: '/portraits/anita-patel.jpg' },
+  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest',   avatarUrl: '/portraits/kevin-chen.jpg' },
+  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', avatarUrl: '/portraits/maria-williams.jpg' },
+  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', avatarUrl: '/portraits/james-kim.jpg' },
+  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', avatarUrl: '/portraits/rachel-gomez.jpg' },
+  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: '/portraits/omar-hassan.jpg' },
 }
 
 export const MOCK_SURVEYS: PceSurvey[] = [
