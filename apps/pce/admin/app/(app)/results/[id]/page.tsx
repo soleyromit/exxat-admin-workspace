@@ -25,7 +25,7 @@
 // Gorgias (comments + download).
 // ============================================================================
 
-import { Fragment, Suspense, useMemo, useState } from 'react'
+import { Fragment, Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useResultsOrigin, withFrom } from '@/lib/pce-nav-origin'
@@ -73,7 +73,15 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RATING_SERIES, RatingLegend } from '@/components/pce/rating-viz'
+import { RATING_SERIES, RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import {
+  OutlineTreeCollapsibleContentRail,
+  OutlineTreeLeafButton,
+  OutlineTreeMenu,
+  OutlineTreeMenuItem,
+  OutlineTreeSub,
+  OutlineTreeSubItem,
+} from '@/components/data-views/outline-tree-menu'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
@@ -582,31 +590,34 @@ function StatusResultScreen({
   )
 }
 
-/** "On this page" rail link — plain anchor semantics, smooth in-page scroll. */
-function AnchorLink({
+/** Navigator row — DS OutlineTreeLeafButton (adoption verdict: IMPORT);
+ *  isActive carries the scroll-spy highlight, count is quiet group meta. */
+function RailLink({
   label,
   onGo,
-  small,
+  active,
+  count,
+  title,
 }: {
   label: string
   onGo: () => void
-  small?: boolean
+  active?: boolean
+  count?: number
+  title?: string
 }) {
   return (
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault()
-        onGo()
-      }}
-      title={label}
-      /* block + min-w-0 so `truncate` shrinks to the 260px rail (ellipsis, not
-         a mid-word clip); shrink-0 so the flex column's max-height doesn't
-         compress each row below its line-height and clip the text vertically. */
-      className={`block min-w-0 shrink-0 truncate rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${small ? 'text-xs py-1' : 'text-sm py-0.5'}`}
+    <OutlineTreeLeafButton
+      surface="panel"
+      isActive={active}
+      onClick={onGo}
+      title={title ?? label}
+      className="w-full min-w-0"
     >
-      {label}
-    </a>
+      <span className="min-w-0 flex-1 truncate text-start">{label}</span>
+      {count != null && (
+        <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      )}
+    </OutlineTreeLeafButton>
   )
 }
 
@@ -1326,6 +1337,9 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
     f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
   const positives = countFor('positive')
   const concerns = countFor('concern')
+  /* Flagged responses were in the data but invisible — a moderator's queue
+     signal, so it rides the meta line and marks the row in the sheet. */
+  const flaggedCount = responses.filter((x) => x.flagged).length
   const previews = responses.slice(0, 2)
   return (
     <div
@@ -1341,6 +1355,7 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
               : `${count} written response${count !== 1 ? 's' : ''}`}
             {positives > 0 && <> · {positives} positive</>}
             {concerns > 0 && <> · {concerns} constructive</>}
+            {flaggedCount > 0 && <> · {flaggedCount} flagged for review</>}
           </p>
         </div>
         {count > 0 && (
@@ -1385,7 +1400,12 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
                       className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
                     >
                       <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
-                      {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
+                      {(chip || x.flagged) && (
+                        <div className="flex items-center gap-1.5">
+                          {chip && <StatusBadge label={chip.label} tone={chip.tone} />}
+                          {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
+                        </div>
+                      )}
                     </div>
                   )
                 })
@@ -1398,108 +1418,15 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* ── question rows: numbers + chips + a single-job range strip ────────────────
-   Settled form (Romit 2026-07-17, after three failed multi-mark encodings +
-   a numbers-only round that lost the range): the IDENTIFICATION layer is
-   literal — instructor score chips, n · fav %, You vs Program — and one
-   small viz carries the one fact numbers can't: THE RANGE. Box-plot-lite on
-   a full 1–5 line: light band = full span of responses, darker band =
-   middle 50%, dot = average. One mark family, no program tick competing
-   (the numbers column owns that comparison) — nothing to misidentify. */
-
-/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
-function ratingQuantile(counts: number[], total: number, q: number): number {
-  if (total <= 0) return 3
-  const target = q * total
-  let cum = 0
-  for (let i = 0; i < 5; i++) {
-    const c = counts[i] ?? 0
-    if (c > 0 && cum + c >= target) {
-      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
-    }
-    cum += c
-  }
-  return 5
-}
-
-/** DS-catalog boxplot anatomy (localhost:4000 → Chart → Statistical →
- *  Boxplot: brand IQR box, foreground whiskers with end caps, median line),
- *  laid horizontal at row height, plus the two benchmark marks: program tick
- *  and the average dot (amber below program). */
-function QuestionBoxplot({
-  counts,
-  total,
-  avg,
-  programAvg,
-}: {
-  counts: number[]
-  total: number
-  avg?: number
-  programAvg?: number | null
-}) {
-  const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
-  if (total <= 0) return <div className="h-6" aria-hidden="true" />
-  const lowest = counts.findIndex((c) => c > 0) + 1
-  const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
-  const p25 = ratingQuantile(counts, total, 0.25)
-  const median = ratingQuantile(counts, total, 0.5)
-  const p75 = ratingQuantile(counts, total, 0.75)
-  const below = avg != null && programAvg != null && avg < programAvg - 0.05
-  return (
-    <div className="relative h-6 w-full min-w-0" aria-hidden="true">
-      {/* 1–5 axis */}
-      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span
-          key={n}
-          className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border"
-          style={{ left: `${x(n)}%` }}
-        />
-      ))}
-      {/* whisker min→max with end caps (DS: foreground stroke) */}
-      <div
-        className="absolute top-1/2 h-px -translate-y-1/2"
-        style={{ left: `${x(lowest)}%`, width: `${Math.max(1, x(highest) - x(lowest))}%`, background: 'var(--muted-foreground)' }}
-      />
-      {[lowest, highest].map((v, i) => (
-        <span
-          key={i}
-          className="absolute top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${x(v)}%`, background: 'var(--muted-foreground)' }}
-        />
-      ))}
-      {/* IQR box — brand fill per the DS boxplot spec */}
-      <div
-        className="absolute top-1/2 h-3 -translate-y-1/2 rounded-[3px]"
-        style={{
-          left: `${x(p25)}%`,
-          width: `${Math.max(2, x(p75) - x(p25))}%`,
-          background: 'var(--brand-color)',
-          opacity: 0.42,
-        }}
-      />
-      {/* median line */}
-      <span
-        className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ left: `${x(median)}%`, background: 'var(--brand-color)' }}
-      />
-      {/* program reference tick */}
-      {programAvg != null && (
-        <span
-          className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
-        />
-      )}
-      {/* average — amber when below program */}
-      {avg != null && (
-        <span
-          className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
-          style={{ left: `${x(avg)}%`, background: below ? 'var(--chip-4)' : 'var(--foreground)' }}
-        />
-      )}
-    </div>
-  )
-}
+/* ── question rows: numbers + chips + the shared rating-mix strip ─────────────
+   Declutter round (Romit 2026-07-18): the boxplot-lite retired — on a 1–5
+   Likert nearly every whisker spanned the full axis, so 22 rows read
+   identical while costing a four-term taught legend. The row viz is now the
+   SHARED RatingStackedBar (rating-viz, Romit-approved form): the same
+   composition vocabulary as the theme chart above — skew is visible per row,
+   hover carries counts + share per rating + n. Numbers stay primary
+   (RUBRIC v2): You vs Program owns the comparison, instructor chips stay
+   literal. */
 
 function QuestionBreakdownTable({
   rows,
@@ -1524,39 +1451,17 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* One-line legend for the single-job range strip — same-family marks,
-          nothing else to identify (chips and numbers are literal). */}
-      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-flex items-center" aria-hidden="true">
-            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
-            <span className="h-2.5 w-4 rounded-[3px]" style={{ background: 'var(--brand-color)', opacity: 0.42 }} />
-            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
-          </span>
-          Box = middle 50% · whiskers = full range
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
-          Median
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-          Average
-          <span className="size-2 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
-          below program
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
-          Program
+      {/* Same swatch legend as the theme chart — ONE rating vocabulary
+          page-wide, nothing new to learn at this depth. */}
+      <div className="flex items-center gap-3 pb-2 flex-wrap">
+        <RatingLegend />
+        <span className="text-xs text-muted-foreground">
+          share of responses per rating · hover for counts
         </span>
       </div>
       <div className="grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-end gap-4 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <span key={n}>{n}</span>
-          ))}
-        </div>
+        <span className="text-xs text-muted-foreground">Rating mix</span>
         <span className="text-xs text-muted-foreground text-right">
           {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
         </span>
@@ -1598,12 +1503,7 @@ function QuestionBreakdownTable({
                 className="scroll-mt-16 grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <QuestionBoxplot
-                  counts={r.counts ?? [0, 0, 0, 0, 0]}
-                  total={r.total ?? 0}
-                  avg={r.avg}
-                  programAvg={r.programAvg}
-                />
+                <RatingStackedBar counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
                 {/* Per-instructor: real avatar + score, amber when below
                     program. Self-describing; nothing to learn. */}
                 <div className="flex items-center justify-end gap-2.5 flex-wrap">
@@ -1664,6 +1564,13 @@ function QuestionBreakdownTable({
    accumulating fast enough, and do I need to nudge?" — daily responses + the
    cumulative rate against the 70% target answer it (Sprig in-progress pattern). */
 
+/** ISO date → the pace chart's short day label (e.g. "Jul 10"). */
+function shortIsoDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 const paceConfig: ChartConfig = {
   responses: { label: 'Responses that day', color: 'var(--chart-1)' },
   cumulativePct: { label: 'Cumulative rate', color: 'var(--brand-color)' },
@@ -1699,7 +1606,11 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
     <ChartCard
       variant="normal"
       title="Collection pace"
-      description={`${survey.responseCount} of ${survey.enrollmentCount} responded · target 70%${survey.deadline ? ` · closes ${survey.deadline}` : ''}`}
+      description={`${survey.responseCount} of ${survey.enrollmentCount} responded · target 70%${survey.deadline ? ` · closes ${survey.deadline}` : ''}${
+        survey.originalDeadline && survey.originalDeadline !== survey.deadline
+          ? ` (extended from ${survey.originalDeadline})`
+          : ''
+      }${survey.nextScheduledReminderAt ? ` · next reminder ${shortIsoDay(survey.nextScheduledReminderAt)}` : ''}`}
       leoInsight={paceLeo}
     >
       <ChartFigure
@@ -1743,6 +1654,20 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
                     label={{ value: 'Today', position: 'insideTop', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
                   />
                 )}
+                {/* Reminder sends — the series already flags them; the bump
+                    after each mark is the reminder working. */}
+                {series.points
+                  .filter((p) => p.reminder)
+                  .map((p) => (
+                    <ReferenceLine
+                      key={`reminder-${p.iso}`}
+                      yAxisId="pct"
+                      x={p.day}
+                      stroke="var(--border-control-35)"
+                      strokeDasharray="2 3"
+                      label={{ value: 'Reminder', position: 'insideTopRight', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
+                    />
+                  ))}
                 <ChartTooltip
                   key={chartTooltipKeyboardSyncProps(activeIndex).key}
                   {...chartTooltipKeyboardSyncProps(activeIndex).props}
@@ -1762,10 +1687,15 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
             </ChartContainer>
             <ChartDataTable
               caption="Collection pace by day"
-              headers={['Day', 'Responses', 'Cumulative rate']}
+              headers={['Day', 'Responses', 'Cumulative rate', 'Reminder']}
               rows={series.points
-                .filter((p) => p.responses != null && p.responses > 0)
-                .map((p) => [p.day, p.responses ?? 0, p.cumulativePct != null ? `${p.cumulativePct}%` : '—'])}
+                .filter((p) => (p.responses != null && p.responses > 0) || p.reminder)
+                .map((p) => [
+                  p.day,
+                  p.responses ?? 0,
+                  p.cumulativePct != null ? `${p.cumulativePct}%` : '—',
+                  p.reminder ? 'Sent' : '—',
+                ])}
             />
           </>
         )}
@@ -2254,6 +2184,37 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* Navigator chrome — the rail collapses to a slim icon strip (Craft TOC
+     pattern) so the content column can reclaim the width on demand; question
+     links fold per evaluation-type group (Udemy course-content pattern)
+     instead of the old always-open nested scrollbox. */
+  const [railOpen, setRailOpen] = useState(true)
+  const [railGroupsOpen, setRailGroupsOpen] = useState<Record<string, boolean>>({})
+  /* Scroll-spy — highlight the section band under the sticky shell. Entries
+     only report crossings, so keep the last known section when none reports. */
+  const [activeAnchor, setActiveAnchor] = useState<string>(inCollection ? 'pace' : 'scores')
+  useEffect(() => {
+    const ids = ['pace', 'scores', 'themes', 'questions', 'comments', 'feedback-loop']
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => !!el)
+    if (els.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveAnchor(visible[0].target.id)
+      },
+      /* Top inset = sticky shell height; bottom bias keeps the highlight on
+         the section whose heading the reader just scrolled past. */
+      { rootMargin: '-64px 0px -55% 0px' },
+    )
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+    /* showFeedbackLoop is declared below this hook — its inputs (ownerInsights,
+       isPD, prior) stand in as deps so the observed set stays current. */
+  }, [inCollection, themes.length, qData, sections.length, allComments.length, ownerInsights, isPD, prior])
   /* ONE sentiment filter governs every comment section (PR #53 anatomy). */
   const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
   const qualCountFor = (f: SentimentFilter) =>
@@ -2445,7 +2406,11 @@ function ResultDetail({
             )}
           </span>
         }
-        subtitle={`${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}`}
+        subtitle={
+          /* Cohort + course type were in the data but never on the page —
+             Aarti's atomic evaluation unit is course × term × cohort. */
+          `${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}`
+        }
         actions={
           /* Hierarchy: ONE primary per state. Live → Send reminder is the
              highest-leverage act (below-target collection); Extend is the
@@ -2577,7 +2542,46 @@ function ResultDetail({
 
             {/* ── Overview — content column + side column (share card, rail) ── */}
             <TabsContent value="overview" className="m-0">
-              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_260px] gap-6 items-start">
+              {/* Sub-xl has no rail — a compact jump menu keeps the section
+                  anchors reachable. */}
+              <div className="xl:hidden mb-4 flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">On this page</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {inCollection && (
+                      <DropdownMenuItem onSelect={() => goTo('pace')}>Collection pace</DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onSelect={() => goTo('scores')}>
+                      {inCollection ? 'Early signal' : 'Scores'}
+                    </DropdownMenuItem>
+                    {themes.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('themes')}>Theme distribution</DropdownMenuItem>
+                    )}
+                    {qData && sections.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('questions', 'questions')}>
+                        Question breakdown
+                      </DropdownMenuItem>
+                    )}
+                    {allComments.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('comments', 'comments')}>
+                        Student comments
+                      </DropdownMenuItem>
+                    )}
+                    {showFeedbackLoop && (
+                      <DropdownMenuItem onSelect={() => goTo('feedback-loop')}>Feedback loop</DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div
+                className={`grid grid-cols-1 gap-6 items-start ${
+                  railOpen
+                    ? 'xl:grid-cols-[minmax(0,1fr)_260px]'
+                    : 'xl:grid-cols-[minmax(0,1fr)_2.25rem]'
+                }`}
+              >
               <div className="flex flex-col gap-4 min-w-0">
               {/* Live: collection health leads — this page is the cockpit
                   while responses accumulate; scores are early signal below. */}
@@ -2821,50 +2825,144 @@ function ResultDetail({
               )}
               </div>
 
-              {/* ── Side column — "On this page" anchors (the live Share card's
-                    copy-link/preview actions moved to the header ⋯ menu). ── */}
-              <div className="hidden xl:flex flex-col gap-4 sticky top-16 self-start w-full">
-              <nav aria-label="On this page" className="flex flex-col gap-0.5 w-full">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">On this page</p>
-                {inCollection && <AnchorLink label="Collection pace" onGo={() => goTo('pace')} />}
-                <AnchorLink label={inCollection ? 'Early signal' : 'Scores'} onGo={() => goTo('scores')} />
-                {themes.length > 0 && (
-                  <AnchorLink label="Theme distribution" onGo={() => goTo('themes')} />
-                )}
-                {qData && sections.length > 0 && (
-                  <>
-                    <AnchorLink label="Question breakdown" onGo={() => goTo('questions', 'questions')} />
-                    <div className="flex flex-col gap-0.5 max-h-64 overflow-y-auto border-s border-border ms-2 ps-2 my-0.5">
-                      {questionIndexGroups.map((g) => (
-                        <Fragment key={g.key}>
-                          <AnchorLink
-                            label={
+              {/* ── Side column — collapsible "On this page" navigator. DS
+                    OutlineTree family (adoption verdict: IMPORT); scroll-spy
+                    active row; question links folded per evaluation-type
+                    group instead of the old always-open nested scrollbox.
+                    Collapsed, the strip hands its width back to the content
+                    column. ── */}
+              <div className="hidden xl:flex flex-col sticky top-16 self-start w-full min-w-0">
+                {railOpen ? (
+                  <nav aria-label="On this page" className="flex w-full min-w-0 flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-muted-foreground">On this page</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Collapse the page navigator"
+                            aria-expanded="true"
+                            onClick={() => setRailOpen(false)}
+                          >
+                            <i className="fa-light fa-angles-right" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Collapse</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <OutlineTreeMenu className="gap-0.5">
+                      {inCollection && (
+                        <OutlineTreeMenuItem>
+                          <RailLink label="Collection pace" active={activeAnchor === 'pace'} onGo={() => goTo('pace')} />
+                        </OutlineTreeMenuItem>
+                      )}
+                      <OutlineTreeMenuItem>
+                        <RailLink
+                          label={inCollection ? 'Early signal' : 'Scores'}
+                          active={activeAnchor === 'scores'}
+                          onGo={() => goTo('scores')}
+                        />
+                      </OutlineTreeMenuItem>
+                      {themes.length > 0 && (
+                        <OutlineTreeMenuItem>
+                          <RailLink label="Theme distribution" active={activeAnchor === 'themes'} onGo={() => goTo('themes')} />
+                        </OutlineTreeMenuItem>
+                      )}
+                      {qData && sections.length > 0 && (
+                        <OutlineTreeMenuItem>
+                          <RailLink
+                            label="Question breakdown"
+                            active={activeAnchor === 'questions'}
+                            onGo={() => goTo('questions', 'questions')}
+                          />
+                          {questionIndexGroups.map((g) => {
+                            const label =
                               g.key === 'Faculty' && scopedFacultyName
                                 ? `Faculty evaluation — ${scopedFacultyName}`
                                 : groupMeta[g.key]?.label ?? g.key
-                            }
-                            onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
+                            const open = !!railGroupsOpen[g.key]
+                            return (
+                              <Collapsible
+                                key={g.key}
+                                open={open}
+                                onOpenChange={(o) => setRailGroupsOpen((prev) => ({ ...prev, [g.key]: o }))}
+                                className="group/collapsible"
+                              >
+                                <div className="flex items-center">
+                                  <CollapsibleTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      className="size-6 shrink-0"
+                                      aria-label={`${open ? 'Hide' : 'Show'} ${label} question links`}
+                                    >
+                                      <i
+                                        className="fa-light fa-chevron-right text-xs transition-transform group-data-[state=open]/collapsible:rotate-90"
+                                        aria-hidden="true"
+                                      />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                  <RailLink
+                                    label={label}
+                                    count={g.items.length}
+                                    onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
+                                  />
+                                </div>
+                                <OutlineTreeCollapsibleContentRail>
+                                  <OutlineTreeSub surface="panel" guideLayout="chevronRail" className="gap-0.5 py-0">
+                                    {g.items.map((q, i) => (
+                                      <OutlineTreeSubItem key={q.id}>
+                                        <RailLink
+                                          label={`${i + 1}. ${q.label}`}
+                                          title={q.label}
+                                          onGo={() => goTo(`question-${q.id}`, 'questions')}
+                                        />
+                                      </OutlineTreeSubItem>
+                                    ))}
+                                  </OutlineTreeSub>
+                                </OutlineTreeCollapsibleContentRail>
+                              </Collapsible>
+                            )
+                          })}
+                        </OutlineTreeMenuItem>
+                      )}
+                      {allComments.length > 0 && (
+                        <OutlineTreeMenuItem>
+                          <RailLink
+                            label="Student comments"
+                            active={activeAnchor === 'comments'}
+                            onGo={() => goTo('comments', 'comments')}
                           />
-                          {g.items.map((q, i) => (
-                            <AnchorLink
-                              key={q.id}
-                              label={`${i + 1}. ${q.label}`}
-                              small
-                              onGo={() => goTo(`question-${q.id}`, 'questions')}
-                            />
-                          ))}
-                        </Fragment>
-                      ))}
-                    </div>
-                  </>
+                        </OutlineTreeMenuItem>
+                      )}
+                      {showFeedbackLoop && (
+                        <OutlineTreeMenuItem>
+                          <RailLink
+                            label="Feedback loop"
+                            active={activeAnchor === 'feedback-loop'}
+                            onGo={() => goTo('feedback-loop')}
+                          />
+                        </OutlineTreeMenuItem>
+                      )}
+                    </OutlineTreeMenu>
+                  </nav>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Expand the page navigator"
+                        aria-expanded="false"
+                        onClick={() => setRailOpen(true)}
+                      >
+                        <i className="fa-light fa-angles-left" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">On this page</TooltipContent>
+                  </Tooltip>
                 )}
-                {allComments.length > 0 && (
-                  <AnchorLink label="Student comments" onGo={() => goTo('comments', 'comments')} />
-                )}
-                {showFeedbackLoop && (
-                  <AnchorLink label="Feedback loop" onGo={() => goTo('feedback-loop')} />
-                )}
-              </nav>
               </div>
               </div>
             </TabsContent>

@@ -96,6 +96,7 @@ export function RatingStackedBar({ counts, total }: { counts: number[]; total: n
               </p>
             )
           }).reverse()}
+          <p className="text-muted-foreground">n = {total}</p>
         </div>
       </TooltipContent>
     </Tooltip>
