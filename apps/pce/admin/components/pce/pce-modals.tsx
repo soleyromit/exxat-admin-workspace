@@ -748,12 +748,49 @@ interface EditEndDateDialogProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   surveys: PceSurvey[]
+  /**
+   * Hard ceiling — no date past this may be saved. Used by the faculty path,
+   * where the ceiling is the term's result-release date (a later close would
+   * release results while collection is still open). Admins pass nothing.
+   * DatePickerField has no min/max prop, so this is enforced on save and
+   * stated in copy rather than by disabling calendar days.
+   */
+  maxDate?: Date
+  /** One line explaining where `maxDate` comes from. */
+  maxDateReason?: string
+  /**
+   * Force an explicit "email the students" acknowledgement before saving.
+   *
+   * Why this is REQUIRED on the faculty path: reminder cadence is anchored to
+   * the TERM END date (Jun 10 master brief: "anchored on term end date"), not
+   * the close date — so moving the close date fires no new reminders. Students
+   * were told the old date and would never learn the window reopened. An
+   * extension without re-notification is a dead feature.
+   *
+   * NOTE: the code below still describes reminders as close-date-anchored. That
+   * conflict (Jun 9 "counted from closing date" vs Jun 10 "term end") is logged
+   * and unresolved — it belongs to Monil, not to this dialog. Bundling the
+   * notify step is correct under EITHER anchor.
+   */
+  requireNotify?: boolean
 }
 
-export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDialogProps) {
+export function EditEndDateDialog({
+  open,
+  onOpenChange,
+  surveys,
+  maxDate,
+  maxDateReason,
+  requireNotify = false,
+}: EditEndDateDialogProps) {
   const { extendSurveyDeadline } = usePce()
   const [newDate, setNewDate] = useState<Date | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
+  /* Two separate error channels. A single `error` drove aria-invalid on the DATE
+   * field even when the failing input was the notify checkbox — telling a screen
+   * reader the date is wrong when it isn't, with no way to resolve the loop. */
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [notifyError, setNotifyError] = useState<string | null>(null)
+  const [notify, setNotify] = useState(false)
 
   if (surveys.length === 0) return null
 
@@ -765,20 +802,33 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
   const single = bulk ? null : surveys[0]
   const singlePending = single ? Math.max(0, single.enrollmentCount - single.responseCount) : 0
 
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
   function handleOpenChange(v: boolean) {
     onOpenChange(v)
-    if (!v) { setNewDate(undefined); setError(null) }
+    if (!v) { setNewDate(undefined); setDateError(null); setNotifyError(null); setNotify(false) }
   }
 
   function handleSave() {
+    setDateError(null)
+    setNotifyError(null)
     if (!newDate) {
-      setError('Pick a new close date.')
+      setDateError('Pick a new close date.')
       return
     }
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     if (newDate < today) {
-      setError('The new close date must be today or later.')
+      setDateError('The new close date must be today or later.')
+      return
+    }
+    if (maxDate && newDate > maxDate) {
+      setDateError(`Pick a date on or before ${fmtDate(maxDate)}.`)
+      return
+    }
+    if (requireNotify && !notify) {
+      setNotifyError('Confirm students will be emailed about the new date.')
       return
     }
     const iso = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
@@ -807,20 +857,55 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
 
         <Field orientation="vertical">
           <Label htmlFor="eed-date">New close date</Label>
+          {/* Calendar range pinned to the plausible window — the 2020 default
+              lower bound offers years the save path rejects anyway. */}
           <DatePickerField
             id="eed-date"
             value={newDate}
-            onChange={(d) => { setNewDate(d); setError(null) }}
-            aria-invalid={!!error}
-            aria-describedby={error ? 'eed-date-error' : undefined}
+            onChange={(d) => { setNewDate(d); setDateError(null) }}
+            fromYear={new Date().getFullYear()}
+            toYear={new Date().getFullYear() + 1}
+            aria-invalid={!!dateError}
+            aria-describedby={dateError ? 'eed-date-error' : undefined}
           />
-          {error && <FieldError id="eed-date-error">{error}</FieldError>}
+          {maxDate && (
+            <p className="text-xs text-muted-foreground">
+              Latest possible: <strong>{fmtDate(maxDate)}</strong>
+              {maxDateReason ? ` — ${maxDateReason}` : ''}
+            </p>
+          )}
+          {dateError && <FieldError id="eed-date-error">{dateError}</FieldError>}
         </Field>
 
-        <p className="text-xs text-muted-foreground">
-          Scheduled reminders are anchored to the close date — extending it shifts the remaining
-          reminder schedule with it.
-        </p>
+        {requireNotify ? (
+          <Field orientation="horizontal">
+            {/* self-start: the block beside it is two lines, so a centred box
+                sits against the help text instead of its own label. */}
+            <Checkbox
+              id="eed-notify"
+              className="self-start mt-0.5"
+              checked={notify}
+              onCheckedChange={(v) => { setNotify(v === true); setNotifyError(null) }}
+              aria-invalid={!!notifyError}
+              aria-describedby={
+                notifyError ? 'eed-notify-help eed-notify-error' : 'eed-notify-help'
+              }
+            />
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="eed-notify">Email students that the window moved</Label>
+              <p id="eed-notify-help" className="text-xs text-muted-foreground">
+                Required. Reminders were scheduled from the original dates, so students
+                are not told about a new close date automatically.
+              </p>
+              {notifyError && <FieldError id="eed-notify-error">{notifyError}</FieldError>}
+            </div>
+          </Field>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Scheduled reminders are anchored to the close date — extending it shifts the remaining
+            reminder schedule with it.
+          </p>
+        )}
 
         <DialogFooter>
           <Button variant="outline" size="default" onClick={() => handleOpenChange(false)}>Cancel</Button>

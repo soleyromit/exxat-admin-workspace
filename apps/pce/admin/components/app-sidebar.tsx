@@ -72,6 +72,7 @@ import {
   type NavSchool,
   type NavProgram,
 } from "@/lib/pce-nav"
+import { isFacultyRoute, FACULTY_HOME } from "@/lib/pce-faculty"
 import { usePce } from "@/components/pce/pce-state"
 import { SettingsAppearanceCard } from "@/components/settings-appearance-card"
 import {
@@ -424,13 +425,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Switching role must also move the user off the current (role-specific) page —
   // admin routes don't belong in the faculty view and vice versa. Land on each
   // role's home: faculty → first faculty nav item, admin → the CE dashboard.
-  const FACULTY_LANDING = NAV_FACULTY[0]?.url ?? "/my-surveys"
+  const FACULTY_LANDING = NAV_FACULTY[0]?.url ?? FACULTY_HOME
   const ADMIN_LANDING = "/analytics"
   function handleToggleRole() {
     const goingToFaculty = user.role === "admin"
     toggleRole()
     router.push(goingToFaculty ? FACULTY_LANDING : ADMIN_LANDING)
   }
+
+  // The click handler above only covers switching. Now that the role is RESTORED
+  // FROM STORAGE on mount, a refresh on an admin URL while in the faculty view
+  // would leave faculty nav rendered over admin content — a state that was
+  // previously unreachable. Send them home instead.
+  const pathname = usePathname()
+  React.useEffect(() => {
+    if (user.role === "faculty" && pathname && !isFacultyRoute(pathname)) {
+      router.replace(FACULTY_HOME)
+    }
+  }, [user.role, pathname, router])
 
   const navUser = {
     name: user.name,
