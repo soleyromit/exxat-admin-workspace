@@ -1309,6 +1309,7 @@ function QuestionDotStrip({
   total,
   perFaculty,
   domainLo,
+  annotate = false,
 }: {
   avg?: number
   programAvg?: number | null
@@ -1317,6 +1318,9 @@ function QuestionDotStrip({
   perFaculty?: BreakdownRow['perFaculty']
   /** Shared axis start (≤ every plotted value; 5 is always the end). */
   domainLo: number
+  /** First rated row only — direct-labels "You" / "Program" under the marks
+   *  (teach-once, Midjourney pattern; legends are the weakest identifier). */
+  annotate?: boolean
 }) {
   const lo = domainLo
   const x = (v: number) => ((Math.min(5, Math.max(lo, v)) - lo) / (5 - lo)) * 100
@@ -1339,10 +1343,15 @@ function QuestionDotStrip({
   /* Multi-instructor rows raise the line to make room for offset initials
      ABOVE it — labels never sit on the marks (offset-label pattern), so the
      line keeps only band + tick + dot + small instructor position ticks. */
-  const lineY = marks.length > 0 ? 'top-[68%]' : 'top-1/2'
-  const gapY = marks.length > 0 ? 'top-[38%]' : 'top-1'
+  const hasInitials = marks.length > 0
+  const lineY = hasInitials ? 'top-[68%]' : annotate ? 'top-[38%]' : 'top-1/2'
+  const gapY = hasInitials ? 'top-[38%]' : annotate ? 'top-0.5' : 'top-1'
+  const height = hasInitials ? 'h-8' : annotate ? 'h-10' : 'h-7'
+  /* Coincident You/Program on the annotated row → one combined label. */
+  const coincident =
+    avg != null && programAvg != null && Math.abs(x(avg) - x(programAvg)) < 8
   return (
-    <div className={`relative w-full min-w-0 ${marks.length > 0 ? 'h-8' : 'h-7'}`} aria-hidden="true">
+    <div className={`relative w-full min-w-0 ${height}`} aria-hidden="true">
       <div className={`absolute inset-x-0 ${lineY} h-px -translate-y-1/2 bg-border`} />
       {ticks.map((n) => (
         <span
@@ -1351,10 +1360,13 @@ function QuestionDotStrip({
           style={{ left: `${x(n)}%` }}
         />
       ))}
-      {/* consensus band — middle 50% of ratings (clamped to the domain) */}
+      {/* consensus whisker — middle 50% of ratings; CONTEXT, so it recedes:
+          thin hairline that must never read as a bar-with-knob (visual review
+          2026-07-17: the h-2 band dominated and its p75 edge read as the
+          score). */}
       {total > 0 && p75 > lo && (
         <div
-          className={`absolute ${lineY} h-2 -translate-y-1/2 rounded-full`}
+          className={`absolute ${lineY} h-1 -translate-y-1/2 rounded-full`}
           style={{
             left: `${x(p25)}%`,
             width: `${Math.max(1.5, x(p75) - x(p25))}%`,
@@ -1388,14 +1400,15 @@ function QuestionDotStrip({
           }}
         />
       )}
-      {/* instructor position ticks on the line + initials offset above them */}
+      {/* instructor marks — HOLLOW circles (shape-distinct from the filled
+          You dot and the program tick), initials offset above */}
       {marks.map((m) => (
         <span
-          key={`t-${m.facultyId}`}
-          className={`absolute ${lineY} h-1.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full`}
+          key={`c-${m.facultyId}`}
+          className={`absolute ${lineY} size-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] bg-card`}
           style={{
             left: `${m.pos}%`,
-            background:
+            borderColor:
               programAvg != null && m.avg < programAvg - 0.05
                 ? 'var(--chip-4)'
                 : 'var(--muted-foreground)',
@@ -1417,6 +1430,23 @@ function QuestionDotStrip({
           {m.initials}
         </span>
       ))}
+      {/* teach-once labels on the first rated row */}
+      {annotate && avg != null && (
+        <span
+          className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground leading-none whitespace-nowrap"
+          style={{ left: `${x(avg)}%` }}
+        >
+          {coincident ? 'You · Program' : 'You'}
+        </span>
+      )}
+      {annotate && !coincident && programAvg != null && (
+        <span
+          className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground leading-none whitespace-nowrap"
+          style={{ left: `${x(programAvg)}%` }}
+        >
+          Program
+        </span>
+      )}
     </div>
   )
 }
@@ -1446,6 +1476,13 @@ function QuestionBreakdownTable({
     : 1
   const axisTicks: number[] = []
   for (let v = domainLo; v <= 5.001; v += 0.5) axisTicks.push(Math.round(v * 2) / 2)
+  /* Teach-once: only the first rendered rated row (lowest favorable share of
+     the first group — same order the table renders) labels You/Program. */
+  const firstAnnotatedId = groups.length
+    ? rows
+        .filter((r) => r.group === groups[0] && r.kind === 'rated')
+        .sort((a, b) => favorableShare(a.counts, a.total) - favorableShare(b.counts, b.total))[0]?.id
+    : undefined
   /* Within each group: lowest favorable share first (the fix-first order);
      free-text rows keep the tail. */
   const orderedFor = (group: string) =>
@@ -1475,17 +1512,13 @@ function QuestionBreakdownTable({
           Gap vs program (amber = below)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-5 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
+          <span className="h-1 w-5 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
           Middle 50% of ratings
         </span>
         {rows.some((r) => r.perFaculty?.length) && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-0.5 font-medium" aria-hidden="true">
-              <span>KC</span>
-              <span className="h-px w-3" style={{ background: 'var(--muted-foreground)' }} />
-              <span>AP</span>
-            </span>
-            Instructor initials at their score
+            <span className="size-2 rounded-full border-[1.5px] bg-card" style={{ borderColor: 'var(--muted-foreground)' }} aria-hidden="true" />
+            Instructor (initials above)
           </span>
         )}
         <span className="tabular-nums">
@@ -1541,6 +1574,7 @@ function QuestionBreakdownTable({
                   total={r.total ?? 0}
                   perFaculty={r.perFaculty}
                   domainLo={domainLo}
+                  annotate={r.id === firstAnnotatedId}
                 />
                 <p className="text-xs tabular-nums text-right whitespace-nowrap text-muted-foreground">
                   {(r.total ?? 0) > 0
