@@ -1095,7 +1095,7 @@ function ThemeBoxplotChart({
                       }))}
                       whiskers
                       detailTitle={t.theme}
-                      detailMeta={`${t.questions} question${t.questions !== 1 ? 's' : ''} · ${total} rating${total !== 1 ? 's' : ''}`}
+                      detailMeta={`${t.questions} question${t.questions !== 1 ? 's' : ''}`}
                       questionLinks={t.questionRows}
                       onQuestionJump={onQuestionJump}
                     />
@@ -1388,10 +1388,8 @@ function ScaleTrackPlot({
       <PopoverSection className="flex flex-col gap-1.5">
         <PopoverStatRow label="Median" value={median.toFixed(1)} />
         <PopoverStatRow label="Middle 50%" value={`${p25.toFixed(1)}–${p75.toFixed(1)}`} />
-        <PopoverStatRow
-          label="Range"
-          value={`${lowest}–${highest} · ${total} rating${total !== 1 ? 's' : ''}`}
-        />
+        <PopoverStatRow label="Range" value={`${lowest}–${highest}`} />
+        <PopoverStatRow label="Responses" value={total} />
         {gapLine(avg)}
       </PopoverSection>
       <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
