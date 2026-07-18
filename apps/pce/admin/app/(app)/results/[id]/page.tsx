@@ -2337,6 +2337,19 @@ function ResultDetail({
           .flatMap((b) => b.scores),
       ]
     : []
+  /* Overall rating mix — every rated answer pooled (scope-aware via
+     allQuestionScores). The hero average anchors the distribution rows
+     (Etsy review-summary anatomy; Romit round 7, option A). */
+  const overallMix = (() => {
+    const counts = [0, 0, 0, 0, 0]
+    for (const q of allQuestionScores)
+      (q.distribution ?? []).forEach((n, i) => {
+        if (i < 5) counts[i] += n
+      })
+    const total = counts.reduce((a, b) => a + b, 0)
+    const avg = total ? counts.reduce((a, n, i) => a + n * (i + 1), 0) / total : 0
+    return { counts, total, avg }
+  })()
   const lowestScore = allQuestionScores.length
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
@@ -2917,6 +2930,36 @@ function ResultDetail({
                     enrolled={result.enrolled}
                   />
                 </div>
+                {/* Overall rating mix — hero average anchoring the five
+                    distribution rows (Etsy/Indeed review-summary anatomy);
+                    the one at-a-glance element the market leads with. */}
+                {overallMix.total > 0 && (
+                  <Card>
+                    <CardContent className="p-0">
+                      <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
+                        <p className="text-sm text-muted-foreground leading-snug">
+                          Overall rating mix
+                        </p>
+                        <div className="flex flex-wrap items-start gap-x-10 gap-y-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
+                                {overallMix.avg.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/ 5</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                              {overallMix.total} ratings · all rated questions
+                            </p>
+                          </div>
+                          <div className="min-w-56 max-w-xl flex-1">
+                            <RatingBreakdownRows counts={overallMix.counts} total={overallMix.total} />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div id="themes" className="scroll-mt-16">
