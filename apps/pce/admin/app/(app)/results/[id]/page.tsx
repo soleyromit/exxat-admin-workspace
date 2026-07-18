@@ -54,6 +54,9 @@ import {
   StatusBadge,
   AvatarInitials,
   PersonIdentityCell,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -73,7 +76,7 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RATING_SERIES, RatingLegend } from '@/components/pce/rating-viz'
+import { MiniRatingColumns } from '@/components/pce/rating-viz'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   OutlineTreeCollapsibleContentRail,
@@ -821,26 +824,24 @@ function ScoreCard({
   const actionItems = [...(prior?.actionItems ?? [])].sort(
     (a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9),
   )
-  /* Slope geometry — two time points on a shared 3–5 window (a full line chart
-     is overkill for two points; the direction IS the message). */
-  const yFor = (v: number) => 52 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 34
-  /* One narrative line, trend only — the badge already owns the program gap. */
+  /* One narrative fragment, trend only — the chip owns the program gap. The
+     prior term + value open the fragment, so the phrase never repeats them. */
   const trendPhrase = (() => {
     if (value == null || !prior) return null
     const best = Math.max(...priors.map((p) => p.avg))
     if (value >= best) {
-      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}.`
+      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}`
     }
     const d = value - prior.avg
-    if (Math.abs(d) <= 0.05) return `Holding steady since ${prior.term}.`
-    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} from ${prior.term}.`
+    if (Math.abs(d) <= 0.05) return 'Holding steady'
+    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} since then`
   })()
   return (
     <Card>
       <CardContent className="pt-6 flex flex-col gap-2">
-        {/* Type identity + per-type status live ON the summary they describe —
-            not in a separate chip row above the tabs (hierarchy: one control
-            row, then content; Romit 2026-07-17 crowding critique). */}
+        {/* Stat-tile anatomy (Romit 2026-07-18): title row, hero + chip, ONE
+            meta line. The two-point slope svg is gone — a 0.1 move on a 3–5
+            window drew a visually flat line; the words carry it better. */}
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
             {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
@@ -875,80 +876,37 @@ function ScoreCard({
             </Badge>
           )}
         </div>
-        {prior && value != null ? (
-          <div
-            role="img"
-            aria-label={`${title} moved from ${prior.avg.toFixed(2)} in ${prior.term} to ${value.toFixed(2)} this term${programAvg != null ? `; program average ${programAvg.toFixed(2)}` : ''}`}
-          >
-            <svg viewBox="0 0 208 58" className="w-52 h-[58px]" aria-hidden="true">
-              {programAvg != null && (
-                <line
-                  x1="12"
-                  x2="196"
-                  y1={yFor(programAvg)}
-                  y2={yFor(programAvg)}
-                  stroke="var(--border)"
-                  strokeWidth="1.5"
-                  strokeDasharray="3 4"
-                />
-              )}
-              <line
-                x1="12"
-                x2="196"
-                y1={yFor(prior.avg)}
-                y2={yFor(value)}
-                stroke="var(--foreground)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy={yFor(prior.avg)} r="3" fill="var(--muted-foreground)" />
-              <circle cx="196" cy={yFor(value)} r="3.5" fill={scoreColor(value)} />
-              {/* Prior value printed AT the mark (RUBRIC v2 Gate 5.3); the hero
-                  number directly above labels the current endpoint. */}
-              <text
-                x="12"
-                y={yFor(prior.avg) - 8}
-                fontSize="12"
-                fill="var(--muted-foreground)"
-                className="tabular-nums"
-              >
-                {prior.avg.toFixed(2)}
-              </text>
-            </svg>
-            <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    tabIndex={0}
-                    className="underline decoration-dotted underline-offset-2 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    {prior.term}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {prior && value != null ? (
+            <>
+              <Popover>
+                <PopoverTrigger className="underline decoration-dotted underline-offset-2 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                  {prior.term} {prior.avg.toFixed(2)}
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="start" sideOffset={6}>
                   {actionItems.length > 0 ? (
-                    <div className="flex flex-col gap-1 max-w-64">
-                      <p className="font-medium">Action items logged for {prior.term}</p>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">Action items logged for {prior.term}</p>
                       {actionItems.map((a) => (
-                        <p key={a.text}>
+                        <p key={a.text} className="text-xs">
                           <span className="capitalize">{a.priority}</span> · {a.text}
                         </p>
                       ))}
                     </div>
                   ) : (
-                    <>No action items logged for {prior.term}.</>
+                    <p className="text-xs">No action items logged for {prior.term}.</p>
                   )}
-                </TooltipContent>
-              </Tooltip>
-              {programAvg != null && <span>Program {programAvg.toFixed(2)} ┄</span>}
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground tabular-nums">
-            Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
-          </p>
-        )}
-        {trendPhrase && <p className="text-xs text-muted-foreground">{trendPhrase}</p>}
+                </PopoverContent>
+              </Popover>
+              {trendPhrase && <> · {trendPhrase}</>}
+              {delta != null && Math.abs(delta) <= 0.05 && programAvg != null && (
+                <> · At program ({programAvg.toFixed(2)})</>
+              )}
+            </>
+          ) : (
+            <>Program average {programAvg != null ? programAvg.toFixed(2) : '—'}</>
+          )}
+        </p>
       </CardContent>
     </Card>
   )
@@ -1011,13 +969,28 @@ interface ThemeRowDatum {
   questions: number
   programAvg: number | null
   /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
-   *  aggregated across the theme's questions — feeds the composition panel. */
+   *  aggregated across the theme's questions — feeds the detail popover. */
   dist: [number, number, number, number, number]
-  /** Per-instructor average within this theme (scope-aware) — benchmark panel. */
-  instructors: { id: string; initials: string; name: string; avg: number }[]
+  /** Per-instructor average within this theme (scope-aware) — photo markers. */
+  instructors: { id: string; initials: string; name: string; avatarUrl?: string; avg: number }[]
+  /** The contributing questions — the popover lists them as jump links. */
+  questionRows: { id: string; text: string; avg: number }[]
 }
 
-function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
+/* Theme rows share the question rows' scale-track boxplot (DS OS → Chart →
+   Statistical → Boxplot anatomy, laid horizontal): ONE vocabulary for every
+   score-vs-program read on this page. Theme rows add the whiskers — theme
+   aggregates have real min–max variance — and their detail popover carries
+   the 1–5 column distribution plus the contributing questions as jump links. */
+function ThemeBoxplotChart({
+  themes,
+  partial,
+  onQuestionJump,
+}: {
+  themes: ThemeRowDatum[]
+  partial?: boolean
+  onQuestionJump?: (questionId: string) => void
+}) {
   if (themes.length === 0) return null
   /* Sort by gap vs program, worst first — the deficit IS the story (Culture
      Amp delta framing); themes without a benchmark sink to the end. */
@@ -1029,172 +1002,73 @@ function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; p
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the mix leans.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — open the theme for its questions.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
   }
   const instructors = [...new Map(sorted.flatMap((t) => t.instructors).map((fi) => [fi.id, fi])).values()]
-  const data = sorted.map((t) => {
-    const total = t.dist.reduce((a, n) => a + n, 0)
-    const row: Record<string, unknown> = {
-      theme: t.theme,
-      avg: +t.avg.toFixed(2),
-      programAvg: t.programAvg != null ? +t.programAvg.toFixed(2) : null,
-      total,
-    }
-    RATING_SERIES.forEach((s, i) => {
-      row[s.key] = total ? +((((t.dist[i] ?? 0) / total) * 100).toFixed(1)) : 0
-    })
-    t.instructors.forEach((fi) => {
-      row[`fi_${fi.id}`] = +fi.avg.toFixed(2)
-    })
-    return row
-  })
-  const compConfig: ChartConfig = Object.fromEntries(
-    RATING_SERIES.map((s) => [s.key, { label: s.label, color: s.color }]),
-  )
-  const benchConfig: ChartConfig = {
-    avg: { label: 'Course avg', color: 'var(--foreground)' },
-    programAvg: { label: 'Program', color: 'var(--muted-foreground)' },
-    ...Object.fromEntries(
-      instructors.map((fi) => [`fi_${fi.id}`, { label: fi.name, color: 'var(--muted-foreground)' }]),
-    ),
-  }
   return (
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Rating composition per theme · course vs program${instructors.length > 0 ? ' vs instructor' : ''} beneath · sorted by gap${partial ? ' · partial data' : ''}`}
+      description={`Score spread per theme vs program · sorted by gap, weakest first${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Rating composition per question theme with a benchmark panel beneath showing course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''} on a 1 to 5 scale. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Boxplot per question theme on a 1 to 5 scale showing the middle fifty percent, median, full range, course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''}. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
-        {(activeIndex) => (
+        {() => (
           <>
-            {/* Composition panel — DS composition family: stacked rating mix */}
-            <RatingLegend />
-            <ChartContainer config={compConfig} className="h-44 w-full">
-              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={false} height={4} />
-                <YAxis
-                  domain={[0, 100]}
-                  ticks={[0, 50, 100]}
-                  tickFormatter={(v: number) => `${v}%`}
-                  width={44}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={CHART_AXIS_TICK}
-                />
-                <ChartTooltip
-                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
-                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
-                  cursor={{ fill: 'var(--muted)', fillOpacity: 0.4 }}
-                  content={
-                    <ChartTooltipContent
-                      formatter={(v: unknown, name: unknown) => [
-                        `${v as number}% `,
-                        compConfig[name as string]?.label ?? String(name),
-                      ]}
+            <ScalePlotLegend whiskers />
+            <div className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-end gap-6 pb-2 border-b border-border">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <span key={n} className="absolute -translate-x-1/2" style={{ left: `${scaleX(n)}%` }}>
+                    {n}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              {sorted.map((t) => {
+                const total = t.dist.reduce((a, n) => a + n, 0)
+                return (
+                  <div
+                    key={t.theme}
+                    className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-center gap-6 py-1.5 border-b border-border last:border-0"
+                  >
+                    <div className="min-w-0 flex flex-col gap-0.5">
+                      <p className="text-sm">{t.theme}</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {t.questions} question{t.questions !== 1 ? 's' : ''} · {total} rating
+                        {total !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <ScaleTrackPlot
+                      counts={t.dist}
+                      total={total}
+                      avg={t.avg}
+                      programAvg={t.programAvg}
+                      people={t.instructors.map((fi) => ({
+                        facultyId: fi.id,
+                        name: fi.name,
+                        initials: fi.initials,
+                        avatarUrl: fi.avatarUrl,
+                        avg: fi.avg,
+                      }))}
+                      whiskers
+                      detailTitle={t.theme}
+                      detailMeta={`${t.questions} question${t.questions !== 1 ? 's' : ''} · ${total} rating${total !== 1 ? 's' : ''}`}
+                      questionLinks={t.questionRows}
+                      onQuestionJump={onQuestionJump}
                     />
-                  }
-                />
-                {RATING_SERIES.map((s) => (
-                  <Bar
-                    key={s.key}
-                    dataKey={s.key}
-                    stackId="mix"
-                    fill={s.color}
-                    fillOpacity={s.opacity}
-                    maxBarSize={72}
-                    isAnimationActive={false}
-                  />
-                ))}
-              </ComposedChart>
-            </ChartContainer>
-            {/* Benchmark panel — same themes on an honest 1–5 axis */}
-            <ChartContainer config={benchConfig} className="h-32 w-full">
-              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={CHART_AXIS_TICK} interval={0} />
-                <YAxis
-                  domain={[3, 5]}
-                  ticks={[3, 4, 5]}
-                  width={44}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={CHART_AXIS_TICK}
-                />
-                <ChartTooltip
-                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
-                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
-                  cursor={{ stroke: 'var(--border)' }}
-                  content={<ChartTooltipContent />}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="programAvg"
-                  stroke="var(--muted-foreground)"
-                  strokeDasharray="4 3"
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="avg"
-                  stroke="transparent"
-                  isAnimationActive={false}
-                  dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) => {
-                    const below =
-                      p.payload?.programAvg != null &&
-                      (p.payload.avg as number) < (p.payload.programAvg as number) - 0.05
-                    return (
-                      <circle
-                        key={`avg-${p.index}`}
-                        cx={p.cx}
-                        cy={p.cy}
-                        r={4.5}
-                        fill={below ? 'var(--chip-4)' : 'var(--foreground)'}
-                        stroke="var(--card)"
-                        strokeWidth={2}
-                      />
-                    )
-                  }}
-                />
-                {instructors.map((fi) => (
-                  <Line
-                    key={fi.id}
-                    type="monotone"
-                    dataKey={`fi_${fi.id}`}
-                    stroke="transparent"
-                    isAnimationActive={false}
-                    dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) =>
-                      p.payload?.[`fi_${fi.id}`] == null ? (
-                        <g key={`fi-${fi.id}-${p.index}`} />
-                      ) : (
-                        <circle
-                          key={`fi-${fi.id}-${p.index}`}
-                          cx={p.cx}
-                          cy={p.cy}
-                          r={3.5}
-                          fill="var(--card)"
-                          stroke="var(--muted-foreground)"
-                          strokeWidth={1.5}
-                        />
-                      )
-                    }
-                  />
-                ))}
-              </ComposedChart>
-            </ChartContainer>
-            <p className="text-xs text-muted-foreground">
-              Top: share of responses per rating. Bottom: ● course avg (amber = below program) ·
-              ┄ program{instructors.length > 0 ? ' · ○ instructor (hover for names)' : ''}.
-            </p>
+                  </div>
+                )
+              })}
+            </div>
             <ChartDataTable
               caption="Theme-wise distribution"
               headers={[
@@ -1205,21 +1079,26 @@ function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; p
                 'Rated 4',
                 'Rated 5',
                 'This course',
+                'Median',
                 'Program average',
                 'Questions',
                 ...instructors.map((fi) => fi.name),
               ]}
-              rows={sorted.map((t) => [
-                t.theme,
-                ...t.dist,
-                `${t.avg.toFixed(1)}/5`,
-                t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
-                t.questions,
-                ...instructors.map((fi) => {
-                  const hit = t.instructors.find((x) => x.id === fi.id)
-                  return hit ? `${hit.avg.toFixed(1)}/5` : '—'
-                }),
-              ])}
+              rows={sorted.map((t) => {
+                const total = t.dist.reduce((a, n) => a + n, 0)
+                return [
+                  t.theme,
+                  ...t.dist,
+                  `${t.avg.toFixed(1)}/5`,
+                  total > 0 ? `${ratingQuantile(t.dist, total, 0.5).toFixed(1)}/5` : '—',
+                  t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
+                  t.questions,
+                  ...instructors.map((fi) => {
+                    const hit = t.instructors.find((x) => x.id === fi.id)
+                    return hit ? `${hit.avg.toFixed(1)}/5` : '—'
+                  }),
+                ]
+              })}
             />
           </>
         )}
@@ -1249,15 +1128,16 @@ interface BreakdownRow {
   perFaculty?: PlotPerson[]
 }
 
-/** Identity marker slice for the question scale plot. */
+/** Identity marker slice for the scale plots. Counts are per-question data;
+ *  theme-level people carry only the average. */
 interface PlotPerson {
   facultyId: string
   name: string
   initials: string
   avatarUrl?: string
   avg: number
-  counts: number[]
-  total: number
+  counts?: number[]
+  total?: number
 }
 
 /** Section → evaluation-type classifier. Builder templates mark faculty
@@ -1339,18 +1219,72 @@ function ProgramTriangle() {
   )
 }
 
-function QuestionScalePlot({
+/** Shared mark legend for every scale plot on the page. */
+function ScalePlotLegend({ whiskers = false }: { whiskers?: boolean }) {
+  return (
+    <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          className="h-2 w-5 rounded-full"
+          style={{ background: 'var(--brand-color)', opacity: 0.42 }}
+          aria-hidden="true"
+        />
+        middle 50%
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
+        median
+      </span>
+      {whiskers && (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-px w-4" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
+          full range
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1.5">
+        <ProgramTriangle />
+        program average
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
+        course
+        <span className="size-2.5 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
+        below program
+      </span>
+      <span>photo = instructor · click any mark for details</span>
+    </div>
+  )
+}
+
+/** Focus ring for in-plot popover triggers (Radix renders real buttons). */
+const PLOT_TRIGGER_RING =
+  'cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+
+function ScaleTrackPlot({
   counts,
   total,
   avg,
   programAvg,
   people,
+  whiskers = false,
+  detailTitle,
+  detailMeta,
+  questionLinks,
+  onQuestionJump,
 }: {
   counts: number[]
   total: number
   avg?: number
   programAvg?: number | null
   people?: PlotPerson[]
+  /** Theme rows only — aggregates have real min–max variance. */
+  whiskers?: boolean
+  /** Header of the detail popover (question rows: "Rating distribution"). */
+  detailTitle: string
+  detailMeta?: string
+  /** Theme popover: contributing questions as jump links. */
+  questionLinks?: { id: string; text: string; avg: number }[]
+  onQuestionJump?: (questionId: string) => void
 }) {
   if (total <= 0 || avg == null) {
     /* No responses yet — quiet muted track, never a blank cell. */
@@ -1365,13 +1299,56 @@ function QuestionScalePlot({
   const median = ratingQuantile(counts, total, 0.5)
   const lowest = counts.findIndex((c) => c > 0) + 1
   const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
-  const gapText = (v: number) =>
-    programAvg != null && Math.abs(v - programAvg) > 0.05
-      ? ` (${v > programAvg ? '+' : '−'}${Math.abs(v - programAvg).toFixed(1)} vs program)`
-      : programAvg != null
-        ? ' (at program)'
-        : ''
-  /* Markers: named people on faculty rows, else the course-average dot. */
+  const gapLine = (v: number) =>
+    programAvg == null ? null : (
+      <p className="text-xs tabular-nums">
+        Program {programAvg.toFixed(1)}
+        {Math.abs(v - programAvg) > 0.05 ? (
+          <span
+            className="font-medium"
+            style={{ color: v > programAvg ? 'var(--chart-2)' : 'var(--chip-4)' }}
+          >
+            {' '}({v > programAvg ? '+' : '−'}{Math.abs(v - programAvg).toFixed(1)})
+          </span>
+        ) : (
+          <span className="text-muted-foreground"> (at program)</span>
+        )}
+      </p>
+    )
+  /* The detail popover body — shared by the band and the course dot. The 1–5
+     distribution renders as the five-column histogram, not a text list. */
+  const detailContent = (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-0.5">
+        <p className="text-sm font-medium">{detailTitle}</p>
+        {detailMeta && <p className="text-xs text-muted-foreground">{detailMeta}</p>}
+      </div>
+      <p className="text-xs tabular-nums text-muted-foreground">
+        Median {median.toFixed(1)} · middle 50% {p25.toFixed(1)}–{p75.toFixed(1)} · range {lowest}–
+        {highest}
+      </p>
+      {gapLine(avg)}
+      <MiniRatingColumns counts={counts} total={total} />
+      {questionLinks && questionLinks.length > 0 && onQuestionJump && (
+        <div className="flex flex-col gap-0.5 border-t border-border pt-2">
+          <p className="text-xs text-muted-foreground">Questions in this theme</p>
+          {questionLinks.map((q) => (
+            <Button
+              key={q.id}
+              variant="ghost"
+              size="sm"
+              className="h-auto justify-start gap-2 px-1.5 py-1 text-xs font-normal"
+              onClick={() => onQuestionJump(q.id)}
+            >
+              <span className="shrink-0 font-medium tabular-nums">{q.avg.toFixed(1)}</span>
+              <span className="min-w-0 truncate text-start">{q.text}</span>
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+  /* Markers: named people when the row has identities, else the course dot. */
   const marks =
     people && people.length > 0
       ? [...people]
@@ -1400,122 +1377,143 @@ function QuestionScalePlot({
     return { ...m, secondRow }
   })
   return (
-    <div className="relative h-16 w-full min-w-0" aria-hidden="true">
+    <div className="relative h-16 w-full min-w-0">
       {/* program benchmark — above the track so it never collides with scores */}
       {programAvg != null && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
-              style={{ left: `${scaleX(programAvg)}%` }}
-            >
-              <span className="text-xs tabular-nums leading-none text-muted-foreground">
-                {programAvg.toFixed(1)}
-              </span>
-              <ProgramTriangle />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
+        <Popover>
+          <PopoverTrigger
+            aria-label={`Program average ${programAvg.toFixed(1)} — details`}
+            className={`absolute top-0 flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
+            style={{ left: `${scaleX(programAvg)}%` }}
+          >
+            <span className="text-xs tabular-nums leading-none text-muted-foreground" aria-hidden="true">
+              {programAvg.toFixed(1)}
+            </span>
+            <ProgramTriangle />
+          </PopoverTrigger>
+          <PopoverContent className="w-64 text-sm" align="center" sideOffset={6}>
             <p className="font-medium">Program average {programAvg.toFixed(1)}</p>
-            <p>Response-weighted across all offerings asking this question.</p>
-          </TooltipContent>
-        </Tooltip>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Response-weighted across all offerings with this {questionLinks ? 'theme' : 'question'}.
+            </p>
+          </PopoverContent>
+        </Popover>
       )}
       {/* dotted 1–5 track */}
-      <div className="absolute inset-x-0 top-7 h-px bg-border" />
+      <div className="absolute inset-x-0 top-7 h-px bg-border" aria-hidden="true" />
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
           className="absolute top-7 size-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-border"
           style={{ left: `${scaleX(n)}%` }}
+          aria-hidden="true"
         />
       ))}
-      {/* middle 50% band — hover carries median, range, and the full mix */}
-      <Tooltip>
-        <TooltipTrigger asChild>
+      {/* whiskers — DS boxplot anatomy: min→max hairline with end caps */}
+      {whiskers && (
+        <>
           <div
-            className="absolute top-7 h-2.5 -translate-y-1/2 rounded-full"
+            className="pointer-events-none absolute top-7 h-px -translate-y-1/2"
             style={{
-              left: `${scaleX(p25)}%`,
-              width: `${Math.max(2, scaleX(p75) - scaleX(p25))}%`,
-              background: 'var(--brand-color)',
-              opacity: 0.25,
+              left: `${scaleX(lowest)}%`,
+              width: `${Math.max(1, scaleX(highest) - scaleX(lowest))}%`,
+              background: 'var(--muted-foreground)',
             }}
+            aria-hidden="true"
           />
-        </TooltipTrigger>
-        <TooltipContent className="tabular-nums">
-          <p className="font-medium">
-            Middle 50%: {p25.toFixed(1)}–{p75.toFixed(1)}
-          </p>
-          <p>
-            Median {median.toFixed(1)} · full range {lowest}–{highest} · {total} rating
-            {total !== 1 ? 's' : ''}
-          </p>
-          <div className="mt-1 flex flex-col gap-0.5">
-            {[4, 3, 2, 1, 0].map((i) => (
-              <p key={i}>
-                Rated {i + 1}: {counts[i] ?? 0} ({Math.round(((counts[i] ?? 0) / total) * 100)}%)
-              </p>
-            ))}
-          </div>
-        </TooltipContent>
-      </Tooltip>
+          {[lowest, highest].map((v, i) => (
+            <span
+              key={i}
+              className="pointer-events-none absolute top-7 h-2.5 w-px -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${scaleX(v)}%`, background: 'var(--muted-foreground)' }}
+              aria-hidden="true"
+            />
+          ))}
+        </>
+      )}
+      {/* middle 50% band — click for the formatted distribution popover */}
+      <Popover>
+        <PopoverTrigger
+          aria-label={`${detailTitle} — distribution details`}
+          className={`absolute top-7 h-2.5 -translate-y-1/2 rounded-full ${PLOT_TRIGGER_RING}`}
+          style={{
+            left: `${scaleX(p25)}%`,
+            width: `${Math.max(2, scaleX(p75) - scaleX(p25))}%`,
+            background: 'var(--brand-color)',
+            opacity: 0.42,
+          }}
+        />
+        <PopoverContent className="w-72" align="center" sideOffset={10}>
+          {detailContent}
+        </PopoverContent>
+      </Popover>
+      {/* median — brand line per the DS boxplot spec */}
+      <span
+        className="pointer-events-none absolute top-7 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ left: `${scaleX(median)}%`, background: 'var(--brand-color)' }}
+        aria-hidden="true"
+      />
       {/* identity markers + at-mark value labels */}
       {placed.map((m) => (
-        <Tooltip key={m.key}>
-          <TooltipTrigger asChild>
-            <div
-              className="absolute flex -translate-x-1/2 flex-col items-center"
-              style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
-            >
-              {m.person ? (
-                <Avatar className="size-6 ring-2 ring-[var(--card)]">
-                  <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
-                  <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
-                </Avatar>
-              ) : (
-                <span
-                  className="size-2.5 rounded-full ring-2 ring-[var(--card)]"
-                  style={{ background: m.below ? 'var(--chip-4)' : 'var(--foreground)' }}
-                />
-              )}
-              <span
-                className="mt-1 text-xs font-semibold leading-none tabular-nums"
-                style={{
-                  color: m.below ? 'var(--chip-4)' : 'var(--foreground)',
-                  marginTop: m.secondRow ? 14 : undefined,
-                }}
-              >
-                {m.value.toFixed(1)}
-              </span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
+        <Popover key={m.key}>
+          <PopoverTrigger
+            aria-label={
+              m.person
+                ? `${m.person.name} — average ${m.value.toFixed(1)}, details`
+                : `Course average ${m.value.toFixed(1)} — details`
+            }
+            className={`absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
+            style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
+          >
             {m.person ? (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-6">
+              <Avatar className="size-6 ring-2 ring-[var(--card)]">
+                <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
+                <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <span
+                className="size-2.5 rounded-full ring-2 ring-[var(--card)]"
+                style={{ background: m.below ? 'var(--chip-4)' : 'var(--foreground)' }}
+              />
+            )}
+            <span
+              className="mt-1 text-xs font-semibold leading-none tabular-nums"
+              style={{
+                color: m.below ? 'var(--chip-4)' : 'var(--foreground)',
+                marginTop: m.secondRow ? 14 : undefined,
+              }}
+            >
+              {m.value.toFixed(1)}
+            </span>
+          </PopoverTrigger>
+          <PopoverContent className="w-72" align="center" sideOffset={6}>
+            {m.person ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5">
+                  <Avatar className="size-8">
                     <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
                     <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
                   </Avatar>
-                  <p className="font-medium">{m.person.name}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{m.person.name}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      Average {m.value.toFixed(1)}
+                      {m.person.total != null
+                        ? ` · ${m.person.total} rating${m.person.total !== 1 ? 's' : ''}`
+                        : ''}
+                    </p>
+                  </div>
                 </div>
-                <p className="tabular-nums">
-                  Average {m.value.toFixed(1)}
-                  {gapText(m.value)} · {m.person.total} rating{m.person.total !== 1 ? 's' : ''}
-                </p>
+                {gapLine(m.value)}
+                {m.person.counts && m.person.total != null && m.person.total > 0 && (
+                  <MiniRatingColumns counts={m.person.counts} total={m.person.total} />
+                )}
               </div>
             ) : (
-              <div className="flex flex-col gap-0.5">
-                <p className="font-medium">Course average {m.value.toFixed(1)}</p>
-                <p className="tabular-nums">
-                  {gapText(m.value).replace(/^ \(|\)$/g, '') || 'No program benchmark'} · {total}{' '}
-                  rating{total !== 1 ? 's' : ''}
-                </p>
-              </div>
+              detailContent
             )}
-          </TooltipContent>
-        </Tooltip>
+          </PopoverContent>
+        </Popover>
       ))}
     </div>
   )
@@ -1620,10 +1618,11 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* Question rows = one wide QuestionScalePlot per row (see its block comment).
+/* Question rows = one wide ScaleTrackPlot per row (see its block comment).
    The former numbers + chips columns folded INTO the plot: at-mark value
-   labels, photo identity markers, program ▲. The freed ~17rem funds the track
-   width that makes middle-50% differences clear (Δpx ≥ 8 at ~24rem). */
+   labels, photo identity markers, program ▲, click-popovers for the detail.
+   The freed ~17rem funds the track width that makes middle-50% differences
+   clear (Δpx ≥ 8 at ~24rem). */
 function QuestionBreakdownTable({
   rows,
   surveyId,
@@ -1647,28 +1646,7 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* One-line mark legend — every other value is printed at its mark. */}
-      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="h-2 w-5 rounded-full"
-            style={{ background: 'var(--brand-color)', opacity: 0.25 }}
-            aria-hidden="true"
-          />
-          middle 50%
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <ProgramTriangle />
-          program average
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-          course
-          <span className="size-2.5 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
-          below program
-        </span>
-        <span>photo = instructor · hover any mark for details</span>
-      </div>
+      <ScalePlotLegend />
       <div className="grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
@@ -1698,29 +1676,32 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                role="img"
-                aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
-                  (r.total ?? 0) > 0 && r.counts
-                    ? ` ranging ${(r.counts.findIndex((c) => c > 0) + 1)} to ${5 - [...r.counts].reverse().findIndex((c) => c > 0)}`
-                    : ''
-                }${
-                  (r.total ?? 0) > 0
-                    ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
-                    : ''
-                }${
-                  r.perFaculty && r.perFaculty.length > 0
-                    ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
-                    : ''
-                }`}
                 className="scroll-mt-16 grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
               >
-                <p className="text-sm min-w-0">{r.label}</p>
-                <QuestionScalePlot
+                <p className="text-sm min-w-0">
+                  {r.label}
+                  {/* Screen-reader glance summary — the plot's popover buttons
+                      carry the drill-down; the data table carries everything. */}
+                  <span className="sr-only">
+                    {`: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                      (r.total ?? 0) > 0
+                        ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
+                        : ''
+                    }${
+                      r.perFaculty && r.perFaculty.length > 0
+                        ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
+                        : ''
+                    }`}
+                  </span>
+                </p>
+                <ScaleTrackPlot
                   counts={r.counts ?? [0, 0, 0, 0, 0]}
                   total={r.total ?? 0}
                   avg={r.avg}
                   programAvg={r.programAvg}
                   people={r.perFaculty}
+                  detailTitle="Rating distribution"
+                  detailMeta={r.label}
                 />
               </div>
             ) : (
@@ -1750,7 +1731,7 @@ function QuestionBreakdownTable({
               f.avg.toFixed(1),
               '—',
               '—',
-              ...f.counts,
+              ...(f.counts ?? [0, 0, 0, 0, 0]),
             ]),
           ])}
       />
@@ -2209,7 +2190,7 @@ function ResultDetail({
       if (t) return 'Course Content'
       return fromFaculty ? 'Teaching Effectiveness' : 'Course Content'
     }
-    type ThemedQ = { theme: string; avg: number; distribution?: number[] }
+    type ThemedQ = { theme: string; avg: number; distribution?: number[]; id: string; text: string }
     const collect = (
       data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
       allowInstructor: (id: string) => boolean,
@@ -2218,11 +2199,13 @@ function ResultDetail({
       const qs: ThemedQ[] = []
       if (parts.course)
         for (const scores of Object.values(data.sectionScores))
-          for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
+          for (const q of scores)
+            qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
       if (parts.faculty)
         for (const b of data.instructorBlocks ?? []) {
           if (!allowInstructor(b.instructorId)) continue
-          for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
+          for (const q of b.scores)
+            qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
         }
       return qs
     }
@@ -2260,17 +2243,30 @@ function ResultDetail({
             id: inst.id,
             initials: inst.initials,
             name: inst.name,
+            avatarUrl: inst.avatarUrl,
             avg: mineTheme.reduce((a, x) => a + x.avg, 0) / mineTheme.length,
           }
         })
         .filter((x): x is NonNullable<typeof x> => x != null)
+      /* Contributing questions, deduped by id (faculty questions repeat per
+         instructor block) — averaged for the popover's jump-link list. */
+      const byId = new Map<string, { text: string; avgs: number[] }>()
+      for (const x of qs) {
+        const hit = byId.get(x.id)
+        if (hit) hit.avgs.push(x.avg)
+        else byId.set(x.id, { text: x.text, avgs: [x.avg] })
+      }
+      const questionRows = [...byId.entries()]
+        .map(([id, v]) => ({ id, text: v.text, avg: v.avgs.reduce((a, n) => a + n, 0) / v.avgs.length }))
+        .sort((a, b) => a.avg - b.avg)
       rows.push({
         theme,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
-        questions: qs.length,
+        questions: questionRows.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
         dist,
         instructors,
+        questionRows,
       })
     }
     return rows
@@ -2861,7 +2857,11 @@ function ResultDetail({
               </div>
 
               <div id="themes" className="scroll-mt-16">
-                <ThemeCompositionChart themes={themes} partial={inCollection} />
+                <ThemeBoxplotChart
+                  themes={themes}
+                  partial={inCollection}
+                  onQuestionJump={(id) => goTo(`question-${id}`, 'questions')}
+                />
               </div>
 
               {/* Question breakdown — collapsed by default (spec); controlled
@@ -3049,7 +3049,7 @@ function ResultDetail({
                             aria-expanded="true"
                             onClick={() => setRailOpen(false)}
                           >
-                            <i className="fa-light fa-angles-right" aria-hidden="true" />
+                            <i className="fa-light fa-table-columns" aria-hidden="true" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="left">Collapse</TooltipContent>
@@ -3161,7 +3161,7 @@ function ResultDetail({
                         aria-expanded="false"
                         onClick={() => setRailOpen(true)}
                       >
-                        <i className="fa-light fa-angles-left" aria-hidden="true" />
+                        <i className="fa-light fa-table-columns" aria-hidden="true" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">On this page</TooltipContent>
