@@ -830,32 +830,28 @@ function ScoreTile({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
-      {/* Label + badge cluster — flex-wrap, not the DS grid auto-column: our
-          badge+count cluster is far wider than the DS's arrow glyph, and at
-          tile widths under ~200px a grid auto column starves the label to
-          one character per line. Wrapping drops the cluster to its own row. */}
-      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
-        {person ? (
-          <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
-            <Avatar className="size-6 shrink-0">
-              <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
-              <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
-            </Avatar>
-            <span className="sr-only">{label} — </span>
-            <span className="min-w-0 font-medium text-foreground">{person.name}</span>
-          </p>
-        ) : (
-          <p className="min-w-0 flex items-start gap-1.5 text-sm text-muted-foreground leading-snug">
-            {icon && <i className={`fa-light ${icon} mt-0.5`} aria-hidden="true" />}
-            <span className="min-w-0">{label}</span>
-          </p>
-        )}
-        {(badge || meta) && (
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-            {badge}
-            {meta && <span>{meta}</span>}
-          </span>
-        )}
+      {/* Fixed four-row skeleton (identity / status / hero / caption), each
+          row min-height'd — the three tiles align by construction whether or
+          not a tile has a badge, an avatar, or a chip (Romit round 10:
+          "make the layout consistent"). */}
+      {person ? (
+        <p className="min-h-6 min-w-0 flex items-center gap-2 text-sm leading-snug">
+          <Avatar className="size-6 shrink-0">
+            <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+            <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+          </Avatar>
+          <span className="sr-only">{label} — </span>
+          <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
+        </p>
+      ) : (
+        <p className="min-h-6 min-w-0 flex items-center gap-1.5 text-sm text-muted-foreground leading-snug">
+          {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
+          <span className="min-w-0 truncate">{label}</span>
+        </p>
+      )}
+      <div className="flex min-h-6 items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+        {badge}
+        {meta && <span>{meta}</span>}
       </div>
       <div className="flex flex-wrap items-baseline gap-2">
         <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
