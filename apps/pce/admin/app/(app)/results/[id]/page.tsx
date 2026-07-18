@@ -1270,186 +1270,14 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* ── question dot strip ───────────────────────────────────────────────────────
-   Level + comparison mark for dense question rows (Cleveland dot strip — ref
-   Midjourney survey results; dataviz form table "before/after per item →
-   dumbbell"): p25–p75 band = consensus, dot = course avg (amber when below
-   program — no red), tick = program benchmark. Multi-instructor questions
-   plot one initialed hollow dot per instructor INSTEAD of the aggregate dot
-   (the right-hand numbers keep the aggregate) — replacing the former
-   per-instructor sub-rows. Distribution SHAPE stays the theme strip's job;
-   exact counts live in the row aria-label + ChartDataTable. */
-
-/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
-function ratingQuantile(counts: number[], total: number, q: number): number {
-  if (total <= 0) return 3
-  const target = q * total
-  let cum = 0
-  for (let i = 0; i < 5; i++) {
-    const c = counts[i] ?? 0
-    if (c > 0 && cum + c >= target) {
-      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
-    }
-    cum += c
-  }
-  return 5
-}
-
-/* Data-dense strip, domain-zoomed (Romit 2026-07-17 "not working" — the real
-   defect was WASTED DOMAIN: all values live in ~3.4–4.6, so a fixed 1–5 axis
-   compressed every mark into the same pixels. Position marks may truncate the
-   axis when it's labeled (dots encode position, not length): the table
-   computes ONE shared domain from its own data and every row plots on it, so
-   a 0.1 gap renders ~10–20px and You-dot + program tick + gap bar +
-   instructor initials coexist on a single lane with real separation. */
-function QuestionDotStrip({
-  avg,
-  programAvg,
-  counts,
-  total,
-  perFaculty,
-  domainLo,
-  annotate = false,
-}: {
-  avg?: number
-  programAvg?: number | null
-  counts: number[]
-  total: number
-  perFaculty?: BreakdownRow['perFaculty']
-  /** Shared axis start (≤ every plotted value; 5 is always the end). */
-  domainLo: number
-  /** First rated row only — direct-labels "You" / "Program" under the marks
-   *  (teach-once, Midjourney pattern; legends are the weakest identifier). */
-  annotate?: boolean
-}) {
-  const lo = domainLo
-  const x = (v: number) => ((Math.min(5, Math.max(lo, v)) - lo) / (5 - lo)) * 100
-  const p25 = ratingQuantile(counts, total, 0.25)
-  const p75 = ratingQuantile(counts, total, 0.75)
-  const ticks: number[] = []
-  for (let v = lo; v <= 5.001; v += 0.5) ticks.push(Math.round(v * 2) / 2)
-  const marks = (perFaculty ?? [])
-    .map((f) => ({ ...f, pos: x(f.avg) }))
-    .sort((a, b) => a.pos - b.pos)
-  /* Near-coincident initials nudge apart so both stay readable. */
-  const markPos: number[] = []
-  marks.forEach((m, i) => {
-    let p = m.pos
-    if (i > 0 && p - markPos[i - 1] < 6) p = markPos[i - 1] + 6
-    markPos.push(Math.min(100, p))
-  })
-  const gap = avg != null && programAvg != null ? avg - programAvg : null
-  const below = gap != null && gap < -0.05
-  /* Multi-instructor rows raise the line to make room for offset initials
-     ABOVE it — labels never sit on the marks (offset-label pattern), so the
-     line keeps only band + tick + dot + small instructor position ticks. */
-  const hasInitials = marks.length > 0
-  const lineY = hasInitials ? 'top-[68%]' : annotate ? 'top-[38%]' : 'top-1/2'
-  const gapY = hasInitials ? 'top-[38%]' : annotate ? 'top-0.5' : 'top-1'
-  const height = hasInitials ? 'h-8' : annotate ? 'h-10' : 'h-7'
-  /* Coincident You/Program on the annotated row → one combined label. */
-  const coincident =
-    avg != null && programAvg != null && Math.abs(x(avg) - x(programAvg)) < 8
-  return (
-    <div className={`relative w-full min-w-0 ${height}`} aria-hidden="true">
-      <div className={`absolute inset-x-0 ${lineY} h-px -translate-y-1/2 bg-border`} />
-      {ticks.map((n) => (
-        <span
-          key={n}
-          className={`absolute ${lineY} w-px -translate-x-1/2 -translate-y-1/2 bg-border ${Number.isInteger(n) ? 'h-2' : 'h-1'}`}
-          style={{ left: `${x(n)}%` }}
-        />
-      ))}
-      {/* consensus whisker — middle 50% of ratings; CONTEXT, so it recedes:
-          thin hairline that must never read as a bar-with-knob (visual review
-          2026-07-17: the h-2 band dominated and its p75 edge read as the
-          score). */}
-      {total > 0 && p75 > lo && (
-        <div
-          className={`absolute ${lineY} h-1 -translate-y-1/2 rounded-full`}
-          style={{
-            left: `${x(p25)}%`,
-            width: `${Math.max(1.5, x(p75) - x(p25))}%`,
-            background: 'var(--border-control-35)',
-          }}
-        />
-      )}
-      {/* signed gap bar — the program→course delta drawn, not only printed */}
-      {gap != null && Math.abs(gap) > 0.05 && (
-        <div
-          className={`absolute ${gapY} h-0.5 rounded-full`}
-          style={{
-            left: `${Math.min(x(programAvg!), x(avg!))}%`,
-            width: `${Math.max(1, Math.abs(x(avg!) - x(programAvg!)))}%`,
-            background: below ? 'var(--chip-4)' : 'var(--chart-2)',
-          }}
-        />
-      )}
-      {programAvg != null && (
-        <span
-          className={`absolute ${lineY} h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full`}
-          style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
-        />
-      )}
-      {avg != null && (
-        <span
-          className={`absolute ${lineY} size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]`}
-          style={{
-            left: `${x(avg)}%`,
-            background: below ? 'var(--chip-4)' : 'var(--foreground)',
-          }}
-        />
-      )}
-      {/* instructor marks — HOLLOW circles (shape-distinct from the filled
-          You dot and the program tick), initials offset above */}
-      {marks.map((m) => (
-        <span
-          key={`c-${m.facultyId}`}
-          className={`absolute ${lineY} size-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] bg-card`}
-          style={{
-            left: `${m.pos}%`,
-            borderColor:
-              programAvg != null && m.avg < programAvg - 0.05
-                ? 'var(--chip-4)'
-                : 'var(--muted-foreground)',
-          }}
-        />
-      ))}
-      {marks.map((m, i) => (
-        <span
-          key={m.facultyId}
-          className="absolute top-0 -translate-x-1/2 text-xs font-medium leading-none"
-          style={{
-            left: `${markPos[i]}%`,
-            color:
-              programAvg != null && m.avg < programAvg - 0.05
-                ? 'var(--chip-4)'
-                : 'var(--muted-foreground)',
-          }}
-        >
-          {m.initials}
-        </span>
-      ))}
-      {/* teach-once labels on the first rated row */}
-      {annotate && avg != null && (
-        <span
-          className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground leading-none whitespace-nowrap"
-          style={{ left: `${x(avg)}%` }}
-        >
-          {coincident ? 'You · Program' : 'You'}
-        </span>
-      )}
-      {annotate && !coincident && programAvg != null && (
-        <span
-          className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground leading-none whitespace-nowrap"
-          style={{ left: `${x(programAvg)}%` }}
-        >
-          Program
-        </span>
-      )}
-    </div>
-  )
-}
+/* ── question rows: numbers + chips, no abstract marks ────────────────────────
+   Final form after three failed spatial encodings (Romit 2026-07-17 "still
+   not understandable"): course-eval admins read WORDS AND NUMBERS, not mark
+   vocabularies (RUBRIC v2: number + chip IS the prescription; Culture Amp's
+   question list is exactly this). Every element is literal — instructor
+   score chips, n · favorable %, You vs Program with a signed delta — so the
+   row needs no legend and nothing has to be taught. Distribution SHAPE
+   stays the theme strip's job; exact counts live in the ChartDataTable. */
 
 function QuestionBreakdownTable({
   rows,
@@ -1462,27 +1290,6 @@ function QuestionBreakdownTable({
 }) {
   if (rows.length === 0) return null
   const groups = [...new Set(rows.map((r) => r.group))]
-  /* ONE shared axis for every row, zoomed to the data (dots encode position,
-     so a labeled truncated domain is honest — and it's what makes 0.1-wide
-     gaps readable instead of smearing everything into the top fifth). Floor
-     of all plotted values, padded and snapped to 0.5; never above 3.5, never
-     below 1. */
-  const plotted = rows
-    .filter((r) => r.kind === 'rated')
-    .flatMap((r) => [r.avg, r.programAvg ?? undefined, ...(r.perFaculty ?? []).map((f) => f.avg)])
-    .filter((v): v is number => v != null)
-  const domainLo = plotted.length
-    ? Math.max(1, Math.min(3.5, Math.floor((Math.min(...plotted) - 0.2) * 2) / 2))
-    : 1
-  const axisTicks: number[] = []
-  for (let v = domainLo; v <= 5.001; v += 0.5) axisTicks.push(Math.round(v * 2) / 2)
-  /* Teach-once: only the first rendered rated row (lowest favorable share of
-     the first group — same order the table renders) labels You/Program. */
-  const firstAnnotatedId = groups.length
-    ? rows
-        .filter((r) => r.group === groups[0] && r.kind === 'rated')
-        .sort((a, b) => favorableShare(a.counts, a.total) - favorableShare(b.counts, b.total))[0]?.id
-    : undefined
   /* Within each group: lowest favorable share first (the fix-first order);
      free-text rows keep the tail. */
   const orderedFor = (group: string) =>
@@ -1495,43 +1302,11 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* Division of labor by form: the theme strip owns distribution SHAPE
-          (stacked bars, 4 rows); question rows own LEVEL vs benchmark — a
-          two-lane strip: You-vs-program on top, instructor dumbbell below. */}
-      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-          You (course avg)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
-          Program
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-0.5 w-5 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
-          Gap vs program (amber = below)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-1 w-5 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
-          Middle 50% of ratings
-        </span>
-        {rows.some((r) => r.perFaculty?.length) && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full border-[1.5px] bg-card" style={{ borderColor: 'var(--muted-foreground)' }} aria-hidden="true" />
-            Instructor (initials above)
-          </span>
-        )}
-        <span className="tabular-nums">
-          Scale {domainLo}–5 (no values below {domainLo})
-        </span>
-      </div>
-      <div className="grid grid-cols-[minmax(200px,320px)_1fr_5rem_12rem] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(200px,1fr)_auto_5rem_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
-          {axisTicks.map((n) => (
-            <span key={n}>{Number.isInteger(n) ? n : n.toFixed(1)}</span>
-          ))}
-        </div>
+        <span className="text-xs text-muted-foreground text-right">
+          {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
+        </span>
         <span className="text-xs text-muted-foreground text-right">n · fav %</span>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
@@ -1564,18 +1339,25 @@ function QuestionBreakdownTable({
                     ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
                     : ''
                 }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,320px)_1fr_5rem_12rem] items-center gap-6 py-2.5 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_5rem_12rem] items-center gap-6 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <QuestionDotStrip
-                  avg={r.avg}
-                  programAvg={r.programAvg}
-                  counts={r.counts ?? [0, 0, 0, 0, 0]}
-                  total={r.total ?? 0}
-                  perFaculty={r.perFaculty}
-                  domainLo={domainLo}
-                  annotate={r.id === firstAnnotatedId}
-                />
+                {/* Per-instructor score chips — literal initials + number,
+                    warning tone when below program. Self-describing; no
+                    legend, nothing to learn. */}
+                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                  {(r.perFaculty ?? []).map((f) => (
+                    <StatusBadge
+                      key={f.facultyId}
+                      label={`${f.initials} ${f.avg.toFixed(1)}`}
+                      tone={
+                        r.programAvg != null && f.avg < r.programAvg - 0.05
+                          ? 'warning'
+                          : 'neutral'
+                      }
+                    />
+                  ))}
+                </div>
                 <p className="text-xs tabular-nums text-right whitespace-nowrap text-muted-foreground">
                   {(r.total ?? 0) > 0
                     ? `${r.total} · ${Math.round(favorableShare(r.counts, r.total) * 100)}%`
@@ -2316,7 +2098,7 @@ function ResultDetail({
         (survey.instructors.length > 1
           ? `${survey.instructors.length} instructors${
               survey.instructors.length <= 3
-                ? ' — one dot per instructor'
+                ? ' — score chip per instructor'
                 : isPD
                   ? ' — use the instructor selector above for per-person scores'
                   : ''
