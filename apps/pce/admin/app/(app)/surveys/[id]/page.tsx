@@ -660,7 +660,6 @@ export default function SurveyDetailPage() {
                           question={q}
                           questionNumber={qi + 1}
                           score={block.scores.find(s => s.questionId === q.id)}
-                          freeTextCount={questionData?.freeTextCounts[q.id]}
                           surveyId={survey.id}
                           isLast={qi === section.questions.length - 1}
                         />
@@ -689,7 +688,6 @@ export default function SurveyDetailPage() {
                         question={q}
                         questionNumber={qi + 1}
                         score={sectionScores.find(s => s.questionId === q.id)}
-                        freeTextCount={questionData?.freeTextCounts[q.id]}
                         surveyId={survey.id}
                         isLast={qi === section.questions.length - 1}
                       />

@@ -3,10 +3,19 @@
 import { useState } from 'react'
 import {
   Button, LocalBanner,
-  SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
+// Sidebar parts MUST come from '@/components/ui/sidebar' (which re-exports the
+// '@exxatdesignux/ui/components/sidebar' subpath), never the main barrel. The barrel
+// and the subpath are separate module instances holding separate SidebarContext
+// objects, so barrel-imported parts call useSidebar against a context that
+// SidebarProvider — mounted from the subpath in components/sidebar/sidebar-shell.tsx —
+// never fills. That threw "useSidebar must be used within a SidebarProvider" and 500'd
+// this route on every request.
+import {
+  SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+} from '@/components/ui/sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { TruncatedText } from '@/components/truncated-text'
 import { EmptyState } from '@/components/empty-state'

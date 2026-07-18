@@ -3,6 +3,31 @@ export type TemplateSection = 'course_content' | 'faculty_performance' | 'course
 export type UserRole = 'admin' | 'faculty'
 export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
 export type SurveyType = 'course_evaluation' | 'programmatic'
+
+// ── Evaluation types ──────────────────────────────────────────────────────────
+// A single course offering is evaluated along MORE THAN ONE type at setup, and
+// each type runs on its own clock — so one offering can show three different
+// statuses at once (Romit, 2026-07-17). Order = the canonical setup order.
+export type EvaluationType = 'course_material' | 'faculty_roles'
+export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles']
+export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
+  course_material: 'Course',
+  faculty_roles:   'Faculty',
+}
+export const EVALUATION_TYPE_ICON: Record<EvaluationType, string> = {
+  course_material: 'fa-book-open',
+  faculty_roles:   'fa-chalkboard-user',
+}
+/** One evaluation type's own lifecycle + response tracking within an offering. */
+export interface EvaluationInstance {
+  type: EvaluationType
+  status: SurveyStatus
+  responseRate: number
+  responseCount: number
+  enrollmentCount: number
+  deadline: string
+}
+
 // Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
@@ -297,6 +322,17 @@ export interface PceSurvey {
   priorOfferings?: PriorOffering[]
   templateId: string
   status: SurveyStatus
+  /** Per-evaluation-type breakdown (Course Material / Faculty and other roles /
+   *  General) — each carries its own status + response tracking. When absent,
+   *  `evaluationsFor()` derives them. The offering-level `status`/`responseCount`
+   *  above stay as the roll-up so KPIs, board and results are unaffected. */
+  evaluations?: EvaluationInstance[]
+  /** FK → course offering; multiple surveys may share it (split evaluations,
+   *  one survey per evaluation type). */
+  offeringId?: string
+  /** 'course' | 'instructor' when the offering splits its surveys —
+   *  lib/pce-results.ts reads both onto the derived EvalResult. */
+  evalScope?: 'course' | 'instructor'
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number
@@ -354,6 +390,11 @@ export interface ResponseComment {
   section: TemplateSection
   text: string
   sentiment: 'positive' | 'neutral' | 'concern'
+  /** Faculty member the comment is ABOUT (the subject, never the author —
+   *  responses stay anonymous). Only meaningful on faculty_performance
+   *  comments of multi-instructor offerings; unset there = not attributable
+   *  to one instructor. Single-instructor offerings derive it. */
+  facultyId?: string
 }
 
 export interface PceResponse {
@@ -461,6 +502,136 @@ export const MOCK_PROGRAMS: PceProgram[] = [
 ]
 
 export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
+  // mon2 — DPT-611 midpoint check-in (backs freeTextCounts.q11 = 6; the
+  // per-question sheet must be able to show every response it counts)
+  {
+    id: 'otr-mon2-1',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'The peds caseload discussions are great, but office hours conflict with our clinical block on Thursdays.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon2-2',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'No major concerns so far — would appreciate the case write-up rubric a week earlier.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-mon2-3',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'The case discussions are the highlight — real charts make the material stick.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon2-4',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Could we get feedback on the first case write-up before the second one is due?',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon2-5',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Nothing blocking — the pediatric gait analysis lab was excellent.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon2-6',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Recordings of the seminar sessions would help on clinical-rotation weeks.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  // mon1 — DPT-510 live (backs freeTextCounts q5/q8)
+  {
+    id: 'otr-mon1-1',
+    surveyId: 'mon1',
+    questionText: 'What would you change about this course?',
+    text: 'Spread the heavy readings out — the middle weeks stack up against the MSK labs.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon1-2',
+    surveyId: 'mon1',
+    questionText: 'What would you change about this course?',
+    text: 'Keep the lab progression as is — each session builds on the last one really well.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-3',
+    surveyId: 'mon1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Dr. Kim explains palpation techniques clearly and checks in with every table.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-4',
+    surveyId: 'mon1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'More practice time before the graded skills check would take the pressure off.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  // s2 — backs freeTextCounts q5/q8
+  {
+    id: 'otr-s2-1',
+    surveyId: 's2',
+    questionText: 'What would you change about this course?',
+    text: 'The weekly quizzes helped me keep up — more of the case-based questions please.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s2-2',
+    surveyId: 's2',
+    questionText: 'What would you change about this course?',
+    text: 'Post the slide decks before lecture so we can annotate during class.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s2-3',
+    surveyId: 's2',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Feedback on assignments was specific and came back quickly.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s2-4',
+    surveyId: 's2',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Sometimes questions in the big lecture hall went unanswered — a follow-up thread would help.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'neutral',
+  },
   {
     id: 'otr1',
     surveyId: 's1',
@@ -1166,7 +1337,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // ── Monitoring-dashboard fixtures — fuller Spring 2026 cycle + history so the
   //    Overview distribution + trend read as real data (not 5 sparse points). ──
   { id: 'mon1',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.kim],      responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Jul 14, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-07-02', nextScheduledReminderAt: '2026-07-09', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 10, responseCount: 4, enrollmentCount: 40, deadline: 'Jul 12, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 45, responseCount: 18, enrollmentCount: 40, deadline: 'Jul 12, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1', priorOfferings: [{ term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 3.6, actionItems: [{ text: 'Add or re-announce office-hour slots outside clinical blocks', priority: 'medium' }], concerns: ['Office hours'] }] },
   { id: 'mon3',  courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Jul 22, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon4',  courseCode: 'DPT-505', courseName: 'Neuroanatomy',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon5',  courseCode: 'DPT-504', courseName: 'Exercise Physiology',                 term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released',   instructors: [INSTRUCTORS.chen],     responseRate: 88, responseCount: 57, enrollmentCount: 65, deadline: 'May 15, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-10', academicYear: '2025–2026', programId: 'prog1' },
@@ -1202,17 +1373,21 @@ export const MOCK_RESPONSES: PceResponse[] = [
     comments: [
       { section: 'course_content', text: 'The msk labs build on each other really well so far.', sentiment: 'positive' },
       { section: 'course_content', text: 'Reading load feels heavy for the middle weeks.', sentiment: 'concern' },
-      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f4' },
     ],
   },
   {
     surveyId: 'mon2',
     sectionScores: [
-      { section: 'faculty_performance', avg: 3.8, count: 4 },
+      { section: 'faculty_performance', avg: 3.8, count: 18 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Great case discussions in the peds unit.', sentiment: 'positive' },
-      { section: 'faculty_performance', text: 'Office hours times are hard to make.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Great case discussions in the peds unit — the NICU scenarios especially.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Office hours times are hard to make around our Thursday clinical block.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Gomez gives specific, usable feedback after every case presentation.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Would help to get the case write-up rubric earlier in the week.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Pace of the seminar feels about right so far.', sentiment: 'neutral' },
+      { section: 'faculty_performance', text: 'The developmental milestones review session was the best class this term.', sentiment: 'positive' },
     ],
   },
   {
@@ -1222,9 +1397,9 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', avg: 4.3, count: 34 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive' },
-      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern' },
-      { section: 'faculty_performance', text: 'Very approachable during office hours and always available.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Very approachable during office hours and always available.', sentiment: 'positive', facultyId: 'f1' },
       { section: 'course_content', text: 'Course materials were well-structured and easy to follow.', sentiment: 'positive' },
       { section: 'course_content', text: 'Some lab sessions felt rushed.', sentiment: 'concern' },
       { section: 'course_content', text: 'The gap between lecture content and exam difficulty was significant.', sentiment: 'concern' },
@@ -1814,9 +1989,9 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { q5: 8, q8: 5 },
+    freeTextCounts: { q5: 2, q8: 2 },
   },
-  // mon2 — DPT-611 live · tmpl2 · Dr. Gomez (f5) · 4 sparse responses
+  // mon2 — DPT-611 live · tmpl2 · Dr. Gomez (f5) · mid-collection, 18 of 40
   {
     surveyId: 'mon2',
     sectionScores: {},
@@ -1824,12 +1999,12 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
       {
         instructorId: 'f5',
         scores: [
-          { questionId: 'q9',  avg: 4.0, count: 4, distribution: [0, 0, 1, 2, 1] },
-          { questionId: 'q10', avg: 3.5, count: 4, distribution: [0, 1, 1, 1, 1] },
+          { questionId: 'q9',  avg: 4.1, count: 18, distribution: [0, 1, 3, 7, 7] },
+          { questionId: 'q10', avg: 3.5, count: 18, distribution: [0, 3, 6, 6, 3] },
         ],
       },
     ],
-    freeTextCounts: { q11: 2 },
+    freeTextCounts: { q11: 6 },
   },
   {
     surveyId: 's1',
@@ -1875,7 +2050,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { c7: 12, i6: 9, l5: 6 },
+    freeTextCounts: { c7: 4, i6: 4, l5: 3 },
   },
   // s2 — DPT-601 Clinical Practicum I · Dr. Williams (f3) primary + Dr. Chen (f2) guest · 21 responses
   {
@@ -1904,7 +2079,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { q5: 9, q8: 5 },
+    freeTextCounts: { q5: 2, q8: 2 },
   },
   // s3 — DPT-602 Clinical Practicum II · Dr. Maria Williams (f3) · 46 responses
   {
@@ -1926,7 +2101,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { q5: 18, q8: 11 },
+    freeTextCounts: { q5: 3, q8: 3 },
   },
   // s4 — DPT-504 Neuroanatomy · Dr. James Kim (f4) · 44 responses
   {
@@ -1948,7 +2123,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { q5: 9, q8: 6 },
+    freeTextCounts: { q5: 1, q8: 2 },
   },
   // s5 — DPT-502 Physiology & Pathophysiology · Dr. James Kim (f4) · 22 responses
   {
@@ -1970,7 +2145,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
         ],
       },
     ],
-    freeTextCounts: { q5: 7, q8: 4 },
+    freeTextCounts: { q5: 1, q8: 0 },
   },
 ]
 

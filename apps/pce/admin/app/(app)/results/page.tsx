@@ -17,6 +17,11 @@ import { useRouter } from 'next/navigation'
 import {
   PageHeader,
   Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -37,12 +42,18 @@ import {
   resultsForUser,
   rateColor,
   scoreColor,
+  programScoreBenchmarks,
+  groupByOffering,
+  facultyFacingState,
+  EVAL_SCOPE_LABEL,
   RESULT_STATUS_BADGE,
   type EvalResult,
+  type OfferingGroup,
 } from '@/lib/pce-results'
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
+import { withFrom } from '@/lib/pce-nav-origin'
 
-type ResultRow = EvalResult & { termRank: number } & Record<string, unknown>
+type ResultRow = EvalResult & { termRank: number; members: EvalResult[] } & Record<string, unknown>
 
 /** Chronological rank for Term-desc default sort ("Fall 2025" strings don't sort). */
 const TERM_RANK = new Map(
@@ -100,6 +111,62 @@ function ResultStatusBadge({ r }: { r: EvalResult }) {
   return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} />
 }
 
+/** Offering-level badge for split-survey offerings — mixed visibility across
+ *  the offering's surveys derives "Partially available" (never stored). */
+const OFFERING_BADGE: Record<
+  OfferingGroup['offeringState'],
+  { label: string; tone: 'success' | 'warning' | 'neutral' | 'info'; icon: string }
+> = {
+  available: RESULT_STATUS_BADGE.available,
+  partial: { label: 'Partially available', tone: 'info', icon: 'fa-circle-half-stroke' },
+  'review-pending': RESULT_STATUS_BADGE.locked,
+  draft: RESULT_STATUS_BADGE.suppressed,
+}
+
+/* ── list-card score cluster (RUBRIC v2 Gate 0 + 3) ───────────────────────────
+   Row slots get NUMBERS, not marks: the previous 112px dot track rendered 0.1
+   differences at 5.6px under 10px dots — fails the Perceivable-Difference
+   test. The score number is the primary encoding; trend and benchmark arrive
+   as signed delta chips (self-describing, no legend needed). */
+
+function DeltaChip({ delta, vs }: { delta: number; vs: string }) {
+  const up = delta >= 0
+  return (
+    <Badge
+      variant="secondary"
+      className="font-normal tabular-nums"
+      style={{ color: up ? 'var(--chart-2)' : 'var(--chip-4)' }}
+    >
+      <i className={`fa-light ${up ? 'fa-arrow-up' : 'fa-arrow-down'}`} aria-hidden="true" />
+      {Math.abs(delta).toFixed(2)} {vs}
+    </Badge>
+  )
+}
+
+function FacultyScoreCluster({ r, benchmark }: { r: EvalResult; benchmark: number | null }) {
+  if (r.status !== 'available' || r.avgScore == null) return null
+  const prev = r.trend.length >= 2 ? r.trend[r.trend.length - 2] : null
+  const termDelta = prev ? r.avgScore - prev.value : null
+  const progDelta = benchmark != null ? r.avgScore - benchmark : null
+  return (
+    <>
+      {termDelta != null && Math.abs(termDelta) > 0.05 && prev && (
+        <DeltaChip delta={termDelta} vs={`vs ${prev.term}`} />
+      )}
+      {progDelta != null && Math.abs(progDelta) > 0.05 && (
+        <DeltaChip delta={progDelta} vs="vs program" />
+      )}
+      <span
+        className="text-sm font-semibold tabular-nums w-16 text-right"
+        style={{ color: scoreColor(r.avgScore) }}
+      >
+        {r.avgScore.toFixed(2)}
+        <span className="text-xs font-normal text-muted-foreground">/5</span>
+      </span>
+    </>
+  )
+}
+
 /* ── Program Director view ────────────────────────────────────────────────── */
 
 function DirectorResults({ results, program }: { results: EvalResult[]; program?: string }) {
@@ -135,10 +202,30 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
   )
   const anyFilter = facultyFilter !== 'all' || termFilter !== 'all' || statusFilter !== 'all'
 
-  const rows: ResultRow[] = useMemo(
-    () => filtered.map((r) => ({ ...r, termRank: TERM_RANK.get(r.term) ?? -1 }) as ResultRow),
-    [filtered],
-  )
+  /* One table row per OFFERING × faculty (Romit 2026-07-17): a split
+     offering's surveys merge into a single row with stacked per-survey
+     values and kind-labeled status chips. Filters run per survey first, so
+     filtering by status narrows the merged row to its matching surveys. */
+  const rows: ResultRow[] = useMemo(() => {
+    const map = new Map<string, EvalResult[]>()
+    for (const r of filtered) {
+      const k = `${r.offeringId ?? `${r.courseCode}|${r.term}`}|${r.facultyId}`
+      map.set(k, [...(map.get(k) ?? []), r])
+    }
+    const rank = { course: 0, instructor: 1 } as Record<string, number>
+    return [...map.values()].map((group) => {
+      const members = [...group].sort(
+        (a, b) => (rank[a.evalScope ?? ''] ?? 2) - (rank[b.evalScope ?? ''] ?? 2),
+      )
+      const lead = members.find((m) => m.status === 'available' && m.avgScore != null) ?? members[0]
+      return {
+        ...members[0],
+        avgScore: lead.avgScore,
+        members,
+        termRank: TERM_RANK.get(members[0].term) ?? -1,
+      } as ResultRow
+    })
+  }, [filtered])
 
   const columns: ColumnDef<ResultRow>[] = useMemo(
     () => [
@@ -188,9 +275,15 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
         key: 'responseRate',
         label: 'Responses',
         sortable: true,
-        width: 110,
+        width: 120,
         header: () => <span className="block text-right">Responses</span>,
-        cell: (row) => <ResponsesCell r={row} />,
+        cell: (row) => (
+          <div className="flex flex-col gap-1.5 items-end">
+            {(row.members as EvalResult[]).map((m) => (
+              <ResponsesCell key={m.id} r={m} />
+            ))}
+          </div>
+        ),
       },
       {
         key: 'avgScore',
@@ -199,19 +292,36 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
         width: 110,
         header: () => <span className="block text-right">Avg Score</span>,
         cell: (row) => (
-          <div className="text-right">
-            <ScorePill r={row} />
+          <div className="flex flex-col gap-2 items-end text-right">
+            {(row.members as EvalResult[]).map((m) => (
+              <ScorePill key={m.id} r={m} />
+            ))}
           </div>
         ),
       },
       {
         key: 'status',
         label: 'Status',
-        width: 190,
+        width: 230,
         header: () => <span className="block text-right">Status</span>,
         cell: (row) => (
-          <div className="flex justify-end">
-            <ResultStatusBadge r={row} />
+          <div className="flex flex-col gap-1.5 items-end">
+            {(row.members as EvalResult[]).map((m) => (
+              <span key={m.id} className="inline-flex items-center gap-2">
+                {m.evalScope && (
+                  <span className="text-xs text-muted-foreground">
+                    {m.evalScope === 'course' ? 'Course' : 'Instructor'}
+                  </span>
+                )}
+                {/* Split rows surface the RELEASE divergence to the PD — an
+                    available-but-unreleased survey reads "Pending release". */}
+                {m.evalScope && m.status === 'available' && !m.releasedToFaculty ? (
+                  <StatusBadge label="Pending release" tone="warning" icon="fa-hourglass-half" />
+                ) : (
+                  <ResultStatusBadge r={m} />
+                )}
+              </span>
+            ))}
           </div>
         ),
       },
@@ -256,13 +366,13 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-40 text-sm" aria-label="Filter by status">
+              <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="locked">In review</SelectItem>
+                <SelectItem value="available">Results Available</SelectItem>
+                <SelectItem value="locked">Review Pending</SelectItem>
                 <SelectItem value="suppressed">Draft</SelectItem>
               </SelectContent>
             </Select>
@@ -296,7 +406,7 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
               showQueryControls={false}
               defaultSort={{ key: 'term', dir: 'desc' }}
               pagination={{ pageSize: 10 }}
-              onRowClick={(row) => router.push(`/results/${encodeURIComponent(row.id)}`)}
+              onRowClick={(row) => router.push(withFrom(`/results/${encodeURIComponent(row.id)}`, 'results'))}
               emptyState={
                 <div className="flex flex-col items-center gap-2 py-8">
                   <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
@@ -316,7 +426,13 @@ function DirectorResults({ results, program }: { results: EvalResult[]; program?
 
 /* ── Faculty view — row cards, own results only (spec ST-14) ─────────────── */
 
-function FacultyResults({ results }: { results: EvalResult[] }) {
+function FacultyResults({
+  results,
+  benchmarks,
+}: {
+  results: EvalResult[]
+  benchmarks: Map<string, number>
+}) {
   const rows = useMemo(
     () =>
       [...results].sort(
@@ -324,6 +440,10 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
       ),
     [results],
   )
+  const groups = useMemo(() => {
+    const g = groupByOffering(rows)
+    return g.sort((a, b) => (TERM_RANK.get(b.term) ?? -1) - (TERM_RANK.get(a.term) ?? -1))
+  }, [rows])
 
   return (
     <>
@@ -334,46 +454,98 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
       />
       <div className="flex-1 px-7 py-4">
         <div className="flex flex-col gap-2 max-w-3xl">
-          <DataRowList<EvalResult>
-            rows={rows}
-            getRowId={(r) => r.id}
-            renderRow={(r) => (
-              <Link
-                href={`/results/${encodeURIComponent(r.id)}`}
-                className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                    {r.courseCode} — {r.courseName}
-                    <ResultStatusBadge r={r} />
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {r.term}
-                    {r.academicYear ? ` · AY ${r.academicYear}` : ''} · {r.program}
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                    {r.responses}/{r.enrolled} responded ({r.responseRate}%)
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center gap-3">
-                  {r.status === 'available' && r.avgScore != null ? (
-                    <span
-                      className="text-sm font-semibold tabular-nums"
-                      style={{ color: scoreColor(r.avgScore) }}
+          <DataRowList<OfferingGroup>
+            rows={groups}
+            getRowId={(g) => g.key}
+            renderRow={(g) =>
+              g.rows.length === 1 ? (
+                (() => {
+                  const r = g.rows[0]
+                  return (
+                    <Link
+                      href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
+                      className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
                     >
-                      {r.avgScore.toFixed(1)}/5
-                    </span>
-                  ) : r.status === 'locked' ? (
-                    <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
-                      In review
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Draft</span>
-                  )}
-                  <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
-                </div>
-              </Link>
-            )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                          {r.courseCode} — {r.courseName}
+                          <ResultStatusBadge r={r} />
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {r.term}
+                          {r.academicYear ? ` · AY ${r.academicYear}` : ''} · {r.program}
+                        </p>
+                        <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                          {r.responses}/{r.enrolled} responded ({r.responseRate}%)
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2">
+                        {r.status === 'available' && r.avgScore != null ? (
+                          <FacultyScoreCluster r={r} benchmark={benchmarks.get(r.program) ?? null} />
+                        ) : r.status === 'locked' ? (
+                          <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
+                            Review Pending
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Draft</span>
+                        )}
+                        <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
+                      </div>
+                    </Link>
+                  )
+                })()
+              ) : (
+                /* Split-survey offering — one DS Card, one row per survey,
+                   each with its OWN status (statuses genuinely diverge). */
+                <Card className="mb-2 gap-2 py-3">
+                  <CardHeader className="px-4">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                      {g.courseCode} — {g.courseName}
+                      <StatusBadge {...OFFERING_BADGE[g.offeringState]} />
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {g.term}
+                      {g.academicYear ? ` · AY ${g.academicYear}` : ''} · {g.program}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-4 pt-0 flex flex-col">
+                    {g.rows.map((r) => {
+                      const state = facultyFacingState(r)
+                      return (
+                        <Link
+                          key={r.id}
+                          href={withFrom(`/results/${encodeURIComponent(r.id)}`, 'results')}
+                          className="flex items-center gap-4 py-2 border-t border-border rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:bg-muted/40 -mx-2 px-2"
+                        >
+                          <span className="flex-1 min-w-0 text-sm truncate">
+                            {r.evalScope ? EVAL_SCOPE_LABEL[r.evalScope] : 'Evaluation'}
+                          </span>
+                          <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                            {r.responses}/{r.enrolled} ({r.responseRate}%)
+                          </span>
+                          {state === 'score' && r.avgScore != null ? (
+                            <span
+                              className="text-sm font-semibold tabular-nums w-16 text-right"
+                              style={{ color: scoreColor(r.avgScore) }}
+                            >
+                              {r.avgScore.toFixed(2)}
+                              <span className="text-xs font-normal text-muted-foreground">/5</span>
+                            </span>
+                          ) : state === 'review-pending' ? (
+                            <span className="text-xs w-24 text-right" style={{ color: 'var(--chip-4)' }}>
+                              Review Pending
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground w-24 text-right">Draft</span>
+                          )}
+                          <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      )
+                    })}
+                  </CardContent>
+                </Card>
+              )
+            }
             emptyState={
               <div className="flex flex-col items-center gap-2 py-12 rounded-lg border border-dashed border-border bg-muted/25">
                 <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
@@ -396,9 +568,12 @@ export default function ResultsPage() {
   const { user, surveys } = usePce()
   const results = useMemo(() => deriveResults(surveys), [surveys])
   const scoped = useMemo(() => resultsForUser(user, results), [user, results])
+  // Benchmark from the FULL program result set (aggregate only — no peer rows
+  // leak to faculty; experience-principles: cohort-relative, never a rank).
+  const benchmarks = useMemo(() => programScoreBenchmarks(results), [results])
 
   if (user.role === 'admin') return <DirectorResults results={scoped} program={user.program} />
-  if (user.role === 'faculty') return <FacultyResults results={scoped} />
+  if (user.role === 'faculty') return <FacultyResults results={scoped} benchmarks={benchmarks} />
 
   return (
     <>

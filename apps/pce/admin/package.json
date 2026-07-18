@@ -17,6 +17,7 @@
     "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true && node scripts/ensure-use-client.mjs || true"
   },
   "dependencies": {
+    "@observablehq/plot": "^0.6.17",
     "@exxatdesignux/product-framework": "^0.1.7",
     "@exxatdesignux/ui": "^0.6.57",
     "@hookform/resolvers": "^5.4.0",

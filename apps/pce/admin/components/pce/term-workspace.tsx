@@ -17,66 +17,73 @@ import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Badge,
   Button,
   KeyMetrics,
-  PersonIdentityCell,
   Skeleton,
   ToggleGroup, ToggleGroupItem,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
-import { TruncatedText } from '@/components/truncated-text'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
-import { EditEndDateDialog } from '@/components/pce/pce-modals'
 import { ModerationSheet } from '@/components/pce/moderation-sheet'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { TermEvaluationsBoard } from '@/components/pce/term-evaluations-board'
+import { EditEndDateDialog } from '@/components/pce/pce-modals'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
 import {
-  RESPONSE_TARGET, LIVE, FINISHED,
+  RESPONSE_TARGET, LIVE,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
-import type { PceSurvey } from '@/lib/pce-mock-data'
+import {
+  EVALUATION_TYPE_LABEL,
+  EVALUATION_TYPE_ICON,
+  type PceSurvey,
+  type EvaluationType,
+  type EvaluationInstance,
+  type SurveyStatus,
+} from '@/lib/pce-mock-data'
+import { evaluationsFor } from '@/lib/pce-evaluations'
+import { withFrom } from '@/lib/pce-nav-origin'
 
-type SurveyRow = PceSurvey & Record<string, unknown>
+/* One row = one evaluation (Course or Faculty) of one offering. Rows group by
+ * course, so each offering is a header with its Course + Faculty rows beneath —
+ * each row its own status, response, close date, and independent actions. */
+type EvalRow = {
+  id: string // `${surveyId}:${type}`
+  surveyId: string
+  courseCode: string
+  courseName: string
+  evaluationType: EvaluationType
+  typeLabel: string
+  status: SurveyStatus
+  responseRate: number
+  responseCount: number
+  enrollmentCount: number
+  deadline: string
+  survey: PceSurvey
+} & Record<string, unknown>
 
+/* Per-evaluation lifecycle predicates (a single instance's status). */
+const isLive = (st: SurveyStatus) => st === 'active' || st === 'collecting'
+const isFinished = (st: SurveyStatus) =>
+  st === 'pending_review' || st === 'closed' || st === 'released'
+
+function primaryInstructor(s: PceSurvey) {
+  return s.instructors.find((i) => i.role === 'primary') ?? s.instructors[0] ?? null
+}
 
 function primaryInstructorName(s: PceSurvey): string {
-  return (s.instructors.find((i) => i.role === 'primary') ?? s.instructors[0])?.name ?? ''
+  return primaryInstructor(s)?.name ?? ''
 }
 
 /* Needs-attention first, then lowest response rate. */
 const STATUS_ORDER: Record<string, number> = {
   active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
 }
-
-/* Legacy survey courseType → display label (matches the push wizard's
- * Courses & Evaluatees type vocabulary). */
-const COURSE_TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom based',
-  clinical: 'Practice based',
-}
-
-const COURSE_TYPE_FILTER_OPTIONS = [
-  { value: 'didactic', label: 'Classroom based' },
-  { value: 'clinical', label: 'Practice based' },
-]
-
-const STATUS_FILTER_OPTIONS = [
-  { value: 'draft',          label: 'Draft' },
-  { value: 'scheduled',      label: 'Scheduled' },
-  { value: 'collecting',     label: 'Collecting Responses' },
-  { value: 'active',         label: 'Active' },
-  { value: 'pending_review', label: 'Pending Review' },
-  { value: 'released',       label: 'Results Released' },
-  { value: 'closed',         label: 'Closed' },
-]
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
 function TermWorkspaceInner() {
@@ -85,11 +92,13 @@ function TermWorkspaceInner() {
   const { surveys } = usePce()
 
   const term = termsOrdered.find((t) => t.id === params?.termId)
-  /* Origin param so /results/[id] breadcrumbs back HERE, not the Results hub. */
-  const fromQ = term ? `?from=${encodeURIComponent(`term:${term.id}`)}` : ''
+  /* Canonical results origin (pce-nav-origin) so /results/[id] breadcrumbs back
+   * HERE, not the Results hub. Built with withFrom(), same as every other
+   * entry link — never a hand-rolled query string. */
+  const fromOrigin = term ? `term:${term.id}` : null
 
-  const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
   const [moderationId, setModerationId] = useState<string | null>(null)
+  const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
   const [evalView, setEvalView] = useState<'table' | 'board'>('table')
 
   const ce = useMemo(
@@ -112,112 +121,99 @@ function TermWorkspaceInner() {
   const responsesCollected = termSurveys.reduce((s, x) => s + x.responseCount, 0)
   const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
 
-  const tableRows: SurveyRow[] = useMemo(
-    () =>
-      [...termSurveys]
-        .sort(
-          (a, b) =>
-            (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) ||
-            a.responseRate - b.responseRate,
-        )
-        .map((s) => ({ ...s, faculty: primaryInstructorName(s) }) as SurveyRow),
-    [termSurveys],
-  )
+  /* Flatten to one row per (offering × evaluation type). Offerings are ordered
+   * needs-attention-first by their most-urgent type, then lowest response; the
+   * three type rows stay in canonical order within each offering. */
+  const tableRows: EvalRow[] = useMemo(() => {
+    const rank = (evals: EvaluationInstance[]) => ({
+      minStatus: Math.min(...evals.map((e) => STATUS_ORDER[e.status] ?? 9)),
+      minRate: Math.min(...evals.map((e) => e.responseRate)),
+    })
+    return termSurveys
+      .map((s) => {
+        const evals = evaluationsFor(s)
+        return { s, evals, r: rank(evals) }
+      })
+      .sort((a, b) => a.r.minStatus - b.r.minStatus || a.r.minRate - b.r.minRate)
+      .flatMap(({ s, evals }) =>
+        evals.map((e): EvalRow => ({
+          id: `${s.id}:${e.type}`,
+          surveyId: s.id,
+          courseCode: s.courseCode,
+          courseName: s.courseName,
+          evaluationType: e.type,
+          typeLabel: EVALUATION_TYPE_LABEL[e.type],
+          status: e.status,
+          responseRate: e.responseRate,
+          responseCount: e.responseCount,
+          enrollmentCount: e.enrollmentCount,
+          deadline: e.deadline,
+          survey: s,
+        })),
+      )
+  }, [termSurveys])
 
-  const facultyOptions = useMemo(
-    () =>
-      [...new Set(termSurveys.map(primaryInstructorName).filter(Boolean))]
-        .sort()
-        .map((n) => ({ value: n, label: n })),
-    [termSurveys],
-  )
+  /* Group header = the offering (shown once); the rows under it are its
+   * Course + Faculty evaluations. */
+  const groupLabels = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const s of termSurveys) m[s.courseCode] = `${s.courseCode} · ${s.courseName}`
+    return m
+  }, [termSurveys])
+  const groupOrder = useMemo(() => {
+    const seen: string[] = []
+    for (const r of tableRows) if (!seen.includes(r.courseCode)) seen.push(r.courseCode)
+    return seen
+  }, [tableRows])
 
-  /* ── table columns (canonical course-evaluation worklist) ── */
-  const columns: ColumnDef<SurveyRow>[] = useMemo(() => {
-    /* Remind opens the send-reminders wizard (all live courses listed, this row
-     * pre-checked), carrying the origin so it routes back here. */
-    const remindHref = (ids: string) =>
-      `/surveys/remind?ids=${ids}${fromQ ? `&${fromQ.slice(1)}` : ''}`
+  /* ── columns — one row per evaluation, proper columns + independent actions ── */
+  const columns: ColumnDef<EvalRow>[] = useMemo(() => {
+    /* Existing remind contract (surveys/remind reads ?ids + ?from only). The
+     * button is per-evaluation; scoping the wizard to a single type's
+     * non-responders is the follow-up (no dead param shipped now). */
+    const remindHref = (surveyId: string) =>
+      `/surveys/remind?ids=${surveyId}${fromOrigin ? `&from=${encodeURIComponent(fromOrigin)}` : ''}`
+    const resultsHref = (surveyId: string) => withFrom(`/results/${surveyId}`, fromOrigin)
     return [
       {
-        key: 'courseCode',
-        label: 'Course',
-        sortable: true,
-        filter: { type: 'text', icon: 'fa-book' },
-        cell: (row) => (
-          <Link
-            href={`/results/${row.id}${fromQ}`}
-            onClick={(e) => e.stopPropagation()}
-            className="block min-w-0 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
-          >
-            <p className="text-sm font-medium">{row.courseCode}</p>
-            <TruncatedText className="text-xs text-muted-foreground max-w-[220px]">{row.courseName}</TruncatedText>
-          </Link>
-        ),
-      },
-      {
-        key: 'faculty',
-        label: 'Faculty',
-        width: 190,
-        sortable: true,
-        filter: { type: 'select', icon: 'fa-user', options: facultyOptions },
+        key: 'typeLabel',
+        label: 'Evaluation',
+        sortable: false,
+        width: 210,
+        filter: { type: 'text', icon: 'fa-list-check' },
         cell: (row) => {
-          const primary = row.instructors.find((i) => i.role === 'primary') ?? row.instructors[0]
-          if (!primary) return <span className="text-sm text-muted-foreground">—</span>
-          const extra = row.instructors.length - 1
+          /* Faculty row names who's being evaluated; Course row is course-level. */
+          const instr = row.evaluationType === 'faculty_roles' ? primaryInstructor(row.survey) : null
+          const extra = row.survey.instructors.length - 1
           return (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1.5 min-w-0 w-fit">
-                  <PersonIdentityCell name={primary.name} initials={primary.initials} />
-                  {extra > 0 && (
-                    <span className="text-xs text-muted-foreground shrink-0">+{extra}</span>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="flex flex-col gap-0.5">
-                  {row.instructors.map((i) => (
-                    <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
-                  ))}
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <i className={`fa-light ${EVALUATION_TYPE_ICON[row.evaluationType]} w-4 shrink-0 text-center text-muted-foreground`} aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{row.typeLabel}</p>
+                {instr && (
+                  <p className="truncate text-xs text-muted-foreground">
+                    {instr.name}{extra > 0 ? ` +${extra}` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
           )
         },
-      },
-      {
-        key: 'courseType',
-        label: 'Type',
-        sortable: true,
-        width: 150,
-        filter: { type: 'select', icon: 'fa-shapes', options: COURSE_TYPE_FILTER_OPTIONS },
-        cell: (row) =>
-          row.courseType ? (
-            <Badge variant="outline" className="font-normal whitespace-nowrap">
-              {COURSE_TYPE_LABEL[row.courseType] ?? row.courseType}
-            </Badge>
-          ) : (
-            <span className="text-sm text-muted-foreground">—</span>
-          ),
       },
       {
         key: 'status',
         label: 'Status',
         sortable: true,
         width: 140,
-        filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
         cell: (row) => <SurveyStatusBadgeOS status={row.status} />,
       },
       {
         key: 'responseRate',
         label: 'Response rate',
         sortable: true,
-        width: 200,
+        width: 210,
         cell: (row) =>
-          row.responseCount > 0 || LIVE(row) ? (
-            /* Pending-first stat (Romit pick, Jul 10 — no bar): the actionable
-             * number leads; the rate line names the target status in words. */
+          row.responseCount > 0 || isLive(row.status) ? (
             <ResponseProgressCell
               rate={row.responseRate}
               responseCount={row.responseCount}
@@ -233,17 +229,13 @@ function TermWorkspaceInner() {
         label: 'Closes',
         sortable: true,
         width: 130,
-        filter: { type: 'text', icon: 'fa-calendar-day' },
         cell: (row) => {
           const d = row.deadline ? daysUntil(row.deadline) : null
-          if (LIVE(row) && d != null) {
+          if (isLive(row.status) && d != null) {
             return (
               <div>
                 <p className="text-sm tabular-nums">{row.deadline}</p>
-                <p
-                  className="text-xs tabular-nums"
-                  style={{ color: d <= 3 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}
-                >
+                <p className="text-xs tabular-nums" style={{ color: d <= 3 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
                   {d <= 0 ? 'closes today' : `${d}d left`}
                 </p>
               </div>
@@ -253,79 +245,54 @@ function TermWorkspaceInner() {
         },
       },
       {
+        /* Independent per-evaluation actions — remind THIS eval's non-responders,
+         * extend THIS eval's close date, review/release THIS eval. */
         key: 'actions',
         label: '',
-        /* Fits the widest inline case — Remind + Extend + ⋯ (~166px of buttons
-         * + 24px cell padding) — without the ~70px of dead reserved space that
-         * was forcing horizontal scroll on the course list. */
-        width: 196,
+        width: 210,
         cell: (row) => {
-          const isAtRisk = LIVE(row) && row.responseRate < AT_RISK_THRESHOLD
+          const atRisk = isLive(row.status) && row.responseRate < AT_RISK_THRESHOLD
+          const label = `${row.typeLabel} evaluation · ${row.courseCode}`
           return (
             <div className="flex items-center justify-end gap-1">
-              {isAtRisk && (
+              {isLive(row.status) && (
                 <Button
-                  variant="outline"
+                  variant={atRisk ? 'outline' : 'ghost'}
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.id)) }}
-                  aria-label={`Send a reminder for ${row.courseCode}`}
+                  onClick={(e) => { e.stopPropagation(); router.push(remindHref(row.surveyId)) }}
+                  aria-label={`Send a reminder for the ${label}`}
                 >
                   Remind
                 </Button>
               )}
-              {isAtRisk && (
+              {isLive(row.status) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row]) }}
-                  aria-label={`Extend the evaluation window for ${row.courseCode}`}
+                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey]) }}
+                  aria-label={`Extend the close date for the ${label}`}
                 >
                   Extend
                 </Button>
               )}
-              {FINISHED(row) && (
+              {isFinished(row.status) && (
                 <Button variant="outline" size="sm" asChild>
-                  <Link
-                    href={`/results/${row.id}${fromQ}`}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`View results for ${row.courseCode}`}
-                  >
+                  <Link href={resultsHref(row.surveyId)} onClick={(e) => e.stopPropagation()} aria-label={`View results for the ${label}`}>
                     View results
                   </Link>
                 </Button>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`More actions for ${row.courseCode}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <Button variant="ghost" size="icon-sm" aria-label={`More actions for the ${label}`} onClick={(e) => e.stopPropagation()}>
                     <i className="fa-light fa-ellipsis" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onSelect={() => router.push(`/results/${row.id}${fromQ}`)}>
-                    View results
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.id}/preview`)}>
-                    Preview form
-                  </DropdownMenuItem>
-                  {row.status === 'pending_review' && (
-                    <DropdownMenuItem onSelect={() => setModerationId(row.id)}>
-                      Review responses
-                    </DropdownMenuItem>
-                  )}
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => router.push(remindHref(row.id))}>
-                      Send reminder
-                    </DropdownMenuItem>
-                  )}
-                  {LIVE(row) && !isAtRisk && (
-                    <DropdownMenuItem onSelect={() => setExtendTargets([row])}>
-                      Edit end date
-                    </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push(resultsHref(row.surveyId))}>View results</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push(`/surveys/${row.surveyId}/preview`)}>Preview form</DropdownMenuItem>
+                  {(row.status === 'pending_review' || row.status === 'closed') && (
+                    <DropdownMenuItem onSelect={() => setModerationId(row.surveyId)}>Review responses</DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -334,7 +301,7 @@ function TermWorkspaceInner() {
         },
       },
     ]
-  }, [router, facultyOptions, fromQ])
+  }, [router, fromOrigin])
 
   if (!term) {
     return (
@@ -458,15 +425,17 @@ function TermWorkspaceInner() {
               {evalView === 'board' ? (
                 <TermEvaluationsBoard surveys={termSurveys} termId={term.id} />
               ) : (
-                <DataTablePaginated<SurveyRow>
+                <DataTablePaginated<EvalRow>
                   data={tableRows}
                   columns={columns}
                   getRowId={(row) => row.id}
-                  selectable
-                  pagination={{ pageSize: 10 }}
+                  defaultGroupBy="courseCode"
+                  groupLabels={groupLabels}
+                  groupOrder={groupOrder}
+                  pagination={{ pageSize: 16 }}
                   edgeInset={false}
                   stickyHeader={false}
-                  onRowClick={(row) => router.push(`/results/${row.id}${fromQ}`)}
+                  onRowClick={(row) => router.push(withFrom(`/results/${row.surveyId}`, fromOrigin))}
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />

@@ -66,7 +66,10 @@ export function deriveTermThemes(
 ): TermThemeRow[] {
   return THEME_PATTERNS.flatMap(theme => {
     let occurrences = 0
-    const courseCodes: string[] = []
+    // A Set, not an array: callers pass one entry per SURVEY, and a course with several
+    // surveys in scope (the By Course tab, a faculty portfolio) repeated its own code —
+    // "came up in DPT-501, DPT-501, DPT-501" — and duplicated React keys on the chips.
+    const courseCodeSet = new Set<string>()
     let hasConcern = false
     let hasPositive = false
     for (const { code, comments } of courses) {
@@ -74,12 +77,13 @@ export function deriveTermThemes(
         theme.keywords.some(kw => c.text.toLowerCase().includes(kw)),
       )
       if (matched.length === 0) continue
-      courseCodes.push(code)
+      courseCodeSet.add(code)
       occurrences += matched.length
       hasConcern = hasConcern || matched.some(c => c.sentiment === 'concern')
       hasPositive = hasPositive || matched.some(c => c.sentiment === 'positive')
     }
     if (occurrences === 0) return []
+    const courseCodes = [...courseCodeSet]
     return [{
       label: theme.label,
       sentiment: dominantSentiment(hasConcern, hasPositive),
