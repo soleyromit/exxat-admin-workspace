@@ -809,6 +809,7 @@ const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 }
 function ScoreTile({
   label,
   icon,
+  person,
   badge,
   meta,
   value,
@@ -818,6 +819,8 @@ function ScoreTile({
 }: {
   label: string
   icon?: string
+  /** Scoped identity — photo + name replace icon + generic label. */
+  person?: { name: string; initials: string; avatarUrl?: string }
   badge?: React.ReactNode
   meta?: string
   value: string
@@ -832,10 +835,21 @@ function ScoreTile({
           tile widths under ~200px a grid auto column starves the label to
           one character per line. Wrapping drops the cluster to its own row. */}
       <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
-        <p className="min-w-0 flex items-start gap-1.5 text-sm text-muted-foreground leading-snug">
-          {icon && <i className={`fa-light ${icon} mt-0.5`} aria-hidden="true" />}
-          <span className="min-w-0">{label}</span>
-        </p>
+        {person ? (
+          <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
+            <Avatar className="size-6 shrink-0">
+              <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+              <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+            </Avatar>
+            <span className="sr-only">{label} — </span>
+            <span className="min-w-0 font-medium text-foreground">{person.name}</span>
+          </p>
+        ) : (
+          <p className="min-w-0 flex items-start gap-1.5 text-sm text-muted-foreground leading-snug">
+            {icon && <i className={`fa-light ${icon} mt-0.5`} aria-hidden="true" />}
+            <span className="min-w-0">{label}</span>
+          </p>
+        )}
         {(badge || meta) && (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
             {badge}
@@ -873,6 +887,7 @@ function ScoreTile({
 function ScoreCard({
   title,
   icon,
+  person,
   statusBadge,
   responseMeta,
   value,
@@ -882,6 +897,9 @@ function ScoreCard({
   title: string
   /** Evaluation-type glyph — ties the card to its type without a second row. */
   icon?: string
+  /** Scoped identity — the card IS this person: photo + name replace the
+   *  generic type label (Romit round 9); title survives as sr-only context. */
+  person?: { name: string; initials: string; avatarUrl?: string }
   /** Per-type status (each type runs on its own clock — Romit 2026-07-17). */
   statusBadge?: React.ReactNode
   /** Per-type collection count, e.g. "46 of 50". */
@@ -913,6 +931,7 @@ function ScoreCard({
         <ScoreTile
           label={title}
           icon={icon}
+          person={person}
           badge={statusBadge}
           meta={responseMeta}
           value={value != null ? value.toFixed(2) : '—'}
@@ -2913,7 +2932,19 @@ function ResultDetail({
                   )}
                   {result.evalScope !== 'course' && (
                   <ScoreCard
-                    title={scopedFacultyName ? `Faculty Performance — ${scopedFacultyName}` : 'Faculty Performance'}
+                    title="Faculty Performance"
+                    person={
+                      /* Scoped or sole instructor: the card IS the person —
+                         photo + name, no "Faculty Performance —" prose
+                         (Romit round 9); type stays as sr-only context. */
+                      (scopedInstructor ?? soleInstructor) != null
+                        ? {
+                            name: (scopedInstructor ?? soleInstructor)!.name,
+                            initials: (scopedInstructor ?? soleInstructor)!.initials,
+                            avatarUrl: (scopedInstructor ?? soleInstructor)!.avatarUrl,
+                          }
+                        : undefined
+                    }
                     icon={EVALUATION_TYPE_ICON.faculty_roles}
                     statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} /> : undefined}
                     responseMeta={facultyInst ? `${facultyInst.responseCount} of ${facultyInst.enrollmentCount}` : undefined}
