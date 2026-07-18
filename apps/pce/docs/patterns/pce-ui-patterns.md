@@ -51,9 +51,37 @@ Every viz answers one question and prompts one action.
 | BulletGauge (response rate) | "Have we hit the 5-response threshold?" | Send reminder / release results |
 | SectionScoreStrip | "How did this section score on 1–5?" | Read comments for context |
 | MicroTrend sparkline | "Is this course improving, stable, or declining?" | Investigate declining courses |
-| Comparison strip (me / dept / school) | "Am I above or below my peers?" | Write action plan |
 | Response rate trajectory (admin) | "Will we reach threshold before close?" | Send reminder now |
 | Sentiment tag (AI, moderation) | "Is this response flagged by AI as concerning?" | Review + approve or flag |
+
+### Multi-survey analytics — Observable Plot (`components/pce/analytics-plots.tsx`)
+
+Built on Plot, not recharts, because this vocabulary (dot-with-distribution, dumbbell,
+regression band, faceted small multiples) is a *channel* in a grammar of graphics and
+bespoke work in a component charting library — and VIZ-007 makes small multiples the
+mandated default, which `fx`/`fy` makes cheap. The DS shell is unchanged and still
+mandatory: `ChartCard` → `ChartFigure` → `ChartDataTable` + a Leo insight anchored to a
+real data point. Renderer is an implementation detail; the shell is the DS identity.
+
+| Component | Question answered | Action prompted | Rubric |
+|---|---|---|---|
+| `FacultyLeaderboardDots` | "Who is an outlier, and are they *consistent*?" — every offering drawn behind the mean, so 4.2±0.1 and 4.2±0.9 stop looking identical | Comment to faculty / internal note / escalate | Q2 cleveland-dot (VIZ-PATTERN-005) |
+| `CourseRankDots` | "Which courses sit below the program median?" | Read the course's open-text before booking a conversation | Q2 cleveland-dot |
+| `GapQuadrant` | "Is the *course* broken or is the *instructor* struggling?" — plus a fitted band, so off-trend is distinguishable from merely low | Redesign the curriculum vs coach the person | Q2 scatter-quadrants |
+| `CourseTermHeat` | "Which course-term cells are weak, and which were never evaluated?" | Open the weak cell's result page | Q3 gap-heatmap (VIZ-PATTERN-001) |
+| `DriftDumbbell` | "Who moved between their 3-year and 1-year mean?" | Investigate the longest amber arrow | Q1/Q5 slope-paired (VIZ-PATTERN-004) |
+| `ProgramTrendStack` | "Which way is the program heading — and was a dip real or a sampling artefact?" (shared term axis) | Investigate the term where the two diverge | Q4 line ×2 — **not** dual-axis (VIZ-011) |
+| `FacultyCompareLines` | "How does each faculty member move, against their peers?" | Drill into the one whose panel dips | Q4 + VIZ-007 small-multiples (VIZ-PATTERN-006) |
+| `ResponseTrendLine` | "Is this faculty member's collection rate holding against the 80% target?" | Send a reminder / adjust the window | Q4 line + target |
+| `BenchmarkDistribution` | "Where do I stand vs the department and university?" — **the percentile substitute**; peer swarm is admin-only (§7.3) | Write an action plan | Q1 bullet / dot-on-distribution (VIZ-PATTERN-003) |
+| `CourseRankSpark` | "Which of this person's courses is weakest, and is it moving?" | Course-fit conversation, not a teaching one | Q2 + Q4, sparkline-table |
+| `KpiSpark` | "Is this KPI's number the end of a rise or a fall?" | — (satisfies VIZ-010: no bare numbers) | Q4 sparkline |
+
+**Removed 2026-07-14:** the "Score by section" radar (fabricated — synthesised five
+dimensions from a charCode seed; the model has three sections and no per-faculty
+attribution) and "Comparative context" (three bars: school/dept/own — answered a real
+question with the weakest available shape; superseded by the leaderboard and
+`BenchmarkDistribution`).
 
 ---
 
@@ -378,3 +406,23 @@ When Romit identifies a mistake in this product, the correction is logged to:
 - Claude's memory system (feedback type)
 
 View all PCE corrections: `__updates('pce', 'corrections')` in browser DevTools console.
+
+## Faculty IA — two surfaces, two contracts (2026-07-16, Romit)
+
+Every faculty surface must name the ONE question it answers. A new nav slot is only earned by
+a new question — not by a new chart.
+
+| Surface | Contract (the question) | Time horizon | May contain | Must NOT contain |
+|---|---|---|---|---|
+| **My Surveys** | *What needs me right now?* | this term | lifecycle table (Collecting / Pending / Results / Scheduled), live response gauges, QR, extend, links into results | trends, benchmarks, any chart that isn't actionable today (Mobbin: Google Classroom "To review", Uxcel Assignments — ops queues carry zero analytics) |
+| **My Dashboard** | *How am I doing?* | lifetime → across terms | standing (two ratings, benchmarks, themes, reflection), and the **Trends section** — the landing zone for longitudinal analytics when it ships (Mobbin: 15Five ships Reporting inside the one personal dashboard; Upwork/Contra lead with identity + one headline score) | peer names, peer scores, rankings (§7.3) |
+
+Retired by this IA: **My Results** (duplicated the table's "Results available" group — a nav
+item pointing at a subset of another nav item) and the **Analytics slot** (a coming-soon page
+holding primary navigation; `/my-analytics` now redirects to the dashboard). Single-survey
+analytics is the RESULT page — Monil's "final node" — reached from either surface, never a
+third destination.
+
+Known hierarchy gap (next design pass): the dashboard opens on four equal KPI tiles; every
+self-view reference (Upwork, Contra) leads with identity + ONE headline score + its benchmark
+delta. The persona's "two ratings side-by-side" earns the hero, not a tile among four.

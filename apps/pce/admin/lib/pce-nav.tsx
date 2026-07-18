@@ -177,20 +177,24 @@ export const NAV_ADMIN: NavLinkItem[] = [
   },
 ]
 
+/* Faculty nav. "My Surveys" leads because the faculty job starts at the course
+ * list, not at analytics (Apr 21: Dr. Robert lands on his surveys and clicks
+ * through to results) — and the shell-migration spec always had My Surveys
+ * first. It had drifted out of this array entirely, which orphaned the route. */
 export const NAV_FACULTY: NavLinkItem[] = [
+  {
+    key: "my-surveys",
+    title: "My Surveys",
+    url: "/my-surveys",
+    icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
+  },
   {
     key: "my-dashboard",
     title: "My Dashboard",
     url: "/my-dashboard",
     icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
-  },
-  {
-    key: "my-results",
-    title: "My Results",
-    url: "/results",
-    icon:       <i className="fa-light fa-square-poll-vertical" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-square-poll-vertical" aria-hidden="true" />,
   },
 ]
 

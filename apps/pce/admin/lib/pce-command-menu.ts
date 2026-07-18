@@ -31,6 +31,10 @@ const PAGE_ROUTES = [
   { id: "page-templates",         label: "Templates",                            href: "/admin/eval-settings?section=templates", icon: "fa-light fa-rectangle-list" },
   { id: "page-moderation",        label: "Moderation",                           href: "/moderation",                icon: "fa-light fa-shield-check" },
   { id: "page-results",           label: "Results",                              href: "/results",                   icon: "fa-light fa-square-poll-vertical" },
+  // Faculty-view surfaces — previously unreachable from ⌘K even though the
+  // role toggle shipped. Labelled "My …" to match their nav rows.
+  { id: "page-my-surveys",        label: "My Surveys",                           keywords: "faculty my courses assigned live status qr extend close date", href: "/my-surveys", icon: "fa-light fa-paper-plane" },
+  { id: "page-my-dashboard",      label: "My Dashboard",                         keywords: "faculty self view own performance", href: "/my-dashboard", icon: "fa-light fa-chart-mixed" },
   { id: "page-analytics-ce",      label: "Analytics — Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
   { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
   { id: "page-email-templates",   label: "Email Templates",                      href: "/admin/email-templates",     icon: "fa-light fa-envelope" },

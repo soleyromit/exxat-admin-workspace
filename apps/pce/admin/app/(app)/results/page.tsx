@@ -40,6 +40,7 @@ import {
   RESULT_STATUS_BADGE,
   type EvalResult,
 } from '@/lib/pce-results'
+import { facultyResultStatus } from '@/lib/pce-faculty'
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 
 type ResultRow = EvalResult & { termRank: number } & Record<string, unknown>
@@ -337,7 +338,15 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
           <DataRowList<EvalResult>
             rows={rows}
             getRowId={(r) => r.id}
-            renderRow={(r) => (
+            renderRow={(r) => {
+              /* Faculty-side status — the release gate applied. `r.status` alone
+               * reports "available" for a closed-but-unreleased survey, which
+               * both mislabels the row AND unlocks the score readout below
+               * before the admin has released anything. The detail page this
+               * links to already gates correctly ("Review Pending"); this makes
+               * the list agree with it. Admin (DirectorResults) is untouched. */
+              const fs = facultyResultStatus(r)
+              return (
               <Link
                 href={`/results/${encodeURIComponent(r.id)}`}
                 className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 mb-2"
@@ -345,7 +354,7 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
                     {r.courseCode} — {r.courseName}
-                    <ResultStatusBadge r={r} />
+                    <StatusBadge {...RESULT_STATUS_BADGE[fs]} />
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {r.term}
@@ -356,14 +365,14 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
                   </p>
                 </div>
                 <div className="shrink-0 flex items-center gap-3">
-                  {r.status === 'available' && r.avgScore != null ? (
+                  {fs === 'available' && r.avgScore != null ? (
                     <span
                       className="text-sm font-semibold tabular-nums"
                       style={{ color: scoreColor(r.avgScore) }}
                     >
                       {r.avgScore.toFixed(1)}/5
                     </span>
-                  ) : r.status === 'locked' ? (
+                  ) : fs === 'locked' ? (
                     <span className="text-xs" style={{ color: 'var(--chip-4)' }}>
                       In review
                     </span>
@@ -373,13 +382,20 @@ function FacultyResults({ results }: { results: EvalResult[] }) {
                   <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" />
                 </div>
               </Link>
-            )}
+              )
+            }}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-12 rounded-lg border border-dashed border-border bg-muted/25">
                 <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
                 <p className="text-sm font-medium">No results available</p>
+                {/* Grade language was explicitly rejected (Apr 21, Vishaka: "just
+                    something like pending admin release covers most of the use
+                    cases and we don't need to then make faculty confused" —
+                    "well, I submitted my grades, but I still can't see this").
+                    The gate is the admin release, so name that and nothing else. */}
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>
-                  Evaluation results will appear here once surveys close and grades are submitted.
+                  Evaluation results will appear here once your program administrator
+                  reviews and releases them.
                 </p>
               </div>
             }

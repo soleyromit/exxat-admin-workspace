@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { usePathname, useRouter } from "@/lib/next-compat"
 import { motion } from "motion/react"
 
@@ -72,6 +73,7 @@ import {
   type NavSchool,
   type NavProgram,
 } from "@/lib/pce-nav"
+import { isFacultyRoute, FACULTY_HOME } from "@/lib/pce-faculty"
 import { usePce } from "@/components/pce/pce-state"
 import { SettingsAppearanceCard } from "@/components/settings-appearance-card"
 import {
@@ -280,7 +282,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
                 const childActive = childIsActive(child)
                 return (
                   <li key={child.key}>
-                    <a
+                    <Link
                       href={child.url}
                       onClick={() => setFlyoutOpen(false)}
                       aria-current={childActive ? "page" : undefined}
@@ -294,7 +296,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
                         {childActive && child.iconActive ? child.iconActive : child.icon}
                       </span>
                       <span className="min-w-0 flex-1 truncate">{child.title}</span>
-                    </a>
+                    </Link>
                   </li>
                 )
               })}
@@ -336,12 +338,12 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
               return (
                 <SidebarMenuSubItem key={child.key}>
                   <SidebarMenuSubButton asChild isActive={childActive}>
-                    <a href={child.url} aria-current={childActive ? "page" : undefined}>
+                    <Link href={child.url} aria-current={childActive ? "page" : undefined}>
                       <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
                         {childActive && child.iconActive ? child.iconActive : child.icon}
                       </span>
                       <span>{child.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               )
@@ -379,10 +381,10 @@ function PrimaryNavItems({ items }: { items: NavLinkItem[] }) {
         return (
           <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-              <a href={item.url} aria-current={active ? "page" : undefined}>
+              <Link href={item.url} aria-current={active ? "page" : undefined}>
                 {active ? (item.iconActive ?? item.icon) : item.icon}
                 <span className="flex-1">{item.title}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
             {item.badge !== undefined && item.badge !== 0 && (
               <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
@@ -402,10 +404,10 @@ function SecondaryNavItems({ items }: { items: NavSecondaryItem[] }) {
       {items.map(item => (
         <SidebarMenuItem key={item.key}>
           <SidebarMenuButton asChild tooltip={item.title}>
-            <a href={item.url}>
+            <Link href={item.url}>
               {item.icon}
               <span>{item.title}</span>
-            </a>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
@@ -424,13 +426,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Switching role must also move the user off the current (role-specific) page —
   // admin routes don't belong in the faculty view and vice versa. Land on each
   // role's home: faculty → first faculty nav item, admin → the CE dashboard.
-  const FACULTY_LANDING = NAV_FACULTY[0]?.url ?? "/my-surveys"
+  const FACULTY_LANDING = NAV_FACULTY[0]?.url ?? FACULTY_HOME
   const ADMIN_LANDING = "/analytics"
   function handleToggleRole() {
     const goingToFaculty = user.role === "admin"
     toggleRole()
     router.push(goingToFaculty ? FACULTY_LANDING : ADMIN_LANDING)
   }
+
+  // The click handler above only covers switching. Now that the role is RESTORED
+  // FROM STORAGE on mount, a refresh on an admin URL while in the faculty view
+  // would leave faculty nav rendered over admin content — a state that was
+  // previously unreachable. Send them home instead.
+  const pathname = usePathname()
+  React.useEffect(() => {
+    if (user.role === "faculty" && pathname && !isFacultyRoute(pathname)) {
+      router.replace(FACULTY_HOME)
+    }
+  }, [user.role, pathname, router])
 
   const navUser = {
     name: user.name,

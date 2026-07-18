@@ -143,6 +143,13 @@ DOCUMENTED_HAND_ROLLS = {
     #  - brand-color-picker: swatch <button>s and hex values are intrinsic to a color picker.
     "app/dev-review-hud.tsx",
     "components/brand-color-picker.tsx",
+    # survey-qr-dialog: trips hand-rolled-export-drawer because the rule fires on
+    # (<Dialog + a /download|export/ keyword + no ExportDrawer import). Here the
+    # keyword is "Download PNG" — saving a QR code image, not exporting a dataset.
+    # ExportDrawer's surface (file-format selector, column picker, async progress)
+    # has no meaning for a single image, so adopting it would be a downgrade, not a
+    # migration. Documented hand-roll (triage 2026-07-15).
+    "components/pce/survey-qr-dialog.tsx",
     # Chart depth audit 2026-05-11 — three viz functions inside larger files
     # are documented as intentional hand-rolls. Note: scan_filename_for_ds_organism
     # only matches on filename stems so these aren't actually flagged by it; entries

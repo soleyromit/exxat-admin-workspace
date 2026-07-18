@@ -237,3 +237,36 @@
 .next-error-h1 {
   color: #fff;
 }
+
+/* ── Chart export → PDF ───────────────────────────────────────────────────────
+   `ChartCardActions` stamps `data-chart-print` on the card body (or the expand
+   dialog) and calls window.print(), then removes it on afterprint.
+
+   Printing the real DOM rather than a hand-written HTML document means the PDF
+   inherits the DS tokens, fonts and chart colours already on the page — and it
+   needs no dependency. `visibility` (not `display`) keeps the print target's
+   layout box intact, so charts keep the width they were measured at. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-chart-print],
+  [data-chart-print] * {
+    visibility: visible;
+  }
+  [data-chart-print] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  /* The card's own footer actions are chrome, not content — never print them. */
+  [data-chart-print] [data-chart-actions] {
+    display: none;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

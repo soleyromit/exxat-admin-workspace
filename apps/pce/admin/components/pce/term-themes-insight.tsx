@@ -13,17 +13,17 @@
 // var(--muted-foreground). Mobbin: Gorgias comment highlights (theme +
 // evidence quote + drill).
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Button } from '@exxatdesignux/ui'
+import { VoiceExplorerDialog, type VoiceExplorerComment } from '@/components/pce/voice-explorer'
+import { SENTIMENT_COLOR } from '@/lib/pce-sentiment'
 import Link from 'next/link'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
-import { deriveTermThemes, type ThemeSentiment, type TermThemeRow } from '@/lib/pce-themes'
+import { deriveTermThemes, type ThemeComment, type ThemeSentiment, type TermThemeRow } from '@/lib/pce-themes'
 import { MOCK_RESPONSES, type PceSurvey } from '@/lib/pce-mock-data'
 
 function SentimentDot({ sentiment }: { sentiment: ThemeSentiment }) {
-  const color =
-    sentiment === 'positive' ? 'var(--chart-2)' :
-    sentiment === 'concern'  ? 'var(--chart-4)' :
-    'var(--muted-foreground)'
+  const color = SENTIMENT_COLOR[sentiment]
   return (
     <span
       aria-hidden="true"
@@ -36,12 +36,16 @@ export function TermThemesInsight({
   surveys,
   scopeLabel,
   className,
+  minComments = 0,
 }: {
   /** The scope's surveys (already filtered to a term or cohort). */
   surveys: PceSurvey[]
   /** Rendered in the source citation, e.g. "Spring 2026". */
   scopeLabel: string
   className?: string
+  /** Below this corpus size the card yields — keyword themes over a handful of comments
+      read as noise, not insight (Romit, 2026-07-16). Student voice still shows the quotes. */
+  minComments?: number
 }) {
   const data = useMemo(() => {
     const withComments = surveys
@@ -53,8 +57,22 @@ export function TermThemesInsight({
         (x): x is { survey: PceSurvey; resp: NonNullable<typeof x.resp> } =>
           !!x.resp && x.resp.comments.length > 0,
       )
+    /**
+     * Group by course BEFORE deriving. `deriveTermThemes` documents its input as "one
+     * {courseCode, comments} entry per course" — passing one entry per *survey* only
+     * happens to hold at term scope, where each survey is a different course. At course
+     * scope (this card scoped to DPT-501 across terms) every entry shares a code, and the
+     * chips render "DPT-501, DPT-501, DPT-501" while the citation claims "3 courses".
+     * A claim that miscounts its own evidence is worse than no claim — the whole point of
+     * naming the courses is that "2 courses mentioned pacing" is unactionable without them.
+     */
+    const byCourse = new Map<string, ThemeComment[]>()
+    for (const x of withComments) {
+      const prev = byCourse.get(x.survey.courseCode) ?? []
+      byCourse.set(x.survey.courseCode, [...prev, ...x.resp.comments])
+    }
     const themes = deriveTermThemes(
-      withComments.map((x) => ({ code: x.survey.courseCode, comments: x.resp.comments })),
+      [...byCourse.entries()].map(([code, comments]) => ({ code, comments })),
     )
     // One grounding quote for the top theme — shortest matching concern first.
     const top: TermThemeRow | undefined = themes[0]
@@ -72,20 +90,38 @@ export function TermThemesInsight({
     }
     // surveyId lookup so chips can deep-link each course to its result.
     const surveyIdByCode = new Map(withComments.map((x) => [x.survey.courseCode, x.survey.id]))
+    // The explorer's corpus — same joins the quotes chips already rely on.
+    const explorerComments: VoiceExplorerComment[] = withComments.flatMap((x) =>
+      x.resp.comments.map((c) => ({
+        text: c.text,
+        section: c.section,
+        sentiment: c.sentiment,
+        courseCode: x.survey.courseCode,
+        courseName: x.survey.courseName,
+        term: x.survey.term,
+        surveyId: x.survey.id,
+      })),
+    )
     return {
       themes,
       quote,
       surveyIdByCode,
+      explorerComments,
       commentCount: withComments.reduce((n, x) => n + x.resp.comments.length, 0),
-      courseCount: withComments.length,
+      // Distinct courses, not surveys — three terms of one course is one course.
+      courseCount: byCourse.size,
     }
   }, [surveys])
 
   // No open-text responses in scope yet — no card (the AI lane never shows
   // an empty shell; it appears once there is something to summarize).
-  if (data.themes.length === 0) return null
+  const [exploreTheme, setExploreTheme] = useState<string | null>(null)
+  const [exploring, setExploring] = useState(false)
+
+  if (data.themes.length === 0 || data.commentCount < minComments) return null
 
   const top = data.themes[0]
+  const maxOccurrences = Math.max(1, ...data.themes.map((t) => t.occurrences))
 
   return (
     <AiInsightCard
@@ -122,13 +158,45 @@ export function TermThemesInsight({
                     </span>
                   ))}
                 </span>
-                <span className="ms-auto shrink-0 tabular-nums text-muted-foreground">
-                  {t.occurrences}
+                <span className="ms-auto flex shrink-0 items-center gap-2">
+                  {/* Occurrence bar — a keyword COUNT, deterministic, so a magnitude bar is
+                      honest here; sentiment stays a dot and never colours the bar (ADR-005). */}
+                  <span aria-hidden="true" className="h-1 w-16 rounded-full bg-muted">
+                    <span
+                      className="block h-1 rounded-full bg-muted-foreground/50"
+                      style={{ width: `${Math.round((t.occurrences / maxOccurrences) * 100)}%` }}
+                    />
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto px-0 tabular-nums"
+                    aria-label={`Explore ${t.occurrences} comments matching ${t.label}`}
+                    onClick={() => {
+                      setExploreTheme(t.label)
+                      setExploring(true)
+                    }}
+                  >
+                    {t.occurrences}
+                  </Button>
                 </span>
               </div>
             ))}
           </div>
+
+          <VoiceExplorerDialog
+            open={exploring}
+            onOpenChange={setExploring}
+            scopeLabel={scopeLabel}
+            comments={data.explorerComments}
+            defaultTheme={exploreTheme}
+          />
         </div>
+      }
+      actions={
+        <Button variant="outline" size="sm" onClick={() => { setExploreTheme(null); setExploring(true) }}>
+          Explore
+        </Button>
       }
     />
   )
