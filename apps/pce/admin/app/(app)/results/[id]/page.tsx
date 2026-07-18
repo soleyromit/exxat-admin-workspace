@@ -1270,14 +1270,75 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* ── question rows: numbers + chips, no abstract marks ────────────────────────
-   Final form after three failed spatial encodings (Romit 2026-07-17 "still
-   not understandable"): course-eval admins read WORDS AND NUMBERS, not mark
-   vocabularies (RUBRIC v2: number + chip IS the prescription; Culture Amp's
-   question list is exactly this). Every element is literal — instructor
-   score chips, n · favorable %, You vs Program with a signed delta — so the
-   row needs no legend and nothing has to be taught. Distribution SHAPE
-   stays the theme strip's job; exact counts live in the ChartDataTable. */
+/* ── question rows: numbers + chips + a single-job range strip ────────────────
+   Settled form (Romit 2026-07-17, after three failed multi-mark encodings +
+   a numbers-only round that lost the range): the IDENTIFICATION layer is
+   literal — instructor score chips, n · fav %, You vs Program — and one
+   small viz carries the one fact numbers can't: THE RANGE. Box-plot-lite on
+   a full 1–5 line: light band = full span of responses, darker band =
+   middle 50%, dot = average. One mark family, no program tick competing
+   (the numbers column owns that comparison) — nothing to misidentify. */
+
+/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
+function ratingQuantile(counts: number[], total: number, q: number): number {
+  if (total <= 0) return 3
+  const target = q * total
+  let cum = 0
+  for (let i = 0; i < 5; i++) {
+    const c = counts[i] ?? 0
+    if (c > 0 && cum + c >= target) {
+      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
+    }
+    cum += c
+  }
+  return 5
+}
+
+function RangeStrip({ counts, total, avg }: { counts: number[]; total: number; avg?: number }) {
+  const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+  if (total <= 0) return <div className="h-5" aria-hidden="true" />
+  const lowest = counts.findIndex((c) => c > 0) + 1
+  const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
+  const p25 = ratingQuantile(counts, total, 0.25)
+  const p75 = ratingQuantile(counts, total, 0.75)
+  return (
+    <div className="relative h-5 w-full min-w-0" aria-hidden="true">
+      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border"
+          style={{ left: `${x(n)}%` }}
+        />
+      ))}
+      {/* full span of responses — lightest ink */}
+      <div
+        className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full"
+        style={{
+          left: `${x(lowest)}%`,
+          width: `${Math.max(1.5, x(highest) - x(lowest))}%`,
+          background: 'var(--border)',
+        }}
+      />
+      {/* middle 50% — mid ink, still clearly context under the dot */}
+      <div
+        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
+        style={{
+          left: `${x(p25)}%`,
+          width: `${Math.max(1.5, x(p75) - x(p25))}%`,
+          background: 'var(--border-control-35)',
+        }}
+      />
+      {/* average */}
+      {avg != null && (
+        <span
+          className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
+          style={{ left: `${x(avg)}%`, background: 'var(--foreground)' }}
+        />
+      )}
+    </div>
+  )
+}
 
 function QuestionBreakdownTable({
   rows,
@@ -1302,8 +1363,29 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      <div className="grid grid-cols-[minmax(200px,1fr)_auto_5rem_12rem] items-end gap-6 pb-2 border-b border-border">
+      {/* One-line legend for the single-job range strip — same-family marks,
+          nothing else to identify (chips and numbers are literal). */}
+      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-1 w-5 rounded-full" style={{ background: 'var(--border)' }} aria-hidden="true" />
+          Range of ratings
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-4 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
+          Middle 50%
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
+          Average
+        </span>
+      </div>
+      <div className="grid grid-cols-[minmax(180px,1fr)_11rem_9rem_5rem_12rem] items-end gap-4 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
+        <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n}>{n}</span>
+          ))}
+        </div>
         <span className="text-xs text-muted-foreground text-right">
           {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
         </span>
@@ -1331,6 +1413,10 @@ function QuestionBreakdownTable({
                 id={`question-${r.id}`}
                 role="img"
                 aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                  (r.total ?? 0) > 0 && r.counts
+                    ? ` ranging ${(r.counts.findIndex((c) => c > 0) + 1)} to ${5 - [...r.counts].reverse().findIndex((c) => c > 0)}`
+                    : ''
+                }${
                   (r.total ?? 0) > 0
                     ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
                     : ''
@@ -1339,9 +1425,10 @@ function QuestionBreakdownTable({
                     ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
                     : ''
                 }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,1fr)_auto_5rem_12rem] items-center gap-6 py-2.5 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(180px,1fr)_11rem_9rem_5rem_12rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
+                <RangeStrip counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} avg={r.avg} />
                 {/* Per-instructor score chips — literal initials + number,
                     warning tone when below program. Self-describing; no
                     legend, nothing to learn. */}
