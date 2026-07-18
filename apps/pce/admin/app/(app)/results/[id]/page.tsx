@@ -78,7 +78,6 @@ import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/
 import { RatingBreakdownRows } from '@/components/pce/rating-viz'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  OutlineTreeCollapsibleContentRail,
   OutlineTreeLeafButton,
   OutlineTreeMenu,
   OutlineTreeMenuItem,
@@ -372,11 +371,15 @@ function FacultyScopeSelector({
   scope,
   setScope,
   isPD,
+  avatarUrlById,
 }: {
   instructors: EvalResult[]
   scope: 'all' | string
   setScope: (v: string) => void
   isPD: boolean
+  /** facultyId → portrait, from survey.instructors — pills show the same
+   *  photos as every plot marker (one identity treatment page-wide). */
+  avatarUrlById?: Record<string, string | undefined>
 }) {
   // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
   // affordance) — a faculty viewer keeps their own identity row and can never
@@ -386,7 +389,10 @@ function FacultyScopeSelector({
     if (!f) return null
     return (
       <div className="flex items-center gap-2">
-        <AvatarInitials initials={f.facultyInitials} className="size-7 text-xs" decorative />
+        <Avatar className="size-7">
+          <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+          <AvatarFallback className="text-xs">{f.facultyInitials}</AvatarFallback>
+        </Avatar>
         <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
         {isPD && (
           <StatusBadge
@@ -407,21 +413,17 @@ function FacultyScopeSelector({
         onValueChange={(v) => v && setScope(v)}
         aria-label="Scope the results by instructor"
       >
-        <ToggleGroupItem value="all" className="gap-1.5">
+        <ToggleGroupItem value="all" className="gap-2">
           <i className="fa-light fa-users text-xs" aria-hidden="true" />
           All faculty
         </ToggleGroupItem>
         {instructors.map((f) => (
-          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-            {/* DS floor: initials never render in a disc under size-6 (24px) —
-                two 12px caps physically exceed a 20px circle's chord. */}
-            <AvatarInitials
-              initials={f.facultyInitials}
-              size="sm"
-              className="shrink-0"
-              fallbackClassName="text-xs font-medium"
-              decorative
-            />
+          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-2">
+            {/* Same portraits as the plot markers; 24px disc floor. */}
+            <Avatar className="size-6 shrink-0">
+              <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+              <AvatarFallback className="text-xs font-medium">{f.facultyInitials}</AvatarFallback>
+            </Avatar>
             {f.facultyName}
           </ToggleGroupItem>
         ))}
@@ -601,17 +603,21 @@ function RailLink({
   active,
   count,
   title,
+  sub,
 }: {
   label: string
   onGo: () => void
   active?: boolean
   count?: number
   title?: string
+  /** Row inside an inset OutlineTreeSub — aligns to the guide line. */
+  sub?: boolean
 }) {
   return (
     <OutlineTreeLeafButton
       surface="panel"
       isActive={active}
+      subGuideAlign={sub}
       onClick={onGo}
       title={title ?? label}
       className="w-full min-w-0"
@@ -662,7 +668,8 @@ function SentimentFilterGroup({
       size="sm"
       aria-label={label}
     >
-      {SENTIMENT_FILTERS.map((f) => (
+      {/* Zero-count sentiments are noise — only offer filters that filter. */}
+      {SENTIMENT_FILTERS.filter((f) => f.key === 'all' || countFor(f.key) > 0).map((f) => (
         <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
           {f.label} ({countFor(f.key)})
         </ToggleGroupItem>
@@ -1045,7 +1052,7 @@ function ThemeBoxplotChart({
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Score spread per theme vs program · sorted by gap, weakest first${partial ? ' · partial data' : ''}`}
+      description={`Score spread per theme vs program · sorted by gap, weakest first · click any mark for details${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
@@ -1055,7 +1062,6 @@ function ThemeBoxplotChart({
       >
         {() => (
           <>
-            <ScalePlotLegend whiskers />
             <div className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-end gap-6 pb-2 border-b border-border">
               <span className="text-xs text-muted-foreground">Theme</span>
               <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
@@ -1253,43 +1259,6 @@ function ProgramTriangle() {
   )
 }
 
-/** Shared mark legend for every scale plot on the page. */
-function ScalePlotLegend({ whiskers = false }: { whiskers?: boolean }) {
-  return (
-    <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          className="h-2 w-5 rounded-full"
-          style={{ background: 'var(--brand-color)', opacity: 0.42 }}
-          aria-hidden="true"
-        />
-        middle 50%
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
-        median
-      </span>
-      {whiskers && (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-px w-4" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
-          full range
-        </span>
-      )}
-      <span className="inline-flex items-center gap-1.5">
-        <ProgramTriangle />
-        program average
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-        course
-        <span className="size-2.5 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
-        below program
-      </span>
-      <span>photo = instructor · click any mark for details</span>
-    </div>
-  )
-}
-
 /** Focus ring for in-plot popover triggers (Radix renders real buttons). */
 const PLOT_TRIGGER_RING =
   'cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
@@ -1453,9 +1422,13 @@ function ScaleTrackPlot({
             className={`absolute top-0 flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
             style={{ left: `${scaleX(programAvg)}%` }}
           >
-            <span className="text-xs tabular-nums leading-none text-muted-foreground" aria-hidden="true">
-              {programAvg.toFixed(1)}
-            </span>
+            {/* Suppress the value when program ≈ score — a duplicated number
+                stacked over the marker reads as a rendering bug. */}
+            {Math.abs(programAvg - avg) > 0.05 && (
+              <span className="text-xs tabular-nums leading-none text-muted-foreground" aria-hidden="true">
+                {programAvg.toFixed(1)}
+              </span>
+            )}
             <ProgramTriangle />
           </PopoverTrigger>
           <PopoverContent className="w-72 p-4" side="top" align="center" sideOffset={6}>
@@ -1607,6 +1580,9 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   const [filter, setFilter] = useState<SentimentFilter>('all')
   const filtered =
     filter === 'all' ? responses : responses.filter((x) => (x.sentiment ?? 'neutral') === filter)
+  /* Per-row sentiment badges only earn their ink when the visible list MIXES
+     sentiments — a uniform column of "Constructive" chips is noise (round 5). */
+  const visibleSentimentKinds = new Set(filtered.map((x) => x.sentiment ?? 'neutral'))
   const countFor = (f: SentimentFilter) =>
     f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
   const positives = countFor('positive')
@@ -1674,9 +1650,11 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
                       className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
                     >
                       <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
-                      {(chip || x.flagged) && (
+                      {((chip && visibleSentimentKinds.size > 1) || x.flagged) && (
                         <div className="flex items-center gap-1.5">
-                          {chip && <StatusBadge label={chip.label} tone={chip.tone} />}
+                          {chip && visibleSentimentKinds.size > 1 && (
+                            <StatusBadge label={chip.label} tone={chip.tone} />
+                          )}
                           {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
                         </div>
                       )}
@@ -1720,7 +1698,8 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      <ScalePlotLegend />
+      {/* No legend (round 5: "a lot of legends which isn't required") —
+          values ride the marks and the popovers explain on click. */}
       <div className="grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
@@ -2718,9 +2697,15 @@ function ResultDetail({
                 </DropdownMenu>
               </>
             )}
-            {!inCollection && (
+            {!inCollection && (() => {
+              /* ONE visible action + ⋯ (Romit 2026-07-18: "tuck in some of
+                 the options inside more"): Enable faculty access when it
+                 applies, else Preview form; everything else in the menu.
+                 Non-PD viewers have no menu and keep Preview form visible. */
+              const showEnable = isPD && !scopedFaculty.releasedToFaculty
+              return (
               <>
-                {isPD && !scopedFaculty.releasedToFaculty && (
+                {showEnable ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -2733,20 +2718,10 @@ function ResultDetail({
                       ? 'Enable faculty access'
                       : `Enable access for ${scopedFaculty.facultyName}`}
                   </Button>
-                )}
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
-                </Button>
-                {/* PD-only: /analytics is an ungated admin surface with
-                    program-wide data — faculty must not land there (scope
-                    flag 2026-07-16; faculty longitudinal view is a separate
-                    surface pending integration). */}
-                {isPD && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
-                    View Longitudinal Insights
-                  </Link>
-                </Button>
+                ) : (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                  </Button>
                 )}
                 {isPD && (
                   <DropdownMenu>
@@ -2756,6 +2731,19 @@ function ResultDetail({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {showEnable && (
+                        <DropdownMenuItem asChild>
+                          <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                        </DropdownMenuItem>
+                      )}
+                      {/* PD-only: /analytics is an ungated admin surface with
+                          program-wide data — faculty must not land there
+                          (scope flag 2026-07-16). */}
+                      <DropdownMenuItem asChild>
+                        <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                          View Longitudinal Insights
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={copySurveyLink}>
                         {linkCopied ? 'Link copied' : 'Copy survey link'}
                       </DropdownMenuItem>
@@ -2769,7 +2757,8 @@ function ResultDetail({
                   </DropdownMenu>
                 )}
               </>
-            )}
+              )
+            })()}
           </div>
         }
       />
@@ -2784,6 +2773,7 @@ function ResultDetail({
               scope={facultyScope}
               setScope={setFacultyScope}
               isPD={isPD}
+              avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
             />
           </div>
 
@@ -2950,7 +2940,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · score vs program on a 1–5 scale
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · click any mark for details
                         </CardDescription>
                         <CardAction>
                           <i
@@ -3187,19 +3177,23 @@ function ResultDetail({
                                     onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
                                   />
                                 </div>
-                                <OutlineTreeCollapsibleContentRail>
-                                  <OutlineTreeSub surface="panel" guideLayout="chevronRail" className="gap-0.5 py-0">
+                                {/* inset layout owns the guide + ps-6 indent —
+                                    chevronRail gave sub-rows zero indent and a
+                                    guide cutting through text (round-5 fix). */}
+                                <CollapsibleContent>
+                                  <OutlineTreeSub surface="panel" guideLayout="inset" className="gap-0.5 py-0 ms-3">
                                     {g.items.map((q, i) => (
                                       <OutlineTreeSubItem key={q.id}>
                                         <RailLink
                                           label={`${i + 1}. ${q.label}`}
                                           title={q.label}
+                                          sub
                                           onGo={() => goTo(`question-${q.id}`, 'questions')}
                                         />
                                       </OutlineTreeSubItem>
                                     ))}
                                   </OutlineTreeSub>
-                                </OutlineTreeCollapsibleContentRail>
+                                </CollapsibleContent>
                               </Collapsible>
                             )
                           })}

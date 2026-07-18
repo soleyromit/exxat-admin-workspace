@@ -2391,11 +2391,27 @@ export function medianFromDistribution(distribution: [number, number, number, nu
   return (ratingAtPosition(distribution, total / 2) + ratingAtPosition(distribution, total / 2 + 1)) / 2
 }
 
+/* djb2 — stable tiny hash for the single-survey benchmark offset. */
+function benchmarkHash(str: string): number {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
+  return h
+}
+
 /** Program-wide average for a question — response-weighted across every survey that asked it.
- *  Returns null when no survey has scored the question. */
+ *  Returns null when no survey has scored the question.
+ *
+ *  Mock-only benchmark synthesis: when exactly ONE survey carries the question
+ *  (template-unique ids like tmplrich's c/i/l/o), the pooled "program" average
+ *  would collapse to that survey's own value — a benchmark that always equals
+ *  you is no benchmark (Romit 2026-07-18 critique: "why are these numbers
+ *  same?"). We apply a deterministic per-question offset so the demo reads
+ *  like real cross-offering data. When real program data exists, only this
+ *  function changes (same convention as pce-collection.ts). */
 export function programAvgForQuestion(questionId: string): number | null {
   let weightedSum = 0
   let responseTotal = 0
+  const contributors = new Set<string>()
   for (const data of MOCK_SURVEY_QUESTION_DATA) {
     const scores = [
       ...Object.values(data.sectionScores).flat(),
@@ -2405,8 +2421,17 @@ export function programAvgForQuestion(questionId: string): number | null {
       if (s.questionId === questionId) {
         weightedSum += s.avg * s.count
         responseTotal += s.count
+        contributors.add(data.surveyId)
       }
     }
   }
-  return responseTotal > 0 ? Math.round((weightedSum / responseTotal) * 10) / 10 : null
+  if (responseTotal === 0) return null
+  let avg = weightedSum / responseTotal
+  if (contributors.size === 1) {
+    /* Offset in {−0.4 … +0.3} \ {0}, step 0.1, stable per question id. */
+    const step = (benchmarkHash(questionId) % 7) - 4 // −4 … +2
+    avg += (step >= 0 ? step + 1 : step) / 10 // skip 0 → −0.4…−0.1 or +0.1…+0.3
+    avg = Math.min(5, Math.max(1, avg))
+  }
+  return Math.round(avg * 10) / 10
 }
