@@ -1295,28 +1295,35 @@ function ratingQuantile(counts: number[], total: number, q: number): number {
   return 5
 }
 
-/* Two-lane strip (Romit pick 2026-07-17: data-dense direction, decluttered):
-   lane 1 on EVERY row = You vs Program — band, program tick, drawn amber/teal
-   gap bar, filled course-avg dot. Lane 2 only on multi-instructor rows = the
-   instructor dumbbell, with INITIALS AS THE MARKS (variant-1 trick — no
-   circle + label pairs to collide). Vertical lane separation adds the You/
-   Program read without piling more pointers on one line. */
+/* Data-dense strip, domain-zoomed (Romit 2026-07-17 "not working" — the real
+   defect was WASTED DOMAIN: all values live in ~3.4–4.6, so a fixed 1–5 axis
+   compressed every mark into the same pixels. Position marks may truncate the
+   axis when it's labeled (dots encode position, not length): the table
+   computes ONE shared domain from its own data and every row plots on it, so
+   a 0.1 gap renders ~10–20px and You-dot + program tick + gap bar +
+   instructor initials coexist on a single lane with real separation. */
 function QuestionDotStrip({
   avg,
   programAvg,
   counts,
   total,
   perFaculty,
+  domainLo,
 }: {
   avg?: number
   programAvg?: number | null
   counts: number[]
   total: number
   perFaculty?: BreakdownRow['perFaculty']
+  /** Shared axis start (≤ every plotted value; 5 is always the end). */
+  domainLo: number
 }) {
-  const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+  const lo = domainLo
+  const x = (v: number) => ((Math.min(5, Math.max(lo, v)) - lo) / (5 - lo)) * 100
   const p25 = ratingQuantile(counts, total, 0.25)
   const p75 = ratingQuantile(counts, total, 0.75)
+  const ticks: number[] = []
+  for (let v = lo; v <= 5.001; v += 0.5) ticks.push(Math.round(v * 2) / 2)
   const marks = (perFaculty ?? [])
     .map((f) => ({ ...f, pos: x(f.avg) }))
     .sort((a, b) => a.pos - b.pos)
@@ -1324,91 +1331,92 @@ function QuestionDotStrip({
   const markPos: number[] = []
   marks.forEach((m, i) => {
     let p = m.pos
-    if (i > 0 && p - markPos[i - 1] < 8) p = markPos[i - 1] + 8
+    if (i > 0 && p - markPos[i - 1] < 6) p = markPos[i - 1] + 6
     markPos.push(Math.min(100, p))
   })
   const gap = avg != null && programAvg != null ? avg - programAvg : null
   const below = gap != null && gap < -0.05
+  /* Multi-instructor rows raise the line to make room for offset initials
+     ABOVE it — labels never sit on the marks (offset-label pattern), so the
+     line keeps only band + tick + dot + small instructor position ticks. */
+  const lineY = marks.length > 0 ? 'top-[68%]' : 'top-1/2'
+  const gapY = marks.length > 0 ? 'top-[38%]' : 'top-1'
   return (
-    <div className="w-full min-w-0" aria-hidden="true">
-      {/* Lane 1 — You vs Program (every row) */}
-      <div className="relative h-6">
-        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-        {[1, 2, 3, 4, 5].map((n) => (
-          <span
-            key={n}
-            className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border"
-            style={{ left: `${x(n)}%` }}
-          />
-        ))}
-        {total > 0 && (
-          <div
-            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
-            style={{
-              left: `${x(p25)}%`,
-              width: `${Math.max(1.5, x(p75) - x(p25))}%`,
-              background: 'var(--border-control-35)',
-            }}
-          />
-        )}
-        {/* signed gap bar — the program→course delta drawn, not only printed */}
-        {gap != null && Math.abs(gap) > 0.05 && (
-          <div
-            className="absolute top-1 h-0.5 rounded-full"
-            style={{
-              left: `${Math.min(x(programAvg!), x(avg!))}%`,
-              width: `${Math.max(1, Math.abs(x(avg!) - x(programAvg!)))}%`,
-              background: below ? 'var(--chip-4)' : 'var(--chart-2)',
-            }}
-          />
-        )}
-        {programAvg != null && (
-          <span
-            className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
-          />
-        )}
-        {avg != null && (
-          <span
-            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
-            style={{
-              left: `${x(avg)}%`,
-              background: below ? 'var(--chip-4)' : 'var(--foreground)',
-            }}
-          />
-        )}
-      </div>
-      {/* Lane 2 — instructor dumbbell, initials as marks (multi-instructor only) */}
-      {marks.length > 0 && (
-        <div className="relative h-4">
-          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: 'var(--border-control-35)' }} />
-          {marks.length > 1 && (
-            <div
-              className="absolute top-1/2 h-px -translate-y-1/2"
-              style={{
-                left: `${marks[0].pos}%`,
-                width: `${Math.max(0.5, marks[marks.length - 1].pos - marks[0].pos)}%`,
-                background: 'var(--muted-foreground)',
-              }}
-            />
-          )}
-          {marks.map((m, i) => (
-            <span
-              key={m.facultyId}
-              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-0.5 text-xs font-medium leading-none"
-              style={{
-                left: `${markPos[i]}%`,
-                color:
-                  programAvg != null && m.avg < programAvg - 0.05
-                    ? 'var(--chip-4)'
-                    : 'var(--muted-foreground)',
-              }}
-            >
-              {m.initials}
-            </span>
-          ))}
-        </div>
+    <div className={`relative w-full min-w-0 ${marks.length > 0 ? 'h-8' : 'h-7'}`} aria-hidden="true">
+      <div className={`absolute inset-x-0 ${lineY} h-px -translate-y-1/2 bg-border`} />
+      {ticks.map((n) => (
+        <span
+          key={n}
+          className={`absolute ${lineY} w-px -translate-x-1/2 -translate-y-1/2 bg-border ${Number.isInteger(n) ? 'h-2' : 'h-1'}`}
+          style={{ left: `${x(n)}%` }}
+        />
+      ))}
+      {/* consensus band — middle 50% of ratings (clamped to the domain) */}
+      {total > 0 && p75 > lo && (
+        <div
+          className={`absolute ${lineY} h-2 -translate-y-1/2 rounded-full`}
+          style={{
+            left: `${x(p25)}%`,
+            width: `${Math.max(1.5, x(p75) - x(p25))}%`,
+            background: 'var(--border-control-35)',
+          }}
+        />
       )}
+      {/* signed gap bar — the program→course delta drawn, not only printed */}
+      {gap != null && Math.abs(gap) > 0.05 && (
+        <div
+          className={`absolute ${gapY} h-0.5 rounded-full`}
+          style={{
+            left: `${Math.min(x(programAvg!), x(avg!))}%`,
+            width: `${Math.max(1, Math.abs(x(avg!) - x(programAvg!)))}%`,
+            background: below ? 'var(--chip-4)' : 'var(--chart-2)',
+          }}
+        />
+      )}
+      {programAvg != null && (
+        <span
+          className={`absolute ${lineY} h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full`}
+          style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
+        />
+      )}
+      {avg != null && (
+        <span
+          className={`absolute ${lineY} size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]`}
+          style={{
+            left: `${x(avg)}%`,
+            background: below ? 'var(--chip-4)' : 'var(--foreground)',
+          }}
+        />
+      )}
+      {/* instructor position ticks on the line + initials offset above them */}
+      {marks.map((m) => (
+        <span
+          key={`t-${m.facultyId}`}
+          className={`absolute ${lineY} h-1.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full`}
+          style={{
+            left: `${m.pos}%`,
+            background:
+              programAvg != null && m.avg < programAvg - 0.05
+                ? 'var(--chip-4)'
+                : 'var(--muted-foreground)',
+          }}
+        />
+      ))}
+      {marks.map((m, i) => (
+        <span
+          key={m.facultyId}
+          className="absolute top-0 -translate-x-1/2 text-xs font-medium leading-none"
+          style={{
+            left: `${markPos[i]}%`,
+            color:
+              programAvg != null && m.avg < programAvg - 0.05
+                ? 'var(--chip-4)'
+                : 'var(--muted-foreground)',
+          }}
+        >
+          {m.initials}
+        </span>
+      ))}
     </div>
   )
 }
@@ -1424,6 +1432,20 @@ function QuestionBreakdownTable({
 }) {
   if (rows.length === 0) return null
   const groups = [...new Set(rows.map((r) => r.group))]
+  /* ONE shared axis for every row, zoomed to the data (dots encode position,
+     so a labeled truncated domain is honest — and it's what makes 0.1-wide
+     gaps readable instead of smearing everything into the top fifth). Floor
+     of all plotted values, padded and snapped to 0.5; never above 3.5, never
+     below 1. */
+  const plotted = rows
+    .filter((r) => r.kind === 'rated')
+    .flatMap((r) => [r.avg, r.programAvg ?? undefined, ...(r.perFaculty ?? []).map((f) => f.avg)])
+    .filter((v): v is number => v != null)
+  const domainLo = plotted.length
+    ? Math.max(1, Math.min(3.5, Math.floor((Math.min(...plotted) - 0.2) * 2) / 2))
+    : 1
+  const axisTicks: number[] = []
+  for (let v = domainLo; v <= 5.001; v += 0.5) axisTicks.push(Math.round(v * 2) / 2)
   /* Within each group: lowest favorable share first (the fix-first order);
      free-text rows keep the tail. */
   const orderedFor = (group: string) =>
@@ -1463,15 +1485,18 @@ function QuestionBreakdownTable({
               <span className="h-px w-3" style={{ background: 'var(--muted-foreground)' }} />
               <span>AP</span>
             </span>
-            Instructor lane (initials at their score)
+            Instructor initials at their score
           </span>
         )}
+        <span className="tabular-nums">
+          Scale {domainLo}–5 (no values below {domainLo})
+        </span>
       </div>
       <div className="grid grid-cols-[minmax(200px,320px)_1fr_5rem_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <span key={n}>{n}</span>
+          {axisTicks.map((n) => (
+            <span key={n}>{Number.isInteger(n) ? n : n.toFixed(1)}</span>
           ))}
         </div>
         <span className="text-xs text-muted-foreground text-right">n · fav %</span>
@@ -1515,6 +1540,7 @@ function QuestionBreakdownTable({
                   counts={r.counts ?? [0, 0, 0, 0, 0]}
                   total={r.total ?? 0}
                   perFaculty={r.perFaculty}
+                  domainLo={domainLo}
                 />
                 <p className="text-xs tabular-nums text-right whitespace-nowrap text-muted-foreground">
                   {(r.total ?? 0) > 0
