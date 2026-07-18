@@ -811,7 +811,6 @@ function ScoreTile({
   icon,
   person,
   badge,
-  meta,
   value,
   suffix,
   delta,
@@ -822,7 +821,6 @@ function ScoreTile({
   /** Scoped identity — photo + name replace icon + generic label. */
   person?: { name: string; initials: string; avatarUrl?: string }
   badge?: React.ReactNode
-  meta?: string
   value: string
   suffix?: string
   delta?: { amount: string; direction: 'up' | 'down'; label: string } | null
@@ -830,28 +828,27 @@ function ScoreTile({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
-      {/* Fixed four-row skeleton (identity / status / hero / caption), each
-          row min-height'd — the three tiles align by construction whether or
-          not a tile has a badge, an avatar, or a chip (Romit round 10:
-          "make the layout consistent"). */}
-      {person ? (
-        <p className="min-h-6 min-w-0 flex items-center gap-2 text-sm leading-snug">
-          <Avatar className="size-6 shrink-0">
-            <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
-            <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
-          </Avatar>
-          <span className="sr-only">{label} — </span>
-          <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
-        </p>
-      ) : (
-        <p className="min-h-6 min-w-0 flex items-center gap-1.5 text-sm text-muted-foreground leading-snug">
-          {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
-          <span className="min-w-0 truncate">{label}</span>
-        </p>
-      )}
-      <div className="flex min-h-6 items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-        {badge}
-        {meta && <span>{meta}</span>}
+      {/* Fixed three-row skeleton (identity + pill / hero / caption), each
+          row min-height'd — tiles align by construction. The status pill
+          rides the heading line, right-aligned; counts are gone (Romit
+          round 11: "remove the counts, keep the pill on the heading line"). */}
+      <div className="flex min-h-6 items-center justify-between gap-2">
+        {person ? (
+          <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
+            <Avatar className="size-6 shrink-0">
+              <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+              <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+            </Avatar>
+            <span className="sr-only">{label} — </span>
+            <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
+          </p>
+        ) : (
+          <p className="min-w-0 flex items-center gap-1.5 text-sm text-muted-foreground leading-snug">
+            {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
+            <span className="min-w-0 truncate">{label}</span>
+          </p>
+        )}
+        {badge && <span className="shrink-0">{badge}</span>}
       </div>
       <div className="flex flex-wrap items-baseline gap-2">
         <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
@@ -885,7 +882,6 @@ function ScoreCard({
   icon,
   person,
   statusBadge,
-  responseMeta,
   value,
   programAvg,
   priors,
@@ -898,8 +894,6 @@ function ScoreCard({
   person?: { name: string; initials: string; avatarUrl?: string }
   /** Per-type status (each type runs on its own clock — Romit 2026-07-17). */
   statusBadge?: React.ReactNode
-  /** Per-type collection count, e.g. "46 of 50". */
-  responseMeta?: string
   value: number | null
   programAvg: number | null
   priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
@@ -929,7 +923,6 @@ function ScoreCard({
           icon={icon}
           person={person}
           badge={statusBadge}
-          meta={responseMeta}
           value={value != null ? value.toFixed(2) : '—'}
           suffix="/ 5"
           delta={
@@ -2916,7 +2909,6 @@ function ResultDetail({
                     title="Course Content"
                     icon={EVALUATION_TYPE_ICON.course_material}
                     statusBadge={courseInst ? <SurveyStatusBadgeOS status={courseInst.status} /> : undefined}
-                    responseMeta={courseInst ? `${courseInst.responseCount} of ${courseInst.enrollmentCount}` : undefined}
                     value={courseAvg}
                     programAvg={programCourseAvg}
                     priors={(survey.priorOfferings ?? []).map((p) => ({
@@ -2943,7 +2935,6 @@ function ResultDetail({
                     }
                     icon={EVALUATION_TYPE_ICON.faculty_roles}
                     statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} /> : undefined}
-                    responseMeta={facultyInst ? `${facultyInst.responseCount} of ${facultyInst.enrollmentCount}` : undefined}
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
                     priors={(survey.priorOfferings ?? [])
