@@ -861,9 +861,9 @@ function ScoreTile({
           </span>
         )}
       </div>
-      {/* min-h-8 = two caption lines — keeps the three tiles' baselines level
-          when captions wrap 2/1/1 (UX-audit N2). */}
-      <div className="min-h-8 text-xs text-muted-foreground leading-snug line-clamp-2 tabular-nums">
+      {/* Single-idea, single-line caption — nowrap + truncate so it can never
+          wrap at any tile width; baselines stay level by construction. */}
+      <div className="flex items-baseline gap-1 overflow-hidden whitespace-nowrap text-xs text-muted-foreground leading-snug tabular-nums">
         {caption}
       </div>
     </div>
@@ -895,14 +895,14 @@ function ScoreCard({
   const actionItems = [...(prior?.actionItems ?? [])].sort(
     (a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9),
   )
-  /* One narrative fragment, trend only — the chip owns the program gap. The
-     prior term + value open the fragment, so the phrase never repeats them. */
+  /* ONE short trend fragment — the caption is a single idea, single line
+     (Romit round 8: "I don't want so much info… the text are wrapping").
+     The chip owns the program gap; exact program value lives in the data
+     table. */
   const trendPhrase = (() => {
     if (value == null || !prior) return null
     const best = Math.max(...priors.map((p) => p.avg))
-    if (value >= best) {
-      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}`
-    }
+    if (value >= best) return `Best of last ${priors.length + 1}`
     const d = value - prior.avg
     if (Math.abs(d) <= 0.05) return 'Holding steady'
     return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} since then`
@@ -948,10 +948,7 @@ function ScoreCard({
                     </div>
                   </PopoverContent>
                 </Popover>
-                {trendPhrase && <> · {trendPhrase}</>}
-                {delta != null && Math.abs(delta) <= 0.05 && programAvg != null && (
-                  <> · At program ({programAvg.toFixed(2)})</>
-                )}
+                {trendPhrase && <span className="truncate"> · {trendPhrase}</span>}
               </>
             ) : (
               <>Program average {programAvg != null ? programAvg.toFixed(2) : '—'}</>
@@ -1626,28 +1623,25 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
             subtitle={`${count} written response${count !== 1 ? 's' : ''} · anonymized${context ? ` · ${context}` : ''}`}
             onClose={() => setOpen(false)}
           />
-          <FloatingSheetPanelBody className="flex flex-col gap-4">
+          {/* DS sheet-body anatomy (ExportDrawer convention): px-4 pb-4 body,
+              space-y-5 sections; the responses render as ONE contained list
+              (invite-collaborators drawer idiom: bordered ul, divide-y rows)
+              instead of floating paragraphs. */}
+          <FloatingSheetPanelBody className="px-4 pb-4 space-y-5">
             <SentimentFilterGroup
               value={filter}
               onChange={setFilter}
               countFor={countFor}
               label={`Filter responses to “${row.label}” by sentiment`}
             />
-            <div className="flex flex-col">
-              {filtered.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-3">
-                  No responses match this filter.
-                </p>
-              ) : (
-                /* Same row anatomy as the qualitative-feedback card — quote
-                   first, sentiment chip on the meta line beneath. */
-                filtered.map((x) => {
+            {filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No responses match this filter.</p>
+            ) : (
+              <ul className="rounded-lg border border-border divide-y divide-border">
+                {filtered.map((x) => {
                   const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
                   return (
-                    <div
-                      key={x.id}
-                      className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
-                    >
+                    <li key={x.id} className="flex flex-col gap-1.5 px-3 py-2.5">
                       <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
                       {((chip && visibleSentimentKinds.size > 1) || x.flagged) && (
                         <div className="flex items-center gap-1.5">
@@ -1657,11 +1651,11 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
                           {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
                         </div>
                       )}
-                    </div>
+                    </li>
                   )
-                })
-              )}
-            </div>
+                })}
+              </ul>
+            )}
           </FloatingSheetPanelBody>
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
@@ -3190,7 +3184,11 @@ function ResultDetail({
                         </OutlineTreeMenuItem>
                       )}
                       {qData && sections.length > 0 && (
-                        <OutlineTreeMenuItem>
+                        /* before:hidden kills the MenuItem's built-in branch
+                           guide — it spans the whole item (566px) and cuts
+                           through the group chevrons; the per-sub inset
+                           border is the only guide we want (Romit round 8). */
+                        <OutlineTreeMenuItem className="before:hidden">
                           <RailLink
                             label="Question breakdown"
                             active={activeAnchor === 'questions'}
