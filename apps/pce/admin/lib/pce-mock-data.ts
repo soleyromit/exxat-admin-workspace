@@ -297,6 +297,9 @@ export interface PceInstructor {
   name: string
   initials: string
   role: 'primary' | 'guest'
+  /** Stock portrait (randomuser.me, stable index per person) — identity marker
+   *  on score plots and avatar surfaces; initials remain the fallback. */
+  avatarUrl?: string
   department?: string
   /** Directory/profile fields (optional — survey.instructors carry only id/name/role). */
   // CAPTE clinical-education faculty classes: Core Faculty (program's primary
@@ -1081,12 +1084,12 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
 ]
 
 const INSTRUCTORS: Record<string, PceInstructor> = {
-  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary' },
-  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest'   },
-  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' },
-  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary' },
-  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary' },
-  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary' },
+  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest',   avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
+  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg' },
+  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/men/11.jpg' },
+  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/women/65.jpg' },
+  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: 'https://randomuser.me/api/portraits/men/75.jpg' },
 }
 
 export const MOCK_SURVEYS: PceSurvey[] = [

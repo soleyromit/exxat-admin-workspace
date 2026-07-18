@@ -73,7 +73,8 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RATING_SERIES, RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import { RATING_SERIES, RatingLegend } from '@/components/pce/rating-viz'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   OutlineTreeCollapsibleContentRail,
   OutlineTreeLeafButton,
@@ -1243,9 +1244,20 @@ interface BreakdownRow {
   programAvg?: number | null
   counts?: number[]
   total?: number
-  /** Multi-instructor course, "All faculty" scope: the per-instructor split of
-   *  this faculty question — the aggregate row above stays the summary. */
-  perFaculty?: { facultyId: string; name: string; initials: string; avg: number; counts: number[]; total: number }[]
+  /** Faculty rows: the named identities (1–3) scored on this question — each
+   *  becomes a photo marker on the scale plot. Course/general rows have none. */
+  perFaculty?: PlotPerson[]
+}
+
+/** Identity marker slice for the question scale plot. */
+interface PlotPerson {
+  facultyId: string
+  name: string
+  initials: string
+  avatarUrl?: string
+  avg: number
+  counts: number[]
+  total: number
 }
 
 /** Section → evaluation-type classifier. Builder templates mark faculty
@@ -1289,33 +1301,223 @@ function favorableShare(counts: number[] | undefined, total: number | undefined)
 }
 
 
-/* You vs program as PRINTED numbers + one signed-gap figure (RUBRIC v2 Gate 0:
-   in a ~10rem cell the deltas the reader must act on render smaller than any
-   mark could be — numbers state it better). Median stays in the data table. */
-function CompareText({
+/* ── question scale plot (Romit 2026-07-18, replacing the stacked rating bar) ──
+   Workable-assessment anatomy: dotted 1–5 track, brand middle-50% band, and
+   the benchmarks IN the plot — program ▲ above the track, the scored identity
+   ON it (course dot, or the instructor's actual photo), values riding the
+   marks. No printed number column: position + at-mark labels carry the
+   comparison. Whiskers stay gone deliberately — min–max on a 1–5 Likert spans
+   the axis on nearly every row (the 8aa825d1 failure); full range and the
+   rating distribution live in the hover tooltips + data table. */
+
+/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
+function ratingQuantile(counts: number[], total: number, q: number): number {
+  if (total <= 0) return 3
+  const target = q * total
+  let cum = 0
+  for (let i = 0; i < 5; i++) {
+    const c = counts[i] ?? 0
+    if (c > 0 && cum + c >= target) {
+      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
+    }
+    cum += c
+  }
+  return 5
+}
+
+/** 1–5 score → % along the track. */
+const scaleX = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+
+/** Small downward triangle — the program benchmark mark. */
+function ProgramTriangle() {
+  return (
+    <span
+      className="block size-0 border-x-[5px] border-t-[6px] border-x-transparent"
+      style={{ borderTopColor: 'var(--muted-foreground)' }}
+      aria-hidden="true"
+    />
+  )
+}
+
+function QuestionScalePlot({
+  counts,
+  total,
   avg,
   programAvg,
+  people,
 }: {
-  avg: number | null | undefined
-  programAvg: number | null | undefined
+  counts: number[]
+  total: number
+  avg?: number
+  programAvg?: number | null
+  people?: PlotPerson[]
 }) {
-  if (avg == null) return <span className="text-xs text-muted-foreground text-right block">—</span>
-  const gap = programAvg != null ? avg - programAvg : null
+  if (total <= 0 || avg == null) {
+    /* No responses yet — quiet muted track, never a blank cell. */
+    return (
+      <div className="flex h-16 items-center" aria-hidden="true">
+        <div className="h-1 w-full rounded-full bg-muted" />
+      </div>
+    )
+  }
+  const p25 = ratingQuantile(counts, total, 0.25)
+  const p75 = ratingQuantile(counts, total, 0.75)
+  const median = ratingQuantile(counts, total, 0.5)
+  const lowest = counts.findIndex((c) => c > 0) + 1
+  const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
+  const gapText = (v: number) =>
+    programAvg != null && Math.abs(v - programAvg) > 0.05
+      ? ` (${v > programAvg ? '+' : '−'}${Math.abs(v - programAvg).toFixed(1)} vs program)`
+      : programAvg != null
+        ? ' (at program)'
+        : ''
+  /* Markers: named people on faculty rows, else the course-average dot. */
+  const marks =
+    people && people.length > 0
+      ? [...people]
+          .sort((a, b) => a.avg - b.avg)
+          .map((p) => ({
+            key: p.facultyId,
+            x: scaleX(p.avg),
+            value: p.avg,
+            below: programAvg != null && p.avg < programAvg - 0.05,
+            person: p as PlotPerson | undefined,
+          }))
+      : [
+          {
+            key: 'course-avg',
+            x: scaleX(avg),
+            value: avg,
+            below: programAvg != null && avg < programAvg - 0.05,
+            person: undefined,
+          },
+        ]
+  /* Near-equal scores: labels drop to a second row instead of colliding. */
+  let lastLabelX = -Infinity
+  const placed = marks.map((m) => {
+    const secondRow = m.x - lastLabelX < 9
+    if (!secondRow) lastLabelX = m.x
+    return { ...m, secondRow }
+  })
   return (
-    <p className="text-xs tabular-nums text-right whitespace-nowrap">
-      <span className="text-muted-foreground">
-        You <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
-        {programAvg != null && <> · Program {programAvg.toFixed(1)}</>}
-      </span>
-      {gap != null && Math.abs(gap) > 0.05 && (
-        <span
-          className="font-medium"
-          style={{ color: gap > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-        >
-          {' '}({gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)})
-        </span>
+    <div className="relative h-16 w-full min-w-0" aria-hidden="true">
+      {/* program benchmark — above the track so it never collides with scores */}
+      {programAvg != null && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+              style={{ left: `${scaleX(programAvg)}%` }}
+            >
+              <span className="text-xs tabular-nums leading-none text-muted-foreground">
+                {programAvg.toFixed(1)}
+              </span>
+              <ProgramTriangle />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="font-medium">Program average {programAvg.toFixed(1)}</p>
+            <p>Response-weighted across all offerings asking this question.</p>
+          </TooltipContent>
+        </Tooltip>
       )}
-    </p>
+      {/* dotted 1–5 track */}
+      <div className="absolute inset-x-0 top-7 h-px bg-border" />
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          className="absolute top-7 size-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-border"
+          style={{ left: `${scaleX(n)}%` }}
+        />
+      ))}
+      {/* middle 50% band — hover carries median, range, and the full mix */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className="absolute top-7 h-2.5 -translate-y-1/2 rounded-full"
+            style={{
+              left: `${scaleX(p25)}%`,
+              width: `${Math.max(2, scaleX(p75) - scaleX(p25))}%`,
+              background: 'var(--brand-color)',
+              opacity: 0.25,
+            }}
+          />
+        </TooltipTrigger>
+        <TooltipContent className="tabular-nums">
+          <p className="font-medium">
+            Middle 50%: {p25.toFixed(1)}–{p75.toFixed(1)}
+          </p>
+          <p>
+            Median {median.toFixed(1)} · full range {lowest}–{highest} · {total} rating
+            {total !== 1 ? 's' : ''}
+          </p>
+          <div className="mt-1 flex flex-col gap-0.5">
+            {[4, 3, 2, 1, 0].map((i) => (
+              <p key={i}>
+                Rated {i + 1}: {counts[i] ?? 0} ({Math.round(((counts[i] ?? 0) / total) * 100)}%)
+              </p>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      {/* identity markers + at-mark value labels */}
+      {placed.map((m) => (
+        <Tooltip key={m.key}>
+          <TooltipTrigger asChild>
+            <div
+              className="absolute flex -translate-x-1/2 flex-col items-center"
+              style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
+            >
+              {m.person ? (
+                <Avatar className="size-6 ring-2 ring-[var(--card)]">
+                  <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
+                  <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
+                </Avatar>
+              ) : (
+                <span
+                  className="size-2.5 rounded-full ring-2 ring-[var(--card)]"
+                  style={{ background: m.below ? 'var(--chip-4)' : 'var(--foreground)' }}
+                />
+              )}
+              <span
+                className="mt-1 text-xs font-semibold leading-none tabular-nums"
+                style={{
+                  color: m.below ? 'var(--chip-4)' : 'var(--foreground)',
+                  marginTop: m.secondRow ? 14 : undefined,
+                }}
+              >
+                {m.value.toFixed(1)}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            {m.person ? (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-6">
+                    <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
+                    <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
+                  </Avatar>
+                  <p className="font-medium">{m.person.name}</p>
+                </div>
+                <p className="tabular-nums">
+                  Average {m.value.toFixed(1)}
+                  {gapText(m.value)} · {m.person.total} rating{m.person.total !== 1 ? 's' : ''}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-0.5">
+                <p className="font-medium">Course average {m.value.toFixed(1)}</p>
+                <p className="tabular-nums">
+                  {gapText(m.value).replace(/^ \(|\)$/g, '') || 'No program benchmark'} · {total}{' '}
+                  rating{total !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
   )
 }
 
@@ -1418,16 +1620,10 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* ── question rows: numbers + chips + the shared rating-mix strip ─────────────
-   Declutter round (Romit 2026-07-18): the boxplot-lite retired — on a 1–5
-   Likert nearly every whisker spanned the full axis, so 22 rows read
-   identical while costing a four-term taught legend. The row viz is now the
-   SHARED RatingStackedBar (rating-viz, Romit-approved form): the same
-   composition vocabulary as the theme chart above — skew is visible per row,
-   hover carries counts + share per rating + n. Numbers stay primary
-   (RUBRIC v2): You vs Program owns the comparison, instructor chips stay
-   literal. */
-
+/* Question rows = one wide QuestionScalePlot per row (see its block comment).
+   The former numbers + chips columns folded INTO the plot: at-mark value
+   labels, photo identity markers, program ▲. The freed ~17rem funds the track
+   width that makes middle-50% differences clear (Δpx ≥ 8 at ~24rem). */
 function QuestionBreakdownTable({
   rows,
   surveyId,
@@ -1451,21 +1647,37 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* Same swatch legend as the theme chart — ONE rating vocabulary
-          page-wide, nothing new to learn at this depth. */}
-      <div className="flex items-center gap-3 pb-2 flex-wrap">
-        <RatingLegend />
-        <span className="text-xs text-muted-foreground">
-          share of responses per rating · hover for counts
+      {/* One-line mark legend — every other value is printed at its mark. */}
+      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="h-2 w-5 rounded-full"
+            style={{ background: 'var(--brand-color)', opacity: 0.25 }}
+            aria-hidden="true"
+          />
+          middle 50%
         </span>
+        <span className="inline-flex items-center gap-1.5">
+          <ProgramTriangle />
+          program average
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
+          course
+          <span className="size-2.5 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
+          below program
+        </span>
+        <span>photo = instructor · hover any mark for details</span>
       </div>
-      <div className="grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-end gap-4 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <span className="text-xs text-muted-foreground">Rating mix</span>
-        <span className="text-xs text-muted-foreground text-right">
-          {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
-        </span>
-        <span className="text-xs text-muted-foreground text-right">You vs program</span>
+        <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n} className="absolute -translate-x-1/2" style={{ left: `${scaleX(n)}%` }}>
+              {n}
+            </span>
+          ))}
+        </div>
       </div>
       {groups.map((group) => {
         const meta = groupMeta[group]
@@ -1500,29 +1712,16 @@ function QuestionBreakdownTable({
                     ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
                     : ''
                 }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(160px,1fr)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
-                <RatingStackedBar counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
-                {/* Per-instructor: real avatar + score, amber when below
-                    program. Self-describing; nothing to learn. */}
-                <div className="flex items-center justify-end gap-2.5 flex-wrap">
-                  {(r.perFaculty ?? []).map((f) => {
-                    const fBelow = r.programAvg != null && f.avg < r.programAvg - 0.05
-                    return (
-                      <span key={f.facultyId} className="inline-flex items-center gap-1">
-                        <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
-                        <span
-                          className="text-xs font-medium tabular-nums"
-                          style={{ color: fBelow ? 'var(--chip-4)' : 'var(--foreground)' }}
-                        >
-                          {f.avg.toFixed(1)}
-                        </span>
-                      </span>
-                    )
-                  })}
-                </div>
-                <CompareText avg={r.avg} programAvg={r.programAvg} />
+                <QuestionScalePlot
+                  counts={r.counts ?? [0, 0, 0, 0, 0]}
+                  total={r.total ?? 0}
+                  avg={r.avg}
+                  programAvg={r.programAvg}
+                  people={r.perFaculty}
+                />
               </div>
             ) : (
               <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} context={meta?.contextLine} />
@@ -2283,14 +2482,18 @@ function ResultDetail({
           const score = scoreFor(section.subjectKey, q.id, group.faculty)
           if (!score) continue
           const counts = score.distribution ?? [0, 0, 0, 0, 0]
-          /* Multi-instructor + "All faculty": name each instructor's block so
-             the aggregate never hides whose teaching a rating describes.
-             ≤3 instructors render inline (Romit-approved brief); beyond that
-             the scope selector is the per-person path. */
+          /* Faculty rows carry their IDENTITIES as plot markers — the scored
+             instructor's photo sits at their score (Romit 2026-07-18: the name
+             is part of the mark, no printed number column). 1–3 identities
+             render; beyond that the scope selector is the per-person path.
+             Section-scored faculty rows (labs/TAs without instructor blocks)
+             have no nameable identity and keep the course dot. */
           let perFaculty: BreakdownRow['perFaculty']
-          if (group.faculty && facultyScope === 'all' && survey.instructors.length > 1 && survey.instructors.length <= 3) {
+          if (group.faculty && (facultyScope !== 'all' || survey.instructors.length <= 3)) {
             const split = (qData.instructorBlocks ?? []).flatMap((b) => {
-              const inst = survey.instructors.find((i) => i.id === b.instructorId)
+              const inst = survey.instructors.find(
+                (i) => i.id === b.instructorId && (facultyScope === 'all' || i.id === facultyScope),
+              )
               const hit = inst ? b.scores.find((x) => x.questionId === q.id) : undefined
               if (!inst || !hit) return []
               const c = hit.distribution ?? [0, 0, 0, 0, 0]
@@ -2298,12 +2501,13 @@ function ResultDetail({
                 facultyId: inst.id,
                 name: inst.name,
                 initials: inst.initials,
+                avatarUrl: inst.avatarUrl,
                 avg: hit.avg,
                 counts: c,
                 total: c.reduce((a, b) => a + b, 0),
               }]
             })
-            if (split.length > 1) perFaculty = split
+            if (split.length > 0) perFaculty = split
           }
           out.push({
             id: q.id,
@@ -2341,7 +2545,7 @@ function ResultDetail({
         (survey.instructors.length > 1
           ? `${survey.instructors.length} instructors${
               survey.instructors.length <= 3
-                ? ' — score chip per instructor'
+                ? ' — photo marker per instructor'
                 : isPD
                   ? ' — use the instructor selector above for per-person scores'
                   : ''
