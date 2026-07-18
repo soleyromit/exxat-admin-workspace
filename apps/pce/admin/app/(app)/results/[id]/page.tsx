@@ -32,7 +32,6 @@ import { useResultsOrigin, withFrom } from '@/lib/pce-nav-origin'
 import {
   PageHeader,
   Button,
-  Badge,
   Card,
   CardAction,
   CardContent,
@@ -76,7 +75,7 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { MiniRatingColumns } from '@/components/pce/rating-viz'
+import { RatingBreakdownRows } from '@/components/pce/rating-viz'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   OutlineTreeCollapsibleContentRail,
@@ -91,7 +90,7 @@ import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
+import { deriveResults, deriveResultsForSurvey, rateColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
 import { SurveyStatusBadgeOS, SENTIMENT_CHIP } from '@/components/pce/pce-badges'
 import { deriveThemes } from '@/lib/pce-themes'
 import {
@@ -799,6 +798,72 @@ function CommentList({
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
+/** DS MetricCell tile anatomy (key-metrics.js MetricCell, verbatim rhythm):
+ *  label row (grid, auto column = badge + count meta) · baseline value row
+ *  with the trend chip · one line-clamp-2 caption. Neutral foreground hero —
+ *  sentiment lives ONLY in the chip (Romit 2026-07-18; teal up / amber down). */
+function ScoreTile({
+  label,
+  icon,
+  badge,
+  meta,
+  value,
+  suffix,
+  delta,
+  caption,
+}: {
+  label: string
+  icon?: string
+  badge?: React.ReactNode
+  meta?: string
+  value: string
+  suffix?: string
+  delta?: { amount: string; direction: 'up' | 'down'; label: string } | null
+  caption: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
+      {/* Label + badge cluster — flex-wrap, not the DS grid auto-column: our
+          badge+count cluster is far wider than the DS's arrow glyph, and at
+          tile widths under ~200px a grid auto column starves the label to
+          one character per line. Wrapping drops the cluster to its own row. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+        <p className="min-w-0 flex items-start gap-1.5 text-sm text-muted-foreground leading-snug">
+          {icon && <i className={`fa-light ${icon} mt-0.5`} aria-hidden="true" />}
+          <span className="min-w-0">{label}</span>
+        </p>
+        {(badge || meta) && (
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+            {badge}
+            {meta && <span>{meta}</span>}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-baseline gap-2">
+        <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
+          {value}
+        </span>
+        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
+        {delta && (
+          <span
+            className="inline-flex items-center gap-1 font-medium leading-none text-xs sm:text-sm"
+            style={{ color: delta.direction === 'up' ? 'var(--chart-2)' : 'var(--chip-4)' }}
+          >
+            <i
+              className={`fa-light ${delta.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'} text-xs`}
+              aria-hidden="true"
+            />
+            {delta.amount} {delta.label}
+          </span>
+        )}
+      </div>
+      <div className="text-xs text-muted-foreground leading-snug line-clamp-2 tabular-nums">
+        {caption}
+      </div>
+    </div>
+  )
+}
+
 function ScoreCard({
   title,
   icon,
@@ -838,75 +903,55 @@ function ScoreCard({
   })()
   return (
     <Card>
-      <CardContent className="pt-6 flex flex-col gap-2">
-        {/* Stat-tile anatomy (Romit 2026-07-18): title row, hero + chip, ONE
-            meta line. The two-point slope svg is gone — a 0.1 move on a 3–5
-            window drew a visually flat line; the words carry it better. */}
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
-            {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
-            <span className="truncate">{title}</span>
-          </p>
-          {(statusBadge || responseMeta) && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-              {statusBadge}
-              {responseMeta && <span>{responseMeta}</span>}
-            </span>
-          )}
-        </div>
-        <div className="flex items-end gap-2 flex-wrap">
-          <span
-            className="font-heading text-3xl font-semibold tabular-nums leading-none"
-            style={{ color: value != null ? scoreColor(value) : 'var(--muted-foreground)' }}
-          >
-            {value != null ? value.toFixed(2) : '—'}
-          </span>
-          <span className="text-xs text-muted-foreground pb-0.5">/ 5</span>
-          {delta != null && Math.abs(delta) > 0.05 && (
-            <Badge
-              variant="secondary"
-              className="font-normal tabular-nums"
-              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-            >
-              <i
-                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
-                aria-hidden="true"
-              />
-              {Math.abs(delta).toFixed(2)} vs program
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {prior && value != null ? (
-            <>
-              <Popover>
-                <PopoverTrigger className="underline decoration-dotted underline-offset-2 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-                  {prior.term} {prior.avg.toFixed(2)}
-                </PopoverTrigger>
-                <PopoverContent className="w-72" align="start" sideOffset={6}>
-                  {actionItems.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Action items logged for {prior.term}</p>
+      <CardContent className="p-0">
+        <ScoreTile
+          label={title}
+          icon={icon}
+          badge={statusBadge}
+          meta={responseMeta}
+          value={value != null ? value.toFixed(2) : '—'}
+          suffix="/ 5"
+          delta={
+            delta != null && Math.abs(delta) > 0.05
+              ? {
+                  amount: Math.abs(delta).toFixed(2),
+                  direction: delta > 0 ? 'up' : 'down',
+                  label: 'vs program',
+                }
+              : null
+          }
+          caption={
+            prior && value != null ? (
+              <>
+                <Popover>
+                  <PopoverTrigger className="underline decoration-dotted underline-offset-2 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                    {prior.term} {prior.avg.toFixed(2)}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-4" align="start" sideOffset={6}>
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-sm font-medium">
+                        {actionItems.length > 0
+                          ? `Action items logged for ${prior.term}`
+                          : `No action items logged for ${prior.term}.`}
+                      </p>
                       {actionItems.map((a) => (
-                        <p key={a.text} className="text-xs">
+                        <p key={a.text} className="text-xs text-muted-foreground">
                           <span className="capitalize">{a.priority}</span> · {a.text}
                         </p>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-xs">No action items logged for {prior.term}.</p>
-                  )}
-                </PopoverContent>
-              </Popover>
-              {trendPhrase && <> · {trendPhrase}</>}
-              {delta != null && Math.abs(delta) <= 0.05 && programAvg != null && (
-                <> · At program ({programAvg.toFixed(2)})</>
-              )}
-            </>
-          ) : (
-            <>Program average {programAvg != null ? programAvg.toFixed(2) : '—'}</>
-          )}
-        </p>
+                  </PopoverContent>
+                </Popover>
+                {trendPhrase && <> · {trendPhrase}</>}
+                {delta != null && Math.abs(delta) <= 0.05 && programAvg != null && (
+                  <> · At program ({programAvg.toFixed(2)})</>
+                )}
+              </>
+            ) : (
+              <>Program average {programAvg != null ? programAvg.toFixed(2) : '—'}</>
+            )
+          }
+        />
       </CardContent>
     </Card>
   )
@@ -926,32 +971,21 @@ function ResponseRateCard({
   const delta = rate - 70
   return (
     <Card>
-      <CardContent className="pt-6 flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground">Response Rate</p>
-        <div className="flex items-end gap-2 flex-wrap">
-          <span
-            className="font-heading text-3xl font-semibold tabular-nums leading-none"
-            style={{ color: rateColor(rate) }}
-          >
-            {rate}%
-          </span>
-          {Math.abs(delta) >= 1 && (
-            <Badge
-              variant="secondary"
-              className="font-normal tabular-nums"
-              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-            >
-              <i
-                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
-                aria-hidden="true"
-              />
-              {Math.abs(delta)} pts vs 70% target
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {responses} of {enrolled} students responded
-        </p>
+      <CardContent className="p-0">
+        <ScoreTile
+          label="Response Rate"
+          value={`${rate}%`}
+          delta={
+            Math.abs(delta) >= 1
+              ? {
+                  amount: `${Math.abs(delta)} pts`,
+                  direction: delta > 0 ? 'up' : 'down',
+                  label: 'vs 70% target',
+                }
+              : null
+          }
+          caption={`${responses} of ${enrolled} students responded`}
+        />
       </CardContent>
     </Card>
   )
@@ -1260,6 +1294,24 @@ function ScalePlotLegend({ whiskers = false }: { whiskers?: boolean }) {
 const PLOT_TRIGGER_RING =
   'cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
+/* Popover body primitives — DS sectioned-popover anatomy (p-0 content, each
+   section owns px-3 py-2, border-b/border-t separators; Slite/Medium
+   definition-row formatting for stats). */
+
+/** Definition row: label left, tabular value right. */
+function PopoverStatRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-right text-xs tabular-nums text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function PopoverSection({ className = '', children }: { className?: string; children: React.ReactNode }) {
+  return <div className={`px-3 py-2 ${className}`}>{children}</div>
+}
+
 function ScaleTrackPlot({
   counts,
   total,
@@ -1299,38 +1351,55 @@ function ScaleTrackPlot({
   const median = ratingQuantile(counts, total, 0.5)
   const lowest = counts.findIndex((c) => c > 0) + 1
   const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
+  /* "vs program" definition row — shared by the detail + person popovers. */
   const gapLine = (v: number) =>
     programAvg == null ? null : (
-      <p className="text-xs tabular-nums">
-        Program {programAvg.toFixed(1)}
-        {Math.abs(v - programAvg) > 0.05 ? (
-          <span
-            className="font-medium"
-            style={{ color: v > programAvg ? 'var(--chart-2)' : 'var(--chip-4)' }}
-          >
-            {' '}({v > programAvg ? '+' : '−'}{Math.abs(v - programAvg).toFixed(1)})
-          </span>
-        ) : (
-          <span className="text-muted-foreground"> (at program)</span>
-        )}
-      </p>
+      <PopoverStatRow
+        label="vs program"
+        value={
+          Math.abs(v - programAvg) > 0.05 ? (
+            <>
+              {programAvg.toFixed(1)}{' '}
+              <span
+                className="font-medium"
+                style={{ color: v > programAvg ? 'var(--chart-2)' : 'var(--chip-4)' }}
+              >
+                ({v > programAvg ? '+' : '−'}{Math.abs(v - programAvg).toFixed(1)})
+              </span>
+            </>
+          ) : (
+            <>
+              {programAvg.toFixed(1)} <span className="text-muted-foreground">· at program</span>
+            </>
+          )
+        }
+      />
     )
-  /* The detail popover body — shared by the band and the course dot. The 1–5
-     distribution renders as the five-column histogram, not a text list. */
+  /* The detail popover body — DS sectioned anatomy: header · stat rows ·
+     distribution · (themes) question jump links. Shared by band + course dot. */
   const detailContent = (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-medium">{detailTitle}</p>
-        {detailMeta && <p className="text-xs text-muted-foreground">{detailMeta}</p>}
+    <div className="flex flex-col">
+      <div className="border-b border-border px-3 py-2">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <p className="text-sm font-semibold truncate">{detailTitle}</p>
+          {detailMeta && <p className="text-xs text-muted-foreground line-clamp-2">{detailMeta}</p>}
+        </div>
       </div>
-      <p className="text-xs tabular-nums text-muted-foreground">
-        Median {median.toFixed(1)} · middle 50% {p25.toFixed(1)}–{p75.toFixed(1)} · range {lowest}–
-        {highest}
-      </p>
-      {gapLine(avg)}
-      <MiniRatingColumns counts={counts} total={total} />
+      <PopoverSection className="flex flex-col gap-1.5">
+        <PopoverStatRow label="Median" value={median.toFixed(1)} />
+        <PopoverStatRow label="Middle 50%" value={`${p25.toFixed(1)}–${p75.toFixed(1)}`} />
+        <PopoverStatRow
+          label="Range"
+          value={`${lowest}–${highest} · ${total} rating${total !== 1 ? 's' : ''}`}
+        />
+        {gapLine(avg)}
+      </PopoverSection>
+      <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
+        <p className="text-xs text-muted-foreground">Rating distribution</p>
+        <RatingBreakdownRows counts={counts} total={total} />
+      </PopoverSection>
       {questionLinks && questionLinks.length > 0 && onQuestionJump && (
-        <div className="flex flex-col gap-0.5 border-t border-border pt-2">
+        <PopoverSection className="flex flex-col gap-0.5 border-t border-border">
           <p className="text-xs text-muted-foreground">Questions in this theme</p>
           {questionLinks.map((q) => (
             <Button
@@ -1344,7 +1413,7 @@ function ScaleTrackPlot({
               <span className="min-w-0 truncate text-start">{q.text}</span>
             </Button>
           ))}
-        </div>
+        </PopoverSection>
       )}
     </div>
   )
@@ -1391,11 +1460,13 @@ function ScaleTrackPlot({
             </span>
             <ProgramTriangle />
           </PopoverTrigger>
-          <PopoverContent className="w-64 text-sm" align="center" sideOffset={6}>
-            <p className="font-medium">Program average {programAvg.toFixed(1)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Response-weighted across all offerings with this {questionLinks ? 'theme' : 'question'}.
-            </p>
+          <PopoverContent className="w-72 p-4" side="top" align="center" sideOffset={6}>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium">Program average {programAvg.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">
+                Response-weighted across all offerings with this {questionLinks ? 'theme' : 'question'}.
+              </p>
+            </div>
           </PopoverContent>
         </Popover>
       )}
@@ -1443,7 +1514,7 @@ function ScaleTrackPlot({
             opacity: 0.42,
           }}
         />
-        <PopoverContent className="w-72" align="center" sideOffset={10}>
+        <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={10}>
           {detailContent}
         </PopoverContent>
       </Popover>
@@ -1486,16 +1557,16 @@ function ScaleTrackPlot({
               {m.value.toFixed(1)}
             </span>
           </PopoverTrigger>
-          <PopoverContent className="w-72" align="center" sideOffset={6}>
+          <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={6}>
             {m.person ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2.5 border-b border-border px-3 py-2">
                   <Avatar className="size-8">
                     <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
                     <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{m.person.name}</p>
+                    <p className="text-sm font-semibold truncate">{m.person.name}</p>
                     <p className="text-xs text-muted-foreground tabular-nums">
                       Average {m.value.toFixed(1)}
                       {m.person.total != null
@@ -1504,9 +1575,14 @@ function ScaleTrackPlot({
                     </p>
                   </div>
                 </div>
-                {gapLine(m.value)}
+                {programAvg != null && (
+                  <PopoverSection className="flex flex-col gap-1.5">{gapLine(m.value)}</PopoverSection>
+                )}
                 {m.person.counts && m.person.total != null && m.person.total > 0 && (
-                  <MiniRatingColumns counts={m.person.counts} total={m.person.total} />
+                  <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Rating distribution</p>
+                    <RatingBreakdownRows counts={m.person.counts} total={m.person.total} />
+                  </PopoverSection>
                 )}
               </div>
             ) : (
