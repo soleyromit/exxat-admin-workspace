@@ -1295,6 +1295,12 @@ function ratingQuantile(counts: number[], total: number, q: number): number {
   return 5
 }
 
+/* Two-lane strip (Romit pick 2026-07-17: data-dense direction, decluttered):
+   lane 1 on EVERY row = You vs Program — band, program tick, drawn amber/teal
+   gap bar, filled course-avg dot. Lane 2 only on multi-instructor rows = the
+   instructor dumbbell, with INITIALS AS THE MARKS (variant-1 trick — no
+   circle + label pairs to collide). Vertical lane separation adds the You/
+   Program read without piling more pointers on one line. */
 function QuestionDotStrip({
   avg,
   programAvg,
@@ -1311,32 +1317,21 @@ function QuestionDotStrip({
   const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
   const p25 = ratingQuantile(counts, total, 0.25)
   const p75 = ratingQuantile(counts, total, 0.75)
-  const dots = (perFaculty ?? [])
+  const marks = (perFaculty ?? [])
     .map((f) => ({ ...f, pos: x(f.avg) }))
     .sort((a, b) => a.pos - b.pos)
-  /* Initials of near-coincident dots nudge apart so both stay readable. */
-  const labelPos: number[] = []
-  dots.forEach((d, i) => {
-    let p = d.pos
-    if (i > 0 && p - labelPos[i - 1] < 7) p = labelPos[i - 1] + 7
-    labelPos.push(Math.min(100, p))
+  /* Near-coincident initials nudge apart so both stay readable. */
+  const markPos: number[] = []
+  marks.forEach((m, i) => {
+    let p = m.pos
+    if (i > 0 && p - markPos[i - 1] < 8) p = markPos[i - 1] + 8
+    markPos.push(Math.min(100, p))
   })
-  const below = avg != null && programAvg != null && avg < programAvg - 0.05
+  const gap = avg != null && programAvg != null ? avg - programAvg : null
+  const below = gap != null && gap < -0.05
   return (
     <div className="w-full min-w-0" aria-hidden="true">
-      {dots.length > 0 && (
-        <div className="relative h-4">
-          {dots.map((d, i) => (
-            <span
-              key={d.facultyId}
-              className="absolute bottom-0 -translate-x-1/2 text-xs text-muted-foreground"
-              style={{ left: `${labelPos[i]}%` }}
-            >
-              {d.initials}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Lane 1 — You vs Program (every row) */}
       <div className="relative h-6">
         <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
         {[1, 2, 3, 4, 5].map((n) => (
@@ -1356,35 +1351,64 @@ function QuestionDotStrip({
             }}
           />
         )}
+        {/* signed gap bar — the program→course delta drawn, not only printed */}
+        {gap != null && Math.abs(gap) > 0.05 && (
+          <div
+            className="absolute top-1 h-0.5 rounded-full"
+            style={{
+              left: `${Math.min(x(programAvg!), x(avg!))}%`,
+              width: `${Math.max(1, Math.abs(x(avg!) - x(programAvg!)))}%`,
+              background: below ? 'var(--chip-4)' : 'var(--chart-2)',
+            }}
+          />
+        )}
         {programAvg != null && (
           <span
             className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
           />
         )}
-        {dots.length > 0
-          ? dots.map((d) => (
-              <span
-                key={d.facultyId}
-                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                style={{
-                  left: `${d.pos}%`,
-                  borderColor: 'var(--foreground)',
-                  background: 'var(--card)',
-                }}
-              />
-            ))
-          : avg != null && (
-              <span
-                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{
-                  left: `${x(avg)}%`,
-                  background: below ? 'var(--chip-4)' : 'var(--foreground)',
-                  boxShadow: '0 0 0 2px var(--card)',
-                }}
-              />
-            )}
+        {avg != null && (
+          <span
+            className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
+            style={{
+              left: `${x(avg)}%`,
+              background: below ? 'var(--chip-4)' : 'var(--foreground)',
+            }}
+          />
+        )}
       </div>
+      {/* Lane 2 — instructor dumbbell, initials as marks (multi-instructor only) */}
+      {marks.length > 0 && (
+        <div className="relative h-4">
+          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: 'var(--border-control-35)' }} />
+          {marks.length > 1 && (
+            <div
+              className="absolute top-1/2 h-px -translate-y-1/2"
+              style={{
+                left: `${marks[0].pos}%`,
+                width: `${Math.max(0.5, marks[marks.length - 1].pos - marks[0].pos)}%`,
+                background: 'var(--muted-foreground)',
+              }}
+            />
+          )}
+          {marks.map((m, i) => (
+            <span
+              key={m.facultyId}
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-0.5 text-xs font-medium leading-none"
+              style={{
+                left: `${markPos[i]}%`,
+                color:
+                  programAvg != null && m.avg < programAvg - 0.05
+                    ? 'var(--chip-4)'
+                    : 'var(--muted-foreground)',
+              }}
+            >
+              {m.initials}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1414,34 +1438,43 @@ function QuestionBreakdownTable({
     <div className="flex flex-col">
       {/* Division of labor by form: the theme strip owns distribution SHAPE
           (stacked bars, 4 rows); question rows own LEVEL vs benchmark — a
-          Cleveland dot strip per row (30 stacked bars read as texture). */}
+          two-lane strip: You-vs-program on top, instructor dumbbell below. */}
       <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-          Course avg
+          You (course avg)
         </span>
-        {rows.some((r) => r.perFaculty?.length) && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full border-2 bg-card" style={{ borderColor: 'var(--foreground)' }} aria-hidden="true" />
-            Instructor (initials)
-          </span>
-        )}
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
           Program
         </span>
         <span className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-5 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
+          Gap vs program (amber = below)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
           <span className="h-2 w-5 rounded-full" style={{ background: 'var(--border-control-35)' }} aria-hidden="true" />
           Middle 50% of ratings
         </span>
+        {rows.some((r) => r.perFaculty?.length) && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-0.5 font-medium" aria-hidden="true">
+              <span>KC</span>
+              <span className="h-px w-3" style={{ background: 'var(--muted-foreground)' }} />
+              <span>AP</span>
+            </span>
+            Instructor lane (initials at their score)
+          </span>
+        )}
       </div>
-      <div className="grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-end gap-6 pb-2 border-b border-border">
+      <div className="grid grid-cols-[minmax(200px,320px)_1fr_5rem_12rem] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
             <span key={n}>{n}</span>
           ))}
         </div>
+        <span className="text-xs text-muted-foreground text-right">n · fav %</span>
         <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => {
@@ -1465,11 +1498,15 @@ function QuestionBreakdownTable({
                 id={`question-${r.id}`}
                 role="img"
                 aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                  (r.total ?? 0) > 0
+                    ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
+                    : ''
+                }${
                   r.perFaculty && r.perFaculty.length > 0
                     ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
                     : ''
                 }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(200px,320px)_1fr_12rem] items-center gap-6 py-3 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(200px,320px)_1fr_5rem_12rem] items-center gap-6 py-2.5 border-b border-border last:border-0"
               >
                 <p className="text-sm min-w-0">{r.label}</p>
                 <QuestionDotStrip
@@ -1479,6 +1516,11 @@ function QuestionBreakdownTable({
                   total={r.total ?? 0}
                   perFaculty={r.perFaculty}
                 />
+                <p className="text-xs tabular-nums text-right whitespace-nowrap text-muted-foreground">
+                  {(r.total ?? 0) > 0
+                    ? `${r.total} · ${Math.round(favorableShare(r.counts, r.total) * 100)}%`
+                    : '—'}
+                </p>
                 <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
