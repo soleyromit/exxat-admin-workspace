@@ -297,8 +297,8 @@ export interface PceInstructor {
   name: string
   initials: string
   role: 'primary' | 'guest'
-  /** Stock portrait (randomuser.me, stable index per person) — identity marker
-   *  on score plots and avatar surfaces; initials remain the fallback. */
+  /** Stock portrait (vendored under /public/portraits) — identity marker on
+   *  score plots and avatar surfaces; initials remain the fallback. */
   avatarUrl?: string
   department?: string
   /** Directory/profile fields (optional — survey.instructors carry only id/name/role). */
