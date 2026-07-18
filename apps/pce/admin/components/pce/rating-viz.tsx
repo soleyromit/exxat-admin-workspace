@@ -84,6 +84,9 @@ export function RatingStackedBar({ counts, total }: { counts: number[]; total: n
               />
             )
           })}
+          {/* No responses yet — quiet muted fill instead of a transparent void
+              (state-review: an empty cell reads as a layout failure). */}
+          {total === 0 && <div className="h-full w-full rounded-md bg-muted" />}
         </div>
       </TooltipTrigger>
       <TooltipContent>
