@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-07-13",
+  "lastUpdated": "2026-07-20",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -713,6 +713,106 @@
       "source": "1:1 meeting with Arun and Romit transcript — Jul 6, 2026",
       "sourceType": "transcript",
       "date": "2026-07-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-054",
+      "product": "pce",
+      "text": "The 'Settings' tab throughout the PCE/CE module must be renamed to 'Setup' to align with Prism product convention. All other areas of Prism use 'setup' not 'settings'. This applies to the sidebar label, page headings, and any CTAs referring to the configuration section. Vishaka: 'In rest of the Prism product, I think we are using the term setup. If I'm not wrong. So any particular reason why we are changing it to settings in this particular module? It is setup. So maybe, Monil, we want to stick to that and not create new terms. So maybe setup is what we want to use.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-055",
+      "product": "pce",
+      "text": "PCE survey takers are limited to students only in phase 1. Contributing faculty (faculty who contribute to a team-taught course) and staff are explicitly out of scope as survey takers. If contributing faculty feedback on course performance is required, it will be addressed in a future phase. Monil: 'No, this is only students. For now. The scope is only students.' Vishaka confirmed: 'if contributing faculty also, we want to collect feedback on the course performance, we are not going to cater to that in phase 1.' This is a good future requirement to capture but not in scope now.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-056",
+      "product": "pce",
+      "text": "The CE module landing page (reached after clicking the CE tile from the Prism main menu) must be a unified 'home page' overview rather than defaulting directly to either the CE Dashboard or the Programmatic Survey Dashboard. The home page shows both CE and programmatic surveys at a glance (e.g., active survey counts, response stats for both types) and provides navigation paths to each. Monil: 'Let us think of a home page kind of a thing before we land on this.' Vishaka and David agreed: 'Yeah, that will be better — either it gives them an overview and a couple of ways to go about it, or give them a nice total of what they have active.' Exact design TBD but the direction is confirmed.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-057",
+      "product": "pce",
+      "text": "The PCE CE dashboard must be designed for 4 distinct fill states: (1) Empty state — no term configured yet; show a single card that says 'no upcoming term — configure term calendar.' (2) Current term only — first term is set up and live; no last term or upcoming term card. (3) Current + last term — two cards visible; no upcoming term. (4) All three cards — current, last, and upcoming term visible. Monil: 'We need to also capture all these scenarios. One scenario is where the user comes for the first time, which is the empty state. Where nothing is configured. Then one scenario where current term, the first term is set up and it is live. There is neither the last term nor the upcoming term. Another scenario is where you have one last term and one current term and no future term. And the fourth scenario you have all the terms. Right now we have only captured the fourth scenario.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-058",
+      "product": "pce",
+      "text": "PCE beta launch target: build-ready by September 15, 2026 (aligned with the cohere 2026 conference). Beta users are programs that sign up at or before the conference. Only beta-enrolled programs will see the CE tile in Prism — it will not be visible to all users until GA. Beta signups collected via a QR code at the product booth and at the end of the PCE/Exam Management session slide decks (one common QR code covers all new modules). The QR code links to a sign-up form that lets programs express interest in PCE, Exam Management, and Accreditation. Beta usage is free. The goal during the Q4 beta period is to hand-hold 5–10 programs through Prism data setup so they are ready to distribute CE for fall 2026 end-of-term evaluations.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-059",
+      "product": "pce",
+      "text": "PCE general announcement (GA) is targeted for January (first or second Friday — exact date TBD). At GA, all Prism users will see the CE tile and the module will be publicly available. Monetization model: free-tier of approximately 6 months from sign-up date, followed by automatic payment. Payment details must be collected at sign-up (prior to the end of the free period) to enable automatic billing — not after the free period ends. Pricing tiers and GTM strategy (product-led vs. AM-assisted) are still being finalized with marketing and sales. Current programmatic survey users who have been using surveys for free will need contract updates from account managers before GA. Monil proposed: 'For beta users, it is going to be free. For GA users we should collect payment details upfront so automatic billing kicks in.' All parties agreed this is the right model to avoid the retroactive payment problem.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-060",
+      "product": "pce",
+      "text": "Clinical term edge case (PA programs): Some PA programs configure a year-long 'clinical term' or 'clinical phase' that spans the entire academic year (e.g., July 2026–June 2027). Because CE distribution is anchored to term start/end dates, a clinical term with year-long dates will always appear as a 'current term' on the CE dashboard. This edge case cannot be ignored and must be investigated and designed for before the dashboard is finalized. Action: David to ask Carol (a PA client, Shenandoah) how they currently collect course evaluations for clinical courses — whether per rotation block or at the end of the clinical year. Monil: 'Depending now that if you collect the start date and end date of the clinical term, they will likely put it as July 2026 to June 2027, which is their clinical year. Then it will always show up as a current term on your dashboard.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-061",
+      "product": "pce",
+      "text": "Action needed column in the course readiness table: all faculty-role-specific add CTAs (e.g., 'add instructor', 'add lab instructor', 'add course coordinator') must be aggregated into a single 'add faculty' CTA. If student roster is empty (count = 0), an 'add students' CTA is shown. Maximum two CTAs visible per row at any time: 'add faculty' and/or 'add students'. No per-role CTAs as separate buttons — this would not scale to programs with 5+ faculty roles. Vishal: 'We can categorize all the faculty roles as add faculty CTA. And all the students as add student. So there is only maximum two CTAs that you will see.' The admin knows which roles to add because they are familiar with their program's role configuration.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course evaluation setup — design feedback and UX refinement transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-062",
+      "product": "pce",
+      "text": "Cohort and 'what to evaluate' selectors in the setup survey wizard must not use horizontal radio buttons. Cohort is a program-level lookup from Prism (NOT dependent on term or academic year — it is a standalone configuration value) and can have more than 20 values. 'What to evaluate' faculty roles can have 45–50 options per program. Both fields need a scalable UI pattern (e.g., dropdown, searchable multi-select, or tag picker) that handles large option sets without overflowing horizontal space. Vishal: 'Cohort can be more than five... cohort is not dependent on terminal academic year. It is just a defined lookup value that comes from Prism.' And: 'What to evaluate, there are 45, 50 faculty roles created in the system.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course evaluation setup — design feedback and UX refinement transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-063",
+      "product": "pce",
+      "text": "Step 1 of the setup survey wizard ('course readiness') has a single primary purpose: to audit course data and help the admin identify and prepare missing data before distribution — NOT primarily to select which courses to evaluate (courses are already known by the admin). The step surfaces where faculty roles, student rosters, or course offering data are missing so the admin can navigate to Prism, fix the gaps, and return. Labels and language on this step must communicate the audit/preparation intent. Vishal: 'The purpose of step 1 is to audit the course data and help user prepare that data. Preparation will happen in Prism. But what best we can do is we can just identify where are the missing data points. And they can go and fill and come back.' If only the language/copy needs to change (not the structure), a copy change may be sufficient before a full UX rethink.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course evaluation setup — design feedback and UX refinement transcript — Jul 14, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-14",
       "status": "confirmed"
     }
   ]
