@@ -51,7 +51,21 @@ interface TrajectoryDatum {
   min: number
   range: number
   median: number
+  /** Middle 50% of the faculty distribution — the boxplot's box. */
+  p25: number
+  p75: number
+  /** Every faculty offering average that term — the popover's strip plot. */
+  scores: number[]
   faculty: number | null
+}
+
+/** Linear-interpolated quantile over a sorted ascending list. */
+function quantileSorted(sorted: number[], q: number): number {
+  if (sorted.length === 0) return 0
+  const idx = (sorted.length - 1) * q
+  const lo = Math.floor(idx)
+  const hi = Math.ceil(idx)
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
 }
 
 /* Hand-rolled standing-per-term plot on the shared 3–5 window. Round-14 rework
@@ -114,22 +128,44 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
               const gap = d.faculty != null ? d.faculty - d.median : null
               return (
                 <div key={d.term} className="relative flex-1">
-                  {/* Cohort range column — neutral gray: context, not signal */}
+                  {/* DS boxplot anatomy (Chart → Statistical → Boxplot), the
+                      SAME vocabulary as the results-page plots: whisker =
+                      full range (neutral hairline + end caps), box = middle
+                      50% (brand, 0.42), line = median (brand). Only YOUR dot
+                      wears sentiment. */}
                   <div
                     aria-hidden="true"
-                    className="absolute left-1/2 w-2 -translate-x-1/2 rounded-sm"
+                    className="absolute left-1/2 w-px -translate-x-1/2"
                     style={{
                       bottom: `${pos(d.min) * 100}%`,
                       height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
                       background: 'var(--muted-foreground)',
-                      opacity: 0.14,
+                      opacity: 0.6,
                     }}
                   />
-                  {/* Median notch — neutral */}
+                  {[d.min, d.min + d.range].map((v, i) => (
+                    <div
+                      key={i}
+                      aria-hidden="true"
+                      className="absolute left-1/2 h-px w-2.5 -translate-x-1/2"
+                      style={{ top: `${(1 - pos(v)) * 100}%`, background: 'var(--muted-foreground)', opacity: 0.6 }}
+                    />
+                  ))}
                   <div
                     aria-hidden="true"
-                    className="absolute left-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                    style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--muted-foreground)' }}
+                    className="absolute left-1/2 w-4 -translate-x-1/2 rounded-[3px]"
+                    style={{
+                      bottom: `${pos(d.p25) * 100}%`,
+                      height: `${Math.max(2, (pos(d.p75) - pos(d.p25)) * 100)}%`,
+                      background: 'var(--brand-color)',
+                      opacity: 0.42,
+                    }}
+                  />
+                  {/* Median — brand line per the DS boxplot spec */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute left-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--brand-color)' }}
                   />
                   {/* Your dot + value — teal at/above median, amber below */}
                   {d.faculty != null && (
@@ -144,7 +180,7 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
                       />
                       <span
                         aria-hidden="true"
-                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium tabular-nums"
+                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-card/85 px-0.5 text-xs font-medium tabular-nums"
                         style={{
                           top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)`,
                           color: below ? 'var(--chip-4)' : 'var(--foreground)',
@@ -164,7 +200,42 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
                       <div className="flex flex-col">
                         <div className="border-b border-border px-3 py-2">
                           <p className="text-sm font-semibold">{d.term}</p>
-                          <p className="text-xs text-muted-foreground">Full faculty range this term</p>
+                          <p className="text-xs text-muted-foreground">
+                            {d.scores.length} faculty evaluated this term
+                          </p>
+                        </div>
+                        {/* Where you sat — the term's actual faculty scores as
+                            a strip plot on the 3–5 window; you are the only
+                            colored mark, median is the brand tick. */}
+                        <div className="border-b border-border px-3 py-2">
+                          <p className="mb-1.5 text-xs text-muted-foreground">Where you sat</p>
+                          <div className="relative h-7" aria-hidden="true">
+                            <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
+                            {d.scores.map((s, i) => (
+                              <span
+                                key={i}
+                                className="absolute top-1/2 h-2.5 w-px -translate-x-1/2 -translate-y-1/2"
+                                style={{ left: `${pos(s) * 100}%`, background: 'var(--muted-foreground)', opacity: 0.5 }}
+                              />
+                            ))}
+                            <span
+                              className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                              style={{ left: `${pos(d.median) * 100}%`, background: 'var(--brand-color)' }}
+                            />
+                            {d.faculty != null && (
+                              <span
+                                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--popover)]"
+                                style={{
+                                  left: `${pos(d.faculty) * 100}%`,
+                                  background: below ? 'var(--chip-4)' : 'var(--chart-2)',
+                                }}
+                              />
+                            )}
+                          </div>
+                          <div className="flex justify-between text-xs tabular-nums text-muted-foreground" aria-hidden="true">
+                            <span>3.0</span>
+                            <span>5.0</span>
+                          </div>
                         </div>
                         <div className="flex flex-col gap-1.5 px-3 py-2">
                           <div className="flex items-baseline justify-between gap-4">
@@ -189,7 +260,13 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
                             </div>
                           )}
                           <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-xs text-muted-foreground">Faculty range</span>
+                            <span className="text-xs text-muted-foreground">Middle 50%</span>
+                            <span className="text-right text-xs tabular-nums">
+                              {d.p25.toFixed(2)}–{d.p75.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-xs text-muted-foreground">Full range</span>
                             <span className="text-right text-xs tabular-nums">
                               {d.min.toFixed(2)}–{(d.min + d.range).toFixed(2)}
                             </span>
@@ -301,6 +378,9 @@ export default function MyDashboardPage() {
         min: +min.toFixed(2),
         range: +(max - min).toFixed(2),
         median: +median.toFixed(2),
+        p25: +quantileSorted(sorted, 0.25).toFixed(2),
+        p75: +quantileSorted(sorted, 0.75).toFixed(2),
+        scores: sorted.map((s) => +s.toFixed(2)),
         faculty: own ? +own.avgRating.toFixed(2) : null,
       }
     })
@@ -476,7 +556,7 @@ export default function MyDashboardPage() {
           <ChartCard
             variant="normal"
             title="Rating over time"
-            description="Where you sat in the faculty range each term · gray column = full range, notch = median · amber = below median · click a term for details"
+            description="Faculty boxplot per term — box = middle 50%, line = median, whisker = full range · your dot (amber = below median) · click a term for details"
             leoInsight={bandLeo}
           >
             <ChartFigure
@@ -489,12 +569,14 @@ export default function MyDashboardPage() {
                   <TrajectoryPlot data={trendData} />
                   <ChartDataTable
                     caption="Rating over time"
-                    headers={['Term', 'You', 'Median', 'Faculty range']}
+                    headers={['Term', 'You', 'Median', 'Middle 50%', 'Faculty range', 'Faculty evaluated']}
                     rows={trendData.map((d) => [
                       d.term,
                       d.faculty != null ? d.faculty.toFixed(2) : '—',
                       d.median.toFixed(2),
+                      `${d.p25.toFixed(2)}–${d.p75.toFixed(2)}`,
                       `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
+                      d.scores.length,
                     ])}
                   />
                 </>
