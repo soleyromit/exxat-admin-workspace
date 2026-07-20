@@ -1413,6 +1413,56 @@ Reconfirms D_EM_0702_03: speed of delivery is the overriding priority. If the de
 
 ---
 
+### 5.64 Module launcher layout, AI capability principle, and modular strategy context (Aarti, 2026-07-19)
+
+Source: `docs/research/meetings/2026-07-19-modular-strategy-ai-capabilities.md` (Granola `1bc03a5a`)
+
+**Module launcher — layout and visual treatment**
+
+Aarti gave specific layout direction for the module launcher (T101), with Romit retaining design discretion on hierarchy.
+
+| Decision | Detail |
+|---|---|
+| No-scroll constraint (D_EM_0719_01) | All Exxat products must be visible without scrolling. "the goal is without scrolling I need to know what exact offers." |
+| Layout suggestion — not prescriptive (D_EM_0719_01) | Top row = one prominent product. Remaining rows = 2-column grid. Aarti: "you can use some of your design thinking to decide what is the best way to do it." |
+| Interactive product diagram (D_EM_0719_02) | Incorporate a diagram of the full Exxat product ecosystem; users can "explode" / drill into each product. Reference: "what product was doing with that diagram." |
+| Visual treatment: subscribed vs non-subscribed (D_EM_0719_03) | Subscribed modules = grayed out. Non-subscribed modules = visually prominent. Purpose: cross-sell/upsell current clients from within the product. |
+
+> "the goal is without scrolling I need to know what exact offers." — Aarti, 2026-07-19
+
+> "the ones that you already have can be grayed out and the ones that you don't have can be given a little bit more important or whatever." — Aarti, 2026-07-19
+
+> "I also like what product was doing with that diagram. So if there's a way to even incorporate that diagram and then like explore exact and then like you know give them a way to explode that." — Aarti, 2026-07-19
+
+**Module-to-persona clustering (D_EM_0719_04)**
+
+| Persona cluster | Products |
+|---|---|
+| Clinical education director | Clinic module |
+| Academic / education director | Exam management |
+| Same user type | Curriculum mapping + Exam management |
+| Same user type | Compliance + Clinic |
+
+> "Curriculum mapping and exam management could probably belong to the same user just like compliance and clinic belongs to the same category of users." — Aarti, 2026-07-19
+
+**AI capability principle (D_EM_0719_05)**
+
+All AI features across the product must have a point-and-click equivalent. AI supplements existing UI flows — it never replaces them. No standalone "loop through all courses" AI batch interface is needed or wanted.
+
+> "this capability have to be done through point of click also no matter what we do. But in addition to point and click for the basic capabilities we are never going to have the UI that says oh ma'am let me drift through all the courses and do it." — Aarti, 2026-07-19
+
+> "we can have both. Ways of working with the product. Where you can either do point and check or you can do this. I don't think it would be necessarily need either or." — Aarti, 2026-07-19
+
+**Timeline (from this meeting)**
+
+| Milestone | Date |
+|---|---|
+| Next team strategy conversation | Week of August 3rd (Vishaka will participate) |
+| Aarti in India | Last week of August + first week of September |
+| Module launcher full review | Deferred to August — aligned with T101 |
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1452,6 +1502,7 @@ Reconfirms D_EM_0702_03: speed of delivery is the overriding priority. If the de
 | 2026-07-02 08:12 | Create template — upload capability and handoff readiness with Monil (PCE) | `3c5d6795` | Monil + Romit |
 | 2026-07-06 10:00 | Priority and governance update 1:1 — Arun and Romit | `e69904b6` | Arun + Romit |
 | 2026-07-07 09:30 | Exam management priority sync and governance change | `91c567e8` | Vishal + Romit |
+| 2026-07-19 10:04 | Modular product strategy — pricing tiers, upsell opportunities, and AI capabilities | `1bc03a5a` | Aarti + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

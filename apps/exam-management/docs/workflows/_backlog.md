@@ -221,6 +221,21 @@ Source: `docs/research/meetings/2026-07-07-vishal-exam-mgmt-priority-sync.md` (G
 |---|---|---|---|---|---|
 | T104 | Assessment creation screens — information density review | Admin / Faculty | Assessment builder (create-assessment-modal.tsx + related builder screens) | P1 — DESIGN-REVIEW | Vishal Jul 7: "there are some screens where the information is too dense. We need to figure out a way to present so much of information. And little screen." Workflow is correct — this is a visual hierarchy and information grouping pass only. Do NOT restructure the workflow; only reconsider grouping, spacing, and visual weight within existing screens. D_EM_0707_05. |
 
+## Phase 1 design tasks — added 2026-07-19
+
+Source: `docs/research/meetings/2026-07-19-modular-strategy-ai-capabilities.md` (Granola `1bc03a5a`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T105 | AI capability rule — audit all AI features for point-and-click parity | All | Cross-cutting | P1 — DOCUMENTATION | Aarti Jul 19: all AI features must have a point-and-click equivalent. No standalone AI batch-processing UI (e.g. "loop through all courses"). Both modes must coexist. Audit existing AI feature designs (question generation, assessment generation, gap analysis) for compliance. D_EM_0719_05. |
+| T106 | Module launcher — update design spec with July 19 Aarti layout direction | Cross-product | Module launcher | P1 — DESIGN-REVIEW | New specifics added Jul 19: (1) no-scroll constraint — all products visible in one view; (2) suggested grid: top row = 1 prominent product, rest = 2-column; (3) interactive product ecosystem diagram with drill-in; (4) subscribed modules = grayed out, non-subscribed = visually emphasized. Full review deferred to August 3rd week. Vishaka will participate. Supplements T101. D_EM_0719_01, D_EM_0719_02, D_EM_0719_03. |
+
+### Updates to existing tasks (Jul 19)
+
+| # | Update |
+|---|---|
+| T101 | New layout direction from Aarti Jul 19: no-scroll, 2-column grid, interactive diagram, subscribed=grayed/non-subscribed=emphasized. See T106 for full spec. Full review still deferred to August. D_EM_0719_01–03. |
+
 ### Priority clarification (Jul 2026)
 
 | # | Update |
