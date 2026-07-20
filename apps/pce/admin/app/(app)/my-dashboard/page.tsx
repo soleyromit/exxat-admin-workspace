@@ -22,6 +22,9 @@ import {
   CardHeader,
   CardTitle,
   KeyMetrics,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   StatusBadge,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
@@ -51,9 +54,13 @@ interface TrajectoryDatum {
   faculty: number | null
 }
 
-/* Hand-rolled standing-per-term plot on the shared 3–5 window: soft cohort
-   range columns + median notch + your value-labeled dot, dots joined by a
-   hairline. Position marks on a printed axis (RUBRIC v2), no library default. */
+/* Hand-rolled standing-per-term plot on the shared 3–5 window. Round-14 rework
+   (Romit: "can't hover and see the data · everything is green, why?"):
+   context marks are NEUTRAL (gray range column + median notch — they are the
+   cohort, not a signal); color exists ONLY as sentiment on YOUR dot — teal at
+   or above the faculty median, amber below (the page-wide rule). Every term
+   column is a click-popover with the sectioned stat rows (the session's plot
+   vocabulary — click, not hover, so it is keyboard-reachable too). */
 function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
   const pos = (v: number) => (Math.min(5, Math.max(3, v)) - 3) / 2
   const n = data.length
@@ -62,17 +69,19 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
     .filter(Boolean)
     .join(' ')
   return (
-    <div
-      role="img"
-      aria-label={`Your rating per term inside the full faculty range. ${data
-        .filter((d) => d.faculty != null)
-        .map((d) => `${d.term}: you ${d.faculty!.toFixed(2)}, median ${d.median.toFixed(2)}`)
-        .join('; ')}.`}
-      className="w-full"
-    >
-      <div className="flex gap-3" aria-hidden="true">
+    <div className="w-full">
+      <span className="sr-only">
+        {`Your rating per term inside the full faculty range. ${data
+          .filter((d) => d.faculty != null)
+          .map((d) => `${d.term}: you ${d.faculty!.toFixed(2)}, median ${d.median.toFixed(2)}`)
+          .join('; ')}.`}
+      </span>
+      <div className="flex gap-3">
         {/* Printed axis — 3.0–5.0 window */}
-        <div className="relative h-60 w-7 shrink-0 text-xs text-muted-foreground tabular-nums">
+        <div
+          className="relative h-60 w-7 shrink-0 text-xs text-muted-foreground tabular-nums"
+          aria-hidden="true"
+        >
           {[5, 4.5, 4, 3.5, 3].map((v) => (
             <span key={v} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - pos(v)) * 100}%` }}>
               {v.toFixed(1)}
@@ -83,56 +92,115 @@ function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
           {[5, 4.5, 4, 3.5, 3].map((v) => (
             <div
               key={v}
+              aria-hidden="true"
               className="absolute inset-x-0 border-t border-dashed border-border"
               style={{ top: `${(1 - pos(v)) * 100}%` }}
             />
           ))}
-          {/* Hairline trajectory between your dots */}
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          {/* Hairline trajectory between your dots — neutral, not a signal */}
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <polyline
               points={points}
               fill="none"
-              stroke="var(--chart-2)"
+              stroke="var(--muted-foreground)"
               strokeWidth="1.5"
-              strokeOpacity="0.45"
+              strokeOpacity="0.35"
               vectorEffect="non-scaling-stroke"
             />
           </svg>
           <div className="absolute inset-0 flex">
-            {data.map((d) => (
-              <div key={d.term} className="relative flex-1">
-                {/* Cohort range column — slim teal tint (Romit-picked V2) */}
-                <div
-                  className="absolute left-1/2 w-2 -translate-x-1/2 rounded-sm"
-                  style={{
-                    bottom: `${pos(d.min) * 100}%`,
-                    height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
-                    background: 'var(--chart-2)',
-                    opacity: 0.15,
-                  }}
-                />
-                {/* Median notch */}
-                <div
-                  className="absolute left-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                  style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--chart-3)' }}
-                />
-                {/* Your dot + value at the mark */}
-                {d.faculty != null && (
-                  <>
-                    <div
-                      className="absolute left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card"
-                      style={{ top: `${(1 - pos(d.faculty)) * 100}%`, background: 'var(--chart-2)' }}
+            {data.map((d) => {
+              const below = d.faculty != null && d.faculty < d.median - 0.005
+              const gap = d.faculty != null ? d.faculty - d.median : null
+              return (
+                <div key={d.term} className="relative flex-1">
+                  {/* Cohort range column — neutral gray: context, not signal */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute left-1/2 w-2 -translate-x-1/2 rounded-sm"
+                    style={{
+                      bottom: `${pos(d.min) * 100}%`,
+                      height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
+                      background: 'var(--muted-foreground)',
+                      opacity: 0.14,
+                    }}
+                  />
+                  {/* Median notch — neutral */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute left-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--muted-foreground)' }}
+                  />
+                  {/* Your dot + value — teal at/above median, amber below */}
+                  {d.faculty != null && (
+                    <>
+                      <div
+                        aria-hidden="true"
+                        className="absolute left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card"
+                        style={{
+                          top: `${(1 - pos(d.faculty)) * 100}%`,
+                          background: below ? 'var(--chip-4)' : 'var(--chart-2)',
+                        }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium tabular-nums"
+                        style={{
+                          top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)`,
+                          color: below ? 'var(--chip-4)' : 'var(--foreground)',
+                        }}
+                      >
+                        {d.faculty.toFixed(2)}
+                      </span>
+                    </>
+                  )}
+                  {/* Whole-column click target → sectioned stat popover */}
+                  <Popover>
+                    <PopoverTrigger
+                      aria-label={`${d.term} — your rating vs the faculty range, details`}
+                      className="absolute inset-y-0 left-1/2 w-10 -translate-x-1/2 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     />
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium tabular-nums text-foreground"
-                      style={{ top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)` }}
-                    >
-                      {d.faculty.toFixed(2)}
-                    </span>
-                  </>
-                )}
-              </div>
-            ))}
+                    <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={6}>
+                      <div className="flex flex-col">
+                        <div className="border-b border-border px-3 py-2">
+                          <p className="text-sm font-semibold">{d.term}</p>
+                          <p className="text-xs text-muted-foreground">Full faculty range this term</p>
+                        </div>
+                        <div className="flex flex-col gap-1.5 px-3 py-2">
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-xs text-muted-foreground">You</span>
+                            <span className="text-right text-xs tabular-nums">
+                              {d.faculty != null ? d.faculty.toFixed(2) : '— (no offering this term)'}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-xs text-muted-foreground">Faculty median</span>
+                            <span className="text-right text-xs tabular-nums">{d.median.toFixed(2)}</span>
+                          </div>
+                          {gap != null && (
+                            <div className="flex items-baseline justify-between gap-4">
+                              <span className="text-xs text-muted-foreground">vs median</span>
+                              <span
+                                className="text-right text-xs font-medium tabular-nums"
+                                style={{ color: Math.abs(gap) <= 0.005 ? 'var(--muted-foreground)' : below ? 'var(--chip-4)' : 'var(--chart-2)' }}
+                              >
+                                {Math.abs(gap) <= 0.005 ? 'At median' : `${gap > 0 ? '+' : '−'}${Math.abs(gap).toFixed(2)}`}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-xs text-muted-foreground">Faculty range</span>
+                            <span className="text-right text-xs tabular-nums">
+                              {d.min.toFixed(2)}–{(d.min + d.range).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -408,7 +476,7 @@ export default function MyDashboardPage() {
           <ChartCard
             variant="normal"
             title="Rating over time"
-            description="Where you sat in the faculty range each term · column = full range · notch = median"
+            description="Where you sat in the faculty range each term · gray column = full range, notch = median · amber = below median · click a term for details"
             leoInsight={bandLeo}
           >
             <ChartFigure
