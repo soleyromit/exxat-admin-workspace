@@ -1,11 +1,11 @@
-# Compliance Report — 2026-07-13
+# Compliance Report — 2026-07-20
 
 ## Summary
 P1 (blocks release): 0
 P2 (fix before next audit): 17
 P3 (advisory): 30
 Resolved since last sweep: 0
-New since last sweep: 2
+New since last sweep: 0
 
 ---
 
@@ -25,7 +25,7 @@ _None._
 | pce-011 | `apps/pce/admin/app/(app)/surveys/push/page.tsx` | 240 | 2026-06-22 | GUARDRAIL-raw-button |
 | pce-012 | `apps/pce/admin/components/data-table/pagination.tsx` | 78, 108, 119, 133, 144 | 2026-06-22 | GUARDRAIL-raw-button |
 | pce-013 | `apps/pce/admin/components/data-table/index.tsx` | 195, 211, 246, 255, 276, 303, 350, 482, 502, 539, 554, 580, 597, 856, 889, 919 | 2026-06-22 | GUARDRAIL-raw-button |
-| pce-014 NEW | `apps/pce/admin/components/key-metrics/index.tsx` | 289 | 2026-07-13 | GUARDRAIL-raw-button |
+| pce-014 | `apps/pce/admin/components/key-metrics/index.tsx` | 289 | 2026-07-13 | GUARDRAIL-raw-button |
 
 **Consequence:** Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.
 **Fix:** Replace with DS `<Button>` using explicit `variant` and `size`. For `data-table/index.tsx` column drag handles, use `role="button"` pattern.
@@ -37,7 +37,7 @@ _None._
 | exam-020 | `apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx` | 1137, 1798, 2528, 3990, 4257 | 2026-06-22 | WCAG-4.1.2-dropdown-modal |
 
 **Consequence:** Without `modal={false}`, Radix DropdownMenu locks body scroll on open — breaks scroll inside nested drawers/dialogs and causes layout shift on mobile.
-**Fix:** Add `modal={false}` to each `<DropdownMenu>` root in `qb-table.tsx` (5 remaining instances). Note: lines 1711 and 2051 were fixed since last sweep — partial progress detected.
+**Fix:** Add `modal={false}` to each `<DropdownMenu>` root in `qb-table.tsx` (5 remaining instances). Note: lines 1711 and 2051 were fixed in a prior sweep — partial progress detected.
 
 ### exam-management — GUARDRAIL-raw-button
 
@@ -52,7 +52,7 @@ _None._
 | exam-027 | `apps/exam-management/admin/components/data-table/index.tsx` | 195, 211, 246, 255, 276, 303, 350, 479, 499, 536, 551, 577, 593, 856, 888, 918 | 2026-06-22 | GUARDRAIL-raw-button |
 | exam-028 | `apps/exam-management/admin/components/search-input.tsx` | 209, 259, 282 | 2026-06-22 | GUARDRAIL-raw-button |
 | exam-029 | `apps/exam-management/admin/components/qb/toggle.tsx` | 26 | 2026-06-22 | GUARDRAIL-raw-button |
-| exam-033 NEW | `apps/exam-management/admin/components/key-metrics/index.tsx` | 289 | 2026-07-13 | GUARDRAIL-raw-button |
+| exam-033 | `apps/exam-management/admin/components/key-metrics/index.tsx` | 289 | 2026-07-13 | GUARDRAIL-raw-button |
 
 **Consequence:** Bypasses DS Button focus ring, variant system, and keyboard contract.
 **Fix:** Replace with DS `<Button>` or `role="button"` div for drag handles.
@@ -128,10 +128,10 @@ _None._
 
 ## Resolved since last report
 
-_None — 0 violations resolved since 2026-06-29 sweep._
+_None — 0 violations resolved since 2026-07-13 sweep._
 
 ---
 
-## Observation: partial DropdownMenu fix in qb-table.tsx
+## Observation: long-standing violations approaching 4-week threshold
 
-Lines 1711 and 2051 in `qb-table.tsx` now have `modal={false}` (were bare `<DropdownMenu>` in the previous snapshot). This progress on exam-020 is noted — 2 of the 7 original root instances are now fixed. The 5 remaining (1137, 1798, 2528, 3990, 4257) keep the violation open.
+All 47 open violations have been present since either 2026-06-22 (4 weeks) or 2026-07-13 (1 week). The P2 raw-button violations in `data-table/index.tsx` and `data-table/pagination.tsx` affect every page in both products and are the highest-leverage fix. The P3 FA icon violations are a one-liner fix per file (`aria-hidden="true"`) and could be batched across all 28 affected files in a single pass.
