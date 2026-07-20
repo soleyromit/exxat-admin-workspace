@@ -21,11 +21,16 @@ function useLocationPath(): string {
   const [path, setPath] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : ''));
   useEffect(() => {
     const update = () => setPath(window.location.pathname);
+    // Deferred: the patched push/replaceState run synchronously inside the
+    // ROUTER's call stack — Next 15 calls them from a useInsertionEffect,
+    // where React forbids scheduling updates. A microtask escapes that
+    // commit-phase window before reading the (already-updated) pathname.
+    const deferredUpdate = () => queueMicrotask(update);
     window.addEventListener('popstate', update);
     const origPush = history.pushState;
     const origReplace = history.replaceState;
-    history.pushState = function (this: History, ...args: Parameters<History['pushState']>) { const r = origPush.apply(this, args); update(); return r; };
-    history.replaceState = function (this: History, ...args: Parameters<History['replaceState']>) { const r = origReplace.apply(this, args); update(); return r; };
+    history.pushState = function (this: History, ...args: Parameters<History['pushState']>) { const r = origPush.apply(this, args); deferredUpdate(); return r; };
+    history.replaceState = function (this: History, ...args: Parameters<History['replaceState']>) { const r = origReplace.apply(this, args); deferredUpdate(); return r; };
     return () => {
       window.removeEventListener('popstate', update);
       history.pushState = origPush;

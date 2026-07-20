@@ -143,6 +143,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     setActiveAccountId(acc.id)      // module register — feeds the term helpers
     setAccountId(acc.id)
     setSurveys(acc.surveys)
+    setTemplates(acc.templates ?? MOCK_TEMPLATES)
     setProgramTerms(acc.terms)
     setHiddenComments({})
     if (typeof window !== 'undefined') {

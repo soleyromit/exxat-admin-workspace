@@ -32,6 +32,10 @@ import { courseDates } from '@/lib/pce-push-validation'
 /** Above this count a picker gains a search field. */
 const COHORT_SEARCH_THRESHOLD = 8
 
+/** Evaluates chips shown in the cell before the rest collapse into "+N"
+ *  (popover with the full set). */
+const MAX_EVALUATE_CHIPS = 2
+
 const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 interface ReadinessRow extends Record<string, unknown> {
@@ -392,17 +396,23 @@ export function StepCoursesEvaluatees({
     const cols: ColumnDef<ReadinessRow>[] = [
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
       {
-        // Identity is ONE pinned column — name leads, code + dates ride the
-        // second line (mono-id pattern) — so the row stays identifiable at any
-        // horizontal scroll and the code never wraps in a skinny column.
-        key: 'name', label: 'Course', sortable: true, width: 225, defaultPin: 'left',
+        // Identity is ONE pinned column. Code LEADS the line: programs talk in
+        // codes ("DPT-502"), and the fixed-width mono token keeps rows aligned
+        // while the name truncates behind it. Sort follows the code (key).
+        key: 'code', label: 'Course', sortable: true, width: 225, defaultPin: 'left',
         cell: r => (
-          <div className="flex flex-col gap-0.5 py-0.5 min-w-0">
+          /* Three quiet lines — code, name, dates — instead of a Dates column:
+             the no-scroll width budget has no room for one, and the two-line
+             Faculty/Template cells already set the row height, so the third
+             line costs nothing. */
+          <div className="flex flex-col py-0.5 min-w-0">
+            <span className="font-mono text-xs font-semibold tabular-nums">{r.code}</span>
             <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
-            <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
-              <span className="font-mono tabular-nums">{r.code}</span>
-              {r.dates && <> · {r.datesLabel}</>}
-            </span>
+            {r.dates && (
+              <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                {r.datesLabel}
+              </span>
+            )}
           </div>
         ),
       },
@@ -427,22 +437,25 @@ export function StepCoursesEvaluatees({
     cols.push({
       key: 'template', label: 'Template', width: 220,
       cell: r => {
-        const isDefault = !!r.templateId && r.templateId === defaultAssignments[r.id]
+        const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
         return (
-          <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+          <div onClick={e => e.stopPropagation()}>
+            {/* A hand-changed row is marked on the CONTROL, not beside it: the
+                trigger takes the secondary tint (the theme's "not factory
+                state" surface). Color never carries it alone — the accessible
+                name says "changed from default" (WCAG 1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
-              <SelectTrigger aria-label={`Template for ${r.code}`} className="w-full min-w-0" style={{ height: 32, fontSize: 13 }}>
+              <SelectTrigger
+                aria-label={`Template for ${r.code}${edited ? ' — changed from default' : ''}`}
+                className={`w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
+                style={{ height: 32, fontSize: 13 }}
+              >
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
                 {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            {/* Mark the EXCEPTION: 13 "Default" chips said nothing; the one
-                row someone changed by hand is the row worth noticing. */}
-            {!isDefault && !!r.templateId && (
-              <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)' }}>Edited</span>
-            )}
           </div>
         )
       },
@@ -454,15 +467,40 @@ export function StepCoursesEvaluatees({
         if (evaluates.length === 0) {
           return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
         }
+        const chip = (c: Criterion) => (
+          <Badge key={c} variant="outline" className="rounded-full font-normal px-1.5 py-0 text-xs">
+            {CRITERION_TOGGLE_LABEL[c]}
+          </Badge>
+        )
+        const shown = evaluates.slice(0, MAX_EVALUATE_CHIPS)
+        const extra = evaluates.length - shown.length
         return (
           /* Same token vocabulary as the old "What to evaluate" field —
-             chips scan across rows; differences pop when templates diverge. */
-          <span className="flex flex-wrap items-center gap-1 py-0.5">
-            {evaluates.map(c => (
-              <Badge key={c} variant="outline" className="rounded-full font-normal px-1.5 py-0 text-xs">
-                {CRITERION_TOGGLE_LABEL[c]}
-              </Badge>
-            ))}
+             chips scan across rows; differences pop when templates diverge.
+             Beyond two, the rest live in a popover: a template evaluating five
+             roles would stack the row five chips tall. */
+          <span className="flex flex-wrap items-center gap-1 py-0.5" onClick={e => e.stopPropagation()}>
+            {shown.map(chip)}
+            {extra > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="h-auto rounded-full px-1.5 py-0 text-xs font-normal"
+                    aria-label={`${extra} more evaluated role${extra === 1 ? '' : 's'}`}
+                  >
+                    +{extra}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent aria-label="Evaluated roles" align="start" className="w-auto p-2.5" style={{ maxWidth: 240 }}>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium">Evaluates</span>
+                    <span className="flex flex-wrap gap-1">{evaluates.map(chip)}</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </span>
         )
       },
@@ -495,28 +533,42 @@ export function StepCoursesEvaluatees({
             // "Add faculty" with the missing roles; twice per row was noise.
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
+          const personLine = ([name, roles]: [string, string[]]) => (
+            /* Shared PersonAvatar (photo → initials fallback). Name and role
+               STACK (person-cell pattern) — side by side, a long role squeezed
+               the name into "Dr. Kevin …". Clipped text goes through
+               TruncatedText, which tooltips on hover AND keyboard focus. */
+            <span key={name} className="flex items-center gap-1.5 min-w-0">
+              <PersonAvatar name={name} />
+              <span className="flex flex-col min-w-0">
+                <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
+                <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  {roles.join(' · ')}
+                </TruncatedText>
+              </span>
+            </span>
+          )
           return (
-            <div className="flex flex-col gap-1 py-1">
-              {shown.map(([name, roles]) => (
-                /* Shared PersonAvatar (photo → initials fallback). Name and
-                   role STACK (person-cell pattern: identity line + secondary
-                   line) — side by side, a long role squeezed the name into
-                   "Dr. Kevin …". Clipped text goes through TruncatedText,
-                   which tooltips on hover AND keyboard focus. */
-                <span key={name} className="flex items-center gap-1.5 min-w-0">
-                  <PersonAvatar name={name} />
-                  <span className="flex flex-col min-w-0">
-                    <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
-                    <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                      {roles.join(' · ')}
-                    </TruncatedText>
-                  </span>
-                </span>
-              ))}
+            <div className="flex flex-col gap-1 py-1" onClick={e => e.stopPropagation()}>
+              {shown.map(personLine)}
+              {/* Same overflow pattern as the Evaluates column: the tail lives
+                  in a popover instead of growing the row a line per person. */}
               {more > 0 && (
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  +{more} more
-                </span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      className="h-auto w-fit rounded-full px-1.5 py-0 text-xs font-normal"
+                      aria-label={`${more} more faculty`}
+                    >
+                      +{more} more
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent aria-label="All faculty on this course" align="start" className="w-auto p-2.5" style={{ maxWidth: 260 }}>
+                    <div className="flex flex-col gap-2">{people.map(personLine)}</div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           )
@@ -724,6 +776,23 @@ export function StepCoursesEvaluatees({
             </div>
           )}
 
+          {/* Template actions ride the scope row's right edge — a separate
+              toolbar line under the fields (plus an assigned-count label) was
+              a band of chrome too many. */}
+          {scopeReady && !isLoading && rows.length > 0 && (
+            <div className="ms-auto self-end flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onResetDefaults}>
+                <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
+                Reset to defaults
+              </Button>
+              {/* Opens the SAME create flow + builder as Settings → Templates,
+                  in place — the wizard stays mounted so its state is preserved. */}
+              <Button variant="outline" size="sm" onClick={() => { setNotice(null); setSubView('create') }}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                New template
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -740,25 +809,6 @@ export function StepCoursesEvaluatees({
       )}
 
       {/* ── Courses ───────────────────────────────────────────────────────── */}
-      {scopeReady && !isLoading && rows.length > 0 && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-            {rows.filter(r => r.templateId).length} of {rows.length} courses have a template
-          </span>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onResetDefaults}>
-              <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
-              Reset to defaults
-            </Button>
-            {/* Opens the SAME create flow + builder as Settings → Templates,
-                in place — the wizard stays mounted so its state is preserved. */}
-            <Button variant="outline" size="sm" onClick={() => { setNotice(null); setSubView('create') }}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              New template
-            </Button>
-          </div>
-        </div>
-      )}
       {!scopeReady ? (
         <EmptyHint
           heading="Choose a term to load courses"
