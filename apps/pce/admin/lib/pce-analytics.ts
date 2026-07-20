@@ -125,7 +125,7 @@ export function cohorts(): string[] {
   return [...new Set(offeringPoints().map((o) => o.cohort).filter((c): c is string => !!c))].sort()
 }
 
-function initialsOf(name: string): string {
+export function initialsOf(name: string): string {
   const parts = name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i, '').trim().split(/\s+/)
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1]![0] : '')).toUpperCase()
 }
