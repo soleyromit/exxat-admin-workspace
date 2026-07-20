@@ -1,1 +1,4 @@
 .vercel
+
+# Build artifact — built by Vercel from source, never committed (regression class: stale committed export)
+/out/
