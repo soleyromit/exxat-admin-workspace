@@ -400,6 +400,17 @@ Source: `docs/research/meetings/2026-07-16-course-eval-sync-vishal.md` (Granola 
 | T120 | Rows 23–32 design scope — await + start design once Vishal shares requirements | Admin | PCE (PRD rows 23–32) | P1 — BLOCKED pending requirements from Vishal (due Jul 17 EOD) | D_PCE_0716_02. Vishal: "by tomorrow end of the day I will also have enough requirement captured in the document for you to start this section 23 to 32." Do not start until requirements land. |
 | T121 | Review Aarti + Vishaka course evaluation meeting recording (Vishal to share) | Design | Research | P1 — ACTION ITEM | D_PCE_0716_06. Recording covers analytics workflows, which metrics to keep or drop, and broader course eval decisions. Review when received — informs T100, T116, T117. Vishal: "That will give you overall understanding of the solution." |
 
+## Phase 1 design tasks — added 2026-07-19 (Modular product strategy — Arun)
+
+Source: `docs/research/meetings/2026-07-19-modular-product-strategy.md` (Granola `1bc03a5a`)
+
+> Leadership strategy call. Portal cross-sell/upsell visual design. Owned products = de-emphasized; not-owned = prominent for upsell. Pictorial ecosystem diagram explored. Above-the-fold constraint. AI = point-and-click + agentic (both paths, not either/or). Team AI strategy conversation: week of Aug 3.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T122 | Portal: upsell visual treatment — de-emphasize subscribed products, highlight not-subscribed | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0719_01. "The ones that you already have can be grayed out and the ones that you don't have can be given a little bit more important or whatever." `subscriptionStatus: 'active' \| 'trial'` = visually de-emphasized; `subscriptionStatus: 'not-subscribed'` = prominent for upsell. Above-the-fold constraint: all products visible without scrolling (D_PORTAL_0719_03). Supplements T118. |
+| T123 | Portal: pictorial product ecosystem diagram — show product relationships with owned vs. not-owned visual state | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0719_02, D_PORTAL_0719_03. "If there's a way to incorporate that diagram and give them a way to explode that." Owned products grayed; not-owned highlighted. Based on Kunal's infographic (T118). Explore as an alternative to or companion to the current product list. Romit design exploration required before any code. |
+
 ---
 
 ## Open product questions
