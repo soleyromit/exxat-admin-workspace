@@ -22,9 +22,6 @@ import {
   CardHeader,
   CardTitle,
   KeyMetrics,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   StatusBadge,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
@@ -40,258 +37,12 @@ import { deriveResults, programScoreBenchmarks, offeringKeyOf } from '@/lib/pce-
 import { deriveThemes, type ThemeComment } from '@/lib/pce-themes'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import { TrajectoryBoxplot, buildTrajectoryDatum } from '@/components/pce/trajectory-boxplot'
 
 const TERM_ORDER = [
   'Spring 2022', 'Fall 2022', 'Spring 2023', 'Fall 2023',
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
-
-interface TrajectoryDatum {
-  term: string
-  min: number
-  range: number
-  median: number
-  /** Middle 50% of the faculty distribution — the boxplot's box. */
-  p25: number
-  p75: number
-  /** Every faculty offering average that term — the popover's strip plot. */
-  scores: number[]
-  faculty: number | null
-}
-
-/** Linear-interpolated quantile over a sorted ascending list. */
-function quantileSorted(sorted: number[], q: number): number {
-  if (sorted.length === 0) return 0
-  const idx = (sorted.length - 1) * q
-  const lo = Math.floor(idx)
-  const hi = Math.ceil(idx)
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
-}
-
-/* Hand-rolled standing-per-term plot on the shared 3–5 window. Round-14 rework
-   (Romit: "can't hover and see the data · everything is green, why?"):
-   context marks are NEUTRAL (gray range column + median notch — they are the
-   cohort, not a signal); color exists ONLY as sentiment on YOUR dot — teal at
-   or above the faculty median, amber below (the page-wide rule). Every term
-   column is a click-popover with the sectioned stat rows (the session's plot
-   vocabulary — click, not hover, so it is keyboard-reachable too). */
-function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
-  const pos = (v: number) => (Math.min(5, Math.max(3, v)) - 3) / 2
-  const n = data.length
-  const points = data
-    .map((d, i) => (d.faculty != null ? `${((i + 0.5) / n) * 100},${(1 - pos(d.faculty)) * 100}` : null))
-    .filter(Boolean)
-    .join(' ')
-  return (
-    <div className="w-full">
-      <span className="sr-only">
-        {`Your rating per term inside the full faculty range. ${data
-          .filter((d) => d.faculty != null)
-          .map((d) => `${d.term}: you ${d.faculty!.toFixed(2)}, median ${d.median.toFixed(2)}`)
-          .join('; ')}.`}
-      </span>
-      <div className="flex gap-3">
-        {/* Printed axis — 3.0–5.0 window */}
-        <div
-          className="relative h-60 w-7 shrink-0 text-xs text-muted-foreground tabular-nums"
-          aria-hidden="true"
-        >
-          {[5, 4.5, 4, 3.5, 3].map((v) => (
-            <span key={v} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - pos(v)) * 100}%` }}>
-              {v.toFixed(1)}
-            </span>
-          ))}
-        </div>
-        <div className="relative h-60 flex-1">
-          {[5, 4.5, 4, 3.5, 3].map((v) => (
-            <div
-              key={v}
-              aria-hidden="true"
-              className="absolute inset-x-0 border-t border-dashed border-border"
-              style={{ top: `${(1 - pos(v)) * 100}%` }}
-            />
-          ))}
-          {/* Hairline trajectory between your dots — neutral, not a signal */}
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <polyline
-              points={points}
-              fill="none"
-              stroke="var(--muted-foreground)"
-              strokeWidth="1.5"
-              strokeOpacity="0.35"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-          <div className="absolute inset-0 flex">
-            {data.map((d) => {
-              const below = d.faculty != null && d.faculty < d.median - 0.005
-              const gap = d.faculty != null ? d.faculty - d.median : null
-              return (
-                <div key={d.term} className="relative flex-1">
-                  {/* DS boxplot anatomy (Chart → Statistical → Boxplot), the
-                      SAME vocabulary as the results-page plots: whisker =
-                      full range (neutral hairline + end caps), box = middle
-                      50% (brand, 0.42), line = median (brand). Only YOUR dot
-                      wears sentiment. */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute left-1/2 w-px -translate-x-1/2"
-                    style={{
-                      bottom: `${pos(d.min) * 100}%`,
-                      height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
-                      background: 'var(--muted-foreground)',
-                      opacity: 0.6,
-                    }}
-                  />
-                  {[d.min, d.min + d.range].map((v, i) => (
-                    <div
-                      key={i}
-                      aria-hidden="true"
-                      className="absolute left-1/2 h-px w-2.5 -translate-x-1/2"
-                      style={{ top: `${(1 - pos(v)) * 100}%`, background: 'var(--muted-foreground)', opacity: 0.6 }}
-                    />
-                  ))}
-                  <div
-                    aria-hidden="true"
-                    className="absolute left-1/2 w-4 -translate-x-1/2 rounded-[3px]"
-                    style={{
-                      bottom: `${pos(d.p25) * 100}%`,
-                      height: `${Math.max(2, (pos(d.p75) - pos(d.p25)) * 100)}%`,
-                      background: 'var(--brand-color)',
-                      opacity: 0.42,
-                    }}
-                  />
-                  {/* Median — brand line per the DS boxplot spec */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute left-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                    style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--brand-color)' }}
-                  />
-                  {/* Your dot + value — teal at/above median, amber below */}
-                  {d.faculty != null && (
-                    <>
-                      <div
-                        aria-hidden="true"
-                        className="absolute left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card"
-                        style={{
-                          top: `${(1 - pos(d.faculty)) * 100}%`,
-                          background: below ? 'var(--chip-4)' : 'var(--chart-2)',
-                        }}
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-card/85 px-0.5 text-xs font-medium tabular-nums"
-                        style={{
-                          top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)`,
-                          color: below ? 'var(--chip-4)' : 'var(--foreground)',
-                        }}
-                      >
-                        {d.faculty.toFixed(2)}
-                      </span>
-                    </>
-                  )}
-                  {/* Whole-column click target → sectioned stat popover */}
-                  <Popover>
-                    <PopoverTrigger
-                      aria-label={`${d.term} — your rating vs the faculty range, details`}
-                      className="absolute inset-y-0 left-1/2 w-10 -translate-x-1/2 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                    />
-                    <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={6}>
-                      <div className="flex flex-col">
-                        <div className="border-b border-border px-3 py-2">
-                          <p className="text-sm font-semibold">{d.term}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {d.scores.length} faculty evaluated this term
-                          </p>
-                        </div>
-                        {/* Where you sat — the term's actual faculty scores as
-                            a strip plot on the 3–5 window; you are the only
-                            colored mark, median is the brand tick. */}
-                        <div className="border-b border-border px-3 py-2">
-                          <p className="mb-1.5 text-xs text-muted-foreground">Where you sat</p>
-                          <div className="relative h-7" aria-hidden="true">
-                            <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
-                            {d.scores.map((s, i) => (
-                              <span
-                                key={i}
-                                className="absolute top-1/2 h-2.5 w-px -translate-x-1/2 -translate-y-1/2"
-                                style={{ left: `${pos(s) * 100}%`, background: 'var(--muted-foreground)', opacity: 0.5 }}
-                              />
-                            ))}
-                            <span
-                              className="absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                              style={{ left: `${pos(d.median) * 100}%`, background: 'var(--brand-color)' }}
-                            />
-                            {d.faculty != null && (
-                              <span
-                                className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--popover)]"
-                                style={{
-                                  left: `${pos(d.faculty) * 100}%`,
-                                  background: below ? 'var(--chip-4)' : 'var(--chart-2)',
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div className="flex justify-between text-xs tabular-nums text-muted-foreground" aria-hidden="true">
-                            <span>3.0</span>
-                            <span>5.0</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1.5 px-3 py-2">
-                          <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-xs text-muted-foreground">You</span>
-                            <span className="text-right text-xs tabular-nums">
-                              {d.faculty != null ? d.faculty.toFixed(2) : '— (no offering this term)'}
-                            </span>
-                          </div>
-                          <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-xs text-muted-foreground">Faculty median</span>
-                            <span className="text-right text-xs tabular-nums">{d.median.toFixed(2)}</span>
-                          </div>
-                          {gap != null && (
-                            <div className="flex items-baseline justify-between gap-4">
-                              <span className="text-xs text-muted-foreground">vs median</span>
-                              <span
-                                className="text-right text-xs font-medium tabular-nums"
-                                style={{ color: Math.abs(gap) <= 0.005 ? 'var(--muted-foreground)' : below ? 'var(--chip-4)' : 'var(--chart-2)' }}
-                              >
-                                {Math.abs(gap) <= 0.005 ? 'At median' : `${gap > 0 ? '+' : '−'}${Math.abs(gap).toFixed(2)}`}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-xs text-muted-foreground">Middle 50%</span>
-                            <span className="text-right text-xs tabular-nums">
-                              {d.p25.toFixed(2)}–{d.p75.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-xs text-muted-foreground">Full range</span>
-                            <span className="text-right text-xs tabular-nums">
-                              {d.min.toFixed(2)}–{(d.min + d.range).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-      {/* Term labels */}
-      <div className="ms-10 flex" aria-hidden="true">
-        {data.map((d) => (
-          <span key={d.term} className="flex-1 pt-2 text-center text-xs text-muted-foreground">
-            {d.term}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const LOOP_BADGE: Record<'resolved' | 'improved' | 'persistent', { label: string; tone: 'success' | 'info' | 'warning' }> = {
   resolved:   { label: 'Resolved',   tone: 'success' },
@@ -366,23 +117,12 @@ export default function MyDashboardPage() {
     const termsWithData = TERM_ORDER.filter((t) => MOCK_FACULTY_OFFERINGS.some((o) => o.term === t))
     return termsWithData.map((term) => {
       const scores = MOCK_FACULTY_OFFERINGS.filter((o) => o.term === term).map((o) => o.avgRating)
-      const min = Math.min(...scores)
-      const max = Math.max(...scores)
-      const sorted = [...scores].sort((a, b) => a - b)
-      const median = sorted.length % 2 === 0
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)]
       const own = offerings.find((o) => o.term === term)
-      return {
-        term: term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
-        min: +min.toFixed(2),
-        range: +(max - min).toFixed(2),
-        median: +median.toFixed(2),
-        p25: +quantileSorted(sorted, 0.25).toFixed(2),
-        p75: +quantileSorted(sorted, 0.75).toFixed(2),
-        scores: sorted.map((s) => +s.toFixed(2)),
-        faculty: own ? +own.avgRating.toFixed(2) : null,
-      }
+      return buildTrajectoryDatum(
+        term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
+        scores,
+        own ? own.avgRating : null,
+      )
     })
   }, [offerings])
 
@@ -492,10 +232,10 @@ export default function MyDashboardPage() {
     )
   }
 
-    const lastWithFaculty = [...trendData].reverse().find((d) => d.faculty != null) ?? null
+    const lastWithFaculty = [...trendData].reverse().find((d) => d.value != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
     ? (() => {
-        const diff = +(lastWithFaculty.faculty! - lastWithFaculty.median).toFixed(2)
+        const diff = +(lastWithFaculty.value! - lastWithFaculty.median).toFixed(2)
         return {
           headline:
             diff < 0
@@ -508,7 +248,7 @@ export default function MyDashboardPage() {
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
-            `${lastWithFaculty.term}: own ${lastWithFaculty.faculty!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
+            `${lastWithFaculty.term}: own ${lastWithFaculty.value!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
             `Band spans ${lastWithFaculty.min.toFixed(2)}–${(lastWithFaculty.min + lastWithFaculty.range).toFixed(2)} this term.`,
           ],
         }
@@ -566,13 +306,13 @@ export default function MyDashboardPage() {
             >
               {() => (
                 <>
-                  <TrajectoryPlot data={trendData} />
+                  <TrajectoryBoxplot data={trendData} valueLabel="You" cohortNoun="faculty" />
                   <ChartDataTable
                     caption="Rating over time"
                     headers={['Term', 'You', 'Median', 'Middle 50%', 'Faculty range', 'Faculty evaluated']}
                     rows={trendData.map((d) => [
                       d.term,
-                      d.faculty != null ? d.faculty.toFixed(2) : '—',
+                      d.value != null ? d.value.toFixed(2) : '—',
                       d.median.toFixed(2),
                       `${d.p25.toFixed(2)}–${d.p75.toFixed(2)}`,
                       `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
