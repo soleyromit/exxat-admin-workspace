@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -48,6 +48,11 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
+  OutlineTreeMenu,
+  OutlineTreeMenuItem,
+  OutlineTreeSub,
+  OutlineTreeSubItem,
+  OutlineTreeLeafButton,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { WizardNav } from '@/components/pce/wizard-nav'
@@ -414,8 +419,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   embedded?: boolean
   /** Called after Publish (embedded hosts return to their own view). */
   onPublished?: (id: string) => void
-  /** Builder-step layout — 'rail' switches between aspects; 'canvas' stacks all aspects on one scroll with an outline rail. */
-  variant?: 'rail' | 'canvas'
+  /** Builder-step layout (design-compare variants):
+   *  'rail' — default; switches between aspects.
+   *  'canvas' — all aspects on one scroll + scrollspy outline rail.
+   *  'document' — one centered column, sticky aspect chips, no side rail.
+   *  'focus' — master-detail; structure tree left, one aspect/section edited center. */
+  variant?: 'rail' | 'canvas' | 'document' | 'focus'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -446,6 +455,32 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const [activeGroup, setActiveGroup] = useState('course_content')
   // Canvas variant — collapsed aspect groups (all expanded by default).
   const [collapsedAspects, setCollapsedAspects] = useState<Set<string>>(new Set())
+  // Document variant — scrollspy for the sticky aspect chip bar.
+  const [docAspect, setDocAspect] = useState('course_content')
+  useEffect(() => {
+    if (variant !== 'document') return
+    const els = ['course_content', 'faculty', 'general']
+      .map(k => document.getElementById(`aspect-${k}`))
+      .filter((el): el is HTMLElement => !!el)
+    if (els.length === 0) return
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setDocAspect(visible[0].target.id.replace('aspect-', ''))
+      },
+      /* Top inset = sticky breadcrumb + chip bar; bottom bias keeps the chip on
+         the aspect whose header just scrolled past. */
+      { rootMargin: '-112px 0px -55% 0px' },
+    )
+    els.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [variant])
+  // Focus variant — master-detail selection: an aspect overview or one section.
+  const [focusSel, setFocusSel] = useState<
+    { kind: 'aspect'; key: string } | { kind: 'section'; id: string }
+  >({ kind: 'aspect', key: 'course_content' })
   // Template details live in the persistent right settings panel (Airtable/Typeform
   // pattern) — no tabs, no dialog. Publish just publishes.
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
@@ -548,14 +583,15 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     setRolePickerSetId(newId) // open the role picker straight away so the user picks roles first
   }
 
-  function handleAddSection(subjectKey?: string, roleSetId?: string) {
+  function handleAddSection(subjectKey?: string, roleSetId?: string): string | undefined {
     const key = subjectKey ?? (isProgrammatic ? 'course_content' : activeGroup)
-    if (!key) return
+    if (!key) return undefined
     const newId = `sec-${Date.now()}`
     addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [], roleSetId }, newId)
     setEditingSectionId(newId)
     setEditingSectionTitle('Untitled Section')
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
+    return newId
   }
 
   // ── Document import — insert extracted sections + questions into a tab ───────
@@ -917,51 +953,287 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
+  // Opening-instruction accordion for one aspect — shared by canvas / document /
+  // focus builder bodies.
+  function renderAspectInstruction(key: string) {
+    const aspectLabel = subjectGroups.find(g => g.key === key)?.label
+    return (
+      <Collapsible
+        open={openInstruction[key] ?? false}
+        onOpenChange={o => setOpenInstruction(p => ({ ...p, [key]: o }))}
+        className="rounded-2 border border-dashed border-border"
+      >
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full justify-between h-auto px-3.5 py-2.5 hover:bg-transparent">
+            <span className="text-xs font-medium text-muted-foreground flex items-center">
+              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+              Opening instruction · shown at the start of {aspectLabel}
+              {(aspectInstructions[key]?.title || aspectInstructions[key]?.text) && (
+                <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
+              )}
+            </span>
+            <i className={`fa-light fa-chevron-${(openInstruction[key] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3.5 pb-3 flex flex-col gap-2">
+          <Input
+            value={aspectInstructions[key]?.title ?? ''}
+            onChange={e => setAspectInstruction(key, { title: e.target.value })}
+            placeholder="Title (optional) — e.g. About this section"
+            className="h-8 text-sm"
+            aria-label={`Opening instruction title for ${key}`}
+          />
+          <Textarea
+            value={aspectInstructions[key]?.text ?? ''}
+            onChange={e => setAspectInstruction(key, { text: e.target.value })}
+            placeholder="Instruction shown to students before this section's questions…"
+            rows={2}
+            className="text-sm"
+            style={{ resize: 'none' }}
+            aria-label={`Opening instruction text for ${key}`}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+    )
+  }
+
+  // Role-set header (Evaluating + role chips + picker + actions) — shared by the
+  // full aspect body and the focus variant's compact section list.
+  function renderRoleSetHeader(set: PceTemplateRoleSet) {
+    return (
+      <div id={`roleset-${set.id}`} className="flex items-start gap-3"
+        style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
+        <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
+        <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+          {set.roles.length === 0 ? (
+            <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
+          ) : set.roles.map(roleKey => {
+            const label = ROLE_LABEL(roleKey)
+            return (
+              <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
+                style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
+                {label}
+                <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
+                  className="opacity-50 hover:opacity-100" onClick={() => toggleRoleSetRole(set, roleKey)}>
+                  <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                </Button>
+              </span>
+            )
+          })}
+        </div>
+        <Popover open={rolePickerSetId === set.id}
+          onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="xs" className="shrink-0">
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
+            {renderRolePickerContent(set)}
+          </PopoverContent>
+        </Popover>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
+              <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+              <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )
+  }
+
+  // ── Focus variant — structure tree + one aspect/section edited at a time ────
+  function focusSectionRow(sec: PceTemplateSection) {
+    return (
+      <Button
+        key={sec.id}
+        variant="outline"
+        className="w-full justify-between h-auto px-4 py-3"
+        onClick={() => setFocusSel({ kind: 'section', id: sec.id })}
+      >
+        <span className="text-sm font-medium truncate">{sec.title}</span>
+        <span className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums shrink-0">
+          {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
+          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
+        </span>
+      </Button>
+    )
+  }
+
+  function renderFocusTree() {
+    const isAspectSel = (key: string) => focusSel.kind === 'aspect' && focusSel.key === key
+    const isSectionSel = (id: string) => focusSel.kind === 'section' && focusSel.id === id
+    const secRows = (secs: PceTemplateSection[]) => secs.map(s => (
+      <OutlineTreeSubItem key={s.id}>
+        <OutlineTreeLeafButton surface="panel" isActive={isSectionSel(s.id)} subGuideAlign
+          onClick={() => setFocusSel({ kind: 'section', id: s.id })} title={s.title} className="w-full min-w-0">
+          <span className="min-w-0 flex-1 truncate text-start">{s.title}</span>
+          <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{s.questions.length}</span>
+        </OutlineTreeLeafButton>
+      </OutlineTreeSubItem>
+    ))
+    return (
+      <nav
+        aria-label="Template structure"
+        className="hidden md:flex shrink-0 w-64 flex-col overflow-y-auto overflow-x-hidden p-3 sticky self-start"
+        style={{ top: 56, maxHeight: 'calc(100vh - 64px)' }}
+      >
+        <OutlineTreeMenu className="gap-0.5">
+          {subjectGroups.map(g => {
+            const c = aspectCounts(g.key)
+            return (
+              <OutlineTreeMenuItem key={g.key} className="before:hidden">
+                <OutlineTreeLeafButton surface="panel" isActive={isAspectSel(g.key)}
+                  onClick={() => setFocusSel({ kind: 'aspect', key: g.key })} title={g.label} className="w-full min-w-0 font-medium">
+                  <span className="min-w-0 flex-1 truncate text-start">{g.label}</span>
+                  <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{c.questions}</span>
+                </OutlineTreeLeafButton>
+                <OutlineTreeSub surface="panel" guideLayout="inset" className="gap-0.5 py-0 ms-3">
+                  {g.key === 'faculty'
+                    ? facultyRoleSets.flatMap(set => {
+                        const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                        return [
+                          <OutlineTreeSubItem key={`rs-${set.id}`}>
+                            <span className="block px-2 pt-1.5 pb-0.5 text-xs font-medium text-muted-foreground truncate">
+                              {set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'No roles selected'}
+                            </span>
+                          </OutlineTreeSubItem>,
+                          ...secRows(setSecs),
+                        ]
+                      })
+                    : secRows(sections.filter(s => s.subjectKey === g.key))}
+                </OutlineTreeSub>
+              </OutlineTreeMenuItem>
+            )
+          })}
+        </OutlineTreeMenu>
+      </nav>
+    )
+  }
+
+  function renderFocusCenter() {
+    // Deleted-section selections fall back to the section's aspect (or Course).
+    let sel = focusSel
+    if (sel.kind === 'section' && !sections.some(s => s.id === (sel as { id: string }).id)) {
+      sel = { kind: 'aspect', key: 'course_content' }
+    }
+    if (sel.kind === 'section') {
+      const sec = sections.find(s => s.id === sel.id)!
+      const aspect = subjectGroups.find(g => g.key === sec.subjectKey)
+      const set = sec.roleSetId ? facultyRoleSets.find(rs => rs.id === sec.roleSetId) : undefined
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground">
+            {aspect?.label}
+            {set ? ` · Evaluating ${set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : '(no roles selected)'}` : ''}
+          </p>
+          {renderSectionCard(sec)}
+        </div>
+      )
+    }
+    const key = sel.key
+    const label = subjectGroups.find(g => g.key === key)?.label
+    const c = aspectCounts(key)
+    const addAndFocusSection = (subjectKey: string, roleSetId?: string) => {
+      const id = handleAddSection(subjectKey, roleSetId)
+      if (id) setFocusSel({ kind: 'section', id })
+    }
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <h2 className="text-base font-semibold">{label}</h2>
+            <p className="text-xs text-muted-foreground">{ASPECT_INFO[key]}</p>
+          </div>
+          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 6 }}>
+            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+          </span>
+        </div>
+        {renderAspectInstruction(key)}
+        {key !== 'faculty' && uploadDocAffordance(key)}
+        {key === 'faculty' ? (
+          <>
+            <p className="text-xs text-muted-foreground">
+              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+              Pick one or more roles per set, then build its sections — one role for role-specific
+              questions, multiple roles for shared questions.
+            </p>
+            {facultyRoleSets.map(set => {
+              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+              return (
+                <div key={set.id} className="rounded-lg border border-border overflow-hidden"
+                  style={{ background: 'var(--background)' }}>
+                  {renderRoleSetHeader(set)}
+                  <div className="flex flex-col gap-2" style={{ padding: 12 }}>
+                    {uploadDocAffordance('faculty', set.id)}
+                    {setSecs.length === 0 ? (
+                      <div className="flex items-center justify-center rounded-lg border border-dashed"
+                        style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
+                        <Button variant="link" size="sm" onClick={() => addAndFocusSection('faculty', set.id)} className="font-semibold">
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {setSecs.map(sec => focusSectionRow(sec))}
+                        <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
+                          <Button variant="link" size="sm" onClick={() => addAndFocusSection('faculty', set.id)} className="font-semibold">
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+              <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
+              </Button>
+            </div>
+          </>
+        ) : (() => {
+          const groupSections = sections.filter(s => s.subjectKey === key)
+          if (groupSections.length === 0) {
+            return (
+              <div className="flex items-center justify-center rounded-lg border border-dashed"
+                style={{ padding: '28px 16px', borderColor: 'var(--border)' }}>
+                <Button variant="link" size="sm" onClick={() => addAndFocusSection(key)} className="font-semibold">
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                </Button>
+              </div>
+            )
+          }
+          return (
+            <>
+              {groupSections.map(sec => focusSectionRow(sec))}
+              <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                <Button variant="link" size="sm" onClick={() => addAndFocusSection(key)} className="font-semibold">
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                </Button>
+              </div>
+            </>
+          )
+        })()}
+      </div>
+    )
+  }
+
   // ── Canvas variant — per-aspect builder body ────────────────────────────────
   // Copy of the rail variant's inline aspect content parameterized by aspect key
   // (kept verbatim apart from anchors so the two layouts compare honestly —
   // delete the losing variant's copy once a direction is picked).
   function renderAspectBody(key: string) {
-    const aspectLabel = subjectGroups.find(g => g.key === key)?.label
     return (
       <>
-        {/* Opening instruction for THIS aspect — collapsible accordion */}
-        <Collapsible
-          open={openInstruction[key] ?? false}
-          onOpenChange={o => setOpenInstruction(p => ({ ...p, [key]: o }))}
-          className="rounded-2 border border-dashed border-border"
-        >
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-between h-auto px-3.5 py-2.5 hover:bg-transparent">
-              <span className="text-xs font-medium text-muted-foreground flex items-center">
-                <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-                Opening instruction · shown at the start of {aspectLabel}
-                {(aspectInstructions[key]?.title || aspectInstructions[key]?.text) && (
-                  <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
-                )}
-              </span>
-              <i className={`fa-light fa-chevron-${(openInstruction[key] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="px-3.5 pb-3 flex flex-col gap-2">
-            <Input
-              value={aspectInstructions[key]?.title ?? ''}
-              onChange={e => setAspectInstruction(key, { title: e.target.value })}
-              placeholder="Title (optional) — e.g. About this section"
-              className="h-8 text-sm"
-              aria-label={`Opening instruction title for ${key}`}
-            />
-            <Textarea
-              value={aspectInstructions[key]?.text ?? ''}
-              onChange={e => setAspectInstruction(key, { text: e.target.value })}
-              placeholder="Instruction shown to students before this section's questions…"
-              rows={2}
-              className="text-sm"
-              style={{ resize: 'none' }}
-              aria-label={`Opening instruction text for ${key}`}
-            />
-          </CollapsibleContent>
-        </Collapsible>
+        {renderAspectInstruction(key)}
 
         {/* Upload document — template-level entry, above the sections */}
         {key !== 'faculty' && uploadDocAffordance(key)}
@@ -980,51 +1252,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               return (
                 <div key={set.id} className="rounded-lg border border-border overflow-hidden"
                   style={{ background: 'var(--background)' }}>
-                  {/* Set header — roles chosen here, never on the section; anchor for the outline rail */}
-                  <div id={`roleset-${set.id}`} className="flex items-start gap-3"
-                    style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
-                    <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
-                    <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                      {set.roles.length === 0 ? (
-                        <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
-                      ) : set.roles.map(roleKey => {
-                        const label = ROLE_LABEL(roleKey)
-                        return (
-                          <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
-                            style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
-                            {label}
-                            <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
-                              className="opacity-50 hover:opacity-100" onClick={() => toggleRoleSetRole(set, roleKey)}>
-                              <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
-                            </Button>
-                          </span>
-                        )
-                      })}
-                    </div>
-                    <Popover open={rolePickerSetId === set.id}
-                      onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="xs" className="shrink-0">
-                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
-                        {renderRolePickerContent(set)}
-                      </PopoverContent>
-                    </Popover>
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
-                          <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
-                          <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  {renderRoleSetHeader(set)}
                   {/* Sections owned by this set */}
                   <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
                     {uploadDocAffordance('faculty', set.id)}
@@ -1153,14 +1381,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                 : 'No type selected — template will apply to all course types.'}
             </p>
             <div className="flex items-center gap-3">
-              <ToggleSwitch
-                id="tmpl-default-for-type"
-                checked={!!t.isDefaultForType}
-                disabled={!t.deliveryMode}
-                onChange={(v) => {
-                  if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
-                }}
-              />
+              {/* DS ToggleSwitch has no disabled prop (checked/onChange/id only) —
+                  disabled state expressed on a wrapper; the handler stays guarded. */}
+              <span
+                className={!t.deliveryMode ? 'opacity-50 pointer-events-none' : ''}
+                aria-disabled={!t.deliveryMode || undefined}
+              >
+                <ToggleSwitch
+                  id="tmpl-default-for-type"
+                  checked={!!t.isDefaultForType}
+                  onChange={(v) => {
+                    if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
+                  }}
+                />
+              </span>
               <label
                 htmlFor="tmpl-default-for-type"
                 className={`text-sm cursor-pointer ${!t.deliveryMode ? 'text-muted-foreground' : ''}`}
@@ -1335,9 +1569,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   }
 
   return (
-    /* Canvas variant scrolls at the window level (sticky rail/panel/footer) —
+    /* Non-rail variants scroll at the window level (sticky rail/panel/footer) —
        an overflow-hidden ancestor would break position:sticky against the window. */
-    <div className={`flex flex-col flex-1 ${variant === 'canvas' ? '' : 'overflow-hidden'}`}>
+    <div className={`flex flex-col flex-1 ${variant === 'rail' ? 'overflow-hidden' : ''}`}>
       {!embedded && (
         <SiteHeader
           breadcrumbs={[{ label: 'Templates', href: backHref }]}
@@ -1399,9 +1633,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           steps={WIZARD_STEPS.map(s => ({ n: s.n, label: s.label }))}
         />
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
-          {/* Left — section list. Canvas scrolls at the window level, so it must
-              not sit under an overflow-hidden ancestor (breaks sticky). */}
-          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'canvas' ? '' : 'overflow-hidden'}`}>
+          {/* Left — section list. Non-rail variants scroll at the window level, so
+              they must not sit under an overflow-hidden ancestor (breaks sticky). */}
+          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'rail' ? 'overflow-hidden' : ''}`}>
           {importedBanner && (
             <div style={{ padding: '10px 40px 0' }}>
               <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
@@ -1511,6 +1745,84 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     )
                   })}
                 </div>
+              </div>
+            </div>
+          ) : variant === 'document' ? (
+            /* Document variant — the builder reads as the questionnaire itself:
+               one centered column, sticky aspect chips for wayfinding (Etsy
+               listing-editor / Workable interview-kit pattern), no side rail. */
+            <div className="flex-1 min-w-0">
+              {/* Sticky aspect chip bar */}
+              <div
+                className="sticky flex justify-center"
+                style={{ top: 48, zIndex: 20, background: 'var(--background)', borderBottom: '1px solid var(--border)' }}
+              >
+                <div className="flex items-center gap-2 w-full" style={{ maxWidth: 760, padding: '10px 24px' }} role="group" aria-label="Jump to aspect">
+                  {subjectGroups.map(g => {
+                    const c = aspectCounts(g.key)
+                    const active = docAspect === g.key
+                    return (
+                      <Button
+                        key={g.key}
+                        variant="outline"
+                        size="sm"
+                        aria-pressed={active}
+                        className={`rounded-full ${active ? 'border-foreground bg-muted' : ''}`}
+                        onClick={() => {
+                          document.getElementById(`aspect-${g.key}`)?.scrollIntoView({ behavior: 'auto', block: 'start' })
+                          setDocAspect(g.key)
+                        }}
+                      >
+                        {g.label}
+                        <span className="text-xs tabular-nums text-muted-foreground">{c.questions}</span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="mx-auto" style={{ maxWidth: 760, padding: '20px 24px 48px' }}>
+                {subjectGroups.map((g, gi) => {
+                  const c = aspectCounts(g.key)
+                  return (
+                    <section
+                      key={g.key}
+                      aria-labelledby={`doc-aspect-${g.key}-heading`}
+                      style={{
+                        borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
+                        padding: gi > 0 ? '24px 0 32px' : '4px 0 32px',
+                      }}
+                    >
+                      {/* Aspect header — document heading; anchor for the chip bar */}
+                      <div id={`aspect-${g.key}`} className="flex items-end justify-between gap-3" style={{ scrollMarginTop: 108 }}>
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <h2
+                            id={`doc-aspect-${g.key}-heading`}
+                            style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
+                          >
+                            {g.label}
+                          </h2>
+                          <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-4" style={{ paddingTop: 16 }}>
+                        {renderAspectBody(g.key)}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'focus' ? (
+            /* Focus variant — master-detail: the whole template structure stays
+               visible in a tree (Whop / Teachable curriculum pattern); the center
+               edits one aspect overview or one section at a time. */
+            <div className="flex flex-row flex-1 min-h-0">
+              {renderFocusTree()}
+              <div className="flex-1 min-w-0" style={{ padding: '28px 40px 48px' }}>
+                <div style={{ maxWidth: 720 }}>{renderFocusCenter()}</div>
               </div>
             </div>
           ) : (
@@ -1717,10 +2029,10 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {/* Right panel — Question attributes when a question is selected */}
           {selectedQ && selectedQuestion && (
             <div
-              className={`w-80 shrink-0 flex flex-col overflow-hidden ${variant === 'canvas' ? 'sticky self-start' : ''}`}
+              className={`w-80 shrink-0 flex flex-col overflow-hidden ${variant !== 'rail' ? 'sticky self-start' : ''}`}
               style={{
                 borderLeft: '1px solid var(--border)',
-                ...(variant === 'canvas' ? { top: 56, height: 'calc(100vh - 64px)' } : {}),
+                ...(variant !== 'rail' ? { top: 56, height: 'calc(100vh - 64px)' } : {}),
               }}
             >
               <AttributesPanel
@@ -1759,12 +2071,12 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {renderReview()}
         </TabsContent>
 
-        {/* ── Wizard footer — Back / Next / Publish (sticky under window scroll in canvas) ── */}
+        {/* ── Wizard footer — Back / Next / Publish (sticky under window scroll in non-rail variants) ── */}
         <div
           className="shrink-0 flex items-center justify-between border-t border-border"
           style={{
             height: 60, padding: '0 40px', background: 'var(--background)',
-            ...(variant === 'canvas' ? { position: 'sticky' as const, bottom: 0, zIndex: 10 } : {}),
+            ...(variant !== 'rail' ? { position: 'sticky' as const, bottom: 0, zIndex: 10 } : {}),
           }}
         >
           <Button
