@@ -24,7 +24,7 @@ import {
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
-  CRITERION_TOGGLE_LABEL,
+  CRITERION_TOGGLE_LABEL, CRITERION_GROUP,
   FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref, templateCriteria,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
@@ -500,8 +500,16 @@ export function StepCoursesEvaluatees({
         if (evaluates.length === 0) {
           return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
         }
+        // One glyph per criterion FAMILY (book = the course itself, person =
+        // any faculty role) — at chip size, ten distinct role icons would be
+        // unreadable noise; the family is the useful distinction.
         const chip = (c: Criterion) => (
-          <Badge key={c} variant="outline" className="rounded-full font-normal px-1.5 py-0 text-xs">
+          <Badge key={c} variant="outline" className="rounded-full font-normal gap-1 px-1.5 py-0 text-xs">
+            <i
+              className={`fa-light ${CRITERION_GROUP[c] === 'Course' ? 'fa-book-open' : 'fa-user'}`}
+              style={{ fontSize: 10 }}
+              aria-hidden="true"
+            />
             {CRITERION_TOGGLE_LABEL[c]}
           </Badge>
         )
