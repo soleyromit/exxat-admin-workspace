@@ -56,6 +56,7 @@ import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
 import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY, COURSE_TYPE_FULL_LABEL, type DeliveryMode } from '@/lib/pce-mock-data'
 import { TemplateImportDialog } from '@/components/pce/template-import-dialog'
+import { TemplateBuilderOutlineRail, type BuilderOutlineItem } from '@/components/pce/template-builder-outline-rail'
 
 // Faculty roles offered in the builder = the program roles configured in Central
 // Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
@@ -406,13 +407,15 @@ function AttributesPanel({
   )
 }
 
-export function TemplateEditor({ templateId, embedded = false, onPublished }: {
+export function TemplateEditor({ templateId, embedded = false, onPublished, variant = 'rail' }: {
   /** Template to edit; falls back to the route param when rendered as a page. */
   templateId?: string
   /** Render without page chrome (SiteHeader) — e.g. inside the push wizard's Survey Design step. */
   embedded?: boolean
   /** Called after Publish (embedded hosts return to their own view). */
   onPublished?: (id: string) => void
+  /** Builder-step layout — 'rail' switches between aspects; 'canvas' stacks all aspects on one scroll with an outline rail. */
+  variant?: 'rail' | 'canvas'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -441,6 +444,8 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
     { key: 'general',        label: 'General' },
   ]
   const [activeGroup, setActiveGroup] = useState('course_content')
+  // Canvas variant — collapsed aspect groups (all expanded by default).
+  const [collapsedAspects, setCollapsedAspects] = useState<Set<string>>(new Set())
   // Template details live in the persistent right settings panel (Airtable/Typeform
   // pattern) — no tabs, no dialog. Publish just publishes.
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
@@ -708,13 +713,16 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
         className="border border-border overflow-hidden"
         style={{ background: 'var(--card)', borderRadius: 'var(--radius-lg)' }}
       >
-        {/* Section header */}
+        {/* Section header — anchor target for the canvas outline rail (small
+            element, not the tall card, so scroll-spy tracks what's in view) */}
         <div
+          id={`sec-${sec.id}`}
           className="flex items-center gap-2"
           style={{
             background: 'var(--muted)',
             padding: '10px 14px',
             borderBottom: isOpen ? '1px solid var(--border)' : 'none',
+            scrollMarginTop: 12,
           }}
         >
           <Button
@@ -888,6 +896,175 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           </div>
         )}
       </div>
+    )
+  }
+
+  // ── Canvas variant — per-aspect builder body ────────────────────────────────
+  // Copy of the rail variant's inline aspect content parameterized by aspect key
+  // (kept verbatim apart from anchors so the two layouts compare honestly —
+  // delete the losing variant's copy once a direction is picked).
+  function renderAspectBody(key: string) {
+    const aspectLabel = subjectGroups.find(g => g.key === key)?.label
+    return (
+      <>
+        {/* Opening instruction for THIS aspect — collapsible accordion */}
+        <Collapsible
+          open={openInstruction[key] ?? false}
+          onOpenChange={o => setOpenInstruction(p => ({ ...p, [key]: o }))}
+          className="rounded-2 border border-dashed border-border"
+        >
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between h-auto px-3.5 py-2.5 hover:bg-transparent">
+              <span className="text-xs font-medium text-muted-foreground flex items-center">
+                <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+                Opening instruction · shown at the start of {aspectLabel}
+                {(aspectInstructions[key]?.title || aspectInstructions[key]?.text) && (
+                  <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
+                )}
+              </span>
+              <i className={`fa-light fa-chevron-${(openInstruction[key] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-3.5 pb-3 flex flex-col gap-2">
+            <Input
+              value={aspectInstructions[key]?.title ?? ''}
+              onChange={e => setAspectInstruction(key, { title: e.target.value })}
+              placeholder="Title (optional) — e.g. About this section"
+              className="h-8 text-sm"
+              aria-label={`Opening instruction title for ${key}`}
+            />
+            <Textarea
+              value={aspectInstructions[key]?.text ?? ''}
+              onChange={e => setAspectInstruction(key, { text: e.target.value })}
+              placeholder="Instruction shown to students before this section's questions…"
+              rows={2}
+              className="text-sm"
+              style={{ resize: 'none' }}
+              aria-label={`Opening instruction text for ${key}`}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Upload document — template-level entry, above the sections */}
+        {key !== 'faculty' && uploadDocAffordance(key)}
+
+        {key === 'faculty' ? (
+          /* Role sets — roles declared OUTSIDE the section (Jul 1 constraint).
+             Each set picks one/multiple roles then owns its own sections. */
+          <>
+            <p className="text-xs text-muted-foreground">
+              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+              Pick one or more roles per set, then build its sections — one role for role-specific
+              questions, multiple roles for shared questions.
+            </p>
+            {facultyRoleSets.map(set => {
+              const setSections = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+              return (
+                <div key={set.id} className="rounded-lg border border-border overflow-hidden"
+                  style={{ background: 'var(--background)' }}>
+                  {/* Set header — roles chosen here, never on the section; anchor for the outline rail */}
+                  <div id={`roleset-${set.id}`} className="flex items-start gap-3"
+                    style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
+                    <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
+                    <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                      {set.roles.length === 0 ? (
+                        <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
+                      ) : set.roles.map(roleKey => {
+                        const label = ROLE_LABEL(roleKey)
+                        return (
+                          <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
+                            style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
+                            {label}
+                            <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
+                              className="opacity-50 hover:opacity-100" onClick={() => toggleRoleSetRole(set, roleKey)}>
+                              <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                            </Button>
+                          </span>
+                        )
+                      })}
+                    </div>
+                    <Popover open={rolePickerSetId === set.id}
+                      onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="xs" className="shrink-0">
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
+                        {renderRolePickerContent(set)}
+                      </PopoverContent>
+                    </Popover>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
+                          <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+                          <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {/* Sections owned by this set */}
+                  <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
+                    {uploadDocAffordance('faculty', set.id)}
+                    {setSections.length === 0 ? (
+                      <div className="flex items-center justify-center rounded-lg border border-dashed"
+                        style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
+                        <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {setSections.map(sec => renderSectionCard(sec))}
+                        <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
+                          <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+              <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
+              </Button>
+            </div>
+          </>
+        ) : (() => {
+          const groupSections = sections.filter(s => s.subjectKey === key)
+          if (groupSections.length === 0) {
+            return (
+              <div
+                className="flex items-center justify-center rounded-lg border border-dashed"
+                style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
+              >
+                <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add section
+                </Button>
+              </div>
+            )
+          }
+          return (
+            <>
+              {groupSections.map(sec => renderSectionCard(sec))}
+              <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add section
+                </Button>
+              </div>
+            </>
+          )
+        })()}
+      </>
     )
   }
 
@@ -1139,7 +1316,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    /* Canvas variant scrolls at the window level (sticky rail/panel/footer) —
+       an overflow-hidden ancestor would break position:sticky against the window. */
+    <div className={`flex flex-col flex-1 ${variant === 'canvas' ? '' : 'overflow-hidden'}`}>
       {!embedded && (
         <SiteHeader
           breadcrumbs={[{ label: 'Templates', href: backHref }]}
@@ -1201,8 +1380,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           steps={WIZARD_STEPS.map(s => ({ n: s.n, label: s.label }))}
         />
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
-          {/* Left — section list */}
-          <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+          {/* Left — section list. Canvas scrolls at the window level, so it must
+              not sit under an overflow-hidden ancestor (breaks sticky). */}
+          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'canvas' ? '' : 'overflow-hidden'}`}>
           {importedBanner && (
             <div style={{ padding: '10px 40px 0' }}>
               <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
@@ -1233,6 +1413,85 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          ) : variant === 'canvas' ? (
+            /* Canvas variant — every aspect stacked on one scroll; the rail's
+               job changes from view-switcher to outline (DS OutlineTree,
+               mirrors results/[id] "On this page"). */
+            <div className="flex flex-row flex-1 min-h-0">
+              <TemplateBuilderOutlineRail
+                groups={subjectGroups.map(g => {
+                  const c = aspectCounts(g.key)
+                  const items: BuilderOutlineItem[] =
+                    g.key === 'faculty'
+                      ? facultyRoleSets.flatMap(set => {
+                          const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                          return [
+                            {
+                              anchorId: `roleset-${set.id}`,
+                              label: set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'No roles selected',
+                            },
+                            ...setSecs.map(s => ({
+                              anchorId: `sec-${s.id}`, label: s.title, count: s.questions.length, nested: true,
+                            })),
+                          ]
+                        })
+                      : sections
+                          .filter(s => s.subjectKey === g.key)
+                          .map(s => ({ anchorId: `sec-${s.id}`, label: s.title, count: s.questions.length }))
+                  return { anchorId: `aspect-${g.key}`, label: g.label, count: c.questions, items }
+                })}
+              />
+
+              {/* One continuous canvas — Course → Faculty → General (window scroll) */}
+              <div className="flex-1 min-w-0" style={{ padding: '28px 40px 48px' }}>
+                <div style={{ maxWidth: 720 }} className="flex flex-col">
+                  {subjectGroups.map((g, gi) => {
+                    const c = aspectCounts(g.key)
+                    const collapsed = collapsedAspects.has(g.key)
+                    return (
+                      <section
+                        key={g.key}
+                        aria-labelledby={`aspect-${g.key}-heading`}
+                        style={{
+                          borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
+                          padding: gi > 0 ? '20px 0 28px' : '0 0 28px',
+                        }}
+                      >
+                        {/* Aspect header — anchor target for the outline rail */}
+                        <div id={`aspect-${g.key}`} className="flex items-start gap-2" style={{ scrollMarginTop: 12 }}>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={collapsed ? `Expand ${g.label}` : `Collapse ${g.label}`}
+                            aria-expanded={!collapsed}
+                            onClick={() => setCollapsedAspects(prev => {
+                              const n = new Set(prev)
+                              if (n.has(g.key)) n.delete(g.key); else n.add(g.key)
+                              return n
+                            })}
+                            className="shrink-0 mt-0.5"
+                          >
+                            <i className={`fa-solid fa-chevron-${collapsed ? 'right' : 'down'} text-xs`} aria-hidden="true" />
+                          </Button>
+                          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                            <h2 id={`aspect-${g.key}-heading`} className="text-base font-semibold">{g.label}</h2>
+                            <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 6 }}>
+                            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {!collapsed && (
+                          <div className="flex flex-col gap-4" style={{ paddingTop: 14, paddingLeft: 36 }}>
+                            {renderAspectBody(g.key)}
+                          </div>
+                        )}
+                      </section>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           ) : (
@@ -1439,8 +1698,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {/* Right panel — Question attributes when a question is selected */}
           {selectedQ && selectedQuestion && (
             <div
-              className="w-80 shrink-0 flex flex-col overflow-hidden"
-              style={{ borderLeft: '1px solid var(--border)' }}
+              className={`w-80 shrink-0 flex flex-col overflow-hidden ${variant === 'canvas' ? 'sticky self-start' : ''}`}
+              style={{
+                borderLeft: '1px solid var(--border)',
+                ...(variant === 'canvas' ? { top: 56, height: 'calc(100vh - 64px)' } : {}),
+              }}
             >
               <AttributesPanel
                 key={selectedQuestion.questionId}
@@ -1478,10 +1740,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {renderReview()}
         </TabsContent>
 
-        {/* ── Wizard footer — Back / Next / Publish ── */}
+        {/* ── Wizard footer — Back / Next / Publish (sticky under window scroll in canvas) ── */}
         <div
           className="shrink-0 flex items-center justify-between border-t border-border"
-          style={{ height: 60, padding: '0 40px', background: 'var(--background)' }}
+          style={{
+            height: 60, padding: '0 40px', background: 'var(--background)',
+            ...(variant === 'canvas' ? { position: 'sticky' as const, bottom: 0, zIndex: 10 } : {}),
+          }}
         >
           <Button
             variant="outline"
