@@ -7,7 +7,7 @@ import {
   Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
-import { PillCell, NumericCell } from '@/components/data-views/table-cells'
+import { NumericCell } from '@/components/data-views/table-cells'
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
@@ -268,7 +268,14 @@ function TokenSelect({
 function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
   const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
   const trigger = (
-    <Button asChild variant="outline" size="xs" className="justify-start">
+    /* Warning-toned content on stock outline chrome: the label already names
+       the missing data ("Add faculty" = faculty missing), the amber says
+       "this needs you" — same vocabulary as the Needs-setup group icon. The
+       chrome itself stays DS-default (no warning Button variant exists). */
+    <Button
+      asChild variant="outline" size="xs" className="justify-start"
+      style={{ color: 'var(--insight-severity-warning-fg)' }}
+    >
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}
@@ -407,7 +414,7 @@ export function StepCoursesEvaluatees({
              line costs nothing. */
           <div className="flex flex-col py-0.5 min-w-0">
             <span className="font-mono text-xs font-semibold tabular-nums">{r.code}</span>
-            <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
+            <TruncatedText className="text-sm">{r.name}</TruncatedText>
             {r.dates && (
               <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
                 {r.datesLabel}
@@ -418,12 +425,9 @@ export function StepCoursesEvaluatees({
       },
       {
         key: 'enrolled', label: 'Students', sortable: true, width: 60,
-        // Catalog count cell — right-aligned tabular-nums; muted when the
-        // roster is the row's gap.
-        cell: r => {
-          const gap = r.cells.students && !r.cells.students.ok
-          return <NumericCell value={r.enrolled} className={gap ? 'text-muted-foreground' : undefined} />
-        },
+        // Catalog count cell — always muted: the count is context, and a
+        // roster gap is announced by the Action column, not by this number.
+        cell: r => <NumericCell value={r.enrolled} className="text-muted-foreground" />,
       },
     ]
     // The row's survey template — placed right after the course identity (the
@@ -438,19 +442,36 @@ export function StepCoursesEvaluatees({
       key: 'template', label: 'Template', width: 220,
       cell: r => {
         const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
+        const unassigned = !r.templateId
         return (
           <div onClick={e => e.stopPropagation()}>
-            {/* A hand-changed row is marked on the CONTROL, not beside it: the
-                trigger takes the secondary tint (the theme's "not factory
-                state" surface). Color never carries it alone — the accessible
-                name says "changed from default" (WCAG 1.4.1). */}
+            {/* State rides the CONTROL, not a note beside it. Unassigned takes
+                the warning treatment (the step's amber "needs setup"
+                vocabulary) so the admin's first job — assign a template — is
+                the loudest thing in an otherwise grey row; assigned rows drop
+                back to stock chrome. A hand-changed row keeps the secondary
+                tint ("not factory state"). Color never carries either alone —
+                the placeholder text and accessible name say it (WCAG 1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
-                aria-label={`Template for ${r.code}${edited ? ' — changed from default' : ''}`}
+                aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
                 className={`w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
-                style={{ height: 32, fontSize: 13 }}
+                style={{
+                  height: 32, fontSize: 13,
+                  /* Border + icon + text, NO warning-bg fill: the amber text
+                     on the tinted fill measured 4.23:1 — under the 4.5 AA
+                     floor at 13px. On the plain row background it passes. */
+                  ...(unassigned ? { borderColor: 'var(--insight-severity-warning-fg)' } : {}),
+                }}
               >
-                <SelectValue placeholder="Select…" />
+                <SelectValue
+                  placeholder={
+                    <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-warning-fg)' }}>
+                      <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />
+                      Assign template
+                    </span>
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -541,7 +562,7 @@ export function StepCoursesEvaluatees({
             <span key={name} className="flex items-center gap-1.5 min-w-0">
               <PersonAvatar name={name} />
               <span className="flex flex-col min-w-0">
-                <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
+                <TruncatedText className="text-sm">{name}</TruncatedText>
                 <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                   {roles.join(' · ')}
                 </TruncatedText>
@@ -585,20 +606,25 @@ export function StepCoursesEvaluatees({
             { value: 'Practice based', label: 'Practice based' },
           ],
         },
-        // Catalog cell for categorical kind (dates moved into the identity
-        // column's second line — they were a whole column of muted context).
-        // rounded-full so it reads as a passive pill, not a pressable button.
-        // Short display label ("Classroom", not "Classroom based") so the pill
-        // fits INSIDE the 120px column instead of overlapping the divider;
-        // sorting/filtering still ride the full typeLabel value.
-        cell: r => <PillCell label={r.typeLabel.replace(/ based$/, '')} className="rounded-full font-normal whitespace-nowrap" />,
+        // Plain muted text, not a pill: the bordered pill was the loudest
+        // chrome in the row while carrying pure context — attention belongs to
+        // the Template and Action columns only. Short display label
+        // ("Classroom", not "Classroom based"); sorting/filtering still ride
+        // the full typeLabel value.
+        cell: r => (
+          <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+            {r.typeLabel.replace(/ based$/, '')}
+          </span>
+        ),
       },
       {
         // What's needed to complete setup — one consolidated column, pinned right.
         key: 'actions', label: 'Action needed', width: 176, defaultPin: 'right', lockPin: true,
         cell: r => {
-          // No template yet = nothing to validate against; the fix is the
-          // Template cell one column over, so name it rather than a dead "—".
+          // No template yet = nothing to validate against. Stays MUTED on
+          // purpose: the Template control itself carries the amber signal for
+          // this gap, and one signal per gap keeps the two attention columns
+          // from shouting about the same thing twice in one row.
           if (!r.templateId) {
             return <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
           }
@@ -874,7 +900,15 @@ export function StepCoursesEvaluatees({
               <>
                 {tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students
                 {selectedMissingTemplate > 0 && (
-                  <> · {selectedMissingTemplate} without a template</>
+                  /* The count that BLOCKS Continue shares the warning color of
+                     the cells that clear it — same signal, both ends. */
+                  <>
+                    {' · '}
+                    <span className="inline-flex items-center gap-1 font-medium" style={{ color: 'var(--insight-severity-warning-fg)' }}>
+                      <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                      {selectedMissingTemplate} without a template
+                    </span>
+                  </>
                 )}
               </>
             )
