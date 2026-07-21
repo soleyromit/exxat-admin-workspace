@@ -13,8 +13,8 @@ import type { ColumnDef } from "@/components/data-table/types"
 import { PageHeader } from "@/components/page-header"
 import { PageTitleRecordSwitcher } from "@/components/page-breadcrumb-trail"
 import { PrimaryPageTemplate } from "@/components/templates/primary-page-template"
-import { AvatarInitials } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { PersonAvatar } from "@/components/pce/person-avatar"
+import { EmptyState } from "@/components/empty-state"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -269,23 +269,20 @@ function CourseOverviewPanel({
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
           {actions.map(action => (
             <li key={action.id} className="max-w-full">
-              <Badge
-                asChild
+              {/* DS Button, not Badge-around-raw-<button>: same chip look via
+                  h-7 + rounded chip radius, real DS focus/keyboard chrome. */}
+              <Button
                 variant="outline"
-                className="h-7 max-w-full gap-1.5 border-border bg-background px-2.5 text-xs font-medium hover:border-brand/40 hover:bg-interactive-hover-soft"
+                size="xs"
+                onClick={() => runAction(action)}
+                className="h-7 max-w-full gap-1.5 px-2.5 text-xs font-medium hover:border-brand/40 hover:bg-interactive-hover-soft"
               >
-                <button
-                  type="button"
-                  onClick={() => runAction(action)}
-                  className="inline-flex min-w-0 max-w-full cursor-pointer items-center gap-1.5 focus-visible:outline-none"
-                >
-                  <i
-                    className={`fa-light ${action.icon} shrink-0 text-xs text-muted-foreground`}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{action.label}</span>
-                </button>
-              </Badge>
+                <i
+                  className={`fa-light ${action.icon} shrink-0 text-xs text-muted-foreground`}
+                  aria-hidden="true"
+                />
+                <span className="truncate">{action.label}</span>
+              </Button>
             </li>
           ))}
         </ul>
@@ -302,11 +299,15 @@ function CourseOverviewPanel({
           <Card>
             <CardContent className="divide-y divide-border p-0">
               {whatsNew.map(item => (
-                <button
+                /* DS Button as a full-width list row: h-auto + rounded-none +
+                   whitespace-normal override the pill anatomy so the divided
+                   rows keep their shape; focus ring comes from the DS. */
+                <Button
                   key={item.id}
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => runAction(item)}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  className="h-auto w-full items-start justify-start gap-3 whitespace-normal rounded-none px-4 py-3 text-left font-normal hover:bg-muted/30"
                 >
                   <TableNewRowDot className="mt-2" />
                   <span className="min-w-0 flex-1">
@@ -314,7 +315,7 @@ function CourseOverviewPanel({
                     <span className="mt-0.5 block text-xs text-muted-foreground">{item.subtitle}</span>
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">{item.occurredAt}</span>
-                </button>
+                </Button>
               ))}
             </CardContent>
           </Card>
@@ -606,9 +607,10 @@ function FormsReviewTable({
         defaultPin: "left",
         cell: row => (
           <div className="flex min-w-0 items-start gap-2.5">
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="mt-0.5 size-8 shrink-0 text-xs"
+              className="mt-0.5 size-8 text-xs"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
@@ -718,9 +720,10 @@ function PracticumLogTable({
         defaultPin: "left",
         cell: row => (
           <div className="flex min-w-0 items-start gap-2.5">
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="mt-0.5 size-8 shrink-0 text-xs"
+              className="mt-0.5 size-8 text-xs"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
@@ -878,9 +881,10 @@ function GradebookTable({
         cell: row => (
           <div className="flex min-w-0 items-center gap-2.5">
             {row.isNew ? <TableNewRowDot className="mt-1" /> : null}
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="size-8 shrink-0 text-xs"
+              className="size-8 text-xs"
             />
             <span className="truncate text-sm font-medium text-foreground">{row.studentName}</span>
           </div>
@@ -1216,14 +1220,13 @@ function ModuleBody({
       )
     }
     return (
-      <div
-        className="mx-4 flex min-h-[32vh] flex-col items-center justify-center rounded-2 border border-dashed border-border bg-card/40 px-6 py-12 text-center lg:mx-6"
-        role="status"
-      >
-        <p className="max-w-md text-sm text-muted-foreground">
-          Time off requests for this offering will appear here. Connect the time-off workflow when
-          the backend is ready.
-        </p>
+      <div className="mx-4 lg:mx-6" role="status">
+        <EmptyState
+          icon="fa-calendar-xmark"
+          title="No time off requests yet"
+          description="Time off requests for this offering will appear here. Connect the time-off workflow when the backend is ready."
+          align="center"
+        />
       </div>
     )
   }
