@@ -425,7 +425,7 @@ export function StepCoursesEvaluatees({
              Faculty/Template cells already set the row height, so the third
              line costs nothing. */
           <div className="flex flex-col py-0.5 min-w-0">
-            <span className="font-mono text-xs font-semibold tabular-nums">{r.code}</span>
+            <span className="font-mono text-xs tabular-nums">{r.code}</span>
             <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
             {r.dates && (
               <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
@@ -696,13 +696,16 @@ export function StepCoursesEvaluatees({
     if (lastTotal.current !== filteredTotal) { lastTotal.current = filteredTotal; setPage(1) }
   }, [filteredTotal])
 
-  // Selection — default all on scope change; any course can be unchecked.
+  // Selection — default to READY rows only on scope change (Romit, Jul 21):
+  // pre-checking needs-setup rows put unpushable courses in the batch and
+  // tripped the "N without a template" blocker. A row fixed later is checked
+  // by the user (or via the group checkbox); any course can be (un)checked.
   const rowSig = rows.map(r => r.id).join('\0')
   const lastRowSig = useRef<string>('')
   useEffect(() => {
     if (lastRowSig.current === rowSig) return
     lastRowSig.current = rowSig
-    tableState.setSelected(new Set(rows.map(r => r.id)))
+    tableState.setSelected(new Set(rows.filter(r => r.readiness === 'ready').map(r => r.id)))
   }, [rowSig, rows, tableState])
 
   // Report selection up (de-duped)
