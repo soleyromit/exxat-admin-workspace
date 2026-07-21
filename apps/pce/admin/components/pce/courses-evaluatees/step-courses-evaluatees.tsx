@@ -268,14 +268,9 @@ function TokenSelect({
 function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
   const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
   const trigger = (
-    /* Warning-toned content on stock outline chrome: the label already names
-       the missing data ("Add faculty" = faculty missing), the amber says
-       "this needs you" — same vocabulary as the Needs-setup group icon. The
-       chrome itself stays DS-default (no warning Button variant exists). */
-    <Button
-      asChild variant="outline" size="xs" className="justify-start"
-      style={{ color: 'var(--insight-severity-warning-fg)' }}
-    >
+    /* Neutral DS chrome: the amber FACT line above the button carries the
+       attention; the button is the remedy, not the alarm. */
+    <Button asChild variant="outline" size="xs" className="justify-start">
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}
@@ -374,7 +369,15 @@ export function StepCoursesEvaluatees({
     () =>
       scoped
         .map(o => {
-          const templateId = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+          // An id that resolves to no PUBLISHED template is treated as
+          // unassigned, not silently "ready": assignments can dangle — the
+          // demo-account provider seeds the default account on first render
+          // and applies the stored account post-mount (pce-state.tsx), and a
+          // template can be deleted/unpublished after assignment. A dangling
+          // id used to render a blank select with zero criteria → zero gaps
+          // → the row lied "Ready to send".
+          const rawTemplateId = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+          const templateId = rawTemplateId && criteriaByTemplate.has(rawTemplateId) ? rawTemplateId : ''
           const rowCriteria = templateId ? (criteriaByTemplate.get(templateId) ?? []) : []
           const r = deriveReadiness([o], rowCriteria)[0]
           const [code, ...rest] = r.courseLabel.split(' – ')
@@ -414,7 +417,7 @@ export function StepCoursesEvaluatees({
              line costs nothing. */
           <div className="flex flex-col py-0.5 min-w-0">
             <span className="font-mono text-xs font-semibold tabular-nums">{r.code}</span>
-            <TruncatedText className="text-sm">{r.name}</TruncatedText>
+            <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
             {r.dates && (
               <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
                 {r.datesLabel}
@@ -445,29 +448,23 @@ export function StepCoursesEvaluatees({
         const unassigned = !r.templateId
         return (
           <div onClick={e => e.stopPropagation()}>
-            {/* State rides the CONTROL, not a note beside it. Unassigned takes
-                the warning treatment (the step's amber "needs setup"
-                vocabulary) so the admin's first job — assign a template — is
-                the loudest thing in an otherwise grey row; assigned rows drop
-                back to stock chrome. A hand-changed row keeps the secondary
-                tint ("not factory state"). Color never carries either alone —
-                the placeholder text and accessible name say it (WCAG 1.4.1). */}
+            {/* Two-hue system (Romit, Jul 21): INFO-blue = a choice to make
+                in-app (assign a template), amber = data missing (fix lives in
+                Prism). The blue rides the placeholder TEXT on stock chrome —
+                a colored border ×N rows read as a wall. Assigned rows are calm
+                grey; a hand-changed row keeps the secondary tint ("not factory
+                state"). Color never carries state alone — the placeholder text
+                and accessible name say it (WCAG 1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
                 aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
                 className={`w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
-                style={{
-                  height: 32, fontSize: 13,
-                  /* Border + icon + text, NO warning-bg fill: the amber text
-                     on the tinted fill measured 4.23:1 — under the 4.5 AA
-                     floor at 13px. On the plain row background it passes. */
-                  ...(unassigned ? { borderColor: 'var(--insight-severity-warning-fg)' } : {}),
-                }}
+                style={{ height: 32, fontSize: 13 }}
               >
                 <SelectValue
                   placeholder={
-                    <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-warning-fg)' }}>
-                      <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />
+                    <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                      <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
                       Assign template
                     </span>
                   }
@@ -562,7 +559,7 @@ export function StepCoursesEvaluatees({
             <span key={name} className="flex items-center gap-1.5 min-w-0">
               <PersonAvatar name={name} />
               <span className="flex flex-col min-w-0">
-                <TruncatedText className="text-sm">{name}</TruncatedText>
+                <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
                 <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                   {roles.join(' · ')}
                 </TruncatedText>
@@ -638,13 +635,28 @@ export function StepCoursesEvaluatees({
           if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
+          // Fact first, remedy second: the amber line NAMES the missing data
+          // (the admin's second focus), the neutral button under it is the
+          // fix. Amber never touches the button — alarm and remedy separate.
+          const fact = (text: string) => (
+            <span className="flex items-center gap-1.5 text-xs font-medium min-w-0 max-w-full" style={{ color: 'var(--insight-severity-warning-fg)' }}>
+              <i className="fa-solid fa-triangle-exclamation shrink-0" aria-hidden="true" />
+              <TruncatedText>{text}</TruncatedText>
+            </span>
+          )
           return (
-            <div className="flex flex-col items-start gap-1 py-0.5">
+            <div className="flex flex-col items-start gap-1 py-1">
               {studentGap && (
-                <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
+                <>
+                  {fact('No students enrolled')}
+                  <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
+                </>
               )}
               {facultyMissing.length > 0 && (
-                <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
+                <>
+                  {fact(`Missing: ${facultyMissing.join(', ')}`)}
+                  <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
+                </>
               )}
             </div>
           )
@@ -900,12 +912,12 @@ export function StepCoursesEvaluatees({
               <>
                 {tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students
                 {selectedMissingTemplate > 0 && (
-                  /* The count that BLOCKS Continue shares the warning color of
-                     the cells that clear it — same signal, both ends. */
+                  /* The count that BLOCKS Continue shares the info-blue of the
+                     "Assign template" placeholders that clear it — same
+                     signal, both ends of the loop. */
                   <>
                     {' · '}
-                    <span className="inline-flex items-center gap-1 font-medium" style={{ color: 'var(--insight-severity-warning-fg)' }}>
-                      <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                    <span className="font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
                       {selectedMissingTemplate} without a template
                     </span>
                   </>
