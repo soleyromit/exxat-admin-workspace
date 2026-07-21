@@ -937,12 +937,16 @@ export function StepCoursesEvaluatees({
           }}
           /* E1 (Romit, Jul 21): tinted group-header bands — the amber band
              says "this section needs you", the green band says "done", and
-             the data rows stay clean. AA-safe DS pairing: icon-disc wash bg
-             + the matching --chip ink (warning-fg on warning-bg fails at
-             4.23:1; chip inks are darker and clear 4.5 comfortably). */
+             the data rows stay clean. AA-safe DS pairing: chart wash bg +
+             the matching --chip ink (warning-fg on warning-bg fails at
+             4.23:1; chip inks are darker and clear 4.5 comfortably).
+             OPAQUE tokens (app globals.css), not the translucent
+             --icon-disc-* washes: the band covers the sticky select cell,
+             and a see-through sticky cell lets the label scroll visibly
+             under the group checkbox. */
           groupHeaderStyles={{
-            gap: { background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' },
-            ready: { background: 'var(--icon-disc-chart-2-bg)', color: 'var(--chip-2)' },
+            gap: { background: 'var(--group-band-attention-bg)', color: 'var(--chip-4)' },
+            ready: { background: 'var(--group-band-done-bg)', color: 'var(--chip-2)' },
           }}
         />
         <div className="border-x border-b border-border rounded-b-lg overflow-hidden">
