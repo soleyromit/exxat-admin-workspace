@@ -510,44 +510,45 @@ export function StepCoursesEvaluatees({
         if (evaluates.length === 0) {
           return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
         }
-        // One glyph per criterion FAMILY (book = the course itself, person =
-        // any faculty role) — at chip size, ten distinct role icons would be
-        // unreadable noise; the family is the useful distinction.
-        const chip = (c: Criterion) => (
-          <Badge key={c} variant="outline" className="rounded-full font-normal gap-1 px-1.5 py-0 text-xs">
+        // F2 (Romit, Jul 21): glyph + muted TEXT, no chip chrome — derived
+        // context should read as context; the tinted Type pill stays the only
+        // pill in this half of the row. One glyph per criterion FAMILY (book
+        // = the course itself, person = any faculty role) — at this size ten
+        // distinct role icons would be unreadable noise.
+        const line = (c: Criterion) => (
+          <span key={c} className="flex items-center gap-1.5 text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
             <i
               className={`fa-light ${CRITERION_GROUP[c] === 'Course' ? 'fa-book-open' : 'fa-user'}`}
               style={{ fontSize: 10 }}
               aria-hidden="true"
             />
             {CRITERION_TOGGLE_LABEL[c]}
-          </Badge>
+          </span>
         )
         const shown = evaluates.slice(0, MAX_EVALUATE_CHIPS)
         const extra = evaluates.length - shown.length
         return (
-          /* Same token vocabulary as the old "What to evaluate" field —
-             chips scan across rows; differences pop when templates diverge.
-             Beyond two, the rest live in a popover: a template evaluating five
-             roles would stack the row five chips tall. */
-          <span className="flex flex-wrap items-center gap-1 py-0.5" onClick={e => e.stopPropagation()}>
-            {shown.map(chip)}
+          /* Beyond two, the rest live in a popover: a template evaluating
+             five roles would stack the row five lines tall. */
+          <span className="flex flex-col items-start gap-0.5 py-0.5" onClick={e => e.stopPropagation()}>
+            {shown.map(line)}
             {extra > 0 && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="xs"
-                    className="h-auto rounded-full px-1.5 py-0 text-xs font-normal"
+                    className="h-auto w-fit p-0 text-xs font-normal text-muted-foreground hover:text-foreground"
+                    style={{ backgroundColor: 'transparent' }}
                     aria-label={`${extra} more evaluated role${extra === 1 ? '' : 's'}`}
                   >
-                    +{extra}
+                    +{extra} more
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent aria-label="Evaluated roles" align="start" className="w-auto p-2.5" style={{ maxWidth: 240 }}>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium">Evaluates</span>
-                    <span className="flex flex-wrap gap-1">{evaluates.map(chip)}</span>
+                    <span className="flex flex-col gap-1">{evaluates.map(line)}</span>
                   </div>
                 </PopoverContent>
               </Popover>
