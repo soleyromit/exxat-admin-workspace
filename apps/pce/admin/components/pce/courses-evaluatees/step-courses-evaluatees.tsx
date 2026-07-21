@@ -32,10 +32,6 @@ import { courseDates } from '@/lib/pce-push-validation'
 /** Above this count a picker gains a search field. */
 const COHORT_SEARCH_THRESHOLD = 8
 
-/** Evaluates chips shown in the cell before the rest collapse into "+N"
- *  (popover with the full set). */
-const MAX_EVALUATE_CHIPS = 2
-
 const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 interface ReadinessRow extends Record<string, unknown> {
@@ -528,36 +524,35 @@ export function StepCoursesEvaluatees({
             {CRITERION_TOGGLE_LABEL[c]}
           </span>
         )
-        // Collapse only when it SAVES a line: "+1 more" costs the same row
-        // height as the label it hides — show the label instead.
-        const collapse = evaluates.length > MAX_EVALUATE_CHIPS + 1
-        const shown = collapse ? evaluates.slice(0, MAX_EVALUATE_CHIPS) : evaluates
-        const extra = evaluates.length - shown.length
+        // Faculty roles collapse to a COUNT (Romit, Jul 21): a template can
+        // evaluate many faculty types, and the WHICH lives on hover/focus (DS
+        // Tip — dotted underline is the affordance). A single role shows its
+        // label (a count of one hides information at no space saving); the
+        // course criterion is always its own line.
+        const courseEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Course')
+        const facultyEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Faculty')
         return (
-          /* Beyond two, the rest live in a popover: a template evaluating
-             five roles would stack the row five lines tall. */
           <span className="flex flex-col items-start gap-0.5 py-0.5" onClick={e => e.stopPropagation()}>
-            {shown.map(line)}
-            {extra > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    className="h-auto w-fit p-0 text-xs font-normal text-muted-foreground hover:text-foreground"
-                    style={{ backgroundColor: 'transparent' }}
-                    aria-label={`${extra} more evaluated role${extra === 1 ? '' : 's'}`}
-                  >
-                    +{extra} more
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent aria-label="Evaluated roles" align="start" className="w-auto p-2.5" style={{ maxWidth: 240 }}>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium">Evaluates</span>
-                    <span className="flex flex-col gap-1">{evaluates.map(line)}</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
+            {courseEval.map(line)}
+            {facultyEval.length === 1 && line(facultyEval[0])}
+            {facultyEval.length > 1 && (
+              <Tip
+                side="bottom"
+                label={
+                  <span className="flex flex-col gap-0.5">
+                    {facultyEval.map(c => <span key={c}>{CRITERION_TOGGLE_LABEL[c]}</span>)}
+                  </span>
+                }
+              >
+                <span
+                  tabIndex={0}
+                  className="flex items-center gap-1.5 whitespace-nowrap underline decoration-dotted underline-offset-2 cursor-default"
+                  style={{ fontSize: 13 }}
+                >
+                  <i className="fa-light fa-user" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} aria-hidden="true" />
+                  {facultyEval.length} faculty roles
+                </span>
+              </Tip>
             )}
           </span>
         )
