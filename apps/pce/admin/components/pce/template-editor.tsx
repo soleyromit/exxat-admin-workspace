@@ -751,15 +751,26 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                   if (e.key === 'Escape') setEditingSectionId(null)
                 }}
                 onClick={e => e.stopPropagation()}
-                className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-0 rounded-none shadow-none px-0"
+                className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-ring focus-visible:ring-offset-0 rounded-none shadow-none px-0"
               />
             ) : (
               <span
-                className="text-sm font-semibold truncate cursor-text block"
+                role="button"
+                tabIndex={0}
+                aria-label={`Rename section ${sec.title}`}
+                className="text-sm font-semibold truncate cursor-text block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={e => {
                   e.stopPropagation()
                   setEditingSectionTitle(sec.title)
                   setEditingSectionId(sec.id)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setEditingSectionTitle(sec.title)
+                    setEditingSectionId(sec.id)
+                  }
                 }}
               >
                 {sec.title}
@@ -802,13 +813,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                   onDragStart={() => handleQDragStart(sec.id, qIndex)}
                   onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
                   onDragEnd={handleQDragEnd}
-                  className="group rounded-lg border cursor-pointer"
+                  className="group rounded-lg border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   style={{
                     background: 'var(--muted)',
                     borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
                     outline: isSelected ? '1px solid var(--foreground)' : 'none',
                   }}
+                  tabIndex={0}
                   onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
+                  onKeyDown={e => {
+                    if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+                      e.preventDefault()
+                      setSelectedQuestion({ sectionId: sec.id, questionId: q.id })
+                    }
+                  }}
                 >
                   {/* Type label row */}
                   <div className="flex items-center justify-end gap-1 px-3 pt-2">
@@ -1138,6 +1156,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               <ToggleSwitch
                 id="tmpl-default-for-type"
                 checked={!!t.isDefaultForType}
+                disabled={!t.deliveryMode}
                 onChange={(v) => {
                   if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
                 }}
