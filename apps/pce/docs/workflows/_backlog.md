@@ -411,6 +411,26 @@ Source: `docs/research/meetings/2026-07-19-modular-product-strategy.md` (Granola
 | T122 | Portal: upsell visual treatment — de-emphasize subscribed products, highlight not-subscribed | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0719_01. "The ones that you already have can be grayed out and the ones that you don't have can be given a little bit more important or whatever." `subscriptionStatus: 'active' \| 'trial'` = visually de-emphasized; `subscriptionStatus: 'not-subscribed'` = prominent for upsell. Above-the-fold constraint: all products visible without scrolling (D_PORTAL_0719_03). Supplements T118. |
 | T123 | Portal: pictorial product ecosystem diagram — show product relationships with owned vs. not-owned visual state | Admin | Portal entry point (`apps/portal/`) | P1 — DESIGN-REVIEW | D_PORTAL_0719_02, D_PORTAL_0719_03. "If there's a way to incorporate that diagram and give them a way to explode that." Owned products grayed; not-owned highlighted. Based on Kunal's infographic (T118). Explore as an alternative to or companion to the current product list. Romit design exploration required before any code. |
 
+## Phase 1 design tasks — added 2026-07-20 (1:1 Arun + Romit / Survey design — Monil)
+
+Source: `docs/research/meetings/2026-07-20-1-1-arun-romit.md` (Granola `2870dd23`) · `docs/research/meetings/2026-07-20-survey-design-course-template-flow.md` (Granola `7cc5879f`)
+
+> 1:1 status sync with Arun (Jul 20 10:00 AM): course eval 80–85% done, wrap-up target = Cohere Sep 2026, exam management cannot demo, AI features = PM decision, DS AI Figma work paused. Design review with Monil (Jul 20 9:05 AM): setup evaluations step order reversed (template first → data audit second), combined-step design is P0 urgent, "Create Template" CTA added to dashboard cards for first-time entities, missing data = soft warning only.
+
+### Updates to existing tasks (Jul 20)
+
+| # | Update |
+|---|---|
+| T111 | **SUPERSEDED by T124.** Step-1-as-data-audit direction (Jul 14) is reversed. New order: course-to-template assignment first, data validation second. T124 is the active design task. D_PCE_0720B_01. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T124 | Setup evaluations flow redesign: combined course-selection + template-assignment + data-audit in single table — URGENT | Admin | Setup evaluations wizard (dashboard → term card → "Setup Evaluations") | **P0 URGENT** | D_PCE_0720B_01, D_PCE_0720B_02. Primary: one unified table (course row + template picker column + data-gap flags). Fallback if too cluttered: two steps in new order (template first, audit second). Must complete before dev picks up this flow. Supersedes T111. Needs Romit design direction — no code changes until designed. |
+| T125 | Dashboard cards: add "Create Template" CTA for entities with zero templates and no prior survey push | Admin | Dashboard term cards | P1 — DESIGN-REVIEW | D_PCE_0720B_03. Entities that get CTA: Riverside, DPT Lakeside, Summit, Cascade (zero templates + no prior push). Entities that do NOT: Harbor, Spring 2026, Fall 2026 (prior-term push exists → template exists). Stack above existing card CTAs. Supplements T114. |
+| T126 | Soft warning treatment for missing faculty/student rows in setup evaluations data-audit column | Admin | Setup evaluations wizard | P1 — DESIGN-REVIEW | D_PCE_0720B_04. Rows missing faculty or student data show inline soft warning (badge, flag, or caution indicator). Proceeding is allowed. Zero-students hard block = backend only, no UI change needed. Use DS-compliant warning pattern (LocalBanner or inline badge — never toast). |
+
 ---
 
 ## Open product questions
