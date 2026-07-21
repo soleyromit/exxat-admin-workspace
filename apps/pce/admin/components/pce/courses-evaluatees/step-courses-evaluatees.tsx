@@ -456,28 +456,13 @@ export function StepCoursesEvaluatees({
         const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
         const unassigned = !r.templateId
         // Zero published templates = the select is a dead end (empty list).
-        // The same pill becomes a real button into the IN-STEP create flow
-        // ("Back to Courses" backtrack; publish returns here, and a lone
-        // published template auto-assigns to every row via the type-default).
+        // No control at all — the CREATE action lives in the Action column
+        // (it's an action; Romit, Jul 21), this cell just names the reason.
         if (publishedTemplates.length === 0) {
           return (
-            <div onClick={e => e.stopPropagation()}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-fit font-medium"
-                style={{
-                  height: 32, fontSize: 13, paddingInline: 12,
-                  background: 'var(--insight-severity-info-bg)',
-                  color: 'var(--insight-severity-info-fg)',
-                }}
-                aria-label={`Create a template — none exist yet to assign to ${r.code}`}
-                onClick={() => { setNotice(null); setSubView('create') }}
-              >
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Create template
-              </Button>
-            </div>
+            <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              No templates yet
+            </span>
           )
         }
         return (
@@ -672,16 +657,29 @@ export function StepCoursesEvaluatees({
         // What's needed to complete setup — one consolidated column, pinned right.
         key: 'actions', label: 'Action needed', width: 176, defaultPin: 'right', lockPin: true,
         cell: r => {
-          // No template yet = nothing to validate against. Stays MUTED on
-          // purpose: the Template control itself carries the signal for this
-          // gap, and one signal per gap keeps the two attention columns from
-          // shouting about the same thing twice in one row.
+          // No template yet = nothing to validate against.
+          // Catalog empty → the fix IS an action, so it renders here as a
+          // real DS button (same anatomy as Add faculty/Add students) that
+          // opens the in-step create flow: "Back to Courses" backtracks,
+          // publish returns here and a lone template auto-assigns via the
+          // type-default. Catalog non-empty → muted note; the Template
+          // select carries the assign affordance (one signal per gap).
           if (!r.templateId) {
-            return (
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                {publishedTemplates.length === 0 ? 'Create a template first' : 'Assign a template'}
-              </span>
-            )
+            if (publishedTemplates.length === 0) {
+              return (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="justify-start"
+                  aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+                  onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
+                >
+                  <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
+                  Create template
+                </Button>
+              )
+            }
+            return <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
           }
           const studentCell = r.cells.students
           const studentGap = !!studentCell && !studentCell.ok
