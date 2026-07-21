@@ -2,11 +2,10 @@
 
 import { TemplateEditor } from '@/components/pce/template-editor'
 
-// Design-compare route (variant 1 of 3, iteration 2) — "worksheet": the
-// template as one dense numbered sheet with sticky aspect band headers and
-// inline type labels; upload lives in the band header as "Generate from
-// document". Compare against /templates/[id] and its /document + /focus
-// siblings. (Route path kept stable across iterations.)
-export default function TemplateWorksheetComparePage() {
-  return <TemplateEditor variant="worksheet" />
+// Design-compare route (variant 1 of 5, iteration 3) — "bands": sticky aspect
+// band headers carry identity + actions; upload lives in the band header as
+// "Generate from document". Section cards are the standard builder cards.
+// (Route path kept stable across iterations.)
+export default function TemplateBandsComparePage() {
+  return <TemplateEditor variant="bands" />
 }

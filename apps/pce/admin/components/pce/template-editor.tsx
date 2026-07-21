@@ -413,12 +413,16 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   embedded?: boolean
   /** Called after Publish (embedded hosts return to their own view). */
   onPublished?: (id: string) => void
-  /** Builder-step layout (design-compare variants, iteration 2):
+  /** Builder-step layout (design-compare variants, iteration 3). Section cards
+   *  (collapse/expand + in-section Add question) are IDENTICAL in every
+   *  variant — only the layout around them changes.
    *  'rail' — default; switches between aspects.
-   *  'worksheet' — dense numbered question rows, the template as one flat sheet.
+   *  'bands' — sticky aspect band headers carry identity + actions.
    *  'document' — one centered column, sticky aspect chips, no side rail.
-   *  'preview' — build left, live student-facing preview right. */
-  variant?: 'rail' | 'worksheet' | 'document' | 'preview'
+   *  'preview' — build left, live student-facing preview right.
+   *  'minimal' — bare essentials: narrow column, plain headings, text actions.
+   *  'columns' — all three aspects side by side as board lanes. */
+  variant?: 'rail' | 'bands' | 'document' | 'preview' | 'minimal' | 'columns'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -1036,9 +1040,8 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
-  // ── Worksheet variant — dense numbered rows, the template as one flat sheet ─
-  // Upload demotes to a "Generate from document" action in the band header (no
-  // dashed boxes); questions are single-line rows with inline type labels.
+  // Compact upload entry — "Generate from document" as a header action instead
+  // of the dashed panel (bands + minimal variants).
   const generateFromDocButton = (subjectKey: string, roleSetId?: string) => (
     <Button
       variant="outline"
@@ -1049,151 +1052,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       Generate from document
     </Button>
   )
-
-  function renderWorksheetQuestionRow(sec: PceTemplateSection, q: TemplateQuestion, qIndex: number, num: number) {
-    const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
-    return (
-      <div
-        key={q.id}
-        tabIndex={0}
-        draggable
-        onDragStart={() => handleQDragStart(sec.id, qIndex)}
-        onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
-        onDragEnd={handleQDragEnd}
-        onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
-        onKeyDown={e => {
-          if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
-            e.preventDefault()
-            setSelectedQuestion({ sectionId: sec.id, questionId: q.id })
-          }
-        }}
-        className="group flex items-center gap-3 cursor-pointer rounded-sm border-b border-border/60 last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        style={{ padding: '6px 8px', background: isSelected ? 'var(--muted)' : 'transparent' }}
-      >
-        <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0 text-end" style={{ width: 26 }}>{num}</span>
-        <span className="text-sm flex-1 min-w-0 truncate">
-          {q.text || <span style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
-        </span>
-        <span
-          className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0"
-          onClick={e => e.stopPropagation()}
-        >
-          <Button variant="ghost" size="icon-xs" aria-label="Move up" disabled={qIndex === 0}
-            onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}>
-            <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Move down" disabled={qIndex === sec.questions.length - 1}
-            onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}>
-            <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Duplicate question"
-            onClick={() => handleDuplicateQuestion(sec.id, q)}>
-            <i className="fa-light fa-copy text-xs" aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Delete question"
-            onClick={() => handleDeleteQuestion(sec.id, q.id)}>
-            <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
-          </Button>
-        </span>
-        <span className="text-xs text-muted-foreground shrink-0 text-end" style={{ width: 104 }}>{qTypeLabel(q.answerType)}</span>
-      </div>
-    )
-  }
-
-  function renderWorksheetSection(sec: PceTemplateSection, startNum: number) {
-    const isOpen = !closedSectionIds.has(sec.id)
-    return (
-      <div key={sec.id}>
-        <div className="flex items-center gap-1.5" style={{ padding: '8px 0 2px' }}>
-          <Button variant="ghost" size="icon-xs" aria-label={isOpen ? `Collapse ${sec.title}` : `Expand ${sec.title}`}
-            onClick={() => toggleSection(sec.id)}>
-            <i className={`fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-xs`} aria-hidden="true" />
-          </Button>
-          {editingSectionId === sec.id ? (
-            <Input
-              autoFocus
-              aria-label="Section title"
-              value={editingSectionTitle}
-              onChange={e => setEditingSectionTitle(e.target.value)}
-              onBlur={() => {
-                updateTemplateSection(t.id, sec.id, { title: editingSectionTitle.trim() || 'Untitled Section' })
-                setEditingSectionId(null)
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                if (e.key === 'Escape') setEditingSectionId(null)
-              }}
-              className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-ring focus-visible:ring-offset-0 rounded-none shadow-none px-0"
-            />
-          ) : (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={`Rename section ${sec.title}`}
-              className="text-sm font-semibold truncate cursor-text rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => { setEditingSectionTitle(sec.title); setEditingSectionId(sec.id) }}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setEditingSectionTitle(sec.title)
-                  setEditingSectionId(sec.id)
-                }
-              }}
-            >
-              {sec.title}
-            </span>
-          )}
-          <span className="text-xs tabular-nums text-muted-foreground">{sec.questions.length}q</span>
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-xs" aria-label="Section actions">
-                <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40">
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => {
-                  removeTemplateSection(t.id, sec.id)
-                  if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
-                }}
-              >
-                <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        {isOpen && (
-          <div className="flex flex-col">
-            {sec.questions.map((q, i) => renderWorksheetQuestionRow(sec, q, i, startNum + i))}
-            <div style={{ paddingTop: 2 }}>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="xs" className="text-muted-foreground" style={{ marginLeft: 26 }}>
-                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add question
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" sideOffset={4}>
-                  {Q_TYPE_GROUPS.map((grp, gi) => (
-                    <div key={grp.label}>
-                      {gi > 0 && <DropdownMenuSeparator />}
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">{grp.label}</DropdownMenuLabel>
-                      {grp.options.map(o => (
-                        <DropdownMenuItem key={o.value} onClick={() => handleAddQuestion(sec.id, o.value)}>
-                          <i className={`fa-light ${o.icon}`} aria-hidden="true" />
-                          {o.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </div>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
 
   // ── Preview variant — live student-facing rendering of the template ─────────
   function renderPreviewQuestion(q: TemplateQuestion, num: number) {
@@ -1774,20 +1632,16 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                 )}
               </div>
             </div>
-          ) : variant === 'worksheet' ? (
-            /* Worksheet variant — the template as one dense numbered sheet
-               (Adaline / Workable row-list pattern): sticky aspect band headers,
-               single-line question rows with inline type labels, upload demoted
-               to a band-header action. */
+          ) : variant === 'bands' ? (
+            /* Bands variant — sticky aspect band headers carry identity + actions
+               (Adaline / Workable pattern); upload demoted to a band-header
+               "Generate from document" action. Section cards are the standard
+               builder cards (collapse/expand + in-section Add question unchanged). */
             <div className="flex-1 min-w-0">
               <div className="mx-auto" style={{ maxWidth: 860, padding: '4px 32px 48px' }}>
                 {subjectGroups.map(g => {
                   const c = aspectCounts(g.key)
-                  const groupSections = g.key === 'faculty'
-                    ? facultyRoleSets.flatMap(set => sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id))
-                    : sections.filter(s => s.subjectKey === g.key)
-                  const startFor = (sec: PceTemplateSection) =>
-                    groupSections.slice(0, groupSections.indexOf(sec)).reduce((n, s) => n + s.questions.length, 1)
+                  const groupSections = sections.filter(s => s.subjectKey === g.key)
                   return (
                     <section key={g.key} aria-labelledby={`ws-aspect-${g.key}-h`} style={{ paddingBottom: 26 }}>
                       {/* Sticky band header — aspect identity + its actions in one line */}
@@ -1811,7 +1665,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           </Button>
                         )}
                       </div>
-                      <div className="flex flex-col gap-1" style={{ paddingTop: 10 }}>
+                      <div className="flex flex-col gap-3" style={{ paddingTop: 12 }}>
                         {renderAspectInstruction(g.key)}
                         {g.key === 'faculty' ? (
                           facultyRoleSets.length === 0 ? (
@@ -1822,17 +1676,17 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             facultyRoleSets.map(set => {
                               const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
                               return (
-                                <div key={set.id} style={{ borderLeft: '2px solid var(--border)', paddingLeft: 12, marginTop: 8 }}>
+                                <div key={set.id} className="flex flex-col gap-3" style={{ borderLeft: '2px solid var(--border)', paddingLeft: 12, marginTop: 8 }}>
                                   {renderRoleSetHeader(set)}
-                                  <div className="flex items-center" style={{ paddingTop: 6 }}>
+                                  <div className="flex items-center">
                                     {generateFromDocButton('faculty', set.id)}
                                   </div>
                                   {setSecs.length === 0 ? (
                                     <p className="text-xs text-muted-foreground" style={{ padding: '8px 0' }}>No sections yet.</p>
                                   ) : (
-                                    setSecs.map(sec => renderWorksheetSection(sec, startFor(sec)))
+                                    setSecs.map(sec => renderSectionCard(sec))
                                   )}
-                                  <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                  <Button variant="ghost" size="xs" className="text-muted-foreground w-fit"
                                     onClick={() => handleAddSection('faculty', set.id)}>
                                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
                                   </Button>
@@ -1845,7 +1699,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             No sections yet — add one or generate from a document.
                           </p>
                         ) : (
-                          groupSections.map(sec => renderWorksheetSection(sec, startFor(sec)))
+                          groupSections.map(sec => renderSectionCard(sec))
                         )}
                       </div>
                     </section>
@@ -1952,6 +1806,100 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                 </div>
               </div>
               {renderStudentPreview()}
+            </div>
+          ) : variant === 'minimal' ? (
+            /* Minimal variant — bare essentials (GitBook-calm): one narrow
+               centered column, plain headings, text-only actions, no chips, no
+               rails, no dashed upload panels. Standard section cards inside. */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto flex flex-col" style={{ maxWidth: 640, padding: '20px 24px 64px' }}>
+                {subjectGroups.map(g => {
+                  const c = aspectCounts(g.key)
+                  const groupSections = sections.filter(s => s.subjectKey === g.key)
+                  return (
+                    <section key={g.key} aria-labelledby={`mn-aspect-${g.key}-h`} style={{ paddingBottom: 36 }}>
+                      <div className="flex items-baseline gap-2.5" style={{ paddingBottom: 10 }}>
+                        <h2 id={`mn-aspect-${g.key}-h`} className="text-sm font-semibold">{g.label}</h2>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                        <span className="ms-auto flex items-center gap-1">
+                          {g.key !== 'faculty' && (
+                            <Button variant="ghost" size="xs" className="text-muted-foreground"
+                              onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
+                              Generate from document
+                            </Button>
+                          )}
+                          {g.key === 'faculty' ? (
+                            <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={handleAddRoleSet}>
+                              Add role set
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={() => handleAddSection(g.key)}>
+                              Add section
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        {renderAspectInstruction(g.key)}
+                        {g.key === 'faculty' ? (
+                          facultyRoleSets.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">No role sets yet.</p>
+                          ) : (
+                            facultyRoleSets.map(set => {
+                              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                              return (
+                                <div key={set.id} className="flex flex-col gap-3">
+                                  {renderRoleSetHeader(set)}
+                                  <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                      onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+                                      Generate from document
+                                    </Button>
+                                    <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                      onClick={() => handleAddSection('faculty', set.id)}>
+                                      Add section
+                                    </Button>
+                                  </div>
+                                  {setSecs.map(sec => renderSectionCard(sec))}
+                                </div>
+                              )
+                            })
+                          )
+                        ) : groupSections.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nothing here yet.</p>
+                        ) : (
+                          groupSections.map(sec => renderSectionCard(sec))
+                        )}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'columns' ? (
+            /* Columns variant — all three aspects side by side as board lanes
+               (Hootsuite / Todoist pattern): compare and balance the template
+               across audiences at a glance. Standard section cards inside. */
+            <div className="flex-1 min-w-0" style={{ padding: '16px 20px 48px' }}>
+              <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                {subjectGroups.map(g => {
+                  const c = aspectCounts(g.key)
+                  return (
+                    <div key={g.key} className="flex flex-col gap-3 rounded-xl" style={{ background: 'var(--muted)', padding: 12 }}>
+                      <div className="flex items-center gap-2" style={{ padding: '2px 2px 0' }}>
+                        <h2 className="text-sm font-semibold flex-1 min-w-0 truncate">{g.label}</h2>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                          {c.sections}s · {c.questions}q
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground" style={{ padding: '0 2px' }}>{ASPECT_INFO[g.key]}</p>
+                      {renderAspectBody(g.key)}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           ) : (
             /* Course evaluation — vertical aspect rail with info + counts (Jun 30 meeting) */
