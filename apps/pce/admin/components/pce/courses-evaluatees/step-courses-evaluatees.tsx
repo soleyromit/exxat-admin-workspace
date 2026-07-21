@@ -515,17 +515,23 @@ export function StepCoursesEvaluatees({
         // pill in this half of the row. One glyph per criterion FAMILY (book
         // = the course itself, person = any faculty role) — at this size ten
         // distinct role icons would be unreadable noise.
+        // Foreground ink at 13px — muted-foreground at 12px was too faint to
+        // read (Romit); the quiet comes from no chrome + the muted glyph, not
+        // from faint text.
         const line = (c: Criterion) => (
-          <span key={c} className="flex items-center gap-1.5 text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+          <span key={c} className="flex items-center gap-1.5 whitespace-nowrap" style={{ fontSize: 13 }}>
             <i
               className={`fa-light ${CRITERION_GROUP[c] === 'Course' ? 'fa-book-open' : 'fa-user'}`}
-              style={{ fontSize: 10 }}
+              style={{ fontSize: 10, color: 'var(--muted-foreground)' }}
               aria-hidden="true"
             />
             {CRITERION_TOGGLE_LABEL[c]}
           </span>
         )
-        const shown = evaluates.slice(0, MAX_EVALUATE_CHIPS)
+        // Collapse only when it SAVES a line: "+1 more" costs the same row
+        // height as the label it hides — show the label instead.
+        const collapse = evaluates.length > MAX_EVALUATE_CHIPS + 1
+        const shown = collapse ? evaluates.slice(0, MAX_EVALUATE_CHIPS) : evaluates
         const extra = evaluates.length - shown.length
         return (
           /* Beyond two, the rest live in a popover: a template evaluating
