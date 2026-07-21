@@ -21,8 +21,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@exxat/ds/packages/ui/src"
-import { Tip } from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
+import { Tip } from "@exxatdesignux/ui"
 // TooltipProvider lives at app root (layout.tsx) — no inner Provider needed.
 // Per actions-overlays.md depth audit.
 import { DataTable, type DataTableExtendedProps } from "./index"

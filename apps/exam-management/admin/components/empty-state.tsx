@@ -28,7 +28,7 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 export interface EmptyStateProps {
   /** Font Awesome icon class fragment, e.g. "fa-filter" (no `fa-light` prefix) */
