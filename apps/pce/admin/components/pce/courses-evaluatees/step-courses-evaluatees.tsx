@@ -455,6 +455,31 @@ export function StepCoursesEvaluatees({
       cell: r => {
         const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
         const unassigned = !r.templateId
+        // Zero published templates = the select is a dead end (empty list).
+        // The same pill becomes a real button into the IN-STEP create flow
+        // ("Back to Courses" backtrack; publish returns here, and a lone
+        // published template auto-assigns to every row via the type-default).
+        if (publishedTemplates.length === 0) {
+          return (
+            <div onClick={e => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-fit font-medium"
+                style={{
+                  height: 32, fontSize: 13, paddingInline: 12,
+                  background: 'var(--insight-severity-info-bg)',
+                  color: 'var(--insight-severity-info-fg)',
+                }}
+                aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+                onClick={() => { setNotice(null); setSubView('create') }}
+              >
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Create template
+              </Button>
+            </div>
+          )
+        }
         return (
           <div onClick={e => e.stopPropagation()}>
             {/* A2 (Romit, Jul 21): the empty state is an ADD-AFFORDANCE, not a
@@ -648,11 +673,15 @@ export function StepCoursesEvaluatees({
         key: 'actions', label: 'Action needed', width: 176, defaultPin: 'right', lockPin: true,
         cell: r => {
           // No template yet = nothing to validate against. Stays MUTED on
-          // purpose: the Template control itself carries the amber signal for
-          // this gap, and one signal per gap keeps the two attention columns
-          // from shouting about the same thing twice in one row.
+          // purpose: the Template control itself carries the signal for this
+          // gap, and one signal per gap keeps the two attention columns from
+          // shouting about the same thing twice in one row.
           if (!r.templateId) {
-            return <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
+            return (
+              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {publishedTemplates.length === 0 ? 'Create a template first' : 'Assign a template'}
+              </span>
+            )
           }
           const studentCell = r.cells.students
           const studentGap = !!studentCell && !studentCell.ok
@@ -708,7 +737,13 @@ export function StepCoursesEvaluatees({
   // pre-checking needs-setup rows put unpushable courses in the batch and
   // tripped the "N without a template" blocker. A row fixed later is checked
   // by the user (or via the group checkbox); any course can be (un)checked.
-  const rowSig = rows.map(r => r.id).join('\0')
+  // The signature includes the published-template catalog: the provider
+  // renders the DEFAULT demo account first and settles the stored account
+  // post-mount, so readiness computed at first paint can be wrong while the
+  // row ids are identical — a catalog change must re-derive the default.
+  // Per-row assignment edits don't change the catalog, so manual selection
+  // survives them.
+  const rowSig = rows.map(r => r.id).join('\0') + '|' + publishedTemplates.map(t => t.id).join('\0')
   const lastRowSig = useRef<string>('')
   useEffect(() => {
     if (lastRowSig.current === rowSig) return
