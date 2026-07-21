@@ -3,28 +3,31 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Skeleton, Button, InputGroup, Tip,
+  Badge, Skeleton, Button, InputGroup, Tip, LocalBanner,
   Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
+import { NumericCell } from '@/components/data-views/table-cells'
+import { PersonAvatar } from '@/components/pce/person-avatar'
+import { usePce } from '@/components/pce/pce-state'
+import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
+import { TemplateEditor } from '@/components/pce/template-editor'
 import { DataTable } from '@/components/data-table'
 import { TruncatedText } from '@/components/truncated-text'
 import { PaginationBar } from '@/components/data-table/pagination'
 import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
 import {
-  type CourseOffering, type TermSeason, type DeliveryMode,
+  type CourseOffering, type TermSeason, type DeliveryMode, type PceTemplate,
   COURSE_TYPE_FULL_LABEL,
 } from '@/lib/pce-mock-data'
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
-  ALL_CRITERIA, CRITERION_TOGGLE_LABEL, CRITERION_GROUP, CRITERION_GROUP_ORDER,
-  FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref,
+  CRITERION_TOGGLE_LABEL, CRITERION_GROUP,
+  FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref, templateCriteria,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
-
-const CRITERIA_ORDER: Criterion[] = ALL_CRITERIA
 
 /** Above this count a picker gains a search field. */
 const COHORT_SEARCH_THRESHOLD = 8
@@ -43,6 +46,8 @@ interface ReadinessRow extends Record<string, unknown> {
   datesLabel: string
   cells: Partial<Record<Criterion, CellReadiness>>
   hasGap: boolean
+  /** Effective template (explicit assignment ?? type default; '' = none). */
+  templateId: string
   /** One Prism link covering every missing faculty role on this offering. */
   facultyHref: string
   /** Group key: gaps first, then ready. */
@@ -71,14 +76,27 @@ interface TokenSelectProps {
   /** Block removing the last chip (required fields). */
   minOne?: boolean
   contentLabel: string
-  /**
-   * Chips rendered before the rest collapse into "+N". Keep this LOW — the field
-   * sits in a horizontal scope band, so chips must never wrap past one row or the
-   * field grows into the table. Measured: 9 chips in a 190px field stacked
-   * vertically and overlapped the page.
-   */
-  maxChips?: number
 }
+
+/** One width for every control in the scope band — Term, Academic Year,
+ *  Cohort, What-to-evaluate — so the row reads as a set, not a ragged line. */
+const SCOPE_FIELD_WIDTH = 224
+
+/** Type-column pill tints — chart-hue wash + matching --chip ink (the DS
+ *  icon-disc pairing). srgb mix (the oklch form is banned in product code);
+ *  chart-4 amber is excluded — it belongs to the warning vocabulary. */
+const TYPE_PILL_TINT: Record<DeliveryMode, { bg: string; fg: string }> = {
+  classroom: { bg: 'color-mix(in srgb, var(--chart-1) 12%, transparent)', fg: 'var(--chip-1)' },
+  lab:       { bg: 'var(--icon-disc-chart-2-bg)',                          fg: 'var(--chip-2)' },
+  practice:  { bg: 'color-mix(in srgb, var(--chart-5) 12%, transparent)', fg: 'var(--chip-5)' },
+}
+
+/** Px estimate of one chip: badge chrome (padding, border, gap, ×-button ≈32)
+ *  + ~6.5px per character at text-xs, capped at the chip's 150px maxWidth. */
+const estChipWidth = (label: string) => Math.min(32 + label.length * 6.5, 150)
+/** Shell padding + the chevron trigger's minimum are spoken for. */
+const CHIP_BUDGET = SCOPE_FIELD_WIDTH - 46
+const OVERFLOW_BADGE_WIDTH = 38
 
 /**
  * One control for both scope fields: chosen values are chips INSIDE the field,
@@ -94,7 +112,7 @@ interface TokenSelectProps {
  */
 function TokenSelect({
   labelId, placeholder, options, selected, onToggle, onClear,
-  groupOrder, searchThreshold = 8, minOne = false, contentLabel, maxChips = 2,
+  groupOrder, searchThreshold = 8, minOne = false, contentLabel,
 }: TokenSelectProps) {
   const [open, setOpen] = useState(false)
   const byValue = useMemo(() => new Map(options.map(o => [o.value, o])), [options])
@@ -105,7 +123,19 @@ function TokenSelect({
       .filter(g => g.items.length > 0)
   }, [options, groupOrder])
 
-  const shown = selected.slice(0, maxChips)
+  // Fill the fixed shell with as many chips as fit, then tuck the rest into
+  // "+N" — a lone chip beside "+N" with dead space after it reads broken.
+  // Estimated, not measured: chips shrink+truncate, so a near-miss degrades
+  // into slight truncation rather than overflow.
+  const shown = useMemo(() => {
+    const labels = selected.map(v => byValue.get(v)?.label ?? v)
+    const widthOf = (n: number) =>
+      labels.slice(0, n).reduce((sum, l) => sum + estChipWidth(l), 0) + Math.max(0, n - 1) * 4
+    if (widthOf(selected.length) <= CHIP_BUDGET) return selected
+    let n = 1
+    while (n < selected.length && widthOf(n + 1) + 4 + OVERFLOW_BADGE_WIDTH <= CHIP_BUDGET) n++
+    return selected.slice(0, n)
+  }, [selected, byValue])
   const overflow = selected.length - shown.length
   // The last chip of a required field must stay put; the field's helper line
   // explains why rather than a title tooltip that never fires on keyboard.
@@ -114,7 +144,10 @@ function TokenSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor>
-        <InputGroup className="flex w-fit min-w-44 max-w-96 flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden">
+        <InputGroup
+          className="flex flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden"
+          style={{ width: SCOPE_FIELD_WIDTH }}
+        >
           {shown.map(v => {
             const o = byValue.get(v)
             if (!o) return null
@@ -148,7 +181,10 @@ function TokenSelect({
           {/* The chevron lives INSIDE the trigger. It was previously a sibling in
               an InputGroupAddon — a plain div — so the one affordance that reads
               as "open me" was not clickable, and the only hit area was a ~20px
-              invisible strip beside it. */}
+              invisible strip beside it.
+              justify-end when chips are shown: the visible label is sr-only
+              (out of flex flow), so justify-between would leave the chevron —
+              the only in-flow child — stranded at the start of the field. */}
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
@@ -156,7 +192,7 @@ function TokenSelect({
               aria-haspopup="listbox"
               aria-expanded={open}
               aria-labelledby={labelId}
-              className="flex-1 justify-between gap-1 px-1 font-normal"
+              className={`flex-1 gap-1 px-1 font-normal ${selected.length === 0 ? 'justify-between' : 'justify-end'}`}
               style={{ minWidth: selected.length === 0 ? 64 : 32, backgroundColor: 'transparent' }}
             >
               {selected.length === 0
@@ -237,6 +273,8 @@ function TokenSelect({
 function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
   const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
   const trigger = (
+    /* Neutral DS chrome: the amber FACT line above the button carries the
+       attention; the button is the remedy, not the alarm. */
     <Button asChild variant="outline" size="xs" className="justify-start">
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
@@ -266,38 +304,40 @@ interface StepCoursesEvaluateesProps {
   season: TermSeason | ''
   academicYear: string
   cohorts: string[]
-  criteria: Criterion[]
   cohortOptions: string[]
   scoped: CourseOffering[]
   isLoading?: boolean
   /** True when a prior step already defined the term (term-setup wizard):
    *  Term + Academic year render as a static line instead of selects. */
   scopeLocked?: boolean
+  /** Templates assignable per course row — what each row validates against. */
+  publishedTemplates: PceTemplate[]
+  /** Explicit per-offering assignments (overrides defaultAssignments). */
+  templateAssignments: Record<string, string>
+  /** Type-matched default template per offering. */
+  defaultAssignments: Record<string, string>
+  onTemplateChange: (offeringId: string, templateId: string) => void
+  onResetDefaults: () => void
   onSeasonChange: (v: TermSeason) => void
   onAcademicYearChange: (v: string) => void
   onToggleCohort: (cohort: string) => void
-  onCriteriaChange: (next: Criterion[]) => void
   onSelectionChange: (ids: Set<string>) => void
   onContinue: () => void
 }
 
 export function StepCoursesEvaluatees({
-  season, academicYear, cohorts, criteria,
+  season, academicYear, cohorts,
   cohortOptions: cohortOpts, scoped, isLoading = false,
   scopeLocked = false,
+  publishedTemplates, templateAssignments, defaultAssignments,
+  onTemplateChange, onResetDefaults,
   onSeasonChange, onAcademicYearChange, onToggleCohort,
-  onCriteriaChange, onSelectionChange, onContinue,
+  onSelectionChange, onContinue,
 }: StepCoursesEvaluateesProps) {
   const years = academicYearOptions()
   const termChosen = !!season && !!academicYear
-  const scopeReady = termChosen && criteria.length > 0
+  const scopeReady = termChosen
 
-  // Guarded, not disabled in the popup: the item stays reachable there, while the
-  // last chip's remove button is disabled and the helper line says why.
-  const toggleCriterion = (c: Criterion) => {
-    const next = criteria.includes(c) ? criteria.filter(x => x !== c) : [...criteria, c]
-    if (next.length > 0) onCriteriaChange(next)
-  }
   const cohortTokenOptions = useMemo<TokenOption[]>(
     () => cohortOpts.map(c => ({ value: c, label: c })),
     [cohortOpts],
@@ -305,21 +345,50 @@ export function StepCoursesEvaluatees({
   // Both callers own cohorts via functional setState, so toggling each selected
   // one off clears without widening the prop contract. Empty = no filter.
   const clearCohorts = () => { for (const c of [...cohorts]) onToggleCohort(c) }
-  const criterionTokenOptions = useMemo<TokenOption[]>(
-    () => CRITERIA_ORDER.map(c => ({
-      value: c, label: CRITERION_TOGGLE_LABEL[c], group: CRITERION_GROUP[c],
-    })),
-    [],
-  )
 
-  const readiness = useMemo(() => deriveReadiness(scoped, criteria), [scoped, criteria])
+  // In-step template creation (ported from the retired Survey Design step): the
+  // step swaps to the SAME create flow + builder used by Settings > Templates,
+  // then returns on publish. The wizard page never unmounts, so state persists.
+  const { templates: allTemplates } = usePce()
+  const [subView, setSubView] = useState<'assign' | 'create' | { buildId: string }>('assign')
+  const [notice, setNotice] = useState<{ kind: 'published' | 'draft'; name: string } | null>(null)
+  const backToAssign = () => {
+    if (typeof subView === 'object') {
+      const t = allTemplates.find(x => x.id === subView.buildId)
+      if (t && t.status !== 'active') setNotice({ kind: 'draft', name: t.name || 'Untitled template' })
+    }
+    setSubView('assign')
+  }
+
+  // WHAT each course must have comes from ITS template, not a wizard-level
+  // "what to evaluate" picker: criteria per row = the assigned template's
+  // sections/role sets, so validation follows the assignment cell by cell.
+  const criteriaByTemplate = useMemo(() => {
+    const m = new Map<string, Criterion[]>()
+    for (const t of publishedTemplates) m.set(t.id, templateCriteria(t))
+    return m
+  }, [publishedTemplates])
+
   // One row per course (one type per course), ordered by code.
   const rows = useMemo<ReadinessRow[]>(
     () =>
-      readiness
-        .map(r => {
+      scoped
+        .map(o => {
+          // An id that resolves to no PUBLISHED template is treated as
+          // unassigned, not silently "ready": assignments can dangle — the
+          // demo-account provider seeds the default account on first render
+          // and applies the stored account post-mount (pce-state.tsx), and a
+          // template can be deleted/unpublished after assignment. A dangling
+          // id used to render a blank select with zero criteria → zero gaps
+          // → the row lied "Ready to send".
+          const rawTemplateId = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+          const templateId = rawTemplateId && criteriaByTemplate.has(rawTemplateId) ? rawTemplateId : ''
+          const rowCriteria = templateId ? (criteriaByTemplate.get(templateId) ?? []) : []
+          const r = deriveReadiness([o], rowCriteria)[0]
           const [code, ...rest] = r.courseLabel.split(' – ')
           const dates = courseDates(r.offering)
+          // A row without a template can't be validated — it needs setup too.
+          const hasGap = !templateId || r.hasGap
           return {
             id: r.offering.id, code, name: rest.join(' – '),
             courseLabel: r.courseLabel,
@@ -328,111 +397,239 @@ export function StepCoursesEvaluatees({
             enrolled: r.offering.enrolledCount,
             dates,
             datesLabel: dates ? `${fmtD(dates.start)} – ${fmtD(dates.end)}` : '—',
-            cells: r.cells, hasGap: r.hasGap,
+            cells: r.cells, hasGap,
+            templateId,
             facultyHref: prismAddFacultyHref(r.offering),
-            readiness: (r.hasGap ? 'gap' : 'ready') as 'gap' | 'ready',
+            readiness: (hasGap ? 'gap' : 'ready') as 'gap' | 'ready',
           }
         })
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
-    [readiness],
+    [scoped, templateAssignments, defaultAssignments, criteriaByTemplate],
   )
 
   const columns = useMemo<ColumnDef<ReadinessRow>[]>(() => {
-    const facultySelected = FACULTY_CRITERIA.filter(c => criteria.includes(c))
     const cols: ColumnDef<ReadinessRow>[] = [
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
       {
-        key: 'code', label: 'Code', sortable: true, width: 80,
-        cell: r => <span className="text-sm font-medium">{r.code}</span>,
+        // Identity is ONE pinned column. Code LEADS the line: programs talk in
+        // codes ("DPT-502"), and the fixed-width mono token keeps rows aligned
+        // while the name truncates behind it. Sort follows the code (key).
+        key: 'code', label: 'Course', sortable: true, width: 225, defaultPin: 'left',
+        cell: r => (
+          /* Three quiet lines — code, name, dates — instead of a Dates column:
+             the no-scroll width budget has no room for one, and the two-line
+             Faculty/Template cells already set the row height, so the third
+             line costs nothing. */
+          <div className="flex flex-col py-0.5 min-w-0">
+            <span className="font-mono text-xs tabular-nums">{r.code}</span>
+            <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
+            {r.dates && (
+              <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                {r.datesLabel}
+              </span>
+            )}
+          </div>
+        ),
       },
       {
-        key: 'name', label: 'Course', sortable: true, width: 160,
-        // 160px clips most real course names, and a native title never fires on
-        // keyboard focus — the same reason the Unassigned line below uses Tip.
-        cell: r => <TruncatedText className="text-sm">{r.name}</TruncatedText>,
-      },
-      {
-        key: 'enrolled', label: 'Students', sortable: true, width: 84,
-        cell: r => {
-          const gap = r.cells.students && !r.cells.students.ok
-          return (
-            <span className="text-sm tabular-nums" style={gap ? { color: 'var(--muted-foreground)' } : undefined}>
-              {r.enrolled}
-            </span>
-          )
-        },
+        key: 'enrolled', label: 'Students', sortable: true, width: 60,
+        // Catalog count cell — always muted: the count is context, and a
+        // roster gap is announced by the Action column, not by this number.
+        cell: r => <NumericCell value={r.enrolled} className="text-muted-foreground" />,
       },
     ]
-    // One Faculty column for every selected person-role, not a column each: the
-    // header stays generic while each line names its own type-aware role
-    // ("Lab Instructor"), so the table width is independent of how many roles a
-    // program evaluates.
-    if (facultySelected.length > 0) {
-      cols.push({
-        key: 'faculty', label: 'Faculty', width: 260,
+    // The row's survey template — placed right after the course identity (the
+    // step's order IS the work order: pick courses → assign templates → fix
+    // what validation flags), and ahead of the wide Faculty column so the
+    // assignment control never hides behind the pinned Action column.
+    // Template select and its consequence are SIBLING columns: the chips under
+    // the dropdown crowded it, and the per-row "Evaluates" word repeated 14
+    // times — as a column, the header says it once and the select stays a
+    // single calm line.
+    cols.push({
+      key: 'template', label: 'Template', width: 220,
+      cell: r => {
+        const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
+        const unassigned = !r.templateId
+        // Zero published templates = the select is a dead end (empty list).
+        // No control at all — the CREATE action lives in the Action column
+        // (it's an action; Romit, Jul 21), this cell just names the reason.
+        if (publishedTemplates.length === 0) {
+          return (
+            <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              No templates yet
+            </span>
+          )
+        }
+        return (
+          <div onClick={e => e.stopPropagation()}>
+            {/* A2 (Romit, Jul 21): the empty state is an ADD-AFFORDANCE, not a
+                blank form field — a soft info-tinted pill ("＋ Assign
+                template", no border, no chevron) that becomes the normal calm
+                select once filled. Info-blue = a choice made in-app; amber is
+                reserved for missing data. A hand-changed row keeps the
+                secondary tint ("not factory state"). Color never carries
+                state alone — the label and accessible name say it (1.4.1). */}
+            <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
+              <SelectTrigger
+                aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+                className={unassigned ? 'w-fit min-w-0' : `w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
+                style={{
+                  height: 32, fontSize: 13,
+                  ...(unassigned ? {
+                    border: 'none', boxShadow: 'none', paddingInline: 12,
+                    background: 'var(--insight-severity-info-bg)',
+                  } : {}),
+                }}
+              >
+                <SelectValue
+                  placeholder={
+                    <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Assign template
+                    </span>
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )
+      },
+    })
+    cols.push({
+      key: 'evaluates', label: 'Evaluates', width: 140,
+      cell: r => {
+        const evaluates = r.templateId ? (criteriaByTemplate.get(r.templateId) ?? []) : []
+        if (evaluates.length === 0) {
+          return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+        }
+        // F2 (Romit, Jul 21): glyph + muted TEXT, no chip chrome — derived
+        // context should read as context; the tinted Type pill stays the only
+        // pill in this half of the row. One glyph per criterion FAMILY (book
+        // = the course itself, person = any faculty role) — at this size ten
+        // distinct role icons would be unreadable noise.
+        // Foreground ink at 13px — muted-foreground at 12px was too faint to
+        // read (Romit); the quiet comes from no chrome + the muted glyph, not
+        // from faint text.
+        const line = (c: Criterion) => (
+          <span key={c} className="flex items-center gap-1.5 whitespace-nowrap" style={{ fontSize: 13 }}>
+            <i
+              className={`fa-light ${CRITERION_GROUP[c] === 'Course' ? 'fa-book-open' : 'fa-user'}`}
+              style={{ fontSize: 10, color: 'var(--muted-foreground)' }}
+              aria-hidden="true"
+            />
+            {CRITERION_TOGGLE_LABEL[c]}
+          </span>
+        )
+        // Faculty roles collapse to a COUNT (Romit, Jul 21): a template can
+        // evaluate many faculty types, and the WHICH lives on hover/focus (DS
+        // Tip — dotted underline is the affordance). A single role shows its
+        // label (a count of one hides information at no space saving); the
+        // course criterion is always its own line.
+        const courseEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Course')
+        const facultyEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Faculty')
+        return (
+          <span className="flex flex-col items-start gap-0.5 py-0.5" onClick={e => e.stopPropagation()}>
+            {courseEval.map(line)}
+            {facultyEval.length === 1 && line(facultyEval[0])}
+            {facultyEval.length > 1 && (
+              <Tip
+                side="bottom"
+                label={
+                  <span className="flex flex-col gap-0.5">
+                    {facultyEval.map(c => <span key={c}>{CRITERION_TOGGLE_LABEL[c]}</span>)}
+                  </span>
+                }
+              >
+                <span
+                  tabIndex={0}
+                  className="flex items-center gap-1.5 whitespace-nowrap underline decoration-dotted underline-offset-2 cursor-default"
+                  style={{ fontSize: 13 }}
+                >
+                  <i className="fa-light fa-user" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} aria-hidden="true" />
+                  {facultyEval.length} faculty roles
+                </span>
+              </Tip>
+            )}
+          </span>
+        )
+      },
+    })
+    // One Faculty column for every person-role the ROW's template evaluates,
+    // not a column each: the header stays generic while each line names its own
+    // type-aware role ("Lab Instructor"), so the table width is independent of
+    // how many roles a template evaluates. r.cells only contains the row's
+    // template criteria, so the cell is per-row by construction.
+    cols.push({
+        key: 'faculty', label: 'Faculty', width: 190,
         cell: r => {
           // One line per PERSON, not per role. A line per role repeated
           // "— not assigned" once for every gap, printed the same human twice
           // when they hold two roles, and grew the row to five lines — the
           // absences shouted louder than the people who actually exist.
           const byPerson = new Map<string, string[]>()
-          const unassigned: string[] = []
-          for (const c of facultySelected) {
+          for (const c of FACULTY_CRITERIA) {
             const cell = r.cells[c]
-            if (!cell) continue // role not applicable to this course type
+            if (!cell) continue // role not evaluated by this row's template, or not applicable
             if (cell.ok && cell.value) {
               byPerson.set(cell.value, [...(byPerson.get(cell.value) ?? []), cell.label])
-            } else {
-              unassigned.push(cell.label)
             }
           }
           const people = [...byPerson]
           const shown = people.slice(0, 2)
           const more = people.length - shown.length
-          if (people.length === 0 && unassigned.length === 0) {
+          if (people.length === 0) {
+            // Gaps are NOT restated here — the Action column already carries
+            // "Add faculty" with the missing roles; twice per row was noise.
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
+          const personLine = ([name, roles]: [string, string[]]) => (
+            /* Shared PersonAvatar (photo → initials fallback). Name and role
+               STACK (person-cell pattern) — side by side, a long role squeezed
+               the name into "Dr. Kevin …". Clipped text goes through
+               TruncatedText, which tooltips on hover AND keyboard focus. */
+            <span key={name} className="flex items-center gap-1.5 min-w-0">
+              <PersonAvatar name={name} />
+              <span className="flex flex-col min-w-0">
+                <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
+                <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  {roles.join(' · ')}
+                </TruncatedText>
+              </span>
+            </span>
+          )
           return (
-            <div className="flex flex-col gap-0.5 py-0.5">
-              {shown.map(([name, roles]) => (
-                <span key={name} className="text-sm flex items-baseline gap-1.5 min-w-0">
-                  <span className="truncate" title={name}>{name}</span>
-                  <span
-                    className="text-xs truncate shrink-0"
-                    style={{ color: 'var(--muted-foreground)', maxWidth: 110 }}
-                    title={roles.join(' · ')}
-                  >
-                    {roles.join(' · ')}
-                  </span>
-                </span>
-              ))}
+            <div className="flex flex-col gap-1 py-1" onClick={e => e.stopPropagation()}>
+              {shown.map(personLine)}
+              {/* Same overflow pattern as the Evaluates column: the tail lives
+                  in a popover instead of growing the row a line per person. */}
               {more > 0 && (
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  +{more} more
-                </span>
-              )}
-              {/* Names the gaps rather than counting them — one truncating line,
-                  the full list on hover AND keyboard focus (a native title never
-                  fires on focus). The row stays 3 lines at any role count. */}
-              {unassigned.length > 0 && (
-                <Tip label={`Unassigned: ${unassigned.join(', ')}`} side="top">
-                  <span
-                    className="text-xs truncate w-fit max-w-full cursor-default"
-                    style={{ color: 'var(--muted-foreground)' }}
-                    tabIndex={0}
-                  >
-                    Unassigned: {unassigned.join(', ')}
-                  </span>
-                </Tip>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      className="h-auto w-fit rounded-full px-1.5 py-0 text-xs font-normal"
+                      aria-label={`${more} more faculty`}
+                    >
+                      +{more} more
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent aria-label="All faculty on this course" align="start" className="w-auto p-2.5" style={{ maxWidth: 260 }}>
+                    <div className="flex flex-col gap-2">{people.map(personLine)}</div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           )
         },
-      })
-    }
+    })
     cols.push(
       {
-        key: 'typeLabel', label: 'Type', sortable: true, width: 120,
+        key: 'typeLabel', label: 'Type', sortable: true, width: 100,
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
@@ -441,26 +638,65 @@ export function StepCoursesEvaluatees({
             { value: 'Practice based', label: 'Practice based' },
           ],
         },
-        cell: r => <Badge variant="outline" className="font-normal whitespace-nowrap">{r.typeLabel}</Badge>,
-      },
-      {
-        key: 'datesLabel', label: 'Dates', width: 125,
-        cell: r => <span className="text-sm tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>{r.datesLabel}</span>,
+        // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
+        // the matching --chip ink (the DS icon-disc pairing, AA-safe). Amber
+        // (chart-4) is deliberately NOT in the map: it stays the warning hue.
+        // Short display label ("Classroom", not "Classroom based");
+        // sorting/filtering still ride the full typeLabel value.
+        cell: r => {
+          const tint = TYPE_PILL_TINT[r.deliveryMode]
+          return (
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              style={{ background: tint.bg, color: tint.fg }}
+            >
+              {r.typeLabel.replace(/ based$/, '')}
+            </span>
+          )
+        },
       },
       {
         // What's needed to complete setup — one consolidated column, pinned right.
-        key: 'actions', label: 'Action needed', width: 230, defaultPin: 'right', lockPin: true,
+        key: 'actions', label: 'Action needed', width: 176, defaultPin: 'right', lockPin: true,
         cell: r => {
-          const studentCell = criteria.includes('students') ? r.cells.students : undefined
+          // No template yet = nothing to validate against.
+          // Catalog empty → the fix IS an action, so it renders here as a
+          // real DS button (same anatomy as Add faculty/Add students) that
+          // opens the in-step create flow: "Back to Courses" backtracks,
+          // publish returns here and a lone template auto-assigns via the
+          // type-default. Catalog non-empty → muted note; the Template
+          // select carries the assign affordance (one signal per gap).
+          if (!r.templateId) {
+            if (publishedTemplates.length === 0) {
+              return (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="justify-start"
+                  aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+                  onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
+                >
+                  <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
+                  Create template
+                </Button>
+              )
+            }
+            return <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
+          }
+          const studentCell = r.cells.students
           const studentGap = !!studentCell && !studentCell.ok
           // Every missing person-role collapses into a single trip to Prism.
           // The exact roles behind the gap, so the generic CTA can still say WHICH.
-          const facultyMissing = facultySelected
+          const facultyMissing = FACULTY_CRITERIA
             .filter(c => r.cells[c] && !r.cells[c]!.ok)
             .map(c => r.cells[c]!.label)
           if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
+          // Buttons only (Romit, Jul 21) — no "Missing:" fact lines: the
+          // button label names the missing data kind, the exact roles live in
+          // the tooltip, and the amber group band already marks the row as
+          // needing setup. The button chrome stays neutral DS.
           return (
             <div className="flex flex-col items-start gap-1 py-0.5">
               {studentGap && (
@@ -475,7 +711,7 @@ export function StepCoursesEvaluatees({
       },
     )
     return cols
-  }, [criteria])
+  }, [publishedTemplates, defaultAssignments, onTemplateChange, criteriaByTemplate])
 
   // Pagination — keeps long course lists (40+) manageable.
   const [page, setPage] = useState(1)
@@ -497,13 +733,22 @@ export function StepCoursesEvaluatees({
     if (lastTotal.current !== filteredTotal) { lastTotal.current = filteredTotal; setPage(1) }
   }, [filteredTotal])
 
-  // Selection — default all on scope change; any course can be unchecked.
-  const rowSig = rows.map(r => r.id).join('\0')
+  // Selection — default to READY rows only on scope change (Romit, Jul 21):
+  // pre-checking needs-setup rows put unpushable courses in the batch and
+  // tripped the "N without a template" blocker. A row fixed later is checked
+  // by the user (or via the group checkbox); any course can be (un)checked.
+  // The signature includes the published-template catalog: the provider
+  // renders the DEFAULT demo account first and settles the stored account
+  // post-mount, so readiness computed at first paint can be wrong while the
+  // row ids are identical — a catalog change must re-derive the default.
+  // Per-row assignment edits don't change the catalog, so manual selection
+  // survives them.
+  const rowSig = rows.map(r => r.id).join('\0') + '|' + publishedTemplates.map(t => t.id).join('\0')
   const lastRowSig = useRef<string>('')
   useEffect(() => {
     if (lastRowSig.current === rowSig) return
     lastRowSig.current = rowSig
-    tableState.setSelected(new Set(rows.map(r => r.id)))
+    tableState.setSelected(new Set(rows.filter(r => r.readiness === 'ready').map(r => r.id)))
   }, [rowSig, rows, tableState])
 
   // Report selection up (de-duped)
@@ -520,6 +765,40 @@ export function StepCoursesEvaluatees({
     for (const r of rows) if (tableState.selected.has(r.id)) n += r.enrolled
     return n
   }, [rows, tableState.selected])
+
+  // Continue needs a template on every course that will be pushed — the rows
+  // NOT selected are excluded from the push and may stay unassigned.
+  const selectedMissingTemplate = useMemo(
+    () => rows.filter(r => tableState.selected.has(r.id) && !r.templateId).length,
+    [rows, tableState.selected],
+  )
+
+  // ── Create sub-view: same chooser + builder as Settings > Templates ────────
+  if (subView !== 'assign') {
+    return (
+      <div className="flex flex-col gap-3">
+        <div>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={backToAssign}>
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+            Back to Courses
+          </Button>
+        </div>
+        {subView === 'create' ? (
+          <CreateBlankTemplate onCreated={id => setSubView({ buildId: id })} />
+        ) : (
+          <TemplateEditor
+            templateId={subView.buildId}
+            embedded
+            onPublished={id => {
+              const t = allTemplates.find(x => x.id === id)
+              setNotice({ kind: 'published', name: t?.name || 'Template' })
+              setSubView('assign')
+            }}
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     /* Full-bleed step: the wizard shell owns the horizontal padding, so the
@@ -543,7 +822,7 @@ export function StepCoursesEvaluatees({
             </div>
           ) : (
             <>
-              <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
+              <div className="flex flex-col gap-1.5" style={{ width: SCOPE_FIELD_WIDTH }}>
                 <label className="text-sm font-semibold">
                   Term <span style={{ color: 'var(--destructive)' }}>*</span>
                 </label>
@@ -557,7 +836,7 @@ export function StepCoursesEvaluatees({
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1.5" style={{ width: 190 }}>
+              <div className="flex flex-col gap-1.5" style={{ width: SCOPE_FIELD_WIDTH }}>
                 <label className="text-sm font-semibold">
                   Academic Year <span style={{ color: 'var(--destructive)' }}>*</span>
                 </label>
@@ -590,53 +869,44 @@ export function StepCoursesEvaluatees({
               />
             </div>
           )}
-        </div>
 
-        {termChosen && (
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold" id="evaluatees-label">
-                What to evaluate <span style={{ color: 'var(--destructive)' }}>*</span>
-              </span>
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                Readiness updates as you select
-              </span>
+          {/* Template actions ride the scope row's right edge — a separate
+              toolbar line under the fields (plus an assigned-count label) was
+              a band of chrome too many. */}
+          {scopeReady && !isLoading && rows.length > 0 && (
+            <div className="ms-auto self-end flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onResetDefaults}>
+                <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
+                Reset to defaults
+              </Button>
+              {/* Opens the SAME create flow + builder as Settings → Templates,
+                  in place — the wizard stays mounted so its state is preserved. */}
+              <Button variant="outline" size="sm" onClick={() => { setNotice(null); setSubView('create') }}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                New template
+              </Button>
             </div>
-            {/* Same control as Cohort: same job shape (pick several from many).
-                The label and the required marker carry the difference, not a
-                different interaction model. The role universe (~40-50 in Prism,
-                narrowed per program in Settings) stays in the searchable popup,
-                so the field shows what you PICKED and never the whole list. */}
-            <div>
-              <TokenSelect
-                labelId="evaluatees-label"
-                placeholder="Select roles"
-                contentLabel="Evaluatee roles"
-                options={criterionTokenOptions}
-                selected={criteria}
-                onToggle={v => toggleCriterion(v as Criterion)}
-                groupOrder={CRITERION_GROUP_ORDER}
-                minOne
-              />
-            </div>
-            {/* Stated, not left to a title tooltip: the last chip's remove button
-                is disabled, and a native title never fires on keyboard. */}
-            {criteria.length === 1 && (
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                At least one selection is required.
-              </p>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {notice && (
+        <LocalBanner
+          variant={notice.kind === 'published' ? 'success' : 'info'}
+          dismissible
+          onDismiss={() => setNotice(null)}
+        >
+          {notice.kind === 'published'
+            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the Template column below.</>
+            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+        </LocalBanner>
+      )}
 
       {/* ── Courses ───────────────────────────────────────────────────────── */}
       {!scopeReady ? (
         <EmptyHint
-          heading={!termChosen ? 'Choose a term to load courses' : 'Select what to evaluate'}
-          sub={!termChosen
-            ? 'Pick a term and academic year above.'
-            : 'Choose Course, Instructor, or Coordinator to see the courses and their readiness.'}
+          heading="Choose a term to load courses"
+          sub="Pick a term and academic year above."
         />
       ) : isLoading ? (
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Loading courses">
@@ -661,20 +931,22 @@ export function StepCoursesEvaluatees({
           edgeInset={false}
           stickyHeader={false}
           groupIcons={{
-            gap: (
-              <i
-                className="fa-solid fa-triangle-exclamation text-xs"
-                aria-hidden="true"
-                style={{ color: 'var(--insight-severity-warning-fg)' }}
-              />
-            ),
-            ready: (
-              <i
-                className="fa-solid fa-circle-check text-xs"
-                aria-hidden="true"
-                style={{ color: 'var(--chart-2)' }}
-              />
-            ),
+            /* Icons inherit the band ink set by groupHeaderStyles below. */
+            gap: <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />,
+            ready: <i className="fa-solid fa-circle-check text-xs" aria-hidden="true" />,
+          }}
+          /* E1 (Romit, Jul 21): tinted group-header bands — the amber band
+             says "this section needs you", the green band says "done", and
+             the data rows stay clean. AA-safe DS pairing: chart wash bg +
+             the matching --chip ink (warning-fg on warning-bg fails at
+             4.23:1; chip inks are darker and clear 4.5 comfortably).
+             OPAQUE tokens (app globals.css), not the translucent
+             --icon-disc-* washes: the band covers the sticky select cell,
+             and a see-through sticky cell lets the label scroll visibly
+             under the group checkbox. */
+          groupHeaderStyles={{
+            gap: { background: 'var(--group-band-attention-bg)', color: 'var(--chip-4)' },
+            ready: { background: 'var(--group-band-done-bg)', color: 'var(--chip-2)' },
           }}
         />
         <div className="border-x border-b border-border rounded-b-lg overflow-hidden">
@@ -694,13 +966,28 @@ export function StepCoursesEvaluatees({
       <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
         <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
           {scopeReady && rows.length > 0
-            ? <>{tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students</>
+            ? (
+              <>
+                {tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students
+                {selectedMissingTemplate > 0 && (
+                  /* The count that BLOCKS Continue shares the info-blue of the
+                     "Assign template" placeholders that clear it — same
+                     signal, both ends of the loop. */
+                  <>
+                    {' · '}
+                    <span className="font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                      {selectedMissingTemplate} without a template
+                    </span>
+                  </>
+                )}
+              </>
+            )
             : null}
         </span>
         <Button
           variant="default"
           size="sm"
-          disabled={!scopeReady || tableState.selected.size === 0}
+          disabled={!scopeReady || tableState.selected.size === 0 || selectedMissingTemplate > 0}
           onClick={onContinue}
         >
           Continue

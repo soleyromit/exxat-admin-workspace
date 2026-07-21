@@ -25,14 +25,13 @@
 // Gorgias (comments + download).
 // ============================================================================
 
-import { Fragment, Suspense, useMemo, useState } from 'react'
+import { Fragment, Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useResultsOrigin, withFrom } from '@/lib/pce-nav-origin'
 import {
   PageHeader,
   Button,
-  Badge,
   Card,
   CardAction,
   CardContent,
@@ -52,8 +51,10 @@ import {
   DropdownMenuTrigger,
   LocalBanner,
   StatusBadge,
-  AvatarInitials,
   PersonIdentityCell,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -73,13 +74,21 @@ import {
 import type { ChartConfig } from '@exxatdesignux/ui'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RATING_SERIES, RatingLegend } from '@/components/pce/rating-viz'
+import { RatingBreakdownRows } from '@/components/pce/rating-viz'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  OutlineTreeLeafButton,
+  OutlineTreeMenu,
+  OutlineTreeMenuItem,
+  OutlineTreeSub,
+  OutlineTreeSubItem,
+} from '@/components/data-views/outline-tree-menu'
 import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
 import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
-import { deriveResults, deriveResultsForSurvey, rateColor, scoreColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
+import { deriveResults, deriveResultsForSurvey, rateColor, facultyFacingState, EVAL_SCOPE_LABEL, RESULT_STATUS_BADGE, type EvalResult } from '@/lib/pce-results'
 import { SurveyStatusBadgeOS, SENTIMENT_CHIP } from '@/components/pce/pce-badges'
 import { deriveThemes } from '@/lib/pce-themes'
 import {
@@ -133,18 +142,11 @@ function GateScreen({
           </p>
         ))}
       </div>
-      {children ?? <GateBackButton />}
+      {/* No default "Back to" CTA — the breadcrumb is the single way-back
+          (P1; UX-audit B1, 2026-07-18). Gates with real interventions pass
+          them as children. */}
+      {children}
     </div>
-  )
-}
-
-/** Default gate CTA — returns to the list the user actually came from. */
-function GateBackButton() {
-  const origin = useResultsOrigin()
-  return (
-    <Button variant="outline" size="sm" asChild>
-      <Link href={origin.href}>Back to {origin.label}</Link>
-    </Button>
   )
 }
 
@@ -361,11 +363,15 @@ function FacultyScopeSelector({
   scope,
   setScope,
   isPD,
+  avatarUrlById,
 }: {
   instructors: EvalResult[]
   scope: 'all' | string
   setScope: (v: string) => void
   isPD: boolean
+  /** facultyId → portrait, from survey.instructors — pills show the same
+   *  photos as every plot marker (one identity treatment page-wide). */
+  avatarUrlById?: Record<string, string | undefined>
 }) {
   // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
   // affordance) — a faculty viewer keeps their own identity row and can never
@@ -375,7 +381,10 @@ function FacultyScopeSelector({
     if (!f) return null
     return (
       <div className="flex items-center gap-2">
-        <AvatarInitials initials={f.facultyInitials} className="size-7 text-xs" decorative />
+        <Avatar className="size-7">
+          <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+          <AvatarFallback className="text-xs">{f.facultyInitials}</AvatarFallback>
+        </Avatar>
         <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
         {isPD && (
           <StatusBadge
@@ -396,21 +405,17 @@ function FacultyScopeSelector({
         onValueChange={(v) => v && setScope(v)}
         aria-label="Scope the results by instructor"
       >
-        <ToggleGroupItem value="all" className="gap-1.5">
+        <ToggleGroupItem value="all" className="gap-2">
           <i className="fa-light fa-users text-xs" aria-hidden="true" />
           All faculty
         </ToggleGroupItem>
         {instructors.map((f) => (
-          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
-            {/* DS floor: initials never render in a disc under size-6 (24px) —
-                two 12px caps physically exceed a 20px circle's chord. */}
-            <AvatarInitials
-              initials={f.facultyInitials}
-              size="sm"
-              className="shrink-0"
-              fallbackClassName="text-xs font-medium"
-              decorative
-            />
+          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-2">
+            {/* Same portraits as the plot markers; 24px disc floor. */}
+            <Avatar className="size-6 shrink-0">
+              <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+              <AvatarFallback className="text-xs font-medium">{f.facultyInitials}</AvatarFallback>
+            </Avatar>
             {f.facultyName}
           </ToggleGroupItem>
         ))}
@@ -582,31 +587,38 @@ function StatusResultScreen({
   )
 }
 
-/** "On this page" rail link — plain anchor semantics, smooth in-page scroll. */
-function AnchorLink({
+/** Navigator row — DS OutlineTreeLeafButton (adoption verdict: IMPORT);
+ *  isActive carries the scroll-spy highlight, count is quiet group meta. */
+function RailLink({
   label,
   onGo,
-  small,
+  active,
+  count,
+  title,
+  sub,
 }: {
   label: string
   onGo: () => void
-  small?: boolean
+  active?: boolean
+  count?: number
+  title?: string
+  /** Row inside an inset OutlineTreeSub — aligns to the guide line. */
+  sub?: boolean
 }) {
   return (
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault()
-        onGo()
-      }}
-      title={label}
-      /* block + min-w-0 so `truncate` shrinks to the 260px rail (ellipsis, not
-         a mid-word clip); shrink-0 so the flex column's max-height doesn't
-         compress each row below its line-height and clip the text vertically. */
-      className={`block min-w-0 shrink-0 truncate rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${small ? 'text-xs py-1' : 'text-sm py-0.5'}`}
+    <OutlineTreeLeafButton
+      surface="panel"
+      isActive={active}
+      subGuideAlign={sub}
+      onClick={onGo}
+      title={title ?? label}
+      className="w-full min-w-0"
     >
-      {label}
-    </a>
+      <span className="min-w-0 flex-1 truncate text-start">{label}</span>
+      {count != null && (
+        <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      )}
+    </OutlineTreeLeafButton>
   )
 }
 
@@ -648,7 +660,8 @@ function SentimentFilterGroup({
       size="sm"
       aria-label={label}
     >
-      {SENTIMENT_FILTERS.map((f) => (
+      {/* Zero-count sentiments are noise — only offer filters that filter. */}
+      {SENTIMENT_FILTERS.filter((f) => f.key === 'all' || countFor(f.key) > 0).map((f) => (
         <ToggleGroupItem key={f.key} value={f.key} aria-label={`${f.label} comments`}>
           {f.label} ({countFor(f.key)})
         </ToggleGroupItem>
@@ -674,7 +687,7 @@ function CommentList({
   /** Evaluation-type glyph for the group header (course / faculty / general). */
   icon?: string
   /** Attributed instructor — renders an avatar so "about whom" is unmissable. */
-  person?: { name: string; initials: string }
+  person?: { name: string; initials: string; avatarUrl?: string }
   comments: IndexedComment[]
   hiddenIdx: number[]
   canModerate: boolean
@@ -711,7 +724,12 @@ function CommentList({
           is aria-level 2, heading order must not skip (axe heading-order). */}
       <div className="flex items-center gap-2 pb-1.5 border-b border-border min-w-0">
         {person ? (
-          <AvatarInitials initials={person.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
+          /* Photo identity — same treatment as every other mark on the page
+             (UX-audit I2); initials remain the fallback. */
+          <Avatar className="size-6 shrink-0">
+            <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+            <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+          </Avatar>
         ) : icon ? (
           <i className={`fa-light ${icon} text-xs text-muted-foreground`} aria-hidden="true" />
         ) : null}
@@ -784,11 +802,86 @@ function CommentList({
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
+/** DS MetricCell tile anatomy (key-metrics.js MetricCell, verbatim rhythm):
+ *  label row (grid, auto column = badge + count meta) · baseline value row
+ *  with the trend chip · one line-clamp-2 caption. Neutral foreground hero —
+ *  sentiment lives ONLY in the chip (Romit 2026-07-18; teal up / amber down). */
+function ScoreTile({
+  label,
+  icon,
+  person,
+  badge,
+  value,
+  suffix,
+  delta,
+  caption,
+}: {
+  label: string
+  icon?: string
+  /** Scoped identity — photo + name replace icon + generic label. */
+  person?: { name: string; initials: string; avatarUrl?: string }
+  badge?: React.ReactNode
+  value: string
+  suffix?: string
+  delta?: { amount: string; direction: 'up' | 'down'; label: string } | null
+  caption: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
+      {/* Fixed three-row skeleton (identity + pill / hero / caption), each
+          row min-height'd — tiles align by construction. The status pill
+          rides the heading line, right-aligned; counts are gone (Romit
+          round 11: "remove the counts, keep the pill on the heading line"). */}
+      <div className="flex min-h-6 items-center justify-between gap-2">
+        {person ? (
+          <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
+            <Avatar className="size-6 shrink-0">
+              <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
+              <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
+            </Avatar>
+            <span className="sr-only">{label} — </span>
+            <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
+          </p>
+        ) : (
+          <p className="min-w-0 flex items-center gap-1.5 text-sm text-muted-foreground leading-snug">
+            {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
+            <span className="min-w-0 truncate">{label}</span>
+          </p>
+        )}
+        {badge && <span className="shrink-0">{badge}</span>}
+      </div>
+      <div className="flex flex-wrap items-baseline gap-2">
+        <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
+          {value}
+        </span>
+        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
+        {delta && (
+          <span
+            className="inline-flex items-center gap-1 font-medium leading-none text-xs sm:text-sm"
+            style={{ color: delta.direction === 'up' ? 'var(--chart-2)' : 'var(--chip-4)' }}
+          >
+            <i
+              className={`fa-light ${delta.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'} text-xs`}
+              aria-hidden="true"
+            />
+            {delta.amount} {delta.label}
+          </span>
+        )}
+      </div>
+      {/* Single-idea, single-line caption — nowrap + truncate so it can never
+          wrap at any tile width; baselines stay level by construction. */}
+      <div className="flex items-baseline gap-1 overflow-hidden whitespace-nowrap text-xs text-muted-foreground leading-snug tabular-nums">
+        {caption}
+      </div>
+    </div>
+  )
+}
+
 function ScoreCard({
   title,
   icon,
+  person,
   statusBadge,
-  responseMeta,
   value,
   programAvg,
   priors,
@@ -796,10 +889,11 @@ function ScoreCard({
   title: string
   /** Evaluation-type glyph — ties the card to its type without a second row. */
   icon?: string
+  /** Scoped identity — the card IS this person: photo + name replace the
+   *  generic type label (Romit round 9); title survives as sr-only context. */
+  person?: { name: string; initials: string; avatarUrl?: string }
   /** Per-type status (each type runs on its own clock — Romit 2026-07-17). */
   statusBadge?: React.ReactNode
-  /** Per-type collection count, e.g. "46 of 50". */
-  responseMeta?: string
   value: number | null
   programAvg: number | null
   priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
@@ -809,134 +903,66 @@ function ScoreCard({
   const actionItems = [...(prior?.actionItems ?? [])].sort(
     (a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9),
   )
-  /* Slope geometry — two time points on a shared 3–5 window (a full line chart
-     is overkill for two points; the direction IS the message). */
-  const yFor = (v: number) => 52 - ((Math.min(5, Math.max(3, v)) - 3) / 2) * 34
-  /* One narrative line, trend only — the badge already owns the program gap. */
+  /* ONE short trend fragment — the caption is a single idea, single line
+     (Romit round 8: "I don't want so much info… the text are wrapping").
+     The chip owns the program gap; exact program value lives in the data
+     table. */
   const trendPhrase = (() => {
     if (value == null || !prior) return null
     const best = Math.max(...priors.map((p) => p.avg))
-    if (value >= best) {
-      return `Best of your last ${priors.length + 1} offering${priors.length + 1 !== 1 ? 's' : ''}.`
-    }
+    if (value >= best) return `Best of last ${priors.length + 1}`
     const d = value - prior.avg
-    if (Math.abs(d) <= 0.05) return `Holding steady since ${prior.term}.`
-    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} from ${prior.term}.`
+    if (Math.abs(d) <= 0.05) return 'Holding steady'
+    return `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d).toFixed(2)} since then`
   })()
   return (
     <Card>
-      <CardContent className="pt-6 flex flex-col gap-2">
-        {/* Type identity + per-type status live ON the summary they describe —
-            not in a separate chip row above the tabs (hierarchy: one control
-            row, then content; Romit 2026-07-17 crowding critique). */}
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
-            {icon && <i className={`fa-light ${icon}`} aria-hidden="true" />}
-            <span className="truncate">{title}</span>
-          </p>
-          {(statusBadge || responseMeta) && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-              {statusBadge}
-              {responseMeta && <span>{responseMeta}</span>}
-            </span>
-          )}
-        </div>
-        <div className="flex items-end gap-2 flex-wrap">
-          <span
-            className="font-heading text-3xl font-semibold tabular-nums leading-none"
-            style={{ color: value != null ? scoreColor(value) : 'var(--muted-foreground)' }}
-          >
-            {value != null ? value.toFixed(2) : '—'}
-          </span>
-          <span className="text-xs text-muted-foreground pb-0.5">/ 5</span>
-          {delta != null && Math.abs(delta) > 0.05 && (
-            <Badge
-              variant="secondary"
-              className="font-normal tabular-nums"
-              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-            >
-              <i
-                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
-                aria-hidden="true"
-              />
-              {Math.abs(delta).toFixed(2)} vs program
-            </Badge>
-          )}
-        </div>
-        {prior && value != null ? (
-          <div
-            role="img"
-            aria-label={`${title} moved from ${prior.avg.toFixed(2)} in ${prior.term} to ${value.toFixed(2)} this term${programAvg != null ? `; program average ${programAvg.toFixed(2)}` : ''}`}
-          >
-            <svg viewBox="0 0 208 58" className="w-52 h-[58px]" aria-hidden="true">
-              {programAvg != null && (
-                <line
-                  x1="12"
-                  x2="196"
-                  y1={yFor(programAvg)}
-                  y2={yFor(programAvg)}
-                  stroke="var(--border)"
-                  strokeWidth="1.5"
-                  strokeDasharray="3 4"
-                />
-              )}
-              <line
-                x1="12"
-                x2="196"
-                y1={yFor(prior.avg)}
-                y2={yFor(value)}
-                stroke="var(--foreground)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy={yFor(prior.avg)} r="3" fill="var(--muted-foreground)" />
-              <circle cx="196" cy={yFor(value)} r="3.5" fill={scoreColor(value)} />
-              {/* Prior value printed AT the mark (RUBRIC v2 Gate 5.3); the hero
-                  number directly above labels the current endpoint. */}
-              <text
-                x="12"
-                y={yFor(prior.avg) - 8}
-                fontSize="12"
-                fill="var(--muted-foreground)"
-                className="tabular-nums"
-              >
-                {prior.avg.toFixed(2)}
-              </text>
-            </svg>
-            <div className="flex w-52 items-baseline justify-between text-xs text-muted-foreground tabular-nums">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    tabIndex={0}
-                    className="underline decoration-dotted underline-offset-2 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    {prior.term}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {actionItems.length > 0 ? (
-                    <div className="flex flex-col gap-1 max-w-64">
-                      <p className="font-medium">Action items logged for {prior.term}</p>
+      <CardContent className="p-0">
+        <ScoreTile
+          label={title}
+          icon={icon}
+          person={person}
+          badge={statusBadge}
+          value={value != null ? value.toFixed(2) : '—'}
+          suffix="/ 5"
+          delta={
+            delta != null && Math.abs(delta) > 0.05
+              ? {
+                  amount: Math.abs(delta).toFixed(2),
+                  direction: delta > 0 ? 'up' : 'down',
+                  label: 'vs program',
+                }
+              : null
+          }
+          caption={
+            prior && value != null ? (
+              <>
+                <Popover>
+                  <PopoverTrigger className="underline decoration-dotted underline-offset-2 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                    {prior.term} {prior.avg.toFixed(2)}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-4" align="start" sideOffset={6}>
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-sm font-medium">
+                        {actionItems.length > 0
+                          ? `Action items logged for ${prior.term}`
+                          : `No action items logged for ${prior.term}.`}
+                      </p>
                       {actionItems.map((a) => (
-                        <p key={a.text}>
+                        <p key={a.text} className="text-xs text-muted-foreground">
                           <span className="capitalize">{a.priority}</span> · {a.text}
                         </p>
                       ))}
                     </div>
-                  ) : (
-                    <>No action items logged for {prior.term}.</>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-              {programAvg != null && <span>Program {programAvg.toFixed(2)} ┄</span>}
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground tabular-nums">
-            Program average {programAvg != null ? programAvg.toFixed(2) : '—'}
-          </p>
-        )}
-        {trendPhrase && <p className="text-xs text-muted-foreground">{trendPhrase}</p>}
+                  </PopoverContent>
+                </Popover>
+                {trendPhrase && <span className="truncate"> · {trendPhrase}</span>}
+              </>
+            ) : (
+              <>Program average {programAvg != null ? programAvg.toFixed(2) : '—'}</>
+            )
+          }
+        />
       </CardContent>
     </Card>
   )
@@ -956,32 +982,21 @@ function ResponseRateCard({
   const delta = rate - 70
   return (
     <Card>
-      <CardContent className="pt-6 flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground">Response Rate</p>
-        <div className="flex items-end gap-2 flex-wrap">
-          <span
-            className="font-heading text-3xl font-semibold tabular-nums leading-none"
-            style={{ color: rateColor(rate) }}
-          >
-            {rate}%
-          </span>
-          {Math.abs(delta) >= 1 && (
-            <Badge
-              variant="secondary"
-              className="font-normal tabular-nums"
-              style={{ color: delta > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-            >
-              <i
-                className={`fa-light ${delta > 0 ? 'fa-arrow-up' : 'fa-arrow-down'}`}
-                aria-hidden="true"
-              />
-              {Math.abs(delta)} pts vs 70% target
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {responses} of {enrolled} students responded
-        </p>
+      <CardContent className="p-0">
+        <ScoreTile
+          label="Response Rate"
+          value={`${rate}%`}
+          delta={
+            Math.abs(delta) >= 1
+              ? {
+                  amount: `${Math.abs(delta)} pts`,
+                  direction: delta > 0 ? 'up' : 'down',
+                  label: 'vs 70% target',
+                }
+              : null
+          }
+          caption={`${responses} of ${enrolled} students responded`}
+        />
       </CardContent>
     </Card>
   )
@@ -999,13 +1014,28 @@ interface ThemeRowDatum {
   questions: number
   programAvg: number | null
   /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
-   *  aggregated across the theme's questions — feeds the composition panel. */
+   *  aggregated across the theme's questions — feeds the detail popover. */
   dist: [number, number, number, number, number]
-  /** Per-instructor average within this theme (scope-aware) — benchmark panel. */
-  instructors: { id: string; initials: string; name: string; avg: number }[]
+  /** Per-instructor average within this theme (scope-aware) — photo markers. */
+  instructors: { id: string; initials: string; name: string; avatarUrl?: string; avg: number }[]
+  /** The contributing questions — the popover lists them as jump links. */
+  questionRows: { id: string; text: string; avg: number }[]
 }
 
-function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; partial?: boolean }) {
+/* Theme rows share the question rows' scale-track boxplot (DS OS → Chart →
+   Statistical → Boxplot anatomy, laid horizontal): ONE vocabulary for every
+   score-vs-program read on this page. Theme rows add the whiskers — theme
+   aggregates have real min–max variance — and their detail popover carries
+   the 1–5 column distribution plus the contributing questions as jump links. */
+function ThemeBoxplotChart({
+  themes,
+  partial,
+  onQuestionJump,
+}: {
+  themes: ThemeRowDatum[]
+  partial?: boolean
+  onQuestionJump?: (questionId: string) => void
+}) {
   if (themes.length === 0) return null
   /* Sort by gap vs program, worst first — the deficit IS the story (Culture
      Amp delta framing); themes without a benchmark sink to the end. */
@@ -1017,172 +1047,72 @@ function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; p
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — see how the mix leans.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — open the theme for its questions.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
   }
   const instructors = [...new Map(sorted.flatMap((t) => t.instructors).map((fi) => [fi.id, fi])).values()]
-  const data = sorted.map((t) => {
-    const total = t.dist.reduce((a, n) => a + n, 0)
-    const row: Record<string, unknown> = {
-      theme: t.theme,
-      avg: +t.avg.toFixed(2),
-      programAvg: t.programAvg != null ? +t.programAvg.toFixed(2) : null,
-      total,
-    }
-    RATING_SERIES.forEach((s, i) => {
-      row[s.key] = total ? +((((t.dist[i] ?? 0) / total) * 100).toFixed(1)) : 0
-    })
-    t.instructors.forEach((fi) => {
-      row[`fi_${fi.id}`] = +fi.avg.toFixed(2)
-    })
-    return row
-  })
-  const compConfig: ChartConfig = Object.fromEntries(
-    RATING_SERIES.map((s) => [s.key, { label: s.label, color: s.color }]),
-  )
-  const benchConfig: ChartConfig = {
-    avg: { label: 'Course avg', color: 'var(--foreground)' },
-    programAvg: { label: 'Program', color: 'var(--muted-foreground)' },
-    ...Object.fromEntries(
-      instructors.map((fi) => [`fi_${fi.id}`, { label: fi.name, color: 'var(--muted-foreground)' }]),
-    ),
-  }
   return (
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Rating composition per theme · course vs program${instructors.length > 0 ? ' vs instructor' : ''} beneath · sorted by gap${partial ? ' · partial data' : ''}`}
+      description={`Score spread per theme vs program · sorted by gap, weakest first · click any mark for details${partial ? ' · partial data' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
         label="Theme-wise distribution"
-        summary={`Rating composition per question theme with a benchmark panel beneath showing course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''} on a 1 to 5 scale. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
+        summary={`Boxplot per question theme on a 1 to 5 scale showing the middle fifty percent, median, full range, course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''}. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
         dataLength={themes.length}
       >
-        {(activeIndex) => (
+        {() => (
           <>
-            {/* Composition panel — DS composition family: stacked rating mix */}
-            <RatingLegend />
-            <ChartContainer config={compConfig} className="h-44 w-full">
-              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={false} height={4} />
-                <YAxis
-                  domain={[0, 100]}
-                  ticks={[0, 50, 100]}
-                  tickFormatter={(v: number) => `${v}%`}
-                  width={44}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={CHART_AXIS_TICK}
-                />
-                <ChartTooltip
-                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
-                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
-                  cursor={{ fill: 'var(--muted)', fillOpacity: 0.4 }}
-                  content={
-                    <ChartTooltipContent
-                      formatter={(v: unknown, name: unknown) => [
-                        `${v as number}% `,
-                        compConfig[name as string]?.label ?? String(name),
-                      ]}
+            <div className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-end gap-6 pb-2 border-b border-border">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <span key={n} className="absolute -translate-x-1/2" style={{ left: `${scaleX(n)}%` }}>
+                    {n}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              {sorted.map((t) => {
+                const total = t.dist.reduce((a, n) => a + n, 0)
+                return (
+                  <div
+                    key={t.theme}
+                    className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-center gap-6 py-2.5 border-b border-border last:border-0"
+                  >
+                    <div className="min-w-0 flex flex-col gap-0.5">
+                      <p className="text-sm">{t.theme}</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {t.questions} question{t.questions !== 1 ? 's' : ''} · {total} rating
+                        {total !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <ScaleTrackPlot
+                      counts={t.dist}
+                      total={total}
+                      avg={t.avg}
+                      programAvg={t.programAvg}
+                      people={t.instructors.map((fi) => ({
+                        facultyId: fi.id,
+                        name: fi.name,
+                        initials: fi.initials,
+                        avatarUrl: fi.avatarUrl,
+                        avg: fi.avg,
+                      }))}
+                      whiskers
+                      detailTitle={t.theme}
+                      detailMeta={`${t.questions} question${t.questions !== 1 ? 's' : ''}`}
+                      questionLinks={t.questionRows}
+                      onQuestionJump={onQuestionJump}
                     />
-                  }
-                />
-                {RATING_SERIES.map((s) => (
-                  <Bar
-                    key={s.key}
-                    dataKey={s.key}
-                    stackId="mix"
-                    fill={s.color}
-                    fillOpacity={s.opacity}
-                    maxBarSize={72}
-                    isAnimationActive={false}
-                  />
-                ))}
-              </ComposedChart>
-            </ChartContainer>
-            {/* Benchmark panel — same themes on an honest 1–5 axis */}
-            <ChartContainer config={benchConfig} className="h-32 w-full">
-              <ComposedChart data={data} margin={{ left: 4, right: 44, top: 8, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="theme" tickLine={false} axisLine={false} tick={CHART_AXIS_TICK} interval={0} />
-                <YAxis
-                  domain={[3, 5]}
-                  ticks={[3, 4, 5]}
-                  width={44}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={CHART_AXIS_TICK}
-                />
-                <ChartTooltip
-                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
-                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
-                  cursor={{ stroke: 'var(--border)' }}
-                  content={<ChartTooltipContent />}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="programAvg"
-                  stroke="var(--muted-foreground)"
-                  strokeDasharray="4 3"
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="avg"
-                  stroke="transparent"
-                  isAnimationActive={false}
-                  dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) => {
-                    const below =
-                      p.payload?.programAvg != null &&
-                      (p.payload.avg as number) < (p.payload.programAvg as number) - 0.05
-                    return (
-                      <circle
-                        key={`avg-${p.index}`}
-                        cx={p.cx}
-                        cy={p.cy}
-                        r={4.5}
-                        fill={below ? 'var(--chip-4)' : 'var(--foreground)'}
-                        stroke="var(--card)"
-                        strokeWidth={2}
-                      />
-                    )
-                  }}
-                />
-                {instructors.map((fi) => (
-                  <Line
-                    key={fi.id}
-                    type="monotone"
-                    dataKey={`fi_${fi.id}`}
-                    stroke="transparent"
-                    isAnimationActive={false}
-                    dot={(p: { cx?: number; cy?: number; index?: number; payload?: Record<string, unknown> }) =>
-                      p.payload?.[`fi_${fi.id}`] == null ? (
-                        <g key={`fi-${fi.id}-${p.index}`} />
-                      ) : (
-                        <circle
-                          key={`fi-${fi.id}-${p.index}`}
-                          cx={p.cx}
-                          cy={p.cy}
-                          r={3.5}
-                          fill="var(--card)"
-                          stroke="var(--muted-foreground)"
-                          strokeWidth={1.5}
-                        />
-                      )
-                    }
-                  />
-                ))}
-              </ComposedChart>
-            </ChartContainer>
-            <p className="text-xs text-muted-foreground">
-              Top: share of responses per rating. Bottom: ● course avg (amber = below program) ·
-              ┄ program{instructors.length > 0 ? ' · ○ instructor (hover for names)' : ''}.
-            </p>
+                  </div>
+                )
+              })}
+            </div>
             <ChartDataTable
               caption="Theme-wise distribution"
               headers={[
@@ -1193,21 +1123,26 @@ function ThemeCompositionChart({ themes, partial }: { themes: ThemeRowDatum[]; p
                 'Rated 4',
                 'Rated 5',
                 'This course',
+                'Median',
                 'Program average',
                 'Questions',
                 ...instructors.map((fi) => fi.name),
               ]}
-              rows={sorted.map((t) => [
-                t.theme,
-                ...t.dist,
-                `${t.avg.toFixed(1)}/5`,
-                t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
-                t.questions,
-                ...instructors.map((fi) => {
-                  const hit = t.instructors.find((x) => x.id === fi.id)
-                  return hit ? `${hit.avg.toFixed(1)}/5` : '—'
-                }),
-              ])}
+              rows={sorted.map((t) => {
+                const total = t.dist.reduce((a, n) => a + n, 0)
+                return [
+                  t.theme,
+                  ...t.dist,
+                  `${t.avg.toFixed(1)}/5`,
+                  total > 0 ? `${ratingQuantile(t.dist, total, 0.5).toFixed(1)}/5` : '—',
+                  t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
+                  t.questions,
+                  ...instructors.map((fi) => {
+                    const hit = t.instructors.find((x) => x.id === fi.id)
+                    return hit ? `${hit.avg.toFixed(1)}/5` : '—'
+                  }),
+                ]
+              })}
             />
           </>
         )}
@@ -1232,9 +1167,21 @@ interface BreakdownRow {
   programAvg?: number | null
   counts?: number[]
   total?: number
-  /** Multi-instructor course, "All faculty" scope: the per-instructor split of
-   *  this faculty question — the aggregate row above stays the summary. */
-  perFaculty?: { facultyId: string; name: string; initials: string; avg: number; counts: number[]; total: number }[]
+  /** Faculty rows: the named identities (1–3) scored on this question — each
+   *  becomes a photo marker on the scale plot. Course/general rows have none. */
+  perFaculty?: PlotPerson[]
+}
+
+/** Identity marker slice for the scale plots. Counts are per-question data;
+ *  theme-level people carry only the average. */
+interface PlotPerson {
+  facultyId: string
+  name: string
+  initials: string
+  avatarUrl?: string
+  avg: number
+  counts?: number[]
+  total?: number
 }
 
 /** Section → evaluation-type classifier. Builder templates mark faculty
@@ -1278,33 +1225,348 @@ function favorableShare(counts: number[] | undefined, total: number | undefined)
 }
 
 
-/* You vs program as PRINTED numbers + one signed-gap figure (RUBRIC v2 Gate 0:
-   in a ~10rem cell the deltas the reader must act on render smaller than any
-   mark could be — numbers state it better). Median stays in the data table. */
-function CompareText({
+/* ── question scale plot (Romit 2026-07-18, replacing the stacked rating bar) ──
+   Workable-assessment anatomy: dotted 1–5 track, brand middle-50% band, and
+   the benchmarks IN the plot — program ▲ above the track, the scored identity
+   ON it (course dot, or the instructor's actual photo), values riding the
+   marks. No printed number column: position + at-mark labels carry the
+   comparison. Whiskers stay gone deliberately — min–max on a 1–5 Likert spans
+   the axis on nearly every row (the 8aa825d1 failure); full range and the
+   rating distribution live in the hover tooltips + data table. */
+
+/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
+function ratingQuantile(counts: number[], total: number, q: number): number {
+  if (total <= 0) return 3
+  const target = q * total
+  let cum = 0
+  for (let i = 0; i < 5; i++) {
+    const c = counts[i] ?? 0
+    if (c > 0 && cum + c >= target) {
+      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
+    }
+    cum += c
+  }
+  return 5
+}
+
+/** 1–5 score → % along the track. */
+const scaleX = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+
+/** Small downward triangle — the program benchmark mark. */
+function ProgramTriangle() {
+  return (
+    <span
+      className="block size-0 border-x-[5px] border-t-[6px] border-x-transparent"
+      style={{ borderTopColor: 'var(--muted-foreground)' }}
+      aria-hidden="true"
+    />
+  )
+}
+
+/** Focus ring for in-plot popover triggers (Radix renders real buttons). */
+const PLOT_TRIGGER_RING =
+  'cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+
+/* Popover body primitives — DS sectioned-popover anatomy (p-0 content, each
+   section owns px-3 py-2, border-b/border-t separators; Slite/Medium
+   definition-row formatting for stats). */
+
+/** Definition row: label left, tabular value right. */
+function PopoverStatRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-right text-xs tabular-nums text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function PopoverSection({ className = '', children }: { className?: string; children: React.ReactNode }) {
+  return <div className={`px-3 py-2 ${className}`}>{children}</div>
+}
+
+function ScaleTrackPlot({
+  counts,
+  total,
   avg,
   programAvg,
+  people,
+  whiskers = false,
+  detailTitle,
+  detailMeta,
+  questionLinks,
+  onQuestionJump,
 }: {
-  avg: number | null | undefined
-  programAvg: number | null | undefined
+  counts: number[]
+  total: number
+  avg?: number
+  programAvg?: number | null
+  people?: PlotPerson[]
+  /** Theme rows only — aggregates have real min–max variance. */
+  whiskers?: boolean
+  /** Header of the detail popover (question rows: "Rating distribution"). */
+  detailTitle: string
+  detailMeta?: string
+  /** Theme popover: contributing questions as jump links. */
+  questionLinks?: { id: string; text: string; avg: number }[]
+  onQuestionJump?: (questionId: string) => void
 }) {
-  if (avg == null) return <span className="text-xs text-muted-foreground text-right block">—</span>
-  const gap = programAvg != null ? avg - programAvg : null
-  return (
-    <p className="text-xs tabular-nums text-right whitespace-nowrap">
-      <span className="text-muted-foreground">
-        You <span className="font-semibold text-foreground">{avg.toFixed(1)}</span>
-        {programAvg != null && <> · Program {programAvg.toFixed(1)}</>}
-      </span>
-      {gap != null && Math.abs(gap) > 0.05 && (
-        <span
-          className="font-medium"
-          style={{ color: gap > 0 ? 'var(--chart-2)' : 'var(--chip-4)' }}
-        >
-          {' '}({gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)})
-        </span>
+  if (total <= 0 || avg == null) {
+    /* No responses yet — quiet muted track, never a blank cell. */
+    return (
+      <div className="flex h-16 items-center" aria-hidden="true">
+        <div className="h-1 w-full rounded-full bg-muted" />
+      </div>
+    )
+  }
+  const p25 = ratingQuantile(counts, total, 0.25)
+  const p75 = ratingQuantile(counts, total, 0.75)
+  const median = ratingQuantile(counts, total, 0.5)
+  const lowest = counts.findIndex((c) => c > 0) + 1
+  const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
+  /* "vs program" definition row — shared by the detail + person popovers. */
+  const gapLine = (v: number) =>
+    programAvg == null ? null : (
+      <PopoverStatRow
+        label="vs program"
+        value={
+          Math.abs(v - programAvg) > 0.05 ? (
+            <>
+              {programAvg.toFixed(1)}{' '}
+              <span
+                className="font-medium"
+                style={{ color: v > programAvg ? 'var(--chart-2)' : 'var(--chip-4)' }}
+              >
+                ({v > programAvg ? '+' : '−'}{Math.abs(v - programAvg).toFixed(1)})
+              </span>
+            </>
+          ) : (
+            <>
+              {programAvg.toFixed(1)} <span className="text-muted-foreground">· at program</span>
+            </>
+          )
+        }
+      />
+    )
+  /* The detail popover body — DS sectioned anatomy: header · stat rows ·
+     distribution · (themes) question jump links. Shared by band + course dot. */
+  const detailContent = (
+    <div className="flex flex-col">
+      <div className="border-b border-border px-3 py-2">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <p className="text-sm font-semibold truncate">{detailTitle}</p>
+          {detailMeta && <p className="text-xs text-muted-foreground line-clamp-2">{detailMeta}</p>}
+        </div>
+      </div>
+      <PopoverSection className="flex flex-col gap-1.5">
+        <PopoverStatRow label="Median" value={median.toFixed(1)} />
+        <PopoverStatRow label="Middle 50%" value={`${p25.toFixed(1)}–${p75.toFixed(1)}`} />
+        <PopoverStatRow label="Range" value={`${lowest}–${highest}`} />
+        <PopoverStatRow label="Responses" value={total} />
+        {gapLine(avg)}
+      </PopoverSection>
+      <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
+        <p className="text-xs text-muted-foreground">Rating distribution</p>
+        <RatingBreakdownRows counts={counts} total={total} />
+      </PopoverSection>
+      {questionLinks && questionLinks.length > 0 && onQuestionJump && (
+        <PopoverSection className="flex flex-col gap-0.5 border-t border-border">
+          <p className="text-xs text-muted-foreground">Questions in this theme</p>
+          {questionLinks.map((q) => (
+            <Button
+              key={q.id}
+              variant="ghost"
+              size="sm"
+              className="h-auto justify-start gap-2 px-1.5 py-1 text-xs font-normal"
+              onClick={() => onQuestionJump(q.id)}
+            >
+              <span className="shrink-0 font-medium tabular-nums">{q.avg.toFixed(1)}</span>
+              <span className="min-w-0 truncate text-start">{q.text}</span>
+            </Button>
+          ))}
+        </PopoverSection>
       )}
-    </p>
+    </div>
+  )
+  /* Markers: named people when the row has identities, else the course dot. */
+  const marks =
+    people && people.length > 0
+      ? [...people]
+          .sort((a, b) => a.avg - b.avg)
+          .map((p) => ({
+            key: p.facultyId,
+            x: scaleX(p.avg),
+            value: p.avg,
+            below: programAvg != null && p.avg < programAvg - 0.05,
+            person: p as PlotPerson | undefined,
+          }))
+      : [
+          {
+            key: 'course-avg',
+            x: scaleX(avg),
+            value: avg,
+            below: programAvg != null && avg < programAvg - 0.05,
+            person: undefined,
+          },
+        ]
+  /* Near-equal scores: labels drop to a second row instead of colliding. */
+  let lastLabelX = -Infinity
+  const placed = marks.map((m) => {
+    const secondRow = m.x - lastLabelX < 9
+    if (!secondRow) lastLabelX = m.x
+    return { ...m, secondRow }
+  })
+  return (
+    <div className="relative h-16 w-full min-w-0">
+      {/* program benchmark — above the track so it never collides with scores */}
+      {programAvg != null && (
+        <Popover>
+          <PopoverTrigger
+            aria-label={`Program average ${programAvg.toFixed(1)} — details`}
+            className={`absolute top-0 flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
+            style={{ left: `${scaleX(programAvg)}%` }}
+          >
+            {/* Suppress the value when program ≈ score — a duplicated number
+                stacked over the marker reads as a rendering bug. */}
+            {Math.abs(programAvg - avg) > 0.05 && (
+              <span className="text-xs tabular-nums leading-none text-muted-foreground" aria-hidden="true">
+                {programAvg.toFixed(1)}
+              </span>
+            )}
+            <ProgramTriangle />
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-4" side="top" align="center" sideOffset={6}>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium">Program average {programAvg.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">
+                Response-weighted across all offerings with this {questionLinks ? 'theme' : 'question'}.
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+      {/* dotted 1–5 track */}
+      <div className="absolute inset-x-0 top-7 h-px bg-border" aria-hidden="true" />
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          className="absolute top-7 size-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-border"
+          style={{ left: `${scaleX(n)}%` }}
+          aria-hidden="true"
+        />
+      ))}
+      {/* whiskers — DS boxplot anatomy: min→max hairline with end caps */}
+      {whiskers && (
+        <>
+          <div
+            className="pointer-events-none absolute top-7 h-px -translate-y-1/2"
+            style={{
+              left: `${scaleX(lowest)}%`,
+              width: `${Math.max(1, scaleX(highest) - scaleX(lowest))}%`,
+              background: 'var(--muted-foreground)',
+            }}
+            aria-hidden="true"
+          />
+          {[lowest, highest].map((v, i) => (
+            <span
+              key={i}
+              className="pointer-events-none absolute top-7 h-2.5 w-px -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${scaleX(v)}%`, background: 'var(--muted-foreground)' }}
+              aria-hidden="true"
+            />
+          ))}
+        </>
+      )}
+      {/* middle 50% band — click for the formatted distribution popover */}
+      <Popover>
+        <PopoverTrigger
+          aria-label={`${detailTitle} — distribution details`}
+          className={`absolute top-7 h-2.5 -translate-y-1/2 rounded-full ${PLOT_TRIGGER_RING}`}
+          style={{
+            left: `${scaleX(p25)}%`,
+            width: `${Math.max(2, scaleX(p75) - scaleX(p25))}%`,
+            background: 'var(--brand-color)',
+            opacity: 0.42,
+          }}
+        />
+        <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={10}>
+          {detailContent}
+        </PopoverContent>
+      </Popover>
+      {/* median — brand line per the DS boxplot spec */}
+      <span
+        className="pointer-events-none absolute top-7 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ left: `${scaleX(median)}%`, background: 'var(--brand-color)' }}
+        aria-hidden="true"
+      />
+      {/* identity markers + at-mark value labels */}
+      {placed.map((m) => (
+        <Popover key={m.key}>
+          <PopoverTrigger
+            aria-label={
+              m.person
+                ? `${m.person.name} — average ${m.value.toFixed(1)}, details`
+                : `Course average ${m.value.toFixed(1)} — details`
+            }
+            className={`absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
+            style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
+          >
+            {m.person ? (
+              <Avatar className="size-6 ring-2 ring-[var(--card)]">
+                <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
+                <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <span
+                className="size-2.5 rounded-full ring-2 ring-[var(--card)]"
+                style={{ background: m.below ? 'var(--chip-4)' : 'var(--foreground)' }}
+              />
+            )}
+            <span
+              className="mt-1 text-xs font-semibold leading-none tabular-nums"
+              style={{
+                color: m.below ? 'var(--chip-4)' : 'var(--foreground)',
+                marginTop: m.secondRow ? 14 : undefined,
+              }}
+            >
+              {m.value.toFixed(1)}
+            </span>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={6}>
+            {m.person ? (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2.5 border-b border-border px-3 py-2">
+                  <Avatar className="size-8">
+                    <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
+                    <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{m.person.name}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      Average {m.value.toFixed(1)}
+                      {m.person.total != null
+                        ? ` · ${m.person.total} rating${m.person.total !== 1 ? 's' : ''}`
+                        : ''}
+                    </p>
+                  </div>
+                </div>
+                {programAvg != null && (
+                  <PopoverSection className="flex flex-col gap-1.5">{gapLine(m.value)}</PopoverSection>
+                )}
+                {m.person.counts && m.person.total != null && m.person.total > 0 && (
+                  <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Rating distribution</p>
+                    <RatingBreakdownRows counts={m.person.counts} total={m.person.total} />
+                  </PopoverSection>
+                )}
+              </div>
+            ) : (
+              detailContent
+            )}
+          </PopoverContent>
+        </Popover>
+      ))}
+    </div>
   )
 }
 
@@ -1322,10 +1584,16 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   const [filter, setFilter] = useState<SentimentFilter>('all')
   const filtered =
     filter === 'all' ? responses : responses.filter((x) => (x.sentiment ?? 'neutral') === filter)
+  /* Per-row sentiment badges only earn their ink when the visible list MIXES
+     sentiments — a uniform column of "Constructive" chips is noise (round 5). */
+  const visibleSentimentKinds = new Set(filtered.map((x) => x.sentiment ?? 'neutral'))
   const countFor = (f: SentimentFilter) =>
     f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
   const positives = countFor('positive')
   const concerns = countFor('concern')
+  /* Flagged responses were in the data but invisible — a moderator's queue
+     signal, so it rides the meta line and marks the row in the sheet. */
+  const flaggedCount = responses.filter((x) => x.flagged).length
   const previews = responses.slice(0, 2)
   return (
     <div
@@ -1341,6 +1609,7 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
               : `${count} written response${count !== 1 ? 's' : ''}`}
             {positives > 0 && <> · {positives} positive</>}
             {concerns > 0 && <> · {concerns} constructive</>}
+            {flaggedCount > 0 && <> · {flaggedCount} flagged for review</>}
           </p>
         </div>
         {count > 0 && (
@@ -1362,35 +1631,39 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
             subtitle={`${count} written response${count !== 1 ? 's' : ''} · anonymized${context ? ` · ${context}` : ''}`}
             onClose={() => setOpen(false)}
           />
-          <FloatingSheetPanelBody className="flex flex-col gap-4">
+          {/* DS sheet-body anatomy (ExportDrawer convention): px-4 pb-4 body,
+              space-y-5 sections; the responses render as ONE contained list
+              (invite-collaborators drawer idiom: bordered ul, divide-y rows)
+              instead of floating paragraphs. */}
+          <FloatingSheetPanelBody className="px-4 pb-4 space-y-5">
             <SentimentFilterGroup
               value={filter}
               onChange={setFilter}
               countFor={countFor}
               label={`Filter responses to “${row.label}” by sentiment`}
             />
-            <div className="flex flex-col">
-              {filtered.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-3">
-                  No responses match this filter.
-                </p>
-              ) : (
-                /* Same row anatomy as the qualitative-feedback card — quote
-                   first, sentiment chip on the meta line beneath. */
-                filtered.map((x) => {
+            {filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No responses match this filter.</p>
+            ) : (
+              <ul className="rounded-lg border border-border divide-y divide-border">
+                {filtered.map((x) => {
                   const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
                   return (
-                    <div
-                      key={x.id}
-                      className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0 first:pt-0"
-                    >
+                    <li key={x.id} className="flex flex-col gap-1.5 px-3 py-2.5">
                       <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
-                      {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
-                    </div>
+                      {((chip && visibleSentimentKinds.size > 1) || x.flagged) && (
+                        <div className="flex items-center gap-1.5">
+                          {chip && visibleSentimentKinds.size > 1 && (
+                            <StatusBadge label={chip.label} tone={chip.tone} />
+                          )}
+                          {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
+                        </div>
+                      )}
+                    </li>
                   )
-                })
-              )}
-            </div>
+                })}
+              </ul>
+            )}
           </FloatingSheetPanelBody>
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
@@ -1398,109 +1671,11 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   )
 }
 
-/* ── question rows: numbers + chips + a single-job range strip ────────────────
-   Settled form (Romit 2026-07-17, after three failed multi-mark encodings +
-   a numbers-only round that lost the range): the IDENTIFICATION layer is
-   literal — instructor score chips, n · fav %, You vs Program — and one
-   small viz carries the one fact numbers can't: THE RANGE. Box-plot-lite on
-   a full 1–5 line: light band = full span of responses, darker band =
-   middle 50%, dot = average. One mark family, no program tick competing
-   (the numbers column owns that comparison) — nothing to misidentify. */
-
-/** Weighted quantile over the 1–5 distribution, each rating an [r−.5, r+.5] bin. */
-function ratingQuantile(counts: number[], total: number, q: number): number {
-  if (total <= 0) return 3
-  const target = q * total
-  let cum = 0
-  for (let i = 0; i < 5; i++) {
-    const c = counts[i] ?? 0
-    if (c > 0 && cum + c >= target) {
-      return Math.min(5, Math.max(1, i + 0.5 + (target - cum) / c))
-    }
-    cum += c
-  }
-  return 5
-}
-
-/** DS-catalog boxplot anatomy (localhost:4000 → Chart → Statistical →
- *  Boxplot: brand IQR box, foreground whiskers with end caps, median line),
- *  laid horizontal at row height, plus the two benchmark marks: program tick
- *  and the average dot (amber below program). */
-function QuestionBoxplot({
-  counts,
-  total,
-  avg,
-  programAvg,
-}: {
-  counts: number[]
-  total: number
-  avg?: number
-  programAvg?: number | null
-}) {
-  const x = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
-  if (total <= 0) return <div className="h-6" aria-hidden="true" />
-  const lowest = counts.findIndex((c) => c > 0) + 1
-  const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
-  const p25 = ratingQuantile(counts, total, 0.25)
-  const median = ratingQuantile(counts, total, 0.5)
-  const p75 = ratingQuantile(counts, total, 0.75)
-  const below = avg != null && programAvg != null && avg < programAvg - 0.05
-  return (
-    <div className="relative h-6 w-full min-w-0" aria-hidden="true">
-      {/* 1–5 axis */}
-      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span
-          key={n}
-          className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border"
-          style={{ left: `${x(n)}%` }}
-        />
-      ))}
-      {/* whisker min→max with end caps (DS: foreground stroke) */}
-      <div
-        className="absolute top-1/2 h-px -translate-y-1/2"
-        style={{ left: `${x(lowest)}%`, width: `${Math.max(1, x(highest) - x(lowest))}%`, background: 'var(--muted-foreground)' }}
-      />
-      {[lowest, highest].map((v, i) => (
-        <span
-          key={i}
-          className="absolute top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${x(v)}%`, background: 'var(--muted-foreground)' }}
-        />
-      ))}
-      {/* IQR box — brand fill per the DS boxplot spec */}
-      <div
-        className="absolute top-1/2 h-3 -translate-y-1/2 rounded-[3px]"
-        style={{
-          left: `${x(p25)}%`,
-          width: `${Math.max(2, x(p75) - x(p25))}%`,
-          background: 'var(--brand-color)',
-          opacity: 0.42,
-        }}
-      />
-      {/* median line */}
-      <span
-        className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ left: `${x(median)}%`, background: 'var(--brand-color)' }}
-      />
-      {/* program reference tick */}
-      {programAvg != null && (
-        <span
-          className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ left: `${x(programAvg)}%`, background: 'var(--muted-foreground)' }}
-        />
-      )}
-      {/* average — amber when below program */}
-      {avg != null && (
-        <span
-          className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--card)]"
-          style={{ left: `${x(avg)}%`, background: below ? 'var(--chip-4)' : 'var(--foreground)' }}
-        />
-      )}
-    </div>
-  )
-}
-
+/* Question rows = one wide ScaleTrackPlot per row (see its block comment).
+   The former numbers + chips columns folded INTO the plot: at-mark value
+   labels, photo identity markers, program ▲, click-popovers for the detail.
+   The freed ~17rem funds the track width that makes middle-50% differences
+   clear (Δpx ≥ 8 at ~24rem). */
 function QuestionBreakdownTable({
   rows,
   surveyId,
@@ -1524,43 +1699,17 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
-      {/* One-line legend for the single-job range strip — same-family marks,
-          nothing else to identify (chips and numbers are literal). */}
-      <div className="flex items-center gap-4 pb-2 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-flex items-center" aria-hidden="true">
-            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
-            <span className="h-2.5 w-4 rounded-[3px]" style={{ background: 'var(--brand-color)', opacity: 0.42 }} />
-            <span className="h-px w-1.5" style={{ background: 'var(--muted-foreground)' }} />
-          </span>
-          Box = middle 50% · whiskers = full range
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
-          Median
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full" style={{ background: 'var(--foreground)' }} aria-hidden="true" />
-          Average
-          <span className="size-2 rounded-full ms-1" style={{ background: 'var(--chip-4)' }} aria-hidden="true" />
-          below program
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-0.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} aria-hidden="true" />
-          Program
-        </span>
-      </div>
-      <div className="grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-end gap-4 pb-2 border-b border-border">
+      {/* No legend (round 5: "a lot of legends which isn't required") —
+          values ride the marks and the popovers explain on click. */}
+      <div className="grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
-        <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums" aria-hidden="true">
+        <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
-            <span key={n}>{n}</span>
+            <span key={n} className="absolute -translate-x-1/2" style={{ left: `${scaleX(n)}%` }}>
+              {n}
+            </span>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground text-right">
-          {rows.some((r) => r.perFaculty?.length) ? 'Per instructor' : ''}
-        </span>
-        <span className="text-xs text-muted-foreground text-right">You vs program</span>
       </div>
       {groups.map((group) => {
         const meta = groupMeta[group]
@@ -1581,48 +1730,33 @@ function QuestionBreakdownTable({
               <div
                 key={r.id}
                 id={`question-${r.id}`}
-                role="img"
-                aria-label={`${r.label}: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
-                  (r.total ?? 0) > 0 && r.counts
-                    ? ` ranging ${(r.counts.findIndex((c) => c > 0) + 1)} to ${5 - [...r.counts].reverse().findIndex((c) => c > 0)}`
-                    : ''
-                }${
-                  (r.total ?? 0) > 0
-                    ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
-                    : ''
-                }${
-                  r.perFaculty && r.perFaculty.length > 0
-                    ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
-                    : ''
-                }`}
-                className="scroll-mt-16 grid grid-cols-[minmax(140px,1fr)_11rem_7.5rem_10rem] items-center gap-4 py-2.5 border-b border-border last:border-0"
+                className="scroll-mt-16 grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
               >
-                <p className="text-sm min-w-0">{r.label}</p>
-                <QuestionBoxplot
+                <p className="text-sm min-w-0">
+                  {r.label}
+                  {/* Screen-reader glance summary — the plot's popover buttons
+                      carry the drill-down; the data table carries everything. */}
+                  <span className="sr-only">
+                    {`: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                      (r.total ?? 0) > 0
+                        ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
+                        : ''
+                    }${
+                      r.perFaculty && r.perFaculty.length > 0
+                        ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
+                        : ''
+                    }`}
+                  </span>
+                </p>
+                <ScaleTrackPlot
                   counts={r.counts ?? [0, 0, 0, 0, 0]}
                   total={r.total ?? 0}
                   avg={r.avg}
                   programAvg={r.programAvg}
+                  people={r.perFaculty}
+                  detailTitle="Rating distribution"
+                  detailMeta={r.label}
                 />
-                {/* Per-instructor: real avatar + score, amber when below
-                    program. Self-describing; nothing to learn. */}
-                <div className="flex items-center justify-end gap-2.5 flex-wrap">
-                  {(r.perFaculty ?? []).map((f) => {
-                    const fBelow = r.programAvg != null && f.avg < r.programAvg - 0.05
-                    return (
-                      <span key={f.facultyId} className="inline-flex items-center gap-1">
-                        <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-xs font-medium" decorative />
-                        <span
-                          className="text-xs font-medium tabular-nums"
-                          style={{ color: fBelow ? 'var(--chip-4)' : 'var(--foreground)' }}
-                        >
-                          {f.avg.toFixed(1)}
-                        </span>
-                      </span>
-                    )
-                  })}
-                </div>
-                <CompareText avg={r.avg} programAvg={r.programAvg} />
               </div>
             ) : (
               <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} context={meta?.contextLine} />
@@ -1651,7 +1785,7 @@ function QuestionBreakdownTable({
               f.avg.toFixed(1),
               '—',
               '—',
-              ...f.counts,
+              ...(f.counts ?? [0, 0, 0, 0, 0]),
             ]),
           ])}
       />
@@ -1663,6 +1797,13 @@ function QuestionBreakdownTable({
    The in-flight page is a COLLECTION COCKPIT: the admin's question is "are we
    accumulating fast enough, and do I need to nudge?" — daily responses + the
    cumulative rate against the 70% target answer it (Sprig in-progress pattern). */
+
+/** ISO date → the pace chart's short day label (e.g. "Jul 10"). */
+function shortIsoDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
 const paceConfig: ChartConfig = {
   responses: { label: 'Responses that day', color: 'var(--chart-1)' },
@@ -1699,7 +1840,11 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
     <ChartCard
       variant="normal"
       title="Collection pace"
-      description={`${survey.responseCount} of ${survey.enrollmentCount} responded · target 70%${survey.deadline ? ` · closes ${survey.deadline}` : ''}`}
+      description={`${survey.responseCount} of ${survey.enrollmentCount} responded · target 70%${survey.deadline ? ` · closes ${survey.deadline}` : ''}${
+        survey.originalDeadline && survey.originalDeadline !== survey.deadline
+          ? ` (extended from ${survey.originalDeadline})`
+          : ''
+      }${survey.nextScheduledReminderAt ? ` · next reminder ${shortIsoDay(survey.nextScheduledReminderAt)}` : ''}`}
       leoInsight={paceLeo}
     >
       <ChartFigure
@@ -1743,6 +1888,20 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
                     label={{ value: 'Today', position: 'insideTop', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
                   />
                 )}
+                {/* Reminder sends — the series already flags them; the bump
+                    after each mark is the reminder working. */}
+                {series.points
+                  .filter((p) => p.reminder)
+                  .map((p) => (
+                    <ReferenceLine
+                      key={`reminder-${p.iso}`}
+                      yAxisId="pct"
+                      x={p.day}
+                      stroke="var(--border-control-35)"
+                      strokeDasharray="2 3"
+                      label={{ value: 'Reminder', position: 'insideTopRight', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
+                    />
+                  ))}
                 <ChartTooltip
                   key={chartTooltipKeyboardSyncProps(activeIndex).key}
                   {...chartTooltipKeyboardSyncProps(activeIndex).props}
@@ -1762,10 +1921,15 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
             </ChartContainer>
             <ChartDataTable
               caption="Collection pace by day"
-              headers={['Day', 'Responses', 'Cumulative rate']}
+              headers={['Day', 'Responses', 'Cumulative rate', 'Reminder']}
               rows={series.points
-                .filter((p) => p.responses != null && p.responses > 0)
-                .map((p) => [p.day, p.responses ?? 0, p.cumulativePct != null ? `${p.cumulativePct}%` : '—'])}
+                .filter((p) => (p.responses != null && p.responses > 0) || p.reminder)
+                .map((p) => [
+                  p.day,
+                  p.responses ?? 0,
+                  p.cumulativePct != null ? `${p.cumulativePct}%` : '—',
+                  p.reminder ? 'Sent' : '—',
+                ])}
             />
           </>
         )}
@@ -2080,7 +2244,7 @@ function ResultDetail({
       if (t) return 'Course Content'
       return fromFaculty ? 'Teaching Effectiveness' : 'Course Content'
     }
-    type ThemedQ = { theme: string; avg: number; distribution?: number[] }
+    type ThemedQ = { theme: string; avg: number; distribution?: number[]; id: string; text: string }
     const collect = (
       data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
       allowInstructor: (id: string) => boolean,
@@ -2089,11 +2253,13 @@ function ResultDetail({
       const qs: ThemedQ[] = []
       if (parts.course)
         for (const scores of Object.values(data.sectionScores))
-          for (const q of scores) qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution })
+          for (const q of scores)
+            qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
       if (parts.faculty)
         for (const b of data.instructorBlocks ?? []) {
           if (!allowInstructor(b.instructorId)) continue
-          for (const q of b.scores) qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution })
+          for (const q of b.scores)
+            qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
         }
       return qs
     }
@@ -2131,17 +2297,30 @@ function ResultDetail({
             id: inst.id,
             initials: inst.initials,
             name: inst.name,
+            avatarUrl: inst.avatarUrl,
             avg: mineTheme.reduce((a, x) => a + x.avg, 0) / mineTheme.length,
           }
         })
         .filter((x): x is NonNullable<typeof x> => x != null)
+      /* Contributing questions, deduped by id (faculty questions repeat per
+         instructor block) — averaged for the popover's jump-link list. */
+      const byId = new Map<string, { text: string; avgs: number[] }>()
+      for (const x of qs) {
+        const hit = byId.get(x.id)
+        if (hit) hit.avgs.push(x.avg)
+        else byId.set(x.id, { text: x.text, avgs: [x.avg] })
+      }
+      const questionRows = [...byId.entries()]
+        .map(([id, v]) => ({ id, text: v.text, avg: v.avgs.reduce((a, n) => a + n, 0) / v.avgs.length }))
+        .sort((a, b) => a.avg - b.avg)
       rows.push({
         theme,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
-        questions: qs.length,
+        questions: questionRows.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
         dist,
         instructors,
+        questionRows,
       })
     }
     return rows
@@ -2160,6 +2339,19 @@ function ResultDetail({
           .flatMap((b) => b.scores),
       ]
     : []
+  /* Overall rating mix — every rated answer pooled (scope-aware via
+     allQuestionScores). The hero average anchors the distribution rows
+     (Etsy review-summary anatomy; Romit round 7, option A). */
+  const overallMix = (() => {
+    const counts = [0, 0, 0, 0, 0]
+    for (const q of allQuestionScores)
+      (q.distribution ?? []).forEach((n, i) => {
+        if (i < 5) counts[i] += n
+      })
+    const total = counts.reduce((a, b) => a + b, 0)
+    const avg = total ? counts.reduce((a, n, i) => a + n * (i + 1), 0) / total : 0
+    return { counts, total, avg }
+  })()
   const lowestScore = allQuestionScores.length
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
@@ -2254,6 +2446,37 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* Navigator chrome — the rail collapses to a slim icon strip (Craft TOC
+     pattern) so the content column can reclaim the width on demand; question
+     links fold per evaluation-type group (Udemy course-content pattern)
+     instead of the old always-open nested scrollbox. */
+  const [railOpen, setRailOpen] = useState(true)
+  const [railGroupsOpen, setRailGroupsOpen] = useState<Record<string, boolean>>({})
+  /* Scroll-spy — highlight the section band under the sticky shell. Entries
+     only report crossings, so keep the last known section when none reports. */
+  const [activeAnchor, setActiveAnchor] = useState<string>(inCollection ? 'pace' : 'scores')
+  useEffect(() => {
+    const ids = ['pace', 'scores', 'themes', 'questions', 'comments', 'feedback-loop']
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => !!el)
+    if (els.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveAnchor(visible[0].target.id)
+      },
+      /* Top inset = sticky shell height; bottom bias keeps the highlight on
+         the section whose heading the reader just scrolled past. */
+      { rootMargin: '-64px 0px -55% 0px' },
+    )
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+    /* showFeedbackLoop is declared below this hook — its inputs (ownerInsights,
+       isPD, prior) stand in as deps so the observed set stays current. */
+  }, [inCollection, themes.length, qData, sections.length, allComments.length, ownerInsights, isPD, prior])
   /* ONE sentiment filter governs every comment section (PR #53 anatomy). */
   const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
   const qualCountFor = (f: SentimentFilter) =>
@@ -2322,14 +2545,18 @@ function ResultDetail({
           const score = scoreFor(section.subjectKey, q.id, group.faculty)
           if (!score) continue
           const counts = score.distribution ?? [0, 0, 0, 0, 0]
-          /* Multi-instructor + "All faculty": name each instructor's block so
-             the aggregate never hides whose teaching a rating describes.
-             ≤3 instructors render inline (Romit-approved brief); beyond that
-             the scope selector is the per-person path. */
+          /* Faculty rows carry their IDENTITIES as plot markers — the scored
+             instructor's photo sits at their score (Romit 2026-07-18: the name
+             is part of the mark, no printed number column). 1–3 identities
+             render; beyond that the scope selector is the per-person path.
+             Section-scored faculty rows (labs/TAs without instructor blocks)
+             have no nameable identity and keep the course dot. */
           let perFaculty: BreakdownRow['perFaculty']
-          if (group.faculty && facultyScope === 'all' && survey.instructors.length > 1 && survey.instructors.length <= 3) {
+          if (group.faculty && (facultyScope !== 'all' || survey.instructors.length <= 3)) {
             const split = (qData.instructorBlocks ?? []).flatMap((b) => {
-              const inst = survey.instructors.find((i) => i.id === b.instructorId)
+              const inst = survey.instructors.find(
+                (i) => i.id === b.instructorId && (facultyScope === 'all' || i.id === facultyScope),
+              )
               const hit = inst ? b.scores.find((x) => x.questionId === q.id) : undefined
               if (!inst || !hit) return []
               const c = hit.distribution ?? [0, 0, 0, 0, 0]
@@ -2337,12 +2564,13 @@ function ResultDetail({
                 facultyId: inst.id,
                 name: inst.name,
                 initials: inst.initials,
+                avatarUrl: inst.avatarUrl,
                 avg: hit.avg,
                 counts: c,
                 total: c.reduce((a, b) => a + b, 0),
               }]
             })
-            if (split.length > 1) perFaculty = split
+            if (split.length > 0) perFaculty = split
           }
           out.push({
             id: q.id,
@@ -2380,7 +2608,7 @@ function ResultDetail({
         (survey.instructors.length > 1
           ? `${survey.instructors.length} instructors${
               survey.instructors.length <= 3
-                ? ' — score chip per instructor'
+                ? ' — photo marker per instructor'
                 : isPD
                   ? ' — use the instructor selector above for per-person scores'
                   : ''
@@ -2445,7 +2673,11 @@ function ResultDetail({
             )}
           </span>
         }
-        subtitle={`${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}`}
+        subtitle={
+          /* Cohort + course type were in the data but never on the page —
+             Aarti's atomic evaluation unit is course × term × cohort. */
+          `${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}`
+        }
         actions={
           /* Hierarchy: ONE primary per state. Live → Send reminder is the
              highest-leverage act (below-target collection); Extend is the
@@ -2470,18 +2702,28 @@ function ResultDetail({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={copySurveyLink}>
+                      <i className="fa-light fa-link" aria-hidden="true" />
                       {linkCopied ? 'Link copied' : 'Copy survey link'}
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                      <Link href={`/surveys/${survey.id}/preview`}>
+                        <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                        Preview form
+                      </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             )}
-            {!inCollection && (
+            {!inCollection && (() => {
+              /* ONE visible action + ⋯ (Romit 2026-07-18: "tuck in some of
+                 the options inside more"): Enable faculty access when it
+                 applies, else Preview form; everything else in the menu.
+                 Non-PD viewers have no menu and keep Preview form visible. */
+              const showEnable = isPD && !scopedFaculty.releasedToFaculty
+              return (
               <>
-                {isPD && !scopedFaculty.releasedToFaculty && (
+                {showEnable ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -2494,20 +2736,10 @@ function ResultDetail({
                       ? 'Enable faculty access'
                       : `Enable access for ${scopedFaculty.facultyName}`}
                   </Button>
-                )}
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
-                </Button>
-                {/* PD-only: /analytics is an ungated admin surface with
-                    program-wide data — faculty must not land there (scope
-                    flag 2026-07-16; faculty longitudinal view is a separate
-                    surface pending integration). */}
-                {isPD && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
-                    View Longitudinal Insights
-                  </Link>
-                </Button>
+                ) : (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                  </Button>
                 )}
                 {isPD && (
                   <DropdownMenu>
@@ -2517,20 +2749,41 @@ function ResultDetail({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {showEnable && (
+                        <DropdownMenuItem asChild>
+                          <Link href={`/surveys/${survey.id}/preview`}>
+                            <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                            Preview form
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      {/* PD-only: /analytics is an ungated admin surface with
+                          program-wide data — faculty must not land there
+                          (scope flag 2026-07-16). */}
+                      <DropdownMenuItem asChild>
+                        <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                          <i className="fa-light fa-chart-line" aria-hidden="true" />
+                          View Longitudinal Insights
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={copySurveyLink}>
+                        <i className="fa-light fa-link" aria-hidden="true" />
                         {linkCopied ? 'Link copied' : 'Copy survey link'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setRemindOpen(true)}>
+                        <i className="fa-light fa-bell" aria-hidden="true" />
                         Send reminder
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setExtendOpen(true)}>
+                        <i className="fa-light fa-calendar-plus" aria-hidden="true" />
                         Extend close date
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
               </>
-            )}
+              )
+            })()}
           </div>
         }
       />
@@ -2545,6 +2798,7 @@ function ResultDetail({
               scope={facultyScope}
               setScope={setFacultyScope}
               isPD={isPD}
+              avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
             />
           </div>
 
@@ -2577,7 +2831,46 @@ function ResultDetail({
 
             {/* ── Overview — content column + side column (share card, rail) ── */}
             <TabsContent value="overview" className="m-0">
-              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_260px] gap-6 items-start">
+              {/* Sub-xl has no rail — a compact jump menu keeps the section
+                  anchors reachable. */}
+              <div className="xl:hidden mb-4 flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">On this page</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {inCollection && (
+                      <DropdownMenuItem onSelect={() => goTo('pace')}>Collection pace</DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onSelect={() => goTo('scores')}>
+                      {inCollection ? 'Early signal' : 'Scores'}
+                    </DropdownMenuItem>
+                    {themes.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('themes')}>Theme distribution</DropdownMenuItem>
+                    )}
+                    {qData && sections.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('questions', 'questions')}>
+                        Question breakdown
+                      </DropdownMenuItem>
+                    )}
+                    {allComments.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('comments', 'comments')}>
+                        Student comments
+                      </DropdownMenuItem>
+                    )}
+                    {showFeedbackLoop && (
+                      <DropdownMenuItem onSelect={() => goTo('feedback-loop')}>Feedback loop</DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div
+                className={`grid grid-cols-1 gap-6 items-start ${
+                  railOpen
+                    ? 'xl:grid-cols-[minmax(0,1fr)_260px]'
+                    : 'xl:grid-cols-[minmax(0,1fr)_2.25rem]'
+                }`}
+              >
               <div className="flex flex-col gap-4 min-w-0">
               {/* Live: collection health leads — this page is the cockpit
                   while responses accumulate; scores are early signal below. */}
@@ -2616,7 +2909,6 @@ function ResultDetail({
                     title="Course Content"
                     icon={EVALUATION_TYPE_ICON.course_material}
                     statusBadge={courseInst ? <SurveyStatusBadgeOS status={courseInst.status} /> : undefined}
-                    responseMeta={courseInst ? `${courseInst.responseCount} of ${courseInst.enrollmentCount}` : undefined}
                     value={courseAvg}
                     programAvg={programCourseAvg}
                     priors={(survey.priorOfferings ?? []).map((p) => ({
@@ -2628,10 +2920,21 @@ function ResultDetail({
                   )}
                   {result.evalScope !== 'course' && (
                   <ScoreCard
-                    title={scopedFacultyName ? `Faculty Performance — ${scopedFacultyName}` : 'Faculty Performance'}
+                    title="Faculty Performance"
+                    person={
+                      /* Scoped or sole instructor: the card IS the person —
+                         photo + name, no "Faculty Performance —" prose
+                         (Romit round 9); type stays as sr-only context. */
+                      (scopedInstructor ?? soleInstructor) != null
+                        ? {
+                            name: (scopedInstructor ?? soleInstructor)!.name,
+                            initials: (scopedInstructor ?? soleInstructor)!.initials,
+                            avatarUrl: (scopedInstructor ?? soleInstructor)!.avatarUrl,
+                          }
+                        : undefined
+                    }
                     icon={EVALUATION_TYPE_ICON.faculty_roles}
                     statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} /> : undefined}
-                    responseMeta={facultyInst ? `${facultyInst.responseCount} of ${facultyInst.enrollmentCount}` : undefined}
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
                     priors={(survey.priorOfferings ?? [])
@@ -2650,10 +2953,44 @@ function ResultDetail({
                     enrolled={result.enrolled}
                   />
                 </div>
+                {/* Overall rating mix — hero average anchoring the five
+                    distribution rows (Etsy/Indeed review-summary anatomy);
+                    the one at-a-glance element the market leads with. */}
+                {overallMix.total > 0 && (
+                  <Card>
+                    <CardContent className="p-0">
+                      <div className="flex min-w-0 flex-col gap-2 p-3 sm:px-5 sm:py-4">
+                        <p className="text-sm text-muted-foreground leading-snug">
+                          Overall rating mix
+                        </p>
+                        <div className="flex flex-wrap items-start gap-x-10 gap-y-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
+                                {overallMix.avg.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/ 5</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                              {overallMix.total} ratings · all rated questions
+                            </p>
+                          </div>
+                          <div className="min-w-56 max-w-xl flex-1">
+                            <RatingBreakdownRows counts={overallMix.counts} total={overallMix.total} />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div id="themes" className="scroll-mt-16">
-                <ThemeCompositionChart themes={themes} partial={inCollection} />
+                <ThemeBoxplotChart
+                  themes={themes}
+                  partial={inCollection}
+                  onQuestionJump={(id) => goTo(`question-${id}`, 'questions')}
+                />
               </div>
 
               {/* Question breakdown — collapsed by default (spec); controlled
@@ -2668,7 +3005,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · score vs program on a 1–5 scale
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · click any mark for details
                         </CardDescription>
                         <CardAction>
                           <i
@@ -2746,7 +3083,7 @@ function ResultDetail({
                           <CommentList
                             key={g.instructor.id}
                             title={`About ${g.instructor.name}`}
-                            person={{ name: g.instructor.name, initials: g.instructor.initials }}
+                            person={{ name: g.instructor.name, initials: g.instructor.initials, avatarUrl: g.instructor.avatarUrl }}
                             comments={g.comments}
                             hiddenIdx={hiddenIdx}
                             canModerate={isPD}
@@ -2771,9 +3108,19 @@ function ResultDetail({
                         />
 
                         {ownerInsights && recommendations.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-medium mb-1.5">Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}</h3>
-                            <ol className="flex flex-col gap-1.5 list-decimal ml-4">
+                          /* AI-lane identity (UX-audit I4): the Leo sparkle +
+                             quiet inset — same lane marking as chart insights,
+                             without the chart overlay machinery. */
+                          <div className="rounded-lg border border-border bg-muted/25 p-3 flex flex-col gap-1.5">
+                            <h3 className="text-sm font-medium flex items-center gap-1.5">
+                              <i
+                                className="fa-light fa-sparkles text-xs"
+                                aria-hidden="true"
+                                style={{ color: 'var(--brand-color)' }}
+                              />
+                              Top {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''}
+                            </h3>
+                            <ol className="flex flex-col gap-1.5 list-decimal ms-5">
                               {recommendations.map((r) => (
                                 <li key={r} className="text-sm text-muted-foreground">
                                   {r}
@@ -2821,50 +3168,152 @@ function ResultDetail({
               )}
               </div>
 
-              {/* ── Side column — "On this page" anchors (the live Share card's
-                    copy-link/preview actions moved to the header ⋯ menu). ── */}
-              <div className="hidden xl:flex flex-col gap-4 sticky top-16 self-start w-full">
-              <nav aria-label="On this page" className="flex flex-col gap-0.5 w-full">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">On this page</p>
-                {inCollection && <AnchorLink label="Collection pace" onGo={() => goTo('pace')} />}
-                <AnchorLink label={inCollection ? 'Early signal' : 'Scores'} onGo={() => goTo('scores')} />
-                {themes.length > 0 && (
-                  <AnchorLink label="Theme distribution" onGo={() => goTo('themes')} />
-                )}
-                {qData && sections.length > 0 && (
-                  <>
-                    <AnchorLink label="Question breakdown" onGo={() => goTo('questions', 'questions')} />
-                    <div className="flex flex-col gap-0.5 max-h-64 overflow-y-auto border-s border-border ms-2 ps-2 my-0.5">
-                      {questionIndexGroups.map((g) => (
-                        <Fragment key={g.key}>
-                          <AnchorLink
-                            label={
+              {/* ── Side column — collapsible "On this page" navigator. DS
+                    OutlineTree family (adoption verdict: IMPORT); scroll-spy
+                    active row; question links folded per evaluation-type
+                    group instead of the old always-open nested scrollbox.
+                    Collapsed, the strip hands its width back to the content
+                    column. ── */}
+              <div className="hidden xl:flex flex-col sticky top-16 self-start w-full min-w-0">
+                {railOpen ? (
+                  <nav aria-label="On this page" className="flex w-full min-w-0 flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-muted-foreground">On this page</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Collapse the page navigator"
+                            aria-expanded="true"
+                            onClick={() => setRailOpen(false)}
+                          >
+                            <i className="fa-light fa-table-columns" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Collapse</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <OutlineTreeMenu className="gap-0.5">
+                      {inCollection && (
+                        <OutlineTreeMenuItem>
+                          <RailLink label="Collection pace" active={activeAnchor === 'pace'} onGo={() => goTo('pace')} />
+                        </OutlineTreeMenuItem>
+                      )}
+                      <OutlineTreeMenuItem>
+                        <RailLink
+                          label={inCollection ? 'Early signal' : 'Scores'}
+                          active={activeAnchor === 'scores'}
+                          onGo={() => goTo('scores')}
+                        />
+                      </OutlineTreeMenuItem>
+                      {themes.length > 0 && (
+                        <OutlineTreeMenuItem>
+                          <RailLink label="Theme distribution" active={activeAnchor === 'themes'} onGo={() => goTo('themes')} />
+                        </OutlineTreeMenuItem>
+                      )}
+                      {qData && sections.length > 0 && (
+                        /* before:hidden kills the MenuItem's built-in branch
+                           guide — it spans the whole item (566px) and cuts
+                           through the group chevrons; the per-sub inset
+                           border is the only guide we want (Romit round 8). */
+                        <OutlineTreeMenuItem className="before:hidden">
+                          <RailLink
+                            label="Question breakdown"
+                            active={activeAnchor === 'questions'}
+                            onGo={() => goTo('questions', 'questions')}
+                          />
+                          {questionIndexGroups.map((g) => {
+                            const label =
                               g.key === 'Faculty' && scopedFacultyName
                                 ? `Faculty evaluation — ${scopedFacultyName}`
                                 : groupMeta[g.key]?.label ?? g.key
-                            }
-                            onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
+                            const open = !!railGroupsOpen[g.key]
+                            return (
+                              <Collapsible
+                                key={g.key}
+                                open={open}
+                                onOpenChange={(o) => setRailGroupsOpen((prev) => ({ ...prev, [g.key]: o }))}
+                                className="group/collapsible"
+                              >
+                                <div className="flex items-center">
+                                  <CollapsibleTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      className="size-6 shrink-0"
+                                      aria-label={`${open ? 'Hide' : 'Show'} ${label} question links`}
+                                    >
+                                      <i
+                                        className="fa-light fa-chevron-right text-xs transition-transform group-data-[state=open]/collapsible:rotate-90"
+                                        aria-hidden="true"
+                                      />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                  <RailLink
+                                    label={label}
+                                    count={g.items.length}
+                                    onGo={() => goTo(groupMeta[g.key]?.anchorId ?? 'questions', 'questions')}
+                                  />
+                                </div>
+                                {/* inset layout owns the guide + ps-6 indent —
+                                    chevronRail gave sub-rows zero indent and a
+                                    guide cutting through text (round-5 fix). */}
+                                <CollapsibleContent>
+                                  <OutlineTreeSub surface="panel" guideLayout="inset" className="gap-0.5 py-0 ms-3">
+                                    {g.items.map((q, i) => (
+                                      <OutlineTreeSubItem key={q.id}>
+                                        <RailLink
+                                          label={`${i + 1}. ${q.label}`}
+                                          title={q.label}
+                                          sub
+                                          onGo={() => goTo(`question-${q.id}`, 'questions')}
+                                        />
+                                      </OutlineTreeSubItem>
+                                    ))}
+                                  </OutlineTreeSub>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )
+                          })}
+                        </OutlineTreeMenuItem>
+                      )}
+                      {allComments.length > 0 && (
+                        <OutlineTreeMenuItem>
+                          <RailLink
+                            label="Student comments"
+                            active={activeAnchor === 'comments'}
+                            onGo={() => goTo('comments', 'comments')}
                           />
-                          {g.items.map((q, i) => (
-                            <AnchorLink
-                              key={q.id}
-                              label={`${i + 1}. ${q.label}`}
-                              small
-                              onGo={() => goTo(`question-${q.id}`, 'questions')}
-                            />
-                          ))}
-                        </Fragment>
-                      ))}
-                    </div>
-                  </>
+                        </OutlineTreeMenuItem>
+                      )}
+                      {showFeedbackLoop && (
+                        <OutlineTreeMenuItem>
+                          <RailLink
+                            label="Feedback loop"
+                            active={activeAnchor === 'feedback-loop'}
+                            onGo={() => goTo('feedback-loop')}
+                          />
+                        </OutlineTreeMenuItem>
+                      )}
+                    </OutlineTreeMenu>
+                  </nav>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Expand the page navigator"
+                        aria-expanded="false"
+                        onClick={() => setRailOpen(true)}
+                      >
+                        <i className="fa-light fa-table-columns" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">On this page</TooltipContent>
+                  </Tooltip>
                 )}
-                {allComments.length > 0 && (
-                  <AnchorLink label="Student comments" onGo={() => goTo('comments', 'comments')} />
-                )}
-                {showFeedbackLoop && (
-                  <AnchorLink label="Feedback loop" onGo={() => goTo('feedback-loop')} />
-                )}
-              </nav>
               </div>
               </div>
             </TabsContent>

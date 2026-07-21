@@ -37,116 +37,12 @@ import { deriveResults, programScoreBenchmarks, offeringKeyOf } from '@/lib/pce-
 import { deriveThemes, type ThemeComment } from '@/lib/pce-themes'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { RatingLegend, RatingStackedBar } from '@/components/pce/rating-viz'
+import { TrajectoryBoxplot, buildTrajectoryDatum } from '@/components/pce/trajectory-boxplot'
 
 const TERM_ORDER = [
   'Spring 2022', 'Fall 2022', 'Spring 2023', 'Fall 2023',
   'Spring 2024', 'Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026',
 ]
-
-interface TrajectoryDatum {
-  term: string
-  min: number
-  range: number
-  median: number
-  faculty: number | null
-}
-
-/* Hand-rolled standing-per-term plot on the shared 3–5 window: soft cohort
-   range columns + median notch + your value-labeled dot, dots joined by a
-   hairline. Position marks on a printed axis (RUBRIC v2), no library default. */
-function TrajectoryPlot({ data }: { data: TrajectoryDatum[] }) {
-  const pos = (v: number) => (Math.min(5, Math.max(3, v)) - 3) / 2
-  const n = data.length
-  const points = data
-    .map((d, i) => (d.faculty != null ? `${((i + 0.5) / n) * 100},${(1 - pos(d.faculty)) * 100}` : null))
-    .filter(Boolean)
-    .join(' ')
-  return (
-    <div
-      role="img"
-      aria-label={`Your rating per term inside the full faculty range. ${data
-        .filter((d) => d.faculty != null)
-        .map((d) => `${d.term}: you ${d.faculty!.toFixed(2)}, median ${d.median.toFixed(2)}`)
-        .join('; ')}.`}
-      className="w-full"
-    >
-      <div className="flex gap-3" aria-hidden="true">
-        {/* Printed axis — 3.0–5.0 window */}
-        <div className="relative h-60 w-7 shrink-0 text-xs text-muted-foreground tabular-nums">
-          {[5, 4.5, 4, 3.5, 3].map((v) => (
-            <span key={v} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - pos(v)) * 100}%` }}>
-              {v.toFixed(1)}
-            </span>
-          ))}
-        </div>
-        <div className="relative h-60 flex-1">
-          {[5, 4.5, 4, 3.5, 3].map((v) => (
-            <div
-              key={v}
-              className="absolute inset-x-0 border-t border-dashed border-border"
-              style={{ top: `${(1 - pos(v)) * 100}%` }}
-            />
-          ))}
-          {/* Hairline trajectory between your dots */}
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <polyline
-              points={points}
-              fill="none"
-              stroke="var(--chart-2)"
-              strokeWidth="1.5"
-              strokeOpacity="0.45"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-          <div className="absolute inset-0 flex">
-            {data.map((d) => (
-              <div key={d.term} className="relative flex-1">
-                {/* Cohort range column — slim teal tint (Romit-picked V2) */}
-                <div
-                  className="absolute left-1/2 w-2 -translate-x-1/2 rounded-sm"
-                  style={{
-                    bottom: `${pos(d.min) * 100}%`,
-                    height: `${(pos(d.min + d.range) - pos(d.min)) * 100}%`,
-                    background: 'var(--chart-2)',
-                    opacity: 0.15,
-                  }}
-                />
-                {/* Median notch */}
-                <div
-                  className="absolute left-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                  style={{ top: `${(1 - pos(d.median)) * 100}%`, background: 'var(--chart-3)' }}
-                />
-                {/* Your dot + value at the mark */}
-                {d.faculty != null && (
-                  <>
-                    <div
-                      className="absolute left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card"
-                      style={{ top: `${(1 - pos(d.faculty)) * 100}%`, background: 'var(--chart-2)' }}
-                    />
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium tabular-nums text-foreground"
-                      style={{ top: `calc(${(1 - pos(d.faculty)) * 100}% - 22px)` }}
-                    >
-                      {d.faculty.toFixed(2)}
-                    </span>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Term labels */}
-      <div className="ms-10 flex" aria-hidden="true">
-        {data.map((d) => (
-          <span key={d.term} className="flex-1 pt-2 text-center text-xs text-muted-foreground">
-            {d.term}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const LOOP_BADGE: Record<'resolved' | 'improved' | 'persistent', { label: string; tone: 'success' | 'info' | 'warning' }> = {
   resolved:   { label: 'Resolved',   tone: 'success' },
@@ -221,20 +117,12 @@ export default function MyDashboardPage() {
     const termsWithData = TERM_ORDER.filter((t) => MOCK_FACULTY_OFFERINGS.some((o) => o.term === t))
     return termsWithData.map((term) => {
       const scores = MOCK_FACULTY_OFFERINGS.filter((o) => o.term === term).map((o) => o.avgRating)
-      const min = Math.min(...scores)
-      const max = Math.max(...scores)
-      const sorted = [...scores].sort((a, b) => a - b)
-      const median = sorted.length % 2 === 0
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)]
       const own = offerings.find((o) => o.term === term)
-      return {
-        term: term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
-        min: +min.toFixed(2),
-        range: +(max - min).toFixed(2),
-        median: +median.toFixed(2),
-        faculty: own ? +own.avgRating.toFixed(2) : null,
-      }
+      return buildTrajectoryDatum(
+        term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
+        scores,
+        own ? own.avgRating : null,
+      )
     })
   }, [offerings])
 
@@ -344,10 +232,10 @@ export default function MyDashboardPage() {
     )
   }
 
-    const lastWithFaculty = [...trendData].reverse().find((d) => d.faculty != null) ?? null
+    const lastWithFaculty = [...trendData].reverse().find((d) => d.value != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
     ? (() => {
-        const diff = +(lastWithFaculty.faculty! - lastWithFaculty.median).toFixed(2)
+        const diff = +(lastWithFaculty.value! - lastWithFaculty.median).toFixed(2)
         return {
           headline:
             diff < 0
@@ -360,7 +248,7 @@ export default function MyDashboardPage() {
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
-            `${lastWithFaculty.term}: own ${lastWithFaculty.faculty!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
+            `${lastWithFaculty.term}: own ${lastWithFaculty.value!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
             `Band spans ${lastWithFaculty.min.toFixed(2)}–${(lastWithFaculty.min + lastWithFaculty.range).toFixed(2)} this term.`,
           ],
         }
@@ -408,7 +296,7 @@ export default function MyDashboardPage() {
           <ChartCard
             variant="normal"
             title="Rating over time"
-            description="Where you sat in the faculty range each term · column = full range · notch = median"
+            description="Faculty boxplot per term — box = middle 50%, line = median, whisker = full range · your dot (amber = below median) · click a term for details"
             leoInsight={bandLeo}
           >
             <ChartFigure
@@ -418,15 +306,17 @@ export default function MyDashboardPage() {
             >
               {() => (
                 <>
-                  <TrajectoryPlot data={trendData} />
+                  <TrajectoryBoxplot data={trendData} valueLabel="You" cohortNoun="faculty" />
                   <ChartDataTable
                     caption="Rating over time"
-                    headers={['Term', 'You', 'Median', 'Faculty range']}
+                    headers={['Term', 'You', 'Median', 'Middle 50%', 'Faculty range', 'Faculty evaluated']}
                     rows={trendData.map((d) => [
                       d.term,
-                      d.faculty != null ? d.faculty.toFixed(2) : '—',
+                      d.value != null ? d.value.toFixed(2) : '—',
                       d.median.toFixed(2),
+                      `${d.p25.toFixed(2)}–${d.p75.toFixed(2)}`,
                       `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
+                      d.scores.length,
                     ])}
                   />
                 </>

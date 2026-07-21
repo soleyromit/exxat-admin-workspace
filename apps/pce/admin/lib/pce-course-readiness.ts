@@ -11,6 +11,7 @@
 import {
   type CourseOffering,
   type DeliveryMode,
+  type PceTemplate,
   deliveryModeOf,
   MOCK_FACULTY,
   MOCK_MASTER_COURSES,
@@ -230,6 +231,65 @@ export function deriveReadiness(offerings: CourseOffering[], criteria: Criterion
     }
     return { offering: o, deliveryMode: mode, courseLabel: courseLabelOf(o), cells, hasGap }
   })
+}
+
+// ── Template → evaluatees ────────────────────────────────────────────────────
+// The merged Courses step (select courses → assign template → validate) derives
+// WHAT each course must have from the template assigned to it: a template that
+// evaluates the Instructor makes "no instructor in Prism" a gap on that row,
+// while a course-content-only template asks nothing of the faculty roster.
+
+/** Template role-set role ids (EVAL_FACULTY_ROLES) → readiness criteria. */
+const ROLE_ID_TO_CRITERION: Record<string, Criterion> = {
+  'instructor': 'instructor',
+  'course-coordinator': 'coordinator',
+  'teaching-assistant': 'teachingAssistant',
+  'lab-assistant': 'labAssistant',
+  'guest-lecturer': 'guestLecturer',
+}
+
+/** Dynamic-section subject keys → criteria (sections not riding a role set). */
+const SUBJECT_KEY_TO_CRITERION: Record<string, Criterion> = {
+  course_content: 'students',
+  course_instructor: 'instructor',
+  lab_instructor: 'instructor',
+  course_coordinator: 'coordinator',
+  teaching_assistant: 'teachingAssistant',
+  course_director: 'courseDirector',
+  preceptor: 'preceptor',
+  clinical_supervisor: 'siteCoordinator',
+}
+
+/**
+ * The evaluatee dimensions a template's sections cover — dynamic sections first
+ * (role sets declare faculty roles; subject keys map directly), falling back to
+ * the legacy fixed buckets for templates that predate templateSections.
+ * Ordered by ALL_CRITERIA so summaries read stably.
+ */
+export function templateCriteria(t: PceTemplate): Criterion[] {
+  const found = new Set<Criterion>()
+  const dyn = t.templateSections ?? []
+  if (dyn.length > 0) {
+    for (const s of dyn) {
+      if (s.roleSetId) {
+        const set = t.facultyRoleSets?.find(r => r.id === s.roleSetId)
+        for (const role of set?.roles ?? []) {
+          const c = ROLE_ID_TO_CRITERION[role]
+          if (c) found.add(c)
+        }
+      } else {
+        const c = SUBJECT_KEY_TO_CRITERION[s.subjectKey]
+        if (c) found.add(c)
+      }
+    }
+  } else {
+    for (const s of t.sections) {
+      if (s === 'course_content') found.add('students')
+      else if (s === 'faculty_performance') found.add('instructor')
+      else if (s === 'course_director') found.add('courseDirector')
+    }
+  }
+  return ALL_CRITERIA.filter(c => found.has(c))
 }
 
 /** Named-check summary: ok / gap counts per evaluated criterion (drives the summary band). */

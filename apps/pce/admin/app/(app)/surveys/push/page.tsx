@@ -13,7 +13,6 @@ import { StepCommunication, type Reminder, type EmailContact } from '@/component
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepCoursesEvaluatees } from '@/components/pce/courses-evaluatees/step-courses-evaluatees'
-import { StepSurveyDesignAssign } from '@/components/pce/distribute-wizard/step-survey-design-assign'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
@@ -27,7 +26,7 @@ import {
   type TermSeason,
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
-import { type Criterion, CRITERION_TOGGLE_LABEL } from '@/lib/pce-course-readiness'
+import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
 import { subjectDataIssues, windowIssues } from '@/lib/pce-push-validation'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
@@ -41,7 +40,10 @@ const INITIAL_EMAIL_CONTACTS: EmailContact[] = []
 const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
   .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
-type WizardStep = 1 | 2 | 3 | 4 | 'success'
+// Steps 1 and 2 merged (Jul 2026): course selection, per-row template
+// assignment, and template-driven validation are ONE step, so the internal
+// numbering skips 2 (WizardNav renders display numbers sequentially).
+type WizardStep = 1 | 3 | 4 | 'success'
 
 // Pre-assign a default template to every (non-archived) offering in a term, so
 // the merged "Scope and design" step shows assignments immediately. One template
@@ -167,9 +169,6 @@ function PushSurveyInner() {
     surveyMode === 'general' ? '' : initialTerm?.academicYear ?? ''
   )
   const [ceCohorts, setCeCohorts] = useState<string[]>([])
-  // Course + Instructor are pre-selected — the common evaluation targets — so
-  // courses/readiness load as soon as a term is chosen (Coordinator opt-in).
-  const [ceCriteria, setCeCriteria] = useState<Criterion[]>(['students', 'instructor'])
 
   // Step 4 — Communication — defaults pre-filled from Central Settings
   const settingsWindow = useMemo(() => windowFromSettings(initialTermId), [initialTermId])
@@ -247,19 +246,21 @@ function PushSurveyInner() {
     for (const o of selectedOfferings) for (const sid of MOCK_COURSE_ENROLLMENTS[o.id] ?? []) seen.add(sid)
     return seen.size
   }, [selectedOfferings])
-  // Default template per picked course (by type) — for the Survey Design step's
-  // "Default" chips + Reset to defaults.
+  // Default template per course (by type) — for the Template column's "Default"
+  // chips + Reset to defaults. CE covers every SCOPED course (not just selected):
+  // a deselected row keeps a sensible default in its Template cell.
+  const defaultAssignmentBase = surveyMode === 'general' ? selectedOfferings : ceScoped
   const defaultAssignments = useMemo(() => {
     const result: Record<string, string> = {}
     if (publishedTemplates.length === 0) return result
     const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
-    for (const o of selectedOfferings) {
+    for (const o of defaultAssignmentBase) {
       if (single) { result[o.id] = single.id; continue }
       const matched = o.courseType ? publishedTemplates.find(t => t.courseType === o.courseType) : undefined
       result[o.id] = (matched ?? publishedTemplates[0]).id
     }
     return result
-  }, [selectedOfferings, publishedTemplates])
+  }, [defaultAssignmentBase, publishedTemplates])
   function handleResetTemplateDefaults() {
     setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
   }
@@ -295,10 +296,19 @@ function PushSurveyInner() {
   )
 
   // CE Review identity line: cohort + evaluate summaries (CE mode only).
+  // What's evaluated is no longer picked directly — it's the union of what the
+  // selected courses' assigned templates evaluate.
   const cohortSummary = surveyMode !== 'general' ? ceCohorts.join(' · ') : undefined
-  const evaluateSummary = surveyMode !== 'general'
-    ? ceCriteria.map((c) => CRITERION_TOGGLE_LABEL[c]).join(', ')
-    : undefined
+  const evaluateSummary = useMemo(() => {
+    if (surveyMode === 'general') return undefined
+    const found = new Set<Criterion>()
+    for (const o of selectedOfferings) {
+      const tid = templateAssignments[o.id] ?? defaultAssignments[o.id]
+      const t = publishedTemplates.find(x => x.id === tid)
+      if (t) for (const c of templateCriteria(t)) found.add(c)
+    }
+    return ALL_CRITERIA.filter(c => found.has(c)).map(c => CRITERION_TOGGLE_LABEL[c]).join(', ')
+  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates])
 
   // Step 1 ("Scope and design") gating — scope fields + a template for every course.
   const scopeValid = surveyMode === 'general'
@@ -491,10 +501,10 @@ function PushSurveyInner() {
             <div className="flex flex-col gap-6 flex-1">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Courses &amp; evaluatees
+                  Courses &amp; survey design
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Choose the term and what to evaluate. Courses load live from Prism.
+                  Choose the term and assign a template to each course. Courses load live from Prism, and each row validates against what its template evaluates.
                 </p>
               </div>
 
@@ -502,15 +512,20 @@ function PushSurveyInner() {
                 season={ceSeason}
                 academicYear={ceAcademicYear}
                 cohorts={ceCohorts}
-                criteria={ceCriteria}
                 cohortOptions={ceCohortOpts}
                 scoped={ceScoped}
+                publishedTemplates={publishedTemplates}
+                templateAssignments={templateAssignments}
+                defaultAssignments={defaultAssignments}
+                onTemplateChange={(offeringId, tmplId) =>
+                  setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+                }
+                onResetDefaults={handleResetTemplateDefaults}
                 onSeasonChange={setCeSeason}
                 onAcademicYearChange={setCeAcademicYear}
                 onToggleCohort={(c) =>
                   setCeCohorts(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
                 }
-                onCriteriaChange={setCeCriteria}
                 onSelectionChange={setSelectedCourseIds}
                 onContinue={() => {
                   if (!surveyTitle.trim() && ceScopeTerm) setSurveyTitle(`${ceScopeTerm.name} Course Evaluations`)
@@ -519,26 +534,11 @@ function PushSurveyInner() {
                     for (const o of selectedOfferings) if (!next[o.id]) next[o.id] = defaultAssignments[o.id]
                     return next
                   })
-                  setStep(2)
+                  setStep(3)
                 }}
               />
             </div>
           ))}
-
-          {step === 2 && (
-            <StepSurveyDesignAssign
-              selectedOfferings={selectedOfferings}
-              publishedTemplates={publishedTemplates}
-              templateAssignments={templateAssignments}
-              defaultAssignments={defaultAssignments}
-              onTemplateChange={(offeringId, tmplId) =>
-                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-              }
-              onResetDefaults={handleResetTemplateDefaults}
-              onBack={() => setStep(1)}
-              onNext={() => setStep(3)}
-            />
-          )}
 
           {step === 3 && (
             <StepCommunication
@@ -570,7 +570,7 @@ function PushSurveyInner() {
               onRemindersChange={setReminders}
               onEmailContactsChange={setEmailContacts}
               title={surveyMode === 'general' ? 'Distribution' : 'Communication'}
-              onBack={() => setStep(surveyMode === 'general' ? 1 : 2)}
+              onBack={() => setStep(1)}
               onNext={() => setStep(4)}
             />
           )}
@@ -599,7 +599,7 @@ function PushSurveyInner() {
               reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
-              onEdit={(n) => setStep(n as WizardStep)}
+              onEdit={(n) => setStep((n === 2 ? 1 : n) as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}
               cohortSummary={cohortSummary}

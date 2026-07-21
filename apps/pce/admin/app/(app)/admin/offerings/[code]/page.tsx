@@ -9,16 +9,13 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
-import {
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
-} from 'recharts'
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
-  ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
+import { TrajectoryBoxplot, buildTrajectoryDatum } from '@/components/pce/trajectory-boxplot'
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByCoursePanel } from '@/components/pce/analytics-panels'
@@ -80,24 +77,16 @@ export default function CourseAnalyticsProfile() {
       }
       const courseAvgs = [...byCourse.values()].map(v => v.n > 0 ? v.sum / v.n : 0).filter(v => v > 0)
       if (courseAvgs.length === 0) return null
-      const min = Math.min(...courseAvgs)
-      const max = Math.max(...courseAvgs)
-      const sorted = [...courseAvgs].sort((a, b) => a - b)
-      const median = sorted.length % 2 === 0
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)]
       const thisTermOfferings = offerings.filter(o => o.term === term)
       const thisEnrolled = thisTermOfferings.reduce((s, o) => s + o.enrolled, 0)
       const thisAvg = thisEnrolled > 0
         ? thisTermOfferings.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / thisEnrolled
         : null
-      return {
-        term: term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
-        min: +min.toFixed(2),
-        range: +(max - min).toFixed(2),
-        median: +median.toFixed(2),
-        course: thisAvg !== null ? +thisAvg.toFixed(2) : null,
-      }
+      return buildTrajectoryDatum(
+        term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
+        courseAvgs,
+        thisAvg,
+      )
     }).filter(Boolean)
   }, [offerings])
 
@@ -138,10 +127,10 @@ export default function CourseAnalyticsProfile() {
     : null
 
   const trendRows = trendData.filter((d): d is NonNullable<typeof d> => d != null)
-  const lastWithCourse = [...trendRows].reverse().find(d => d.course != null) ?? null
+  const lastWithCourse = [...trendRows].reverse().find(d => d.value != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithCourse
     ? (() => {
-        const diff = +(lastWithCourse.course! - lastWithCourse.median).toFixed(2)
+        const diff = +(lastWithCourse.value! - lastWithCourse.median).toFixed(2)
         return {
           headline:
             diff < 0
@@ -154,9 +143,8 @@ export default function CourseAnalyticsProfile() {
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
-            `${lastWithCourse.term}: this course ${lastWithCourse.course!.toFixed(2)}/5 · median ${lastWithCourse.median.toFixed(2)}/5.`,
+            `${lastWithCourse.term}: this course ${lastWithCourse.value!.toFixed(2)}/5 · median ${lastWithCourse.median.toFixed(2)}/5.`,
           ],
-          anchor: { xValue: lastWithCourse.term, yDataKeys: ['course'] },
         }
       })()
     : null
@@ -193,38 +181,28 @@ export default function CourseAnalyticsProfile() {
       <ChartCard
         variant="normal"
         title="Rating over time"
-        description="Within full course distribution · ● this course · ─ ─ median"
+        description="Course boxplot per term — box = middle 50%, line = median, whisker = full range · this course\u2019s dot (amber = below median) · click a term for details"
         leoInsight={bandLeo}
       >
         <ChartFigure
           label="Rating over time"
-          summary="This course's rating per term plotted inside the full course distribution band, with the median as a dashed line."
+          summary="This course's rating per term shown as a dot inside the full course boxplot — box is the middle fifty percent, line the median, whisker the full range."
           dataLength={trendRows.length}
         >
-          {(activeIndex) => (
+          {() => (
             <>
-              <div className="relative w-full">
-                <ChartContainer config={trendChartConfig} className="h-52 w-full">
-                  <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                    <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-                    <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
-                    <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-                    <Line dataKey="course" stroke="var(--brand-color)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--brand-color)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false} />
-                  </ComposedChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay
-                  data={trendRows.map(({ term: t, course: c, median }) => ({ term: t, course: c, median }))}
-                  xDataKey="term"
-                />
-              </div>
+              <TrajectoryBoxplot data={trendRows} valueLabel="This course" cohortNoun="courses" />
               <ChartDataTable
                 caption="Rating over time"
-                headers={['Term', 'This course', 'Median']}
-                rows={trendRows.map(d => [d.term, d.course != null ? d.course.toFixed(2) : '—', d.median.toFixed(2)])}
+                headers={['Term', 'This course', 'Median', 'Middle 50%', 'Course range', 'Courses evaluated']}
+                rows={trendRows.map(d => [
+                  d.term,
+                  d.value != null ? d.value.toFixed(2) : '—',
+                  d.median.toFixed(2),
+                  `${d.p25.toFixed(2)}–${d.p75.toFixed(2)}`,
+                  `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
+                  d.scores.length,
+                ])}
               />
             </>
           )}

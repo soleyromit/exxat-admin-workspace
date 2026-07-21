@@ -20,6 +20,7 @@ import {
   type ProgramTerm,
   type CourseOffering,
   type PceSurvey,
+  type PceTemplate,
 } from '@/lib/pce-mock-data'
 
 export interface DemoAccount {
@@ -31,6 +32,9 @@ export interface DemoAccount {
   terms: ProgramTerm[]
   offerings: CourseOffering[]
   surveys: PceSurvey[]
+  /** Survey templates — omit for the full mock catalog; [] = none created yet
+   *  (drives the dashboard's "Create template" CTA). */
+  templates?: PceTemplate[]
 }
 
 /* ── reusable terms pulled from the full mock ─────────────────────────────── */
@@ -147,6 +151,16 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     terms: [SPRING26, FALL25, DATELESS_UPCOMING],
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: MOCK_SURVEYS,
+  },
+  {
+    id: 'acc-notemplates',
+    name: 'Prairie DPT',
+    blurb: 'Courses ready, but no survey templates created yet',
+    terms: [SPRING26, FALL26],
+    offerings: MOCK_COURSE_OFFERINGS,
+    // No surveys: without a template there is nothing to push.
+    surveys: [],
+    templates: [],
   },
 ]
 

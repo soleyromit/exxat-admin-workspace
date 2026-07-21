@@ -429,6 +429,10 @@ function TermWorkspaceInner() {
                   data={tableRows}
                   columns={columns}
                   getRowId={(row) => row.id}
+                  /* No bulk workflow on this table — checkboxes + the floating
+                     "N selected · Export · Delete" bar were noise, and Delete
+                     had no real path here (Romit 2026-07-19). */
+                  selectable={false}
                   defaultGroupBy="courseCode"
                   groupLabels={groupLabels}
                   groupOrder={groupOrder}

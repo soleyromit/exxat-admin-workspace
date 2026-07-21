@@ -8,12 +8,18 @@ interface WizardNavProps {
   onStepClick: (n: number) => void
   mode?: 'course_evaluation' | 'general'
   steps?: { n: number; label: string }[]
+  /** Landmark label. Override when TWO steppers coexist on one page (the
+   *  template builder embeds inside a wizard step) — duplicate nav labels
+   *  fail axe landmark-unique. */
+  ariaLabel?: string
 }
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
+  // Course selection + per-row template assignment + template-driven validation
+  // are ONE step (merged Jul 2026). The `n` values stay aligned to the internal
+  // wizard steps (1 → 3 → 4), same convention as the programmatic flow below.
   course_evaluation: [
-    { n: 1, label: 'Courses & Evaluatees' },
-    { n: 2, label: 'Survey Design' },
+    { n: 1, label: 'Courses & Survey Design' },
     { n: 3, label: 'Communication' },
     { n: 4, label: 'Review' },
   ],
@@ -26,12 +32,12 @@ const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   ],
 }
 
-export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps }: WizardNavProps) {
+export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps, ariaLabel = 'Wizard steps' }: WizardNavProps) {
   const STEPS = steps ?? DEFAULT_STEPS[mode]
 
   return (
     <nav
-      aria-label="Wizard steps"
+      aria-label={ariaLabel}
       className="shrink-0 border-b border-border flex items-center"
       style={{ height: 52, padding: '0 40px', background: 'var(--background)', gap: 0 }}
     >

@@ -200,10 +200,12 @@ function ViewTermLink({ termId, name }: { termId: string; name: string }) {
 /* ── current term (the hero card) ─────────────────────────────────────────── */
 
 function CurrentTermCard({
-  snap, atRisk, className,
+  snap, atRisk, noTemplates = false, className,
 }: {
   snap: TermSnapshot
   atRisk: PceSurvey[]
+  /** No survey templates exist yet — evaluations are blocked on creating one. */
+  noTemplates?: boolean
   className?: string
 }) {
   const { term } = snap
@@ -227,7 +229,27 @@ function CurrentTermCard({
         <TermMetaLine term={term} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {noCourses ? (
+        {noTemplates ? (
+          /* Templates are the prerequisite for everything else on this card —
+             without one there is nothing to push, so this CTA outranks the
+             no-courses block. Same action sub-card anatomy as its siblings. */
+          <div className="flex items-start gap-3 rounded-md border border-border p-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted" aria-hidden="true">
+              <i className="fa-light fa-file-lines text-muted-foreground" style={{ fontSize: 16 }} />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">No survey templates yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Create a template to define what evaluations ask — the first step before sending them.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild className="self-start">
+                <Link href="/templates/new">Create template</Link>
+              </Button>
+            </div>
+          </div>
+        ) : noCourses ? (
           <div className="flex items-start gap-3 rounded-md border border-border p-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted" aria-hidden="true">
               <i className="fa-light fa-layer-group text-muted-foreground" style={{ fontSize: 16 }} />
@@ -656,7 +678,7 @@ function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 function DashboardHomeInner() {
-  const { surveys, programTerms } = usePce()
+  const { surveys, programTerms, templates } = usePce()
 
   /* Terms come from STATE (not the static mock) so a term finished in the
    * setup wizard appears here as a card immediately. */
@@ -713,9 +735,12 @@ function DashboardHomeInner() {
 
   return (
     <div className="flex flex-col flex-1">
-      <SiteHeader title="Dashboard" />
+      {/* Scope in the title — two dashboards live in this shell (Course
+          Evaluation vs Programmatic Surveys); a bare "Dashboard" gave no
+          orientation (Romit 2026-07-19). Matches the command-menu label. */}
+      <SiteHeader title="Course Evaluation Dashboard" />
       <PageHeader
-        title="Dashboard"
+        title="Course Evaluation Dashboard"
         subtitle="Track response collection and act where students haven’t responded"
         actions={
           /* Before any term exists, "Set up Evaluations" is premature (there's
@@ -758,7 +783,7 @@ function DashboardHomeInner() {
                 fill from the left; the first rendered card lands in the hero
                 column. */}
             <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1.35fr_1fr_1fr]">
-              {curSnap && <CurrentTermCard snap={curSnap} atRisk={curAtRisk} />}
+              {curSnap && <CurrentTermCard snap={curSnap} atRisk={curAtRisk} noTemplates={templates.length === 0} />}
               {upcomingSnaps.length > 0 && (
                 <div className="flex flex-col gap-4">
                   {upcomingSnaps.map((s) => (

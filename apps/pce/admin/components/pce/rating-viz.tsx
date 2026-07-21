@@ -66,6 +66,46 @@ export function MiniRatingColumns({ counts, total }: { counts: number[]; total: 
   )
 }
 
+/* Per-rating horizontal breakdown rows — the POPOVER-scale distribution form
+   (Sprig/Medium definition-row pattern; Romit 2026-07-18). One row per rating,
+   5 first: swatch · rating · proportional track · "n · share%". The vertical
+   MiniRatingColumns reads as empty pills at popover width — use THIS inside
+   popovers; columns stay for wide inline surfaces. Text cells stay visible to
+   AT: they are the popover's only counts. */
+export function RatingBreakdownRows({ counts, total }: { counts: number[]; total: number }) {
+  if (total <= 0) {
+    return <p className="text-xs text-muted-foreground">No ratings yet</p>
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {[4, 3, 2, 1, 0].map((i) => {
+        const s = RATING_SERIES[i]
+        const n = counts[i] ?? 0
+        const share = n / total
+        return (
+          <div key={s.key} className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2">
+            <span
+              className="size-2.5 rounded-[2px]"
+              style={{ background: s.color, opacity: s.opacity }}
+              aria-hidden="true"
+            />
+            <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${share * 100}%`, background: s.color, opacity: s.opacity }}
+              />
+            </div>
+            <span className="text-right text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+              {n} · {Math.round(share * 100)}%
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /* Thick horizontal 100%-stacked rating bar (Romit): segments 1→5 left to
    right; counts + shares per rating on hover and in the caller's data table. */
 export function RatingStackedBar({ counts, total }: { counts: number[]; total: number }) {
@@ -84,6 +124,9 @@ export function RatingStackedBar({ counts, total }: { counts: number[]; total: n
               />
             )
           })}
+          {/* No responses yet — quiet muted fill instead of a transparent void
+              (state-review: an empty cell reads as a layout failure). */}
+          {total === 0 && <div className="h-full w-full rounded-md bg-muted" />}
         </div>
       </TooltipTrigger>
       <TooltipContent>
@@ -96,6 +139,7 @@ export function RatingStackedBar({ counts, total }: { counts: number[]; total: n
               </p>
             )
           }).reverse()}
+          <p className="text-muted-foreground">n = {total}</p>
         </div>
       </TooltipContent>
     </Tooltip>

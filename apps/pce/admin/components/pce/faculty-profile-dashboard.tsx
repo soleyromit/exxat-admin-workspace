@@ -8,19 +8,16 @@ import {
   chartTooltipKeyboardSyncProps,
 } from '@exxatdesignux/ui'
 import type { ChartConfig } from '@exxatdesignux/ui'
-import {
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
-} from 'recharts'
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
-  ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
 } from '@/components/charts-overview'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByFacultyPanel } from '@/components/pce/analytics-panels'
 import { MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
+import { TrajectoryBoxplot, buildTrajectoryDatum } from '@/components/pce/trajectory-boxplot'
 
 // Shared by the admin "By Faculty" profile (/admin/faculty/[id]) and the faculty
 // self-view (/my-dashboard). Same profile header + radar + distribution band +
@@ -45,11 +42,6 @@ function sectionScores(facultyId: string, avgRating: number) {
   }))
 }
 
-const trendChartConfig: ChartConfig = {
-  range:   { label: 'Faculty range', color: 'var(--border)' },
-  median:  { label: 'Median',        color: 'var(--muted-foreground)' },
-  faculty: { label: 'This faculty',  color: 'var(--brand-color)' },
-}
 const radarChartConfig: ChartConfig = {
   score: { label: 'Score', color: 'var(--brand-color)' },
 }
@@ -76,20 +68,12 @@ export function FacultyProfileDashboard({
     const termsWithData = TERM_ORDER.filter(t => MOCK_FACULTY_OFFERINGS.some(o => o.term === t))
     return termsWithData.map(term => {
       const scores = MOCK_FACULTY_OFFERINGS.filter(o => o.term === term).map(o => o.avgRating)
-      const min = Math.min(...scores)
-      const max = Math.max(...scores)
-      const sorted = [...scores].sort((a, b) => a - b)
-      const median = sorted.length % 2 === 0
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)]
       const facultyThisTerm = offerings.find(o => o.term === term)
-      return {
-        term: term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
-        min: +min.toFixed(2),
-        range: +(max - min).toFixed(2),
-        median: +median.toFixed(2),
-        faculty: facultyThisTerm ? +facultyThisTerm.avgRating.toFixed(2) : null,
-      }
+      return buildTrajectoryDatum(
+        term.replace('Spring ', 'Sp ').replace('Fall ', 'F '),
+        scores,
+        facultyThisTerm ? facultyThisTerm.avgRating : null,
+      )
     })
   }, [offerings])
 
@@ -126,10 +110,10 @@ export function FacultyProfileDashboard({
       }
     : null
 
-  const lastWithFaculty = [...trendData].reverse().find(d => d.faculty != null) ?? null
+  const lastWithFaculty = [...trendData].reverse().find(d => d.value != null) ?? null
   const bandLeo: ChartLeoInsight | null = lastWithFaculty
     ? (() => {
-        const diff = +(lastWithFaculty.faculty! - lastWithFaculty.median).toFixed(2)
+        const diff = +(lastWithFaculty.value! - lastWithFaculty.median).toFixed(2)
         return {
           headline:
             diff < 0
@@ -142,10 +126,9 @@ export function FacultyProfileDashboard({
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
-            `${lastWithFaculty.term}: own ${lastWithFaculty.faculty!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
+            `${lastWithFaculty.term}: own ${lastWithFaculty.value!.toFixed(2)}/5 · median ${lastWithFaculty.median.toFixed(2)}/5.`,
             `Band spans ${lastWithFaculty.min.toFixed(2)}–${(lastWithFaculty.min + lastWithFaculty.range).toFixed(2)} this term.`,
           ],
-          anchor: { xValue: lastWithFaculty.term, yDataKeys: ['faculty'] },
         }
       })()
     : null
@@ -182,38 +165,28 @@ export function FacultyProfileDashboard({
       <ChartCard
         variant="normal"
         title="Rating over time"
-        description="Within full faculty distribution · ● this faculty · ─ ─ median"
+        description="Faculty boxplot per term — box = middle 50%, line = median, whisker = full range · this faculty\u2019s dot (amber = below median) · click a term for details"
         leoInsight={bandLeo}
       >
         <ChartFigure
           label="Rating over time"
-          summary="This faculty member's rating per term plotted inside the full faculty distribution band, with the median as a dashed line."
+          summary="This faculty member's rating per term shown as a dot inside the full faculty boxplot — box is the middle fifty percent, line the median, whisker the full range."
           dataLength={trendData.length}
         >
-          {(activeIndex) => (
+          {() => (
             <>
-              <div className="relative w-full">
-                <ChartContainer config={trendChartConfig} className="h-52 w-full text-xs">
-                  <ComposedChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="term" tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis domain={[2.5, 5]} ticks={[3.0, 3.5, 4.0, 4.5, 5.0]} tick={CHART_AXIS_TICK} axisLine={false} tickLine={false} />
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent />} />
-                    <Area dataKey="min" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-                    <Area dataKey="range" stackId="band" stroke="none" fill="var(--muted)" fillOpacity={0.5} isAnimationActive={false} />
-                    <Line dataKey="median" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-                    <Line dataKey="faculty" stroke="var(--brand-color)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--brand-color)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls isAnimationActive={false} />
-                  </ComposedChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay
-                  data={trendData.map(({ term: t, faculty, median }) => ({ term: t, faculty, median }))}
-                  xDataKey="term"
-                />
-              </div>
+              <TrajectoryBoxplot data={trendData} valueLabel="This faculty" cohortNoun="faculty" />
               <ChartDataTable
                 caption="Rating over time"
-                headers={['Term', 'This faculty', 'Median']}
-                rows={trendData.map(d => [d.term, d.faculty != null ? d.faculty.toFixed(2) : '—', d.median.toFixed(2)])}
+                headers={['Term', 'This faculty', 'Median', 'Middle 50%', 'Faculty range', 'Faculty evaluated']}
+                rows={trendData.map(d => [
+                  d.term,
+                  d.value != null ? d.value.toFixed(2) : '—',
+                  d.median.toFixed(2),
+                  `${d.p25.toFixed(2)}–${d.p75.toFixed(2)}`,
+                  `${d.min.toFixed(2)}–${(d.min + d.range).toFixed(2)}`,
+                  d.scores.length,
+                ])}
               />
             </>
           )}

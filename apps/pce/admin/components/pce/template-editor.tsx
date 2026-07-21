@@ -1197,6 +1197,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           currentStep={currentStepNum}
           completedUpTo={maxStepReached}
           onStepClick={goToStepNum}
+          ariaLabel="Template builder steps"
           steps={WIZARD_STEPS.map(s => ({ n: s.n, label: s.label }))}
         />
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">

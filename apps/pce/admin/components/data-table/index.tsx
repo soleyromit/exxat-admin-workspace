@@ -627,6 +627,13 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   /** Optional leading icon per group key, rendered before the group label (PCE extension). */
   groupIcons?: Record<string, React.ReactNode>
   /**
+   * Optional per-group header band styling (PCE extension) — background +
+   * color applied to the group divider row's cells; label, icon and record
+   * count inherit the color. Use AA-safe tinted pairs (e.g. the
+   * --icon-disc-* bg tokens with their --chip-* inks).
+   */
+  groupHeaderStyles?: Record<string, React.CSSProperties>
+  /**
    * When false, table toolbar and grid omit `mx-4 lg:mx-6` / `px-4 lg:px-6` insets.
    * Use on embedded surfaces where the page shell or content rail already pads
    * horizontally (e.g. wizard steps). Mirrors the DS DataTable API (v0.6.55).
@@ -664,6 +671,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   showColumnHeaders = true,
   state,
   groupIcons,
+  groupHeaderStyles,
   edgeInset = true,
   stickyHeader = true,
 }: DataTableInnerProps<TData>) {
@@ -1029,8 +1037,12 @@ function DataTableInner<TData extends Record<string, unknown>>({
             ).map(({ groupKey, groupLabel, rows: groupRows }) => (
               <React.Fragment key={groupKey ?? "__all__"}>
                 {groupLabel && (() => {
-                  const groupCellBase =
-                    "py-1.5 text-xs font-semibold text-muted-foreground bg-dt-group-bg select-none border-b border-border"
+                  const groupStyle = groupKey != null ? groupHeaderStyles?.[groupKey] : undefined
+                  const groupCellBase = cn(
+                    "py-1.5 text-xs font-semibold select-none border-b border-border",
+                    // A tinted band supplies its own bg + ink; default stays muted.
+                    groupStyle ? undefined : "text-muted-foreground bg-dt-group-bg",
+                  )
                   const hasSelectCell = selectable && displayCols[0]?.key === "select"
                   /* Group select-all (PCE extension) — toggles every row in the section. */
                   const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
@@ -1056,8 +1068,13 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       {groupLabel}
                       {/* WCAG 2.1 AA fix 2026-05-11: opacity-60 on muted-foreground
                          drops to 2.57:1 contrast (visual-review caught). Using
-                         text-muted-foreground at full opacity hits 4.6:1+. */}
-                      <span className="ml-2 text-[12px] font-normal normal-case tracking-normal text-muted-foreground">
+                         text-muted-foreground at full opacity hits 4.6:1+.
+                         On a tinted band the count inherits the band ink instead
+                         (same rule: full opacity, no alpha tricks). */}
+                      <span className={cn(
+                        "ml-2 text-[12px] font-normal normal-case tracking-normal",
+                        groupStyle ? undefined : "text-muted-foreground",
+                      )}>
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
                     </>
@@ -1070,7 +1087,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
                              body select cells) so the checkbox shares their exact
                              x — a colSpan label cell can never line up because
                              fixed-layout stretching redistributes column widths. */}
-                          <td className={cn(groupCellBase, "px-3 sticky left-0 z-10")}>
+                          <td className={cn(groupCellBase, "px-3 sticky left-0 z-10")} style={groupStyle}>
                             <div
                               className="flex items-center justify-center"
                               onClick={(e) => e.stopPropagation()}
@@ -1078,12 +1095,12 @@ function DataTableInner<TData extends Record<string, unknown>>({
                               {groupCheckbox}
                             </div>
                           </td>
-                          <td colSpan={displayCols.length - 1} className={cn(groupCellBase, "px-3")}>
+                          <td colSpan={displayCols.length - 1} className={cn(groupCellBase, "px-3")} style={groupStyle}>
                             {labelContent}
                           </td>
                         </>
                       ) : (
-                        <td colSpan={displayCols.length} className={cn(groupCellBase, "px-3 sticky left-0")}>
+                        <td colSpan={displayCols.length} className={cn(groupCellBase, "px-3 sticky left-0")} style={groupStyle}>
                           {selectable && (
                             <span className="mr-2 inline-flex align-middle" onClick={(e) => e.stopPropagation()}>
                               {groupCheckbox}
