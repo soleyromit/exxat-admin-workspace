@@ -86,6 +86,15 @@ interface TokenSelectProps {
  *  Cohort, What-to-evaluate — so the row reads as a set, not a ragged line. */
 const SCOPE_FIELD_WIDTH = 224
 
+/** Type-column pill tints — chart-hue wash + matching --chip ink (the DS
+ *  icon-disc pairing). srgb mix (the oklch form is banned in product code);
+ *  chart-4 amber is excluded — it belongs to the warning vocabulary. */
+const TYPE_PILL_TINT: Record<DeliveryMode, { bg: string; fg: string }> = {
+  classroom: { bg: 'color-mix(in srgb, var(--chart-1) 12%, transparent)', fg: 'var(--chip-1)' },
+  lab:       { bg: 'var(--icon-disc-chart-2-bg)',                          fg: 'var(--chip-2)' },
+  practice:  { bg: 'color-mix(in srgb, var(--chart-5) 12%, transparent)', fg: 'var(--chip-5)' },
+}
+
 /** Px estimate of one chip: badge chrome (padding, border, gap, ×-button ≈32)
  *  + ~6.5px per character at text-xs, capped at the chip's 150px maxWidth. */
 const estChipWidth = (label: string) => Math.min(32 + label.length * 6.5, 150)
@@ -448,23 +457,29 @@ export function StepCoursesEvaluatees({
         const unassigned = !r.templateId
         return (
           <div onClick={e => e.stopPropagation()}>
-            {/* Two-hue system (Romit, Jul 21): INFO-blue = a choice to make
-                in-app (assign a template), amber = data missing (fix lives in
-                Prism). The blue rides the placeholder TEXT on stock chrome —
-                a colored border ×N rows read as a wall. Assigned rows are calm
-                grey; a hand-changed row keeps the secondary tint ("not factory
-                state"). Color never carries state alone — the placeholder text
-                and accessible name say it (WCAG 1.4.1). */}
+            {/* A2 (Romit, Jul 21): the empty state is an ADD-AFFORDANCE, not a
+                blank form field — a soft info-tinted pill ("＋ Assign
+                template", no border, no chevron) that becomes the normal calm
+                select once filled. Info-blue = a choice made in-app; amber is
+                reserved for missing data. A hand-changed row keeps the
+                secondary tint ("not factory state"). Color never carries
+                state alone — the label and accessible name say it (1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
                 aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
-                className={`w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
-                style={{ height: 32, fontSize: 13 }}
+                className={unassigned ? 'w-fit min-w-0' : `w-full min-w-0 ${edited ? 'bg-secondary' : ''}`}
+                style={{
+                  height: 32, fontSize: 13,
+                  ...(unassigned ? {
+                    border: 'none', boxShadow: 'none', paddingInline: 12,
+                    background: 'var(--insight-severity-info-bg)',
+                  } : {}),
+                }}
               >
                 <SelectValue
                   placeholder={
                     <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
-                      <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                       Assign template
                     </span>
                   }
@@ -603,16 +618,22 @@ export function StepCoursesEvaluatees({
             { value: 'Practice based', label: 'Practice based' },
           ],
         },
-        // Plain muted text, not a pill: the bordered pill was the loudest
-        // chrome in the row while carrying pure context — attention belongs to
-        // the Template and Action columns only. Short display label
-        // ("Classroom", not "Classroom based"); sorting/filtering still ride
-        // the full typeLabel value.
-        cell: r => (
-          <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
-            {r.typeLabel.replace(/ based$/, '')}
-          </span>
-        ),
+        // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
+        // the matching --chip ink (the DS icon-disc pairing, AA-safe). Amber
+        // (chart-4) is deliberately NOT in the map: it stays the warning hue.
+        // Short display label ("Classroom", not "Classroom based");
+        // sorting/filtering still ride the full typeLabel value.
+        cell: r => {
+          const tint = TYPE_PILL_TINT[r.deliveryMode]
+          return (
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              style={{ background: tint.bg, color: tint.fg }}
+            >
+              {r.typeLabel.replace(/ based$/, '')}
+            </span>
+          )
+        },
       },
       {
         // What's needed to complete setup — one consolidated column, pinned right.
@@ -635,28 +656,17 @@ export function StepCoursesEvaluatees({
           if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
-          // Fact first, remedy second: the amber line NAMES the missing data
-          // (the admin's second focus), the neutral button under it is the
-          // fix. Amber never touches the button — alarm and remedy separate.
-          const fact = (text: string) => (
-            <span className="flex items-center gap-1.5 text-xs font-medium min-w-0 max-w-full" style={{ color: 'var(--insight-severity-warning-fg)' }}>
-              <i className="fa-solid fa-triangle-exclamation shrink-0" aria-hidden="true" />
-              <TruncatedText>{text}</TruncatedText>
-            </span>
-          )
+          // Buttons only (Romit, Jul 21) — no "Missing:" fact lines: the
+          // button label names the missing data kind, the exact roles live in
+          // the tooltip, and the amber group band already marks the row as
+          // needing setup. The button chrome stays neutral DS.
           return (
-            <div className="flex flex-col items-start gap-1 py-1">
+            <div className="flex flex-col items-start gap-1 py-0.5">
               {studentGap && (
-                <>
-                  {fact('No students enrolled')}
-                  <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
-                </>
+                <AddInPrismButton href={studentCell!.prismHref ?? '#'} label="Add students" />
               )}
               {facultyMissing.length > 0 && (
-                <>
-                  {fact(`Missing: ${facultyMissing.join(', ')}`)}
-                  <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
-                </>
+                <AddInPrismButton href={r.facultyHref} label="Add faculty" roles={facultyMissing} />
               )}
             </div>
           )
@@ -875,20 +885,18 @@ export function StepCoursesEvaluatees({
           edgeInset={false}
           stickyHeader={false}
           groupIcons={{
-            gap: (
-              <i
-                className="fa-solid fa-triangle-exclamation text-xs"
-                aria-hidden="true"
-                style={{ color: 'var(--insight-severity-warning-fg)' }}
-              />
-            ),
-            ready: (
-              <i
-                className="fa-solid fa-circle-check text-xs"
-                aria-hidden="true"
-                style={{ color: 'var(--chart-2)' }}
-              />
-            ),
+            /* Icons inherit the band ink set by groupHeaderStyles below. */
+            gap: <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />,
+            ready: <i className="fa-solid fa-circle-check text-xs" aria-hidden="true" />,
+          }}
+          /* E1 (Romit, Jul 21): tinted group-header bands — the amber band
+             says "this section needs you", the green band says "done", and
+             the data rows stay clean. AA-safe DS pairing: icon-disc wash bg
+             + the matching --chip ink (warning-fg on warning-bg fails at
+             4.23:1; chip inks are darker and clear 4.5 comfortably). */
+          groupHeaderStyles={{
+            gap: { background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' },
+            ready: { background: 'var(--icon-disc-chart-2-bg)', color: 'var(--chip-2)' },
           }}
         />
         <div className="border-x border-b border-border rounded-b-lg overflow-hidden">
