@@ -2,10 +2,11 @@
 
 import { TemplateEditor } from '@/components/pce/template-editor'
 
-// Design-compare route (Jul 21, variant 3 of 3) — master-detail builder: the
-// whole template structure stays visible in a tree while one aspect overview
-// or section is edited in the center. Compare against /templates/[id] and its
-// /canvas + /document siblings.
-export default function TemplateFocusComparePage() {
-  return <TemplateEditor variant="focus" />
+// Design-compare route (variant 3 of 3, iteration 2) — "preview": build on
+// the left, live student-facing preview on the right rendering real scales,
+// choices, and inputs as the student will see them. Compare against
+// /templates/[id] and its /canvas + /document siblings. (Route path kept
+// stable across iterations.)
+export default function TemplatePreviewComparePage() {
+  return <TemplateEditor variant="preview" />
 }

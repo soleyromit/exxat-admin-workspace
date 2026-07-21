@@ -48,11 +48,6 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  OutlineTreeMenu,
-  OutlineTreeMenuItem,
-  OutlineTreeSub,
-  OutlineTreeSubItem,
-  OutlineTreeLeafButton,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { WizardNav } from '@/components/pce/wizard-nav'
@@ -61,7 +56,6 @@ import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
 import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY, COURSE_TYPE_FULL_LABEL, type DeliveryMode } from '@/lib/pce-mock-data'
 import { TemplateImportDialog } from '@/components/pce/template-import-dialog'
-import { TemplateBuilderOutlineRail, type BuilderOutlineItem } from '@/components/pce/template-builder-outline-rail'
 
 // Faculty roles offered in the builder = the program roles configured in Central
 // Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
@@ -419,12 +413,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   embedded?: boolean
   /** Called after Publish (embedded hosts return to their own view). */
   onPublished?: (id: string) => void
-  /** Builder-step layout (design-compare variants):
+  /** Builder-step layout (design-compare variants, iteration 2):
    *  'rail' — default; switches between aspects.
-   *  'canvas' — all aspects on one scroll + scrollspy outline rail.
+   *  'worksheet' — dense numbered question rows, the template as one flat sheet.
    *  'document' — one centered column, sticky aspect chips, no side rail.
-   *  'focus' — master-detail; structure tree left, one aspect/section edited center. */
-  variant?: 'rail' | 'canvas' | 'document' | 'focus'
+   *  'preview' — build left, live student-facing preview right. */
+  variant?: 'rail' | 'worksheet' | 'document' | 'preview'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -453,8 +447,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     { key: 'general',        label: 'General' },
   ]
   const [activeGroup, setActiveGroup] = useState('course_content')
-  // Canvas variant — collapsed aspect groups (all expanded by default).
-  const [collapsedAspects, setCollapsedAspects] = useState<Set<string>>(new Set())
   // Document variant — scrollspy for the sticky aspect chip bar.
   const [docAspect, setDocAspect] = useState('course_content')
   useEffect(() => {
@@ -477,10 +469,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     els.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [variant])
-  // Focus variant — master-detail selection: an aspect overview or one section.
-  const [focusSel, setFocusSel] = useState<
-    { kind: 'aspect'; key: string } | { kind: 'section'; id: string }
-  >({ kind: 'aspect', key: 'course_content' })
   // Template details live in the persistent right settings panel (Airtable/Typeform
   // pattern) — no tabs, no dialog. Publish just publishes.
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
@@ -1048,185 +1036,303 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
-  // ── Focus variant — structure tree + one aspect/section edited at a time ────
-  function focusSectionRow(sec: PceTemplateSection) {
-    return (
-      <Button
-        key={sec.id}
-        variant="outline"
-        className="w-full justify-between h-auto px-4 py-3"
-        onClick={() => setFocusSel({ kind: 'section', id: sec.id })}
-      >
-        <span className="text-sm font-medium truncate">{sec.title}</span>
-        <span className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums shrink-0">
-          {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
-          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
-        </span>
-      </Button>
-    )
-  }
+  // ── Worksheet variant — dense numbered rows, the template as one flat sheet ─
+  // Upload demotes to a "Generate from document" action in the band header (no
+  // dashed boxes); questions are single-line rows with inline type labels.
+  const generateFromDocButton = (subjectKey: string, roleSetId?: string) => (
+    <Button
+      variant="outline"
+      size="xs"
+      className="shrink-0"
+      onClick={() => { uploadTargetRef.current = { subjectKey, roleSetId }; uploadInputRef.current?.click() }}
+    >
+      Generate from document
+    </Button>
+  )
 
-  function renderFocusTree() {
-    const isAspectSel = (key: string) => focusSel.kind === 'aspect' && focusSel.key === key
-    const isSectionSel = (id: string) => focusSel.kind === 'section' && focusSel.id === id
-    const secRows = (secs: PceTemplateSection[]) => secs.map(s => (
-      <OutlineTreeSubItem key={s.id}>
-        <OutlineTreeLeafButton surface="panel" isActive={isSectionSel(s.id)} subGuideAlign
-          onClick={() => setFocusSel({ kind: 'section', id: s.id })} title={s.title} className="w-full min-w-0">
-          <span className="min-w-0 flex-1 truncate text-start">{s.title}</span>
-          <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{s.questions.length}</span>
-        </OutlineTreeLeafButton>
-      </OutlineTreeSubItem>
-    ))
+  function renderWorksheetQuestionRow(sec: PceTemplateSection, q: TemplateQuestion, qIndex: number, num: number) {
+    const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
     return (
-      <nav
-        aria-label="Template structure"
-        className="hidden md:flex shrink-0 w-64 flex-col overflow-y-auto overflow-x-hidden p-3 sticky self-start"
-        style={{ top: 56, maxHeight: 'calc(100vh - 64px)' }}
-      >
-        <OutlineTreeMenu className="gap-0.5">
-          {subjectGroups.map(g => {
-            const c = aspectCounts(g.key)
-            return (
-              <OutlineTreeMenuItem key={g.key} className="before:hidden">
-                <OutlineTreeLeafButton surface="panel" isActive={isAspectSel(g.key)}
-                  onClick={() => setFocusSel({ kind: 'aspect', key: g.key })} title={g.label} className="w-full min-w-0 font-medium">
-                  <span className="min-w-0 flex-1 truncate text-start">{g.label}</span>
-                  <span className="ms-auto shrink-0 text-xs tabular-nums text-muted-foreground">{c.questions}</span>
-                </OutlineTreeLeafButton>
-                <OutlineTreeSub surface="panel" guideLayout="inset" className="gap-0.5 py-0 ms-3">
-                  {g.key === 'faculty'
-                    ? facultyRoleSets.flatMap(set => {
-                        const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
-                        return [
-                          <OutlineTreeSubItem key={`rs-${set.id}`}>
-                            <span className="block px-2 pt-1.5 pb-0.5 text-xs font-medium text-muted-foreground truncate">
-                              {set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'No roles selected'}
-                            </span>
-                          </OutlineTreeSubItem>,
-                          ...secRows(setSecs),
-                        ]
-                      })
-                    : secRows(sections.filter(s => s.subjectKey === g.key))}
-                </OutlineTreeSub>
-              </OutlineTreeMenuItem>
-            )
-          })}
-        </OutlineTreeMenu>
-      </nav>
-    )
-  }
-
-  function renderFocusCenter() {
-    // Deleted-section selections fall back to the section's aspect (or Course).
-    let sel = focusSel
-    if (sel.kind === 'section' && !sections.some(s => s.id === (sel as { id: string }).id)) {
-      sel = { kind: 'aspect', key: 'course_content' }
-    }
-    if (sel.kind === 'section') {
-      const sec = sections.find(s => s.id === sel.id)!
-      const aspect = subjectGroups.find(g => g.key === sec.subjectKey)
-      const set = sec.roleSetId ? facultyRoleSets.find(rs => rs.id === sec.roleSetId) : undefined
-      return (
-        <div className="flex flex-col gap-4">
-          <p className="text-xs text-muted-foreground">
-            {aspect?.label}
-            {set ? ` · Evaluating ${set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : '(no roles selected)'}` : ''}
-          </p>
-          {renderSectionCard(sec)}
-        </div>
-      )
-    }
-    const key = sel.key
-    const label = subjectGroups.find(g => g.key === key)?.label
-    const c = aspectCounts(key)
-    const addAndFocusSection = (subjectKey: string, roleSetId?: string) => {
-      const id = handleAddSection(subjectKey, roleSetId)
-      if (id) setFocusSel({ kind: 'section', id })
-    }
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <h2 className="text-base font-semibold">{label}</h2>
-            <p className="text-xs text-muted-foreground">{ASPECT_INFO[key]}</p>
-          </div>
-          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 6 }}>
-            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
-          </span>
-        </div>
-        {renderAspectInstruction(key)}
-        {key !== 'faculty' && uploadDocAffordance(key)}
-        {key === 'faculty' ? (
-          <>
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-              Pick one or more roles per set, then build its sections — one role for role-specific
-              questions, multiple roles for shared questions.
-            </p>
-            {facultyRoleSets.map(set => {
-              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
-              return (
-                <div key={set.id} className="rounded-lg border border-border overflow-hidden"
-                  style={{ background: 'var(--background)' }}>
-                  {renderRoleSetHeader(set)}
-                  <div className="flex flex-col gap-2" style={{ padding: 12 }}>
-                    {uploadDocAffordance('faculty', set.id)}
-                    {setSecs.length === 0 ? (
-                      <div className="flex items-center justify-center rounded-lg border border-dashed"
-                        style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
-                        <Button variant="link" size="sm" onClick={() => addAndFocusSection('faculty', set.id)} className="font-semibold">
-                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        {setSecs.map(sec => focusSectionRow(sec))}
-                        <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
-                          <Button variant="link" size="sm" onClick={() => addAndFocusSection('faculty', set.id)} className="font-semibold">
-                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-              <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
-              </Button>
-            </div>
-          </>
-        ) : (() => {
-          const groupSections = sections.filter(s => s.subjectKey === key)
-          if (groupSections.length === 0) {
-            return (
-              <div className="flex items-center justify-center rounded-lg border border-dashed"
-                style={{ padding: '28px 16px', borderColor: 'var(--border)' }}>
-                <Button variant="link" size="sm" onClick={() => addAndFocusSection(key)} className="font-semibold">
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                </Button>
-              </div>
-            )
+      <div
+        key={q.id}
+        tabIndex={0}
+        draggable
+        onDragStart={() => handleQDragStart(sec.id, qIndex)}
+        onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
+        onDragEnd={handleQDragEnd}
+        onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
+        onKeyDown={e => {
+          if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+            e.preventDefault()
+            setSelectedQuestion({ sectionId: sec.id, questionId: q.id })
           }
-          return (
-            <>
-              {groupSections.map(sec => focusSectionRow(sec))}
-              <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-                <Button variant="link" size="sm" onClick={() => addAndFocusSection(key)} className="font-semibold">
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                </Button>
-              </div>
-            </>
-          )
-        })()}
+        }}
+        className="group flex items-center gap-3 cursor-pointer rounded-sm border-b border-border/60 last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        style={{ padding: '6px 8px', background: isSelected ? 'var(--muted)' : 'transparent' }}
+      >
+        <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0 text-end" style={{ width: 26 }}>{num}</span>
+        <span className="text-sm flex-1 min-w-0 truncate">
+          {q.text || <span style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
+        </span>
+        <span
+          className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0"
+          onClick={e => e.stopPropagation()}
+        >
+          <Button variant="ghost" size="icon-xs" aria-label="Move up" disabled={qIndex === 0}
+            onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}>
+            <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Move down" disabled={qIndex === sec.questions.length - 1}
+            onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}>
+            <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Duplicate question"
+            onClick={() => handleDuplicateQuestion(sec.id, q)}>
+            <i className="fa-light fa-copy text-xs" aria-hidden="true" />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Delete question"
+            onClick={() => handleDeleteQuestion(sec.id, q.id)}>
+            <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
+          </Button>
+        </span>
+        <span className="text-xs text-muted-foreground shrink-0 text-end" style={{ width: 104 }}>{qTypeLabel(q.answerType)}</span>
       </div>
     )
   }
 
-  // ── Canvas variant — per-aspect builder body ────────────────────────────────
+  function renderWorksheetSection(sec: PceTemplateSection, startNum: number) {
+    const isOpen = !closedSectionIds.has(sec.id)
+    return (
+      <div key={sec.id}>
+        <div className="flex items-center gap-1.5" style={{ padding: '8px 0 2px' }}>
+          <Button variant="ghost" size="icon-xs" aria-label={isOpen ? `Collapse ${sec.title}` : `Expand ${sec.title}`}
+            onClick={() => toggleSection(sec.id)}>
+            <i className={`fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-xs`} aria-hidden="true" />
+          </Button>
+          {editingSectionId === sec.id ? (
+            <Input
+              autoFocus
+              aria-label="Section title"
+              value={editingSectionTitle}
+              onChange={e => setEditingSectionTitle(e.target.value)}
+              onBlur={() => {
+                updateTemplateSection(t.id, sec.id, { title: editingSectionTitle.trim() || 'Untitled Section' })
+                setEditingSectionId(null)
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                if (e.key === 'Escape') setEditingSectionId(null)
+              }}
+              className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-ring focus-visible:ring-offset-0 rounded-none shadow-none px-0"
+            />
+          ) : (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={`Rename section ${sec.title}`}
+              className="text-sm font-semibold truncate cursor-text rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => { setEditingSectionTitle(sec.title); setEditingSectionId(sec.id) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setEditingSectionTitle(sec.title)
+                  setEditingSectionId(sec.id)
+                }
+              }}
+            >
+              {sec.title}
+            </span>
+          )}
+          <span className="text-xs tabular-nums text-muted-foreground">{sec.questions.length}q</span>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-xs" aria-label="Section actions">
+                <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
+                  removeTemplateSection(t.id, sec.id)
+                  if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
+                }}
+              >
+                <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        {isOpen && (
+          <div className="flex flex-col">
+            {sec.questions.map((q, i) => renderWorksheetQuestionRow(sec, q, i, startNum + i))}
+            <div style={{ paddingTop: 2 }}>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="xs" className="text-muted-foreground" style={{ marginLeft: 26 }}>
+                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add question
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" sideOffset={4}>
+                  {Q_TYPE_GROUPS.map((grp, gi) => (
+                    <div key={grp.label}>
+                      {gi > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">{grp.label}</DropdownMenuLabel>
+                      {grp.options.map(o => (
+                        <DropdownMenuItem key={o.value} onClick={() => handleAddQuestion(sec.id, o.value)}>
+                          <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                          {o.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Preview variant — live student-facing rendering of the template ─────────
+  function renderPreviewQuestion(q: TemplateQuestion, num: number) {
+    const isSel = selectedQuestion?.questionId === q.id
+    if (q.answerType === 'title') {
+      return <h4 key={q.id} className="text-sm font-semibold" style={{ paddingTop: 4 }}>{q.text || 'Untitled title'}</h4>
+    }
+    const choiceIcon = q.answerType === 'multiple_choice' ? 'fa-square' : 'fa-circle'
+    return (
+      <div key={q.id} className="flex flex-col gap-2 rounded-md"
+        style={{ padding: '8px 10px', outline: isSel ? '2px solid var(--ring)' : 'none', outlineOffset: 2 }}>
+        <span className="text-sm font-medium">
+          {num}. {q.text || <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
+        </span>
+        {q.answerType === 'likert' && (
+          <div className="flex flex-col gap-1" aria-hidden="true">
+            <div className="flex items-center gap-1.5">
+              {EVAL_DEFAULT_SCALE.labels.map((_, i) => (
+                <div key={i} className="flex-1 h-8 rounded-md border border-border flex items-center justify-center text-sm tabular-nums"
+                  style={{ background: 'var(--background)' }}>
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{EVAL_DEFAULT_SCALE.labels[0]}</span>
+              <span>{EVAL_DEFAULT_SCALE.labels[EVAL_DEFAULT_SCALE.labels.length - 1]}</span>
+            </div>
+          </div>
+        )}
+        {q.answerType === 'free_text' && (
+          <div className="rounded-md border border-border text-sm"
+            style={{ minHeight: 60, padding: '8px 10px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+            Type your answer…
+          </div>
+        )}
+        {CHOICE_TYPES.has(q.answerType) && q.answerType !== 'select_dropdown' && (
+          <div className="flex flex-col gap-1.5" aria-hidden="true">
+            {(q.choices?.length ? q.choices : ['Option 1', 'Option 2']).map((c, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <i className={`fa-light ${choiceIcon} text-xs text-muted-foreground`} aria-hidden="true" />{c}
+              </div>
+            ))}
+          </div>
+        )}
+        {q.answerType === 'select_dropdown' && (
+          <div className="flex items-center justify-between rounded-md border border-border text-sm"
+            style={{ height: 34, padding: '0 10px', background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Select an option<i className="fa-light fa-caret-down" aria-hidden="true" />
+          </div>
+        )}
+        {q.answerType === 'number' && (
+          <div className="rounded-md border border-border text-sm flex items-center"
+            style={{ height: 34, padding: '0 10px', maxWidth: 180, background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Enter a number
+          </div>
+        )}
+        {q.answerType === 'date_picker' && (
+          <div className="rounded-md border border-border text-sm flex items-center justify-between"
+            style={{ height: 34, padding: '0 10px', maxWidth: 220, background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Select a date<i className="fa-light fa-calendar" aria-hidden="true" />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function renderStudentPreview() {
+    const aspectBlocks = subjectGroups
+      .map(g => {
+        const groupSections = g.key === 'faculty'
+          ? facultyRoleSets.flatMap(set => sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id))
+          : sections.filter(s => s.subjectKey === g.key)
+        return { g, groupSections }
+      })
+      .filter(b => b.groupSections.length > 0 || aspectInstructions[b.g.key]?.title || aspectInstructions[b.g.key]?.text)
+    return (
+      <aside
+        aria-label="Student preview"
+        className="hidden lg:flex flex-col shrink-0 sticky self-start rounded-xl border border-border overflow-hidden"
+        style={{ top: 56, width: '44%', maxWidth: 560, height: 'calc(100vh - 136px)', background: 'var(--muted)' }}
+      >
+        <div className="flex items-center justify-between shrink-0" style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+          <span className="text-xs font-medium text-muted-foreground">
+            <i className="fa-light fa-eye me-1.5" aria-hidden="true" />Student preview
+          </span>
+          <span className="text-xs text-muted-foreground">Updates live as you build</span>
+        </div>
+        {/* Focusable scroll region — the preview content is decorative, so the
+            region itself must take keyboard focus to stay scrollable (axe
+            scrollable-region-focusable). */}
+        <div
+          className="flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          style={{ padding: 14 }}
+          tabIndex={0}
+          role="region"
+          aria-label="Student preview content"
+        >
+          <div className="rounded-lg border border-border flex flex-col gap-6" style={{ background: 'var(--background)', padding: '22px 22px 30px' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 400, lineHeight: 1.25 }}>
+              {t.name || 'Untitled template'}
+            </h3>
+            {aspectBlocks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Add sections and questions on the left to see what students will see here.
+              </p>
+            ) : (
+              aspectBlocks.map(({ g, groupSections }) => {
+                let n = 0
+                const instr = aspectInstructions[g.key]
+                return (
+                  <div key={g.key} className="flex flex-col gap-3">
+                    {(instr?.title || instr?.text) && (
+                      <div className="flex flex-col gap-0.5">
+                        {instr?.title && <h4 className="text-sm font-semibold">{instr.title}</h4>}
+                        {instr?.text && <p className="text-sm text-muted-foreground">{instr.text}</p>}
+                      </div>
+                    )}
+                    {groupSections.map(sec => (
+                      <div key={sec.id} className="flex flex-col gap-2">
+                        <h4 className="text-sm font-semibold" style={{ paddingTop: 4 }}>{sec.title}</h4>
+                        {sec.questions.map(q => {
+                          if (q.answerType === 'title') return renderPreviewQuestion(q, 0)
+                          n += 1
+                          return renderPreviewQuestion(q, n)
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      </aside>
+    )
+  }
+
+  // ── Canvas-style per-aspect builder body (document + preview variants) ──────
   // Copy of the rail variant's inline aspect content parameterized by aspect key
   // (kept verbatim apart from anchors so the two layouts compare honestly —
   // delete the losing variant's copy once a direction is picked).
@@ -1668,83 +1774,83 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                 )}
               </div>
             </div>
-          ) : variant === 'canvas' ? (
-            /* Canvas variant — every aspect stacked on one scroll; the rail's
-               job changes from view-switcher to outline (DS OutlineTree,
-               mirrors results/[id] "On this page"). */
-            <div className="flex flex-row flex-1 min-h-0">
-              <TemplateBuilderOutlineRail
-                groups={subjectGroups.map(g => {
+          ) : variant === 'worksheet' ? (
+            /* Worksheet variant — the template as one dense numbered sheet
+               (Adaline / Workable row-list pattern): sticky aspect band headers,
+               single-line question rows with inline type labels, upload demoted
+               to a band-header action. */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto" style={{ maxWidth: 860, padding: '4px 32px 48px' }}>
+                {subjectGroups.map(g => {
                   const c = aspectCounts(g.key)
-                  const items: BuilderOutlineItem[] =
-                    g.key === 'faculty'
-                      ? facultyRoleSets.flatMap(set => {
-                          const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
-                          return [
-                            {
-                              anchorId: `roleset-${set.id}`,
-                              label: set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'No roles selected',
-                            },
-                            ...setSecs.map(s => ({
-                              anchorId: `sec-${s.id}`, label: s.title, count: s.questions.length, nested: true,
-                            })),
-                          ]
-                        })
-                      : sections
-                          .filter(s => s.subjectKey === g.key)
-                          .map(s => ({ anchorId: `sec-${s.id}`, label: s.title, count: s.questions.length }))
-                  return { anchorId: `aspect-${g.key}`, label: g.label, count: c.questions, items }
-                })}
-              />
-
-              {/* One continuous canvas — Course → Faculty → General (window scroll) */}
-              <div className="flex-1 min-w-0" style={{ padding: '28px 40px 48px' }}>
-                <div style={{ maxWidth: 720 }} className="flex flex-col">
-                  {subjectGroups.map((g, gi) => {
-                    const c = aspectCounts(g.key)
-                    const collapsed = collapsedAspects.has(g.key)
-                    return (
-                      <section
-                        key={g.key}
-                        aria-labelledby={`aspect-${g.key}-heading`}
-                        style={{
-                          borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
-                          padding: gi > 0 ? '20px 0 28px' : '0 0 28px',
-                        }}
+                  const groupSections = g.key === 'faculty'
+                    ? facultyRoleSets.flatMap(set => sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id))
+                    : sections.filter(s => s.subjectKey === g.key)
+                  const startFor = (sec: PceTemplateSection) =>
+                    groupSections.slice(0, groupSections.indexOf(sec)).reduce((n, s) => n + s.questions.length, 1)
+                  return (
+                    <section key={g.key} aria-labelledby={`ws-aspect-${g.key}-h`} style={{ paddingBottom: 26 }}>
+                      {/* Sticky band header — aspect identity + its actions in one line */}
+                      <div
+                        className="sticky flex items-center gap-3"
+                        style={{ top: 48, zIndex: 10, background: 'var(--background)', padding: '10px 0 8px', borderBottom: '1px solid var(--border)' }}
                       >
-                        {/* Aspect header — anchor target for the outline rail */}
-                        <div id={`aspect-${g.key}`} className="flex items-start gap-2" style={{ scrollMarginTop: 12 }}>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={collapsed ? `Expand ${g.label}` : `Collapse ${g.label}`}
-                            aria-expanded={!collapsed}
-                            onClick={() => setCollapsedAspects(prev => {
-                              const n = new Set(prev)
-                              if (n.has(g.key)) n.delete(g.key); else n.add(g.key)
-                              return n
-                            })}
-                            className="shrink-0 mt-0.5"
-                          >
-                            <i className={`fa-solid fa-chevron-${collapsed ? 'right' : 'down'} text-xs`} aria-hidden="true" />
+                        <h2 id={`ws-aspect-${g.key}-h`} className="text-sm font-semibold shrink-0">{g.label}</h2>
+                        <span className="text-xs text-muted-foreground truncate min-w-0 hidden xl:block">{ASPECT_INFO[g.key]}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums ms-auto shrink-0">
+                          {c.sections}s · {c.questions}q
+                        </span>
+                        {g.key !== 'faculty' && generateFromDocButton(g.key)}
+                        {g.key === 'faculty' ? (
+                          <Button variant="ghost" size="xs" className="shrink-0" onClick={handleAddRoleSet}>
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
                           </Button>
-                          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                            <h2 id={`aspect-${g.key}-heading`} className="text-base font-semibold">{g.label}</h2>
-                            <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 6 }}>
-                            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        {!collapsed && (
-                          <div className="flex flex-col gap-4" style={{ paddingTop: 14, paddingLeft: 36 }}>
-                            {renderAspectBody(g.key)}
-                          </div>
+                        ) : (
+                          <Button variant="ghost" size="xs" className="shrink-0" onClick={() => handleAddSection(g.key)}>
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                          </Button>
                         )}
-                      </section>
-                    )
-                  })}
-                </div>
+                      </div>
+                      <div className="flex flex-col gap-1" style={{ paddingTop: 10 }}>
+                        {renderAspectInstruction(g.key)}
+                        {g.key === 'faculty' ? (
+                          facultyRoleSets.length === 0 ? (
+                            <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
+                              No role sets yet — add one to start building faculty questions.
+                            </p>
+                          ) : (
+                            facultyRoleSets.map(set => {
+                              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                              return (
+                                <div key={set.id} style={{ borderLeft: '2px solid var(--border)', paddingLeft: 12, marginTop: 8 }}>
+                                  {renderRoleSetHeader(set)}
+                                  <div className="flex items-center" style={{ paddingTop: 6 }}>
+                                    {generateFromDocButton('faculty', set.id)}
+                                  </div>
+                                  {setSecs.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground" style={{ padding: '8px 0' }}>No sections yet.</p>
+                                  ) : (
+                                    setSecs.map(sec => renderWorksheetSection(sec, startFor(sec)))
+                                  )}
+                                  <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                    onClick={() => handleAddSection('faculty', set.id)}>
+                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                                  </Button>
+                                </div>
+                              )
+                            })
+                          )
+                        ) : groupSections.length === 0 ? (
+                          <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
+                            No sections yet — add one or generate from a document.
+                          </p>
+                        ) : (
+                          groupSections.map(sec => renderWorksheetSection(sec, startFor(sec)))
+                        )}
+                      </div>
+                    </section>
+                  )
+                })}
               </div>
             </div>
           ) : variant === 'document' ? (
@@ -1815,15 +1921,37 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                 })}
               </div>
             </div>
-          ) : variant === 'focus' ? (
-            /* Focus variant — master-detail: the whole template structure stays
-               visible in a tree (Whop / Teachable curriculum pattern); the center
-               edits one aspect overview or one section at a time. */
-            <div className="flex flex-row flex-1 min-h-0">
-              {renderFocusTree()}
-              <div className="flex-1 min-w-0" style={{ padding: '28px 40px 48px' }}>
-                <div style={{ maxWidth: 720 }}>{renderFocusCenter()}</div>
+          ) : variant === 'preview' ? (
+            /* Preview variant — build left, live student-facing preview right
+               (Maze / Zoom Surveys pattern): the preview renders real scales,
+               choices, and inputs and updates as the template is edited. */
+            <div className="flex flex-row gap-6 flex-1 min-h-0" style={{ padding: '20px 32px 48px' }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col" style={{ maxWidth: 620 }}>
+                  {subjectGroups.map((g, gi) => {
+                    const c = aspectCounts(g.key)
+                    return (
+                      <section
+                        key={g.key}
+                        aria-labelledby={`pv-aspect-${g.key}-h`}
+                        style={{ borderTop: gi > 0 ? '1px solid var(--border)' : 'none', padding: gi > 0 ? '20px 0 24px' : '0 0 24px' }}
+                      >
+                        <div className="flex items-start justify-between gap-3" style={{ paddingBottom: 12 }}>
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <h2 id={`pv-aspect-${g.key}-h`} className="text-base font-semibold">{g.label}</h2>
+                            <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 4 }}>
+                            {c.sections}s · {c.questions}q
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-4">{renderAspectBody(g.key)}</div>
+                      </section>
+                    )
+                  })}
+                </div>
               </div>
+              {renderStudentPreview()}
             </div>
           ) : (
             /* Course evaluation — vertical aspect rail with info + counts (Jun 30 meeting) */
