@@ -1039,7 +1039,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+              <i className="fa-light fa-sparkles" aria-hidden="true" /> Generate from document
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
               <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
             </DropdownMenuItem>
@@ -1876,23 +1881,33 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                               Opening instruction
                             </Button>
                           )}
-                          {g.key !== 'faculty' && (
-                            <Button variant="outline" size="xs"
-                              onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
-                              <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-                              Generate from document
-                            </Button>
-                          )}
                           {g.key === 'faculty' ? (
                             <Button variant="outline" size="xs" onClick={handleAddRoleSet}>
                               <i className="fa-light fa-user-group text-xs" aria-hidden="true" />
                               Add role set
                             </Button>
                           ) : (
-                            <Button variant="outline" size="xs" onClick={() => handleAddSection(g.key)}>
-                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                              Add section
-                            </Button>
+                            <>
+                              <Button variant="outline" size="xs" onClick={() => handleAddSection(g.key)}>
+                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                Add section
+                              </Button>
+                              {/* Secondary actions live behind the ellipsis to keep
+                                  the header to one calm row */}
+                              <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${g.label}`}>
+                                    <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuItem
+                                    onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
+                                    <i className="fa-light fa-sparkles" aria-hidden="true" /> Generate from document
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
                           )}
                         </span>
                       </div>
@@ -1917,19 +1932,16 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                               return (
                                 <div key={set.id} className="flex flex-col gap-3">
                                   {renderRoleSetHeader(set)}
-                                  <div className="flex items-center gap-1.5">
-                                    <Button variant="outline" size="xs"
-                                      onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
-                                      <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-                                      Generate from document
-                                    </Button>
-                                    <Button variant="outline" size="xs"
+                                  {setSecs.map(sec => renderSectionCard(sec))}
+                                  {/* Trailing add keeps the set header to one row —
+                                      Generate from document lives in the set's ⋯ menu */}
+                                  <div className="flex items-center justify-center">
+                                    <Button variant="link" size="sm" className="font-semibold"
                                       onClick={() => handleAddSection('faculty', set.id)}>
                                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                                       Add section
                                     </Button>
                                   </div>
-                                  {setSecs.map(sec => renderSectionCard(sec))}
                                 </div>
                               )
                             })
