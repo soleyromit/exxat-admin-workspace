@@ -473,12 +473,15 @@ export function StepCoursesEvaluatees({
         cell: r => <NumericCell value={r.enrolled} className="text-muted-foreground" />,
       },
       {
-        // What's ALREADY out for this course — one line per pushed flow, so a
+        // What's ALREADY out for this course — one block per pushed flow, so a
         // course being evaluated in separate flows (different evaluatees) shows
         // every prior run before the admin sets up the next one. The canonical
-        // SurveyStatusBadge carries the lifecycle; the muted text names WHO
-        // that flow evaluates (the course itself, or the instructor by name).
-        key: 'flows', label: 'Status', width: 180,
+        // SurveyStatusBadge carries the lifecycle; the muted line under it
+        // names WHO that flow evaluates (the course itself, or the instructor
+        // by name). Badge and evaluatee STACK — inline, the badge left the
+        // name ~60px and even "Course" clipped; stacking is the same pattern
+        // the Faculty (name/role) and Evaluates cells already use.
+        key: 'flows', label: 'Status', width: 160,
         cell: r => {
           if (r.flows.length === 0) {
             return (
@@ -488,10 +491,10 @@ export function StepCoursesEvaluatees({
             )
           }
           return (
-            <div className="flex flex-col items-start gap-1 py-1">
+            <div className="flex flex-col items-start gap-1.5 py-1">
               {r.flows.map(f => (
-                <span key={f.id} className="flex items-center gap-1.5 min-w-0 max-w-full">
-                  <span className="shrink-0"><SurveyStatusBadge status={f.status} /></span>
+                <span key={f.id} className="flex flex-col items-start gap-0.5 min-w-0 max-w-full">
+                  <SurveyStatusBadge status={f.status} />
                   <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                     {flowEvaluateeLabel(f)}
                   </TruncatedText>
