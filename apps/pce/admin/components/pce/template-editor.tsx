@@ -1050,10 +1050,8 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       <div id={`roleset-${set.id}`} className="flex items-start gap-3"
         style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
         <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
-        <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-          {set.roles.length === 0 ? (
-            <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
-          ) : set.roles.map(roleKey => {
+        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+          {set.roles.map(roleKey => {
             const label = ROLE_LABEL(roleKey)
             return (
               <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
@@ -1066,18 +1064,21 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               </span>
             )
           })}
+          {/* Add flows INLINE as the last pill — it wraps with the chips so
+              the action stays next to the list it modifies. */}
+          <Popover open={rolePickerSetId === set.id}
+            onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="xs" className="rounded-full">
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                {set.roles.length === 0 ? 'Pick one or more roles' : 'Add role'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-72" align="start" sideOffset={8} aria-label="Add role">
+              {renderRolePickerContent(set)}
+            </PopoverContent>
+          </Popover>
         </div>
-        <Popover open={rolePickerSetId === set.id}
-          onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="xs" className="shrink-0">
-              <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
-            {renderRolePickerContent(set)}
-          </PopoverContent>
-        </Popover>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
