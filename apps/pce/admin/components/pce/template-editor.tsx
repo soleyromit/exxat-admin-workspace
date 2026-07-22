@@ -1150,13 +1150,14 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         ) : secs.length === 0 ? renderStopGate(stop) : (
           <>
             {secs.map(sec => renderSectionCard(sec))}
-            <div className="flex items-center justify-center">
-              <Button variant="link" size="sm" className="font-semibold"
-                onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Add section
-              </Button>
-            </div>
+            {/* Full-width dashed row — visible "insert here" affordance in the
+                flow where the section will appear (a heading-level button would
+                be ambiguous across faculty role sets). */}
+            <Button variant="outline" size="sm" className="w-full font-semibold border-dashed"
+              onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+              Add section
+            </Button>
           </>
         )}
       </div>
