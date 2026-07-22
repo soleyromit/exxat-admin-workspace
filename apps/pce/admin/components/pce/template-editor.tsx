@@ -961,6 +961,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           className="w-fit -ms-2 text-muted-foreground font-normal"
           onClick={() => setOpenInstruction(p => ({ ...p, [key]: true }))}
         >
+          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
           {summary ? (
             <span className="truncate" style={{ maxWidth: 420 }}>Opening instruction · {summary}</span>
           ) : (
@@ -1060,6 +1061,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       className="shrink-0"
       onClick={() => { uploadTargetRef.current = { subjectKey, roleSetId }; uploadInputRef.current?.click() }}
     >
+      <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
       Generate from document
     </Button>
   )
@@ -1231,6 +1233,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                       <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
                       <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
                         onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+                        <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
                         Generate from document
                       </Button>
                     </div>
@@ -1240,7 +1243,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             })}
             <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
               <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
+                <i className="fa-light fa-user-group text-xs" aria-hidden="true" />Add role set
               </Button>
             </div>
           </>
@@ -1255,6 +1258,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
               <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
                 onClick={() => { uploadTargetRef.current = { subjectKey: key }; uploadInputRef.current?.click() }}>
+                <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
                 Generate from document
               </Button>
             </div>
@@ -1666,7 +1670,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         {g.key !== 'faculty' && generateFromDocButton(g.key)}
                         {g.key === 'faculty' ? (
                           <Button variant="ghost" size="xs" className="shrink-0" onClick={handleAddRoleSet}>
-                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
+                            <i className="fa-light fa-user-group text-xs" aria-hidden="true" />Add role set
                           </Button>
                         ) : (
                           <Button variant="ghost" size="xs" className="shrink-0" onClick={() => handleAddSection(g.key)}>
@@ -1846,19 +1850,22 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         <span className="text-xs text-muted-foreground tabular-nums">
                           {c.questions} question{c.questions !== 1 ? 's' : ''}
                         </span>
-                        <span className="ms-auto flex items-center gap-1">
+                        <span className="ms-auto flex items-center gap-1.5">
                           {g.key !== 'faculty' && (
-                            <Button variant="ghost" size="xs" className="text-muted-foreground"
+                            <Button variant="outline" size="xs"
                               onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
+                              <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
                               Generate from document
                             </Button>
                           )}
                           {g.key === 'faculty' ? (
-                            <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={handleAddRoleSet}>
+                            <Button variant="outline" size="xs" onClick={handleAddRoleSet}>
+                              <i className="fa-light fa-user-group text-xs" aria-hidden="true" />
                               Add role set
                             </Button>
                           ) : (
-                            <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={() => handleAddSection(g.key)}>
+                            <Button variant="outline" size="xs" onClick={() => handleAddSection(g.key)}>
+                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                               Add section
                             </Button>
                           )}
@@ -1875,13 +1882,15 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                               return (
                                 <div key={set.id} className="flex flex-col gap-3">
                                   {renderRoleSetHeader(set)}
-                                  <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                  <div className="flex items-center gap-1.5">
+                                    <Button variant="outline" size="xs"
                                       onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+                                      <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
                                       Generate from document
                                     </Button>
-                                    <Button variant="ghost" size="xs" className="text-muted-foreground"
+                                    <Button variant="outline" size="xs"
                                       onClick={() => handleAddSection('faculty', set.id)}>
+                                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                                       Add section
                                     </Button>
                                   </div>
