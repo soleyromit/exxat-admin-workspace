@@ -12,6 +12,7 @@ import type { MetricItem } from '@exxatdesignux/ui'
 import {
   MOCK_STUDENTS, MOCK_COHORTS, MOCK_COURSE_ENROLLMENTS,
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS, MOCK_SURVEYS,
+  representativeSurveyByKey,
   type Student,
 } from '@/lib/pce-mock-data'
 import { DataTablePaginated } from '@/components/data-table/pagination'
@@ -25,10 +26,10 @@ const STATUSES = ['enrolled', 'graduated', 'withdrawn', 'on-leave'] as const
 /* Module-level eval context — all constant data, computed once. */
 const _courseCodeById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c.code]))
 const _termNameById   = new Map(MOCK_PROGRAM_TERMS.map(t => [t.id, t.name]))
-const _surveyByKey    = new Map(
-  MOCK_SURVEYS
-    .filter(s => s.surveyType === 'course_evaluation')
-    .map(s => [`${s.courseCode}-${s.term}`, s]),
+// representativeSurveyByKey, not a plain Map: split flows share the composite
+// courseCode-term key, and last-wins construction silently dropped all but one.
+const _surveyByKey    = representativeSurveyByKey(
+  MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation'),
 )
 
 /* Invert MOCK_COURSE_ENROLLMENTS: studentId → offeringIds */
