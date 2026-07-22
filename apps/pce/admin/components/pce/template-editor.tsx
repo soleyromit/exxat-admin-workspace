@@ -75,11 +75,11 @@ const SURVEY_TYPE_OPTIONS: { value: SurveyPurpose; label: string; description: s
   { value: 'preceptor_eval',    label: 'Preceptor Eval',  description: 'Clinical site and preceptor feedback' },
 ]
 
-// Editor wizard steps — build, configure, then review before publishing.
+// Editor wizard steps — configure first, then build, then review before publishing.
 type WizardStepKey = 'builder' | 'settings' | 'review'
 const WIZARD_STEPS: { n: number; key: WizardStepKey; label: string }[] = [
-  { n: 1, key: 'builder',  label: 'Builder' },
-  { n: 2, key: 'settings', label: 'Template settings' },
+  { n: 1, key: 'settings', label: 'Template settings' },
+  { n: 2, key: 'builder',  label: 'Builder' },
   { n: 3, key: 'review',   label: 'Review' },
 ]
 
@@ -494,7 +494,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     openImport(target.subjectKey, target.roleSetId)
   }
   // Editor is a 3-step wizard — Builder → Template settings → Review — ending in Publish.
-  const [wizardStep, setWizardStep] = useState<WizardStepKey>('builder')
+  const [wizardStep, setWizardStep] = useState<WizardStepKey>('settings')
   const [maxStepReached, setMaxStepReached] = useState(1)
   const currentStepNum = WIZARD_STEPS.find(s => s.key === wizardStep)?.n ?? 1
   const goToStep = (key: WizardStepKey) => {
@@ -2226,7 +2226,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           )}
         </TabsContent>
 
-        {/* ── Step 2 · Template settings ── */}
+        {/* ── Step 1 · Template settings ── */}
         <TabsContent value="settings" className="flex-1 overflow-y-auto m-0" style={{ padding: '28px 40px 48px' }}>
           <div style={{ maxWidth: 560 }}>
             {renderTemplateSettings()}
