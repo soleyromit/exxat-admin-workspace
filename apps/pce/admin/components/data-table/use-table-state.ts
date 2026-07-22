@@ -8,7 +8,7 @@ import * as React from "react"
 import type { RowHeight } from "@/lib/row-height"
 import type { ColumnDef, SortDir } from "./types"
 import type { ActiveFilter, FilterOperator, SortRule } from "@/components/table-properties/types"
-import { parseRowDateToYmd } from "@exxat/ds/packages/ui/src"
+import { parseRowDateToYmd } from "@exxatdesignux/ui"
 
 let _filterId = 0
 function nextFilterId() { return `f-${++_filterId}` }
@@ -187,6 +187,14 @@ export function useTableState<TData extends Record<string, unknown>>(
   // ── Column order ──────────────────────────────────────────────────────────
   const [colOrder, setColOrder] = React.useState<string[]>(() => columns.map(c => c.key))
 
+  // Sync colOrder + colWidths when the column key set changes (e.g. dynamic column sets).
+  const colKeySig = columns.map(c => c.key).join('\0')
+  React.useEffect(() => {
+    setColOrder(columns.map(c => c.key))
+    setColWidths(buildDefaultWidths(columns))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colKeySig])
+
   // ── Column pins ───────────────────────────────────────────────────────────
   const [colPins, setColPins] = React.useState<Record<string, "left" | "right">>(() => buildDefaultPins(columns))
   const lockedPins = React.useMemo(() => buildLockedPins(columns), [columns])
@@ -321,10 +329,12 @@ export function useTableState<TData extends Record<string, unknown>>(
   }, [rows, paginationOverride?.page, paginationOverride?.pageSize])
 
   // ── Grouped rows ──────────────────────────────────────────────────────────
+  // Groups are built from the PAGED slice so grouping and pagination compose
+  // (each page shows its rows under their group headers).
   const groupedRows = React.useMemo(() => {
     if (!groupBy) return [{ groupKey: null as string | null, groupLabel: null as string | null, rows }]
     const groups = new Map<string, TData[]>()
-    rows.forEach(row => {
+    pagedRows.forEach(row => {
       const val = String(row[groupBy] ?? "—")
       if (!groups.has(val)) groups.set(val, [])
       groups.get(val)!.push(row)
@@ -347,7 +357,7 @@ export function useTableState<TData extends Record<string, unknown>>(
       groupLabel: groupLabels?.[key] ?? key,
       rows: groupRows,
     }))
-  }, [rows, groupBy, groupLabels, groupOrder])
+  }, [rows, pagedRows, groupBy, groupLabels, groupOrder])
 
   // ── Effective pins (respect overflow) ─────────────────────────────────────
   const LOCKED_KEYS = React.useMemo(() => new Set(Object.keys(lockedPins)), [lockedPins])
@@ -373,7 +383,7 @@ export function useTableState<TData extends Record<string, unknown>>(
     return [...leftPinned, ...free, ...rightPinned]
       .map(k => columns.find(c => c.key === k))
       .filter((c): c is ColumnDef<TData> => !!c)
-      .filter(c => !hiddenCols.has(c.key))
+      .filter(c => !hiddenCols.has(c.key) && !c.hidden)
   }, [colOrder, colPins, hiddenCols, columns])
 
   // ── Column actions ────────────────────────────────────────────────────────

@@ -1,0 +1,20 @@
+---
+description: Legacy pointer — use _constitution.exxat-ds.mdc + component-selection-guide
+alwaysApply: false
+appliesTo: [universal]
+---
+
+# Exxat DS — agent entry (redirect)
+
+**This file is a redirect.** Always-on context: **`.cursor/rules/_constitution.exxat-ds.mdc`** (four files total with product-context, product-routing, ux-discovery-protocol).
+
+| Need | Open |
+|------|------|
+| Pre-flight / task → files | `.cursor/skills/exxat-token-economy/SKILL.md` |
+| Human orientation | `docs/exxat-ds/HANDBOOK.md` |
+| Binding manual + §13 checklist | `./AGENTS.md` |
+| Pattern index | `docs/exxat-ds/INDEX.yaml` |
+| Design new surface | `.cursor/skills/exxat-senior-ux/SKILL.md` |
+| Review existing surface | `.cursor/skills/exxat-ux-audit/SKILL.md` |
+
+Scoped rules (hub, KPI, charts, overlays, focus shell, …) are listed in **`INDEX.yaml`** — load only what the task needs.

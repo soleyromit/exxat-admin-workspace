@@ -1,0 +1,85 @@
+---
+description: Exxat DS — choose SecondaryPanel vs SidebarDrillIn for nested sidebar nav (tree vs flat, scope vs deep section).
+alwaysApply: false
+globs: 
+  - components/sidebar/**/*
+  - lib/mock/navigation.tsx
+  - lib/library-nav.ts
+tags: [shell, nav]
+seeAlso:
+  - .cursor/skills/exxat-sidebar-nav/SKILL.md
+---
+
+# Exxat DS — secondary panel vs sidebar drill-in (when to use which)
+
+Two patterns exist for nested sidebar navigation. They are **not interchangeable** — picking the wrong one creates either a too-noisy "scope strip" beside the work or a too-aggressive primary-nav swap when the user wanted to *stay scoped*.
+
+| Pattern | Mental model | Shell behaviour |
+|---|---|---|
+| **`SecondaryPanel`** | "I am **scoping** what I see on the hub." Primary nav stays visible; a **panel beside** it shows tree / filter / scope rows. | Primary sidebar + nested panel coexist. |
+| **`SidebarDrillIn`** | "I am **going into** a deep section (Settings, Tokens, Admin)." The primary nav is **replaced** by the section's own flat list. | Primary nav slides out; section nav (with **← Back**) slides in. |
+
+## Decision tree
+
+| Question | Answer | Use |
+|---|---|---|
+| Does the nested nav need to show a TREE or persistent hierarchy? | Yes | **SecondaryPanel** |
+| Does the nested nav have its own header/footer chrome (search, filters, create)? | Yes | **SecondaryPanel** |
+| Does the nested nav need to coexist alongside the primary sidebar rows? | Yes | **SecondaryPanel** |
+| Is the nested nav a FLAT list of route-distinct destinations? | Yes | **SidebarDrillIn** |
+| Should the workspace switcher + sidebar footer hide while in nested nav? | Yes | **SidebarDrillIn** |
+| Is the nested nav a single category/filter pivot (`?category=…`)? | Yes | **SidebarDrillIn** |
+| Multiple consumers register against the same nested-nav id? | Yes | **SecondaryPanel** |
+| Does the nested nav need persistent local state (selected folder, expanded groups)? | Yes | **SecondaryPanel** |
+
+If two answers point at different patterns, pick the one the user's **mental model** matches — "scoping the hub" (panel) vs "going into a section" (drill-in).
+
+## MUST use SecondaryPanel when
+
+- The nested nav is a **tree** or persistent **hierarchy** (folders, groups, expandable nodes).
+- The nested nav owns its own **header / footer chrome** — search, "+ new folder", filter chips, info banner.
+- The nested nav needs to **coexist** alongside primary nav rows so users can pivot back to other hubs without leaving scope.
+- **Persistent local state** survives across drilling (selected folder, expanded groups, scroll position).
+- **Multiple consumers** register against the same panel id (Library scope panel is the canonical case).
+- Reference: **Library** — `components/library-secondary-nav.tsx` + `components/sidebar/secondary-panel.tsx`. **IA:** primary **Question bank** → child **Library** (`/library/all`) → secondary **All questions** / My / Folders — **`docs/exxat-ds/library-nav-ia-pattern.md`**.
+
+## MUST use SidebarDrillIn when
+
+- The nested nav is a **flat list** of distinct routes (each item navigates somewhere new and has its own URL).
+- The drill-in is **one level deep** — no nested drill-ins inside it.
+- The user is **"going somewhere"**, not **"scoping the current hub"** — Settings, Admin, Workspace config, deep tool sections.
+- The workspace switcher and sidebar footer **should hide** while drilled in so the user can focus on the drilled-in task.
+- The nested nav is a single **category / filter pivot** that lives on one route plus `?category=…` (e.g. Tokens & themes).
+- Reference: **Tokens & themes** — `lib/mock/navigation.tsx` (`TOKENS_DRILL_IN_ITEMS`) + `components/sidebar/app-sidebar.tsx` (`SidebarDrillInItems`).
+
+## MUST NOT
+
+- Use **`SecondaryPanel`** for a flat, single-level category picker — use **`SidebarDrillIn`**. A panel for a flat list adds chrome the user doesn't need and keeps competing primary rows visible.
+- Use **`SidebarDrillIn`** when the nested nav must remain visible **alongside** primary rows — use **`SecondaryPanel`**. Drilling in hides the primary tree and breaks "pivot to another hub" without an extra back step.
+- **Nest `SidebarDrillIn` inside another `SidebarDrillIn`** — the back affordance becomes ambiguous and breaks the one-level-deep contract.
+- Wire **BOTH `secondaryPanel` AND `drillIn`** on the same `NavLinkItem` — pick one. Two simultaneous nested-nav strategies create two sources of truth for "what does this row do when clicked?".
+- Forget the **Esc / Cmd+[ / Ctrl+[** keyboard close on `SidebarDrillIn` — every drill-in MUST be exit-able by keyboard (see `.cursor/rules/exxat-accessibility.mdc` § "Keyboard scope and escape").
+
+## Active state inside the drill-in
+
+`SidebarDrillIn` items use **exact path + search compare** — NOT prefix matching. When two items share `/tokens-themes` and differ only by `?category=…`, the matcher MUST compare `item.url === pathname + location.search` so only the active category lights up. Prefix matching would highlight every category row at once.
+
+```tsx
+const locationSearch = useLocation().search
+const currentHref = `${pathname}${locationSearch}`
+const isActive = item.url === currentHref
+```
+
+Reference: `SidebarDrillInItems` in `components/sidebar/app-sidebar.tsx` (note the comment about why prefix matching is wrong here).
+
+For `SecondaryPanel` rows that route to distinct paths, use the shared `nav-active` helpers (`isNavHrefActive` / `resolveActiveNavHref`) per **`.cursor/rules/exxat-nav-single-active.mdc`** — those handle longest-prefix matching across the whole nav tree.
+
+## See also
+
+- **`.cursor/rules/exxat-primary-nav-secondary-panel.mdc`** — SecondaryPanel rule (lifecycle, flyout close vs dismiss, surface elevation).
+- **`docs/exxat-ds/library-nav-ia-pattern.md`** — Library three-tier nav + flyout behaviour.
+- **`.cursor/rules/exxat-accessibility.mdc`** — § "Keyboard scope and escape" (Esc handler required on every drill-in).
+- **`.cursor/rules/exxat-nav-single-active.mdc`** — one active row across primary + secondary + drilled-in nav.
+- **`docs/exxat-ds/component-selection-guide.md`** — top-of-funnel decision tree.
+- `components/sidebar/app-sidebar.tsx` — `SidebarDrillInItems`, `findActiveDrillInSection`.
+- `packages/ui/src/components/ui/sidebar-drill-in.tsx` — `SidebarDrillIn` primitive.
