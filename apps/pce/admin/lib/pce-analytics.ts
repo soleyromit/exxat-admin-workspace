@@ -20,8 +20,8 @@
  * `courseAvg` and `facultyAvg` stay separate all the way through.
  */
 
-import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
-import type { FacultyOfferingRecord, PceSurvey } from '@/lib/pce-mock-data'
+import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
+import type { FacultyOfferingRecord, PceInstructor, PceSurvey } from '@/lib/pce-mock-data'
 // The anonymity gate's default, imported rather than re-declared. `pce-results` resolves it
 // per survey (`survey.minimumThreshold ?? MINIMUM_THRESHOLD`) and so must this file — a
 // threshold that means 40 on the result page and 5 here is not a gate.
@@ -118,6 +118,45 @@ export interface OfferingPoint extends FacultyOfferingRecord {
    * correctness depends on a fixture coincidence.
    */
   minimumThreshold: number
+  /**
+   * The role this person held IN THIS OFFERING — the course-association role, per the
+   * 2026-05-19 decision (Monil): "role-based sections derive from course associations,
+   * not faculty rank." A person can be Course Coordinator on one offering and Guest
+   * Lecturer on another, so the role lives on the offering, never on the directory record.
+   */
+  evalRole: FacultyEvalRoleId
+}
+
+/** One of the course-association roles a faculty member can be evaluated under. */
+export type FacultyEvalRoleId = (typeof EVAL_FACULTY_ROLES)[number]['id']
+
+/**
+ * Synthesize the course-association role for a fixture offering.
+ *
+ * The real system reads this off the Prism course association; `MOCK_FACULTY_OFFERINGS`
+ * predates that field, so until the fixture is reconciled the role is derived: the
+ * per-offering `role: 'guest'` is authoritative (it IS association-level data), and
+ * primary rows fall back to the directory position as a stand-in. Replace the fallback,
+ * not the field, when real association data lands.
+ */
+function evalRoleOf(o: FacultyOfferingRecord, f: PceInstructor | undefined): FacultyEvalRoleId {
+  if (o.role === 'guest') return 'guest-lecturer'
+  switch (f?.position) {
+    case 'Department Chair':
+    case 'Program Director':
+    case 'Course Director':
+    case 'Clinical Coordinator': return 'course-coordinator'
+    case 'Lab Instructor':       return 'lab-assistant'
+    case 'Teaching Assistant':   return 'teaching-assistant'
+    default:                     return 'instructor'
+  }
+}
+
+/** The roles that actually HAVE evaluated offerings, in canonical order — a role filter
+ *  offering options that render an empty board is the legacy "dropdown ≠ table" bug (§4.7). */
+export function facultyEvalRoleOptions(): { id: FacultyEvalRoleId; label: string }[] {
+  const present = new Set(offeringPoints().map((p) => p.evalRole))
+  return EVAL_FACULTY_ROLES.filter((r) => present.has(r.id)).map((r) => ({ id: r.id, label: r.label }))
 }
 
 /** Distinct cohorts present in the data, newest class last. */
@@ -161,6 +200,7 @@ export function offeringPoints(): OfferingPoint[] {
       // The diversified fixture dropped the per-row surveyId; fall back to a
       // courseCode + term match so the register's rows can still reach a result.
       surveyId: o.surveyId ?? survey?.id,
+      evalRole: evalRoleOf(o, f),
       year: termToYear(o.term),
       facultyName: name,
       initials: f?.initials ?? initialsOf(name),
@@ -575,11 +615,16 @@ function windowMean(
  * are looking at one term or all of them. Scoping the window to a single term would make
  * avg1y === avg3y === that term, i.e. drift always 0.
  */
-/** `cohort` scopes to one class — see the note on `courseStats`. */
-export function facultyStats(term?: string, cohort?: string): FacultyStat[] {
+/** `cohort` scopes to one class — see the note on `courseStats`.
+ *  `role` scopes to one course-association role — comparing a Lab Assistant's scores
+ *  against a Course Coordinator's is a different conversation, so the leaderboard can
+ *  compare like with like. Same global-filter grammar as `term` (Monil). */
+export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalRoleId): FacultyStat[] {
   const all = offeringPoints()
   const now = latestYear(all)
-  const points = all.filter((p) => (!term || p.term === term) && (!cohort || p.cohort === cohort))
+  const points = all.filter(
+    (p) => (!term || p.term === term) && (!cohort || p.cohort === cohort) && (!role || p.evalRole === role),
+  )
   const byFaculty = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byFaculty.get(p.facultyId) ?? []
@@ -591,9 +636,11 @@ export function facultyStats(term?: string, cohort?: string): FacultyStat[] {
     .map(([facultyId, offs]) => {
       const enrolled = offs.reduce((s, o) => s + o.enrolled, 0)
       const responded = offs.reduce((s, o) => s + o.responded, 0)
-      // Windows are computed against ALL of this person's history, not the scoped slice —
-      // see the note on the term param.
-      const own = all.filter((p) => p.facultyId === facultyId)
+      // Windows are computed against ALL of this person's history, not the term slice —
+      // see the note on the term param. The ROLE scope does apply: role is not a time
+      // window, and a drift arrow computed over a different role than the dot it sits
+      // next to would describe someone else's trajectory.
+      const own = all.filter((p) => p.facultyId === facultyId && (!role || p.evalRole === role))
       const avg1y = windowMean(own, now - 1, now)
       const avg3y = windowMean(own, now - 3, now)
       return {
@@ -677,10 +724,12 @@ export function facultyCourseStats(facultyId: string): FacultyCourseStat[] {
     .sort((a, b) => b.score.weighted - a.score.weighted)
 }
 
-/** A faculty member's response-rate history by term (story 11). */
-export function facultyResponseSeries(): { facultyId: string; name: string; term: string; short: string; year: number; responseRate: number }[] {
+/** A faculty member's response-rate history by term (story 11).
+ *  `role` scopes to one course-association role — the By Faculty filters are global,
+ *  so the trend cards must answer for the same slice as the leaderboard above them. */
+export function facultyResponseSeries(role?: FacultyEvalRoleId): { facultyId: string; name: string; term: string; short: string; year: number; responseRate: number }[] {
   const byKey = new Map<string, OfferingPoint[]>()
-  offeringPoints().forEach((p) => {
+  offeringPoints().filter((p) => !role || p.evalRole === role).forEach((p) => {
     const key = `${p.facultyId}::${p.term}`
     const list = byKey.get(key) ?? []
     list.push(p)
@@ -788,8 +837,9 @@ export function facultyCourseResponseTrend(
     .sort((a, b) => a.year - b.year)
 }
 
-export function facultyTermSeries(): { facultyId: string; name: string; term: string; short: string; year: number; rating: number }[] {
-  const points = offeringPoints()
+/** `role` — see the note on `facultyResponseSeries`. */
+export function facultyTermSeries(role?: FacultyEvalRoleId): { facultyId: string; name: string; term: string; short: string; year: number; rating: number }[] {
+  const points = offeringPoints().filter((p) => !role || p.evalRole === role)
   const byKey = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const key = `${p.facultyId}::${p.term}`

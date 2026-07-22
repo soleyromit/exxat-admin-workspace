@@ -13,12 +13,12 @@ import {
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { usePce } from '@/components/pce/pce-state'
-import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
+import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
 import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
 import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
-import { facultyStats, allTerms } from '@/lib/pce-analytics'
+import { facultyStats, allTerms, type FacultyEvalRoleId } from '@/lib/pce-analytics'
 import {
   offeringsCsv, exportFilename, downloadCsv, scopedOfferings, type ExportScope,
 } from '@/lib/pce-analytics-export'
@@ -106,6 +106,14 @@ function AnalyticsInner() {
   const facultyTerm = param('facultyTerm') ?? undefined
   const setFacultyTerm = (t: string | undefined) => setScope({ facultyTerm: t ?? null })
 
+  /** Global role scope for the same tables — undefined = all roles. Validated like `tab`:
+   *  a hand-edited ?facultyRole=zzz must fall back to all roles, not silently empty the board. */
+  const facultyRoleParam = param('facultyRole')
+  const facultyRole = EVAL_FACULTY_ROLES.some((r) => r.id === facultyRoleParam)
+    ? (facultyRoleParam as FacultyEvalRoleId)
+    : undefined
+  const setFacultyRole = (r: FacultyEvalRoleId | undefined) => setScope({ facultyRole: r ?? null })
+
   /** Terms that HAVE evaluation history, newest first — the By Term axis. */
   const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
 
@@ -113,7 +121,14 @@ function AnalyticsInner() {
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
 
   /** The selected faculty member's class-size-weighted mean — the portfolio's anchor value.
-   *  Derived from the canonical dataset so it cannot drift from the leaderboard above. */
+   *  Derived from the canonical dataset so it cannot drift from the leaderboard above.
+   *
+   *  Deliberately NOT scoped by `facultyRole`: the role filter's boundary is the "All
+   *  faculty" section above the portfolio. The portfolio charts this value anchors are the
+   *  person's FULL history (per the ask: role filtering is for comparing multiple faculty,
+   *  apart from single-faculty analytics) — a role-scoped anchor on an all-role portfolio
+   *  would disagree with every chart around it, which is worse than differing from the
+   *  role-filtered leaderboard number the reader drilled in from. */
   const selectedFacultyAvg = useMemo(() => {
     const stat = facultyStats().find(f => f.facultyId === selectedFacultyId)
     return stat ? stat.score.weighted : null
@@ -136,12 +151,12 @@ function AnalyticsInner() {
    */
   const exportScope: ExportScope = useMemo(() => {
     switch (activeTab) {
-      case 'faculty': return { tab: 'faculty', facultyId: selectedFacultyId, term: facultyTerm }
+      case 'faculty': return { tab: 'faculty', facultyId: selectedFacultyId, term: facultyTerm, role: facultyRole }
       case 'course':  return { tab: 'course', courseCode: effectiveCourseCode }
       case 'term':    return { tab: 'term', term }
       default:        return { tab: 'overview' }
     }
-  }, [activeTab, selectedFacultyId, facultyTerm, effectiveCourseCode, term])
+  }, [activeTab, selectedFacultyId, facultyTerm, facultyRole, effectiveCourseCode, term])
 
   /* The count goes ON the button so the scope is legible BEFORE the click — you can see that
      "Export 9 offerings" means this faculty member, not the program's 53. It also makes the
@@ -261,6 +276,8 @@ function AnalyticsInner() {
             <FacultyLeaderboardSection
               term={facultyTerm}
               onTermChange={setFacultyTerm}
+              role={facultyRole}
+              onRoleChange={setFacultyRole}
               onSelectFaculty={(id) => {
                 // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
                 // drill-down is the same tab scrolled to the portfolio, not a new route —

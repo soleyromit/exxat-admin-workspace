@@ -36,8 +36,9 @@ import {
   FacultyScoreStrip, LARGE_ROSTER_N,
 } from '@/components/pce/analytics-plots'
 import {
-  facultyStats, facultyTermSeries, facultyResponseSeries, medianOf, benchmarks, termSeries,
-  RESPONSE_TARGET,
+  facultyStats, facultyTermSeries, facultyResponseSeries, facultyEvalRoleOptions,
+  medianOf, benchmarks, termSeries,
+  RESPONSE_TARGET, type FacultyEvalRoleId,
 } from '@/lib/pce-analytics'
 import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
@@ -45,6 +46,7 @@ import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
 const fmt2 = (v: number) => v.toFixed(2)
 
 const ALL_TERMS = '__all__'
+const ALL_ROLES = '__all__'
 
 /** How many faculty the collapsed card lists — the lowest scorers, the only actionable ones. */
 const LOWEST_SHOWN = 5
@@ -52,11 +54,16 @@ const LOWEST_SHOWN = 5
 export function FacultyLeaderboardSection({
   term,
   onTermChange,
+  role,
+  onRoleChange,
   onSelectFaculty,
 }: {
   /** Scoped term, or undefined for all terms. */
   term?: string
   onTermChange?: (term: string | undefined) => void
+  /** Scoped course-association role, or undefined for all roles. */
+  role?: FacultyEvalRoleId
+  onRoleChange?: (role: FacultyEvalRoleId | undefined) => void
   /** Drill into one faculty member — the "view insights" step. */
   onSelectFaculty?: (facultyId: string) => void
 }) {
@@ -73,7 +80,18 @@ export function FacultyLeaderboardSection({
     [],
   )
 
-  const faculty = useMemo(() => facultyStats(term), [term])
+  /**
+   * Role scope, beside the term scope — same global-filter grammar (Monil: "Filters are
+   * global on these tables"). The question it answers is fairness: a Lab Assistant ranked
+   * against a Course Coordinator on one board is comparing different jobs, and the person
+   * who looks "lowest" may just hold the hardest role. The vocabulary is the COURSE-
+   * ASSOCIATION role (2026-05-19, Monil: roles derive from course associations, not
+   * faculty rank) — the same person can appear under different roles in different terms.
+   */
+  const roleOptions = useMemo(() => facultyEvalRoleOptions(), [])
+  const roleLabel = roleOptions.find((r) => r.id === role)?.label
+
+  const faculty = useMemo(() => facultyStats(term, undefined, role), [term, role])
   const median = useMemo(() => medianOf(faculty.map((f) => f.score.weighted)), [faculty])
 
   /**
@@ -92,8 +110,8 @@ export function FacultyLeaderboardSection({
     () => (isLarge ? faculty.slice(-LOWEST_SHOWN).reverse() : faculty),
     [faculty, isLarge],
   )
-  const series = useMemo(() => facultyTermSeries(), [])
-  const responseSeries = useMemo(() => facultyResponseSeries(), [])
+  const series = useMemo(() => facultyTermSeries(role), [role])
+  const responseSeries = useMemo(() => facultyResponseSeries(role), [role])
 
   /* Movers — who the trend cards NAME (decided with Romit, 2026-07-15: highlight-spaghetti).
    *
@@ -232,8 +250,10 @@ export function FacultyLeaderboardSection({
     <div className="flex flex-col gap-4">
       <h2 className="sr-only">All faculty</h2>
 
-      {/* Global term scope for the tables below — Monil: "scope to a term or span all terms". */}
-      <div className="flex items-center gap-3">
+      {/* Global scope for the tables below — Monil: "scope to a term or span all terms".
+          Role sits beside term with the same grammar: both are global filters over the
+          leaderboard AND the two trend cards, never over the individual portfolio below. */}
+      <div className="flex flex-wrap items-center gap-3">
         <label className="shrink-0 text-sm text-muted-foreground" htmlFor="leaderboard-term">
           Scope
         </label>
@@ -254,17 +274,36 @@ export function FacultyLeaderboardSection({
             ))}
           </SelectContent>
         </Select>
+        <label className="shrink-0 text-sm text-muted-foreground" htmlFor="leaderboard-role">
+          Role
+        </label>
+        <Select
+          value={role ?? ALL_ROLES}
+          onValueChange={(v) => onRoleChange?.(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
+          /* Same state-review rule as the term scope: no options → no promise. */
+          disabled={roleOptions.length === 0}
+        >
+          <SelectTrigger id="leaderboard-role" className="h-8 w-44 text-sm" aria-label="Scope the leaderboard to a role">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_ROLES}>All roles</SelectItem>
+            {roleOptions.map((r) => (
+              <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-xs text-muted-foreground">
           {term
-            ? `${faculty.length} faculty taught in ${term}.`
-            : `${faculty.length} faculty across all terms — 1-year and 3-year windows always span full history.`}
+            ? `${faculty.length} faculty ${roleLabel ? `taught as ${roleLabel}` : 'taught'} in ${term}.`
+            : `${faculty.length} faculty ${roleLabel ? `as ${roleLabel} ` : ''}across all terms — 1-year and 3-year windows always span full history.`}
         </p>
       </div>
 
       <ChartCard
         variant="normal"
         title="Faculty leaderboard"
-        description={`${faculty.length} faculty${term ? ` · ${term}` : ''} · vs the ${fmt2(median)} median`}
+        description={`${faculty.length} faculty${roleLabel ? ` · ${roleLabel}` : ''}${term ? ` · ${term}` : ''} · vs the ${fmt2(median)} median`}
         leoInsight={leaderLeo}
       >
         <ChartFigure
@@ -295,7 +334,7 @@ export function FacultyLeaderboardSection({
                 /* A term can have enrollment but no closed CE surveys — the chart and roster
                    would both render empty with no explanation (state-review round 2). */
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  No faculty evaluated in {term ?? 'any term'} yet.
+                  No faculty evaluated{roleLabel ? ` as ${roleLabel}` : ''} in {term ?? 'any term'} yet.
                 </p>
               ) : isLarge ? (
                 <FacultyScoreStrip faculty={faculty} median={median} leoAnchor={leaderAnchor} />

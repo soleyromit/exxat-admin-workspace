@@ -3,9 +3,10 @@
  *
  * The header Export button had no `onClick` — it rendered, it looked live, and it did
  * nothing. A dead control is worse than a missing one: the user spends a click and a moment
- * of confusion discovering the affordance lied. (Same reason the Faculty Role filter did not
- * get built — every offering is role:'primary', so it would have been a dropdown with one
- * option.) So: make it real or delete it. This makes it real.
+ * of confusion discovering the affordance lied. So: make it real or delete it. This makes it
+ * real. (An earlier note here said the Faculty Role filter was skipped because every offering
+ * was role:'primary' — that premise is gone: `OfferingPoint.evalRole` now carries the
+ * course-association role and By Faculty filters on it.)
  *
  * ONE ROW = ONE OFFERING, on every tab. The tabs are five questions asked of one grain, and
  * the offering IS that grain — every KPI, dot and line in this feature derives from
@@ -25,14 +26,17 @@
  * exports its counts but not a score that could re-identify.
  */
 
-import { offeringPoints, type OfferingPoint } from '@/lib/pce-analytics'
+import { offeringPoints, type OfferingPoint, type FacultyEvalRoleId } from '@/lib/pce-analytics'
 // Same constant the on-screen register suppresses by (analytics-survey-details.tsx) — imported,
 // not re-declared, so the CSV and the table can never disagree about who is suppressed.
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
 
 export type ExportScope =
   | { tab: 'overview' }
-  | { tab: 'faculty'; facultyId?: string; term?: string }
+  /** `role` = the By Faculty role filter. Scope-defining state on that tab, so the export
+   *  must carry it — a role-filtered screen exporting all-role rows is the exact lie of
+   *  omission the header comment forbids. */
+  | { tab: 'faculty'; facultyId?: string; term?: string; role?: FacultyEvalRoleId }
   | { tab: 'course'; courseCode?: string }
   | { tab: 'term'; term?: string }
 
@@ -60,7 +64,8 @@ export function scopedOfferings(scope: ExportScope): OfferingPoint[] {
       return all.filter(
         (o) =>
           (!scope.facultyId || o.facultyId === scope.facultyId) &&
-          (!scope.term || o.term === scope.term),
+          (!scope.term || o.term === scope.term) &&
+          (!scope.role || o.evalRole === scope.role),
       )
     case 'course':
       return all.filter((o) => !scope.courseCode || o.courseCode === scope.courseCode)
