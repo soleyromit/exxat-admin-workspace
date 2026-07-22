@@ -80,7 +80,9 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
                     : 'var(--muted-foreground)',
                 }}
               >
-                {isCompleted ? (
+                {/* Current step shows its number, never a check — a check on the
+                    active step reads as "already done". */}
+                {isCompleted && !isCurrent ? (
                   <i className="fa-solid fa-check text-xs" aria-hidden="true" />
                 ) : (
                   displayNum

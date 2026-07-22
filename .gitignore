@@ -34,3 +34,6 @@ tools/visual-check/screenshots/
 
 # Claude Code agent worktrees (embedded git repos — never commit)
 .claude/worktrees/
+
+# app-level pnpm symlinks (not caught by node_modules/ dir rule)
+apps/*/*/node_modules

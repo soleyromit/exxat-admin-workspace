@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -75,11 +75,11 @@ const SURVEY_TYPE_OPTIONS: { value: SurveyPurpose; label: string; description: s
   { value: 'preceptor_eval',    label: 'Preceptor Eval',  description: 'Clinical site and preceptor feedback' },
 ]
 
-// Editor wizard steps — build, configure, then review before publishing.
+// Editor wizard steps — configure first, then build, then review before publishing.
 type WizardStepKey = 'builder' | 'settings' | 'review'
 const WIZARD_STEPS: { n: number; key: WizardStepKey; label: string }[] = [
-  { n: 1, key: 'builder',  label: 'Builder' },
-  { n: 2, key: 'settings', label: 'Template settings' },
+  { n: 1, key: 'settings', label: 'Template settings' },
+  { n: 2, key: 'builder',  label: 'Builder' },
   { n: 3, key: 'review',   label: 'Review' },
 ]
 
@@ -406,13 +406,28 @@ function AttributesPanel({
   )
 }
 
-export function TemplateEditor({ templateId, embedded = false, onPublished }: {
+export function TemplateEditor({ templateId, embedded = false, onPublished, variant = 'guided' }: {
   /** Template to edit; falls back to the route param when rendered as a page. */
   templateId?: string
   /** Render without page chrome (SiteHeader) — e.g. inside the push wizard's Survey Design step. */
   embedded?: boolean
   /** Called after Publish (embedded hosts return to their own view). */
   onPublished?: (id: string) => void
+  /** Builder-step layout (design-compare variants, iteration 3). Section cards
+   *  (collapse/expand + in-section Add question) are IDENTICAL in every
+   *  variant — only the layout around them changes.
+   *  'rail' — switches between aspects.
+   *  'bands' — sticky aspect band headers carry identity + actions.
+   *  'document' — one centered column, sticky aspect chips, no side rail.
+   *  'preview' — build left, live student-facing preview right.
+   *  'minimal' — bare essentials: narrow column, plain headings, text actions.
+   *  'columns' — all three aspects side by side as board lanes.
+   *  'tabs' — horizontal aspect tabs, one aspect at a time worked
+   *           sequentially; each faculty role set is a first-class tab
+   *           (Monil Jul 21 proposal).
+   *  'guided' — DEFAULT (picked Jul 22): sequential stops in a left grouped
+   *             evaluation list — no chrome above the content. */
+  variant?: 'rail' | 'bands' | 'document' | 'preview' | 'minimal' | 'columns' | 'tabs' | 'guided'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -441,6 +456,31 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
     { key: 'general',        label: 'General' },
   ]
   const [activeGroup, setActiveGroup] = useState('course_content')
+  // Tabs/guided variants — which sequential stop (aspect or faculty role set)
+  // is on stage. Keys: 'course', `stop-<roleSetId>`, 'general'.
+  const [activeStop, setActiveStop] = useState('course')
+  // Document variant — scrollspy for the sticky aspect chip bar.
+  const [docAspect, setDocAspect] = useState('course_content')
+  useEffect(() => {
+    if (variant !== 'document') return
+    const els = ['course_content', 'faculty', 'general']
+      .map(k => document.getElementById(`aspect-${k}`))
+      .filter((el): el is HTMLElement => !!el)
+    if (els.length === 0) return
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setDocAspect(visible[0].target.id.replace('aspect-', ''))
+      },
+      /* Top inset = sticky breadcrumb + chip bar; bottom bias keeps the chip on
+         the aspect whose header just scrolled past. */
+      { rootMargin: '-112px 0px -55% 0px' },
+    )
+    els.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [variant])
   // Template details live in the persistent right settings panel (Airtable/Typeform
   // pattern) — no tabs, no dialog. Publish just publishes.
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
@@ -462,7 +502,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
     openImport(target.subjectKey, target.roleSetId)
   }
   // Editor is a 3-step wizard — Builder → Template settings → Review — ending in Publish.
-  const [wizardStep, setWizardStep] = useState<WizardStepKey>('builder')
+  const [wizardStep, setWizardStep] = useState<WizardStepKey>('settings')
   const [maxStepReached, setMaxStepReached] = useState(1)
   const currentStepNum = WIZARD_STEPS.find(s => s.key === wizardStep)?.n ?? 1
   const goToStep = (key: WizardStepKey) => {
@@ -510,9 +550,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
 
   // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
   const ASPECT_INFO: Record<string, string> = {
-    course_content: 'About the course itself — shown once per course.',
-    faculty:        'About teaching staff — group sections into role sets that evaluate one or more roles.',
-    general:        'Program-wide questions — shown once per evaluation.',
+    course_content: 'Evaluates the course itself — asked once per course.',
+    faculty:        'Evaluates teaching staff — sections group into role sets that evaluate one or more roles.',
+    general:        'Evaluates the program overall — asked once per evaluation.',
   }
   const aspectCounts = (key: string) => {
     const secs = sections.filter(s => s.subjectKey === key)
@@ -541,16 +581,50 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
     const newId = `rs-${Date.now()}`
     addFacultyRoleSet(t.id, newId)
     setRolePickerSetId(newId) // open the role picker straight away so the user picks roles first
+    return newId
   }
 
-  function handleAddSection(subjectKey?: string, roleSetId?: string) {
+  // Sequential "stops" for the tabs/guided variants — Course, each faculty
+  // role set as its own first-class stop (a role, not a "role set", drives
+  // the sequence), then General.
+  // label = full role list (rail, aria); shortLabel = compact "first +N" form
+  // for tabs and prev/next buttons where an unbounded list won't fit.
+  const builderStops: { key: string; label: string; shortLabel: string; subjectKey: string; roleSetId?: string }[] = [
+    { key: 'course', label: 'Course', shortLabel: 'Course', subjectKey: 'course_content' },
+    ...facultyRoleSets.map(set => {
+      const roleShort = set.roles.length === 0 ? 'new evaluation'
+        : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
+        : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
+      return {
+        key: `stop-${set.id}`,
+        label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · new evaluation',
+        shortLabel: `Faculty · ${roleShort}`,
+        subjectKey: 'faculty',
+        roleSetId: set.id,
+      }
+    }),
+    { key: 'general', label: 'General', shortLabel: 'General', subjectKey: 'general' },
+  ]
+  const stopSections = (stop: { subjectKey: string; roleSetId?: string }) =>
+    sections.filter(s => s.subjectKey === stop.subjectKey && (stop.subjectKey !== 'faculty' || s.roleSetId === stop.roleSetId))
+  const stopQuestionCount = (stop: { subjectKey: string; roleSetId?: string }) =>
+    stopSections(stop).reduce((n, s) => n + s.questions.length, 0)
+  const activeStopIdx = Math.max(0, builderStops.findIndex(s => s.key === activeStop))
+  const curStop = builderStops[activeStopIdx]
+  const handleAddRoleStop = () => {
+    const newId = handleAddRoleSet()
+    setActiveStop(`stop-${newId}`)
+  }
+
+  function handleAddSection(subjectKey?: string, roleSetId?: string): string | undefined {
     const key = subjectKey ?? (isProgrammatic ? 'course_content' : activeGroup)
-    if (!key) return
+    if (!key) return undefined
     const newId = `sec-${Date.now()}`
     addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [], roleSetId }, newId)
     setEditingSectionId(newId)
     setEditingSectionTitle('Untitled Section')
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
+    return newId
   }
 
   // ── Document import — insert extracted sections + questions into a tab ───────
@@ -708,13 +782,16 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
         className="border border-border overflow-hidden"
         style={{ background: 'var(--card)', borderRadius: 'var(--radius-lg)' }}
       >
-        {/* Section header */}
+        {/* Section header — anchor target for the canvas outline rail (small
+            element, not the tall card, so scroll-spy tracks what's in view) */}
         <div
+          id={`sec-${sec.id}`}
           className="flex items-center gap-2"
           style={{
             background: 'var(--muted)',
             padding: '10px 14px',
             borderBottom: isOpen ? '1px solid var(--border)' : 'none',
+            scrollMarginTop: 12,
           }}
         >
           <Button
@@ -743,15 +820,26 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
                   if (e.key === 'Escape') setEditingSectionId(null)
                 }}
                 onClick={e => e.stopPropagation()}
-                className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-0 rounded-none shadow-none px-0"
+                className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-ring focus-visible:ring-offset-0 rounded-none shadow-none px-0"
               />
             ) : (
               <span
-                className="text-sm font-semibold truncate cursor-text block"
+                role="button"
+                tabIndex={0}
+                aria-label={`Rename section ${sec.title}`}
+                className="text-sm font-semibold truncate cursor-text block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={e => {
                   e.stopPropagation()
                   setEditingSectionTitle(sec.title)
                   setEditingSectionId(sec.id)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setEditingSectionTitle(sec.title)
+                    setEditingSectionId(sec.id)
+                  }
                 }}
               >
                 {sec.title}
@@ -760,7 +848,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           </div>
 
           <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-            {sec.questions.length}q
+            {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
           </span>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -787,6 +875,17 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           <div className="flex flex-col gap-2" style={{ padding: '10px 12px 14px' }}>
             {sec.questions.map((q, qIndex) => {
               const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
+              // Aspect stamp — cards are self-identifying mid-scroll (which
+              // evaluation the question belongs to). Faculty adds the set's roles.
+              const stampGroup = subjectGroups.find(g => g.key === sec.subjectKey)?.label
+              const stampRoles = sec.subjectKey === 'faculty' && sec.roleSetId
+                ? (facultyRoleSets.find(rs => rs.id === sec.roleSetId)?.roles ?? []).map(ROLE_LABEL).join(', ')
+                : ''
+              // Single-aspect variants (tabs/guided) already scope the stage to
+              // one aspect — the stamp would repeat the stage heading on every
+              // card, so it only renders in the long-scroll variants.
+              const singleAspectStage = variant === 'tabs' || variant === 'guided'
+              const cardStamp = isProgrammatic || !stampGroup || singleAspectStage ? '' : stampRoles ? `${stampGroup} — ${stampRoles}` : stampGroup
               return (
                 <div
                   key={q.id}
@@ -794,37 +893,38 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
                   onDragStart={() => handleQDragStart(sec.id, qIndex)}
                   onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
                   onDragEnd={handleQDragEnd}
-                  className="group rounded-lg border cursor-pointer"
+                  className="group relative rounded-lg border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   style={{
                     background: 'var(--muted)',
                     borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
                     outline: isSelected ? '1px solid var(--foreground)' : 'none',
                   }}
+                  tabIndex={0}
                   onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
+                  onKeyDown={e => {
+                    if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+                      e.preventDefault()
+                      setSelectedQuestion({ sectionId: sec.id, questionId: q.id })
+                    }
+                  }}
                 >
-                  {/* Type label row */}
-                  <div className="flex items-center justify-end gap-1 px-3 pt-2">
-                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                      {qTypeLabel(q.answerType)}
+                  {/* Question text leads the card */}
+                  <div className="px-4 pt-3">
+                    <span className="text-sm font-semibold">
+                      {q.text || <span className="font-normal text-muted-foreground">Untitled Question</span>}
                     </span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          aria-label="Question info"
-                          className="opacity-40"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Click to edit attributes</TooltipContent>
-                    </Tooltip>
                   </div>
-                  {/* Hover toolbar */}
+                  {/* Meta line — type · aspect stamp */}
+                  <div className="px-4 pt-1 pb-3">
+                    <span className="text-xs text-muted-foreground">
+                      {qTypeLabel(q.answerType)}{cardStamp ? ` · ${cardStamp}` : ''}
+                    </span>
+                  </div>
+                  {/* Actions — overlay so the card reserves no space at rest;
+                      focus-within keeps them reachable by keyboard */}
                   <div
-                    className="flex items-center gap-0.5 px-2 pb-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute flex items-center gap-0.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                    style={{ top: 4, right: 8, background: 'var(--muted)' }}
                     onClick={e => e.stopPropagation()}
                   >
                     <Button variant="ghost" size="icon-sm" aria-label="Move up" disabled={qIndex === 0}
@@ -841,20 +941,14 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
                     </Button>
                     <Button variant="ghost" size="icon-sm" aria-label="Delete question"
                       onClick={() => handleDeleteQuestion(sec.id, q.id)}>
-                      <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
+                      <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
                     </Button>
                     <div
-                      style={{ cursor: 'grab', marginLeft: 'auto' }}
-                      className="shrink-0 text-muted-foreground flex items-center opacity-50"
+                      style={{ cursor: 'grab' }}
+                      className="shrink-0 text-muted-foreground flex items-center"
                     >
                       <DragHandleGripIcon />
                     </div>
-                  </div>
-                  {/* Question text */}
-                  <div className="px-4 pb-4">
-                    <span className="text-sm font-semibold">
-                      {q.text || <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>Untitled Question</span>}
-                    </span>
                   </div>
                 </div>
               )
@@ -864,7 +958,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
             <div className="flex justify-center pt-2">
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="default" size="sm" className="font-semibold">
+                  {/* Outline, not filled — a repeated per-section action must not
+                      outrank the page-level actions (P3). */}
+                  <Button variant="outline" size="sm" className="font-semibold">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                     Add question
                   </Button>
@@ -888,6 +984,440 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           </div>
         )}
       </div>
+    )
+  }
+
+  // Opening-instruction — one quiet text line (Zoom-builder pattern): a text
+  // affordance when empty, the instruction text itself when filled; the editor
+  // expands on demand. Chrome demoted after the Jul 21 crowding review.
+  function renderAspectInstruction(key: string) {
+    const aspectLabel = subjectGroups.find(g => g.key === key)?.label
+    const instr = aspectInstructions[key]
+    const summary = instr?.title || instr?.text
+    const open = openInstruction[key] ?? false
+    if (!open) {
+      return (
+        <Button
+          variant="ghost"
+          size="xs"
+          className="w-fit -ms-2 text-muted-foreground font-normal"
+          onClick={() => setOpenInstruction(p => ({ ...p, [key]: true }))}
+        >
+          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+          {summary ? (
+            <span className="truncate" style={{ maxWidth: 420 }}>Opening instruction · {summary}</span>
+          ) : (
+            'Add opening instruction'
+          )}
+        </Button>
+      )
+    }
+    return (
+      <div className="rounded-lg border border-border flex flex-col gap-2" style={{ padding: '10px 12px', background: 'var(--card)' }}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Opening instruction — shown to students at the start of {aspectLabel}
+          </span>
+          <Button variant="ghost" size="icon-xs" aria-label="Collapse opening instruction"
+            onClick={() => setOpenInstruction(p => ({ ...p, [key]: false }))}>
+            <i className="fa-light fa-chevron-up text-xs" aria-hidden="true" />
+          </Button>
+        </div>
+        <Input
+          value={aspectInstructions[key]?.title ?? ''}
+          onChange={e => setAspectInstruction(key, { title: e.target.value })}
+          placeholder="Title (optional) — e.g. About this section"
+          className="h-8 text-sm"
+          aria-label={`Opening instruction title for ${key}`}
+        />
+        <Textarea
+          value={aspectInstructions[key]?.text ?? ''}
+          onChange={e => setAspectInstruction(key, { text: e.target.value })}
+          placeholder="Instruction shown to students before this section's questions…"
+          rows={2}
+          className="text-sm"
+          style={{ resize: 'none' }}
+          aria-label={`Opening instruction text for ${key}`}
+        />
+      </div>
+    )
+  }
+
+  // Role-set header (Evaluating + role chips + picker + actions) — shared by the
+  // full aspect body and the focus variant's compact section list.
+  function renderRoleSetHeader(set: PceTemplateRoleSet) {
+    return (
+      <div id={`roleset-${set.id}`} className="flex items-start gap-3"
+        style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
+        {/* No visible "Evaluating" label — the aspect identity line already
+            states the direction; the aria-label keeps it for screen readers. */}
+        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0" role="group" aria-label="Roles this evaluation covers">
+          {set.roles.map(roleKey => {
+            const label = ROLE_LABEL(roleKey)
+            return (
+              <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
+                style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
+                {label}
+                <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
+                  className="opacity-50 hover:opacity-100" onClick={() => toggleRoleSetRole(set, roleKey)}>
+                  <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                </Button>
+              </span>
+            )
+          })}
+          {/* Add flows INLINE as the last pill — it wraps with the chips so
+              the action stays next to the list it modifies. */}
+          <Popover open={rolePickerSetId === set.id}
+            onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="xs" className="rounded-full">
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                {set.roles.length === 0 ? 'Pick one or more roles' : 'Add role'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-72" align="start" sideOffset={8} aria-label="Add role">
+              {renderRolePickerContent(set)}
+            </PopoverContent>
+          </Popover>
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Generate from document" className="shrink-0"
+              onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+              <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Generate from document</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Remove role set" className="shrink-0"
+              onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+              <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Remove role set</TooltipContent>
+        </Tooltip>
+      </div>
+    )
+  }
+
+  // Decision gate for an empty stop (tabs/guided variants) — upload OR build
+  // manually, one choice on screen (Monil Jul 21: "one decision point is
+  // taken and done").
+  function renderStopGate(stop: { subjectKey: string; roleSetId?: string }) {
+    return (
+      <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <Button
+          variant="outline"
+          className="h-auto flex-col items-center gap-1"
+          style={{ paddingBlock: 24 }}
+          onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}
+        >
+          <i className="fa-light fa-sparkles text-base" aria-hidden="true" />
+          <span className="text-sm font-semibold">Upload a document</span>
+          <span className="text-xs text-muted-foreground font-normal whitespace-normal">Generate sections and questions automatically — edit them after</span>
+        </Button>
+        <Button
+          variant="outline"
+          className="h-auto flex-col items-center gap-1"
+          style={{ paddingBlock: 24 }}
+          onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}
+        >
+          <i className="fa-light fa-plus text-base" aria-hidden="true" />
+          <span className="text-sm font-semibold">Build manually</span>
+          <span className="text-xs text-muted-foreground font-normal whitespace-normal">Add sections and questions yourself</span>
+        </Button>
+      </div>
+    )
+  }
+
+  // One stop's canvas (tabs/guided variants) — role chips for a faculty stop,
+  // then the standard section cards or the decision gate when empty.
+  function renderStopStage(stop: { subjectKey: string; roleSetId?: string }) {
+    const secs = stopSections(stop)
+    const set = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
+    // Roles come first — an evaluation with no audience can't take questions
+    // yet, so the upload/build gate waits until at least one role is picked.
+    const rolesPending = set ? set.roles.length === 0 : false
+    return (
+      <div className="flex flex-col gap-3">
+        {set && renderRoleSetHeader(set)}
+        {rolesPending ? (
+          <p className="text-xs text-muted-foreground text-center" style={{ padding: '24px 0' }}>
+            Choose who this evaluation covers — pick at least one role above to start adding questions.
+          </p>
+        ) : secs.length === 0 ? renderStopGate(stop) : (
+          <>
+            {secs.map(sec => renderSectionCard(sec))}
+            {/* Full-width dashed row — visible "insert here" affordance in the
+                flow where the section will appear (a heading-level button would
+                be ambiguous across faculty role sets). */}
+            <Button variant="outline" size="sm" className="w-full font-semibold border-dashed"
+              onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+              Add section
+            </Button>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // Prev/next between stops (outline — the wizard footer below owns the
+  // single filled CTA).
+  function renderStopNav() {
+    const prev = activeStopIdx > 0 ? builderStops[activeStopIdx - 1] : null
+    const next = activeStopIdx < builderStops.length - 1 ? builderStops[activeStopIdx + 1] : null
+    return (
+      <div className="flex items-center justify-between" style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        {prev ? (
+          <Button variant="outline" size="sm" onClick={() => setActiveStop(prev.key)}>
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+            {prev.shortLabel}
+          </Button>
+        ) : <span />}
+        {next ? (
+          <Button variant="outline" size="sm" onClick={() => setActiveStop(next.key)}>
+            Next: {next.shortLabel}
+            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+          </Button>
+        ) : (
+          <span className="text-xs text-muted-foreground">All aspects covered — continue to Review</span>
+        )}
+      </div>
+    )
+  }
+
+  // Compact upload entry — "Generate from document" as a header action instead
+  // of the dashed panel (bands + minimal variants).
+  const generateFromDocButton = (subjectKey: string, roleSetId?: string) => (
+    <Button
+      variant="outline"
+      size="xs"
+      className="shrink-0"
+      onClick={() => { uploadTargetRef.current = { subjectKey, roleSetId }; uploadInputRef.current?.click() }}
+    >
+      <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+      Generate from document
+    </Button>
+  )
+
+  // ── Preview variant — live student-facing rendering of the template ─────────
+  function renderPreviewQuestion(q: TemplateQuestion, num: number) {
+    const isSel = selectedQuestion?.questionId === q.id
+    if (q.answerType === 'title') {
+      return <h4 key={q.id} className="text-sm font-semibold" style={{ paddingTop: 4 }}>{q.text || 'Untitled title'}</h4>
+    }
+    const choiceIcon = q.answerType === 'multiple_choice' ? 'fa-square' : 'fa-circle'
+    return (
+      <div key={q.id} className="flex flex-col gap-2 rounded-md"
+        style={{ padding: '8px 10px', outline: isSel ? '2px solid var(--ring)' : 'none', outlineOffset: 2 }}>
+        <span className="text-sm font-medium">
+          {num}. {q.text || <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
+        </span>
+        {q.answerType === 'likert' && (
+          <div className="flex flex-col gap-1" aria-hidden="true">
+            <div className="flex items-center gap-1.5">
+              {EVAL_DEFAULT_SCALE.labels.map((_, i) => (
+                <div key={i} className="flex-1 h-8 rounded-md border border-border flex items-center justify-center text-sm tabular-nums"
+                  style={{ background: 'var(--background)' }}>
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{EVAL_DEFAULT_SCALE.labels[0]}</span>
+              <span>{EVAL_DEFAULT_SCALE.labels[EVAL_DEFAULT_SCALE.labels.length - 1]}</span>
+            </div>
+          </div>
+        )}
+        {q.answerType === 'free_text' && (
+          <div className="rounded-md border border-border text-sm"
+            style={{ minHeight: 60, padding: '8px 10px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+            Type your answer…
+          </div>
+        )}
+        {CHOICE_TYPES.has(q.answerType) && q.answerType !== 'select_dropdown' && (
+          <div className="flex flex-col gap-1.5" aria-hidden="true">
+            {(q.choices?.length ? q.choices : ['Option 1', 'Option 2']).map((c, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <i className={`fa-light ${choiceIcon} text-xs text-muted-foreground`} aria-hidden="true" />{c}
+              </div>
+            ))}
+          </div>
+        )}
+        {q.answerType === 'select_dropdown' && (
+          <div className="flex items-center justify-between rounded-md border border-border text-sm"
+            style={{ height: 34, padding: '0 10px', background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Select an option<i className="fa-light fa-caret-down" aria-hidden="true" />
+          </div>
+        )}
+        {q.answerType === 'number' && (
+          <div className="rounded-md border border-border text-sm flex items-center"
+            style={{ height: 34, padding: '0 10px', maxWidth: 180, background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Enter a number
+          </div>
+        )}
+        {q.answerType === 'date_picker' && (
+          <div className="rounded-md border border-border text-sm flex items-center justify-between"
+            style={{ height: 34, padding: '0 10px', maxWidth: 220, background: 'var(--background)', color: 'var(--muted-foreground)' }} aria-hidden="true">
+            Select a date<i className="fa-light fa-calendar" aria-hidden="true" />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function renderStudentPreview() {
+    const aspectBlocks = subjectGroups
+      .map(g => {
+        const groupSections = g.key === 'faculty'
+          ? facultyRoleSets.flatMap(set => sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id))
+          : sections.filter(s => s.subjectKey === g.key)
+        return { g, groupSections }
+      })
+      .filter(b => b.groupSections.length > 0 || aspectInstructions[b.g.key]?.title || aspectInstructions[b.g.key]?.text)
+    return (
+      <aside
+        aria-label="Student preview"
+        className="hidden lg:flex flex-col shrink-0 sticky self-start rounded-xl border border-border overflow-hidden"
+        style={{ top: 56, width: '44%', maxWidth: 560, height: 'calc(100vh - 136px)', background: 'var(--muted)' }}
+      >
+        <div className="flex items-center justify-between shrink-0" style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+          <span className="text-xs font-medium text-muted-foreground">
+            <i className="fa-light fa-eye me-1.5" aria-hidden="true" />Student preview
+          </span>
+          <span className="text-xs text-muted-foreground">Updates live as you build</span>
+        </div>
+        {/* Focusable scroll region — the preview content is decorative, so the
+            region itself must take keyboard focus to stay scrollable (axe
+            scrollable-region-focusable). */}
+        <div
+          className="flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          style={{ padding: 14 }}
+          tabIndex={0}
+          role="region"
+          aria-label="Student preview content"
+        >
+          <div className="rounded-lg border border-border flex flex-col gap-6" style={{ background: 'var(--background)', padding: '22px 22px 30px' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 400, lineHeight: 1.25 }}>
+              {t.name || 'Untitled template'}
+            </h3>
+            {aspectBlocks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Add sections and questions on the left to see what students will see here.
+              </p>
+            ) : (
+              aspectBlocks.map(({ g, groupSections }) => {
+                let n = 0
+                const instr = aspectInstructions[g.key]
+                return (
+                  <div key={g.key} className="flex flex-col gap-3">
+                    {(instr?.title || instr?.text) && (
+                      <div className="flex flex-col gap-0.5">
+                        {instr?.title && <h4 className="text-sm font-semibold">{instr.title}</h4>}
+                        {instr?.text && <p className="text-sm text-muted-foreground">{instr.text}</p>}
+                      </div>
+                    )}
+                    {groupSections.map(sec => (
+                      <div key={sec.id} className="flex flex-col gap-2">
+                        <h4 className="text-sm font-semibold" style={{ paddingTop: 4 }}>{sec.title}</h4>
+                        {sec.questions.map(q => {
+                          if (q.answerType === 'title') return renderPreviewQuestion(q, 0)
+                          n += 1
+                          return renderPreviewQuestion(q, n)
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      </aside>
+    )
+  }
+
+  // ── Canvas-style per-aspect builder body (document + preview variants) ──────
+  // Copy of the rail variant's inline aspect content parameterized by aspect key
+  // (kept verbatim apart from anchors so the two layouts compare honestly —
+  // delete the losing variant's copy once a direction is picked).
+  function renderAspectBody(key: string) {
+    return (
+      <>
+        {renderAspectInstruction(key)}
+
+        {key === 'faculty' ? (
+          /* Role sets — roles declared OUTSIDE the section (Jul 1 constraint).
+             Each set picks one/multiple roles then owns its own sections. */
+          <>
+            {facultyRoleSets.map(set => {
+              const setSections = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+              return (
+                <div key={set.id} className="rounded-lg border border-border overflow-hidden"
+                  style={{ background: 'var(--background)' }}>
+                  {renderRoleSetHeader(set)}
+                  {/* Sections owned by this set — upload is a quiet text action,
+                      not a panel (Jul 21 crowding review) */}
+                  <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
+                    {setSections.map(sec => renderSectionCard(sec))}
+                    <div className="flex items-center justify-center gap-1" style={{ paddingTop: setSections.length ? 2 : 6 }}>
+                      <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                      </Button>
+                      <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
+                        onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+                        <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+                        Generate from document
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+              <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
+                <i className="fa-light fa-user-group text-xs" aria-hidden="true" />Add role set
+              </Button>
+            </div>
+          </>
+        ) : (() => {
+          const groupSections = sections.filter(s => s.subjectKey === key)
+          const actionsRow = (
+            <div className="flex items-center justify-center gap-1" style={{ paddingTop: 4 }}>
+              <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Add section
+              </Button>
+              <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
+              <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
+                onClick={() => { uploadTargetRef.current = { subjectKey: key }; uploadInputRef.current?.click() }}>
+                <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+                Generate from document
+              </Button>
+            </div>
+          )
+          if (groupSections.length === 0) {
+            return (
+              <div
+                className="flex items-center justify-center rounded-lg border border-dashed"
+                style={{ padding: '20px 16px', borderColor: 'var(--border)' }}
+              >
+                {actionsRow}
+              </div>
+            )
+          }
+          return (
+            <>
+              {groupSections.map(sec => renderSectionCard(sec))}
+              {actionsRow}
+            </>
+          )
+        })()}
+      </>
     )
   }
 
@@ -958,13 +1488,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
                 : 'No type selected — template will apply to all course types.'}
             </p>
             <div className="flex items-center gap-3">
-              <ToggleSwitch
-                id="tmpl-default-for-type"
-                checked={!!t.isDefaultForType}
-                onChange={(v) => {
-                  if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
-                }}
-              />
+              {/* DS ToggleSwitch has no disabled prop (checked/onChange/id only) —
+                  disabled state expressed on a wrapper; the handler stays guarded. */}
+              <span
+                className={!t.deliveryMode ? 'opacity-50 pointer-events-none' : ''}
+                aria-disabled={!t.deliveryMode || undefined}
+              >
+                <ToggleSwitch
+                  id="tmpl-default-for-type"
+                  checked={!!t.isDefaultForType}
+                  onChange={(v) => {
+                    if (t.deliveryMode) updateTemplate(t.id, { isDefaultForType: v })
+                  }}
+                />
+              </span>
               <label
                 htmlFor="tmpl-default-for-type"
                 className={`text-sm cursor-pointer ${!t.deliveryMode ? 'text-muted-foreground' : ''}`}
@@ -1139,7 +1676,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    /* Non-rail variants scroll at the window level (sticky rail/panel/footer) —
+       an overflow-hidden ancestor would break position:sticky against the window. */
+    <div className={`flex flex-col flex-1 ${variant === 'rail' || variant === 'guided' ? 'overflow-hidden' : ''}`}>
       {!embedded && (
         <SiteHeader
           breadcrumbs={[{ label: 'Templates', href: backHref }]}
@@ -1175,13 +1714,17 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
             : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
           }
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
-            >
-              Save draft
-            </Button>
+            {/* Published templates edit via Unpublish → edit → republish; offering
+                "Save draft" beside an Approved badge tells two stories at once. */}
+            {t.status !== 'active' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
+              >
+                Save draft
+              </Button>
+            )}
             {/* Publish moved into the wizard's Review step; Unpublish stays here for live templates */}
             {t.status === 'active' && (
               <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
@@ -1201,8 +1744,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished }: {
           steps={WIZARD_STEPS.map(s => ({ n: s.n, label: s.label }))}
         />
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
-          {/* Left — section list */}
-          <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+          {/* Left — section list. Non-rail variants scroll at the window level, so
+              they must not sit under an overflow-hidden ancestor (breaks sticky). */}
+          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'rail' || variant === 'guided' ? 'overflow-hidden' : ''}`}>
           {importedBanner && (
             <div style={{ padding: '10px 40px 0' }}>
               <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
@@ -1233,6 +1777,503 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          ) : variant === 'bands' ? (
+            /* Bands variant — sticky aspect band headers carry identity + actions
+               (Adaline / Workable pattern); upload demoted to a band-header
+               "Generate from document" action. Section cards are the standard
+               builder cards (collapse/expand + in-section Add question unchanged). */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto" style={{ maxWidth: 860, padding: '4px 32px 48px' }}>
+                {subjectGroups.map(g => {
+                  const c = aspectCounts(g.key)
+                  const groupSections = sections.filter(s => s.subjectKey === g.key)
+                  return (
+                    <section key={g.key} aria-labelledby={`ws-aspect-${g.key}-h`} style={{ paddingBottom: 26 }}>
+                      {/* Sticky band header — aspect identity + its actions in one line */}
+                      <div
+                        className="sticky flex items-center gap-3"
+                        style={{ top: 48, zIndex: 10, background: 'var(--background)', padding: '10px 0 8px', borderBottom: '1px solid var(--border)' }}
+                      >
+                        <h2 id={`ws-aspect-${g.key}-h`} className="text-sm font-semibold shrink-0">{g.label}</h2>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                        </Tooltip>
+                        <span className="text-xs text-muted-foreground tabular-nums ms-auto shrink-0">
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                        {g.key !== 'faculty' && generateFromDocButton(g.key)}
+                        {g.key === 'faculty' ? (
+                          <Button variant="ghost" size="xs" className="shrink-0" onClick={handleAddRoleSet}>
+                            <i className="fa-light fa-user-group text-xs" aria-hidden="true" />Add role set
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="xs" className="shrink-0" onClick={() => handleAddSection(g.key)}>
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-3" style={{ paddingTop: 12 }}>
+                        {renderAspectInstruction(g.key)}
+                        {g.key === 'faculty' ? (
+                          facultyRoleSets.length === 0 ? (
+                            <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
+                              No role sets yet — add one to start building faculty questions.
+                            </p>
+                          ) : (
+                            facultyRoleSets.map(set => {
+                              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                              return (
+                                <div key={set.id} className="flex flex-col gap-3" style={{ borderLeft: '2px solid var(--border)', paddingLeft: 12, marginTop: 8 }}>
+                                  {renderRoleSetHeader(set)}
+                                  <div className="flex items-center">
+                                    {generateFromDocButton('faculty', set.id)}
+                                  </div>
+                                  {setSecs.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground" style={{ padding: '8px 0' }}>No sections yet.</p>
+                                  ) : (
+                                    setSecs.map(sec => renderSectionCard(sec))
+                                  )}
+                                  <Button variant="ghost" size="xs" className="text-muted-foreground w-fit"
+                                    onClick={() => handleAddSection('faculty', set.id)}>
+                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                                  </Button>
+                                </div>
+                              )
+                            })
+                          )
+                        ) : groupSections.length === 0 ? (
+                          <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
+                            No sections yet — add one or generate from a document.
+                          </p>
+                        ) : (
+                          groupSections.map(sec => renderSectionCard(sec))
+                        )}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'document' ? (
+            /* Document variant — the builder reads as the questionnaire itself:
+               one centered column, sticky aspect chips for wayfinding (Etsy
+               listing-editor / Workable interview-kit pattern), no side rail. */
+            <div className="flex-1 min-w-0">
+              {/* Sticky aspect chip bar */}
+              <div
+                className="sticky flex justify-center"
+                style={{ top: 48, zIndex: 20, background: 'var(--background)', borderBottom: '1px solid var(--border)' }}
+              >
+                <div className="flex items-center gap-2 w-full" style={{ maxWidth: 760, padding: '10px 24px' }} role="group" aria-label="Jump to aspect">
+                  {subjectGroups.map(g => {
+                    const c = aspectCounts(g.key)
+                    const active = docAspect === g.key
+                    return (
+                      <Button
+                        key={g.key}
+                        variant="outline"
+                        size="sm"
+                        aria-pressed={active}
+                        className={`rounded-full ${active ? 'border-foreground bg-muted' : ''}`}
+                        onClick={() => {
+                          document.getElementById(`aspect-${g.key}`)?.scrollIntoView({ behavior: 'auto', block: 'start' })
+                          setDocAspect(g.key)
+                        }}
+                      >
+                        {g.label}
+                        <span className="text-xs tabular-nums text-muted-foreground">{c.questions}</span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="mx-auto" style={{ maxWidth: 760, padding: '20px 24px 48px' }}>
+                {subjectGroups.map((g, gi) => {
+                  const c = aspectCounts(g.key)
+                  return (
+                    <section
+                      key={g.key}
+                      aria-labelledby={`doc-aspect-${g.key}-heading`}
+                      style={{
+                        borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
+                        padding: gi > 0 ? '24px 0 32px' : '4px 0 32px',
+                      }}
+                    >
+                      {/* Aspect header — document heading; anchor for the chip bar */}
+                      <div id={`aspect-${g.key}`} className="flex items-end justify-between gap-3" style={{ scrollMarginTop: 108 }}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h2
+                            id={`doc-aspect-${g.key}-heading`}
+                            style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
+                          >
+                            {g.label}
+                          </h2>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                                <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-4" style={{ paddingTop: 16 }}>
+                        {renderAspectBody(g.key)}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'preview' ? (
+            /* Preview variant — build left, live student-facing preview right
+               (Maze / Zoom Surveys pattern): the preview renders real scales,
+               choices, and inputs and updates as the template is edited. */
+            <div className="flex flex-row gap-6 flex-1 min-h-0" style={{ padding: '20px 32px 48px' }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col" style={{ maxWidth: 620 }}>
+                  {subjectGroups.map((g, gi) => {
+                    const c = aspectCounts(g.key)
+                    return (
+                      <section
+                        key={g.key}
+                        aria-labelledby={`pv-aspect-${g.key}-h`}
+                        style={{ borderTop: gi > 0 ? '1px solid var(--border)' : 'none', padding: gi > 0 ? '20px 0 24px' : '0 0 24px' }}
+                      >
+                        <div className="flex items-start justify-between gap-3" style={{ paddingBottom: 12 }}>
+                          <div className="flex items-center gap-1 min-w-0">
+                            <h2 id={`pv-aspect-${g.key}-h`} className="text-base font-semibold">{g.label}</h2>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                                  <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 4 }}>
+                            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-4">{renderAspectBody(g.key)}</div>
+                      </section>
+                    )
+                  })}
+                </div>
+              </div>
+              {renderStudentPreview()}
+            </div>
+          ) : variant === 'minimal' ? (
+            /* Minimal variant — bare essentials (GitBook-calm): one narrow
+               centered column, plain headings, text-only actions, no chips, no
+               rails, no dashed upload panels. Standard section cards inside. */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto flex flex-col" style={{ maxWidth: 720, padding: '20px 24px 64px' }}>
+                {subjectGroups.map((g, gi) => {
+                  const c = aspectCounts(g.key)
+                  const groupSections = sections.filter(s => s.subjectKey === g.key)
+                  const instr = aspectInstructions[g.key]
+                  // Instruction editor/summary shows below only when open or
+                  // filled; otherwise its trigger sits in the header cluster so
+                  // every option lives on ONE line (Jul 21 layout feedback).
+                  const instrVisible = (openInstruction[g.key] ?? false) || !!(instr?.title || instr?.text)
+                  return (
+                    <section
+                      key={g.key}
+                      aria-labelledby={`mn-aspect-${g.key}-h`}
+                      style={{
+                        borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
+                        padding: gi > 0 ? '24px 0 32px' : '0 0 32px',
+                      }}
+                    >
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-2" style={{ paddingBottom: 4 }}>
+                        <h2
+                          id={`mn-aspect-${g.key}-h`}
+                          style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
+                        >
+                          {g.label}
+                        </h2>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                        <span className="ms-auto flex items-center flex-wrap gap-1.5">
+                          {!instrVisible && (
+                            <Button variant="outline" size="xs"
+                              onClick={() => setOpenInstruction(p => ({ ...p, [g.key]: true }))}>
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                              Opening instruction
+                            </Button>
+                          )}
+                          {g.key === 'faculty' ? (
+                            <Button variant="outline" size="xs" onClick={handleAddRoleSet}>
+                              <i className="fa-light fa-user-group text-xs" aria-hidden="true" />
+                              Add role set
+                            </Button>
+                          ) : (
+                            <>
+                              <Button variant="outline" size="xs" onClick={() => handleAddSection(g.key)}>
+                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                Add section
+                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label={`Generate from document for ${g.label}`}
+                                    onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
+                                    <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Generate from document</TooltipContent>
+                              </Tooltip>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      {/* Aspect identity line — the three groups are visually identical
+                          otherwise, so each must state who/what it evaluates. */}
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Part {gi + 1} of {subjectGroups.length} · {ASPECT_INFO[g.key]}
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        {instrVisible && renderAspectInstruction(g.key)}
+                        {g.key === 'faculty' ? (
+                          facultyRoleSets.length === 0 ? (
+                            <div className="flex items-center justify-center" style={{ minHeight: 72 }}>
+                              <Button variant="link" size="sm" onClick={handleAddRoleSet} className="font-semibold">
+                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                Add role set
+                              </Button>
+                            </div>
+                          ) : (
+                            facultyRoleSets.map(set => {
+                              const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                              return (
+                                <div key={set.id} className="flex flex-col gap-3">
+                                  {renderRoleSetHeader(set)}
+                                  {setSecs.map(sec => renderSectionCard(sec))}
+                                  {/* Trailing add keeps the set header to one row —
+                                      Generate from document lives in the set's ⋯ menu */}
+                                  <div className="flex items-center justify-center">
+                                    <Button variant="link" size="sm" className="font-semibold"
+                                      onClick={() => handleAddSection('faculty', set.id)}>
+                                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                      Add section
+                                    </Button>
+                                  </div>
+                                </div>
+                              )
+                            })
+                          )
+                        ) : groupSections.length === 0 ? (
+                          <div className="flex items-center justify-center" style={{ minHeight: 72 }}>
+                            <Button variant="link" size="sm" onClick={() => handleAddSection(g.key)} className="font-semibold">
+                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                              Add section
+                            </Button>
+                          </div>
+                        ) : (
+                          groupSections.map(sec => renderSectionCard(sec))
+                        )}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'columns' ? (
+            /* Columns variant — all three aspects side by side as board lanes
+               (Hootsuite / Todoist pattern): compare and balance the template
+               across audiences at a glance. Standard section cards inside. */
+            <div className="flex-1 min-w-0" style={{ padding: '16px 20px 48px' }}>
+              <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                {subjectGroups.map(g => {
+                  const c = aspectCounts(g.key)
+                  return (
+                    <div key={g.key} className="flex flex-col gap-3 rounded-xl" style={{ background: 'var(--muted)', padding: 12 }}>
+                      <div className="flex items-center gap-1" style={{ padding: '2px 2px 0' }}>
+                        <h2 className="text-sm font-semibold min-w-0 truncate">{g.label}</h2>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                        </Tooltip>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0 ms-auto">
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {renderAspectBody(g.key)}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : variant === 'tabs' ? (
+            /* Tabs variant — Monil Jul 21: horizontal aspect tabs, one aspect
+               on stage at a time, worked left to right; a faculty role set is
+               a first-class tab. Standard section cards inside. */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto flex flex-col" style={{ maxWidth: 760, padding: '16px 24px 64px' }}>
+                <div className="flex items-end flex-wrap" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div
+                    role="tablist"
+                    aria-label="Template aspects"
+                    className="flex items-end gap-1 flex-wrap"
+                    onKeyDown={e => {
+                      // APG tablist contract — arrows move between tabs, Tab exits
+                      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+                      e.preventDefault()
+                      const delta = e.key === 'ArrowRight' ? 1 : -1
+                      const nextIdx = (activeStopIdx + delta + builderStops.length) % builderStops.length
+                      setActiveStop(builderStops[nextIdx].key)
+                      const tabs = e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]')
+                      tabs[nextIdx]?.focus()
+                    }}
+                  >
+                    {builderStops.map(stop => {
+                      const cur = stop.key === curStop.key
+                      const done = stopQuestionCount(stop) > 0
+                      return (
+                        <Button
+                          key={stop.key}
+                          role="tab"
+                          aria-selected={cur}
+                          tabIndex={cur ? 0 : -1}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setActiveStop(stop.key)}
+                          className={cur ? 'font-semibold' : ''}
+                          style={cur ? { background: 'var(--muted)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' } : {}}
+                        >
+                          {done && !cur && (
+                            <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                          )}
+                          {stop.shortLabel}
+                          <span className="text-xs text-muted-foreground tabular-nums">{stopQuestionCount(stop)}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="text-muted-foreground">
+                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                    Evaluate another role
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground" style={{ margin: '12px 0' }}>
+                  {ASPECT_INFO[curStop.subjectKey]}
+                </p>
+                <div role="tabpanel" aria-label={curStop.label} tabIndex={0}>
+                  {renderStopStage(curStop)}
+                </div>
+                {renderStopNav()}
+              </div>
+            </div>
+          ) : variant === 'guided' ? (
+            /* Guided variant — the same sequential stops as 'tabs', carried in
+               a left checklist rail (Mercury onboarding pattern) so no chrome
+               sits above the content. Standard section cards inside. */
+            <div className="flex flex-row flex-1 min-h-0">
+              <nav
+                aria-label="Evaluations in this template"
+                className="shrink-0 overflow-y-auto p-3 flex flex-col gap-1"
+                style={{ width: 240, borderRight: '1px solid var(--border)' }}
+              >
+                {/* NOT a numbered sequence — these are the evaluations the
+                    template contains (3 types; Faculty holds one item per
+                    role set). Status marks only: check = has questions. */}
+                {(() => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, indent?: boolean) => {
+                    const cur = stop.key === curStop.key
+                    const done = stopQuestionCount(stop) > 0
+                    const railSet = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
+                    // "No roles yet" is a gap needing attention (amber), not a
+                    // not-started evaluation — one signal per gap.
+                    const rolesPending = railSet ? railSet.roles.length === 0 : false
+                    return (
+                      <Button
+                        key={stop.key}
+                        variant="ghost"
+                        onClick={() => setActiveStop(stop.key)}
+                        aria-current={cur ? 'true' : undefined}
+                        className="h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-transparent"
+                        style={{
+                          background: cur ? 'var(--muted)' : 'transparent',
+                          marginLeft: indent ? 12 : 0,
+                        }}
+                      >
+                        <span className="flex items-start gap-2.5 w-full">
+                          <span className="shrink-0 flex items-center justify-center" style={{ width: 16, height: 16, marginTop: 2 }}>
+                            {done ? (
+                              <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                            ) : (
+                              <span className="rounded-full" style={{ width: 8, height: 8, border: `1.5px solid ${rolesPending ? 'var(--chip-4)' : 'var(--border)'}` }} aria-hidden="true" />
+                            )}
+                          </span>
+                          <span className="flex flex-col items-start min-w-0">
+                            <span className={`text-sm whitespace-normal ${cur ? 'font-semibold' : 'font-medium'}`}>{label}</span>
+                            <span className="text-xs tabular-nums" style={{ color: rolesPending ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
+                              {rolesPending ? 'no roles yet' : done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
+                            </span>
+                          </span>
+                        </span>
+                      </Button>
+                    )
+                  }
+                  const facultyStops = builderStops.filter(s => s.subjectKey === 'faculty')
+                  const courseStop = builderStops.find(s => s.key === 'course')!
+                  const generalStop = builderStops.find(s => s.key === 'general')!
+                  return (
+                    <>
+                      {renderRailItem(courseStop, 'Course')}
+                      {/* 38px left = status-slot width + gap, aligning the group
+                          label with item text */}
+                      <span className="text-xs font-medium text-muted-foreground" style={{ padding: '10px 12px 2px 38px' }}>
+                        Faculty
+                      </span>
+                      {facultyStops.map(stop => {
+                        const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
+                        const roleLabel = set && set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'New evaluation'
+                        return renderRailItem(stop, roleLabel, true)
+                      })}
+                      <Button variant="ghost" size="sm" onClick={handleAddRoleStop}
+                        className="justify-start text-muted-foreground" style={{ marginLeft: 12 }}>
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                        Evaluate another role
+                      </Button>
+                      {renderRailItem(generalStop, 'General')}
+                    </>
+                  )
+                })()}
+              </nav>
+              <div className="flex-1 overflow-y-auto" style={{ padding: '24px 40px 48px' }}>
+                <div style={{ maxWidth: 720 }} className="flex flex-col gap-3">
+                  <div>
+                    {/* Aspect only — the Evaluating chips below own the role
+                        list; an unbounded enumeration doesn't belong in a
+                        display heading. */}
+                    <h2 className="text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
+                      {curStop.subjectKey === 'faculty' ? 'Faculty' : curStop.label}
+                    </h2>
+                    <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
+                      {ASPECT_INFO[curStop.subjectKey]}
+                    </p>
+                  </div>
+                  {renderStopStage(curStop)}
+                  {renderStopNav()}
+                </div>
               </div>
             </div>
           ) : (
@@ -1331,11 +2372,8 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             style={{ background: 'var(--background)' }}>
                             {/* Set header — roles chosen here, never on the section */}
                             <div className="flex items-start gap-3" style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                              <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
-                              <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                                {set.roles.length === 0 ? (
-                                  <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
-                                ) : set.roles.map(roleKey => {
+                              <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0" role="group" aria-label="Roles this evaluation covers">
+                                {set.roles.map(roleKey => {
                                   const label = ROLE_LABEL(roleKey)
                                   return (
                                     <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
@@ -1348,30 +2386,28 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                                     </span>
                                   )
                                 })}
+                                <Popover open={rolePickerSetId === set.id}
+                                  onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="xs" className="rounded-full">
+                                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                      {set.roles.length === 0 ? 'Pick one or more roles' : 'Add role'}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="p-0 w-72" align="start" sideOffset={8} aria-label="Add role">
+                                    {renderRolePickerContent(set)}
+                                  </PopoverContent>
+                                </Popover>
                               </div>
-                              <Popover open={rolePickerSetId === set.id}
-                                onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" size="xs" className="shrink-0">
-                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label="Remove role set" className="shrink-0"
+                                    onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+                                    <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
                                   </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
-                                  {renderRolePickerContent(set)}
-                                </PopoverContent>
-                              </Popover>
-                              <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
-                                    <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-44">
-                                  <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
-                                    <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                </TooltipTrigger>
+                                <TooltipContent>Remove role set</TooltipContent>
+                              </Tooltip>
                             </div>
                             {/* Sections owned by this set */}
                             <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
@@ -1439,8 +2475,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {/* Right panel — Question attributes when a question is selected */}
           {selectedQ && selectedQuestion && (
             <div
-              className="w-80 shrink-0 flex flex-col overflow-hidden"
-              style={{ borderLeft: '1px solid var(--border)' }}
+              className={`w-80 shrink-0 flex flex-col overflow-hidden ${variant !== 'rail' ? 'sticky self-start' : ''}`}
+              style={{
+                borderLeft: '1px solid var(--border)',
+                ...(variant !== 'rail' ? { top: 56, height: 'calc(100vh - 64px)' } : {}),
+              }}
             >
               <AttributesPanel
                 key={selectedQuestion.questionId}
@@ -1466,7 +2505,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           )}
         </TabsContent>
 
-        {/* ── Step 2 · Template settings ── */}
+        {/* ── Step 1 · Template settings ── */}
         <TabsContent value="settings" className="flex-1 overflow-y-auto m-0" style={{ padding: '28px 40px 48px' }}>
           <div style={{ maxWidth: 560 }}>
             {renderTemplateSettings()}
@@ -1478,10 +2517,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           {renderReview()}
         </TabsContent>
 
-        {/* ── Wizard footer — Back / Next / Publish ── */}
+        {/* ── Wizard footer — Back / Next / Publish (sticky under window scroll in non-rail variants) ── */}
         <div
           className="shrink-0 flex items-center justify-between border-t border-border"
-          style={{ height: 60, padding: '0 40px', background: 'var(--background)' }}
+          style={{
+            height: 60, padding: '0 40px', background: 'var(--background)',
+            ...(variant !== 'rail' ? { position: 'sticky' as const, bottom: 0, zIndex: 10 } : {}),
+          }}
         >
           <Button
             variant="outline"
