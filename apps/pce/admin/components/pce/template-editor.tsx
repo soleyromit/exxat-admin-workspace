@@ -591,7 +591,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     { key: 'course', label: 'Course', subjectKey: 'course_content' },
     ...facultyRoleSets.map(set => ({
       key: `stop-${set.id}`,
-      label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · pick roles',
+      label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · new evaluation',
       subjectKey: 'faculty',
       roleSetId: set.id,
     })),
@@ -873,7 +873,11 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               const stampRoles = sec.subjectKey === 'faculty' && sec.roleSetId
                 ? (facultyRoleSets.find(rs => rs.id === sec.roleSetId)?.roles ?? []).map(ROLE_LABEL).join(', ')
                 : ''
-              const cardStamp = isProgrammatic || !stampGroup ? '' : stampRoles ? `${stampGroup} — ${stampRoles}` : stampGroup
+              // Single-aspect variants (tabs/guided) already scope the stage to
+              // one aspect — the stamp would repeat the stage heading on every
+              // card, so it only renders in the long-scroll variants.
+              const singleAspectStage = variant === 'tabs' || variant === 'guided'
+              const cardStamp = isProgrammatic || !stampGroup || singleAspectStage ? '' : stampRoles ? `${stampGroup} — ${stampRoles}` : stampGroup
               return (
                 <div
                   key={q.id}
@@ -1122,10 +1126,17 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   function renderStopStage(stop: { subjectKey: string; roleSetId?: string }) {
     const secs = stopSections(stop)
     const set = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
+    // Roles come first — an evaluation with no audience can't take questions
+    // yet, so the upload/build gate waits until at least one role is picked.
+    const rolesPending = set ? set.roles.length === 0 : false
     return (
       <div className="flex flex-col gap-3">
         {set && renderRoleSetHeader(set)}
-        {secs.length === 0 ? renderStopGate(stop) : (
+        {rolesPending ? (
+          <p className="text-xs text-muted-foreground text-center" style={{ padding: '24px 0' }}>
+            Choose who this evaluation covers — pick at least one role above to start adding questions.
+          </p>
+        ) : secs.length === 0 ? renderStopGate(stop) : (
           <>
             {secs.map(sec => renderSectionCard(sec))}
             <div className="flex items-center justify-center">
@@ -2152,7 +2163,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   </div>
                   <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="text-muted-foreground">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Add role
+                    Evaluate another role
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground" style={{ margin: '12px 0' }}>
@@ -2181,6 +2192,10 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const renderRailItem = (stop: typeof builderStops[number], label: string, indent?: boolean) => {
                     const cur = stop.key === curStop.key
                     const done = stopQuestionCount(stop) > 0
+                    const railSet = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
+                    // "No roles yet" is a gap needing attention (amber), not a
+                    // not-started evaluation — one signal per gap.
+                    const rolesPending = railSet ? railSet.roles.length === 0 : false
                     return (
                       <Button
                         key={stop.key}
@@ -2198,13 +2213,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             {done ? (
                               <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
                             ) : (
-                              <span className="rounded-full" style={{ width: 8, height: 8, border: '1.5px solid var(--border)' }} aria-hidden="true" />
+                              <span className="rounded-full" style={{ width: 8, height: 8, border: `1.5px solid ${rolesPending ? 'var(--chip-4)' : 'var(--border)'}` }} aria-hidden="true" />
                             )}
                           </span>
                           <span className="flex flex-col items-start min-w-0">
                             <span className={`text-sm whitespace-normal ${cur ? 'font-semibold' : 'font-medium'}`}>{label}</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
+                            <span className="text-xs tabular-nums" style={{ color: rolesPending ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
+                              {rolesPending ? 'no roles yet' : done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
                             </span>
                           </span>
                         </span>
@@ -2217,18 +2232,20 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   return (
                     <>
                       {renderRailItem(courseStop, 'Course')}
-                      <span className="text-xs font-medium text-muted-foreground" style={{ padding: '10px 12px 2px' }}>
+                      {/* 38px left = status-slot width + gap, aligning the group
+                          label with item text */}
+                      <span className="text-xs font-medium text-muted-foreground" style={{ padding: '10px 12px 2px 38px' }}>
                         Faculty
                       </span>
                       {facultyStops.map(stop => {
                         const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
-                        const roleLabel = set && set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'Pick roles'
+                        const roleLabel = set && set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'New evaluation'
                         return renderRailItem(stop, roleLabel, true)
                       })}
                       <Button variant="ghost" size="sm" onClick={handleAddRoleStop}
                         className="justify-start text-muted-foreground" style={{ marginLeft: 12 }}>
                         <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                        Add role
+                        Evaluate another role
                       </Button>
                       {renderRailItem(generalStop, 'General')}
                     </>
