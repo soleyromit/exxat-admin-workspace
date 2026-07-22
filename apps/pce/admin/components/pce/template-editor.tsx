@@ -406,7 +406,7 @@ function AttributesPanel({
   )
 }
 
-export function TemplateEditor({ templateId, embedded = false, onPublished, variant = 'rail' }: {
+export function TemplateEditor({ templateId, embedded = false, onPublished, variant = 'guided' }: {
   /** Template to edit; falls back to the route param when rendered as a page. */
   templateId?: string
   /** Render without page chrome (SiteHeader) — e.g. inside the push wizard's Survey Design step. */
@@ -416,7 +416,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   /** Builder-step layout (design-compare variants, iteration 3). Section cards
    *  (collapse/expand + in-section Add question) are IDENTICAL in every
    *  variant — only the layout around them changes.
-   *  'rail' — default; switches between aspects.
+   *  'rail' — switches between aspects.
    *  'bands' — sticky aspect band headers carry identity + actions.
    *  'document' — one centered column, sticky aspect chips, no side rail.
    *  'preview' — build left, live student-facing preview right.
@@ -425,8 +425,8 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
    *  'tabs' — horizontal aspect tabs, one aspect at a time worked
    *           sequentially; each faculty role set is a first-class tab
    *           (Monil Jul 21 proposal).
-   *  'guided' — same sequential stops in a left checklist rail (Mercury
-   *             onboarding pattern) — no chrome above the content. */
+   *  'guided' — DEFAULT (picked Jul 22): sequential stops in a left grouped
+   *             evaluation list — no chrome above the content. */
   variant?: 'rail' | 'bands' | 'document' | 'preview' | 'minimal' | 'columns' | 'tabs' | 'guided'
 }) {
   const routeParams = useParams<{ id: string }>()
@@ -1080,23 +1080,24 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             </PopoverContent>
           </Popover>
         </div>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
-              <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Generate from document" className="shrink-0"
               onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
-              <i className="fa-light fa-sparkles" aria-hidden="true" /> Generate from document
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
-              <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Generate from document</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Remove role set" className="shrink-0"
+              onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+              <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Remove role set</TooltipContent>
+        </Tooltip>
       </div>
     )
   }
@@ -2025,21 +2026,15 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                                 <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                                 Add section
                               </Button>
-                              {/* Secondary actions live behind the ellipsis to keep
-                                  the header to one calm row */}
-                              <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${g.label}`}>
-                                    <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuItem
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label={`Generate from document for ${g.label}`}
                                     onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
-                                    <i className="fa-light fa-sparkles" aria-hidden="true" /> Generate from document
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                    <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Generate from document</TooltipContent>
+                              </Tooltip>
                             </>
                           )}
                         </span>
@@ -2403,18 +2398,15 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                                   </PopoverContent>
                                 </Popover>
                               </div>
-                              <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
-                                    <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label="Remove role set" className="shrink-0"
+                                    onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+                                    <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
                                   </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-44">
-                                  <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
-                                    <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                </TooltipTrigger>
+                                <TooltipContent>Remove role set</TooltipContent>
+                              </Tooltip>
                             </div>
                             {/* Sections owned by this set */}
                             <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
