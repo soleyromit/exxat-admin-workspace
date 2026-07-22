@@ -542,9 +542,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
 
   // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
   const ASPECT_INFO: Record<string, string> = {
-    course_content: 'About the course itself — shown once per course.',
-    faculty:        'About teaching staff — group sections into role sets that evaluate one or more roles.',
-    general:        'Program-wide questions — shown once per evaluation.',
+    course_content: 'Evaluates the course itself — asked once per course.',
+    faculty:        'Evaluates teaching staff — sections group into role sets that evaluate one or more roles.',
+    general:        'Evaluates the program overall — asked once per evaluation.',
   }
   const aspectCounts = (key: string) => {
     const secs = sections.filter(s => s.subjectKey === key)
@@ -834,6 +834,13 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           <div className="flex flex-col gap-2" style={{ padding: '10px 12px 14px' }}>
             {sec.questions.map((q, qIndex) => {
               const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
+              // Aspect stamp — cards are self-identifying mid-scroll (which
+              // evaluation the question belongs to). Faculty adds the set's roles.
+              const stampGroup = subjectGroups.find(g => g.key === sec.subjectKey)?.label
+              const stampRoles = sec.subjectKey === 'faculty' && sec.roleSetId
+                ? (facultyRoleSets.find(rs => rs.id === sec.roleSetId)?.roles ?? []).map(ROLE_LABEL).join(', ')
+                : ''
+              const cardStamp = isProgrammatic || !stampGroup ? '' : stampRoles ? `${stampGroup} — ${stampRoles}` : stampGroup
               return (
                 <div
                   key={q.id}
@@ -841,7 +848,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                   onDragStart={() => handleQDragStart(sec.id, qIndex)}
                   onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
                   onDragEnd={handleQDragEnd}
-                  className="group rounded-lg border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="group relative rounded-lg border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   style={{
                     background: 'var(--muted)',
                     borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
@@ -856,29 +863,23 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                     }
                   }}
                 >
-                  {/* Type label row */}
-                  <div className="flex items-center justify-end gap-1 px-3 pt-2">
-                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                      {qTypeLabel(q.answerType)}
+                  {/* Question text leads the card */}
+                  <div className="px-4 pt-3">
+                    <span className="text-sm font-semibold">
+                      {q.text || <span className="font-normal text-muted-foreground">Untitled Question</span>}
                     </span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          aria-label="Question info"
-                          className="opacity-40"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Click to edit attributes</TooltipContent>
-                    </Tooltip>
                   </div>
-                  {/* Hover toolbar */}
+                  {/* Meta line — type · aspect stamp */}
+                  <div className="px-4 pt-1 pb-3">
+                    <span className="text-xs text-muted-foreground">
+                      {qTypeLabel(q.answerType)}{cardStamp ? ` · ${cardStamp}` : ''}
+                    </span>
+                  </div>
+                  {/* Actions — overlay so the card reserves no space at rest;
+                      focus-within keeps them reachable by keyboard */}
                   <div
-                    className="flex items-center gap-0.5 px-2 pb-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute flex items-center gap-0.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                    style={{ top: 4, right: 8, background: 'var(--muted)' }}
                     onClick={e => e.stopPropagation()}
                   >
                     <Button variant="ghost" size="icon-sm" aria-label="Move up" disabled={qIndex === 0}
@@ -895,20 +896,14 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                     </Button>
                     <Button variant="ghost" size="icon-sm" aria-label="Delete question"
                       onClick={() => handleDeleteQuestion(sec.id, q.id)}>
-                      <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
+                      <i className="fa-light fa-trash text-xs text-destructive" aria-hidden="true" />
                     </Button>
                     <div
-                      style={{ cursor: 'grab', marginLeft: 'auto' }}
-                      className="shrink-0 text-muted-foreground flex items-center opacity-50"
+                      style={{ cursor: 'grab' }}
+                      className="shrink-0 text-muted-foreground flex items-center"
                     >
                       <DragHandleGripIcon />
                     </div>
-                  </div>
-                  {/* Question text */}
-                  <div className="px-4 pb-4">
-                    <span className="text-sm font-semibold">
-                      {q.text || <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>Untitled Question</span>}
-                    </span>
                   </div>
                 </div>
               )
@@ -918,7 +913,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             <div className="flex justify-center pt-2">
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="default" size="sm" className="font-semibold">
+                  {/* Outline, not filled — a repeated per-section action must not
+                      outrank the page-level actions (P3). */}
+                  <Button variant="outline" size="sm" className="font-semibold">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                     Add question
                   </Button>
@@ -1577,13 +1574,17 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
           }
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
-            >
-              Save draft
-            </Button>
+            {/* Published templates edit via Unpublish → edit → republish; offering
+                "Save draft" beside an Approved badge tells two stories at once. */}
+            {t.status !== 'active' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
+              >
+                Save draft
+              </Button>
+            )}
             {/* Publish moved into the wizard's Review step; Unpublish stays here for live templates */}
             {t.status === 'active' && (
               <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
@@ -1857,7 +1858,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         padding: gi > 0 ? '24px 0 32px' : '0 0 32px',
                       }}
                     >
-                      <div className="flex items-center flex-wrap gap-x-3 gap-y-2" style={{ paddingBottom: 14 }}>
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-2" style={{ paddingBottom: 4 }}>
                         <h2
                           id={`mn-aspect-${g.key}-h`}
                           style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
@@ -1895,11 +1896,21 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           )}
                         </span>
                       </div>
+                      {/* Aspect identity line — the three groups are visually identical
+                          otherwise, so each must state who/what it evaluates. */}
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Part {gi + 1} of {subjectGroups.length} · {ASPECT_INFO[g.key]}
+                      </p>
                       <div className="flex flex-col gap-3">
                         {instrVisible && renderAspectInstruction(g.key)}
                         {g.key === 'faculty' ? (
                           facultyRoleSets.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">No role sets yet.</p>
+                            <div className="flex items-center justify-center" style={{ minHeight: 72 }}>
+                              <Button variant="link" size="sm" onClick={handleAddRoleSet} className="font-semibold">
+                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                Add role set
+                              </Button>
+                            </div>
                           ) : (
                             facultyRoleSets.map(set => {
                               const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
@@ -1924,7 +1935,12 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             })
                           )
                         ) : groupSections.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">No sections yet.</p>
+                          <div className="flex items-center justify-center" style={{ minHeight: 72 }}>
+                            <Button variant="link" size="sm" onClick={() => handleAddSection(g.key)} className="font-semibold">
+                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                              Add section
+                            </Button>
+                          </div>
                         ) : (
                           groupSections.map(sec => renderSectionCard(sec))
                         )}
