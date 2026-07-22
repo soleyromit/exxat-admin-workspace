@@ -1049,8 +1049,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     return (
       <div id={`roleset-${set.id}`} className="flex items-start gap-3"
         style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
-        <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
-        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+        {/* No visible "Evaluating" label — the aspect identity line already
+            states the direction; the aria-label keeps it for screen readers. */}
+        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0" role="group" aria-label="Roles this evaluation covers">
           {set.roles.map(roleKey => {
             const label = ROLE_LABEL(roleKey)
             return (
@@ -2375,11 +2376,8 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             style={{ background: 'var(--background)' }}>
                             {/* Set header — roles chosen here, never on the section */}
                             <div className="flex items-start gap-3" style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                              <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
-                              <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                                {set.roles.length === 0 ? (
-                                  <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
-                                ) : set.roles.map(roleKey => {
+                              <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0" role="group" aria-label="Roles this evaluation covers">
+                                {set.roles.map(roleKey => {
                                   const label = ROLE_LABEL(roleKey)
                                   return (
                                     <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
@@ -2392,18 +2390,19 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                                     </span>
                                   )
                                 })}
+                                <Popover open={rolePickerSetId === set.id}
+                                  onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="xs" className="rounded-full">
+                                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                      {set.roles.length === 0 ? 'Pick one or more roles' : 'Add role'}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="p-0 w-72" align="start" sideOffset={8} aria-label="Add role">
+                                    {renderRolePickerContent(set)}
+                                  </PopoverContent>
+                                </Popover>
                               </div>
-                              <Popover open={rolePickerSetId === set.id}
-                                onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" size="xs" className="shrink-0">
-                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
-                                  {renderRolePickerContent(set)}
-                                </PopoverContent>
-                              </Popover>
                               <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
