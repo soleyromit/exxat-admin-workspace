@@ -807,7 +807,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           </div>
 
           <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-            {sec.questions.length}q
+            {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
           </span>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -1665,7 +1665,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
                         </Tooltip>
                         <span className="text-xs text-muted-foreground tabular-nums ms-auto shrink-0">
-                          {c.sections}s · {c.questions}q
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
                         </span>
                         {g.key !== 'faculty' && generateFromDocButton(g.key)}
                         {g.key === 'faculty' ? (
@@ -1823,7 +1823,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             </Tooltip>
                           </div>
                           <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 4 }}>
-                            {c.sections}s · {c.questions}q
+                            {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <div className="flex flex-col gap-4">{renderAspectBody(g.key)}</div>
@@ -1839,18 +1839,42 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                centered column, plain headings, text-only actions, no chips, no
                rails, no dashed upload panels. Standard section cards inside. */
             <div className="flex-1 min-w-0">
-              <div className="mx-auto flex flex-col" style={{ maxWidth: 640, padding: '20px 24px 64px' }}>
-                {subjectGroups.map(g => {
+              <div className="mx-auto flex flex-col" style={{ maxWidth: 720, padding: '20px 24px 64px' }}>
+                {subjectGroups.map((g, gi) => {
                   const c = aspectCounts(g.key)
                   const groupSections = sections.filter(s => s.subjectKey === g.key)
+                  const instr = aspectInstructions[g.key]
+                  // Instruction editor/summary shows below only when open or
+                  // filled; otherwise its trigger sits in the header cluster so
+                  // every option lives on ONE line (Jul 21 layout feedback).
+                  const instrVisible = (openInstruction[g.key] ?? false) || !!(instr?.title || instr?.text)
                   return (
-                    <section key={g.key} aria-labelledby={`mn-aspect-${g.key}-h`} style={{ paddingBottom: 36 }}>
-                      <div className="flex items-baseline gap-2.5" style={{ paddingBottom: 10 }}>
-                        <h2 id={`mn-aspect-${g.key}-h`} className="text-sm font-semibold">{g.label}</h2>
+                    <section
+                      key={g.key}
+                      aria-labelledby={`mn-aspect-${g.key}-h`}
+                      style={{
+                        borderTop: gi > 0 ? '1px solid var(--border)' : 'none',
+                        padding: gi > 0 ? '24px 0 32px' : '0 0 32px',
+                      }}
+                    >
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-2" style={{ paddingBottom: 14 }}>
+                        <h2
+                          id={`mn-aspect-${g.key}-h`}
+                          style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
+                        >
+                          {g.label}
+                        </h2>
                         <span className="text-xs text-muted-foreground tabular-nums">
                           {c.questions} question{c.questions !== 1 ? 's' : ''}
                         </span>
-                        <span className="ms-auto flex items-center gap-1.5">
+                        <span className="ms-auto flex items-center flex-wrap gap-1.5">
+                          {!instrVisible && (
+                            <Button variant="outline" size="xs"
+                              onClick={() => setOpenInstruction(p => ({ ...p, [g.key]: true }))}>
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                              Opening instruction
+                            </Button>
+                          )}
                           {g.key !== 'faculty' && (
                             <Button variant="outline" size="xs"
                               onClick={() => { uploadTargetRef.current = { subjectKey: g.key }; uploadInputRef.current?.click() }}>
@@ -1872,7 +1896,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         </span>
                       </div>
                       <div className="flex flex-col gap-3">
-                        {renderAspectInstruction(g.key)}
+                        {instrVisible && renderAspectInstruction(g.key)}
                         {g.key === 'faculty' ? (
                           facultyRoleSets.length === 0 ? (
                             <p className="text-xs text-muted-foreground">No role sets yet.</p>
@@ -1900,7 +1924,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             })
                           )
                         ) : groupSections.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">Nothing here yet.</p>
+                          <p className="text-xs text-muted-foreground">No sections yet.</p>
                         ) : (
                           groupSections.map(sec => renderSectionCard(sec))
                         )}
@@ -1931,7 +1955,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
                         </Tooltip>
                         <span className="text-xs text-muted-foreground tabular-nums shrink-0 ms-auto">
-                          {c.sections}s · {c.questions}q
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
                         </span>
                       </div>
                       {renderAspectBody(g.key)}
