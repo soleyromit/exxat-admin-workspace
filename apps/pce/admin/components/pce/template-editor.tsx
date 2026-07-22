@@ -945,47 +945,58 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
-  // Opening-instruction accordion for one aspect — shared by canvas / document /
-  // focus builder bodies.
+  // Opening-instruction — one quiet text line (Zoom-builder pattern): a text
+  // affordance when empty, the instruction text itself when filled; the editor
+  // expands on demand. Chrome demoted after the Jul 21 crowding review.
   function renderAspectInstruction(key: string) {
     const aspectLabel = subjectGroups.find(g => g.key === key)?.label
+    const instr = aspectInstructions[key]
+    const summary = instr?.title || instr?.text
+    const open = openInstruction[key] ?? false
+    if (!open) {
+      return (
+        <Button
+          variant="ghost"
+          size="xs"
+          className="w-fit -ms-2 text-muted-foreground font-normal"
+          onClick={() => setOpenInstruction(p => ({ ...p, [key]: true }))}
+        >
+          {summary ? (
+            <span className="truncate" style={{ maxWidth: 420 }}>Opening instruction · {summary}</span>
+          ) : (
+            'Add opening instruction'
+          )}
+        </Button>
+      )
+    }
     return (
-      <Collapsible
-        open={openInstruction[key] ?? false}
-        onOpenChange={o => setOpenInstruction(p => ({ ...p, [key]: o }))}
-        className="rounded-2 border border-dashed border-border"
-      >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between h-auto px-3.5 py-2.5 hover:bg-transparent">
-            <span className="text-xs font-medium text-muted-foreground flex items-center">
-              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-              Opening instruction · shown at the start of {aspectLabel}
-              {(aspectInstructions[key]?.title || aspectInstructions[key]?.text) && (
-                <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
-              )}
-            </span>
-            <i className={`fa-light fa-chevron-${(openInstruction[key] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
+      <div className="rounded-lg border border-border flex flex-col gap-2" style={{ padding: '10px 12px', background: 'var(--card)' }}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Opening instruction — shown to students at the start of {aspectLabel}
+          </span>
+          <Button variant="ghost" size="icon-xs" aria-label="Collapse opening instruction"
+            onClick={() => setOpenInstruction(p => ({ ...p, [key]: false }))}>
+            <i className="fa-light fa-chevron-up text-xs" aria-hidden="true" />
           </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-3.5 pb-3 flex flex-col gap-2">
-          <Input
-            value={aspectInstructions[key]?.title ?? ''}
-            onChange={e => setAspectInstruction(key, { title: e.target.value })}
-            placeholder="Title (optional) — e.g. About this section"
-            className="h-8 text-sm"
-            aria-label={`Opening instruction title for ${key}`}
-          />
-          <Textarea
-            value={aspectInstructions[key]?.text ?? ''}
-            onChange={e => setAspectInstruction(key, { text: e.target.value })}
-            placeholder="Instruction shown to students before this section's questions…"
-            rows={2}
-            className="text-sm"
-            style={{ resize: 'none' }}
-            aria-label={`Opening instruction text for ${key}`}
-          />
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+        <Input
+          value={aspectInstructions[key]?.title ?? ''}
+          onChange={e => setAspectInstruction(key, { title: e.target.value })}
+          placeholder="Title (optional) — e.g. About this section"
+          className="h-8 text-sm"
+          aria-label={`Opening instruction title for ${key}`}
+        />
+        <Textarea
+          value={aspectInstructions[key]?.text ?? ''}
+          onChange={e => setAspectInstruction(key, { text: e.target.value })}
+          placeholder="Instruction shown to students before this section's questions…"
+          rows={2}
+          className="text-sm"
+          style={{ resize: 'none' }}
+          aria-label={`Opening instruction text for ${key}`}
+        />
+      </div>
     )
   }
 
@@ -1199,44 +1210,30 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       <>
         {renderAspectInstruction(key)}
 
-        {/* Upload document — template-level entry, above the sections */}
-        {key !== 'faculty' && uploadDocAffordance(key)}
-
         {key === 'faculty' ? (
           /* Role sets — roles declared OUTSIDE the section (Jul 1 constraint).
              Each set picks one/multiple roles then owns its own sections. */
           <>
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-              Pick one or more roles per set, then build its sections — one role for role-specific
-              questions, multiple roles for shared questions.
-            </p>
             {facultyRoleSets.map(set => {
               const setSections = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
               return (
                 <div key={set.id} className="rounded-lg border border-border overflow-hidden"
                   style={{ background: 'var(--background)' }}>
                   {renderRoleSetHeader(set)}
-                  {/* Sections owned by this set */}
+                  {/* Sections owned by this set — upload is a quiet text action,
+                      not a panel (Jul 21 crowding review) */}
                   <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
-                    {uploadDocAffordance('faculty', set.id)}
-                    {setSections.length === 0 ? (
-                      <div className="flex items-center justify-center rounded-lg border border-dashed"
-                        style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
-                        <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
-                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        {setSections.map(sec => renderSectionCard(sec))}
-                        <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
-                          <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
-                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                    {setSections.map(sec => renderSectionCard(sec))}
+                    <div className="flex items-center justify-center gap-1" style={{ paddingTop: setSections.length ? 2 : 6 }}>
+                      <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                      </Button>
+                      <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
+                        onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
+                        Generate from document
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )
@@ -1249,28 +1246,33 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           </>
         ) : (() => {
           const groupSections = sections.filter(s => s.subjectKey === key)
+          const actionsRow = (
+            <div className="flex items-center justify-center gap-1" style={{ paddingTop: 4 }}>
+              <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Add section
+              </Button>
+              <span className="text-xs text-muted-foreground" aria-hidden="true">·</span>
+              <Button variant="ghost" size="sm" className="text-muted-foreground font-normal"
+                onClick={() => { uploadTargetRef.current = { subjectKey: key }; uploadInputRef.current?.click() }}>
+                Generate from document
+              </Button>
+            </div>
+          )
           if (groupSections.length === 0) {
             return (
               <div
                 className="flex items-center justify-center rounded-lg border border-dashed"
-                style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
+                style={{ padding: '20px 16px', borderColor: 'var(--border)' }}
               >
-                <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                  Add section
-                </Button>
+                {actionsRow}
               </div>
             )
           }
           return (
             <>
               {groupSections.map(sec => renderSectionCard(sec))}
-              <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-                <Button variant="link" size="sm" onClick={() => handleAddSection(key)} className="font-semibold">
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                  Add section
-                </Button>
-              </div>
+              {actionsRow}
             </>
           )
         })()}
@@ -1650,7 +1652,14 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         style={{ top: 48, zIndex: 10, background: 'var(--background)', padding: '10px 0 8px', borderBottom: '1px solid var(--border)' }}
                       >
                         <h2 id={`ws-aspect-${g.key}-h`} className="text-sm font-semibold shrink-0">{g.label}</h2>
-                        <span className="text-xs text-muted-foreground truncate min-w-0 hidden xl:block">{ASPECT_INFO[g.key]}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                        </Tooltip>
                         <span className="text-xs text-muted-foreground tabular-nums ms-auto shrink-0">
                           {c.sections}s · {c.questions}q
                         </span>
@@ -1754,14 +1763,21 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     >
                       {/* Aspect header — document heading; anchor for the chip bar */}
                       <div id={`aspect-${g.key}`} className="flex items-end justify-between gap-3" style={{ scrollMarginTop: 108 }}>
-                        <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <h2
                             id={`doc-aspect-${g.key}-heading`}
                             style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, lineHeight: 1.2 }}
                           >
                             {g.label}
                           </h2>
-                          <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                                <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                          </Tooltip>
                         </div>
                         <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                           {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
@@ -1791,9 +1807,16 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         style={{ borderTop: gi > 0 ? '1px solid var(--border)' : 'none', padding: gi > 0 ? '20px 0 24px' : '0 0 24px' }}
                       >
                         <div className="flex items-start justify-between gap-3" style={{ paddingBottom: 12 }}>
-                          <div className="flex flex-col gap-0.5 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
                             <h2 id={`pv-aspect-${g.key}-h`} className="text-base font-semibold">{g.label}</h2>
-                            <p className="text-xs text-muted-foreground">{ASPECT_INFO[g.key]}</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                                  <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                            </Tooltip>
                           </div>
                           <span className="text-xs text-muted-foreground tabular-nums shrink-0" style={{ paddingTop: 4 }}>
                             {c.sections}s · {c.questions}q
@@ -1888,13 +1911,20 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const c = aspectCounts(g.key)
                   return (
                     <div key={g.key} className="flex flex-col gap-3 rounded-xl" style={{ background: 'var(--muted)', padding: 12 }}>
-                      <div className="flex items-center gap-2" style={{ padding: '2px 2px 0' }}>
-                        <h2 className="text-sm font-semibold flex-1 min-w-0 truncate">{g.label}</h2>
-                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                      <div className="flex items-center gap-1" style={{ padding: '2px 2px 0' }}>
+                        <h2 className="text-sm font-semibold min-w-0 truncate">{g.label}</h2>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon-xs" aria-label={`About ${g.label}`} className="text-muted-foreground">
+                              <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{ASPECT_INFO[g.key]}</TooltipContent>
+                        </Tooltip>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0 ms-auto">
                           {c.sections}s · {c.questions}q
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground" style={{ padding: '0 2px' }}>{ASPECT_INFO[g.key]}</p>
                       {renderAspectBody(g.key)}
                     </div>
                   )
