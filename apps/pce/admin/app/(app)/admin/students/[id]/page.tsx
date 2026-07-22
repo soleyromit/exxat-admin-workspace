@@ -13,13 +13,16 @@ import { EnrollmentStatusBadge, SurveyStatusBadge } from '@/components/pce/pce-b
 import {
   MOCK_STUDENTS, MOCK_COURSE_ENROLLMENTS, MOCK_COURSE_OFFERINGS,
   MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS, MOCK_SURVEYS,
+  representativeSurveyByKey,
 } from '@/lib/pce-mock-data'
 import type { SurveyStatus } from '@/lib/pce-mock-data'
 
 const courseCodeById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c.code]))
 const courseNameById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c.name]))
 const termNameById   = new Map(MOCK_PROGRAM_TERMS.map(t => [t.id, t.name]))
-const surveyByKey    = new Map(MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic').map(s => [`${s.courseCode}-${s.term}`, s]))
+// representativeSurveyByKey, not a plain Map: split flows share the composite
+// key, and last-wins construction silently dropped all but one of them.
+const surveyByKey    = representativeSurveyByKey(MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic'))
 
 const studentOfferingIds: Record<string, string[]> = {}
 Object.entries(MOCK_COURSE_ENROLLMENTS).forEach(([coId, sids]) => {

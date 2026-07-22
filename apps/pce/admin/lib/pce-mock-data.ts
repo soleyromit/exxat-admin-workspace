@@ -1095,6 +1095,21 @@ const INSTRUCTORS: Record<string, PceInstructor> = {
   hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: '/portraits/omar-hassan.jpg' },
 }
 
+/** Legacy composite-key lookup (`courseCode-term` → ONE survey). Split flows
+ *  (several surveys sharing an offering) collide on that key, and plain Map
+ *  construction silently keeps whichever seed comes LAST. The representative
+ *  is the flow that OPENS first — the one a student meets first — so pick by
+ *  openDate instead of array order. */
+export function representativeSurveyByKey(surveys: PceSurvey[]): Map<string, PceSurvey> {
+  const m = new Map<string, PceSurvey>()
+  for (const s of surveys) {
+    const k = `${s.courseCode}-${s.term}`
+    const prev = m.get(k)
+    if (!prev || (s.openDate ?? '9999') < (prev.openDate ?? '9999')) m.set(k, s)
+  }
+  return m
+}
+
 export const MOCK_SURVEYS: PceSurvey[] = [
   {
     id: 's1',
@@ -1386,7 +1401,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // All 'scheduled': the term starts Aug 24, so nothing can be live yet.
   { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Oct 23, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-10-12', academicYear: '2026–2027', programId: 'prog1' },
   { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 4, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-23', academicYear: '2026–2027', programId: 'prog1' },
-  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  // instructors: [] — a course-scope flow evaluates no PERSON; listing one
+  // would seed a ghost row in that instructor's faculty analytics
+  // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [

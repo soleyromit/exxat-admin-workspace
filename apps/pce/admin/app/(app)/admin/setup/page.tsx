@@ -25,7 +25,7 @@ import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import {
   MOCK_PROGRAM_TERMS, MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS,
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_STUDENTS, MOCK_COHORTS,
-  MOCK_COURSE_ENROLLMENTS,
+  MOCK_COURSE_ENROLLMENTS, representativeSurveyByKey,
   type CourseOffering, type Student,
 } from '@/lib/pce-mock-data'
 import { SetupView } from './_view-setup'
@@ -58,9 +58,12 @@ const _courseById      = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c]))
 const _termByIdMap     = new Map(MOCK_PROGRAM_TERMS.map(t => [t.id, t]))
 const _facultyByIdMap  = new Map(MOCK_FACULTY.map(f => [f.id, f]))
 
+// representativeSurveyByKey, not plain Maps: split flows share the composite
+// courseCode-term key, and last-wins construction silently dropped all but one.
 const _ceSurveyKeyMap = new Map(
-  MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation' && s.status !== 'draft')
-    .map(s => [`${s.courseCode}-${s.term}`, s.id])
+  [...representativeSurveyByKey(
+    MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation' && s.status !== 'draft'),
+  )].map(([k, s]) => [k, s.id])
 )
 const _ceSurveyRateMap = new Map(
   MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation').map(s => [s.id, s.responseRate])
@@ -69,9 +72,8 @@ const _ceSurveyRateMap = new Map(
 /* Student eval maps */
 const _stdCourseCodeById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c.code]))
 const _stdTermNameById   = new Map(MOCK_PROGRAM_TERMS.map(t => [t.id, t.name]))
-const _stdSurveyByKey    = new Map(
-  MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation')
-    .map(s => [`${s.courseCode}-${s.term}`, s])
+const _stdSurveyByKey    = representativeSurveyByKey(
+  MOCK_SURVEYS.filter(s => s.surveyType === 'course_evaluation'),
 )
 const _studentOfferingIds: Record<string, string[]> = {}
 Object.entries(MOCK_COURSE_ENROLLMENTS).forEach(([coId, sids]) => {
