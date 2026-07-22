@@ -2170,48 +2170,70 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                sits above the content. Standard section cards inside. */
             <div className="flex flex-row flex-1 min-h-0">
               <nav
-                aria-label="Template aspects"
+                aria-label="Evaluations in this template"
                 className="shrink-0 overflow-y-auto p-3 flex flex-col gap-1"
-                style={{ width: 232, borderRight: '1px solid var(--border)' }}
+                style={{ width: 240, borderRight: '1px solid var(--border)' }}
               >
-                {builderStops.map((stop, i) => {
-                  const cur = stop.key === curStop.key
-                  const done = stopQuestionCount(stop) > 0
-                  return (
-                    <Button
-                      key={stop.key}
-                      variant="ghost"
-                      onClick={() => setActiveStop(stop.key)}
-                      aria-current={cur ? 'step' : undefined}
-                      className="h-auto w-full justify-start text-left rounded-lg px-3 py-2 hover:bg-transparent"
-                      style={{ background: cur ? 'var(--muted)' : 'transparent' }}
-                    >
-                      <span className="flex items-start gap-2.5 w-full">
-                        <span
-                          className="shrink-0 flex items-center justify-center rounded-full text-xs font-semibold"
-                          style={{
-                            width: 18, height: 18, marginTop: 1,
-                            background: cur ? 'var(--foreground)' : 'transparent',
-                            border: cur || done ? 'none' : '1.5px solid var(--border)',
-                            color: cur ? 'var(--background)' : done ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                          }}
-                        >
-                          {done && !cur ? <i className="fa-solid fa-check text-xs" aria-hidden="true" /> : i + 1}
-                        </span>
-                        <span className="flex flex-col items-start min-w-0">
-                          <span className={`text-sm truncate ${cur ? 'font-semibold' : 'font-medium'}`}>{stop.label}</span>
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            {done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
+                {/* NOT a numbered sequence — these are the evaluations the
+                    template contains (3 types; Faculty holds one item per
+                    role set). Status marks only: check = has questions. */}
+                {(() => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, indent?: boolean) => {
+                    const cur = stop.key === curStop.key
+                    const done = stopQuestionCount(stop) > 0
+                    return (
+                      <Button
+                        key={stop.key}
+                        variant="ghost"
+                        onClick={() => setActiveStop(stop.key)}
+                        aria-current={cur ? 'true' : undefined}
+                        className="h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-transparent"
+                        style={{
+                          background: cur ? 'var(--muted)' : 'transparent',
+                          marginLeft: indent ? 12 : 0,
+                        }}
+                      >
+                        <span className="flex items-start gap-2.5 w-full">
+                          <span className="shrink-0 flex items-center justify-center" style={{ width: 16, height: 16, marginTop: 2 }}>
+                            {done ? (
+                              <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                            ) : (
+                              <span className="rounded-full" style={{ width: 8, height: 8, border: '1.5px solid var(--border)' }} aria-hidden="true" />
+                            )}
+                          </span>
+                          <span className="flex flex-col items-start min-w-0">
+                            <span className={`text-sm whitespace-normal ${cur ? 'font-semibold' : 'font-medium'}`}>{label}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
+                            </span>
                           </span>
                         </span>
+                      </Button>
+                    )
+                  }
+                  const facultyStops = builderStops.filter(s => s.subjectKey === 'faculty')
+                  const courseStop = builderStops.find(s => s.key === 'course')!
+                  const generalStop = builderStops.find(s => s.key === 'general')!
+                  return (
+                    <>
+                      {renderRailItem(courseStop, 'Course')}
+                      <span className="text-xs font-medium text-muted-foreground" style={{ padding: '10px 12px 2px' }}>
+                        Faculty
                       </span>
-                    </Button>
+                      {facultyStops.map(stop => {
+                        const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
+                        const roleLabel = set && set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'Pick roles'
+                        return renderRailItem(stop, roleLabel, true)
+                      })}
+                      <Button variant="ghost" size="sm" onClick={handleAddRoleStop}
+                        className="justify-start text-muted-foreground" style={{ marginLeft: 12 }}>
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                        Add role
+                      </Button>
+                      {renderRailItem(generalStop, 'General')}
+                    </>
                   )
-                })}
-                <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="justify-start text-muted-foreground">
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                  Add role
-                </Button>
+                })()}
               </nav>
               <div className="flex-1 overflow-y-auto" style={{ padding: '24px 40px 48px' }}>
                 <div style={{ maxWidth: 720 }} className="flex flex-col gap-3">
