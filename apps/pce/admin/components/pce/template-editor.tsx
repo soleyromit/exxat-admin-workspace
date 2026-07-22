@@ -421,8 +421,13 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
    *  'document' — one centered column, sticky aspect chips, no side rail.
    *  'preview' — build left, live student-facing preview right.
    *  'minimal' — bare essentials: narrow column, plain headings, text actions.
-   *  'columns' — all three aspects side by side as board lanes. */
-  variant?: 'rail' | 'bands' | 'document' | 'preview' | 'minimal' | 'columns'
+   *  'columns' — all three aspects side by side as board lanes.
+   *  'tabs' — horizontal aspect tabs, one aspect at a time worked
+   *           sequentially; each faculty role set is a first-class tab
+   *           (Monil Jul 21 proposal).
+   *  'guided' — same sequential stops in a left checklist rail (Mercury
+   *             onboarding pattern) — no chrome above the content. */
+  variant?: 'rail' | 'bands' | 'document' | 'preview' | 'minimal' | 'columns' | 'tabs' | 'guided'
 }) {
   const routeParams = useParams<{ id: string }>()
   const id = templateId ?? routeParams?.id
@@ -451,6 +456,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     { key: 'general',        label: 'General' },
   ]
   const [activeGroup, setActiveGroup] = useState('course_content')
+  // Tabs/guided variants — which sequential stop (aspect or faculty role set)
+  // is on stage. Keys: 'course', `stop-<roleSetId>`, 'general'.
+  const [activeStop, setActiveStop] = useState('course')
   // Document variant — scrollspy for the sticky aspect chip bar.
   const [docAspect, setDocAspect] = useState('course_content')
   useEffect(() => {
@@ -573,6 +581,31 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     const newId = `rs-${Date.now()}`
     addFacultyRoleSet(t.id, newId)
     setRolePickerSetId(newId) // open the role picker straight away so the user picks roles first
+    return newId
+  }
+
+  // Sequential "stops" for the tabs/guided variants — Course, each faculty
+  // role set as its own first-class stop (a role, not a "role set", drives
+  // the sequence), then General.
+  const builderStops: { key: string; label: string; subjectKey: string; roleSetId?: string }[] = [
+    { key: 'course', label: 'Course', subjectKey: 'course_content' },
+    ...facultyRoleSets.map(set => ({
+      key: `stop-${set.id}`,
+      label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · pick roles',
+      subjectKey: 'faculty',
+      roleSetId: set.id,
+    })),
+    { key: 'general', label: 'General', subjectKey: 'general' },
+  ]
+  const stopSections = (stop: { subjectKey: string; roleSetId?: string }) =>
+    sections.filter(s => s.subjectKey === stop.subjectKey && (stop.subjectKey !== 'faculty' || s.roleSetId === stop.roleSetId))
+  const stopQuestionCount = (stop: { subjectKey: string; roleSetId?: string }) =>
+    stopSections(stop).reduce((n, s) => n + s.questions.length, 0)
+  const activeStopIdx = Math.max(0, builderStops.findIndex(s => s.key === activeStop))
+  const curStop = builderStops[activeStopIdx]
+  const handleAddRoleStop = () => {
+    const newId = handleAddRoleSet()
+    setActiveStop(`stop-${newId}`)
   }
 
   function handleAddSection(subjectKey?: string, roleSetId?: string): string | undefined {
@@ -1050,6 +1083,85 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+    )
+  }
+
+  // Decision gate for an empty stop (tabs/guided variants) — upload OR build
+  // manually, one choice on screen (Monil Jul 21: "one decision point is
+  // taken and done").
+  function renderStopGate(stop: { subjectKey: string; roleSetId?: string }) {
+    return (
+      <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <Button
+          variant="outline"
+          className="h-auto flex-col items-center gap-1"
+          style={{ paddingBlock: 24 }}
+          onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}
+        >
+          <i className="fa-light fa-sparkles text-base" aria-hidden="true" />
+          <span className="text-sm font-semibold">Upload a document</span>
+          <span className="text-xs text-muted-foreground font-normal whitespace-normal">Generate sections and questions automatically — edit them after</span>
+        </Button>
+        <Button
+          variant="outline"
+          className="h-auto flex-col items-center gap-1"
+          style={{ paddingBlock: 24 }}
+          onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}
+        >
+          <i className="fa-light fa-plus text-base" aria-hidden="true" />
+          <span className="text-sm font-semibold">Build manually</span>
+          <span className="text-xs text-muted-foreground font-normal whitespace-normal">Add sections and questions yourself</span>
+        </Button>
+      </div>
+    )
+  }
+
+  // One stop's canvas (tabs/guided variants) — role chips for a faculty stop,
+  // then the standard section cards or the decision gate when empty.
+  function renderStopStage(stop: { subjectKey: string; roleSetId?: string }) {
+    const secs = stopSections(stop)
+    const set = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
+    return (
+      <div className="flex flex-col gap-3">
+        {set && renderRoleSetHeader(set)}
+        {secs.length === 0 ? renderStopGate(stop) : (
+          <>
+            {secs.map(sec => renderSectionCard(sec))}
+            <div className="flex items-center justify-center">
+              <Button variant="link" size="sm" className="font-semibold"
+                onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Add section
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // Prev/next between stops (outline — the wizard footer below owns the
+  // single filled CTA).
+  function renderStopNav() {
+    const prev = activeStopIdx > 0 ? builderStops[activeStopIdx - 1] : null
+    const next = activeStopIdx < builderStops.length - 1 ? builderStops[activeStopIdx + 1] : null
+    return (
+      <div className="flex items-center justify-between" style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        {prev ? (
+          <Button variant="outline" size="sm" onClick={() => setActiveStop(prev.key)}>
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+            {prev.label}
+          </Button>
+        ) : <span />}
+        {next ? (
+          <Button variant="outline" size="sm" onClick={() => setActiveStop(next.key)}>
+            Next: {next.label}
+            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+          </Button>
+        ) : (
+          <span className="text-xs text-muted-foreground">All aspects covered — continue to Review</span>
+        )}
       </div>
     )
   }
@@ -1543,7 +1655,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   return (
     /* Non-rail variants scroll at the window level (sticky rail/panel/footer) —
        an overflow-hidden ancestor would break position:sticky against the window. */
-    <div className={`flex flex-col flex-1 ${variant === 'rail' ? 'overflow-hidden' : ''}`}>
+    <div className={`flex flex-col flex-1 ${variant === 'rail' || variant === 'guided' ? 'overflow-hidden' : ''}`}>
       {!embedded && (
         <SiteHeader
           breadcrumbs={[{ label: 'Templates', href: backHref }]}
@@ -1611,7 +1723,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
           {/* Left — section list. Non-rail variants scroll at the window level, so
               they must not sit under an overflow-hidden ancestor (breaks sticky). */}
-          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'rail' ? 'overflow-hidden' : ''}`}>
+          <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${variant === 'rail' || variant === 'guided' ? 'overflow-hidden' : ''}`}>
           {importedBanner && (
             <div style={{ padding: '10px 40px 0' }}>
               <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
@@ -1990,6 +2102,130 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     </div>
                   )
                 })}
+              </div>
+            </div>
+          ) : variant === 'tabs' ? (
+            /* Tabs variant — Monil Jul 21: horizontal aspect tabs, one aspect
+               on stage at a time, worked left to right; a faculty role set is
+               a first-class tab. Standard section cards inside. */
+            <div className="flex-1 min-w-0">
+              <div className="mx-auto flex flex-col" style={{ maxWidth: 760, padding: '16px 24px 64px' }}>
+                <div className="flex items-end flex-wrap" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div
+                    role="tablist"
+                    aria-label="Template aspects"
+                    className="flex items-end gap-1 flex-wrap"
+                    onKeyDown={e => {
+                      // APG tablist contract — arrows move between tabs, Tab exits
+                      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+                      e.preventDefault()
+                      const delta = e.key === 'ArrowRight' ? 1 : -1
+                      const nextIdx = (activeStopIdx + delta + builderStops.length) % builderStops.length
+                      setActiveStop(builderStops[nextIdx].key)
+                      const tabs = e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]')
+                      tabs[nextIdx]?.focus()
+                    }}
+                  >
+                    {builderStops.map(stop => {
+                      const cur = stop.key === curStop.key
+                      const done = stopQuestionCount(stop) > 0
+                      return (
+                        <Button
+                          key={stop.key}
+                          role="tab"
+                          aria-selected={cur}
+                          tabIndex={cur ? 0 : -1}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setActiveStop(stop.key)}
+                          className={cur ? 'font-semibold' : ''}
+                          style={cur ? { background: 'var(--muted)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' } : {}}
+                        >
+                          {done && !cur && (
+                            <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                          )}
+                          {stop.label}
+                          <span className="text-xs text-muted-foreground tabular-nums">{stopQuestionCount(stop)}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="text-muted-foreground">
+                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                    Add role
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground" style={{ margin: '12px 0' }}>
+                  {ASPECT_INFO[curStop.subjectKey]}
+                </p>
+                <div role="tabpanel" aria-label={curStop.label} tabIndex={0}>
+                  {renderStopStage(curStop)}
+                </div>
+                {renderStopNav()}
+              </div>
+            </div>
+          ) : variant === 'guided' ? (
+            /* Guided variant — the same sequential stops as 'tabs', carried in
+               a left checklist rail (Mercury onboarding pattern) so no chrome
+               sits above the content. Standard section cards inside. */
+            <div className="flex flex-row flex-1 min-h-0">
+              <nav
+                aria-label="Template aspects"
+                className="shrink-0 overflow-y-auto p-3 flex flex-col gap-1"
+                style={{ width: 232, borderRight: '1px solid var(--border)' }}
+              >
+                {builderStops.map((stop, i) => {
+                  const cur = stop.key === curStop.key
+                  const done = stopQuestionCount(stop) > 0
+                  return (
+                    <Button
+                      key={stop.key}
+                      variant="ghost"
+                      onClick={() => setActiveStop(stop.key)}
+                      aria-current={cur ? 'step' : undefined}
+                      className="h-auto w-full justify-start text-left rounded-lg px-3 py-2 hover:bg-transparent"
+                      style={{ background: cur ? 'var(--muted)' : 'transparent' }}
+                    >
+                      <span className="flex items-start gap-2.5 w-full">
+                        <span
+                          className="shrink-0 flex items-center justify-center rounded-full text-xs font-semibold"
+                          style={{
+                            width: 18, height: 18, marginTop: 1,
+                            background: cur ? 'var(--foreground)' : 'transparent',
+                            border: cur || done ? 'none' : '1.5px solid var(--border)',
+                            color: cur ? 'var(--background)' : done ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                          }}
+                        >
+                          {done && !cur ? <i className="fa-solid fa-check text-xs" aria-hidden="true" /> : i + 1}
+                        </span>
+                        <span className="flex flex-col items-start min-w-0">
+                          <span className={`text-sm truncate ${cur ? 'font-semibold' : 'font-medium'}`}>{stop.label}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : 'not started'}
+                          </span>
+                        </span>
+                      </span>
+                    </Button>
+                  )
+                })}
+                <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="justify-start text-muted-foreground">
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add role
+                </Button>
+              </nav>
+              <div className="flex-1 overflow-y-auto" style={{ padding: '24px 40px 48px' }}>
+                <div style={{ maxWidth: 720 }} className="flex flex-col gap-3">
+                  <div>
+                    <h2 className="text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
+                      {curStop.label}
+                    </h2>
+                    <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
+                      {ASPECT_INFO[curStop.subjectKey]}
+                    </p>
+                  </div>
+                  {renderStopStage(curStop)}
+                  {renderStopNav()}
+                </div>
               </div>
             </div>
           ) : (
