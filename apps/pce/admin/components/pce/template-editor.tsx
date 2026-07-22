@@ -587,15 +587,23 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // Sequential "stops" for the tabs/guided variants — Course, each faculty
   // role set as its own first-class stop (a role, not a "role set", drives
   // the sequence), then General.
-  const builderStops: { key: string; label: string; subjectKey: string; roleSetId?: string }[] = [
-    { key: 'course', label: 'Course', subjectKey: 'course_content' },
-    ...facultyRoleSets.map(set => ({
-      key: `stop-${set.id}`,
-      label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · new evaluation',
-      subjectKey: 'faculty',
-      roleSetId: set.id,
-    })),
-    { key: 'general', label: 'General', subjectKey: 'general' },
+  // label = full role list (rail, aria); shortLabel = compact "first +N" form
+  // for tabs and prev/next buttons where an unbounded list won't fit.
+  const builderStops: { key: string; label: string; shortLabel: string; subjectKey: string; roleSetId?: string }[] = [
+    { key: 'course', label: 'Course', shortLabel: 'Course', subjectKey: 'course_content' },
+    ...facultyRoleSets.map(set => {
+      const roleShort = set.roles.length === 0 ? 'new evaluation'
+        : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
+        : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
+      return {
+        key: `stop-${set.id}`,
+        label: set.roles.length ? `Faculty · ${set.roles.map(ROLE_LABEL).join(', ')}` : 'Faculty · new evaluation',
+        shortLabel: `Faculty · ${roleShort}`,
+        subjectKey: 'faculty',
+        roleSetId: set.id,
+      }
+    }),
+    { key: 'general', label: 'General', shortLabel: 'General', subjectKey: 'general' },
   ]
   const stopSections = (stop: { subjectKey: string; roleSetId?: string }) =>
     sections.filter(s => s.subjectKey === stop.subjectKey && (stop.subjectKey !== 'faculty' || s.roleSetId === stop.roleSetId))
@@ -1162,12 +1170,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         {prev ? (
           <Button variant="outline" size="sm" onClick={() => setActiveStop(prev.key)}>
             <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
-            {prev.label}
+            {prev.shortLabel}
           </Button>
         ) : <span />}
         {next ? (
           <Button variant="outline" size="sm" onClick={() => setActiveStop(next.key)}>
-            Next: {next.label}
+            Next: {next.shortLabel}
             <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
           </Button>
         ) : (
@@ -2155,7 +2163,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           {done && !cur && (
                             <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
                           )}
-                          {stop.label}
+                          {stop.shortLabel}
                           <span className="text-xs text-muted-foreground tabular-nums">{stopQuestionCount(stop)}</span>
                         </Button>
                       )
@@ -2255,8 +2263,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
               <div className="flex-1 overflow-y-auto" style={{ padding: '24px 40px 48px' }}>
                 <div style={{ maxWidth: 720 }} className="flex flex-col gap-3">
                   <div>
+                    {/* Aspect only — the Evaluating chips below own the role
+                        list; an unbounded enumeration doesn't belong in a
+                        display heading. */}
                     <h2 className="text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
-                      {curStop.label}
+                      {curStop.subjectKey === 'faculty' ? 'Faculty' : curStop.label}
                     </h2>
                     <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
                       {ASPECT_INFO[curStop.subjectKey]}
