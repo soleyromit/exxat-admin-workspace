@@ -62,6 +62,12 @@ const OVERRIDES: Record<string, EvaluationInstance[]> = {
     inst('course_material', 'active',         46, 57, 'May 5, 2026'),
     inst('faculty_roles',   'collecting',     46, 39, 'May 5, 2026'),
   ],
+  // Fall 2026 split flows (pce-mock-data pf1–pf3): each flow IS a single
+  // evaluation type — instructor-only or course-only — so deriving both types
+  // from the roll-up would resurrect the half the flow deliberately excludes.
+  pf1: [inst('faculty_roles',   'scheduled', 44, 0, 'Oct 23, 2026')],
+  pf2: [inst('faculty_roles',   'scheduled', 44, 0, 'Dec 4, 2026')],
+  pf3: [inst('course_material', 'scheduled', 14, 0, 'Dec 18, 2026')],
 }
 
 const ORDER_INDEX: Record<EvaluationType, number> = Object.fromEntries(

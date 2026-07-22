@@ -1095,6 +1095,21 @@ const INSTRUCTORS: Record<string, PceInstructor> = {
   hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: '/portraits/omar-hassan.jpg' },
 }
 
+/** Legacy composite-key lookup (`courseCode-term` → ONE survey). Split flows
+ *  (several surveys sharing an offering) collide on that key, and plain Map
+ *  construction silently keeps whichever seed comes LAST. The representative
+ *  is the flow that OPENS first — the one a student meets first — so pick by
+ *  openDate instead of array order. */
+export function representativeSurveyByKey(surveys: PceSurvey[]): Map<string, PceSurvey> {
+  const m = new Map<string, PceSurvey>()
+  for (const s of surveys) {
+    const k = `${s.courseCode}-${s.term}`
+    const prev = m.get(k)
+    if (!prev || (s.openDate ?? '9999') < (prev.openDate ?? '9999')) m.set(k, s)
+  }
+  return m
+}
+
 export const MOCK_SURVEYS: PceSurvey[] = [
   {
     id: 's1',
@@ -1374,6 +1389,22 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   { id: 'pg2', courseCode: 'Clinical Site Feedback — DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
   { id: 'pg3', courseCode: 'Faculty Self-Assessment — All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
   { id: 'pg4', courseCode: 'Curriculum Effectiveness — All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+
+  // ── Fall 2026 (pt5) — flows already pushed for the upcoming term ──────────
+  // The SAME offering can be covered by SEPARATE push flows, each evaluating a
+  // different evaluatee: `offeringId` ties the flows to the course, `evalScope`
+  // + `instructors` say WHO each one evaluates. The push wizard's Status column
+  // reads these, so setting up a second flow shows what's already out.
+  //   co13 (DPT-510) — two instructor flows, one per teaching block: Dr. Patel
+  //     mid-term, Dr. Chen (guest, second block) end-of-term.
+  //   co17 (DPT-601) — the course-material flow is out; faculty flow is not.
+  // All 'scheduled': the term starts Aug 24, so nothing can be live yet.
+  { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Oct 23, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-10-12', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 4, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-23', academicYear: '2026–2027', programId: 'prog1' },
+  // instructors: [] — a course-scope flow evaluates no PERSON; listing one
+  // would seed a ghost row in that instructor's faculty analytics
+  // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [

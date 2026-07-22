@@ -19,8 +19,10 @@ import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
 import {
   type CourseOffering, type TermSeason, type DeliveryMode, type PceTemplate,
+  type PceSurvey,
   COURSE_TYPE_FULL_LABEL,
 } from '@/lib/pce-mock-data'
+import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
@@ -52,6 +54,19 @@ interface ReadinessRow extends Record<string, unknown> {
   facultyHref: string
   /** Group key: gaps first, then ready. */
   readiness: 'gap' | 'ready'
+  /** Evaluation flows ALREADY pushed for this offering (other wizard runs) —
+   *  the same course can be covered by several, each with its own evaluatee. */
+  flows: PceSurvey[]
+}
+
+/** WHO an already-pushed flow evaluates — the course itself, the named
+ *  instructor(s), or both when the flow's template covered everything. */
+function flowEvaluateeLabel(f: PceSurvey): string {
+  if (f.evalScope === 'course') return 'Course'
+  if (f.evalScope === 'instructor') {
+    return f.instructors.length > 0 ? f.instructors.map(i => i.name).join(', ') : 'Instructor'
+  }
+  return 'Course + Faculty'
 }
 
 interface TokenOption {
@@ -349,7 +364,7 @@ export function StepCoursesEvaluatees({
   // In-step template creation (ported from the retired Survey Design step): the
   // step swaps to the SAME create flow + builder used by Settings > Templates,
   // then returns on publish. The wizard page never unmounts, so state persists.
-  const { templates: allTemplates } = usePce()
+  const { templates: allTemplates, surveys } = usePce()
   const [subView, setSubView] = useState<'assign' | 'create' | { buildId: string }>('assign')
   const [notice, setNotice] = useState<{ kind: 'published' | 'draft'; name: string } | null>(null)
   const backToAssign = () => {
@@ -368,6 +383,25 @@ export function StepCoursesEvaluatees({
     for (const t of publishedTemplates) m.set(t.id, templateCriteria(t))
     return m
   }, [publishedTemplates])
+
+  // Flows already pushed per offering — earlier wizard runs, keyed by the
+  // survey's offeringId FK. Course-scope flows lead, then by open date, so the
+  // Status cell reads in the order the students will see them.
+  const flowsByOffering = useMemo(() => {
+    const m = new Map<string, PceSurvey[]>()
+    for (const s of surveys) {
+      if (!s.offeringId) continue
+      m.set(s.offeringId, [...(m.get(s.offeringId) ?? []), s])
+    }
+    const rank: Record<string, number> = { course: 0, instructor: 1 }
+    for (const list of m.values()) {
+      list.sort((a, b) =>
+        (rank[a.evalScope ?? ''] ?? 2) - (rank[b.evalScope ?? ''] ?? 2) ||
+        (a.openDate ?? '').localeCompare(b.openDate ?? ''),
+      )
+    }
+    return m
+  }, [surveys])
 
   // One row per course (one type per course), ordered by code.
   const rows = useMemo<ReadinessRow[]>(
@@ -401,10 +435,11 @@ export function StepCoursesEvaluatees({
             templateId,
             facultyHref: prismAddFacultyHref(r.offering),
             readiness: (hasGap ? 'gap' : 'ready') as 'gap' | 'ready',
+            flows: flowsByOffering.get(r.offering.id) ?? [],
           }
         })
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
-    [scoped, templateAssignments, defaultAssignments, criteriaByTemplate],
+    [scoped, templateAssignments, defaultAssignments, criteriaByTemplate, flowsByOffering],
   )
 
   const columns = useMemo<ColumnDef<ReadinessRow>[]>(() => {
@@ -436,6 +471,38 @@ export function StepCoursesEvaluatees({
         // Catalog count cell — always muted: the count is context, and a
         // roster gap is announced by the Action column, not by this number.
         cell: r => <NumericCell value={r.enrolled} className="text-muted-foreground" />,
+      },
+      {
+        // What's ALREADY out for this course — one block per pushed flow, so a
+        // course being evaluated in separate flows (different evaluatees) shows
+        // every prior run before the admin sets up the next one. The canonical
+        // SurveyStatusBadge carries the lifecycle; the muted line under it
+        // names WHO that flow evaluates (the course itself, or the instructor
+        // by name). Badge and evaluatee STACK — inline, the badge left the
+        // name ~60px and even "Course" clipped; stacking is the same pattern
+        // the Faculty (name/role) and Evaluates cells already use.
+        key: 'flows', label: 'Status', width: 160,
+        cell: r => {
+          if (r.flows.length === 0) {
+            return (
+              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                Not pushed
+              </span>
+            )
+          }
+          return (
+            <div className="flex flex-col items-start gap-1.5 py-1">
+              {r.flows.map(f => (
+                <span key={f.id} className="flex flex-col items-start gap-0.5 min-w-0 max-w-full">
+                  <SurveyStatusBadge status={f.status} />
+                  <TruncatedText className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    {flowEvaluateeLabel(f)}
+                  </TruncatedText>
+                </span>
+              ))}
+            </div>
+          )
+        },
       },
     ]
     // The row's survey template — placed right after the course identity (the

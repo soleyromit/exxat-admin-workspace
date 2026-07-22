@@ -28,6 +28,7 @@ import {
   MOCK_MASTER_COURSES,
   MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
+import { CRITERION_GROUP, templateCriteria } from '@/lib/pce-course-readiness'
 
 export const DEFAULT_SETUP_EMAIL_SUBJECT =
   'Your course evaluation for {{course_name}} is now open'
@@ -527,8 +528,23 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
         const faculty = offering ? MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId) : null
         const templateId = templateAssignments[offeringId] ?? ''
 
+        // Scope from what the assigned template evaluates: course-only /
+        // faculty-only templates make a single-evaluatee flow; a template that
+        // covers both leaves evalScope undefined (a combined flow). offeringId
+        // ties every flow to its course so the push wizard's Status column can
+        // show what's already out when a LATER flow targets the same course.
+        const tmpl = templates.find(t => t.id === templateId)
+        const crits = tmpl ? templateCriteria(tmpl) : []
+        const hasCourse = crits.some(c => CRITERION_GROUP[c] === 'Course')
+        const hasFaculty = crits.some(c => CRITERION_GROUP[c] === 'Faculty')
+        const evalScope = hasCourse && !hasFaculty ? ('course' as const)
+          : hasFaculty && !hasCourse ? ('instructor' as const)
+          : undefined
+
         return {
           id: `s${Date.now()}-${offeringId}`,
+          offeringId,
+          evalScope,
           courseCode: masterCourse?.code ?? offeringId,
           courseName: masterCourse?.name ?? '',
           term: term?.name ?? academicYear,
@@ -551,7 +567,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       })
       return [...ss, ...newSurveys]
     })
-  }, [])
+  }, [templates])
 
   // ── Survey intervention actions ───────────────────────────────────────────
 
