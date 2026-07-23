@@ -1082,7 +1082,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // full aspect body and the focus variant's compact section list.
   function renderRoleSetHeader(set: PceTemplateRoleSet) {
     return (
-      <div id={`roleset-${set.id}`} className="flex items-start gap-3"
+      <div id={`roleset-${set.id}`} className="flex items-center gap-3"
         style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', scrollMarginTop: 12 }}>
         {/* No visible "Evaluating" label — the aspect identity line already
             states the direction; the aria-label keeps it for screen readers. */}
@@ -1105,7 +1105,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           <Popover open={rolePickerSetId === set.id}
             onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="xs" className="rounded-full">
+              <Button variant="outline" size="xs">
                 <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                 {set.roles.length === 0 ? 'Pick one or more roles' : 'Add role'}
               </Button>
