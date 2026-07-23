@@ -237,3 +237,21 @@
 .next-error-h1 {
   color: #fff;
 }
+
+/* Readiness-table group bands (Courses & Survey Design) — 14% chart wash
+   composed OVER --card: opaque so the sticky (pinned) select cell occludes
+   content scrolling beneath it. Paired ink is the matching --chip-N token;
+   runtime axe-verified ≥4.5:1 on both bands (chip inks are darker than the
+   severity-fg mixes, which fail on these washes at 4.23:1). */
+:root {
+  --group-band-attention-bg: color-mix(in srgb, var(--chart-4) 14%, var(--card));
+  --group-band-done-bg: color-mix(in srgb, var(--chart-2) 14%, var(--card));
+}
+
+/* Blocked audit row (readiness surfaces): a wash lighter than the band (7%
+   vs 14%) plus an inset amber edge, so the ROW that needs the user pops
+   without competing with its group header. */
+.dt-row-blocked {
+  background: color-mix(in srgb, var(--chart-4) 7%, transparent);
+  box-shadow: inset 2px 0 0 var(--chip-4);
+}
