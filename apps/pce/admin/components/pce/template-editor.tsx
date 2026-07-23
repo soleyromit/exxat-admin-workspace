@@ -1115,11 +1115,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="ghost" size="xs" className="shrink-0"
-          onClick={() => { uploadTargetRef.current = { subjectKey: 'faculty', roleSetId: set.id }; uploadInputRef.current?.click() }}>
-          <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-          Generate
-        </Button>
+        {/* No Generate here — in the roles row it reads as "generate a role"
+            (Romit, Jul 23). Document generation lives in the stage's
+            "Have a document?" strip. */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon-sm" aria-label="Remove role set" className="shrink-0"
