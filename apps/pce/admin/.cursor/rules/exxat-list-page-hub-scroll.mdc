@@ -1,0 +1,45 @@
+---
+description: Exxat DS — ListPageTemplate hub scroll — one page scrollport; table/list/board grow together
+globs: 
+  - packages/ui/src/components/templates/list-page.tsx
+  - packages/ui/src/components/data-views/hub-table.tsx
+  - packages/ui/src/components/data-views/list-page-board-template.tsx
+  - components/**/*-client.tsx
+  - components/**/*-table.tsx
+tags: [layout, list-page, data-views]
+seeAlso:
+  - .cursor/rules/exxat-page-scroll-ownership.mdc
+  - .cursor/rules/exxat-list-page-connected-views.mdc
+  - docs/exxat-ds/data-views-pattern.md
+---
+
+# Exxat DS — list page hub scroll
+
+**Binding for `ListPageTemplate` hubs (Library, Team, Compliance, …).**
+
+## Scroll owner
+
+**`PrimaryPageTemplate` → `[data-page-scroll]`** is the **only** vertical scroll for table, list, and board views. KPI strip, view tabs, filter toolbar, and view body **scroll together** — same cadence as **`DataTable`** on the table tab.
+
+## MUST
+
+1. **Table / list / board** — Body grows with page content. Use **`HubTable` `toolbarShell(<ViewBody />)`** (toolbar + body in one `pb-6` block). **Do not** wrap board/list in `viewportToolbarShell`, `flex-1 min-h-0`, or nested `overflow-y-auto` unless product explicitly documents a split-pane exception.
+2. **`ListPageTemplate` tab body** — For `table`, `list`, and `board` tabs the template uses **`min-h-min`** (no viewport lock). Folder / panel / tree / dashboard tabs use **`min-h-0 flex-1`** for internal scroll.
+3. **Header + metrics** — Stay **`shrink-0`** above view tabs; never compress the KPI flat band into the tab row.
+4. **Board columns** — **`ListPageBoardTemplate`** uses natural column height + horizontal overflow only; vertical overflow belongs to **`[data-page-scroll]`**.
+
+## MUST NOT
+
+- Pin the filter toolbar while only the board/list body scrolls (second scrollbar under tabs).
+- Put **`flex-1 min-h-0`** on board/list wrappers — cards clip at the viewport instead of scrolling the page.
+- Use **`scrollableViewportToolbarShell`** or equivalent for board — removed; use **`toolbarShell`** only.
+
+## Viewport-fill exception (internal scroll)
+
+**`folder` · `panel` · `tree-panel` · `dashboard`** — Use **`viewportToolbarShell`** so the body fills the tab and owns Miller/tree/canvas scroll regions. See **`exxat-list-page-view-shells.mdc`**.
+
+## Reference
+
+- **`packages/ui/src/components/templates/list-page.tsx`** — `LIST_PAGE_VIEWPORT_FILL_VIEWS`, tab body classes
+- **`packages/ui/src/components/data-views/hub-table.tsx`** — `toolbarShell` vs `viewportToolbarShell`
+- **`components/library-table.tsx`** — board → `toolbarShell`; folder/panel/tree → `viewportToolbarShell`

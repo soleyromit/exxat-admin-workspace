@@ -56,9 +56,3 @@ If any step fails or produces unexpected output:
 
 ## Known edge cases
 <!-- Agent appends failure fixes here -->
-
-### Null transcript (2026-06-15)
-Meeting "Meeting with Aarti on PCE, Exam Management" (Jun 13, id: ab7e2691-bfaa-4ace-ac8f-29fcb2a3daec) returned `"transcript": null`. This happens when Granola has note metadata but no recorded/processed transcript. Fix: skip silently, note in commit message as "1 meeting had no transcript."
-
-### Transcript too large for inline return (2026-06-15)
-Meeting "India discussion — Weekly Product Sync | New Initiatives (Prism)" (Jun 10, id: 4d1fa807-2bda-4a38-880e-15376e9810a7) was 159,934 chars — exceeded inline token limit. Granola tool saved it to a file path. Fix: use `python3 -c "content=open(path).read(); print(content[A:B])"` in 15,000-char chunks to read without stdout overflow.

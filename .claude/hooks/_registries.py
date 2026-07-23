@@ -24,7 +24,7 @@ STATE_PATH = REPO_ROOT / "docs" / "telemetry" / "registry-state.json"
 REGISTRIES: list[str] = [
     "DESIGN.md",
     "CLAUDE.md",
-    "docs/CLAUDE-DS-REFERENCE.md",
+    "tools/ds/source.mjs",
     "docs/PRODUCTS.md",
     "docs/ANALOGIES.md",
     "docs/RESEARCH-SIGNALS.md",

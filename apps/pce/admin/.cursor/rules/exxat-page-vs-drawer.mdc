@@ -1,0 +1,31 @@
+---
+description: Exxat DS — when to use a drawer vs a new page for actions and auxiliary UI.
+alwaysApply: false
+globs: 
+  - components/**/*drawer*
+  - components/**/*Drawer*
+  - apps/web/src/views/**/*
+tags: [overlay, routing]
+seeAlso:
+  - docs/exxat-ds/drawer-vs-dialog-pattern.md
+  - .cursor/skills/exxat-overlays/SKILL.md
+---
+
+# Exxat DS — page vs drawer
+
+## Rule
+
+- **Drawer / sheet** — Use when the user needs **the current page’s context** *and* a **quick view**, **quick actions**, or a **short auxiliary flow** (parent list or hub stays meaningful behind the panel).
+- **Dialog (modal)** — Use for **blocking** short confirms/alerts on the **same route** when the hub must not stay interactable — see **`docs/drawer-vs-dialog-pattern.md`**, **`.cursor/rules/exxat-drawer-vs-dialog.mdc`**.
+- **New page (route)** — Use **otherwise**: primary tasks, long-form or multi-step work, or anything that should have its **own URL** / history without the parent page visible.
+
+## Product examples (this repo)
+
+- **Drawer-appropriate:** `TablePropertiesDrawer`, `ExportDrawer`, lightweight panels that supplement a hub.
+- **Page-appropriate:** Full settings flows, multi-step record-creation wizards (e.g. `new-library-item-form.tsx`), or any task that is itself the user's primary intent.
+
+## Authoritative detail
+
+- **`./AGENTS.md` §6.4**
+- **`docs/exxat-ds/data-views-pattern.md`** (Page vs drawer)
+- **`docs/exxat-ds/drawer-vs-dialog-pattern.md`** (drawer vs modal dialog)

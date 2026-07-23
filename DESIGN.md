@@ -30,7 +30,7 @@ When app-type changes, the matching DS profile auto-loads via SessionStart / Use
 
 | Layer | Responsibility | Source files | Auto-generated? |
 |---|---|---|---|
-| L0 Foundations | Tokens, components, DS surface | `exxat-ds/`, `studentUX/`, `docs/foundations/ds-snapshot.json`, `docs/foundations/ds-profiles/{admin,student}.md` | snapshot: yes; profiles: hand + auto-diff |
+| L0 Foundations | Tokens, components, DS surface | `exxat-ds/`, `studentUX/`, `node tools/ds/source.mjs --list`, `docs/foundations/ds-profiles/{admin,student}.md` | snapshot: yes; profiles: hand + auto-diff |
 | L1 Patterns | Composition recipes (viz, states, forms, nav, IA, onboarding, async, dashboards, admin, ai, experience) | `docs/patterns/<category>/<name>.md` | hand-written |
 | L2 Product UX | Strategy, personas, workflows, content per product | `apps/<product>/DESIGN.md`, `apps/<product>/docs/` | hand-written |
 | L3 Process | Research, ADRs, telemetry, decisions | `docs/research/`, `docs/decisions/`, `docs/telemetry/`, plus per-product equivalents | intake skill writes |
@@ -68,7 +68,7 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **DS-007** — Component imports must match the active DS profile. Admin: `@exxat/ds/packages/ui/src`. Student: `@exxat/student/components/...`. *Gate:* PreToolUse after profile load.
 - **DS-008** — Tailwind color utilities outside the semantic allowlist (`bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-card`, `bg-popover`, etc.) are banned. *Gate:* PreToolUse.
 - **DS-009** — DS components may not have visual treatments (shadow, border, hover bg, padding, gradient) beyond what the DS source defines, unless documented as an exception. *Gate:* code review; long-term AST diff against component defaults.
-- **DS-010** — Before importing any DS component, the import must resolve in `docs/foundations/ds-snapshot.json` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked. *Gate:* PreToolUse (blocking, v0.2).
+- **DS-010** — Before importing any DS component, the import must resolve in `node tools/ds/source.mjs --list` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked. *Gate:* PreToolUse (blocking, v0.2).
 - **DS-011** — No inline typography literals (`fontSize`, `fontWeight`, `fontFamily` as raw values in `style={{}}`). Use Tailwind classes (`text-xs`, `font-semibold`) or token references (`var(--text-xs)`, `var(--font-sans)`). *Gate:* PreToolUse (blocking, v0.2).
 - **DS-012** — Every admin app's `app/globals.css` MUST contain the DS overrides block (DS Tabs fix, sidebar token, datatable tokens) verbatim from `docs/foundations/admin-globals-template.css`. Without these, DS Tabs render with broken layout (wrong orientation, no underline indicator) and the sidebar/datatable lose their theme tokens on dark mode. *Gate:* `scripts/ds-globals-audit.py` in pre-commit (blocking, --strict). *Reason:* DS itself ships with broken Tailwind classes for Tabs (sets `data-orientation` but classes look for `data-horizontal`); each admin app must mirror the fix until exxat-ds patches upstream.
 - **DS-013** — No raw `oklch()` literal in inline `style` props. Define a CSS variable in `globals.css` and reference it as `var(--token)`. *Gate:* PreToolUse (blocking, v0.3).
@@ -114,6 +114,9 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **A11Y-017** — Non-text UI contrast ≥ 3:1 against adjacent colors: form-field borders, focus rings, icon-only buttons, chart axes/legends. Use `--border-control-3` / `--border-control-35` only for fields. Maps to **WCAG 1.4.11**. *Gate:* token contrast audit (CI script) + code review. *(Distinct from A11Y-003 text contrast.)*
 - **A11Y-018** — Modal/Sheet/Drawer MUST trap focus while open and restore focus to opener on close. DS `Dialog`/`Sheet` from `@exxat-ds/ui` already handle this; **raw `<div role="dialog">` is BANNED.** Maps to **WCAG 2.1.2 + 2.4.3**. *Gate:* PreToolUse banning raw `role="dialog"`. *Pattern:* `docs/patterns/a11y/modal-focus-trap.md`.
 - **A11Y-019** — Page heading hierarchy: exactly one `<h1>` per route, no heading levels skipped (h2 → h4 forbidden). Sidebar/nav not counted. Maps to **WCAG 1.3.1 + 2.4.6**. *Gate:* Stop hook AST scan. *Pattern:* `docs/patterns/a11y/landmarks.md`.
+- **A11Y-020** (WCAG 1.4.3) — `opacity-*` on any text element is **banned**. It multiplies against the base token contrast and produces unpredictable failures (e.g. `--muted-foreground` at 5.5:1 × `opacity-50` ≈ 2.5:1 — hard fail). To de-emphasise text use a different DS token (`--muted-foreground`, `--foreground`). *Gate:* grep `opacity-[1-9]` / `opacity: 0.` on text-bearing nodes.
+- **A11Y-021** (WCAG 1.4.11) — `var(--border)` (~1.2:1 on white) must **never** be the sole visual indicator of a UI state (swatch dot, indicator ring, active underline, status icon). Minimum token for non-text state indicators: `var(--muted-foreground)` (5.5:1). *Gate:* code review; grep `borderColor.*var(--border)` in state-variant style objects.
+- **CLARIFICATION A11Y-003** — `text-muted-foreground` on `bg-card`/white = **5.5:1** in all shipped themes — passes 4.5:1 AA, no override needed. `text-xs` pixel size is **not** a WCAG AA requirement; WCAG specifies contrast ratios only. Do not change `muted-foreground` → `foreground` or `text-xs` → `text-[12px]` to "fix" WCAG — check the ratio, not the size.
 
 ### CONTENT — Voice, Glossary, Errors
 - **CONTENT-001** — Use the glossary in `apps/<product>/docs/content.md`. New terms added via intake before use. *Gate:* content-lint Stop hook.
@@ -142,6 +145,18 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **I18N-002** — Locale resolution at school-configuration level; no per-user override Phase 1. *Gate:* architecture review.
 - **I18N-003** — CSS uses logical properties (`padding-inline-start`, `margin-inline-end`, `text-align: start`) instead of physical (`left`/`right`); Tailwind logical classes (`ps-*`, `pe-*`, `me-*`, `start-*`, `end-*`) are first-class. *Gate:* code review.
 - **I18N-004** — New locale activation requires ADR documenting locale, glossary owner, QA path. *Gate:* governance.
+
+### UX — Design Process Protocol (2026-05-22)
+
+Seven phases required before any screen design or implementation. Non-negotiable. No phase can be skipped. Gate: UserPromptSubmit when "design / new screen / new page / redesign" is detected.
+
+- **UX-001 (Synthesis)** — Before any screen: extract ALL entities + relationships from docs + transcripts. Write "Job to be done" per persona (one sentence). Write "Moment that matters" per persona. Write "Primary fear" per persona. Map the entity state machine. Map the full entity chain (e.g., Template → Survey → Response → Analytics → Action Plan). *Gate:* mandatory; blocks UX-002.
+- **UX-002 (Purpose Statements)** — For EVERY screen: write "This screen exists so [persona] can [specific decision or action]." If unsatisfied in one sentence, the screen is not ready to design. List every decision + every data item needed. Verify all needed data is visible on this screen without navigation. *Gate:* mandatory; blocks UX-003.
+- **UX-003 (Mobbin Research)** — Search Mobbin for the FLOW TYPE (not the product category) before sketching. "moderation queue" not "survey tool". "analytics with comparison" not "faculty dashboard". Pull 3-5 screens. Extract the principle (how does the layout answer the question? where does the primary action live? how does it handle empty state?). Never search once at project start and stop — search per flow type every time. *Gate:* mandatory; Mobbin MCP must be called. *(Memory: [[feedback_basic_claude_design]])*
+- **UX-004 (Contextual Data Map)** — For each decision point: list the data the user needs, confirm it is on this screen. If they must navigate away to get it, that is a design failure. Fix by bringing the data to the screen (inline summary, tooltip, sheet from right) or removing the decision from this screen. *Gate:* mandatory.
+- **UX-005 (AI Layer Map)** — Map AI assistance at every friction/decision point. AI is not a panel — it is a layer. Every form field: can AI pre-fill? Every decision: can AI recommend with visible reasoning? Every data display: can AI add insight? AI entry points must be documented before implementation. *Gate:* mandatory for any screen touching evaluation, analytics, or distribution workflows.
+- **UX-006 (Visualization Purpose)** — For every data point shown, write: (1) the question it answers, (2) the action the user takes after reading it. No action = no chart; replace with text. Chart type selection: comparison → bullet/strip; trend → sparkline/slope; threshold → BulletGauge; composition → only then bar. Never progress bar for performance metric. *(Rules: VIZ-001, VIZ-002, VIZ-004, VIZ-010)*
+- **UX-007 (State Coverage)** — Every screen defines: empty (what user does NEXT), loading (skeleton), error (specific + recovery action), partial (degraded experience), at-threshold (200 items), first-time (onboarding vs. empty). No screen is done without all 6 states documented. *Gate:* state-review subagent call before any PR.
 
 ---
 

@@ -2,27 +2,48 @@
   "name": "@exxat/pce-admin",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "dev": "next dev --port 3005",
+    "predev": "exxat-ui dev-guard",
+    "dev": "next dev --turbopack --port 3005",
+    "dev:clean": "lsof -ti tcp:3005 -sTCP:LISTEN | xargs -r kill -9; next dev --turbopack --port 3005",
     "build": "next build",
     "start": "next start --port 3005",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true && node scripts/ensure-use-client.mjs || true"
   },
   "dependencies": {
+    "@observablehq/plot": "^0.6.17",
+    "@exxatdesignux/product-framework": "^0.1.7",
+    "@exxatdesignux/ui": "^0.6.57",
+    "@hookform/resolvers": "^5.4.0",
     "clsx": "^2.1.1",
+    "motion": "^12.42.0",
     "next": "^15.3.1",
     "next-themes": "^0.4.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.5.0"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.80.0",
+    "recharts": "^3.9.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "axe-core": "^4.12.1",
+    "tailwindcss": "^4.3.1",
     "typescript": "^5.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }

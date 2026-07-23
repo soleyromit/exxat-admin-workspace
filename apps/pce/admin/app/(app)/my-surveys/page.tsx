@@ -5,29 +5,29 @@ import { useSearchParams } from 'next/navigation'
 import {
   Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  SidebarTrigger, Separator, Skeleton,
-} from '@exxat/ds/packages/ui/src'
+  Skeleton,
+} from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { ResponseGauge } from '@/components/pce/response-gauge'
+import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
-const FACULTY_ID = 'f1'
-
 /* Group buckets for faculty's own surveys. Aarti's 2026-05-08 directive: active
    bubbles up, results next, past surveys at the bottom. We collapse open/active
    into 'collecting' for grouping purposes. */
 const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
-  pending_review: 'Closed, Pending Review',
-  collecting:     'Ongoing',
-  active:         'Scheduled',
+  pending_review: 'Pending review',
+  collecting:     'Collecting',
+  active:         'Active',
+  scheduled:      'Scheduled',
   draft:          'Draft',
-  released:       'Closed, Results Available',
+  released:       'Results',
   closed:         'Past surveys',
 }
 
@@ -49,13 +49,14 @@ export default function MySurveysPage() {
 }
 
 function MySurveysContent() {
-  const { surveys } = usePce()
+  const { surveys, user } = usePce()
+  const facultyId = user.facultyId ?? 'f1'
   const searchParams = useSearchParams()
   const filterParam = searchParams.get('filter')
   const [term, setTerm] = useState('Spring 2026')
 
   const mySurveys = surveys.filter(s =>
-    s.instructors.some(i => i.id === FACULTY_ID) && s.term === term
+    s.instructors.some(i => i.id === facultyId) && s.term === term
   )
 
   // ?filter=released narrows to released/closed; otherwise show all assigned.
@@ -98,11 +99,12 @@ function MySurveysContent() {
       sortable: true,
       width: 200,
       cell: (row) => (
-        <ResponseGauge
-          rate={row.survey.responseRate}
+        <BulletGauge
           responseCount={row.survey.responseCount}
           enrollmentCount={row.survey.enrollmentCount}
-          showBar={row.survey.responseRate > 0}
+          width={120}
+          height={4}
+          ariaLabel={null}
         />
       ),
     },
@@ -143,9 +145,8 @@ function MySurveysContent() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title={filterParam === 'released' ? 'Results' : 'My Surveys'} />
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
@@ -157,7 +158,7 @@ function MySurveysContent() {
             {MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
@@ -177,6 +178,7 @@ function MySurveysContent() {
                 window.location.href = `/my-surveys/${row.survey.id}/results`
               }
             }}
+            toolbarSlot={() => null}
           />
         )}
       </div>
@@ -187,10 +189,13 @@ function MySurveysContent() {
 function MySurveysSkeleton() {
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
-        <Skeleton className="h-7 w-7" />
-        <Skeleton className="h-4 w-24" />
-      </header>
+      <SiteHeader title="My Surveys" />
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+          My Surveys
+        </h1>
+        <Skeleton className="h-8 w-36" />
+      </div>
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-2">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}

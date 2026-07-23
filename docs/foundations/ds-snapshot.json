@@ -1,7 +1,5 @@
 {
   "version": "0.2.0",
-  "generated_at": "2026-05-08T23:55:01.608487+00:00",
-  "workspace": "/Users/romitsoley/Work",
   "profiles": {
     "admin": {
       "ds_name": "Exxat-DS",

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — automatic Claude Code account failover via claude-swap.
+
+  Polls every 5 minutes (StartInterval 300) plus once at load. `cswap auto --once`
+  checks the active account's 5h / 7d usage; when it crosses the threshold (85%),
+  it switches to the account with the most quota left BEFORE you hit the wall.
+  Runs safely alongside Claude Code (takes the same credential locks), and
+  quarantines accounts whose token has died.
+
+  Install (one-time):
+    cp scripts/launchd/com.exxat.cswap-auto.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.exxat.cswap-auto.plist
+
+  Verify:
+    launchctl list | grep com.exxat.cswap-auto
+    tail -f /tmp/cswap-auto.log
+
+  Tune threshold/cadence:
+    cswap config set autoswitch.threshold 80     # switch earlier
+    (edit StartInterval below for a different poll cadence)
+
+  Unload (to stop):
+    launchctl unload ~/Library/LaunchAgents/com.exxat.cswap-auto.plist
+
+  NOTE: failover only works if every registered account has a LIVE token.
+  Check `cswap list` — an account showing http-401 must be refreshed
+  (re-run `claude setup-token` for it, then `cswap add-token`).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.exxat.cswap-auto</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/romitsoley/.local/pipx/venvs/claude-swap/bin/cswap</string>
+        <string>auto</string>
+        <string>--once</string>
+        <string>--threshold</string>
+        <string>85</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/cswap-auto.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/cswap-auto.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/romitsoley</string>
+        <key>PATH</key>
+        <string>/Users/romitsoley/.local/pipx/venvs/claude-swap/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

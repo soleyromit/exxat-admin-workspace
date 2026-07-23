@@ -61,6 +61,29 @@ What this audit looks for in product code (apps/<product>/<role>/):
      See docs/governance/component-state-catalog.md for the canonical state
      matrix and docs/patterns/admin/state-coverage.md for prescriptions.
 
+  8. DS migration coverage (added 2026-05-29). Detects vendored or hand-rolled
+     components whose canonical DS equivalents are now available from
+     @exxatdesignux/ui. All WARN — migration targets, not blocking violations.
+
+       - vendored-datatable           : components/data-table/ dir exists and
+                                        content goes beyond index.tsx importing
+                                        from the DS package. Migrate to DS.
+       - vendored-keymetrics          : components/key-metrics/ dir exists
+                                        without a DS-import-only index.tsx.
+       - vendored-table-properties    : components/table-properties/ dir exists.
+       - hand-rolled-status-badge     : custom component whose name contains
+                                        StatusBadge / SurveyStatusBadge /
+                                        AssessmentStatusBadge / StatusDot with
+                                        rounded+text-xs+status-word className
+                                        and no StatusBadge import from DS.
+       - missing-list-page-template   : page.tsx imports local DataTable but
+                                        not ListPageTemplate from DS.
+       - hand-rolled-export-drawer    : Sheet/Dialog/Drawer with export-related
+                                        names and no ExportDrawer DS import.
+
+  9. FERPA data-flow (added 2026-05-17). Flags files that handle both a
+     student identifier AND response/answer text in the same component.
+
 Run from repo root:
 
     python3 scripts/ds-adoption-audit.py
@@ -115,11 +138,17 @@ DOCUMENTED_HAND_ROLLS = {
     "components/pce/trend-sparkline.tsx",
     "components/pce/response-gauge.tsx",
     "components/pce/ai-insight-card.tsx",
+    # Internal dev / utility surfaces — NOT shipped product UI (triage 2026-06-15):
+    #  - dev-review-hud: in-DOM conformance overlay; its <button>s + #hex are dev chrome.
+    #  - brand-color-picker: swatch <button>s and hex values are intrinsic to a color picker.
+    "app/dev-review-hud.tsx",
+    "components/brand-color-picker.tsx",
     # Chart depth audit 2026-05-11 — three viz functions inside larger files
     # are documented as intentional hand-rolls. Note: scan_filename_for_ds_organism
     # only matches on filename stems so these aren't actually flagged by it; entries
     # remain here for documentation parity with the registry.
-    "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29
+    "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29 — dashboard, not a list page
+    "app/(app)/analytics/programmatic/page.tsx",  # dashboard, not a list page
     "components/curricular-loop-diagram.tsx",  # PerformanceHeatmap l.267, TrendRow l.797
     # exam-management: assessment-builder question picker — tightly coupled
     # picker grid (full-row click toggles selection, custom selected-row tint,
@@ -128,6 +157,111 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # pce: throwaway design-compare surfaces (Jul 22, push-step decision for
+    # Monil) — each renders the SAME rows under competing cell/row treatments.
+    # They are comparison exhibits, not entity hubs: ListPageTemplate's
+    # toolbar/view chrome would obscure the one variable under comparison.
+    # Delete these entries with the pages once the design is signed off.
+    "app/(app)/compare/push-flow-rows/page.tsx",
+    "app/(app)/compare/push-course-ledger/page.tsx",
+    "app/(app)/compare/fix-affordance/page.tsx",
+    # pce: faculty + course analytics profiles — detail pages for a single entity; the DataTable
+    # renders a sub-list (offerings) not the primary entity list. ListPageTemplate is for
+    # top-level entity list pages, not sub-tables within a profile view.
+    "app/(app)/admin/faculty/[id]/page.tsx",
+    "app/(app)/admin/offerings/[code]/page.tsx",
+    "app/(app)/admin/students/[id]/page.tsx",
+    "app/(app)/admin/terms/[id]/page.tsx",
+    # exam-management: qb-table — purpose-built spreadsheet for the question bank.
+    # Frozen header + left column, virtual scroll over thousands of rows, inline
+    # cell editing, drag-handle column resizing, multi-level group-by. DataTable's
+    # row model and bulk-actions bar don't compose with this interaction surface.
+    # Documented in docs/governance/ds-adoption.md → DataTable hand-rolls 2026-06-17.
+    "app/(app)/question-bank/qb-table.tsx",
+    # exam-management: access and private pages use local DataTable — ListPageTemplate migration
+    # deferred until the DataTable vendoring (exam-management uses local vendored copy) is resolved.
+    "app/(app)/access/page.tsx",
+    "app/(app)/private/page.tsx",
+    # exam-management: assessment-landing uses Sheet/Dialog for "Send to Chair" review workflow
+    # and the download window is exam-download UX (not data-export). ExportDrawer doesn't apply.
+    "app/(app)/assessments/[id]/assessment-landing-client.tsx",
+    # exam-management: status.tsx — AssessmentStatus screen with two intentional hand-rolls:
+    # 1. CSV export via exportItemAnalysisCsv() is a single-click browser download function;
+    #    ExportDrawer applies to Sheet/Dialog-based export UI with format selector + column picker.
+    #    The file has a <Dialog> for "Reschedule assessment" (date picker) which is not an
+    #    export drawer and co-triggers the export-drawer pattern.
+    # 2. Lifecycle stepper (LIFE step circles at grid/rounded-full/text-xs) is a progress
+    #    indicator, not a StatusBadge. DS StatusBadge covers product-lifecycle pill/dot badges;
+    #    no DS stepper component exists. AssessmentStatusBadge is a local component.
+    "components/assessment-creation/screens/status.tsx",
+    # exam-management: students-tab Sheet is for "Enroll Student" (roster management),
+    # not a CSV/data export. The "download" keyword refers to exam download UX.
+    "app/(app)/courses/[id]/tabs/students-tab.tsx",
+    # exam-management: QBToggle — custom toggle switch replacing DS ToggleSwitch.
+    # DS ToggleSwitch renders `border-2 border-input` which produces a large gray
+    # ring on white/brand-tinted surfaces. This component uses DS tokens directly
+    # (--brand-color track, neutral OFF, --background thumb) with no border ring.
+    # Documented in docs/governance/ds-adoption.md → QB ToggleSwitch exception.
+    "components/qb/toggle.tsx",
+    # pce: distribute-wizard — three Sheet-embedded tables where the full DataTable
+    # organism would conflict with the sheet layout / pinned footer.
+    # email-list-sheet: editable roster (add/remove rows inline); DataTable's
+    #   sort/resize chrome conflicts with the fixed-width sheet layout.
+    # exxat-prism-sheet: student picker; DataTable's bulk-actions bar conflicts
+    #   with the Sheet's pinned footer CTA ("Add N students").
+    # step-report-access: role × student access matrix (cross-tab); DataTable
+    #   has no matrix-column model.
+    # All three documented in docs/governance/ds-adoption.md → PCE section.
+    "components/pce/distribute-wizard/email-list-sheet.tsx",
+    "components/pce/distribute-wizard/exxat-prism-sheet.tsx",
+    "components/pce/distribute-wizard/step-report-access.tsx",
+    # pce: vendored DataTable has PCE-specific extensions (defaultGroupBy,
+    # groupLabels, groupOrder) not yet in the DS export. Intentional until
+    # the DS DataTable supports grouped row presets.
+    "components/data-table",
+    # pce admin: list pages use vendored DataTable (see above). ListPageTemplate
+    # migration deferred until DataTable vendoring is resolved.
+    "app/(app)/admin/faculty/page.tsx",
+    "app/(app)/admin/offerings/page.tsx",
+    "app/(app)/admin/terms/page.tsx",
+    "app/(app)/admin/accommodations/page.tsx",
+    "app/(app)/admin/students/page.tsx",
+    "app/(app)/admin/courses/page.tsx",
+    "app/(app)/admin/competencies/page.tsx",
+    "app/(app)/admin/content-areas/page.tsx",
+    "app/(app)/admin/assessment-types/page.tsx",
+    "app/(app)/admin/standards/page.tsx",
+    "app/(app)/admin/permissions/page.tsx",
+    "app/(app)/my-surveys/page.tsx",
+    # pce: templates/new/page.tsx — wizard page, not a list page. DataTable is
+    # used only for the copy-select picker step; ListPageTemplate is for primary
+    # entity hubs, not wizard sub-steps. Intentional until a picker variant is
+    # added to ListPageTemplate.
+    "app/(app)/templates/new/page.tsx",
+    # pce: SurveyStatusBadge — workflow status badges (draft/active/collecting/
+    # closed/released) with product-specific CSS variables (--pce-status-*) and
+    # dot indicators. DS StatusBadge covers only product-lifecycle states
+    # (beta/new/alpha/preview/deprecated) — no overlap with survey workflow states.
+    # Documented as intentional hand-roll in docs/governance/ds-adoption.md.
+    "components/pce/pce-badges.tsx",
+    # pce: table-properties directory — PCE's stripped vendor (~340 LoC) retains
+    # only columns/sort/filter panels; canonical (1041 LoC) includes
+    # conditional-formatting, group-by, view-type switcher, row-density that PCE
+    # doesn't need yet. Intentional until those sections are needed.
+    "components/table-properties",
+    # pce: step-communication.tsx — hex values are SVG linearGradient stopColor
+    # attributes in an aria-hidden decorative icon (PrismIconMark). Cannot be
+    # replaced with var(--token); SVG gradients require literal color values.
+    "components/pce/distribute-wizard/step-communication.tsx",
+    # Design OS shell (all apps): data-display-previews.tsx is the in-app DS
+    # documentation page that intentionally renders the raw Table primitive to
+    # demonstrate it — it documents the component, it isn't product list UI.
+    "components/design-system/data-display-previews.tsx",
+    # pce: settings-appearance-card.tsx — hex values are CHROME_LIGHT/CHROME_DARK
+    # object literals used as theme-preview swatch data (macOS traffic-light dot
+    # colors rendered inside a static browser-chrome illustration). Not applied
+    # as UI colors on any interactive element; intentional product design fidelity.
+    "components/settings-appearance-card.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of
@@ -156,11 +290,61 @@ LEGITIMATE_NON_CARD_DIVS = {
     # (no FieldGroup primitive) tracked in ds-escalations-2026-05-11.md:160;
     # allowlist accepted by architect-runs/2026-05-11-baseline.md open-Q #2.
     "components/pce/pce-modals.tsx",
+    # pce: ai-thinking-surface.tsx — line 14 is inside a JSDoc comment code
+    # example (`<div className="relative rounded-xl border p-6">`), not real JSX.
+    # The actual component wraps children with `relative overflow-hidden` for
+    # dot-pattern overlay positioning — no card chrome.
+    "components/ui/ai-thinking-surface.tsx",
+    # pce: survey-preview-dialog.tsx — line 79 is a `h-8 px-3` input-field
+    # placeholder visually representing a "Written response" answer blank inside
+    # a preview dialog. `h-8` constrains height to 32px — not card content chrome.
+    "components/pce/distribute-wizard/survey-preview-dialog.tsx",
+    # pce: dashed-border empty/zero states (icon + message + CTA, centered).
+    # Same category exam-management resolved with its EmptyState molecule —
+    # these are empty-state panels, not Card content chrome; Card slots
+    # (Header/Title/Content) don't map onto the centered anatomy. The anatomy
+    # repeats across these files — extracting a shared PCE EmptyState molecule
+    # is tracked in docs/governance/ds-adoption.md (2026-07-11).
+    "app/(app)/course-evaluation/term-setup/page.tsx",  # + derived-window readout strip (l.381)
+    "app/(app)/surveys/remind/page.tsx",           # two zero states (on-target / no evals)
+    "app/(app)/results/[id]/page.tsx",             # centered pending/empty result panel
+    "components/pce/term-workspace.tsx",           # first-run empty state
+    "components/pce/dashboard-home.tsx",           # empty states + needs-attention strips (l.214/370)
+    # pce: _view-countdown.tsx — countdown hero is a border-l-4 accent status
+    # strip (banner anatomy), not a Card.
+    "app/(app)/admin/setup/_view-countdown.tsx",
+    # pce: step-review.tsx — acknowledgement-gates group container wrapping
+    # AckGroup checkbox rows (settled push-wizard design); a fieldset-style
+    # wrapper like pce-modals.tsx above, not a content Card.
+    "components/pce/distribute-wizard/step-review.tsx",
+    # pce: step-survey-design-assign.tsx — inline zero-state strip ("no courses
+    # selected") inside a wizard step, not a content Card.
+    "components/pce/distribute-wizard/step-survey-design-assign.tsx",
+    # exam-management: qb-result-detail-panel.tsx — read-only answer renderers.
+    # The flagged divs are inline answer-display boxes (model answer highlight for
+    # FillBlank; essay area placeholder), not card chrome. These are sub-sentence
+    # display elements inside a Sheet body — Card would over-engineer.
+    # Accepted by touch-gate exemption 2026-06-05.
+    "components/assessment-builder/qb-result-detail-panel.tsx",
 }
 
-GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = set()
-# (empty as of 2026-05-11)
+GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = {
+    # Design OS shell files stamped into exam-management, patient-log, and pce
+    # by the Design OS migration (paths are app-relative, so each entry covers
+    # all apps). command-menu.tsx was previously vendored at
+    # components/command-menu/index.tsx precisely to avoid this rule; the
+    # migration flattened it back. Migration plan: move each back into a
+    # components/<organism>/ subdirectory (or rename) in the shell template,
+    # then re-stamp. Tracked in docs/governance/ds-adoption.md →
+    # "Grandfathered hand-rolls" (2026-07-11).
+    "components/command-menu.tsx",
+    "components/ui/coach-mark.tsx",
+}
 # Previously listed:
+#   "lib/design-system/component-docs/coach-mark.tsx" — REDUNDANT 2026-07-14.
+#     scan_filename_for_ds_organism now exempts lib/design-system/component-docs/
+#     wholesale (ComponentDocSpec catalog entries document the canonical
+#     organism, never implement it), so this entry was unreachable.
 #   "components/key-metrics.tsx" — MIGRATED 2026-05-11. File deleted;
 #     vendored canonical lives at components/key-metrics/index.tsx. The two
 #     consumer pages (competency, live-monitor) now import canonical.
@@ -207,6 +391,22 @@ EYEBROW_PARAGRAPH_RE = re.compile(
 RAW_BUTTON_RE = re.compile(r"<\s*button\b[^>]*>")
 HEX_COLOR_RE = re.compile(r"['\"]\#[0-9a-fA-F]{3,8}\b['\"]?")
 RGB_COLOR_RE = re.compile(r"\brgb\s*\(")
+# Hand-rolled component detection (WARN) — added 2026-06-15 to close coverage
+# gaps for tabs / avatar / sheet that previously drifted undetected.
+ROLE_TABLIST_RE = re.compile(r'role\s*=\s*["\'](?:tablist|tab)["\']')
+TABS_DS_RE = re.compile(r"<\s*Tabs(?:Trigger|List)\b")
+CIRCULAR_IMG_RE = re.compile(r"<\s*img\b[^>]*rounded-full")
+AVATAR_DS_RE = re.compile(r"<\s*Avatar(?:Image|Fallback)?\b")
+SHEET_DS_RE = re.compile(r"<\s*(?:Sheet|SheetContent|Dialog|DialogContent|Drawer)\b")
+CLASSNAME_VALUE_RE = re.compile(r"""className\s*=\s*["'`]([^"'`]+)["'`]""")
+# A <button> carrying a non-button ARIA role is a deliberate semantic control
+# (radio/tab/switch/option/menuitem), NOT a generic action button — "use DS
+# Button" is the wrong advice for it. (A radio/tab wants RadioGroup/Tabs, flagged
+# by their own rules; an intentional a11y pattern like question-editor's roving
+# radio is correct as-is.) Skip these in the raw-button rule.
+SEMANTIC_ROLE_RE = re.compile(
+    r'role\s*=\s*["\'](?:radio|tab|switch|option|menuitem|menuitemradio|menuitemcheckbox)["\']'
+)
 
 # ── State-coverage regexes (added 2026-05-11; phase-0 warn) ────────────────
 # DataTable JSX open (multi-line). Just locates the start position; we
@@ -270,6 +470,44 @@ SKELETON_RE = re.compile(r"\bSkeleton\b")
 # before the component receives data — this cannot be solved in the UI layer.
 FERPA_STUDENT_ID_RE = re.compile(r"\bstudentId\b|\bstudentName\b|\bstudentEmail\b")
 FERPA_RESPONSE_TEXT_RE = re.compile(r"\bresponseText\b|\bresponseBody\b|\banswerText\b")
+
+# ── WCAG ARIA regexes (added 2026-05-22) ─────────────────────────────────────
+#
+# Rule: aria-combobox-required
+# aria-expanded / aria-haspopup / aria-autocomplete are only valid on elements
+# that carry role="combobox" (or a handful of others — button, listbox, etc.).
+# On a bare <input> or <InputGroupInput> without role="combobox" these are
+# disallowed (ARIA 1.2 §6.6 aria-expanded / §6.23 aria-haspopup).
+# Source of incident: search-input.tsx shipped without role="combobox"; caught
+# as aria-allowed-attr (critical) in axe-core scan 2026-05-22.
+ARIA_COMBOBOX_ATTRS_RE = re.compile(
+    r"<\s*(?:InputGroupInput|input)\b(?P<attrs>[^>]{0,600}?)"
+    r"(?P<trigger>aria-expanded|aria-haspopup|aria-autocomplete)"
+    r"(?:[^>]{0,600}?)>",
+    re.DOTALL,
+)
+ROLE_COMBOBOX_RE = re.compile(r'\brole\s*=\s*["\']combobox["\']')
+
+# Rule: nested-main-landmark
+# DS SidebarInset renders as <main data-slot="sidebar-inset">. Adding a
+# second <main> inside it violates landmark uniqueness (WCAG 1.3.6 / ARIA
+# 4.3.2). Source of incident: layout.tsx fix added <main> inside SidebarInset,
+# creating landmark-no-duplicate-main (moderate) across all PCE admin pages.
+SIDEBAR_INSET_IMPORT_RE = re.compile(r"\bSidebarInset\b")
+MAIN_ELEMENT_OPEN_RE = re.compile(r"<\s*main\b")
+
+# Rule: color-mix-contrast-risk
+# color-mix() with oklch or hsl produces colors whose contrast ratio cannot
+# be computed at static-analysis time. When used as backgroundColor / background
+# in an inline style on a non-decorative element, flag it so the author verifies
+# contrast manually or in the visual-check run. Does NOT flag :root / theme files.
+# Source of incident: badge on PCE root page produced 2.46:1 from color-mix.
+COLOR_MIX_INLINE_BG_RE = re.compile(
+    r"style\s*=\s*\{\s*\{[^}]{0,800}"
+    r"(?:backgroundColor|background)\s*:\s*['\"`]?color-mix\s*\("
+    r"|(?:backgroundColor|background)[^}]{0,400}color-mix\s*\(",
+    re.DOTALL,
+)
 
 # ── Models ──────────────────────────────────────────────────────────────────
 @dataclass
@@ -425,23 +663,92 @@ def scan_file_for_raw_button(rel: str, text: str) -> list[Gap]:
         return []
     if "components/key-metrics/" in rel:
         return []
-    m = RAW_BUTTON_RE.search(text)
-    if not m:
+    if rel in DOCUMENTED_HAND_ROLLS:
         return []
-    line_no = text[: m.start()].count("\n") + 1
+    lines = text.split("\n")
+    for m in RAW_BUTTON_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
+        # Skip matches inside comment lines (e.g. a docstring or JSX comment
+        # mentioning "<button>"). Covers //, /* */, leading *, and JSX {/* */}.
+        if lt.startswith(("//", "*", "/*", "{/*")):
+            continue
+        # Skip deliberate ARIA semantic controls (radio/tab/switch/…) — not generic Buttons.
+        if SEMANTIC_ROLE_RE.search(m.group(0)):
+            continue
+        return [Gap(
+            severity="warn",
+            rule="raw-html-button",
+            file=rel,
+            line=line_no,
+            message="Raw <button> element. Use DS Button with explicit variant + size.",
+        )]
+    return []
+
+def scan_file_for_hand_rolled_tabs(rel: str, text: str) -> list[Gap]:
+    """Flag hand-rolled tab strips (role="tab"/"tablist") not built on DS Tabs.
+    No DOCUMENTED_HAND_ROLLS blanket skip — that list is per-component (e.g. a
+    DataTable exception) and must not exempt an unrelated hand-rolled tablist."""
+    m = ROLE_TABLIST_RE.search(text)
+    if not m or TABS_DS_RE.search(text):
+        return []
     return [Gap(
         severity="warn",
-        rule="raw-html-button",
+        rule="hand-rolled-tabs",
         file=rel,
-        line=line_no,
-        message="Raw <button> element. Use DS Button with explicit variant + size.",
+        line=text[: m.start()].count("\n") + 1,
+        message="Hand-rolled tabs (role=\"tab\"/\"tablist\") — use DS Tabs / TabsList / "
+                "TabsTrigger / TabsContent from '@exxatdesignux/ui'. See docs/governance/ds-adoption.md.",
     )]
 
+def scan_file_for_hand_rolled_avatar(rel: str, text: str) -> list[Gap]:
+    """Flag a circular <img> (rounded-full) used as an avatar without DS Avatar."""
+    m = CIRCULAR_IMG_RE.search(text)
+    if not m or AVATAR_DS_RE.search(text):
+        return []
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-avatar",
+        file=rel,
+        line=text[: m.start()].count("\n") + 1,
+        message="Circular <img> (rounded-full) used as an avatar — use DS Avatar + "
+                "AvatarImage / AvatarFallback from '@exxatdesignux/ui' (fallback, sizes, shapes). "
+                "See docs/governance/ds-adoption.md.",
+    )]
+
+def scan_file_for_hand_rolled_sheet_panel(rel: str, text: str) -> list[Gap]:
+    """Flag a hand-rolled fixed full-height side panel that should be a DS Sheet.
+    Conservative: requires `fixed` + `inset-y-0` + a side + a width in ONE className,
+    skips the app sidebar (the intended fixed nav), and skips files already using
+    DS Sheet/Dialog/Drawer."""
+    if "components/sidebar/" in rel:  # the app sidebar is the intended fixed nav
+        return []
+    if SHEET_DS_RE.search(text):
+        return []
+    for m in CLASSNAME_VALUE_RE.finditer(text):
+        cls = m.group(1)
+        if ("fixed" in cls and "inset-y-0" in cls
+                and ("right-0" in cls or "left-0" in cls)
+                and re.search(r"\bw-", cls)):
+            return [Gap(
+                severity="warn",
+                rule="hand-rolled-sheet-panel",
+                file=rel,
+                line=text[: m.start()].count("\n") + 1,
+                message="Hand-rolled fixed side panel (fixed + inset-y-0 + left/right + width) — "
+                        "use DS Sheet / SheetContent from '@exxatdesignux/ui' (overlay, focus trap, "
+                        "close, inset shell). See docs/governance/ds-adoption.md.",
+            )]
+    return []
+
 def scan_file_for_color_literals(rel: str, text: str) -> list[Gap]:
-    """Flag hex / rgb literals. Theme files are exempt."""
+    """Flag hex / rgb literals. Theme files are exempt.
+    Files in DOCUMENTED_HAND_ROLLS are also exempt (rationale recorded there)."""
     if rel.endswith(".css"):
         return []
     if "theme" in rel.lower():
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
         return []
     gaps: list[Gap] = []
     for m in HEX_COLOR_RE.finditer(text):
@@ -537,14 +844,20 @@ def scan_file_for_datatable_no_empty_state(rel: str, text: str) -> list[Gap]:
     if rel in DOCUMENTED_HAND_ROLLS:
         return []
     gaps: list[Gap] = []
+    lines = text.split("\n")
     for m in DATATABLE_OPEN_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
+        # Skip matches inside comment lines (e.g. a docstring or JSX comment
+        # mentioning "<DataTable>"). Covers //, /* */, leading *, and JSX {/* */}.
+        if lt.startswith(("//", "*", "/*", "{/*")):
+            continue
         block = _extract_jsx_props_block(text, m.start())
         if EMPTY_STATE_PROP_RE.search(block):
             continue
         # Allow a same-file empty-guard render-fork as an alternative.
         if EMPTY_GUARD_RE.search(text):
             continue
-        line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
             severity="block",
             rule="datatable-no-empty-state",
@@ -684,8 +997,8 @@ def scan_file_for_clickable_without_focus_ring(rel: str, text: str) -> list[Gap]
 
 def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
     """A file with async-fetch signals that does NOT import or render Skeleton.
-    Heuristic — some files compose loading state into a child component;
-    warn-only."""
+    Heuristic — some files compose loading state into a child component.
+    Promoted to block 2026-06-09 after 30+ days at 0 hits across all products."""
     if "components/data-table/" in rel:
         return []
     if rel in DOCUMENTED_HAND_ROLLS:
@@ -698,7 +1011,7 @@ def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
     m = ASYNC_FETCH_RE.search(text)
     line_no = text[: m.start()].count("\n") + 1 if m else 1
     return [Gap(
-        severity="warn",
+        severity="block",
         rule="async-fetch-no-skeleton",
         file=rel,
         line=line_no,
@@ -712,6 +1025,119 @@ def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
             "See docs/patterns/admin/state-coverage.md → loading."
         ),
     )]
+
+def scan_file_for_aria_combobox_required(rel: str, text: str) -> list[Gap]:
+    """Flag aria-expanded / aria-haspopup / aria-autocomplete on <input> or
+    <InputGroupInput> without role="combobox" in the same element opening tag.
+
+    WCAG 4.1.2 (ARIA 1.2 §6.6 aria-expanded): these attributes are only
+    allowed on roles that explicitly list them as supported — combobox is the
+    relevant one for search inputs with a popup list. Without role="combobox"
+    axe-core raises aria-allowed-attr (critical).
+    """
+    if "components/data-table/" in rel:
+        return []
+    gaps: list[Gap] = []
+    for m in ARIA_COMBOBOX_ATTRS_RE.finditer(text):
+        attrs = m.group("attrs") + m.group("trigger")
+        # If role="combobox" is already in the same opening tag, it's fine.
+        if ROLE_COMBOBOX_RE.search(attrs):
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        trigger = m.group("trigger")
+        gaps.append(Gap(
+            severity="block",
+            rule="aria-combobox-required",
+            file=rel,
+            line=line_no,
+            message=(
+                f"`{trigger}` on `<input>` / `<InputGroupInput>` requires "
+                "`role=\"combobox\"` on the same element — without it axe-core "
+                "raises aria-allowed-attr (critical). Add `role=\"combobox\"` "
+                "to the input and `id` + `role=\"listbox\"` to the popup. "
+                "Canonical: apps/exam-management/admin/components/search-input.tsx"
+            ),
+        ))
+        if len(gaps) >= 3:
+            break
+    return gaps
+
+
+def scan_file_for_nested_main_landmark(rel: str, text: str) -> list[Gap]:
+    """Flag <main> inside a file that also imports SidebarInset.
+
+    DS SidebarInset renders as <main data-slot="sidebar-inset"> in the DOM.
+    Adding a second <main> creates landmark-no-duplicate-main (moderate) and
+    landmark-main-is-top-level (moderate) across every page in the product.
+    Source: PCE layout.tsx fix 2026-05-22 introduced nested <main>.
+
+    Exemption: the DS source itself (exxat-ds/, studentUX/).
+    """
+    if "exxat-ds/" in rel or "studentUX/" in rel:
+        return []
+    if not SIDEBAR_INSET_IMPORT_RE.search(text):
+        return []
+    for m in MAIN_ELEMENT_OPEN_RE.finditer(text):
+        # Skip matches inside comments: // ... or {/* ... */}
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        line_text = text[line_start: text.find("\n", m.start())]
+        stripped = line_text.lstrip()
+        if stripped.startswith("//") or stripped.startswith("*") or "{/*" in line_text:
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        return [Gap(
+            severity="block",
+            rule="nested-main-landmark",
+            file=rel,
+            line=line_no,
+            message=(
+                "`<main>` element found in a file that imports `SidebarInset`. "
+                "DS `SidebarInset` already renders as `<main data-slot=\"sidebar-inset\">` "
+                "— adding a second `<main>` creates a nested landmark violation "
+                "(WCAG 4.1.1 / aria-landmark-no-duplicate-main). "
+                "Remove the `<main>` wrapper; use a `<div>` instead. "
+                "To support skip-link focus, add `id=\"main-content\" tabIndex={-1}` "
+                "to the `SidebarInset` prop (if it passes unknown props to its element)."
+            ),
+        )]
+    return []
+
+
+def scan_file_for_color_mix_contrast_risk(rel: str, text: str) -> list[Gap]:
+    """Flag color-mix() used as backgroundColor / background in inline styles
+    on non-decorative elements.
+
+    color-mix() with oklch or hsl tokens produces computed colors whose
+    contrast ratio cannot be verified at static-analysis time. This is warn-only;
+    the author must verify in the visual-check browser run (axe measures contrast
+    against the actual rendered color).
+
+    Source: PCE root page badge used color-mix() → 2.46:1 contrast (needs 4.5:1).
+    Exempts: CSS files, theme files, decorative containers.
+    """
+    if rel.endswith(".css") or "theme" in rel.lower():
+        return []
+    gaps: list[Gap] = []
+    for m in COLOR_MIX_INLINE_BG_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        gaps.append(Gap(
+            severity="warn",
+            rule="color-mix-contrast-risk",
+            file=rel,
+            line=line_no,
+            message=(
+                "`color-mix()` used as `backgroundColor`/`background` in an "
+                "inline style. The resulting contrast ratio cannot be verified "
+                "statically — must be confirmed in the visual-check axe run "
+                "(WCAG 1.4.3: text ≥4.5:1, UI ≥3:1). "
+                "If the element contains text, verify contrast using the browser "
+                "DevTools color picker. Prefer DS token pairs with known contrast."
+            ),
+        ))
+        if len(gaps) >= 3:
+            break
+    return gaps
+
 
 def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
     """FERPA §99.31 data-flow check.
@@ -750,6 +1176,375 @@ def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
         ),
     )]
 
+# ── DS migration coverage scanners (added 2026-05-29) ───────────────────────
+# These are WARN-only: they identify vendored / hand-rolled components that
+# can now be replaced by canonical exports from @exxatdesignux/ui. They are
+# migration guides, not blocking violations.
+
+# Signals used by scanner B (hand-rolled status badge).
+_HAND_ROLLED_BADGE_NAME_RE = re.compile(
+    # ListHubStatusBadge is the DS-prescribed vendored name (template-vite) — exclude it.
+    r"(?:function|const|class)\s+(?!ListHub)\w*(?:StatusBadge|SurveyStatusBadge|"
+    r"AssessmentStatusBadge|StatusDot)\w*\s*(?:[=(:<]|=>)",
+    re.IGNORECASE,
+)
+_BADGE_CLASS_SIGNAL_RE = re.compile(
+    r'className=["\'\`][^"\'\`]*'
+    r'(?=.*\brounded(?:-(?:sm|md|lg|xl|2xl|full))?\b)'
+    r'(?=.*\btext-xs\b)'
+    r'(?=.*\b(?:draft|active|published|closed|pending|released)\b)'
+    r'[^"\'\`]*["\'\`]',
+    re.IGNORECASE,
+)
+_STATUS_BADGE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bStatusBadge\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+
+# Signals used by scanner D (hand-rolled export drawer).
+_EXPORT_DRAWER_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bExportDrawer\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+_EXPORT_KEYWORD_RE = re.compile(
+    # lowercase `export` omitted — matches ES module `export default/function` syntax
+    # and produces false positives on every TSX file that has a Sheet/Dialog.
+    # Only uppercase `Export` (the UI label) and file-format keywords are checked.
+    r"\b(?:download|csv|xlsx|Export|Download|CSV|XLSX)\b"
+)
+_SHEET_DIALOG_DRAWER_RE = re.compile(r"<\s*(?:Sheet|Dialog|Drawer)\b")
+
+# Signals used by scanner C (missing ListPageTemplate).
+_LOCAL_DATATABLE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bDataTable\b[^}]*\}\s*from\s*['\"]@/components/data-table['\"]"
+)
+_LIST_PAGE_TEMPLATE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bListPageTemplate\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+
+
+def scan_dir_for_vendored_ds_component(
+    product: str, role: str, root: Path
+) -> list[Gap]:
+    """Directory-level check — detects vendored copies of components that
+    @exxatdesignux/ui now exports directly.
+
+    Called once per product (outside the per-file loop). Checks three well-known
+    vendored component directories. Emits WARN rather than BLOCK — these are
+    migration targets, not new violations.
+    """
+    def _is_vendored(comp_dir: Path) -> bool:
+        """Return True if the directory looks like a vendored component rather
+        than a thin re-export wrapper."""
+        if not comp_dir.is_dir():
+            return False
+        tsx_files = list(comp_dir.glob("*.tsx")) + list(comp_dir.glob("*.ts"))
+        if not tsx_files:
+            return False
+        # If there is more than one *.tsx / *.ts file, it's definitely vendored.
+        if len(tsx_files) > 1:
+            return True
+        # Single index.tsx — check whether it imports from @exxatdesignux/ui
+        index = comp_dir / "index.tsx"
+        if not index.exists():
+            index = comp_dir / "index.ts"
+        if not index.exists():
+            return True  # Single non-index file = vendored
+        try:
+            text = index.read_text(encoding="utf-8")
+        except Exception:
+            return True
+        # If the single file re-exports from the DS package, it's a thin wrapper
+        # (i.e., already migrated). Otherwise it's still vendored.
+        if re.search(r"from\s*['\"]@exxatdesignux/ui['\"]", text):
+            return False
+        return True
+
+    gaps: list[Gap] = []
+    prefix = f"apps/{product}/{role}/"
+
+    checks = [
+        (
+            root / "components" / "data-table",
+            "vendored-datatable",
+            "DataTable is vendored locally; @exxatdesignux/ui now exports DataTable "
+            "directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → DataTable row.",
+        ),
+        (
+            root / "components" / "key-metrics",
+            "vendored-keymetrics",
+            "KeyMetrics is vendored locally; @exxatdesignux/ui now exports KeyMetrics "
+            "directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → KeyMetrics row.",
+        ),
+        (
+            root / "components" / "table-properties",
+            "vendored-table-properties",
+            "table-properties is vendored locally; @exxatdesignux/ui now exports "
+            "TablePropertiesDrawer directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → TablePropertiesDrawer row.",
+        ),
+    ]
+
+    for comp_dir, rule, message in checks:
+        if not _is_vendored(comp_dir):
+            continue
+        short_comp_rel = str(comp_dir.relative_to(root))
+        if short_comp_rel in DOCUMENTED_HAND_ROLLS:
+            continue
+        rel = prefix + short_comp_rel
+        gaps.append(Gap(
+            severity="warn",
+            rule=rule,
+            file=rel,
+            line=None,
+            message=message,
+        ))
+
+    return gaps
+
+
+def scan_file_for_hand_rolled_status_badge(rel: str, text: str) -> list[Gap]:
+    """Detect custom status badge components that should use StatusBadge from DS.
+
+    Signals (any of these triggers the check):
+      - Component/function name contains StatusBadge, SurveyStatusBadge,
+        AssessmentStatusBadge, or StatusDot
+      - className with rounded + text-xs + a status word (draft, active, etc.)
+
+    Only flagged when StatusBadge is NOT already imported from @exxatdesignux/ui.
+    Severity: WARN — migration guide.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Check if StatusBadge is already imported from DS
+    if _STATUS_BADGE_IMPORT_RE.search(text):
+        return []
+    # Look for either signal
+    name_match = _HAND_ROLLED_BADGE_NAME_RE.search(text)
+    class_match = _BADGE_CLASS_SIGNAL_RE.search(text)
+    m = name_match or class_match
+    if not m:
+        return []
+    line_no = text[: m.start()].count("\n") + 1
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-status-badge",
+        file=rel,
+        line=line_no,
+        message=(
+            "Custom status badge detected; StatusBadge from @exxatdesignux/ui "
+            "covers this pattern (variants: pill / dot, sizes: xs / sm / md). "
+            "Replace with: import { StatusBadge } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → StatusBadge row."
+        ),
+    )]
+
+
+def scan_file_for_missing_list_page_template(rel: str, text: str) -> list[Gap]:
+    """Detect list pages that use a local DataTable without ListPageTemplate.
+
+    Signals (all must be true):
+      - File is a Next.js page file (has 'app/' in path, ends with page.tsx)
+      - Imports DataTable from @/components/data-table
+      - Does NOT import ListPageTemplate from @exxatdesignux/ui
+      - File has at least 50 lines
+
+    Severity: WARN — ListPageTemplate provides toolbar + view-switching and
+    reduces boilerplate, but existing pages can migrate incrementally.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Only page files
+    if "app/" not in rel or not rel.endswith("page.tsx"):
+        return []
+    # Only files that use local DataTable
+    if not _LOCAL_DATATABLE_IMPORT_RE.search(text):
+        return []
+    # Already using ListPageTemplate
+    if _LIST_PAGE_TEMPLATE_IMPORT_RE.search(text):
+        return []
+    # Minimum size — very short pages are probably not list pages
+    if text.count("\n") < 49:
+        return []
+    # Cite the DataTable import line
+    m = _LOCAL_DATATABLE_IMPORT_RE.search(text)
+    line_no = text[: m.start()].count("\n") + 1 if m else 1
+    return [Gap(
+        severity="warn",
+        rule="missing-list-page-template",
+        file=rel,
+        line=line_no,
+        message=(
+            "Page imports local DataTable without ListPageTemplate; "
+            "consider @exxatdesignux/ui ListPageTemplate for built-in toolbar, "
+            "view-switching, and URL-synced filter/sort state. "
+            "import { ListPageTemplate } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → ListPageTemplate row."
+        ),
+    )]
+
+
+def scan_file_for_hand_rolled_export_drawer(rel: str, text: str) -> list[Gap]:
+    """Detect hand-rolled export/download UI that should use ExportDrawer from DS.
+
+    Signals (all must be true):
+      - File contains <Sheet, <Dialog, or <Drawer JSX
+      - File references export/download/csv/xlsx keywords in component or JSX context
+      - ExportDrawer is NOT already imported from @exxatdesignux/ui
+
+    Severity: WARN — migration guide.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Already using DS ExportDrawer
+    if _EXPORT_DRAWER_IMPORT_RE.search(text):
+        return []
+    # Must have a sheet/dialog/drawer
+    sheet_match = _SHEET_DIALOG_DRAWER_RE.search(text)
+    if not sheet_match:
+        return []
+    # Must have export/download/csv/xlsx keywords
+    if not _EXPORT_KEYWORD_RE.search(text):
+        return []
+    line_no = text[: sheet_match.start()].count("\n") + 1
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-export-drawer",
+        file=rel,
+        line=line_no,
+        message=(
+            "Custom export/download sheet detected; ExportDrawer from "
+            "@exxatdesignux/ui covers this pattern (file format selector, "
+            "column picker, async progress). "
+            "import { ExportDrawer } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → ExportDrawer row."
+        ),
+    )]
+
+
+_OVERFLOW_HIDDEN_RE = re.compile(r'\boverflow-hidden\b|["\']\s*overflow\s*:\s*hidden', re.IGNORECASE)
+_POPOVER_TOOLTIP_TRIGGER_RE = re.compile(
+    r'data-slot=["\'](?:popover|tooltip|select|combobox)-trigger["\']'
+    r'|<PopoverTrigger|<TooltipTrigger|<SelectTrigger',
+    re.IGNORECASE,
+)
+_GLOBALS_CSS_IMPORT_RE = re.compile(
+    r'@import\s+["\'].*(?:globals|@exxatdesignux/ui).*\.css["\']'
+    r'|import\s+["\'].*globals\.css["\']',
+    re.IGNORECASE,
+)
+
+
+_OVERFLOW_PORTAL_SAFE_RE = re.compile(
+    r"overflow-hidden\s+safe\s*[—-]\s*(?:floating\s+uses\s+)?Radix\s+Portal",
+    re.IGNORECASE,
+)
+
+def scan_file_for_overflow_hidden_with_floating(rel: str, text: str) -> list[Gap]:
+    """WARN: detect overflow-hidden on a container that also contains a popover
+    / tooltip / select trigger in the same file.
+
+    Popovers using Radix Portal are safe (content portals to body), but custom
+    or non-portal variants get clipped. This rule flags co-presence to prompt
+    manual review — a false positive rate is expected.
+
+    Suppression: add a comment containing "overflow-hidden safe — Radix Portal"
+    anywhere in the file to acknowledge that all floats use Radix Portal.
+
+    Added 2026-06-01 after Romit reported popovers being cut off in produced UI.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    if not _OVERFLOW_HIDDEN_RE.search(text):
+        return []
+    if not _POPOVER_TOOLTIP_TRIGGER_RE.search(text):
+        return []
+    # If the file has been audited and all floats confirmed to use Radix Portal,
+    # a suppression comment silences this rule.
+    if _OVERFLOW_PORTAL_SAFE_RE.search(text):
+        return []
+    # Only flag if the overflow-hidden and trigger appear on different lines
+    # (same-line = inline style on the trigger itself, unlikely to clip)
+    overflow_lines = {i + 1 for i, ln in enumerate(text.splitlines()) if _OVERFLOW_HIDDEN_RE.search(ln)}
+    trigger_lines  = {i + 1 for i, ln in enumerate(text.splitlines()) if _POPOVER_TOOLTIP_TRIGGER_RE.search(ln)}
+    if overflow_lines == trigger_lines:
+        return []
+    first_overflow = min(overflow_lines)
+    return [Gap(
+        severity="warn",
+        rule="overflow-hidden-with-floating",
+        file=rel,
+        line=first_overflow,
+        message=(
+            "overflow-hidden detected in same file as a popover/tooltip/select trigger. "
+            "If the trigger is inside the overflow container AND not using Radix Portal, "
+            "the floating content will be clipped. Verify: open the floating element in the "
+            "browser and check getBoundingClientRect() is fully inside the viewport. "
+            "Radix Portal components (PopoverContent, TooltipContent, DropdownMenuContent) "
+            "are safe; custom absolute-positioned floats are not."
+        ),
+    )]
+
+
+def scan_file_for_missing_globals_css(rel: str, text: str) -> list[Gap]:
+    """WARN: admin layout.tsx / globals.css files that don't import DS globals.
+
+    If globals.css is not imported, CSS tokens (--background, --primary, etc.)
+    are undefined → all DS component colors fall back to browser defaults →
+    color mismatch. This is the #1 cause of "wrong color" bugs.
+
+    Added 2026-06-01 after Romit reported color mismatches in produced UI.
+    """
+    # Only check layout files and global CSS entry points
+    basename = Path(rel).name
+    if basename not in {"layout.tsx", "globals.css", "layout.ts"}:
+        return []
+    # layout.tsx must import globals.css — only check ROOT layout (app/layout.tsx),
+    # not nested group layouts like app/(app)/layout.tsx which inherit from root.
+    if basename in {"layout.tsx", "layout.ts"}:
+        # Skip nested route-group layouts (path contains a segment like (app), (admin), etc.)
+        # Root layout path: apps/<product>/<role>/app/layout.tsx
+        # Nested layout path: apps/<product>/<role>/app/(group)/layout.tsx
+        parts = Path(rel).parts
+        app_idx = next((i for i, p in enumerate(parts) if p == "app"), None)
+        if app_idx is None:
+            return []
+        segments_after_app = parts[app_idx + 1 :]
+        # If there's a route-group segment (surrounded by parens) before layout.tsx, skip
+        if any(s.startswith("(") and s.endswith(")") for s in segments_after_app[:-1]):
+            return []
+        has_css_import = bool(re.search(r'import\s+["\']\..*globals\.css["\']', text))
+        if not has_css_import:
+            return [Gap(
+                severity="warn",
+                rule="layout-missing-globals-css",
+                file=rel,
+                line=1,
+                message=(
+                    "layout.tsx does not import globals.css. "
+                    "Without this, @exxatdesignux/ui CSS tokens (--background, --primary, "
+                    "--card, --border, etc.) are undefined — all DS colors fall back to "
+                    "browser defaults, causing color mismatch across the entire app. "
+                    "Add: import './globals.css' (or the correct relative path)."
+                ),
+            )]
+    # globals.css must @import the DS package CSS
+    if basename == "globals.css":
+        if not _GLOBALS_CSS_IMPORT_RE.search(text):
+            return [Gap(
+                severity="warn",
+                rule="globals-css-missing-ds-import",
+                file=rel,
+                line=1,
+                message=(
+                    "globals.css does not @import '@exxatdesignux/ui/globals.css' "
+                    "(or equivalent). DS tokens will not be defined. "
+                    "Add: @import '@exxatdesignux/ui/globals.css'; as the first line."
+                ),
+            )]
+    return []
+
+
 def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     """Flag a custom file whose stem matches a DS organism in the registry."""
     if rel in ALLOWED_ORGANISM_PATHS:
@@ -759,6 +1554,13 @@ def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     if "components/data-table/" in rel:
         return []
     if "components/table-properties/" in rel:
+        return []
+    # lib/design-system/component-docs/<organism>.tsx files are ComponentDocSpec
+    # catalog entries that *document* the canonical DS organism (they import it
+    # to render live examples). Sharing the organism's name is the point — the
+    # slug drives the /design-system route. They are never implementations, so
+    # the name-collision heuristic is always a false positive here.
+    if "lib/design-system/component-docs/" in rel:
         return []
     stem = Path(rel).stem.lower()
     if stem not in DS_ORGANISM_NAMES:
@@ -819,12 +1621,20 @@ def iter_source_files(root: Path):
         rel_str = str(rel)
         if "node_modules" in rel.parts or ".next" in rel.parts:
             continue
+        # Skip auto-generated backup snapshots (not product code)
+        if ".exxat-ui" in rel.parts:
+            continue
         if rel_str.endswith(".d.ts"):
             continue
         yield path, rel_str
 
 def audit_product(product: str, role: str, root: Path) -> ProductReport:
     report = ProductReport(product=product, role=role)
+
+    # Scanner A — directory-level vendored-component check (once per product).
+    for g in scan_dir_for_vendored_ds_component(product, role, root):
+        report.gaps.append(g)
+
     for path, rel in iter_source_files(root):
         report.pages_scanned += 1
         try:
@@ -850,6 +1660,23 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_async_fetch_no_skeleton,
             # FERPA data-flow check — added 2026-05-17.
             scan_file_for_ferpa_data_coexistence,
+            # WCAG ARIA + landmark checks — added 2026-05-22.
+            scan_file_for_aria_combobox_required,
+            scan_file_for_nested_main_landmark,
+            scan_file_for_color_mix_contrast_risk,
+            # DS migration coverage (WARN) — added 2026-05-29.
+            scan_file_for_hand_rolled_status_badge,
+            scan_file_for_missing_list_page_template,
+            scan_file_for_hand_rolled_export_drawer,
+            # Visual rendering safety (WARN) — added 2026-06-01.
+            # Catches overflow-clipped popovers + missing globals.css (color mismatch).
+            scan_file_for_overflow_hidden_with_floating,
+            scan_file_for_missing_globals_css,
+            # Component-substitution coverage (WARN) — added 2026-06-15.
+            # Closes tabs/avatar/sheet blind spots flagged in the gallery audit.
+            scan_file_for_hand_rolled_tabs,
+            scan_file_for_hand_rolled_avatar,
+            scan_file_for_hand_rolled_sheet_panel,
         ):
             for g in fn(short_rel, text):
                 g.file = rel
@@ -906,13 +1733,25 @@ def main():
             "Default: all blocking rules. "
             "State-coverage rules (phase-0 warn, candidate promotion to block): "
             "datatable-no-empty-state, dialog-no-error-feedback, "
-            "opacity-60-on-text-parent, clickable-without-focus-ring, "
-            "async-fetch-no-skeleton. Promote each to block once the audit "
-            "shows 0 hits across all products."
+            "opacity-60-on-text-parent, clickable-without-focus-ring. "
+            "async-fetch-no-skeleton promoted to block 2026-06-09 (30+ days, 0 hits). "
+            "Promote remaining to block once the audit shows 0 hits across all products."
         ),
     )
     ap.add_argument("--product", help="Scope to one product (e.g., pce, exam-management).")
     ap.add_argument("--json", action="store_true", help="Machine-readable JSON output.")
+    ap.add_argument(
+        "--touched-files",
+        metavar="FILES",
+        help=(
+            "Newline-or-space-separated list of repo-relative paths staged for commit. "
+            "Restricts output to only these files and promotes migration WARN rules "
+            "(raw-html-button, hand-rolled-export-drawer, color-mix-contrast-risk, "
+            "vendored-datatable, missing-list-page-template, card-shape-masquerade, "
+            "hand-rolled-status-badge) to BLOCK — the touch-gate. "
+            "Combine with --strict to exit 1 on any promoted violation."
+        ),
+    )
     args = ap.parse_args()
 
     products = discover_products()
@@ -920,6 +1759,64 @@ def main():
         products = [p for p in products if p[0] == args.product]
 
     reports = [audit_product(prod, role, root) for prod, role, root in products]
+
+    # ── Touch-gate filter ────────────────────────────────────────────────────
+    # When --touched-files is given (called from pre-commit with staged paths),
+    # restrict the report to those files and promote migration WARNs to BLOCK.
+    if args.touched_files:
+        raw_paths = args.touched_files.replace("\n", " ").split()
+        touched_abs: set[Path] = {
+            (REPO_ROOT / p.strip()).resolve() for p in raw_paths if p.strip()
+        }
+
+        # Rules promoted WARN → BLOCK when the containing file is staged.
+        # These are "migration targets" — the touch forces the migration.
+        TOUCH_PROMOTE_RULES = {
+            "raw-html-button",
+            "hand-rolled-export-drawer",
+            "color-mix-contrast-risk",
+            "vendored-datatable",
+            "missing-list-page-template",
+            "card-shape-masquerade",
+            "hand-rolled-status-badge",
+        }
+
+        filtered: list[ProductReport] = []
+        for r in reports:
+            promoted_gaps: list[Gap] = []
+            for g in r.gaps:
+                gap_abs = (REPO_ROOT / g.file).resolve()
+                # Directory-level gaps (vendored-datatable) hit if any staged file
+                # lives inside the flagged directory.
+                in_touched = gap_abs in touched_abs or any(
+                    str(t).startswith(str(gap_abs)) or gap_abs == t
+                    for t in touched_abs
+                )
+                if not in_touched:
+                    continue
+                if g.severity == "warn" and g.rule in TOUCH_PROMOTE_RULES:
+                    g = Gap(
+                        severity="block",
+                        rule=g.rule,
+                        file=g.file,
+                        line=g.line,
+                        message=g.message + " [promoted: touch-gate]",
+                    )
+                promoted_gaps.append(g)
+            if promoted_gaps:
+                rpt = ProductReport(
+                    product=r.product,
+                    role=r.role,
+                    pages_scanned=r.pages_scanned,
+                )
+                rpt.gaps = promoted_gaps
+                filtered.append(rpt)
+        reports = filtered
+
+        if not reports:
+            if not args.json:
+                print("DS touch-gate: clean — no DS violations in staged files.")
+            sys.exit(0)
 
     if args.json:
         data = [

@@ -1,0 +1,80 @@
+---
+description: Before publishing @exxatdesignux/ui — sync dogfood builder app to generated starter, then publish smoke in 123_Testing; never version-only publish.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-package-publish-validation.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — package publish validation (agents + maintainers)
+
+**Applies when:** bumping `@exxatdesignux/ui` or `@exxatdesignux/product-framework` versions, running `pnpm release`, or answering "publish the package".
+
+## One builder app + one generated starter payload
+
+| App | Path | Role |
+|-----|------|------|
+| **Builder / dogfood** | `apps/web` | What we run at `pnpm dev` (port 4000) — **edit shell here** |
+| **Generated starter payload** | `packages/ui/generated-starter/` | What npm + `exxat-ui init` / `upgrade` copy from — **generated, not a second app; do not hand-edit for parity** |
+
+**MUST** run sync after any builder-shell change **before** publish:
+
+```bash
+pnpm builder:contract        # proves apps/web is wired to local DS + manifest is complete
+pnpm sync-ui-template          # apps/web → generated starter payload (apply)
+pnpm sync-ui-template:check    # fails if still drifted
+```
+
+`pnpm release:gates` runs the builder contract, dogfood build, sync apply + check, **publish smoke** (`smoke-test:publish`), and tenant smoke — agents still run sync explicitly when they edited `apps/web` so the tree is committed before gates.
+
+## External workspace (MUST — outside monorepo)
+
+Publish smoke **MUST NOT** scaffold inside `DS_Workspace V2` or OS `/tmp`.
+
+**Default root:**
+
+`/Users/himanshusuthar/Exxat Projects/Design System/123_Testing`
+
+| Subfolder | Contents |
+|-----------|----------|
+| `tarballs/` | `pnpm pack` output |
+| `apps/` | Temp consumer scaffolds |
+
+Override: `EXXAT_PUBLISH_SMOKE_ROOT=/other/path`
+
+## MUST NOT
+
+- **Publish after a version bump only** — no `pnpm release` until gates pass.
+- **Hand-edit `generated-starter/`** for shell parity when the change belongs in `apps/web` — it is a generated starter payload; sync instead.
+- **Skip sync** because `apps/web` “looks fine” — consumers get the generated starter payload, not dogfood paths.
+- **Assume prior `release:gates`** — re-run after `apps/web`, `generated-starter`, `bin/`, or `package.json` `files` changes.
+
+## MUST (agent order before every publish)
+
+1. **Finish builder work** in `apps/web` (routes, nav, settings shell, sidebar, etc.).
+2. **`pnpm builder:contract`** — prove `apps/web` consumes local DS (`workspace:*` + Vite source resolver) and the sync manifest is complete.
+3. **`pnpm sync-ui-template`** — copy shell into the generated starter payload.
+4. **`pnpm sync-ui-template:check`** — zero drift (or rely on gates step 2–3).
+5. **`pnpm release:gates`** — builder build, sync apply + check, **publish smoke** (`smoke-test:publish` in `123_Testing/`), upgrade preservation + **`vite build`** + dev boot.
+6. **`pnpm release`** (maintainer npm OTP).
+
+**Publish smoke proves:** synced generated starter in tarball → temp app in `123_Testing` → `exxat-ui upgrade` preserves builder-owned content/data → build → dev boot.
+
+**Tell consumers:** `upgrade` refreshes predefined Prism / One / Design OS shell and navigation from the generated starter while preserving builder-owned tenant catalog, data modules, mock/API wiring, and custom pages.
+
+## Agent checklist (state in chat)
+
+- [ ] Shell changes landed in **`apps/web`** (not only generated-starter)
+- [ ] **`pnpm builder:contract`** green
+- [ ] Ran **`pnpm sync-ui-template`** (builder → generated starter)
+- [ ] **`sync-template:check`** green
+- [ ] Publish smoke used **`123_Testing`** (log: `external workspace (outside monorepo)`)
+- [ ] Tarball has `bin/shell-sync-manifest.mjs`; **`exxat-ui upgrade`** OK; dev boot OK
+- [ ] `packages/ui/package.json` version matches `RELEASES.md`
+
+## See also
+
+- `docs/exxat-ds/package-publish-validation.md`
+- `docs/exxat-ds/architecture/0002-builder-app-published-starter.md`
+- `pnpm sync-ui-template` (root) · `packages/ui/scripts/sync-template-from-reference-app.mjs`
+- `packages/ui/scripts/smoke-test-publish.mjs` · `publish-smoke-workspace.mjs`
+- `.agents/skills/exxat-package-upgrade/SKILL.md` — Phase 7

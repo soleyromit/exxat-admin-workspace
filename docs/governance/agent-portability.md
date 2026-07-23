@@ -14,7 +14,7 @@
 | `/DESIGN.md` (rules + spec) | — | ✅ |
 | `docs/triggers.md` (regex → action map) | partially | ✅ (regex is portable; action handlers are agent-specific) |
 | `docs/patterns/**` (pattern catalogue) | — | ✅ |
-| `docs/foundations/ds-snapshot.json` | — | ✅ |
+| `node tools/ds/source.mjs --list` | — | ✅ |
 | `apps/<product>/docs/storytelling/**` | — | ✅ |
 | `docs/exports/v<version>/` | — | ✅ (this is THE consumer-facing bundle) |
 

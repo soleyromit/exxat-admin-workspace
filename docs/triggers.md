@@ -46,11 +46,11 @@
 
 ### DS reference lazy-load
 
-CLAUDE.md §6 holds the ~15 most-used tokens. The full DS reference (token tables, component APIs, theme system; ~8K tokens) lives in `docs/CLAUDE-DS-REFERENCE.md` and is loaded on demand:
+CLAUDE.md §6 holds the ~15 most-used tokens. The full DS reference (token tables, component APIs, theme system; ~8K tokens) lives in `node tools/ds/source.mjs` (+ globals.css) and is loaded on demand:
 
 | Match | Fires |
 |---|---|
-| Any DS component name (`Button\|Badge\|Sheet\|DataTable\|Sidebar\|Dropdown\|Dialog\|Tooltip\|Tabs?\|Avatar\|Card\|Popover\|InputGroup\|Field\|Select\|Checkbox\|RadioGroup\|Toggle\|Drawer\|Banner\|Calendar\|Breadcrumb`) | `lazy:ds-reference` — Read `docs/CLAUDE-DS-REFERENCE.md` before generating UI code |
+| Any DS component name (`Button\|Badge\|Sheet\|DataTable\|Sidebar\|Dropdown\|Dialog\|Tooltip\|Tabs?\|Avatar\|Card\|Popover\|InputGroup\|Field\|Select\|Checkbox\|RadioGroup\|Toggle\|Drawer\|Banner\|Calendar\|Breadcrumb`) | `lazy:ds-reference` — Read `node tools/ds/source.mjs` (+ globals.css) before generating UI code |
 | Token reference `var(--anything)` or words `tokens?\|theme(-one\|-prism)?\|DS reference\|design system` | `lazy:ds-reference` |
 | `scaffold\|new product\|new screen\|new component\|new admin\|new student app` | `lazy:ds-reference` |
 | **Coupled:** `intent:design` or `intent:redesign` always also fires `lazy:ds-reference` | `lazy:ds-reference` |

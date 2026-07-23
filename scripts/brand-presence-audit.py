@@ -6,7 +6,7 @@ correct typography) and still feel brandless if it never surfaces
 brand-specific tokens. This audit counts brand-token occurrences per
 page and flags pages where the brand effectively never renders.
 
-Brand tokens (per docs/CLAUDE-DS-REFERENCE.md):
+Brand tokens (per `node tools/ds/source.mjs` (+ globals.css)):
   --brand-color, --brand-color-dark, --brand-color-light, --brand-color-deep
   --brand-tint, --brand-tint-light, --brand-tint-subtle
   --brand-foreground
