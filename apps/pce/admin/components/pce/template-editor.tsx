@@ -2176,7 +2176,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       )
                     })}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={handleAddRoleStop} className="text-muted-foreground">
+                  <Button variant="outline" size="sm" onClick={handleAddRoleStop} className="border-dashed">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                     Evaluate another role
                   </Button>
@@ -2314,8 +2314,12 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
                             return renderRailItem(stop, set ? shortRoleLabel(set) : 'New evaluation', true)
                           })}
-                          <Button variant="ghost" size="sm" onClick={handleAddRoleStop}
-                            className="justify-start text-muted-foreground" style={{ marginLeft: 14 }}>
+                          {/* Outline + dashed = action, not a nav row — the
+                              ghost version was indistinguishable from tabs
+                              (Romit, Jul 23). */}
+                          <Button variant="outline" size="sm" onClick={handleAddRoleStop}
+                            className="justify-start border-dashed self-start"
+                            style={{ marginLeft: 14, marginTop: 2 }}>
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Evaluate another role
                           </Button>
