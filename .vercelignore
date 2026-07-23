@@ -7,3 +7,8 @@ apps/pce/admin/src/
 # Next code imports them (sidebar/secondary-panel.tsx), and next.config.ts
 # aliases react-router-dom to lib/react-router-compat.tsx. Excluding them only
 # deleted files the build needs — "Module not found: @/components/library-*".
+
+# Local worktree forests (13GB+) — dev/VCS clutter, never part of any build.
+# Without these the CLI upload exceeds the 10mb request limit.
+.claude/
+.worktrees/
