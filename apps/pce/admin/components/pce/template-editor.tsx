@@ -466,7 +466,11 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // Empty stops open straight into the standard empty section card (Jul 23) —
   // no decision gate, no pre-written titles: a new template's sections are
   // the admin's to name. Course/General seed one "Untitled Section"; a
-  // faculty role set does the same once roles are picked.
+  // faculty role set does the same once roles are picked. The ref makes
+  // seeding once-per-stop: StrictMode's double mount effect would otherwise
+  // seed twice (both runs see the same pre-add snapshot), and a section the
+  // admin deletes must not respawn.
+  const seededStopsRef = useRef<Set<string>>(new Set())
   useEffect(() => {
     if (variant !== 'tabs' && variant !== 'guided') return
     if (!template) return
@@ -482,8 +486,11 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       subjectKey = activeStop === 'course' ? 'course_content' : activeStop === 'general' ? 'general' : null
     }
     if (!subjectKey) return
+    const seedKey = `${template.id}|${subjectKey}|${roleSetId ?? ''}`
+    if (seededStopsRef.current.has(seedKey)) return
     const has = allSections.some(s => s.subjectKey === subjectKey && (subjectKey !== 'faculty' || s.roleSetId === roleSetId))
     if (!has) {
+      seededStopsRef.current.add(seedKey)
       addTemplateSection(template.id, { subjectKey, title: 'Untitled Section', questions: [], roleSetId }, `sec-${Date.now()}`)
     }
   }, [variant, template, activeStop, addTemplateSection])
@@ -1163,12 +1170,11 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           <p className="text-xs text-muted-foreground text-center" style={{ padding: '24px 0' }}>
             Choose who this evaluation covers — pick at least one role above to start adding questions.
           </p>
-        ) : secs.length === 0 ? (
-          /* One-render flash only — the seeding effect above creates the
-             aspect's starter sections (or faculty's Untitled Section). */
-          null
         ) : (
           <>
+            {/* Usually non-empty — the seeding effect above creates one
+                Untitled Section per stop; if the admin deletes it, the add
+                affordances below still carry the stage. */}
             {secs.map(sec => renderSectionCard(sec))}
             {/* Full-width dashed row — visible "insert here" affordance in the
                 flow where the section will appear (a heading-level button would
