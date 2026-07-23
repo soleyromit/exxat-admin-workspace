@@ -1,16 +1,15 @@
 'use client'
 
-import { useMemo, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, Skeleton, Button, InputGroup, Tip, LocalBanner,
   Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
   Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
 } from '@exxatdesignux/ui'
-import { NumericCell } from '@/components/data-views/table-cells'
-import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
-import type { FilterFieldDef } from '@/components/table-properties/types'
-import { PersonAvatar } from '@/components/pce/person-avatar'
+import { NumericCell, PeopleAvatarRailCell, type PersonStub } from '@/components/data-views/table-cells'
+import { facultyAvatarUrl } from '@/components/pce/person-avatar'
+import { initialsOf } from '@/lib/pce-analytics'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
@@ -24,9 +23,11 @@ import {
   type PceSurvey,
   COURSE_TYPE_FULL_LABEL,
 } from '@/lib/pce-mock-data'
+import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import {
   type Criterion, type CellReadiness,
+  CRITERION_TOGGLE_LABEL, CRITERION_GROUP,
   FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref, templateCriteria,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
@@ -181,9 +182,7 @@ function TokenSelect({
             )
           })}
           {overflow > 0 && (
-            <Badge variant="outline" className="font-normal shrink-0">
-              +{overflow}<span className="sr-only"> more selected</span>
-            </Badge>
+            <Badge variant="outline" className="font-normal shrink-0">+{overflow}</Badge>
           )}
           {/* The chevron lives INSIDE the trigger. It was previously a sibling in
               an InputGroupAddon — a plain div — so the one affordance that reads
@@ -307,17 +306,13 @@ function AddInPrismButton({ href, label, roles }: { href: string; label: string;
   )
 }
 
-interface StepCoursesEvaluateesProps {
+interface StepCoursesEvaluateesClassicProps {
   season: TermSeason | ''
   academicYear: string
   cohorts: string[]
   cohortOptions: string[]
   scoped: CourseOffering[]
   isLoading?: boolean
-  /** Fetch failure from the parent's async boundary — renders the error
-   *  banner with a Retry affordance when provided. */
-  error?: string | null
-  onRetry?: () => void
   /** True when a prior step already defined the term (term-setup wizard):
    *  Term + Academic year render as a static line instead of selects. */
   scopeLocked?: boolean
@@ -336,15 +331,15 @@ interface StepCoursesEvaluateesProps {
   onContinue: () => void
 }
 
-export function StepCoursesEvaluatees({
+export function StepCoursesEvaluateesClassic({
   season, academicYear, cohorts,
-  cohortOptions: cohortOpts, scoped, isLoading = false, error = null, onRetry,
+  cohortOptions: cohortOpts, scoped, isLoading = false,
   scopeLocked = false,
   publishedTemplates, templateAssignments, defaultAssignments,
   onTemplateChange, onResetDefaults,
   onSeasonChange, onAcademicYearChange, onToggleCohort,
   onSelectionChange, onContinue,
-}: StepCoursesEvaluateesProps) {
+}: StepCoursesEvaluateesClassicProps) {
   const years = academicYearOptions()
   const termChosen = !!season && !!academicYear
   const scopeReady = termChosen
@@ -450,7 +445,7 @@ export function StepCoursesEvaluatees({
   // minWidth = the sum, so blowing the budget forces a horizontal scroll in
   // which Faculty slides under the pinned Action column (hard mid-letter
   // clip) and Status — the column this step exists to consult — scrolls
-  // out of view. Current sum: 40+190+78+330+200+86+150 = 1074.
+  // out of view. Current sum: 40+224+78+124+208+96+82+150 = 1002.
   const columns = useMemo<ColumnDef<ReadinessRow>[]>(() => {
     const cols: ColumnDef<ReadinessRow>[] = [
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
@@ -458,7 +453,7 @@ export function StepCoursesEvaluatees({
         // Identity is ONE pinned column. Code LEADS the line: programs talk in
         // codes ("DPT-502"), and the fixed-width mono token keeps rows aligned
         // while the name truncates behind it. Sort follows the code (key).
-        key: 'code', label: 'Course', sortable: true, width: 190, defaultPin: 'left',
+        key: 'code', label: 'Course', sortable: true, width: 224, defaultPin: 'left',
         cell: r => (
           /* Three quiet lines — code, name, dates — instead of a Dates column:
              the no-scroll width budget has no room for one, and the two-line
@@ -467,110 +462,90 @@ export function StepCoursesEvaluatees({
           <div className="flex flex-col py-0.5 min-w-0">
             <span className="font-mono text-xs tabular-nums">{r.code}</span>
             <TruncatedText className="text-sm font-medium">{r.name}</TruncatedText>
-            {/* Enrollment tucks into the identity line (Romit, Jul 22) — the
-                dedicated Students column is hidden by default, re-addable via
-                Table properties. Amber count = the roster gap at a glance. */}
-            <span className="flex items-center gap-1 text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
-              {r.dates && <span>{r.datesLabel}</span>}
-              {r.dates && <span aria-hidden="true">·</span>}
-              <span
-                className="inline-flex items-center gap-1"
-                style={r.enrolled === 0 ? { color: 'var(--chip-4)', fontWeight: 500 } : undefined}
-              >
-                <i className="fa-light fa-user-group" style={{ fontSize: 9 }} aria-hidden="true" />
-                {r.enrolled}
-                <span className="sr-only"> students enrolled</span>
+            {r.dates && (
+              <span className="text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                {r.datesLabel}
               </span>
-            </span>
+            )}
           </div>
         ),
       },
       {
         // 78, not 60: the header itself needs the room — at 60 it rendered
         // as a clipped "Student:".
-        key: 'enrolled', label: 'Students', width: 78,
+        key: 'enrolled', label: 'Students', sortable: true, width: 78,
         // Catalog count cell — always muted: the count is context, and a
         // roster gap is announced by the Action column, not by this number.
         cell: r => <NumericCell value={r.enrolled} className="text-muted-foreground" />,
       },
       {
-        // THE FLOW LEDGER (Romit, Jul 22 — the promoted Variant C): one line
-        // per evaluation flow this course's template implies, fixed grammar
-        // glyph · evaluatee · status/fix, state-adaptive weight:
-        //   amber + button        → blocked (the only loud thing; fix ON the line)
-        //   unlabeled             → will be created on push (mark only exceptions)
-        //   "Scheduled · Oct 12"  → covered by an earlier run; here's when it opens
-        // Monil's separate-flows model reads natively — lines diverge per
-        // evaluatee — and the anatomy matches the term workspace's per-flow rows.
-        key: 'flows', label: 'Evaluation flows', width: 330,
+        // What's ALREADY out for this course — one block per pushed flow, so a
+        // course being evaluated in separate flows (different evaluatees) shows
+        // every prior run before the admin sets up the next one. The canonical
+        // SurveyStatusBadge carries the lifecycle; the muted line under it
+        // names WHO that flow evaluates (the course itself, or the instructor
+        // by name). Badge and evaluatee STACK — inline, the badge left the
+        // name ~60px and even "Course" clipped; stacking is the same pattern
+        // the Faculty (name/role) and Evaluates cells already use.
+        key: 'flows', label: 'Status', width: 124,
         cell: r => {
-          const criteria = r.templateId ? (criteriaByTemplate.get(r.templateId) ?? []) : []
-          if (criteria.length === 0) {
-            return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
-          }
-          const studentsCell = r.cells.students
-          const noStudents = !!studentsCell && !studentsCell.ok
-          const lines: ReactNode[] = []
-          // Course-level roster gap leads — it blocks EVERY flow below it once,
-          // instead of stamping each line.
-          // Ledger lines are INFORMATION ONLY (Romit, Jul 22 — variant 4 of the
-          // fix-affordance compare): the fixes live in the dedicated Action
-          // column, one predictable scan lane, with the amber lines here as
-          // their referents.
-          if (noStudents) {
-            lines.push(
-              <span key="students" className="flex items-center gap-1.5 min-w-0">
-                <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--group-band-attention-bg)' }}>
-                  <i className="fa-light fa-users-slash" style={{ fontSize: 9, color: 'var(--chip-4)' }} aria-hidden="true" />
-                </span>
-                <span className="text-sm font-medium truncate" style={{ color: 'var(--chip-4)' }}>No students enrolled</span>
-              </span>,
+          if (r.flows.length === 0) {
+            return (
+              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                Not pushed
+              </span>
             )
           }
-          if (criteria.includes('students')) {
-            const covered = r.flows.find(f => f.evalScope !== 'instructor')
-            lines.push(
-              <span key="course" className="flex items-center gap-1.5 min-w-0">
-                <span className="size-5 rounded-full flex items-center justify-center shrink-0 border border-border" style={{ background: 'var(--background)' }}>
-                  <i className="fa-light fa-book-open" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} aria-hidden="true" />
-                </span>
-                {/* In a gap course every non-blocked flow WAITS on the fix —
-                    muted ink says "planned, not proceeding" so the amber gap
-                    lines are the only thing that reads active. */}
-                <span className="text-sm truncate" style={r.hasGap && !covered ? { color: 'var(--muted-foreground)' } : undefined}>Course</span>
-              </span>,
-            )
-          }
-          for (const c of FACULTY_CRITERIA) {
-            const cell = r.cells[c]
-            if (!cell) continue
-            if (!cell.ok) {
-              lines.push(
-                <span key={c} className="flex items-center gap-1.5 min-w-0">
-                  <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--group-band-attention-bg)' }}>
-                    <i className="fa-light fa-user-slash" style={{ fontSize: 9, color: 'var(--chip-4)' }} aria-hidden="true" />
-                  </span>
-                  <span className="text-sm font-medium truncate" style={{ color: 'var(--chip-4)' }}>
-                    {cell.label}<span className="font-normal"> — not assigned</span>
-                  </span>
-                </span>,
-              )
-              continue
-            }
-            const covered = r.flows.find(f => f.evalScope === 'instructor' && f.instructors[0]?.name === cell.value)
-            lines.push(
-              <span key={c} className="flex items-center gap-1.5 min-w-0">
-                <PersonAvatar name={cell.value!} className="size-5" />
-                <span className="text-sm truncate" style={r.hasGap && !covered ? { color: 'var(--muted-foreground)' } : undefined}>
-                  {cell.value}
-                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}> · {cell.label}</span>
-                </span>
-              </span>,
-            )
+          // ONE badge per status run + an avatar RAIL for who's covered — the
+          // DS cell vocabulary (status = ListHubStatusBadge, multiple people =
+          // PeopleAvatarRailCell): stacked text lines under repeated badges
+          // read as clutter and grew the row per flow. Book disc = the course
+          // itself (same glyph as the Evaluates column); faces = instructors,
+          // each with a name Tip; >3 tucks into the rail's own "+N" chip
+          // (Romit, Jul 22: >2 stacked entries = overflow component).
+          const groups: { status: PceSurvey['status']; flows: PceSurvey[] }[] = []
+          for (const f of r.flows) {
+            const g = groups[groups.length - 1]
+            if (g && g.status === f.status) g.flows.push(f)
+            else groups.push({ status: f.status, flows: [f] })
           }
           return (
-            <div className="flex flex-col gap-1.5 py-1 min-w-0" onClick={e => e.stopPropagation()}>
-              {lines}
+            <div className="flex flex-col items-start gap-1.5 py-1" onClick={e => e.stopPropagation()}>
+              {groups.map(g => {
+                const hasCourse = g.flows.some(f => f.evalScope !== 'instructor')
+                const seen = new Set<string>()
+                const people: PersonStub[] = []
+                for (const f of g.flows) {
+                  if (f.evalScope === 'course') continue
+                  for (const i of f.instructors) {
+                    if (seen.has(i.name)) continue
+                    seen.add(i.name)
+                    people.push({ name: i.name, initials: i.initials, avatarUrl: i.avatarUrl })
+                  }
+                }
+                return (
+                  <span key={g.flows[0].id} className="flex flex-col items-start gap-1 min-w-0">
+                    <SurveyStatusBadge status={g.status} />
+                    <span className="flex items-center gap-1">
+                      {hasCourse && (
+                        <Tip side="top" label="Course evaluation">
+                          <span
+                            className="size-6 rounded-full flex items-center justify-center shrink-0"
+                            style={{ background: 'var(--muted)' }}
+                          >
+                            <i
+                              className="fa-light fa-book-open"
+                              style={{ fontSize: 10, color: 'var(--muted-foreground)' }}
+                              aria-hidden="true"
+                            />
+                          </span>
+                        </Tip>
+                      )}
+                      {people.length > 0 && <PeopleAvatarRailCell people={people} visibleMax={3} overlap />}
+                    </span>
+                  </span>
+                )
+              })}
             </div>
           )
         },
@@ -580,29 +555,32 @@ export function StepCoursesEvaluatees({
     // step's order IS the work order: pick courses → assign templates → fix
     // what validation flags), and ahead of the wide Faculty column so the
     // assignment control never hides behind the pinned Action column.
-    // No evaluates subtitle anymore — the flow ledger IS the live rendering of
-    // what the template evaluates, so restating it under the select would be
-    // the same repetition the ledger replaced.
+    // What the template evaluates rides UNDER the select as a muted subtitle,
+    // not a sibling column (Romit, Jul 22 — supersedes the Jul 21 sibling
+    // layout): the value is derived from the template, so a whole column
+    // repeated one string 14× and made the table read packed.
     cols.push({
-      key: 'template', label: 'Template', width: 200,
+      key: 'template', label: 'Template', width: 208,
       cell: r => {
         const edited = !!r.templateId && r.templateId !== defaultAssignments[r.id]
         const unassigned = !r.templateId
-        // Zero published templates = the select is a dead end. The CREATE
-        // action moved HERE from the retired Action column (Jul 22): it opens
-        // the same in-step create flow.
+        const evaluates = r.templateId ? (criteriaByTemplate.get(r.templateId) ?? []) : []
+        const courseEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Course')
+        const facultyEval = evaluates.filter(c => CRITERION_GROUP[c] === 'Faculty')
+        // "Course · 2 faculty roles" — the role names live in a Tip on the
+        // faculty fragment (single role names itself; a count of one hides
+        // information at no space saving).
+        const facultyLabel = facultyEval.length === 1
+          ? CRITERION_TOGGLE_LABEL[facultyEval[0]]
+          : `${facultyEval.length} faculty roles`
+        // Zero published templates = the select is a dead end (empty list).
+        // No control at all — the CREATE action lives in the Action column
+        // (it's an action; Romit, Jul 21), this cell just names the reason.
         if (publishedTemplates.length === 0) {
           return (
-            <Button
-              variant="outline"
-              size="xs"
-              className="justify-start"
-              aria-label={`Create a template — none exist yet to assign to ${r.code}`}
-              onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
-            >
-              <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
-              Create template
-            </Button>
+            <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              No templates yet
+            </span>
           )
         }
         return (
@@ -648,13 +626,74 @@ export function StepCoursesEvaluatees({
                 {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {evaluates.length > 0 && (
+              <span className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                {courseEval.length > 0 && <span>Course</span>}
+                {courseEval.length > 0 && facultyEval.length > 0 && <span aria-hidden="true">·</span>}
+                {facultyEval.length > 1 ? (
+                  <Tip
+                    side="bottom"
+                    label={
+                      <span className="flex flex-col gap-0.5">
+                        {facultyEval.map(c => <span key={c}>{CRITERION_TOGGLE_LABEL[c]}</span>)}
+                      </span>
+                    }
+                  >
+                    <span
+                      tabIndex={0}
+                      /* In the tab order (the Tip fires on focus) → needs a
+                         visible focus indicator like any interactive surface. */
+                      className="underline decoration-dotted underline-offset-2 cursor-default rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {facultyLabel}
+                    </span>
+                  </Tip>
+                ) : facultyEval.length === 1 ? (
+                  <span>{facultyLabel}</span>
+                ) : null}
+              </span>
+            )}
           </div>
         )
       },
     })
+    // Faculty = an adjoined avatar cluster, identity only (Romit, Jul 22 —
+    // supersedes the stacked name/role lines): who fills the evaluated roles
+    // is glanceable as faces; name + role live in each face's Tip. One face
+    // per PERSON (someone holding two roles appears once, Tip lists both).
+    cols.push({
+        key: 'faculty', label: 'Faculty', width: 96,
+        cell: r => {
+          const byPerson = new Map<string, string[]>()
+          for (const c of FACULTY_CRITERIA) {
+            const cell = r.cells[c]
+            if (!cell) continue // role not evaluated by this row's template, or not applicable
+            if (cell.ok && cell.value) {
+              byPerson.set(cell.value, [...(byPerson.get(cell.value) ?? []), cell.label])
+            }
+          }
+          if (byPerson.size === 0) {
+            // Gaps are NOT restated here — the Action column already carries
+            // "Add faculty" with the missing roles; twice per row was noise.
+            return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+          }
+          const stubs: PersonStub[] = [...byPerson].map(([name, roles]) => ({
+            // The Tip renders this string — name + role(s), since neither is
+            // on the surface anymore.
+            name: `${name} · ${roles.join(' · ')}`,
+            initials: initialsOf(name),
+            avatarUrl: facultyAvatarUrl(name),
+          }))
+          return (
+            <div className="py-1" onClick={e => e.stopPropagation()}>
+              <PeopleAvatarRailCell people={stubs} visibleMax={3} overlap />
+            </div>
+          )
+        },
+    })
     cols.push(
       {
-        key: 'typeLabel', label: 'Type', sortable: true, width: 86,
+        key: 'typeLabel', label: 'Type', sortable: true, width: 82,
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
@@ -681,26 +720,47 @@ export function StepCoursesEvaluatees({
         },
       },
       {
-        // Fixes in ONE scannable lane (Romit, Jul 22 — fix-affordance variant
-        // 4): the amber ledger lines name each gap; this column carries the
-        // consolidated Prism trips. Create-template stays in the Template cell.
+        // What's needed to complete setup — one consolidated column, pinned right.
         key: 'actions', label: 'Action needed', width: 150, defaultPin: 'right', lockPin: true,
         cell: r => {
+          // No template yet = nothing to validate against.
+          // Catalog empty → the fix IS an action, so it renders here as a
+          // real DS button (same anatomy as Add faculty/Add students) that
+          // opens the in-step create flow: "Back to Courses" backtracks,
+          // publish returns here and a lone template auto-assigns via the
+          // type-default. Catalog non-empty → muted note; the Template
+          // select carries the assign affordance (one signal per gap).
           if (!r.templateId) {
-            return publishedTemplates.length === 0
-              ? <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
-              : <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
+            if (publishedTemplates.length === 0) {
+              return (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="justify-start"
+                  aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+                  onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
+                >
+                  <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
+                  Create template
+                </Button>
+              )
+            }
+            return <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Assign a template</span>
           }
           const studentCell = r.cells.students
           const studentGap = !!studentCell && !studentCell.ok
-          // Every missing person-role collapses into a single trip to Prism;
-          // the tooltip names WHICH roles.
+          // Every missing person-role collapses into a single trip to Prism.
+          // The exact roles behind the gap, so the generic CTA can still say WHICH.
           const facultyMissing = FACULTY_CRITERIA
             .filter(c => r.cells[c] && !r.cells[c]!.ok)
             .map(c => r.cells[c]!.label)
           if (!studentGap && facultyMissing.length === 0) {
             return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
           }
+          // Buttons only (Romit, Jul 21) — no "Missing:" fact lines: the
+          // button label names the missing data kind, the exact roles live in
+          // the tooltip, and the amber group band already marks the row as
+          // needing setup. The button chrome stays neutral DS.
           return (
             <div className="flex flex-col items-start gap-1 py-0.5">
               {studentGap && (
@@ -728,15 +788,6 @@ export function StepCoursesEvaluatees({
     { gap: 'Needs setup', ready: 'Ready to send' },
     ['gap', 'ready'],
   )
-  // Students is an OPTIONAL column (Romit, Jul 22): hidden by default — the
-  // count rides the Course identity line — and re-addable from the Table
-  // properties drawer. Run-once so a user's unhide sticks.
-  const hidStudentsOnce = useRef(false)
-  useEffect(() => {
-    if (hidStudentsOnce.current) return
-    hidStudentsOnce.current = true
-    tableState.setHiddenCols(prev => new Set([...prev, 'enrolled']))
-  }, [tableState])
   const filteredTotal = tableState.rows.length
   const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize))
   const safePage = Math.min(page, totalPages)
@@ -925,16 +976,6 @@ export function StepCoursesEvaluatees({
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Loading courses">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-11 w-full rounded-md" />)}
         </div>
-      ) : error ? (
-        /* Async error surface (state-catalog invariant #6): the parent owns
-           the fetch; this branch gives its failure a retry affordance. */
-        <LocalBanner
-          variant="error"
-          title="Could not load courses"
-          {...(onRetry ? { action: { label: 'Retry', onClick: onRetry } } : {})}
-        >
-          {error}
-        </LocalBanner>
       ) : rows.length === 0 ? (
         <EmptyHint heading="No courses for this scope" sub="Adjust the term or cohort filter." />
       ) : (
@@ -953,61 +994,6 @@ export function StepCoursesEvaluatees({
           hasFooter
           edgeInset={false}
           stickyHeader={false}
-          /* Table properties (columns / filters / sort) — the standard drawer,
-             where the hidden-by-default Students column can be re-added. */
-          toolbarSlot={(state) => {
-            const filterFields: FilterFieldDef[] = columns
-              .filter(c => c.filter)
-              .map(c => ({
-                key: c.key,
-                label: c.label,
-                icon: c.filter!.icon ?? 'fa-filter',
-                type: c.filter!.type,
-                operators: c.filter!.operators ?? ['is', 'is_not'],
-                options: c.filter!.options,
-              }))
-            return (
-              <>
-                <Tip label="Table properties" side="bottom">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Table properties"
-                    aria-expanded={state.sheetOpen}
-                    onClick={() => state.setSheetOpen(o => !o)}
-                  >
-                    <i className="fa-light fa-sliders text-[13px]" aria-hidden="true" />
-                  </Button>
-                </Tip>
-                <TablePropertiesDrawer
-                  open={state.sheetOpen}
-                  onOpenChange={state.setSheetOpen}
-                  activeFilters={state.activeFilters}
-                  onAddFilter={state.addFilter}
-                  onUpdateFilter={state.updateFilter}
-                  onRemoveFilter={state.removeFilter}
-                  getFilterConnector={state.getConnector}
-                  onToggleFilterConnector={state.toggleConnector}
-                  filterFields={filterFields}
-                  totalRows={rows.length}
-                  filteredRows={state.rows.length}
-                  sortRules={state.sortRules}
-                  onSortRulesChange={state.setSortRules}
-                  onAddSortRule={state.addSortRule}
-                  onRemoveSortRule={state.removeSortRule}
-                  onToggleSortDir={state.toggleSortDir}
-                  colOrder={state.colOrder}
-                  onColOrderChange={state.setColOrder}
-                  hiddenCols={state.hiddenCols}
-                  onToggleColVisibility={state.toggleColVisibility}
-                  onMoveCol={state.moveCol}
-                  resolveColumnLabel={(key) => columns.find(c => c.key === key)?.label ?? key}
-                  orderableKeys={columns.filter(c => c.key !== 'select' && c.key !== 'actions').map(c => c.key)}
-                />
-              </>
-            )
-          }}
           groupIcons={{
             /* Icons inherit the band ink set by groupHeaderStyles below. */
             gap: <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />,
