@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a compact `docs/watch/ds-snapshot.json` of DS component public APIs so `compliance-reviewer` and `ds-check` grep it instead of reading full source files — reducing per-session DS token cost from ~4K tokens/component to ~50 tokens/grep.
+**Goal:** Build a compact `node tools/ds/source.mjs --list` of DS component public APIs so `compliance-reviewer` and `ds-check` grep it instead of reading full source files — reducing per-session DS token cost from ~4K tokens/component to ~50 tokens/grep.
 
 **Architecture:** A Python script (`scripts/build-ds-snapshot.py`) reads the Admin DS source at `exxat-ds/packages/ui/src/` and extracts component names, import paths, variants, sizes, and key props using regex. Output is a compact JSON. A lightweight scheduled CCR routine runs the script whenever the DS submodule pointer advances. The `compliance-reviewer` subagent is updated to grep the snapshot file instead of reading raw source.
 
@@ -14,7 +14,7 @@
 
 | File | Action | Responsibility |
 |---|---|---|
-| `docs/watch/ds-snapshot.json` | Create | Compact DS API surface — written by the script |
+| `node tools/ds/source.mjs --list` | Create | Compact DS API surface — written by the script |
 | `scripts/build-ds-snapshot.py` | Create | Reads DS source, extracts API, writes snapshot |
 | `scripts/build-ds-snapshot.test.py` | Create | Tests for the extractor functions |
 | `.claude/agents/compliance-reviewer.md` | Modify | Add §0: read ds-snapshot.json before checking |
@@ -114,7 +114,7 @@ Expected: `ModuleNotFoundError: No module named 'scripts.build_ds_snapshot'`
 """
 Build a compact JSON snapshot of the Exxat DS public API surface.
 Reads exxat-ds/packages/ui/src/, extracts component APIs via regex.
-Output: docs/watch/ds-snapshot.json
+Output: `node tools/ds/source.mjs --list`
 
 Run: python3 scripts/build-ds-snapshot.py
 """
@@ -283,7 +283,7 @@ cd /Users/romitsoley/Work && python3 scripts/build-ds-snapshot.py
 
 Expected:
 ```
-✓ Snapshot written to docs/watch/ds-snapshot.json
+✓ Snapshot written to `node tools/ds/source.mjs --list`
   ~40 components indexed
 ```
 
@@ -291,7 +291,7 @@ Spot-check the output:
 ```bash
 python3 -c "
 import json
-s = json.load(open('docs/watch/ds-snapshot.json'))
+s = json.load(open('`node tools/ds/source.mjs --list`'))
 btn = s['components'].get('Button', {})
 print('Button variants:', btn.get('variants', []))
 print('Button sizes:', btn.get('sizes', []))
@@ -304,7 +304,7 @@ Expected: Button variants include `default`, `secondary`, `outline`. DataTable k
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C /Users/romitsoley/Work add scripts/build-ds-snapshot.py scripts/build-ds-snapshot.test.py docs/watch/ds-snapshot.json
+git -C /Users/romitsoley/Work add scripts/build-ds-snapshot.py scripts/build-ds-snapshot.test.py `node tools/ds/source.mjs --list`
 git -C /Users/romitsoley/Work commit -m "feat(ds-snapshot): build compact DS API snapshot — 40 components, reduces per-session DS read cost"
 ```
 
@@ -328,7 +328,7 @@ Add this block at the very beginning of the agent instructions (after the frontm
 ```markdown
 ## Step 0: Load DS snapshot (read once, use for all checks)
 
-Read `docs/watch/ds-snapshot.json`. This gives you the compact API surface for every DS component — variants, sizes, key props, import paths — without reading full source files.
+Read `node tools/ds/source.mjs --list`. This gives you the compact API surface for every DS component — variants, sizes, key props, import paths — without reading full source files.
 
 Use it to answer:
 - "Is `variant='ghost'` valid for Button?" → check `components.Button.variants`
@@ -366,7 +366,7 @@ git submodule status exxat-ds
 git log --oneline exxat-ds | head -3
 ```
 
-Compare the current submodule commit to what was recorded in `docs/watch/ds-snapshot.json`'s `generated` field. If the snapshot was generated today, it may already be current — but run the refresh anyway to be safe.
+Compare the current submodule commit to what was recorded in `node tools/ds/source.mjs --list`'s `generated` field. If the snapshot was generated today, it may already be current — but run the refresh anyway to be safe.
 
 ## Step 2: Rebuild the snapshot
 
@@ -374,14 +374,14 @@ Compare the current submodule commit to what was recorded in `docs/watch/ds-snap
 python3 scripts/build-ds-snapshot.py
 ```
 
-Expected output: `✓ Snapshot written to docs/watch/ds-snapshot.json`
+Expected output: `✓ Snapshot written to `node tools/ds/source.mjs --list`
 
 ## Step 3: Spot-check for regressions
 
 ```bash
 python3 -c "
 import json
-s = json.load(open('docs/watch/ds-snapshot.json'))
+s = json.load(open('`node tools/ds/source.mjs --list`'))
 print('Total components:', s['componentCount'])
 for name in ['Button', 'Badge', 'DataTable', 'KeyMetrics']:
     c = s['components'].get(name)
@@ -401,8 +401,8 @@ Component [name] missing from snapshot after rebuild. Check exxat-ds/packages/ui
 ## Step 4: Commit if snapshot changed
 
 ```bash
-git diff --quiet docs/watch/ds-snapshot.json || (
-  git add docs/watch/ds-snapshot.json &&
+git diff --quiet `node tools/ds/source.mjs --list` || (
+  git add `node tools/ds/source.mjs --list` &&
   git commit -m "chore(ds-snapshot): refresh after DS submodule update [$(date +%Y-%m-%d)]"
 )
 ```

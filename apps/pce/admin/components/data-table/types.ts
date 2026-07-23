@@ -38,9 +38,11 @@ export interface ColumnDef<TData> {
     type: "select" | "text" | "date"
     /** icon class for filter pills, e.g. "fa-circle-dot" */
     icon?: string
-    options?: { value: string; label: string }[]
+    options?: { value: string; label: string; node?: React.ReactNode }[]
     operators?: FilterOperator[]
   }
+  /** When true, the column is excluded from the rendered table but remains available in the filter dropdown */
+  hidden?: boolean
 }
 
 export interface CellContext<TData> {

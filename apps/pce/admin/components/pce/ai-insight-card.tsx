@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { Card, CardContent } from '@exxatdesignux/ui'
 
 /**
  * AiInsightCard — workspace pulled-vs-AI lane affordance per
@@ -43,33 +44,35 @@ export function AiInsightCard({
   className,
 }: Props) {
   return (
-    <section
+    <Card
       role="region"
       aria-label="AI insight"
-      className={`rounded-lg border border-border p-4 bg-background ${className ?? ''}`}
+      className={`shadow-none ${className ?? ''}`}
     >
-      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
-        <i
-          className="fa-light fa-sparkles"
-          style={{ color: 'var(--brand-color)' }}
-          aria-hidden="true"
-        />
-        <span>{title}</span>
-      </div>
-
-      {preBody && <div className="mb-2">{preBody}</div>}
-
-      <div className="text-sm text-foreground mb-2">{body}</div>
-
-      <p className="text-xs text-muted-foreground">
-        Based on {source}
-      </p>
-
-      {actions && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {actions}
+      <CardContent className="p-4">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
+          <i
+            className="fa-light fa-sparkles"
+            style={{ color: 'var(--brand-color)' }}
+            aria-hidden="true"
+          />
+          <span>{title}</span>
         </div>
-      )}
-    </section>
+
+        {preBody && <div className="mb-2">{preBody}</div>}
+
+        <div className="text-sm text-foreground mb-2">{body}</div>
+
+        <p className="text-xs text-muted-foreground">
+          Based on {source}
+        </p>
+
+        {actions && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {actions}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

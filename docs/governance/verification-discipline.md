@@ -15,7 +15,7 @@
 
 ---
 
-## The five patterns I keep failing on
+## The seven patterns I keep failing on
 
 ### Pattern A — "Clean" ≠ "fine"
 
@@ -109,19 +109,159 @@
 
 Static enforcement: five audit rules surface the regex-able slice (see `docs/governance/ds-adoption.md` → "State-coverage requirements"). The subagent goes deeper for non-regex-able cases.
 
+### Pattern G — Grep-verify every claimed change before declaring done (added 2026-05-22)
+
+**What I do wrong:** Say "all changes are in" from session memory. Memory is wrong — linter rollbacks, edit failures, and context compression mean what I think I wrote may not be what's in the file.
+
+**Real example (2026-05-22):** Romit asked "are these all implemented?" I had no idea without checking. The correct answer required spawning an Explore agent to grep-verify every file. Without that step I would have said "yes" when some items could have been missing.
+
+**The fix — before typing "done", "all in", "implemented", or any completion claim:**
+
+1. Spawn `Explore` agent with exact grep commands for each claimed change.
+2. Report `PRESENT (file:line snippet)` or `MISSING (what was found instead)` per item.
+3. Never claim done from session memory alone.
+4. If any item is MISSING: fix it before claiming done.
+
+### Pattern I — Evidence-required: no text assertions (added 2026-06-01)
+
+**What I do wrong:** Claim "WCAG passes", "ds-conformance-reviewer returned GREENLIGHT", "DS imports verified" as plain text without showing the actual evidence. Same session, same model marking its own work = hallucination risk.
+
+**Real example (2026-06-01):** Romit: "Claude forgets WCAG, doesn't do proper visual review, and doesn't execute what it recognizes." Root cause: subagents were "run" in text only — no output was pasted, no grep was shown, no axe-core path was cited. The claim was the verification.
+
+**The fix — every verification claim requires evidence:**
+
+```
+## Verification evidence
+axe-core: /tmp/visual-check/<product>-<route>.axe.json — 0 violations
+  OR: "not run — dev server not started"
+DS imports: Button from '@exxatdesignux/ui' (file.tsx:2), DataTable (file.tsx:3)
+grep banned patterns: 0 hits (command: grep -n "uppercase tracking-wide" <files>)
+ds-conformance-reviewer: [paste literal first line of verdict — GREENLIGHT or NEEDS-MORE: ...]
+state-review: [paste literal first line]
+verification-reviewer: [paste literal first line]
+```
+
+"I ran ds-conformance-reviewer" with no output = Pattern I violation. Paste the verdict or it didn't happen.
+
+### Pattern L — No overconfident verdicts: explicit NOT-verified list required (added 2026-06-01)
+
+**What I do wrong:** Say "GREENLIGHT" or "passes visual review" based on static code analysis alone — without actually running a browser, without testing popover open state, without checking color rendering. The verdict sounds like a browser test when it's actually a grep.
+
+**Real example (2026-06-01):** Romit: "I see you giving confident verdicts but you miss key elements — popovers getting cut off, hidden content, color mismatch even though you have DS guidelines, files, code." Root cause: GREENLIGHT verdict implied browser verification when only static code was checked.
+
+**Specific gaps this pattern catches:**
+- Popover / tooltip / dropdown cut off by `overflow: hidden` ancestor — invisible to static grep
+- Color token mismatch — `--primary` used correctly in code but renders wrong if globals.css not loaded
+- z-index stacking — portal components hidden behind another layer
+- Floating content off-screen — trigger at edge of viewport, content positions outside
+
+**The fix — every visual or compliance verdict must include a NOT-verified section:**
+
+```
+## Verdict: GREENLIGHT (static analysis only)
+
+Verified:
+✅ No raw <button> — grep: 0 hits
+✅ DS imports correct — Button, DataTable from @exxatdesignux/ui (file.tsx:2-3)
+✅ aria-hidden on all FA icons — grep: 3 found, all present
+✅ No hardcoded hex — grep: 0 hits
+
+NOT verified (requires dev server + browser):
+⚠ Popover clip — overflow ancestors not runtime-tested
+⚠ Color rendering — tokens defined in code, not checked in browser
+⚠ z-index stacking — portaled content z-index not runtime-verified
+⚠ Hover/focus states — not interacted with in browser
+```
+
+Calling it "GREENLIGHT" without the NOT-verified section is a Pattern L violation.
+Calling it "GREENLIGHT — visual review complete" when no browser was opened is a hard block.
+
+**Two verdict tiers:**
+- `GREENLIGHT (static)` — code analysis passed; browser not opened
+- `GREENLIGHT (runtime)` — Playwright interactions.mjs ran and passed; browser verified
+
+Never use `GREENLIGHT` alone. Always specify which tier.
+
+### Pattern K — Proactive self-questioning before every task (added 2026-06-01)
+
+**What I do wrong:** Wait for Romit to be frustrated before recognizing a recurring pattern. The correction happens reactively — Romit says "you keep forgetting X", I add a rule, it works for one session, then the next session starts fresh and the cycle repeats.
+
+**Real example (2026-06-01):** Romit: "I always think Claude should ask questions to itself and build intelligent architecture solutions without me saying anything. You should be able to recognize feedback patterns before you decide to compact the conversation." Root cause: no self-briefing step. Each session starts cold with no active check against known failure patterns.
+
+**The fix — at the start of every session AND before every non-trivial task:**
+
+Ask yourself these three questions from memory, not from what's in the current prompt:
+
+```
+1. What have I repeatedly failed on for this type of work?
+   → Read MEMORY.md: find 2-3 feedback entries relevant to task type.
+   
+2. What does the discipline log say I most recently skipped?
+   → Read verification-discipline.md bottom of discipline log: last 3 entries.
+   
+3. Am I about to repeat a known mistake?
+   → Cross-reference question 1+2 against the current task.
+   → If yes: state it at the top of the response before proceeding.
+```
+
+If any of these surfaces a known failure: **declare it first, unprompted**. Don't wait for Romit to say "you keep doing X". Say it yourself: "I know I tend to skip pre-task declaration on PCE pages — doing it now."
+
+**The frustration trigger:** The `user-prompt-submit.py` hook detects frustration signals ("you keep", "you always", "again", "I keep having to tell you") and fires `self:pattern-recognition` — forcing this protocol before the response.
+
+### Pattern J — Pre-task state declaration (added 2026-06-01)
+
+**What I do wrong:** Start editing a file without declaring what's currently in it. Result: hallucination about "what was there before", claiming to fix things that were already correct, or missing existing violations entirely.
+
+**Real example (2026-06-01):** Romit: "Claude still doesn't do a good job analysing the old pages and updating/upgrading to new DS." Root cause: Claude begins writing new code without reading and declaring the pre-existing violations in the file. No anchor = no accountability.
+
+**The fix — before touching any file, output:**
+
+```
+File: apps/<product>/admin/components/foo.tsx
+Current DS violations: [raw <button> at line 23, hardcoded #3b82f6 at line 47]
+Hand-rolled with DS equivalent: [<StatusPill> → StatusBadge, local data-table/ → DataTable]
+WCAG issues (static read): [FA icon missing aria-hidden at line 31, no aria-label on icon-only Button at line 58]
+```
+
+If the file is new: state "new file — no pre-existing violations."
+This runs BEFORE Gate 1. Not after. Not during. Before.
+
+### Pattern H — Self-reflections must produce artifacts, not text (added 2026-05-22)
+
+**What I do wrong:** Write "self-reflection" bullets at the end of responses that say "I should have done X" or "next time I will Y" — and then produce nothing. The bullet is discarded at context window end. The mistake repeats.
+
+**Real example (2026-05-22):** Romit asked "are these self-reflection solved or are they just text?" Correct answer: they were just text. No memory was written, no rule was updated, no discipline log entry was added.
+
+**The fix — every self-reflection bullet must immediately produce one of:**
+
+| Bullet type | Required artifact |
+|---|---|
+| "I should have done X before writing Y" | New or updated rule in verification-discipline.md (this file) |
+| "This mistake came from not reading Z" | Discipline log entry (table below) |
+| "X still isn't fixed" | TaskCreate or memory entry tracking it |
+| "This pattern will repeat across sessions" | `feedback` memory write to `/memory/` |
+| "I should make X standard" | Update CLAUDE.md, design-review-protocol.md, or per-product CLAUDE.md |
+
+If you cannot produce an artifact for a bullet, delete the bullet. No bullet without an artifact.
+
 ---
 
 ## When to apply
 
 | Trigger | Patterns to check |
 |---|---|
+| Start of any session | **K** — self-briefing: read MEMORY.md + discipline log before first task |
+| Romit expresses frustration / says "again" / "you keep" | **K** — pattern recognition + memory write + architecture proposal |
+| I'm about to touch any file | **J** — pre-task state declaration first |
 | I'm about to type "clean" or "passes" | A |
 | I just fixed a bug Romit flagged | B |
 | Romit asked me to do something "for X" where X is a set | C |
 | I touched a DS component | D, B (other places with same component) |
-| I'm about to claim a non-trivial change is done | E, A |
+| I'm about to claim a non-trivial change is done | E, A, **G**, **I** |
+| I ran a subagent | **I** — paste literal verdict, not "I ran it" |
 | Romit asks "did you also …" | C, B (I should have anticipated) |
 | I added a page that fetches async, accepts form input, or renders a list | F |
+| I write a self-reflection bullet | **H** — produce artifact immediately or delete the bullet |
 
 ---
 
@@ -139,7 +279,7 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | 2026-05-11 | state-coverage audit | F | Shipped admin list pages with DataTable + no `emptyState` prop — the 0-row render fell back to "No results match your filters" instead of a first-run empty state. Caught by `datatable-no-empty-state` audit rule across exam-management `/access`, `/private`, etc. |
 | 2026-05-11 | state-coverage audit | F | Shipped Cards with `opacity-60` containing `text-muted-foreground` children — drops contrast below WCAG 4.5:1. Caught by `opacity-60-on-text-parent` audit rule (2 hits in exam-management as of audit landing). |
 | 2026-05-11 | state-coverage audit | F | Shipped clickable `<div>`s with `onClick` + `cursor-pointer` but no `focus-visible:ring` — keyboard users have no focus indicator. Caught by `clickable-without-focus-ring` audit rule (3 hits in exam-management qb-table + assessments-tab). |
-| 2026-05-11 | Romit | A | Claimed agents "checked every page from localhost:4000 + every state + every interaction" when they had only HTTP-fetched static HTML + read demo source + run axe on default-state screenshots. Interaction states (hover, focus, open-dialog, validation-error, submission feedback, theme switch, responsive) were never exercised. The catalog agent itself flagged Calendar `mode="single"` only, 20 components missing from library-catalog.ts, and 6 placeholder-only previews — implicit evidence the interactive layer wasn't walked — but my reply elided that. Closing the gap requires Playwright interaction tests (tracked: `tools/visual-check/interactions.mjs`, separate session). Closed 2026-05-11: `tools/visual-check/interactions.mjs` drives 12 interaction states per route (default, focus walks on button/input/select/dropdown, open-dialog, dialog-validation, open-sheet, open-dropdown, command-palette, mobile-viewport, theme-toggle); `visual-review` subagent consumes the captures and renders a consolidated GREENLIGHT/NEEDS-MORE verdict that considers default + interaction states together. First run against PCE admin `/surveys` + `/admin/students` + `/admin/terms` + `/analytics` surfaced 7 nodes of `aria-hidden-focus` (open-dropdown) + 3 routes × `document-title` + 3 routes × `html-has-lang` (mobile-viewport) — none caught by the default-state runner. |
+| 2026-05-11 | Romit | A | Claimed agents "checked every page from localhost:4000 + every state + every interaction" when they had only HTTP-fetched static HTML + read demo source + run axe on default-state screenshots. Interaction states (hover, focus, open-dialog, validation-error, submission feedback, theme switch, responsive) were never exercised. The catalog agent itself flagged Calendar `mode="single"` only, 20 components missing from library-catalog.ts, and 6 placeholder-only previews — implicit evidence the interactive layer wasn't walked — but my reply elided that. Closing the gap requires Playwright interaction tests (tracked: `tools/visual-check/interactions.mjs`, separate session). Closed 2026-05-11: `tools/visual-check/interactions.mjs` drives 12 interaction states per route (default, focus walks on button/input/select/dropdown, open-dialog, dialog-validation, open-sheet, open-dropdown, command-palette, mobile-viewport, theme-toggle); `ds-conformance-reviewer` subagent consumes the captures and renders a consolidated GREENLIGHT/NEEDS-MORE verdict that considers default + interaction states together. First run against PCE admin `/surveys` + `/admin/students` + `/admin/terms` + `/analytics` surfaced 7 nodes of `aria-hidden-focus` (open-dropdown) + 3 routes × `document-title` + 3 routes × `html-has-lang` (mobile-viewport) — none caught by the default-state runner. |
 | 2026-05-12 | Romit | B | Class-level confirmation: Pattern B is not occasional — Romit reports the same failure with Toggle (QB filter sheets fix not cascaded to other Toggle uses), Button, DataTable, "almost all components". A single discipline-log row per incident undersells it; the failure is structural. Closed 2026-05-12: `.claude/hooks/user-prompt-submit.py` `_cascade_check()` greps `apps/**/*.tsx` for `<ComponentName>` JSX usages when the prompt matches `fix\|redesign\|rework\|polish\|tighten\|improve <Noun>` OR `<Noun> (is broken\|looks wrong)` shapes. Injects a "[Cascade check (Pattern B) — `<Name>` is referenced in N file(s).]" block with file list (capped at 15) before triggers, forcing enumeration. Verified: prompt "fix the toggle" returns `<Toggle>` × 4 paths; "redesign Button" returns 80; "the DataTable is broken" returns 21; "what is the weather" is silent. |
 
 ### Bug closures — 2026-05-11
@@ -150,6 +290,16 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | `document-title` on mobile-viewport (Bug 2) | Not a runner timing issue. The runner's `command-palette` step (⌘K) opened `CommandPalette` which crashed with `TypeError: Cannot read properties of undefined (reading 'subscribe')` inside cmdk because DS `CommandDialog` renders `DialogPrimitive.Root` directly WITHOUT wrapping its children in cmdk's `Command` root. cmdk's `CommandInput`/`CommandList`/`CommandItem` all `useContext(CommandContext)` — without the `Command` provider, the context is undefined. The crash put Next.js into its dev error overlay (`<html id="__next_error__">`, no `lang`, no `<title>`), and the subsequent mobile-viewport screenshot captured that error state — hence the `document-title` / `html-has-lang` regression. | Wrapped `<CommandDialog>` children with `<Command>` in `apps/pce/admin/components/command-palette.tsx` (cmdk-root context provider). Imported `Command` alongside `CommandDialog` from `@exxat/ds/packages/ui/src`. | After fix, runner now captures `command-palette` state for every route (previously skipped because input never mounted), and `mobile-viewport` returns clean (`<html lang="en">` + `<title>PCE — Admin</title>` intact). Fixed 2026-05-11 by Claude. |
 | `html-has-lang` on mobile-viewport (Bug 3) | Same root cause as Bug 2 (cmdk crash → Next.js error overlay). | Same fix as Bug 2 — `<Command>` wrapper in `command-palette.tsx`. | Same verification as Bug 2 — `/tmp/visual-check/interactions/surveys.mobile-viewport.axe.json` shows 0 serious violations after fix. Fixed 2026-05-11 by Claude. |
 | TS error `onOpenAutoFocus` on `DropdownMenuContent` at `qb-table.tsx:2096` (Bug 4) | `@radix-ui/react-menu@2.1.16` moved `onOpenAutoFocus` into `MenuContentImplPrivateProps`, and `MenuRootContentTypeProps extends Omit<MenuContentImplProps, keyof MenuContentImplPrivateProps>` — so the prop is intentionally removed from the public type even though `MenuContentImpl` still wires it at runtime. The DS `DropdownMenuContent` spreads `...props` to `DropdownMenuPrimitive.Content`, so the callback DOES reach the FocusScope, but TS rightly complains about the prop being unknown. | Added a typed proxy `DropdownMenuContentEx` in `apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx` (just below the imports) that re-types `DropdownMenuContent` to accept `onOpenAutoFocus`. Used the proxy for the column-header dropdown (lines 2113 + 2264). Runtime behavior unchanged — focus stays on the inline-filter search input when `hasInlineFilter` is true. | `cd apps/exam-management/admin && pnpm typecheck` exits clean. Fixed 2026-05-11 by Claude. |
+
+| 2026-05-22 | Romit | D | Fixed "no main landmark" without reading DS SidebarInset source first. SidebarInset already renders as `<main>` — added a second `<main>` and created `landmark-no-duplicate-main` across every PCE page. Pattern D: import ≠ correct use. Fix: new `nested-main-landmark` BLOCK rule in `ds-adoption-audit.py`. |
+| 2026-05-22 | Romit | G | Said "all changes are implemented" from session memory. Could not verify without spawning Explore agent. Fix: Pattern G added — grep-verify every claimed change before saying done. |
+| 2026-05-22 | Romit | H | Wrote "self-reflection" bullets across multiple responses without producing any artifact (no memory write, no rule update, no discipline log entry). The bullets were discarded and the patterns repeated within the same session. Fix: Pattern H added — every bullet must immediately produce an artifact or be deleted. |
+| 2026-05-22 | self-caught | D | Wrote SearchInput with `aria-expanded` + `aria-haspopup` without checking ARIA spec for which roles those attributes are valid on. The WAI-ARIA §6.6 / §6.23 tables are not consulted during component authoring. Fix: `aria-combobox-required` BLOCK rule in `ds-adoption-audit.py` catches this at commit time. |
+| 2026-05-22 | self-caught | A | Claimed `ds-conformance-reviewer` had verified WCAG when it had only done static code analysis — never opened a browser, never ran axe. Said "GREENLIGHT" when 10 blocking violations existed in the live app. Fix: design-review-protocol.md Gate 2 now requires `run.mjs` + `interactions.mjs` before compliance claim; `wcag-check.yml` runs on every PR and push. |
+| 2026-06-01 | Romit | I | "Claude forgets WCAG, doesn't do proper visual review, doesn't execute what it recognizes." Root cause: subagents claimed in text without pasting literal output. No evidence block. Fix: Pattern I (evidence-required) added to verification-discipline.md + CLAUDE.md Gate 2 step 9 — paste literal subagent verdict or it didn't happen. |
+| 2026-06-01 | Romit | J | "Claude doesn't do a good job analysing old pages and upgrading to new DS." Root cause: editing files without first declaring what violations exist in them. No pre-task anchor = no accountability for what was there before. Fix: Pattern J (pre-task state declaration) added + CLAUDE.md pre-task block before Gate 1. |
+| 2026-06-01 | Romit | B | DS adoption not consistent across old pages — violations fixed in one place but not swept across all siblings. Root cause: Pattern B not enforced structurally. Fix: `/ds-sweep` skill created — systematic per-product backlog before any new work begins on a product. |
+| 2026-06-01 | Romit | K | "Claude should ask questions to itself and build intelligent architecture without me saying anything. You should recognize feedback patterns before compacting conversation." Root cause: no self-briefing at session start. Each session started cold. Corrections only happened after Romit expressed frustration. Fix: Pattern K added — self-briefing required at session start + frustration-signal hook fires `self:pattern-recognition` action automatically. |
 
 When you (Romit) catch me again, append a row. The goal is the table shrinking over time.
 

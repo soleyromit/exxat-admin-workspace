@@ -16,11 +16,10 @@ Triggered automatically by post-merge hook on submodule update (P5.5).
 """
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 
-WORKSPACE = Path("/Users/romitsoley/Work")
+WORKSPACE = Path(__file__).resolve().parents[1]
 
 
 def extract_exports_from_tsx(path: Path) -> set[str]:
@@ -204,10 +203,10 @@ def main() -> None:
     admin_tokens = extract_tokens(WORKSPACE / "exxat-ds/packages/ui/src/theme.css")
     student_tokens = extract_tokens(WORKSPACE / "studentUX/src/styles/globals.css")
 
+    # NOTE: this file is committed and diffed by CI to detect staleness, so its
+    # contents must depend only on DS source — no timestamps, no absolute paths.
     snapshot = {
         "version": "0.2.0",  # bumped: now includes per-export identifiers
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "workspace": str(WORKSPACE),
         "profiles": {
             "admin": {
                 "ds_name": "Exxat-DS",
@@ -240,7 +239,7 @@ def main() -> None:
         },
     }
 
-    out_path = WORKSPACE / "docs/foundations/ds-snapshot.json"
+    out_path = WORKSPACE / "docs" / "foundations" / "ds-snapshot.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(snapshot, indent=2))
 

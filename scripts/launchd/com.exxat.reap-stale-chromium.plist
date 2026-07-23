@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — reaps stale headless Chromium left behind by
+  visual-check / audit-server runs (the recurring CPU leak).
+
+  Install (one-time):
+    cp scripts/launchd/com.exxat.reap-stale-chromium.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.exxat.reap-stale-chromium.plist
+
+  Verify:
+    launchctl list | grep com.exxat.reap-stale-chromium
+
+  Unload (to stop):
+    launchctl unload ~/Library/LaunchAgents/com.exxat.reap-stale-chromium.plist
+
+  Logs:
+    tail -f /tmp/reap-stale-chromium.log
+
+  Cadence: every 2 minutes (StartInterval 120), plus once at load. Mechanisms
+  (see the script): EMERGENCY kills the audit-server spawner + ALL browsers when
+  a burst pileup (>= REAP_EMERGENCY_COUNT) appears; SPAWNER kills an audit-server
+  abandoned past REAP_SPAWNER_THRESHOLD_SECS; ROUTINE reaps individual browsers
+  older than REAP_THRESHOLD_SECS. An active short-lived run is never touched.
+  Tune any threshold via the EnvironmentVariables entry below.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.exxat.reap-stale-chromium</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/Users/romitsoley/Work/tools/visual-check/reap-stale-chromium.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/romitsoley/Work</string>
+
+    <key>StartInterval</key>
+    <integer>120</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/reap-stale-chromium.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/reap-stale-chromium.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>REAP_THRESHOLD_SECS</key>
+        <string>900</string>
+    </dict>
+</dict>
+</plist>

@@ -31,8 +31,8 @@ except ImportError:
     def _telemetry_emit(*a, **k): pass
 
 
-WORKSPACE = Path("/Users/romitsoley/Work")
-SNAPSHOT_PATH = WORKSPACE / "docs/foundations/ds-snapshot.json"
+WORKSPACE = Path(__file__).resolve().parents[2]
+SNAPSHOT_PATH = WORKSPACE / "docs" / "foundations" / "ds-snapshot.json"
 
 
 # Pattern-based rules: (rule_id, regex_pattern, message, file_path_pattern, blocking)
@@ -58,6 +58,13 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("DS-005", r"\btoast\s*\(|from\s+['\"]sonner['\"]",
      "toast()/Sonner banned in admin apps (DS-005). Use LocalBanner / SystemBanner.",
      r"/apps/[^/]+/admin/", True),
+    # DS-013 (visual fidelity) — display headings must use the DS serif display
+    # font (font-heading / ivypresto). Catches the generic-title antipattern:
+    # an h1/h2 at a large text size with no font-heading. sr-only headings have
+    # no display size, so they're exempt. See docs/governance/ds-visual-reference.md.
+    ("DS-013", r"<h[12]\b(?![^>]*font-heading)[^>]*\btext-(?:2xl|3xl|4xl|5xl|6xl|\[(?:2[4-9]|[3-9]\d)px\])",
+     "Display heading missing the DS display font (DS-013). Add `font-heading` (ivypresto serif) — page/detail titles + KPI numerals are serif, not sans-serif bold. See docs/governance/ds-visual-reference.md.",
+     r"/apps/", True),
     ("A11Y-004", r"<i\s+className\s*=\s*[\"']fa-[^\"']+[\"'](?![^>]*aria-hidden)",
      "FA icon missing aria-hidden=\"true\" (A11Y-004 / WCAG 1.3.1).",
      r"/apps/", True),
@@ -109,12 +116,11 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
      "`white` inside color-mix banned (DS-014). Use var(--background) so dark mode honors the theme.",
      r"/apps/", True),
 
-    # DS-015 (was ds-check R6) — DS Button without explicit variant prop.
-    # Regex: <Button followed by attributes that DON'T include variant=, terminating in >.
-    # Best-effort; may false-positive if variant is on a wrapping props spread. Warning-only.
+    # DS-015 — DS Button without explicit variant prop. BLOCK: the implicit default
+    # shifts visually across DS versions; always declare intent explicitly.
     ("DS-015", r"<Button(?![^>]*\bvariant\s*=)[^>]*>",
      "DS Button missing explicit variant prop (DS-015). Add variant=\"default|outline|secondary|ghost|destructive|link\" — never rely on the implicit default.",
-     r"/apps/", False),
+     r"/apps/", True),
 
     # DS-016 (was ds-check R12) — rounded wrapper around <Table> needs overflow-hidden.
     # Catches the most-common pattern: <div className="...rounded-{lg|xl|2xl}..."> with <Table inside.
@@ -129,6 +135,47 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("DS-017", r"\bstyle\s*=\s*\{\s*\{[^}]*\bcolor\s*:\s*['\"]\s*var\s*\(\s*--(?:foreground|muted-foreground|destructive|primary-foreground|brand-color|brand-color-dark)\s*\)['\"]",
      "DS-token color in inline style (DS-017). Prefer Tailwind class — `text-foreground`, `text-muted-foreground`, `text-destructive`, etc.",
      r"/apps/", False),
+
+    # ── New rules added 2026-06-02 ──────────────────────────────────────────
+
+    # DS-019 — color-mix(in oklch) in any form banned in TSX inline styles.
+    # DS-014 catches the 'white' sub-case; DS-019 covers the full pattern
+    # including color-mix(in oklch, var(--brand-color) 10%, var(--background)).
+    # Always use semantic token pairs: var(--brand-tint) bg + var(--brand-color) text
+    # for brand surfaces; var(--muted) bg + var(--muted-foreground) text for neutral;
+    # var(--destructive) with Tailwind /10 opacity for error surfaces.
+    ("DS-019", r"color-mix\s*\(\s*in\s+oklch",
+     "color-mix(in oklch) banned (DS-019). Use DS token pairs: var(--brand-tint) for brand bg, var(--muted) for neutral bg. Never compute tints at render time.",
+     r"/apps/", True),
+
+    # DS-020 — uppercase + tracking-wide/wider in className strings.
+    # Both classes together = banned anti-pattern (design-anti-patterns.md).
+    # Section/group labels: use text-xs font-medium text-muted-foreground instead.
+    ("DS-020", r"\buppercase\b[^\n\"'`]*\btracking-wider?\b",
+     "uppercase + tracking-wide banned (DS-020). Section labels: text-xs font-medium text-muted-foreground. See docs/governance/design-anti-patterns.md.",
+     r"/apps/", True),
+
+    # DS-023 — import from vendored data-table directory.
+    # The local copy is a migration target; all new imports must use the DS package.
+    ("DS-023", r"from\s+['\"](?:@/|\.\.?/)+components/data-table['\"]",
+     "Importing vendored data-table banned (DS-023). Use: import { DataTable } from '@exxatdesignux/ui'.",
+     r"/apps/", True),
+
+    # DS-024 — hand-rolled export sheet/drawer. DS provides ExportDrawer which
+    # covers format selector, column picker, and async progress natively.
+    # Catches: Sheet/Drawer/Dialog names containing export/download cues without
+    # an ExportDrawer import in the same content.
+    ("DS-024", r"(?:export|Export|download|Download)(?:Sheet|Drawer|Dialog|Panel)",
+     "Hand-rolled export sheet/drawer (DS-024). Use: import { ExportDrawer } from '@exxatdesignux/ui'. Covers format selector, column picker, async progress.",
+     r"/apps/", True),
+
+    # A11Y-007 (WCAG 2.1.1) — interactive <div> or <span> with onClick +
+    # cursor-pointer but no focus-visible ring. Keyboard users can't reach it.
+    # Preferred fix: replace with DS Button variant="ghost".
+    # Fallback: add tabIndex={0} role="button" onKeyDown={handler} focus-visible:ring-2 focus-visible:ring-ring.
+    ("A11Y-007", r"<(?:div|span)\b[^>]*\bonClick\b[^>]*\bcursor-pointer\b(?![^>]*focus-visible)[^>]*>",
+     "Clickable <div>/<span> missing focus-visible:ring (A11Y-007 / WCAG 2.1.1). Use DS <Button variant=\"ghost\"> or add: tabIndex={0} role=\"button\" onKeyDown focus-visible:ring-2 focus-visible:ring-ring.",
+     r"/apps/", True),
 ]
 
 
@@ -141,6 +188,77 @@ def get_content(tool_name: str, tool_input: dict) -> str:
         edits = tool_input.get("edits", [])
         return "\n".join(e.get("new_string", "") or "" for e in edits)
     return ""
+
+
+# ── Touch-gate surface: existing-file violation scan ────────────────────────
+# Patterns that correspond to WARN rules in ds-adoption-audit.py (migration
+# targets). When about to edit an existing file, these are surfaced as a
+# pre-task declaration so Romit is informed before changes land.
+#
+# Format: (rule_slug, compiled_regex, count_occurrences, human message)
+_TOUCH_WARN_PATTERNS: list[tuple[str, re.Pattern[str], bool, str]] = [
+    (
+        "color-mix",
+        re.compile(r"color-mix\s*\(\s*in\s+oklch", re.IGNORECASE),
+        True,
+        "color-mix(in oklch) → replace with var(--brand-tint) or DS token pair",
+    ),
+    (
+        "uppercase-tracking",
+        re.compile(r"\buppercase\b[^\n\"'`]*\btracking-wider?\b"),
+        True,
+        "uppercase + tracking-wide → use text-xs font-medium text-muted-foreground",
+    ),
+    (
+        "hand-rolled-export",
+        re.compile(r"(?:export|Export|download|Download)(?:Sheet|Drawer|Dialog)", re.IGNORECASE),
+        False,
+        "Hand-rolled export sheet/drawer → use ExportDrawer from @exxatdesignux/ui",
+    ),
+    (
+        "vendored-datatable",
+        re.compile(r"from\s+['\"](?:@/|\.\.?/)*components/data-table"),
+        False,
+        "Importing vendored data-table → migrate to DataTable from @exxatdesignux/ui",
+    ),
+    (
+        "datatable-missing-emptystate",
+        re.compile(r"<DataTable\b(?![^>]*emptyState)"),
+        True,
+        "<DataTable> missing emptyState prop → add emptyState={<EmptyState />}",
+    ),
+    (
+        "datatable-missing-toolbarslot",
+        re.compile(r"<DataTable\b(?![^>]*toolbarSlot)"),
+        True,
+        "<DataTable> missing toolbarSlot prop → required per component-consistency governance",
+    ),
+    (
+        "hand-rolled-status-badge",
+        re.compile(r"rounded[^\n\"'`]*text-xs[^\n\"'`]*(?:Active|Inactive|Draft|Published|Pending|Status)"),
+        False,
+        "Hand-rolled status badge → use StatusBadge from @exxatdesignux/ui",
+    ),
+]
+
+
+def scan_existing_file_for_touch_warns(file_path: str) -> list[tuple[str, str, int]]:
+    """Read current file from disk and return (rule, message, count) for each hit."""
+    p = Path(file_path)
+    if not p.exists():
+        return []
+    try:
+        text = p.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
+
+    results: list[tuple[str, str, int]] = []
+    for slug, pattern, do_count, msg in _TOUCH_WARN_PATTERNS:
+        matches = pattern.findall(text)
+        if matches:
+            count = len(matches) if do_count else 0
+            results.append((slug, msg, count))
+    return results
 
 
 def detect_profile(file_path: str) -> str | None:
@@ -171,6 +289,88 @@ def load_snapshot() -> dict | None:
         return _snapshot_cache
     except (json.JSONDecodeError, OSError):
         return None
+
+
+_component_truth_cache: dict | None = None
+
+
+def load_component_truth() -> dict:
+    """Load component_truth from `node tools/ds/source.mjs --list`.
+    Returns {} on any failure — callers treat empty dict as no-op.
+    """
+    global _component_truth_cache
+    if _component_truth_cache is not None:
+        return _component_truth_cache
+    try:
+        foundations = SNAPSHOT_PATH
+        if not foundations.exists():
+            _component_truth_cache = {}
+            return {}
+        _component_truth_cache = json.loads(foundations.read_text()).get("component_truth", {})
+    except (json.JSONDecodeError, OSError):
+        _component_truth_cache = {}
+    return _component_truth_cache
+
+
+def emit_component_gaps(content: str) -> list[tuple[str, str, bool]]:
+    """DS-CMP-001 — when DS components with known source-import gaps are used,
+    emit WARN with the specific gaps and browser verify checklist.
+
+    Non-blocking: this is a design-time reminder, not a gate. It fires on
+    any edit to a TSX file that imports DS components with documented gaps,
+    so the developer sees the requirements before writing component-dependent
+    code.
+    """
+    truth = load_component_truth()
+    if not truth:
+        return []
+
+    # Match both source-import and compiled-import paths
+    all_import_re = re.compile(
+        r"import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['\"]"
+        r"(?:@exxat/ds/packages/ui/src|@exxatdesignux/ui)"
+        r"['\"]"
+    )
+
+    imported: set[str] = set()
+    for m in all_import_re.finditer(content):
+        for raw in m.group(1).split(","):
+            name = raw.strip().split(" as ")[0].strip()
+            if name and not name.startswith("type "):
+                imported.add(name)
+
+    if not imported:
+        return []
+
+    warnings: list[tuple[str, str, bool]] = []
+    seen_gap_keys: set[str] = set()
+
+    for component in sorted(imported):
+        entry = truth.get(component, {})
+        gaps = [g for g in entry.get("source_import_gaps", []) if g and "See " not in g]
+        checks = entry.get("verify_in_browser", [])
+        variants = entry.get("data_variants_required", [])
+
+        if not gaps and not variants:
+            continue  # Component has no known gaps — skip silently
+
+        parts: list[str] = [f"<{component}> has documented DS environment requirements:"]
+        if variants:
+            parts.append(f"  @custom-variant needed: {', '.join(variants)}")
+        for gap in gaps:
+            key = gap[:60]
+            if key not in seen_gap_keys:
+                seen_gap_keys.add(key)
+                parts.append(f"  ⚠ {gap}")
+        if checks:
+            checks_short = checks[:2]
+            parts.append(f"  Verify in browser: {' | '.join(checks_short)}")
+            if len(checks) > 2:
+                parts.append(f"    (+{len(checks)-2} more — see `node tools/ds/source.mjs --list`)")
+
+        warnings.append(("DS-CMP-001", "\n  ".join(parts), False))
+
+    return warnings
 
 
 def check_ds_imports(content: str, profile: str) -> list[tuple[str, str]]:
@@ -299,10 +499,58 @@ def main() -> None:
 
     if not file_path or "/apps/" not in file_path:
         sys.exit(0)
+
+    # ── CSS gate: validate globals.css / index.css for @custom-variant sentinel ──
+    # Runs BEFORE the tsx/ts early-exit so CSS files are not silently skipped.
+    if file_path.endswith(".css"):
+        if any(s in file_path for s in ("globals.css", "index.css")):
+            new_css = (
+                tool_input.get("new_string", "")
+                or tool_input.get("content", "")
+                or ""
+            )
+            if new_css and len(new_css) > 150 and "@custom-variant" not in new_css:
+                print(
+                    "[Design Intelligence Harness — PreToolUse CSS Gate]\n"
+                    f"  File: {file_path}\n\n"
+                    "  [WARN] DS-CSS-001: This CSS entry point is missing the @custom-variant block.\n"
+                    "  DS components silently break in browser — TypeScript passes, CSS never fires:\n"
+                    "    • Tabs variant=line: active underline invisible\n"
+                    "    • Dialog/Sheet: open/close is a hard cut (no animation)\n"
+                    "    • Select/DropdownMenu: dropdown snaps open (no zoom animation)\n"
+                    "    • Checkbox: checked/unchecked states may not render\n"
+                    "    • Sidebar: data-active='false' items get active styling\n\n"
+                    "  Apply the canonical 9-variant block from:\n"
+                    "  docs/governance/ds-product-compatibility.md",
+                    file=sys.stderr,
+                )
+        sys.exit(0)  # never run tsx rules on CSS files
+
     if not file_path.endswith((".tsx", ".ts")):
         sys.exit(0)
     if any(skip in file_path for skip in ["/node_modules/", ".test.", ".spec.", "/.next/", "/dist/"]):
         sys.exit(0)
+
+    # ── Pre-task declaration: surface existing violations in the target file ──
+    # Non-blocking. Shows Romit what migration debt the file already carries
+    # before any new content is written. The touch-gate in pre-commit will
+    # BLOCK the commit if these violations are still present after the edit.
+    existing_warns = scan_existing_file_for_touch_warns(file_path)
+    if existing_warns:
+        lines = [
+            "",
+            "╔══ PRE-TASK DECLARATION ════════════════════════════════════════════╗",
+            f"║  Existing DS violations in {Path(file_path).name}",
+            "║  Fix these in this edit — the touch-gate will block the commit if",
+            "║  they remain when you stage the file.",
+            "╠════════════════════════════════════════════════════════════════════╣",
+        ]
+        for slug, msg, count in existing_warns:
+            count_str = f" ×{count}" if count > 0 else ""
+            lines.append(f"║  [{slug}]{count_str}  {msg}")
+        lines.append("╚════════════════════════════════════════════════════════════════════╝")
+        lines.append("")
+        print("\n".join(lines), file=sys.stderr)
 
     content = get_content(tool_name, tool_input)
     if not content:
@@ -320,6 +568,47 @@ def main() -> None:
         except re.error:
             continue
 
+    # ── Structural checks (require two-pass logic, not pure regex) ──────────
+
+    # DS-021 — DataTable missing emptyState prop (write-time enforcement).
+    # Already BLOCK in ds-adoption-audit; enforced here so the violation is
+    # caught before it reaches the commit.
+    if re.search(r"<DataTable\b", content) and "/apps/" in file_path:
+        if not re.search(r"\bemptyState\b", content):
+            violations.append((
+                "DS-021",
+                "<DataTable> missing emptyState prop (DS-021). "
+                "Add emptyState={<EmptyState title=\"No results\" />} — "
+                "every list page must handle the zero-data state.",
+                True,
+            ))
+        # DS-022 — DataTable missing toolbarSlot prop.
+        if not re.search(r"\btoolbarSlot\b", content):
+            violations.append((
+                "DS-022",
+                "<DataTable> missing toolbarSlot prop (DS-022). "
+                "Required per component-consistency governance "
+                "(docs/governance/component-consistency.md). "
+                "Pass toolbarSlot={<YourToolbar />} or toolbarSlot={null} to opt out explicitly.",
+                True,
+            ))
+
+    # DS-026 — opacity-60/50/40 on element whose content includes
+    # text-muted-foreground descendants. Combined contrast fails WCAG 1.4.3.
+    # Two-stage: find opacity hit, then look ahead 600 chars for muted text.
+    if "/apps/" in file_path:
+        for m in re.finditer(r'className\s*=\s*["\'][^"\']*\bopacity-(?:40|50|60)\b', content):
+            window = content[m.start(): m.start() + 600]
+            if re.search(r"\btext-muted-foreground\b", window):
+                violations.append((
+                    "DS-026",
+                    "opacity-40/50/60 on a text-muted-foreground parent fails WCAG 1.4.3 (DS-026). "
+                    "The combined contrast drops below 4.5:1. "
+                    "Use a lower-opacity text token instead of wrapping the element.",
+                    True,
+                ))
+                break
+
     # DS profile-based rules (DS-010 + DS-007)
     profile = detect_profile(file_path)
     if profile:
@@ -327,6 +616,12 @@ def main() -> None:
             violations.append((rule_id, message, True))  # DS-010 always blocks
         for rule_id, message in check_ds_007(content, profile):
             violations.append((rule_id, message, True))  # DS-007 always blocks
+
+    # DS-CMP-001: component-specific gap enrichment (non-blocking)
+    # Emits source_import_gaps + verify_in_browser from the enriched snapshot
+    # whenever a file imports DS components with known environment requirements.
+    for rule_id, message, blocking in emit_component_gaps(content):
+        violations.append((rule_id, message, blocking))
 
     if not violations:
         _telemetry_emit(

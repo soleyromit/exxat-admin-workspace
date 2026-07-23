@@ -2,7 +2,7 @@
 
 > Defines the JSON schema for `docs/exports/v<version>/`. Other agents (MagicPatterns, Pencil.dev, custom tooling) consume the bundle to enforce the same DS rules and use the same patterns.
 >
-> Generator: `scripts/export-design-spec.py`. Source of truth: workspace `/DESIGN.md`, `docs/triggers.md`, `docs/patterns/`, `apps/<product>/`, `docs/foundations/ds-snapshot.json`.
+> Generator: `scripts/export-design-spec.py`. Source of truth: workspace `/DESIGN.md`, `docs/triggers.md`, `docs/patterns/`, `apps/<product>/`, `node tools/ds/source.mjs --list`.
 
 ---
 
@@ -126,7 +126,7 @@ Per-product overview.
 
 ### `ds-snapshot.json`
 
-Copy of `docs/foundations/ds-snapshot.json`. See that file's structure — it's the DS surface map (admin profile + student profile, with components, hooks, exports, primitives, shared, tokens).
+Copy of `node tools/ds/source.mjs --list`. See that file's structure — it's the DS surface map (admin profile + student profile, with components, hooks, exports, primitives, shared, tokens).
 
 ---
 

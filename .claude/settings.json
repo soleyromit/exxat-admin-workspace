@@ -1,6 +1,37 @@
 {
+  "model": "claude-opus-4-8",
+  "attribution": {
+    "sessionUrl": false
+  },
   "permissions": {
     "allow": [
+      "Agent(compliance-reviewer)",
+      "Agent(verification-reviewer)",
+      "Agent(visual-review)",
+      "Agent(state-review)",
+      "Agent(ds-conformance-reviewer)",
+      "Agent(ds-adoption-reviewer)",
+      "Agent(Explore)",
+      "Agent(model:claude-opus-4-8)",
+      "Agent(model:claude-sonnet-4-6)",
+      "Agent(model:claude-sonnet-5*)",
+      "Task(compliance-reviewer)",
+      "Task(verification-reviewer)",
+      "Task(visual-review)",
+      "Task(state-review)",
+      "Task(ds-conformance-reviewer)",
+      "Task(ds-adoption-reviewer)",
+      "Task(Explore)",
+      "Bash(pnpm typecheck *)",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(BASE_URL=http://localhost:3001 node tools/visual-check/*)",
+      "mcp__mobbin__search_screens",
+      "mcp__mobbin__search_flows",
+      "mcp__claude_ai_Granola__get_meeting_transcript",
+      "mcp__claude_ai_Granola__query_granola_meetings",
+      "mcp__claude_ai_Granola__get_meetings",
+      "mcp__claude_ai_Granola__list_meetings",
+      "mcp__claude_ai_Granola__list_meeting_folders",
       "Bash(ls /Users/romitsoley/Work/*.md)",
       "Bash(gh api *)",
       "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(item['path']\\) for item in data.get\\('tree',[]\\) if not item['path'].startswith\\('.'\\) and item['type']=='blob']\")",
@@ -12,8 +43,8 @@
       "Bash(git commit *)",
       "Read(//Users/romitsoley/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/subagent-driven-development/**)",
       "Bash(git branch *)",
-      "Bash(git -c credential.helper='!gh auth git-credential' submodule add -b main https://github.com/ExxatDesign/Exxat-DS.git exxat-ds)",
-      "Bash(GIT_ASKPASS=\"\" git -c credential.helper='!gh auth git-credential' submodule add -b main https://github.com/ExxatDesign/Exxat-DS-Workspace.git exxat-ds)",
+      "Bash(git -c credential.helper='!gh auth git-credential' submodule add -b main https://github.com/ExxatDesign/Exxat-DS.git @exxatdesignux-ui-legacy)",
+      "Bash(GIT_ASKPASS=\"\" git -c credential.helper='!gh auth git-credential' submodule add -b main https://github.com/ExxatDesign/Exxat-DS-Workspace.git @exxatdesignux-ui-workspace-legacy)",
       "Bash(git -c credential.helper='!gh auth git-credential' submodule add https://github.com/ExxatDesign/studentUX.git studentUX)",
       "Bash(git submodule *)",
       "Bash(git -C /Users/romitsoley/Work submodule status)",
@@ -58,11 +89,24 @@
       "WebFetch(domain:localhost)",
       "Bash(find apps/exam-management -name \"*.tsx\" -exec grep -l \"brand-foreground\" {} \\\\;)",
       "Bash(\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)",
-      "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)"
+      "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)",
+      "Bash(curl -s *)",
+      "Bash(curl -sI *)",
+      "Bash(node /Users/romitsoley/Work/tools/ds/source.mjs *)"
     ],
+    "deny": [
+      "Agent(model:claude-haiku*)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean -fd *)",
+      "Bash(git stash drop *)",
+      "Bash(git commit --amend *)"
+    ],
+    "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "/Users/romitsoley/Work/apps/exam-management/admin/app/(app)/questions",
-      "/Users/romitsoley/Work/apps/exam-management/student/app/exam/[id]"
+      "/Users/romitsoley/Work/apps/exam-management/student/app/exam/[id]",
+      "/Users/romitsoley/Documents/research-repos"
     ]
   },
   "hooks": {
@@ -99,6 +143,24 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-edit-checks.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/exxat-brief-gate.mjs"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -112,9 +174,21 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-checks.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "FileChanged": [
       {
-        "matcher": "DESIGN.md|CLAUDE.md|docs/CLAUDE-DS-REFERENCE.md|docs/PRODUCTS.md|docs/ANALOGIES.md|docs/RESEARCH-SIGNALS.md|docs/COMPETITOR-INTEL.md|docs/SUBAGENTS.md|docs/triggers.md|docs/governance/claude-practices.md",
+        "matcher": "DESIGN.md|CLAUDE.md|docs/CLAUDE-DS-REFERENCE.md|docs/PRODUCTS.md|docs/ANALOGIES.md|docs/RESEARCH-SIGNALS.md|docs/COMPETITOR-INTEL.md|docs/SUBAGENTS.md|docs/triggers.md|docs/governance/claude-practices.md|apps/*/app/globals.css|apps/*/src/index.css|shared/ds-tailwind-variants.css",
         "hooks": [
           {
             "type": "command",
@@ -131,6 +205,35 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-stop.py",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ds-claim-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/vault-citation-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/vault-capture-reminder.py",
+            "timeout": 10
           }
         ]
       }

@@ -1,6 +1,6 @@
 # Workspace Build Status
 > Single source of truth for session continuity. Update after each significant build session.
-> Last updated: 2026-06-26
+> Last updated: 2026-05-19
 
 ---
 
@@ -64,14 +64,12 @@ vercel deploy --prebuilt --prod --yes
 | Create and Manage Question Bank | 🟢 Shipped |
 | My Questions & All Questions | 🟢 Shipped |
 | Assessment Creation | 🟡 In Progress |
-| In Assessment Experience (Student) | 🟢 Shipped |
+| In Assessment Experience (Student) | 🟡 In Progress |
 | Course Offering Perspective | 🟡 In Progress |
 | Question Creation (Manual & AI) | 🟡 In Progress |
 | Question Tagging / Import | 🟡 In Progress |
 | Assessment Distribution | 🟡 In Progress |
 | Dashboard | 🟡 In Progress |
-| Setup — Logo, LMS integration, RBAC, Import Courses | 🟡 In Progress |
-| Base entities — Faculty, Students | 🟡 In Progress |
 
 **What's built (Question Bank):**
 - Full QB view: folder tree sidebar + question table + filter sheet

@@ -159,7 +159,7 @@ packages:
 |---|---|
 | `/DESIGN.md` | Canonical scholastic spec (43 rules, 7 categories) — read first for any UI work |
 | `docs/BASE-ENTITIES.md` | Cross-product entity spec — Student, Faculty, Course Offering, Term, Master Course |
-| `docs/CLAUDE-DS-REFERENCE.md` | DS tokens, component APIs, theme system |
+| `node tools/ds/source.mjs` (+ globals.css) | DS tokens, component APIs, theme system |
 | `docs/PRODUCTS.md` | Workspace product registry |
 | `docs/ANALOGIES.md` | Pattern catalog (Mobbin / competitor refs) |
 | `docs/RESEARCH-SIGNALS.md` | Cross-product signals (3+ product threshold) |

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — rebuilds the vault's _Insights.md index weekly.
+
+  Install (one-time):
+    cp scripts/launchd/com.exxat.build-insights.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.exxat.build-insights.plist
+
+  Verify:
+    launchctl list | grep com.exxat.build-insights
+
+  Unload (to stop):
+    launchctl unload ~/Library/LaunchAgents/com.exxat.build-insights.plist
+
+  Logs:
+    tail -f /tmp/build-insights.log
+
+  Cadence: every Monday at 8:47am local time. Offset from the other watchers
+  (claude-updates 8:17, ds-updates) so the scheduled jobs don't collide.
+  Off-the-hour minute by design. If the machine is asleep at the scheduled
+  time, launchd runs the job on next wake.
+
+  What it does: reads .curation/*.jsonl in the vault, re-injects the curated
+  frontmatter keys into each note, and regenerates _Insights.md. It does NOT
+  touch _Home.md or CLAUDE.md. Fully offline — no network, no Claude API calls,
+  no costs.
+
+  PATH/HOME/PYENV_ROOT point at the pyenv shims (3.10.6) so the scheduled run
+  uses the same interpreter as the interactive one (mirrors the DEFECT-B env fix
+  applied to com.exxat.claude-updates.plist). No SSL_CERT_FILE needed — the
+  script makes no HTTPS requests.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.exxat.build-insights</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>/Users/romitsoley/Work/scripts/build-insights.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/romitsoley/Work</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>47</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/build-insights.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/build-insights.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/romitsoley/.pyenv/shims:/Users/romitsoley/.pyenv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/romitsoley</string>
+        <key>PYENV_ROOT</key>
+        <string>/Users/romitsoley/.pyenv</string>
+    </dict>
+</dict>
+</plist>

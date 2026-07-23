@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — runs the DS updates watcher weekly.
+
+  Polls the @exxatdesignux/ui npm package (installed-vs-latest gap) AND the two
+  DS submodules (component exports + theme tokens). Writes any delta to
+  docs/governance/ds-updates/pending-review.md, which the SessionStart hook
+  surfaces as a "🎨 DS-UPDATE AUTO-INVOKE" nag on the next Claude session.
+
+  Install (one-time):
+    cp scripts/launchd/com.exxat.ds-updates.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.exxat.ds-updates.plist
+
+  Verify:
+    launchctl list | grep com.exxat.ds-updates
+
+  Unload (to stop):
+    launchctl unload ~/Library/LaunchAgents/com.exxat.ds-updates.plist
+
+  Logs:
+    tail -f /tmp/ds-update-watch.log
+
+  Cadence: every Monday at 8:23am local time — 6 min after the claude-updates
+  watcher (8:17) so they don't contend. Off-the-hour minute by design. If the
+  machine is asleep at the scheduled time, launchd runs the job on next wake.
+
+  FULLY OFFLINE relative to Claude — it only runs `npm view` + reads local
+  files. No Claude API calls, no costs. The intelligence layer (mapping the
+  gap to an upgrade plan) runs in-session when Romit invokes /check-ds-updates.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.exxat.ds-updates</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>/Users/romitsoley/Work/scripts/ds-update-watch.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/romitsoley/Work</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>23</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/ds-update-watch.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/ds-update-watch.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
