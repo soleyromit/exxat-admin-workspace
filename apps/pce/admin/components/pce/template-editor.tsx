@@ -77,13 +77,6 @@ const SURVEY_TYPE_OPTIONS: { value: SurveyPurpose; label: string; description: s
 
 // Editor wizard steps — configure first, then build, then review before publishing.
 type WizardStepKey = 'builder' | 'settings' | 'review'
-// Starter sections per aspect — an empty Course/General stop seeds these as
-// standard empty section cards (Jul 23; faculty seeds one Untitled Section).
-const STARTER_SECTION_TITLES: Record<string, string[]> = {
-  course_content: ['Course Content & Organization', 'Workload & Expectations', 'Learning Resources & Materials'],
-  general:        ['Program Experience', 'Learning Environment', 'Overall Satisfaction'],
-}
-
 const WIZARD_STEPS: { n: number; key: WizardStepKey; label: string }[] = [
   { n: 1, key: 'settings', label: 'Template settings' },
   { n: 2, key: 'builder',  label: 'Builder' },
@@ -470,30 +463,29 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // (open while a faculty stop is active or a role set has no roles yet);
   // true/false = the chevron's explicit choice.
   const [facultyManual, setFacultyManual] = useState<boolean | null>(null)
-  // Empty stops open straight into standard empty section cards (Jul 23) —
-  // no decision gate. Course/General seed their aspect's starter sections;
-  // a faculty role set with roles picked seeds one "Untitled Section".
+  // Empty stops open straight into the standard empty section card (Jul 23) —
+  // no decision gate, no pre-written titles: a new template's sections are
+  // the admin's to name. Course/General seed one "Untitled Section"; a
+  // faculty role set does the same once roles are picked.
   useEffect(() => {
     if (variant !== 'tabs' && variant !== 'guided') return
     if (!template) return
     const allSections = template.templateSections ?? []
+    let subjectKey: string | null = null
+    let roleSetId: string | undefined
     if (activeStop.startsWith('stop-')) {
-      const rsId = activeStop.slice('stop-'.length)
-      const set = (template.facultyRoleSets ?? []).find(rs => rs.id === rsId)
+      roleSetId = activeStop.slice('stop-'.length)
+      const set = (template.facultyRoleSets ?? []).find(rs => rs.id === roleSetId)
       if (!set || set.roles.length === 0) return
-      const has = allSections.some(s => s.subjectKey === 'faculty' && s.roleSetId === rsId)
-      if (!has) {
-        addTemplateSection(template.id, { subjectKey: 'faculty', title: 'Untitled Section', questions: [], roleSetId: rsId }, `sec-${Date.now()}`)
-      }
-      return
+      subjectKey = 'faculty'
+    } else {
+      subjectKey = activeStop === 'course' ? 'course_content' : activeStop === 'general' ? 'general' : null
     }
-    const subjectKey = activeStop === 'course' ? 'course_content' : activeStop === 'general' ? 'general' : null
     if (!subjectKey) return
-    if (allSections.some(s => s.subjectKey === subjectKey)) return
-    const now = Date.now()
-    ;(STARTER_SECTION_TITLES[subjectKey] ?? []).forEach((title, i) => {
-      addTemplateSection(template.id, { subjectKey, title, questions: [] }, `sec-${now}-${i}`)
-    })
+    const has = allSections.some(s => s.subjectKey === subjectKey && (subjectKey !== 'faculty' || s.roleSetId === roleSetId))
+    if (!has) {
+      addTemplateSection(template.id, { subjectKey, title: 'Untitled Section', questions: [], roleSetId }, `sec-${Date.now()}`)
+    }
   }, [variant, template, activeStop, addTemplateSection])
   // Document variant — scrollspy for the sticky aspect chip bar.
   const [docAspect, setDocAspect] = useState('course_content')
