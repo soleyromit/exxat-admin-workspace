@@ -157,6 +157,14 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # pce: throwaway design-compare surfaces (Jul 22, push-step decision for
+    # Monil) — each renders the SAME rows under competing cell/row treatments.
+    # They are comparison exhibits, not entity hubs: ListPageTemplate's
+    # toolbar/view chrome would obscure the one variable under comparison.
+    # Delete these entries with the pages once the design is signed off.
+    "app/(app)/compare/push-flow-rows/page.tsx",
+    "app/(app)/compare/push-course-ledger/page.tsx",
+    "app/(app)/compare/fix-affordance/page.tsx",
     # pce: faculty + course analytics profiles — detail pages for a single entity; the DataTable
     # renders a sub-list (offerings) not the primary entity list. ListPageTemplate is for
     # top-level entity list pages, not sub-tables within a profile view.

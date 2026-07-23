@@ -35,6 +35,9 @@ const PAGE_ROUTES = [
   { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
   { id: "page-email-templates",   label: "Email Templates",                      href: "/admin/email-templates",     icon: "fa-light fa-envelope" },
   { id: "page-reminder-schedule", label: "Reminder Schedule",                    href: "/admin/reminder-schedule",   icon: "fa-light fa-bell" },
+  { id: "page-compare-push-flow-rows", label: "Compare — Push flow rows (Variant B)", keywords: "variant compare per-flow evaluatee monil", href: "/compare/push-flow-rows", icon: "fa-light fa-table-list" },
+  { id: "page-compare-push-course-ledger", label: "Compare — Course flow ledger (Variant C)", keywords: "variant compare ledger course flows monil", href: "/compare/push-course-ledger", icon: "fa-light fa-table-list" },
+  { id: "page-compare-fix-affordance", label: "Compare — Fix affordance (3 treatments)", keywords: "variant compare add faculty students action density", href: "/compare/fix-affordance", icon: "fa-light fa-table-list" },
   { id: "page-settings",          label: "Settings",                             href: "/settings",                  icon: "fa-light fa-gear" },
   { id: "page-help",              label: "Help",                                 href: "/help",                      icon: "fa-light fa-circle-question" },
 ]
