@@ -77,6 +77,13 @@ const SURVEY_TYPE_OPTIONS: { value: SurveyPurpose; label: string; description: s
 
 // Editor wizard steps — configure first, then build, then review before publishing.
 type WizardStepKey = 'builder' | 'settings' | 'review'
+// Starter sections per aspect — an empty Course/General stop seeds these as
+// standard empty section cards (Jul 23; faculty seeds one Untitled Section).
+const STARTER_SECTION_TITLES: Record<string, string[]> = {
+  course_content: ['Course Content & Organization', 'Workload & Expectations', 'Learning Resources & Materials'],
+  general:        ['Program Experience', 'Learning Environment', 'Overall Satisfaction'],
+}
+
 const WIZARD_STEPS: { n: number; key: WizardStepKey; label: string }[] = [
   { n: 1, key: 'settings', label: 'Template settings' },
   { n: 2, key: 'builder',  label: 'Builder' },
@@ -463,19 +470,30 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // (open while a faculty stop is active or a role set has no roles yet);
   // true/false = the chevron's explicit choice.
   const [facultyManual, setFacultyManual] = useState<boolean | null>(null)
-  // Faculty stops skip the starter-sections gate (Jul 23): a role set with
-  // roles picked but no sections gets a plain "Untitled Section" seeded so
-  // the stage opens straight into the standard empty section card.
+  // Empty stops open straight into standard empty section cards (Jul 23) —
+  // no decision gate. Course/General seed their aspect's starter sections;
+  // a faculty role set with roles picked seeds one "Untitled Section".
   useEffect(() => {
     if (variant !== 'tabs' && variant !== 'guided') return
-    if (!template || !activeStop.startsWith('stop-')) return
-    const rsId = activeStop.slice('stop-'.length)
-    const set = (template.facultyRoleSets ?? []).find(rs => rs.id === rsId)
-    if (!set || set.roles.length === 0) return
-    const has = (template.templateSections ?? []).some(s => s.subjectKey === 'faculty' && s.roleSetId === rsId)
-    if (!has) {
-      addTemplateSection(template.id, { subjectKey: 'faculty', title: 'Untitled Section', questions: [], roleSetId: rsId }, `sec-${Date.now()}`)
+    if (!template) return
+    const allSections = template.templateSections ?? []
+    if (activeStop.startsWith('stop-')) {
+      const rsId = activeStop.slice('stop-'.length)
+      const set = (template.facultyRoleSets ?? []).find(rs => rs.id === rsId)
+      if (!set || set.roles.length === 0) return
+      const has = allSections.some(s => s.subjectKey === 'faculty' && s.roleSetId === rsId)
+      if (!has) {
+        addTemplateSection(template.id, { subjectKey: 'faculty', title: 'Untitled Section', questions: [], roleSetId: rsId }, `sec-${Date.now()}`)
+      }
+      return
     }
+    const subjectKey = activeStop === 'course' ? 'course_content' : activeStop === 'general' ? 'general' : null
+    if (!subjectKey) return
+    if (allSections.some(s => s.subjectKey === subjectKey)) return
+    const now = Date.now()
+    ;(STARTER_SECTION_TITLES[subjectKey] ?? []).forEach((title, i) => {
+      addTemplateSection(template.id, { subjectKey, title, questions: [] }, `sec-${now}-${i}`)
+    })
   }, [variant, template, activeStop, addTemplateSection])
   // Document variant — scrollspy for the sticky aspect chip bar.
   const [docAspect, setDocAspect] = useState('course_content')
@@ -575,13 +593,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const aspectCounts = (key: string) => {
     const secs = sections.filter(s => s.subjectKey === key)
     return { sections: secs.length, questions: secs.reduce((n, s) => n + s.questions.length, 0) }
-  }
-  // Starter sections per aspect — an empty stop offers these as one-click
-  // seeds to begin working in (Jul 23: replaces the upload-vs-build gate).
-  const STARTER_SECTIONS: Record<string, string[]> = {
-    course_content: ['Course Content & Organization', 'Workload & Expectations', 'Learning Resources & Materials'],
-    faculty:        ['Teaching Effectiveness', 'Communication & Clarity', 'Availability & Support'],
-    general:        ['Program Experience', 'Learning Environment', 'Overall Satisfaction'],
   }
 
   const selectedSec = selectedQuestion ? sections.find(s => s.id === selectedQuestion.sectionId) : null
@@ -1123,57 +1134,24 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
-  // Empty stop (tabs/guided variants) — starter sections the admin can begin
-  // working in right away (Jul 23: replaces the upload-vs-build decision
-  // gate), with document generation as the secondary path below.
-  function handleAddStarterSection(stop: { subjectKey: string; roleSetId?: string }, title: string) {
-    const newId = `sec-${Date.now()}`
-    addTemplateSection(t.id, { subjectKey: stop.subjectKey, title, questions: [], roleSetId: stop.roleSetId }, newId)
-    setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
-  }
-  function renderStopGate(stop: { subjectKey: string; roleSetId?: string }) {
-    const starters = STARTER_SECTIONS[stop.subjectKey] ?? []
+  // Generate-from-document strip (tabs/guided) — shown under the section list
+  // while a stop is untouched (0 questions), then quietly disappears.
+  function renderGenerateStrip(stop: { subjectKey: string; roleSetId?: string }) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">Start with a section — pick one and add questions, or begin from a blank one.</p>
-          {starters.map(title => (
-            <Button
-              key={title}
-              variant="outline"
-              size="sm"
-              className="justify-start"
-              onClick={() => handleAddStarterSection(stop, title)}
-            >
-              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-              {title}
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            className="justify-start text-muted-foreground font-normal"
-            onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}
-          >
-            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-            Blank section
-          </Button>
+      <div className="flex items-center gap-3 rounded-lg border border-dashed border-border" style={{ padding: '10px 14px' }}>
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="text-sm font-medium">Have a document?</span>
+          <span className="text-xs text-muted-foreground">Generate sections and questions from it — edit them after.</span>
         </div>
-        <div className="flex items-center gap-3 rounded-lg border border-dashed border-border" style={{ padding: '10px 14px' }}>
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-medium">Have a document?</span>
-            <span className="text-xs text-muted-foreground">Generate sections and questions from it — edit them after.</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-            onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}
-          >
-            <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-            Generate
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}
+        >
+          <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+          Generate
+        </Button>
       </div>
     )
   }
@@ -1194,10 +1172,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             Choose who this evaluation covers — pick at least one role above to start adding questions.
           </p>
         ) : secs.length === 0 ? (
-          /* Starter gate is Course/General-only — a roled faculty stop gets an
-             "Untitled Section" seeded by the effect above, so this branch only
-             flashes for one render on the faculty path. */
-          stop.subjectKey === 'faculty' ? null : renderStopGate(stop)
+          /* One-render flash only — the seeding effect above creates the
+             aspect's starter sections (or faculty's Untitled Section). */
+          null
         ) : (
           <>
             {secs.map(sec => renderSectionCard(sec))}
@@ -1209,6 +1186,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               <i className="fa-light fa-plus text-xs" aria-hidden="true" />
               Add section
             </Button>
+            {stopQuestionCount(stop) === 0 && renderGenerateStrip(stop)}
           </>
         )}
       </div>
