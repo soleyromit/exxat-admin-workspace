@@ -2194,12 +2194,12 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
               </div>
             </div>
           ) : variant === 'guided' ? (
-            /* Guided variant — the template's evaluations in a left checklist
-               rail (Mercury onboarding pattern). Variant D (Jul 23): Course /
-               Faculty / General are symmetric peer rows; Faculty also
-               discloses its role sets via a chevron, auto-expanding while one
-               is active or missing roles. Status marks only: check = has
-               questions; the empty ring alone means not started (no text). */
+            /* Guided variant — vertical tabs over the template's evaluations.
+               Jul 23 "quiet tabs" pass: rows are plain names with a left
+               active bar (the vertical form of the DS line-tabs underline);
+               progress is a trailing ✓+count; amber appears only for a role
+               set the admin created and left role-less. Adding a role set
+               lives on the Faculty stage, never inside the tab list. */
             <div className="flex flex-row flex-1 min-h-0">
               <nav
                 aria-label="Evaluations in this template"
@@ -2210,27 +2210,20 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const facultyStops = builderStops.filter(s => s.subjectKey === 'faculty')
                   const anyRolesPending = facultyRoleSets.some(rs => rs.roles.length === 0)
                   const facultyExpanded = facultyManual ?? (curStop.subjectKey === 'faculty' || anyRolesPending)
-                  // "No roles yet" is a gap needing attention (amber), not a
-                  // not-started evaluation — one signal per gap. Ring stroke =
-                  // muted-foreground for ≥3:1 non-text contrast (A11Y-017).
-                  // Checklist completion mark (check / ring glyph), not a status chip —
-                  // DS StatusBadge (labeled pill/dot) was considered and doesn't apply
-                  // to an unlabeled 16px nav-row glyph.
-                  const completionMark = (done: boolean, amber?: boolean) => (
-                    <span className="shrink-0 flex items-center justify-center" style={{ width: 16, height: 16 }}>
-                      {done ? (
-                        <i className="fa-solid fa-check text-xs" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
-                      ) : (
-                        <span className="rounded-full" style={{ width: 8, height: 8, border: `1.5px solid ${amber ? 'var(--chip-4)' : 'var(--muted-foreground)'}` }} aria-hidden="true" />
-                      )}
-                    </span>
+                  // Left active bar — neutral foreground (brand stays on CTAs).
+                  const activeBar = (on: boolean) => (
+                    <span aria-hidden="true" className="rounded-full" style={{
+                      position: 'absolute', left: 0, top: 7, bottom: 7, width: 2.5,
+                      background: on ? 'var(--foreground)' : 'transparent',
+                    }} />
                   )
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, indent?: boolean) => {
+                  const doneMeta = (stop: typeof builderStops[number]) => stopQuestionCount(stop) > 0 ? (
+                    <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: 'var(--brand-color)' }}>
+                      <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
+                    </span>
+                  ) : null
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { indent?: boolean; amber?: boolean }) => {
                     const cur = stop.key === curStop.key
-                    const done = stopQuestionCount(stop) > 0
-                    const railSet = stop.subjectKey === 'faculty' ? facultyRoleSets.find(rs => rs.id === stop.roleSetId) : undefined
-                    const rolesPending = railSet ? railSet.roles.length === 0 : false
-                    const sub = rolesPending ? 'no roles yet' : done ? `${stopQuestionCount(stop)} question${stopQuestionCount(stop) !== 1 ? 's' : ''}` : null
                     return (
                       <Button
                         key={stop.key}
@@ -2238,28 +2231,25 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         size="sm"
                         onClick={() => setActiveStop(stop.key)}
                         aria-current={cur ? 'step' : undefined}
-                        className="h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60"
+                        className={`relative h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${cur ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
                         style={{
                           background: cur ? 'var(--muted)' : 'transparent',
-                          marginLeft: indent ? 14 : 0,
+                          marginLeft: opts?.indent ? 14 : 0,
                         }}
                       >
-                        <span className="flex items-center gap-2.5 w-full">
-                          {completionMark(done, rolesPending)}
-                          <span className="flex flex-col items-start min-w-0">
-                            <span className={`text-sm truncate ${cur ? 'font-semibold' : 'font-medium'}`}>{label}</span>
-                            {sub && (
-                              <span className="text-xs tabular-nums" style={{ color: rolesPending ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>{sub}</span>
-                            )}
-                          </span>
+                        {activeBar(cur)}
+                        <span className="flex items-center gap-2 w-full min-w-0">
+                          <span className="text-sm truncate" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
+                          {doneMeta(stop)}
                         </span>
                       </Button>
                     )
                   }
                   // Rail labels stay compact — the stage's Evaluating chips own
-                  // the full role enumeration.
+                  // the full role enumeration. A role-less set is labeled by
+                  // its one outstanding to-do rather than a placeholder noun.
                   const shortRoleLabel = (set: PceTemplateRoleSet) =>
-                    set.roles.length === 0 ? 'New evaluation'
+                    set.roles.length === 0 ? 'Choose roles…'
                       : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
                       : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
                   const courseStop = builderStops.find(s => s.key === 'course')!
@@ -2271,9 +2261,9 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     <>
                       {renderRailItem(courseStop, 'Course')}
                       {/* Faculty peer row — the main button enters the aspect
-                          (first role set); the chevron only toggles the group.
-                          aria-current surfaces a hidden active child when the
-                          group is folded. */}
+                          (first role set, creating one if none exist); the
+                          chevron only toggles the group. aria-current surfaces
+                          a hidden active child when the group is folded. */}
                       <div className="flex items-center">
                         <Button
                           variant="ghost"
@@ -2285,14 +2275,16 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             else handleAddRoleStop()
                           }}
                           aria-current={facultyCur && !facultyExpanded ? 'step' : undefined}
-                          className="h-auto flex-1 justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60"
+                          className={`relative h-auto flex-1 justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${facultyCur && !facultyExpanded ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
                           style={{ background: facultyCur && !facultyExpanded ? 'var(--muted)' : 'transparent' }}
                         >
-                          <span className="flex items-center gap-2.5 w-full">
-                            {completionMark(facultyDone, anyRolesPending)}
-                            <span className={`text-sm ${facultyCur && !facultyExpanded ? 'font-semibold' : 'font-medium'}`}>Faculty</span>
-                            <span className="text-xs tabular-nums ms-auto" style={{ color: anyRolesPending ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
-                              {anyRolesPending ? `${pendingCount} need${pendingCount === 1 ? 's' : ''} roles` : `${facultyRoleSets.length} role${facultyRoleSets.length !== 1 ? 's' : ''}`}
+                          {activeBar(facultyCur && !facultyExpanded)}
+                          <span className="flex items-center gap-2 w-full">
+                            <span className="text-sm">Faculty</span>
+                            <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: anyRolesPending ? 'var(--chip-4)' : facultyDone ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
+                              {anyRolesPending
+                                ? `${pendingCount} need${pendingCount === 1 ? 's' : ''} roles`
+                                : `${facultyDone ? '✓ ' : ''}${facultyRoleSets.length} role${facultyRoleSets.length !== 1 ? 's' : ''}`}
                             </span>
                           </span>
                         </Button>
@@ -2308,21 +2300,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           <i className={`fa-light fa-chevron-${facultyExpanded ? 'down' : 'right'} text-xs`} aria-hidden="true" />
                         </Button>
                       </div>
-                      {facultyExpanded && (
+                      {facultyExpanded && facultyStops.length > 0 && (
                         <div id="guided-rail-faculty-group" role="group" aria-labelledby="guided-rail-faculty" className="flex flex-col gap-1">
                           {facultyStops.map(stop => {
                             const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
-                            return renderRailItem(stop, set ? shortRoleLabel(set) : 'New evaluation', true)
+                            const pending = !set || set.roles.length === 0
+                            return renderRailItem(stop, set ? shortRoleLabel(set) : 'Choose roles…', { indent: true, amber: pending })
                           })}
-                          {/* Outline + dashed = action, not a nav row — the
-                              ghost version was indistinguishable from tabs
-                              (Romit, Jul 23). */}
-                          <Button variant="outline" size="sm" onClick={handleAddRoleStop}
-                            className="justify-start border-dashed self-start"
-                            style={{ marginLeft: 14, marginTop: 2 }}>
-                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                            Evaluate another role
-                          </Button>
                         </div>
                       )}
                       {renderRailItem(generalStop, 'General')}
@@ -2344,9 +2328,18 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         {ASPECT_INFO[curStop.subjectKey]}
                       </p>
                     </div>
-                    {/* Distinct generate entry point above the section list —
-                        not a Fascia Add-section action (Jul 23). */}
-                    {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
+                    {/* Aspect-level actions above the section list — distinct
+                        entry points, not Fascia Add-section actions (Jul 23).
+                        Evaluate another role lives here, not in the tab rail. */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {curStop.subjectKey === 'faculty' && (
+                        <Button variant="outline" size="xs" onClick={handleAddRoleStop}>
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                          Evaluate another role
+                        </Button>
+                      )}
+                      {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
+                    </div>
                   </div>
                   {/* No prev/next footer (Jul 23) — the rail owns navigation;
                       the wizard footer owns the single forward CTA. */}
