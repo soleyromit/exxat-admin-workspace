@@ -1,131 +1,165 @@
-# Viz Selection Rubric
+# Viz Selection Rubric — v2
 
 > Required reading before designing any analytics card, dashboard, or report screen.
-> DESIGN.md rules **VIZ-001..011** all bind here.
-> Default to richer viz; **progress bars are last resort (VIZ-001)**.
-
-## Quick lookup — pattern index (8 patterns, 11 rules)
-
-| Pattern | File | Best for |
-|---|---|---|
-| Bullet vs Target | `bullet-vs-target.md` | Where does X stand vs target/cohort |
-| Outlier Strip Plot | `outlier-strip-plot.md` | Who's an outlier across many entities (N>30) |
-| Cleveland Dot Plot | `cleveland-dot.md` | Ranked single-metric list (N≤30) |
-| Slope Graph (Paired) | `slope-paired.md` | Before/after across N entities (2 timepoints) |
-| Gap Heatmap | `gap-heatmap.md` | Two-dimensional gaps (students × competencies) |
-| Small Multiples | `small-multiples.md` | Same chart shape across faceting dim (per faculty/cohort) |
-| Calendar Heatmap | `calendar-heatmap.md` | Activity over ≥30 days with day-of-week intact |
-| Progression Sankey | `progression-sankey.md` | Sequential stages with attrition |
-| AI vs Pulled Lane | `ai-vs-pulled-lane.md` | Visually distinguishing AI-generated vs computed |
+> DESIGN.md rules **VIZ-001..011** bind here. Progress bars are last resort (VIZ-001).
+>
+> **What changed in v2 (2026-07-16):** v1 only mapped *question → form*. The results-page
+> redesign (PR #46) passed every v1 check and still shipped unreadable micro-viz — dots whose
+> diameter exceeded the differences they encoded. v2 adds the missing layers: **a
+> not-a-chart gate, a perceivable-difference test, container-fit ladders, and a 7-point
+> glance test**. A form is only "correct" when it passes ALL gates, in order.
 
 ---
 
-## The five questions
+## Gate 0 — Is it even a chart?
 
-Match the user's question to the right viz. If your question matches none, ask Romit before generating.
+The most common viz mistake is charting a fact that a number states better.
 
-### 1. "Where does X stand vs target / cohort?"
-
-| Right viz | Why | Pattern file |
+| The data is… | Use | Never |
 |---|---|---|
-| Bullet chart | Actual + target + qualitative ranges in one read | `bullet-vs-target.md` |
-| Dot-on-distribution | Where one entity sits in the cohort distribution | (P3) `strip-with-marker.md` |
-| Slope (single line) | Before/after for one entity | (P3) `slope-single.md` |
-| Slope graph (paired) | Before/after across N entities — see who moved | `slope-paired.md` |
+| One current value (± trend) | **Stat: number + signed delta chip** (`4.65` `↑ 0.25 vs Sp25`) | a mini chart squeezed into the slot |
+| A handful of headline numbers | **KPI row** (KeyMetrics, max 4) | grouped bars |
+| One value vs one benchmark, in a **list row** | **number + delta chip** (`+0.4 vs prog`) | dot-on-track (see PD test below) |
+| A ratio against a limit, in-flight 0→100% | progress bar (**only** here) | — |
+| >7 categories that all carry meaning | **table** (or table + chart) | more colors |
 
-❌ **Wrong:** Progress bar. Hides cohort, hides target, hides trajectory.
+**The redundancy rule (Aarti A4):** *"You either need the chart or you need those numbers.
+You don't need both."* Every fact gets ONE primary encoding. In slots < 200px wide the
+number is primary and at most one mark may support it; in sections ≥ 600px the chart is
+primary and prints one number per row, at the mark.
 
-### 2. "Who is an outlier across N entities?"
+## Gate 1 — Question fit (v1, kept)
 
-| Right viz | Why | Pattern file |
-|---|---|---|
-| Strip plot / dot plot | Every entity = a dot; outliers visually obvious (N>30) | `outlier-strip-plot.md` |
-| Cleveland dot plot | Ranked list with median reference line (N≤30) | `cleveland-dot.md` |
-| Scatter (2 vars) | Quadrants surface high-low / low-high outliers | (P3) `scatter-quadrants.md` |
-| Box / violin plot | Distribution + outliers above/below whiskers | (P3) `box-distribution.md` |
+Match the user's question. If it matches none, ask Romit before generating.
 
-❌ **Wrong:** Sorted bar list. Works for ranking but buries the gap if there's a true outlier.
+| # | Question | Right forms | Wrong |
+|---|---|---|---|
+| 1 | Where does X stand vs target/cohort? | bullet (wide slots only) · dot-on-distribution · slope | progress bar |
+| 2 | Who is an outlier across N entities? | strip plot (N>30) · Cleveland dot (N≤30) · scatter | sorted bar list |
+| 3 | Gaps across two dimensions? | heatmap · small multiples | grid of progress bars |
+| 4 | How is X changing over time? | line · sparkline (≥ 96px) · slope (2 points) · cumulative area | % delta arrow alone |
+| 5 | Cohort A vs cohort B? | paired slope · distribution overlay · grouped bar (N≤10) | two big numbers |
+| 6 | Ordered-scale share (Likert/sentiment)? | **vertical per-rating mini-histogram** when the distribution SHAPE is the story (skew/bimodality — designer-chosen for PCE question breakdown, Romit 2026-07-16) · 100% stacked bar (favorable-share story) · diverging stacked (neutral-midpoint story) | pie/donut |
 
-### 3. "Where are the gaps across two dimensions (students × competencies, sites × KPIs)?"
+## Gate 2 — Perceivable-Difference test (PD test) — **new, hard gate**
 
-| Right viz | Why | Pattern file |
-|---|---|---|
-| Heatmap | Two-dimensional density readable at a glance | `gap-heatmap.md` |
-| Small multiples | Repeated chart per row/col, axes aligned | `small-multiples.md` |
-| Calendar heatmap | Time × day-of-week density (≥30 days) | `calendar-heatmap.md` |
-
-❌ **Wrong:** Grid of progress bars. Eye cannot integrate dozens of independent bars into a pattern.
-
-### 4. "How is X changing over time?"
-
-| Right viz | Why | Pattern file |
-|---|---|---|
-| Line | Standard trajectory | (P3) `line-trajectory.md` |
-| Sparkline (inline) | Per-row trend in a table | (P3) `sparkline-table.md` |
-| Slope (multi) | Before/after across many entities | (P3) `slope-multi.md` |
-| Cumulative area | Stock-like accumulation | (P3) `cumulative-area.md` |
-
-❌ **Wrong:** Single % delta with arrow. Hides the path; a drop-and-recovery looks identical to flat.
-
-### 5. "How does cohort A compare to cohort B?"
-
-| Right viz | Why | Pattern file |
-|---|---|---|
-| Slope (paired) | Direct A→B comparison per entity | (P3) `slope-pair.md` |
-| Distribution overlay | Two density curves on the same axis | (P3) `distribution-overlay.md` |
-| Grouped bar | When N is small (≤10) and entities are named | (P3) `grouped-bar.md` |
-
-❌ **Wrong:** Two big numbers side by side. No distribution, no overlap, no narrative.
-
----
-
-## Quick decision flow
+Position/length encodings are only honest when the smallest difference the user must
+**act on** is bigger than both the rendering noise and the mark itself.
 
 ```
-What's the question?
-├─ Single value vs target?       → bullet
-├─ Many values, find outlier?    → strip plot / scatter
-├─ Two-dim density / gaps?       → heatmap
-├─ Trajectory over time?         → line / sparkline / slope
-├─ Cohort comparison?            → slope-pair / distribution overlay
-├─ Composition (parts of whole)? → stacked bar / waffle (NEVER pie/donut for ≥4 slices)
-├─ Single in-flight task 0–100%? → progress bar (only here)
-└─ None of the above?            → ask before generating
+px-per-unit   = track-width-px / domain-span
+Δpx           = actionable-difference × px-per-unit
+
+PASS requires: Δpx ≥ 8   AND   Δpx ≥ mark-diameter
 ```
 
+Worked example (the PR #46 failure): list-card track 112px on a 3–5 window →
+px-per-unit = 56. Actionable difference 0.1 → **Δpx = 5.6px**, drawn with **10px dots**.
+The mark is bigger than the difference. FAIL → fall back to Gate 0 (number + delta chip).
+
+Remedies, in order: (1) widen the track; (2) zoom the domain — **only with a visible,
+labeled axis**; (3) abandon position encoding for this slot — print the number.
+A zoomed domain without a printed axis is a lie; a zoomed domain that still fails the
+PD test is a lie *and* unreadable.
+
+## Gate 3 — Container fit ladder — **new**
+
+The same fact degrades as its container shrinks. Never render a section-scale form in a
+row-scale slot.
+
+| Slot | Width | Allowed forms |
+|---|---|---|
+| Table cell / list-row slot | < 200px | number + delta chip · status dot · sparkline ≥ 96px with endpoint labels — **max ONE mark** |
+| Card | 200–600px | stat + slope/spark with direct endpoint labels · single mini bar/meter |
+| Section | ≥ 600px | full charts: dot plots, Likert bars, heatmaps, lines — with axis + direct labels |
+| Page | full-width | anything above + small multiples |
+
+**Legend-adjacency rule:** if decoding requires information outside the visual unit the
+eye is on (a legend at the top of a list, a subtitle two cards away), the form fails the
+slot. Row-scale marks must be self-evident or labeled in place.
+
+## Gate 4 — Perceptual ranking (Cleveland–McGill)
+
+When several forms survive Gates 0–3, prefer the highest-ranked encoding the container
+allows: **position on a common scale > length > slope/angle > area > color value**.
+Color is never the primary encoding (A11Y-008) and never the only one.
+
+## Gate 5 — The glance test — **new, run on the rendered screenshot, not the JSX**
+
+Screenshot the real render at real size. All seven must pass:
+
+1. **5-second takeaway** — a first-time viewer states the main point unprompted.
+2. **Marks ≥ 12px** in their smallest dimension (dots ≥ 12px Ø; bars ≥ 8px thick; a
+   ring-vs-filled distinction needs ≥ 12px to read at all).
+3. **Labels in place** — the value a mark encodes is printed at the mark or one saccade
+   away; never in a far column the eye must round-trip to.
+4. **Differences visible** — the two closest marks the user must distinguish are ≥ 8px
+   apart (the PD test, verified on pixels).
+5. **≤ 2 encodings to learn** per surface; the whole page teaches ONE comparison
+   vocabulary, not four.
+6. **No hover required** — hover enriches (counts, breakdowns); the takeaway must not
+   live only in a tooltip.
+7. **Solid marks** — no opacity-stepped series (a 0.45-alpha segment reads as empty
+   track); use distinct solid steps of one hue.
+
+Any failure → back to Gate 3 and degrade the form. **"Chart renders" ≠ "chart reads."**
+
 ---
 
-## Color discipline (binds VIZ-003, VIZ-004)
+## Worked audit — PR #46 results viz scored under v2
 
-- Series colors: `--chart-1` … `--chart-5`. Never raw hex / Tailwind colors.
-- Conditional thresholds: `--conditional-rule-{green,yellow,blue,red,purple,orange}`.
-- **Score / rating / performance viz: NEVER red.** Use amber/orange (`--chart-4`, `--chart-5`) for "below threshold". *(VIZ-004, per Aarti)*
-- Color is never the only encoding (A11Y-008). Pair with shape, label, or icon.
+Honesty check: the v1 rubric approved all of these. v2 verdicts:
 
-## Annotation discipline (VIZ-002)
+| Component | Gate it fails | v2 verdict |
+|---|---|---|
+| `BulletScore` (list card, 112px track, 10px dots) | PD test (Δpx 5.6 < mark 10) · legend-adjacency | **Replace**: `4.65/5` + `+0.4 vs prog` delta chip |
+| `TrendSpark` (64px sparkline) | Gate 5.2 min size · Gate 3 (< 96px) | **Replace**: `↑ 0.25 vs Sp25` chip, or widen to ≥ 96px with endpoint labels |
+| `CompareDots` (15rem col, you/median/prog) | PD test · Gate 5.5 (4th vocabulary) | **Replace**: printed `you 3.7 · prog 3.7` + one signed-gap chip |
+| Theme distribution | — | **Designer decision (Romit)**: per-theme vertical rating histograms — the same five-column form as the question rows, aggregated per theme, "Avg X · Program Y" printed at right. A dot plot (even with fixed marks/labels) was tried and rejected; one visual language page-wide beats a second comparison form |
+| `ScoreCard` slope (208px, 2 points) | passes PD (Δpx ≈ 9/0.1) | **Keep**: add endpoint value labels on the SVG |
+| Per-question rating distribution | — | **Designer decision (Romit)**: the vertical per-rating mini-histogram is intentionally retained — the SHAPE (skew, bimodality) is the story a single favorable-share bar hides. A consolidation to a two-tone bar was tried and reverted. Consolidating a designer-chosen form requires approval, whatever the rubric says |
+| AI-verdict-first ordering, gap-sorted rows, collapsed-header previews | — | **Keep** — narrative layer passed |
 
-- Target lines, benchmark dots, distribution bands belong on the chart.
-- Outliers are highlighted on the viz (color + label callout), not enumerated in prose.
-- Text below a chart labels values; it does not interpret the data.
+## Color discipline (binds VIZ-003/004 — unchanged)
+
+- Series colors: `--chart-1..5` via tokens only; score/rating viz **never red** — amber
+  (`--chip-4`/`--chart-4`) for below-threshold (Aarti).
+- Brand color is never a data color (CTAs only).
+- Color never the sole encoding — pair with position, shape, or label.
+
+## Annotation discipline (VIZ-002 — unchanged)
+
+- Targets/benchmarks/bands drawn ON the chart; outliers highlighted on the viz.
+- Text under a chart labels values; interpretation belongs to the narrative line
+  (AI insight / trend sentence), which leads the surface.
+
+## Anti-patterns (block list — v2 additions marked ●)
+
+- More than one progress bar in a card → heatmap or strip plot.
+- Pie/donut ≥ 4 slices · 3D · dual-axis · gradients/shadows → never.
+- `% complete` as a bare width-div → bullet (wide slots) or number + chip.
+- ● **Micro-dot-on-track in row slots** — any position encoding that fails the PD test.
+- ● **Zoomed domain without a visible labeled axis.**
+- ● **Opacity-stepped series** (alpha < 1 as a scale step).
+- ● **Legend outside the visual unit** for row-scale marks.
+- ● **Sparklines < 96px** or without endpoint labels.
+- ● **Two encodings for one fact at equal weight** (bar + repeated number columns).
+
+## Pattern catalogue (this folder — unchanged)
+
+`bullet-vs-target.md` · `outlier-strip-plot.md` · `cleveland-dot.md` · `slope-paired.md` ·
+`gap-heatmap.md` · `small-multiples.md` · `calendar-heatmap.md` · `progression-sankey.md` ·
+`ai-vs-pulled-lane.md`
 
 ---
 
-## Anti-patterns (block list)
+## The v2 decision flow
 
-- More than one progress bar in a card → use heatmap or strip plot.
-- Pie / donut for ≥4 slices → use stacked bar or waffle.
-- 3D chart of any kind → never.
-- Dual-axis line chart → split into small multiples.
-- Decorative grid lines, drop shadows on bars, gradients → strip them (DS-009).
-- "% complete" rendered as a literal `width: ${n}%` div with no scale, target, or context → use bullet chart.
-
----
-
-## Pattern catalogue (this folder)
-
-P1 (this round):
-- `bullet-vs-target.md`
-- `outlier-strip-plot.md`
-- `gap-heatmap.md`
-
-P3 (later): `strip-with-marker`, `slope-single`, `slope-multi`, `slope-pair`, `scatter-quadrants`, `box-distribution`, `small-multiples`, `line-trajectory`, `sparkline-table`, `cumulative-area`, `distribution-overlay`, `grouped-bar`.
+```
+0. Would a number + delta chip state it better?      → yes: stop, no chart
+1. Which of the six questions is being asked?        → candidate forms
+2. PD test: Δpx ≥ 8 AND ≥ mark size?                 → no: widen / zoom-with-axis / demote to number
+3. Container ladder: is the form allowed in the slot? → no: degrade one rung
+4. Pick the highest Cleveland–McGill encoding left
+5. Render → screenshot → 7-point glance test          → any fail: back to 3
+```
