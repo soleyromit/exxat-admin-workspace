@@ -2300,13 +2300,22 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           <i className={`fa-light fa-chevron-${facultyExpanded ? 'down' : 'right'} text-xs`} aria-hidden="true" />
                         </Button>
                       </div>
-                      {facultyExpanded && facultyStops.length > 0 && (
+                      {facultyExpanded && (
                         <div id="guided-rail-faculty-group" role="group" aria-labelledby="guided-rail-faculty" className="flex flex-col gap-1">
                           {facultyStops.map(stop => {
                             const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
                             const pending = !set || set.roles.length === 0
                             return renderRailItem(stop, set ? shortRoleLabel(set) : 'Choose roles…', { indent: true, amber: pending })
                           })}
+                          {/* Add-a-tab affordance — part of the tab group, set
+                              apart from nav rows by the dashed outline (Romit,
+                              Jul 23). */}
+                          <Button variant="outline" size="sm" onClick={handleAddRoleStop}
+                            className="justify-start border-dashed self-start"
+                            style={{ marginLeft: 14, marginTop: 2 }}>
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                            Evaluate another role
+                          </Button>
                         </div>
                       )}
                       {renderRailItem(generalStop, 'General')}
@@ -2328,18 +2337,10 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         {ASPECT_INFO[curStop.subjectKey]}
                       </p>
                     </div>
-                    {/* Aspect-level actions above the section list — distinct
-                        entry points, not Fascia Add-section actions (Jul 23).
-                        Evaluate another role lives here, not in the tab rail. */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {curStop.subjectKey === 'faculty' && (
-                        <Button variant="outline" size="xs" onClick={handleAddRoleStop}>
-                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                          Evaluate another role
-                        </Button>
-                      )}
-                      {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
-                    </div>
+                    {/* Distinct generate entry point above the section list —
+                        not a Fascia Add-section action (Jul 23). Evaluate
+                        another role lives in the tab rail's Faculty group. */}
+                    {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
                   </div>
                   {/* No prev/next footer (Jul 23) — the rail owns navigation;
                       the wizard footer owns the single forward CTA. */}
