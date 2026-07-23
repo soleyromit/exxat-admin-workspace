@@ -646,6 +646,10 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     stopSections(stop).reduce((n, s) => n + s.questions.length, 0)
   const activeStopIdx = Math.max(0, builderStops.findIndex(s => s.key === activeStop))
   const curStop = builderStops[activeStopIdx]
+  // Header Generate action hides while a faculty stop has no roles yet —
+  // there's no audience to generate an evaluation for.
+  const curStopRolesPending = curStop.subjectKey === 'faculty'
+    && (facultyRoleSets.find(rs => rs.id === curStop.roleSetId)?.roles.length ?? 0) === 0
   const handleAddRoleStop = () => {
     const newId = handleAddRoleSet()
     setActiveStop(`stop-${newId}`)
@@ -1156,20 +1160,13 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             {/* Full-width dashed row — visible "insert here" affordance in the
                 flow where the section will appear (a heading-level button would
                 be ambiguous across faculty role sets). */}
-            {/* Creation row — both ways to add content, side by side (Jul 23:
-                replaces the full-width "Have a document?" banner). */}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 font-semibold border-dashed"
-                onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Add section
-              </Button>
-              <Button variant="outline" size="sm" className="shrink-0"
-                onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}>
-                <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-                Generate from document
-              </Button>
-            </div>
+            {/* Add section stands alone — the Fascia row can't host a second
+                action (Jul 23); Generate from document is a header action. */}
+            <Button variant="outline" size="sm" className="w-full font-semibold border-dashed"
+              onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+              Add section
+            </Button>
           </>
         )}
       </div>
@@ -2184,9 +2181,12 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     Evaluate another role
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground" style={{ margin: '12px 0' }}>
-                  {ASPECT_INFO[curStop.subjectKey]}
-                </p>
+                <div className="flex items-center justify-between gap-3" style={{ margin: '12px 0' }}>
+                  <p className="text-xs text-muted-foreground">
+                    {ASPECT_INFO[curStop.subjectKey]}
+                  </p>
+                  {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
+                </div>
                 <div role="tabpanel" aria-label={curStop.label} tabIndex={0}>
                   {renderStopStage(curStop)}
                 </div>
@@ -2328,16 +2328,21 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
               </nav>
               <div className="flex-1 overflow-y-auto" style={{ padding: '24px 40px 48px' }}>
                 <div style={{ maxWidth: 720 }} className="flex flex-col gap-3">
-                  <div>
-                    {/* Aspect only — the Evaluating chips below own the role
-                        list; an unbounded enumeration doesn't belong in a
-                        display heading. */}
-                    <h2 className="text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
-                      {curStop.subjectKey === 'faculty' ? 'Faculty' : curStop.label}
-                    </h2>
-                    <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
-                      {ASPECT_INFO[curStop.subjectKey]}
-                    </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      {/* Aspect only — the Evaluating chips below own the role
+                          list; an unbounded enumeration doesn't belong in a
+                          display heading. */}
+                      <h2 className="text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
+                        {curStop.subjectKey === 'faculty' ? 'Faculty' : curStop.label}
+                      </h2>
+                      <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
+                        {ASPECT_INFO[curStop.subjectKey]}
+                      </p>
+                    </div>
+                    {/* Distinct generate entry point above the section list —
+                        not a Fascia Add-section action (Jul 23). */}
+                    {!curStopRolesPending && generateFromDocButton(curStop.subjectKey, curStop.roleSetId)}
                   </div>
                   {/* No prev/next footer (Jul 23) — the rail owns navigation;
                       the wizard footer owns the single forward CTA. */}
