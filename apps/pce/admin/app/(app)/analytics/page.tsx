@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useMemo, Suspense } from 'react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleGroup, ToggleGroupItem,
@@ -16,35 +15,109 @@ import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
+import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
+import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
+import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
+import { facultyStats, allTerms } from '@/lib/pce-analytics'
+import {
+  offeringsCsv, exportFilename, downloadCsv, scopedOfferings, type ExportScope,
+} from '@/lib/pce-analytics-export'
 
 type Axis = 'term' | 'cohort'
-// 'overview' retired Jul 2026 — the monitoring layer moved to the Dashboard home.
-type AnalyticsTab = 'term' | 'faculty' | 'course'
+/**
+ * 'overview' was retired Jul 2026 on the premise that "the monitoring layer moved to the
+ * Dashboard home" — but it never did: `dashboard-home.tsx` is a response-collection ops
+ * surface with no charts, so 8 of the 20 ADMIN analytics stories had no home at all.
+ * Restored 2026-07-14 per Monil's accepted model (2026-07-13): "three tabs, in fact four:
+ * overview, by faculty, by course and by term", tabs on top rather than in the sidebar.
+ */
+type AnalyticsTab = 'overview' | 'term' | 'faculty' | 'course'
 
 function AnalyticsInner() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const { sendSurveyReminder } = usePce()
 
-  const [activeTab, setActiveTab]                   = useState<AnalyticsTab>(() => {
-    const requested = searchParams?.get('tab')
-    return requested === 'faculty' || requested === 'course' ? requested : 'term'
-  })
+  /**
+   * The URL is the single source of truth for the active tab — not local state seeded from it.
+   *
+   * It used to be `useState(() => searchParams.get('tab'))`, which reads ONCE on mount. Next's
+   * App Router does not remount on a same-route search-param change, so every in-page link to
+   * another tab (the "Open By Faculty" buttons on the attention cards) changed the address bar
+   * and did nothing visible — worse than having no link at all. Verified before this fix:
+   * clicking it produced `?tab=faculty` while the Overview tab stayed selected.
+   *
+   * Deriving from the URL also makes the tabs genuinely deep-linkable (which the code already
+   * claimed) and makes the browser back button work across tabs.
+   *
+   * SCOPE LIVES IN THE URL, all of it — tab, term, facultyId, courseCode.
+   *
+   * These used to be read-once `useState(() => searchParams.get(...))`: the page READ them on
+   * mount and never WROTE them, so /analytics?facultyId=f4 worked on a cold load and nothing
+   * you did afterwards was shareable. Half-honouring a query param is worse than ignoring it,
+   * because the URL then looks authoritative while silently describing a stale view.
+   *
+   * Closing the course→faculty round trip made this concrete: that drill selects a faculty
+   * member and switches tab, and the tab moved in the URL while the person did not. Copying
+   * the link sent a colleague to the faculty tab showing someone else.
+   *
+   * One derivation for all four (`param`), one writer (`setScope`) — the same shape `tab`
+   * already had, extended rather than duplicated. A second mechanism for the other three is
+   * how two sources of truth start.
+   */
+  const param = (key: string) => searchParams?.get(key) ?? null
+
+  const activeTab: AnalyticsTab = (() => {
+    const requested = param('tab')
+    return requested === 'faculty' || requested === 'course' || requested === 'term'
+      ? requested
+      : 'overview'
+  })()
+
+  /**
+   * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
+   * drill: person AND tab) lands as ONE history entry — two pushes would make Back a
+   * half-step into a state the user never saw.
+   *
+   * `null` deletes the param: an explicit "all terms" must not leave a stale `term=` behind.
+   */
+  const setScope = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams?.toString() ?? '')
+    Object.entries(patch).forEach(([k, v]) => (v === null ? next.delete(k) : next.set(k, v)))
+    // scroll:false — changing scope should not fling the reader to the top of a long page.
+    router.push(`${pathname}?${next.toString()}`, { scroll: false })
+  }
+
+  const setActiveTab = (tab: AnalyticsTab) => setScope({ tab })
   const [axis, setAxis]                             = useState<Axis>('term')
-  const [term, setTerm]                             = useState(
-    searchParams?.get('term') || 'Spring 2026'
-  )
+  const term = param('term') || 'Spring 2026'
+  const setTerm = (t: string) => setScope({ term: t })
   const [cohort, setCohort]                         = useState('Class of 2026')
   const [nudgeTarget, setNudgeTarget]               = useState<NudgeTarget | null>(null)
   const [selectedSurveyId, setSelectedSurveyId]     = useState<string | null>(null)
-  const [selectedFacultyId, setSelectedFacultyId]   = useState<string>(
-    searchParams?.get('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
-  )
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
-    searchParams?.get('courseCode') || ''
-  )
+  const selectedFacultyId = param('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
+  const setSelectedFacultyId = (id: string) => setScope({ facultyId: id })
+
+  const selectedCourseCode = param('courseCode') || ''
+  const setSelectedCourseCode = (code: string) => setScope({ courseCode: code })
+
+  /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
+  const facultyTerm = param('facultyTerm') ?? undefined
+  const setFacultyTerm = (t: string | undefined) => setScope({ facultyTerm: t ?? null })
+
+  /** Terms that HAVE evaluation history, newest first — the By Term axis. */
+  const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
 
   const scopeLabel = axis === 'term' ? term : cohort
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
+
+  /** The selected faculty member's class-size-weighted mean — the portfolio's anchor value.
+   *  Derived from the canonical dataset so it cannot drift from the leaderboard above. */
+  const selectedFacultyAvg = useMemo(() => {
+    const stat = facultyStats().find(f => f.facultyId === selectedFacultyId)
+    return stat ? stat.score.weighted : null
+  }, [selectedFacultyId])
 
   const distinctCourses = useMemo(() => {
     const seen = new Set<string>()
@@ -56,36 +129,89 @@ function AnalyticsInner() {
   }, [])
   const effectiveCourseCode = selectedCourseCode || distinctCourses[0]?.code || ''
 
+  /**
+   * The export scope IS the tab's scope. Exporting the whole program from a screen filtered
+   * to one faculty member is a lie of omission — the reader believes they downloaded what
+   * they were looking at.
+   */
+  const exportScope: ExportScope = useMemo(() => {
+    switch (activeTab) {
+      case 'faculty': return { tab: 'faculty', facultyId: selectedFacultyId, term: facultyTerm }
+      case 'course':  return { tab: 'course', courseCode: effectiveCourseCode }
+      case 'term':    return { tab: 'term', term }
+      default:        return { tab: 'overview' }
+    }
+  }, [activeTab, selectedFacultyId, facultyTerm, effectiveCourseCode, term])
+
+  /* The count goes ON the button so the scope is legible BEFORE the click — you can see that
+     "Export 9 offerings" means this faculty member, not the program's 53. It also makes the
+     empty case honest: 0 rows disables rather than handing back a header-only file. */
+  const exportCount = useMemo(() => scopedOfferings(exportScope).length, [exportScope])
+
+  const exportLabel =
+    activeTab === 'faculty' ? selectedFaculty?.name
+      : activeTab === 'course' ? effectiveCourseCode
+      : activeTab === 'term' ? term
+      : undefined
+
+  const runExport = () => {
+    const csv = offeringsCsv(exportScope)
+    // The clock is read here, at the click, not inside the pure export module.
+    //
+    // LOCAL date, not toISOString(). ISO is UTC: exporting at 8pm in New York stamped the
+    // file with tomorrow's date, which I only caught because the download came back
+    // "…-2026-07-15.csv" on the 14th. `en-CA` is the terse way to get YYYY-MM-DD local.
+    const today = new Date().toLocaleDateString('en-CA')
+    downloadCsv(exportFilename(exportScope, exportLabel, today), csv)
+  }
+
   return (
     <>
       <SiteHeader title="Analytics" />
 
       <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-        <Button variant="outline" size="sm">
-          <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
-          Export
-        </Button>
-        <Button size="sm" asChild>
-          <Link href="/surveys/push">
-            <i className="fa-light fa-paper-plane" aria-hidden="true" />
-            Set up Evaluations
-          </Link>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
+        {/*
+          Export is a REQUIREMENT, not a nicety. Source: Romit, design review 2026-07-15
+          (Granola `1e018244`) — analytics must pair scalable data with an export, because
+          coordinators reconcile Exxat's numbers against another tool's in a spreadsheet.
+
+          This button and the module behind it were removed on the reasoning that "analytics is
+          a reading surface", which conflates two controls: export does not write. It is how a
+          reading surface hands its numbers to the tool the reader reconciles in — so a reading
+          surface is exactly where it belongs.
+
+          The count is ON the button so the scope is legible BEFORE the click: "Export 9
+          offerings" is visibly this faculty member, not the program's 53, and 0 disables rather
+          than handing back a header-only file. No icon — action buttons are text-only.
+        */}
+        <Button variant="outline" size="sm" onClick={runExport} disabled={exportCount === 0}>
+          Export {exportCount} {exportCount === 1 ? 'offering' : 'offerings'}
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnalyticsTab)} className="flex flex-col flex-1 min-h-0">
         <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
           <TabsList variant="line">
-            <TabsTrigger value="term">By Term</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="faculty">By Faculty</TabsTrigger>
             <TabsTrigger value="course">By Course</TabsTrigger>
+            <TabsTrigger value="term">By Term</TabsTrigger>
           </TabsList>
         </div>
 
+        {/* ───── Overview — the program brief. No entity selector by design: this is the
+                 one tab whose scope is "everything", so a filter here would be a
+                 different question. ───── */}
+        <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
+          <div className="flex flex-col gap-6">
+            <AnalyticsOverviewPanel />
+          </div>
+        </TabsContent>
+
         {/* ───── By Term ───── */}
         <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <ToggleGroup type="single" value={axis} onValueChange={(v) => v && setAxis(v as Axis)} variant="outline" size="sm">
                 <ToggleGroupItem value="term"   aria-label="View by term">Term</ToggleGroupItem>
@@ -93,9 +219,15 @@ function AnalyticsInner() {
               </ToggleGroup>
 
               {axis === 'term' ? (
+                /* analyticsTerms, not MOCK_TERMS. MOCK_TERMS is the set of terms you can PUSH
+                   an evaluation to (used by my-surveys, the push modal, the surveys table) —
+                   it lists 3 while offerings span 5, so Spring 2024 and Fall 2024 had real
+                   data that this dropdown could not reach. Operational terms and historical
+                   terms are different questions; this tab asks the historical one. That is the
+                   same class of bug the legacy app shipped (§4.7 "Term dropdown ≠ Term table"). */
                 <Select value={term} onValueChange={setTerm}>
                   <SelectTrigger className="h-8 w-36 text-sm" aria-label="Select term"><SelectValue /></SelectTrigger>
-                  <SelectContent>{MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>{analyticsTerms.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               ) : (
                 <Select value={cohort} onValueChange={setCohort}>
@@ -105,13 +237,48 @@ function AnalyticsInner() {
               )}
             </div>
 
-            <ByTermPanel axis={axis} value={scopeLabel} onOpenSurvey={setSelectedSurveyId} onNudge={setNudgeTarget} />
+            <ByTermPanel
+              axis={axis}
+              value={scopeLabel}
+              onOpenSurvey={setSelectedSurveyId}
+              onNudge={setNudgeTarget}
+              /* The attention table names courses; naming without a door was the last dead-end
+                 on the tab. Row → By Course, scoped to that course. */
+              onSelectCourse={(code) => setScope({ tab: 'course', courseCode: code })}
+            />
           </div>
         </TabsContent>
 
-        {/* ───── By Faculty ───── */}
+        {/* ───── By Faculty — the most important tab (accepted 2026-07-13).
+                 Order follows the flow Monil described: land on the leaderboard of all
+                 faculty, then drill into one. The selector below is the drill-down, which
+                 is also what VIZ-007 asks for — the all-faculty view is the default and the
+                 dropdown is the optional narrowing, not the other way round. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6">
+            {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
+                /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
+            <FacultyLeaderboardSection
+              term={facultyTerm}
+              onTermChange={setFacultyTerm}
+              onSelectFaculty={(id) => {
+                // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
+                // drill-down is the same tab scrolled to the portfolio, not a new route —
+                // the portfolio is a filtered state of By Faculty, not a surface of its own.
+                setSelectedFacultyId(id)
+                requestAnimationFrame(() =>
+                  document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                )
+              }}
+            />
+
+            <div id="individual-faculty" className="border-t border-border pt-6">
+              <h2 className="text-sm font-semibold">Individual faculty</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Their portfolio: how they perform per term and per course, and every survey behind it.
+              </p>
+            </div>
+
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="faculty-select">Faculty</label>
               <Select value={selectedFacultyId} onValueChange={setSelectedFacultyId}>
@@ -137,13 +304,29 @@ function AnalyticsInner() {
               </div>
             )}
 
-            <ByFacultyPanel facultyId={selectedFacultyId} onOpenSurvey={setSelectedSurveyId} />
+            {/* extraCharts is what makes this tab's "their portfolio" copy true. Without it
+                the tab rendered a KPI strip and a table while /admin/faculty/[id] showed the
+                full portfolio — two doors to the same faculty member, different contents.
+                lens="admin": this tab is admin-only, so the peer distribution is allowed. */}
+            <ByFacultyPanel
+              facultyId={selectedFacultyId}
+              onOpenSurvey={setSelectedSurveyId}
+              extraCharts={
+                selectedFacultyId ? (
+                  <FacultyPortfolioCharts
+                    facultyId={selectedFacultyId}
+                    avgRating={selectedFacultyAvg}
+                    lens="admin"
+                  />
+                ) : null
+              }
+            />
           </div>
         </TabsContent>
 
         {/* ───── By Course ───── */}
         <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6 max-w-4xl">
+          <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">Course</label>
               <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>
@@ -152,7 +335,18 @@ function AnalyticsInner() {
               </Select>
             </div>
 
-            <ByCoursePanel courseCode={effectiveCourseCode} onOpenSurvey={setSelectedSurveyId} />
+            {/* The round trip: By Faculty could always reach a course (the portfolio ranks
+                them), but By Course could not reach a person — so "is this the course or the
+                instructor?" was only pursuable in one direction. Selecting the faculty member
+                AND switching tabs in one click, because landing on the faculty tab still
+                showing someone else would be a worse lie than not linking at all. */}
+            <ByCoursePanel
+              courseCode={effectiveCourseCode}
+              onOpenSurvey={setSelectedSurveyId}
+              // ONE push, both changes — see setScope. Two calls would race on the same
+              // searchParams snapshot and the second would clobber the first.
+              onSelectFaculty={(facultyId) => setScope({ facultyId, tab: 'faculty' })}
+            />
           </div>
         </TabsContent>
       </Tabs>

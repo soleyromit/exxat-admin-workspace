@@ -104,7 +104,10 @@ function SurveyBoardCard({ s, href }: { s: PceSurvey; href: string }) {
         <ListPageBoardCardTitleRow
           title={(
             <span className="block">
-              <span className="block font-mono text-xs font-normal text-muted-foreground">{s.courseCode}</span>
+              <span className="block font-mono text-xs font-normal text-muted-foreground">
+                {s.courseCode}
+                {s.evalScope ? ` · ${s.evalScope === 'course' ? 'Course' : 'Instructor'}` : ''}
+              </span>
               <span className="line-clamp-2">{s.courseName}</span>
             </span>
           )}
