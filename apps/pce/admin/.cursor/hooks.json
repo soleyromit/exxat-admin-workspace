@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/exxat-session-status.mjs"
+      }
+    ],
+    "preToolUse": [
+      {
+        "_comment": "Matcher covers BOTH Claude-native tool names (Write, StrReplace, EditNotebook) AND Cursor's edit tools (write/Write, edit_file, search_replace, create_file, MultiEdit). Missing a name here = silent bypass; the brief-gate fires on the path AFTER this matcher gates the tool, so adding names is safe (the hook itself validates the path).",
+        "command": ".cursor/hooks/exxat-brief-gate.mjs",
+        "matcher": "^(Write|write|StrReplace|Edit|EditNotebook|MultiEdit|write_file|edit_file|search_replace|create_file|multi_edit|multi_edit_file)$"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/exxat-image-ia-gate.mjs"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "command": ".cursor/hooks/react-doctor.sh",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 120
+      },
+      {
+        "_comment": "Exxat-DS-specific content check (raw Badge vs StatusBadge/PillCell, duplicate favorite-star components, tabs-in-tabs nesting, double table padding) — the automated floor for rules that were previously prose-only. See exxat-ds-check.mjs header for why this exists.",
+        "command": ".cursor/hooks/exxat-ds-check.mjs",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "timeout": 15
+      }
+    ]
+  }
+}

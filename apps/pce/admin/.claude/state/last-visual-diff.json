@@ -1,0 +1,10 @@
+{
+  "ts": "2026-07-07T15:59:18.955Z",
+  "base": "http://localhost:3005",
+  "dsUrl": "http://localhost:4000",
+  "route": "/surveys/s3",
+  "dsRoutesOk": 5,
+  "scanned": 702,
+  "deviations": 5,
+  "result": "DEVIATIONS"
+}

@@ -1,10 +1,86 @@
-export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'pending_review' | 'released' | 'closed'
+export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'scheduled' | 'pending_review' | 'released' | 'closed'
 export type TemplateSection = 'course_content' | 'faculty_performance' | 'course_director'
 export type UserRole = 'admin' | 'faculty'
+export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
+export type SurveyType = 'course_evaluation' | 'programmatic'
+
+// ── Evaluation types ──────────────────────────────────────────────────────────
+// A single course offering is evaluated along MORE THAN ONE type at setup, and
+// each type runs on its own clock — so one offering can show three different
+// statuses at once (Romit, 2026-07-17). Order = the canonical setup order.
+export type EvaluationType = 'course_material' | 'faculty_roles'
+export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles']
+export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
+  course_material: 'Course',
+  faculty_roles:   'Faculty',
+}
+export const EVALUATION_TYPE_ICON: Record<EvaluationType, string> = {
+  course_material: 'fa-book-open',
+  faculty_roles:   'fa-chalkboard-user',
+}
+/** One evaluation type's own lifecycle + response tracking within an offering. */
+export interface EvaluationInstance {
+  type: EvaluationType
+  status: SurveyStatus
+  responseRate: number
+  responseCount: number
+  enrollmentCount: number
+  deadline: string
+}
+
+// Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
+export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
+
+export interface PceSubject {
+  key: SubjectKey
+  label: string
+  description: string
+  isGeneral: boolean  // true = always available (e.g. Course Content), false = Prism role-based
+  prismCount?: number // how many courses in the mock data have this role assigned
+  perLabel?: string   // "course" | "faculty member" | "preceptor" etc.
+}
+
+/** A Faculty role set — roles declared OUTSIDE the section (Jul 1 PCE constraint).
+ *  Owns the Faculty sections whose `roleSetId` equals this set's id. */
+export interface PceTemplateRoleSet {
+  id: string
+  roles: string[]
+}
+
+export interface PceTemplateSection {
+  id: string
+  subjectKey: string
+  title: string  // admin-customizable display name
+  description?: string
+  /** Faculty aspect only — the role set this section belongs to. Roles are declared
+   *  on the set (PceTemplateRoleSet), NEVER on the section. A section references its
+   *  set by id; it does not carry roles itself. */
+  roleSetId?: string
+  questions: TemplateQuestion[]
+  order: number
+}
+
+export interface PceProgram {
+  id: string
+  name: string
+  code: string
+}
+
+export interface PceOpenTextResponse {
+  id: string
+  surveyId: string
+  questionText: string
+  text: string
+  sectionSubject: SubjectKey
+  flagged?: boolean
+  /** AI pre-tag. 'concern' renders as "Constructive" (amber — no red in rating UI). */
+  sentiment?: 'positive' | 'neutral' | 'concern'
+}
 
 export interface PceTemplate {
   id: string
   name: string
+  description?: string
   sections: TemplateSection[]
   status: 'active' | 'draft'
   questionCount: number
@@ -15,14 +91,205 @@ export interface PceTemplate {
   questions: Record<TemplateSection, TemplateQuestion[]>
   /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
   likertPointer: 3 | 4 | 5 | 7 | 10
+  courseType?: CourseTypeFilter
+  /** CE templates — CB/PB/LB match target picked in Template settings (Monil
+   *  2026-07-10: Course type is back; Survey type/Access are programmatic-only).
+   *  Legacy `courseType` mirrors it so push-wizard auto-assign keeps matching. */
+  deliveryMode?: DeliveryMode
+  /** CE templates — preferred default when auto-assigning within its course type. */
+  isDefaultForType?: boolean
+  /** Survey type — the purpose this template serves. Shown in the template settings step. */
+  surveyPurpose?: 'student_pulse' | 'faculty_self_eval' | 'alumni' | 'preceptor_eval'
+  /** Visibility — 'program' = any admin/coordinator in the program can find & use it;
+   *  'private' = only the creator. Defaults to 'program' when unset. */
+  access?: 'program' | 'private'
+  /** Owning program — drives the Program filter on the templates hub (matches live). */
+  programId?: string
+  /** 'course_evaluation' | 'programmatic'. Added in Phase 1 expansion. */
+  surveyType?: SurveyType
+  /** Dynamic subject-based sections (additive — parallel to legacy questions/sections). */
+  templateSections?: PceTemplateSection[]
+  /** Faculty aspect role sets. Each set declares one OR multiple roles (outside the
+   *  section) and owns the Faculty sections whose roleSetId matches. One role → role-
+   *  specific questions; multiple roles → shared questions. Add more sets for more cases. */
+  facultyRoleSets?: PceTemplateRoleSet[]
+  /** Optional form-level instruction shown to respondents before the first question. */
+  formInstructionTitle?: string
+  formInstructionDescription?: string
+}
+
+/** Min response rate (%) required before results release — mirrors the
+ *  "Minimum response rate to release" control in Evaluation settings.
+ *  Source of truth for the "Below threshold" KPI on the Evaluations hub. */
+export const EVAL_RELEASE_THRESHOLD_PCT = 60
+
+/** Faculty roles eligible to be evaluated in a course evaluation. */
+export const EVAL_FACULTY_ROLES = [
+  { id: 'course-coordinator', label: 'Course Coordinator' },
+  { id: 'instructor',         label: 'Instructor' },
+  { id: 'teaching-assistant', label: 'Teaching Assistant' },
+  { id: 'lab-assistant',      label: 'Lab Assistant' },
+  { id: 'guest-lecturer',     label: 'Guest Lecturer' },
+] as const
+
+/** Default selected faculty roles (all active teaching roles, TAs excluded by default). */
+export const EVAL_DEFAULT_FACULTY_ROLE_IDS: string[] = ['course-coordinator', 'instructor']
+
+/** Benchmark targets used in analytics — source of truth for threshold lines on charts. */
+export const EVAL_BENCHMARKS = {
+  targetResponseRate: 70, // % — courses below this are flagged
+  targetCourseScore:  4.0, // out of 5
+  targetFacultyScore: 4.0, // out of 5
+} as const
+
+/** Default Likert scale configuration — single source read by template editor + analytics. */
+export const EVAL_DEFAULT_SCALE = {
+  preset: 'agreement' as const,
+  points: 5,
+  labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
+}
+
+// ── Evaluation Dates — anchor-date model (mirrors live /settings → Evaluation Dates) ──
+export type DateAnchor = 'course_end' | 'term_end'
+export const DATE_ANCHOR_LABELS: Record<DateAnchor, string> = {
+  course_end: 'Course End Date',
+  term_end:   'Term End Date',
+}
+/** Window + release rules: a signed day-offset from a chosen anchor. */
+export const EVAL_DATE_RULES = {
+  windowAnchor:  'course_end' as DateAnchor,
+  opensOffset:   -7, // negative = before anchor
+  closesOffset:  7,  // positive = after anchor
+  releaseAnchor: 'course_end' as DateAnchor,
+  releaseOffset: 14,
+}
+
+// ── Communication — email templates (mirrors live Email Templates manager) ──
+export type EvalEmailType = 'invitation' | 'reminder'
+export type EvalEmailStatus = 'action_required' | 'ready'
+export interface EvalEmailTemplate {
+  id: string
+  name: string
+  type: EvalEmailType
+  status: EvalEmailStatus
+  subject: string
+  body: string
+}
+export const EVAL_EMAIL_TEMPLATES: EvalEmailTemplate[] = [
+  {
+    id: 'tpl-invite-formal', name: 'Formal Invite', type: 'invitation', status: 'ready',
+    subject: 'Your course evaluation for {{course_name}} is now open',
+    body: 'Hi {{student_first_name}},\n\nYour course evaluation for {{course_name}} ({{term_name}}) is now open and your response is required. Your answers are anonymous.\n\nComplete it by {{close_date}}: {{survey_link}}\n\n{{program_name}} Team',
+  },
+  {
+    id: 'tpl-invite-friendly', name: 'Friendly Nudge', type: 'invitation', status: 'ready',
+    subject: 'We’d love your feedback on {{course_name}}',
+    body: 'Hi {{student_first_name}},\n\nGot 5 minutes? Your anonymous feedback on {{course_name}} helps us make the program better.\n\n{{survey_link}}\n\nThank you!\n{{program_name}} Team',
+  },
+  {
+    id: 'tpl-reminder-formal', name: 'Formal Reminder', type: 'reminder', status: 'ready',
+    subject: 'Reminder: {{course_name}} evaluation closes {{close_date}}',
+    body: 'Hi {{student_first_name}},\n\nYour evaluation for {{course_name}} closes in {{days_until_close}} day{{s}} ({{close_date}}). It takes about 5 minutes and is anonymous.\n\n{{survey_link}}\n\n{{program_name}} Team',
+  },
+]
+
+// ── Communication — reminder cadence engine (mirrors live Reminder Cadence) ──
+export type ReminderFrequency = 'daily' | 'every_3_days' | 'every_7_days' | 'custom'
+export type ReminderAnchor = 'survey_close' | 'term_end' | 'course_end'
+export const REMINDER_FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
+  daily: 'Daily', every_3_days: 'Every 3 days', every_7_days: 'Every 7 days', custom: 'Custom',
+}
+export const REMINDER_ANCHOR_LABELS: Record<ReminderAnchor, string> = {
+  survey_close: 'Survey Close Date', term_end: 'Term End Date', course_end: 'Course End Date',
+}
+export const EVAL_REMINDER_CADENCE = {
+  frequency:       'every_3_days' as ReminderFrequency,
+  anchor:          'survey_close' as ReminderAnchor,
+  startDaysBefore: 14,
 }
 
 export interface TemplateQuestion {
   id: string
   text: string
-  answerType: 'likert' | 'free_text'
+  answerType: 'likert' | 'free_text' | 'single_choice' | 'multiple_choice' | 'title' | 'number' | 'select_dropdown' | 'date_picker'
+  choices?: string[]
   /** 0-based position within its section */
   order: number
+}
+
+// ── Template builder — "import document" mock library ─────────────────────────
+// Selecting a document inserts these sections + questions into the active
+// builder tab (keyed by subjectKey). Real parsing is out of scope; this stands
+// in for extracted content the admin can then edit.
+export interface TemplateImportDoc {
+  id: string
+  name: string
+  sections: { title: string; questions: { text: string; answerType: TemplateQuestion['answerType']; choices?: string[] }[] }[]
+}
+export const TEMPLATE_IMPORT_LIBRARY: Record<string, TemplateImportDoc[]> = {
+  course_content: [
+    {
+      id: 'imp-course-standard', name: 'Course Evaluation — Standard.docx',
+      sections: [
+        { title: 'Course Content & Organization', questions: [
+          { text: 'The course objectives were clearly stated.', answerType: 'likert' },
+          { text: 'The course content was well organized.', answerType: 'likert' },
+          { text: 'The pace of the course was appropriate.', answerType: 'likert' },
+          { text: 'Assignments and activities contributed to my learning.', answerType: 'likert' },
+        ]},
+        { title: 'Learning Materials', questions: [
+          { text: 'The textbook and readings were useful.', answerType: 'likert' },
+          { text: 'Online resources supported my learning.', answerType: 'likert' },
+          { text: 'What materials would you add or remove?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+    {
+      id: 'imp-course-clinical', name: 'Clinical Course Eval.docx',
+      sections: [
+        { title: 'Clinical Preparation', questions: [
+          { text: 'The course prepared me for clinical practice.', answerType: 'likert' },
+          { text: 'Skills labs reinforced key competencies.', answerType: 'likert' },
+        ]},
+        { title: 'Overall', questions: [
+          { text: 'What was the most valuable part of this course?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
+  faculty: [
+    {
+      id: 'imp-faculty-standard', name: 'Instructor Evaluation.docx',
+      sections: [
+        { title: 'Teaching Effectiveness', questions: [
+          { text: 'The instructor explained concepts clearly.', answerType: 'likert' },
+          { text: 'The instructor was well prepared for class.', answerType: 'likert' },
+          { text: 'The instructor stimulated my interest in the subject.', answerType: 'likert' },
+        ]},
+        { title: 'Communication & Support', questions: [
+          { text: 'The instructor was available for help outside class.', answerType: 'likert' },
+          { text: 'The instructor provided useful feedback on my work.', answerType: 'likert' },
+          { text: 'Additional comments about the instructor:', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
+  general: [
+    {
+      id: 'imp-general-program', name: 'Program Feedback.docx',
+      sections: [
+        { title: 'Program Resources', questions: [
+          { text: 'Facilities and equipment met my needs.', answerType: 'likert' },
+          { text: 'Academic advising was helpful.', answerType: 'likert' },
+          { text: 'Library and study resources were adequate.', answerType: 'likert' },
+        ]},
+        { title: 'Overall Experience', questions: [
+          { text: 'Overall, I am satisfied with the program.', answerType: 'likert' },
+          { text: 'What one change would most improve the program?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
 }
 
 export interface PceInstructor {
@@ -30,6 +297,19 @@ export interface PceInstructor {
   name: string
   initials: string
   role: 'primary' | 'guest'
+  /** Stock portrait (vendored under /public/portraits) — identity marker on
+   *  score plots and avatar surfaces; initials remain the fallback. */
+  avatarUrl?: string
+  department?: string
+  /** Directory/profile fields (optional — survey.instructors carry only id/name/role). */
+  // CAPTE clinical-education faculty classes: Core Faculty (program's primary
+  // appointed faculty) · Associated Faculty (teach but not core) · Adjunct.
+  facultyType?: 'core' | 'associated' | 'adjunct'
+  rank?: string        // e.g. 'Professor', 'Associate Professor', 'Lecturer'
+  position?: string    // e.g. 'Department Chair', 'Program Director'
+  email?: string
+  phone?: string
+  employmentStatus?: 'active' | 'inactive'
 }
 
 export interface PceSurvey {
@@ -39,12 +319,23 @@ export interface PceSurvey {
   term: string
   /** Cohort = graduating class (e.g., "Class of 2027"). Per Aarti 2026-05-08 16:09 D3, the atomic unit for evaluation is course × term × cohort × faculty. */
   cohort?: string
-  /** Per UC-14 + workspace ADR-002: practice | classroom | lab (optional, extensible). Updated per PRD §2 Key Decision #5 (14 Jun 2026) — replaces Didactic/Clinical taxonomy. */
-  courseType?: 'practice' | 'classroom' | 'lab'
+  /** Per UC-14 + workspace ADR-002: Classroom (didactic) | Practice (clinical) | Lab (seminar). Used for the course-type split filter on Cohort view (C5). */
+  courseType?: 'didactic' | 'clinical' | 'seminar'
   /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
   priorOfferings?: PriorOffering[]
   templateId: string
   status: SurveyStatus
+  /** Per-evaluation-type breakdown (Course Material / Faculty and other roles /
+   *  General) — each carries its own status + response tracking. When absent,
+   *  `evaluationsFor()` derives them. The offering-level `status`/`responseCount`
+   *  above stay as the roll-up so KPIs, board and results are unaffected. */
+  evaluations?: EvaluationInstance[]
+  /** FK → course offering; multiple surveys may share it (split evaluations,
+   *  one survey per evaluation type). */
+  offeringId?: string
+  /** 'course' | 'instructor' when the offering splits its surveys —
+   *  lib/pce-results.ts reads both onto the derived EvalResult. */
+  evalScope?: 'course' | 'instructor'
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number
@@ -53,6 +344,29 @@ export interface PceSurvey {
   createdAt: string
   releasedAt?: string
   closedAt?: string
+  /** 'course_evaluation' | 'programmatic'. */
+  surveyType?: SurveyType
+  /** YYYY-MM-DD — date the survey opens for student responses. */
+  openDate?: string
+  /** Academic year string, e.g. '2025–2026'. */
+  academicYear?: string
+  /** FK → PceProgram */
+  programId?: string
+  /** YYYY-MM-DD — last manual (out-of-schedule) reminder sent for THIS survey.
+   *  Guard rail: the send-reminder confirm quotes it to prevent double-nudging. */
+  lastReminderSentAt?: string
+  /** YYYY-MM-DD — next cadence reminder scheduled from Settings (anchored to close date). */
+  nextScheduledReminderAt?: string
+  /** Admin who set up / pushed this survey — drives the "Created by" column + filter. */
+  createdBy?: string
+  /** Close date before the most recent extension. Set once, on the first "Edit end date". */
+  originalDeadline?: string
+  /** ST-14 gating: results stay "Review Pending" until grades are submitted.
+   *  Omitted = true for surveys that reached review (see lib/pce-results.ts). */
+  gradesSubmitted?: boolean
+  /** ST-14 gating: below this response count the result is suppressed ("Draft").
+   *  Omitted = MINIMUM_THRESHOLD (lib/pce-results.ts). */
+  minimumThreshold?: number
 }
 
 export interface PriorOffering {
@@ -62,6 +376,11 @@ export interface PriorOffering {
   courseAvg: number
   /** Faculty performance avg, 1–5 scale. */
   facultyAvg: number
+  /** Action items logged for that term — ST-15 score-card tooltip, by priority. */
+  actionItems?: { text: string; priority: 'high' | 'medium' | 'low' }[]
+  /** Theme labels (lib/pce-themes.ts vocabulary) logged as concerns that term —
+   *  drives the ST-15 Closed Loop Timeline (resolved / improved / persistent). */
+  concerns?: string[]
 }
 
 export interface SectionScore {
@@ -74,6 +393,11 @@ export interface ResponseComment {
   section: TemplateSection
   text: string
   sentiment: 'positive' | 'neutral' | 'concern'
+  /** Faculty member the comment is ABOUT (the subject, never the author —
+   *  responses stay anonymous). Only meaningful on faculty_performance
+   *  comments of multi-instructor offerings; unset there = not attributable
+   *  to one instructor. Single-instructor offerings derive it. */
+  facultyId?: string
 }
 
 export interface PceResponse {
@@ -88,19 +412,435 @@ export interface PceUser {
   email: string
   initials: string
   role: UserRole
+  /** Links the user to their faculty record (MOCK_FACULTY) for the faculty-role view. */
+  facultyId?: string
+  /** ST-14: Program Directors see results scoped to their program; unset = "All Programs". */
+  program?: string
 }
 
+// Dr. Anita Patel is both Department Chair (admin) and faculty (f1) — a real
+// dual role. Unifying the identity means the faculty view (dashboard + forms)
+// is scoped to a populated faculty record instead of a mismatched/hardcoded id.
 export const MOCK_CURRENT_USER: PceUser = {
   id: 'u1',
-  name: 'Dr. Sarah Thompson',
-  email: 'thompson@university.edu',
-  initials: 'ST',
+  name: 'Dr. Anita Patel',
+  email: 'anita.patel@university.edu',
+  initials: 'AP',
   role: 'admin',
+  facultyId: 'f1',
+  program: 'Doctor of Physical Therapy',
 }
+
+export const MOCK_SUBJECTS: PceSubject[] = [
+  {
+    key: 'course_content',
+    label: 'Course',
+    description: 'Evaluates the course itself — structure, materials, objectives, workload.',
+    isGeneral: true,
+    perLabel: 'course',
+  },
+  {
+    key: 'course_instructor',
+    label: 'Course Instructor',
+    description: 'Evaluates faculty who teach portions of the course.',
+    isGeneral: false,
+    prismCount: 3,
+    perLabel: 'faculty member',
+  },
+  {
+    key: 'course_coordinator',
+    label: 'Course Coordinator',
+    description: 'Evaluates the faculty member responsible for managing the course.',
+    isGeneral: false,
+    prismCount: 1,
+    perLabel: 'faculty member',
+  },
+  {
+    key: 'teaching_assistant',
+    label: 'Teaching Assistant',
+    description: 'Evaluates TAs who support instruction.',
+    isGeneral: false,
+    prismCount: 0,
+    perLabel: 'teaching assistant',
+  },
+  {
+    key: 'lab_instructor',
+    label: 'Lab Instructor',
+    description: 'Evaluates faculty running lab sessions.',
+    isGeneral: false,
+    prismCount: 1,
+    perLabel: 'lab instructor',
+  },
+  {
+    key: 'course_director',
+    label: 'Course Director',
+    description: 'Evaluates the director overseeing the course curriculum.',
+    isGeneral: false,
+    prismCount: 1,
+    perLabel: 'course director',
+  },
+  {
+    key: 'preceptor',
+    label: 'Preceptor',
+    description: 'Evaluates clinical preceptors who supervise students during rotations.',
+    isGeneral: false,
+    prismCount: 0,
+    perLabel: 'preceptor',
+  },
+  {
+    key: 'clinical_supervisor',
+    label: 'Clinical Supervisor',
+    description: 'Evaluates clinical supervisors at the placement site.',
+    isGeneral: false,
+    prismCount: 0,
+    perLabel: 'clinical supervisor',
+  },
+]
+
+export const MOCK_PROGRAMS: PceProgram[] = [
+  { id: 'prog1', name: 'Doctor of Physical Therapy', code: 'DPT' },
+  { id: 'prog2', name: 'Master of Science in Nursing', code: 'MSN' },
+  { id: 'prog3', name: 'Doctor of Pharmacy', code: 'PharmD' },
+  { id: 'prog4', name: 'Physician Assistant Studies', code: 'PA' },
+]
+
+export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
+  // mon2 — DPT-611 midpoint check-in (backs freeTextCounts.q11 = 6; the
+  // per-question sheet must be able to show every response it counts)
+  {
+    id: 'otr-mon2-1',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'The peds caseload discussions are great, but office hours conflict with our clinical block on Thursdays.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon2-2',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'No major concerns so far — would appreciate the case write-up rubric a week earlier.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-mon2-3',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'The case discussions are the highlight — real charts make the material stick.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon2-4',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Could we get feedback on the first case write-up before the second one is due?',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon2-5',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Nothing blocking — the pediatric gait analysis lab was excellent.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon2-6',
+    surveyId: 'mon2',
+    questionText: 'Any concerns to share at the midpoint?',
+    text: 'Recordings of the seminar sessions would help on clinical-rotation weeks.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  // mon1 — DPT-510 live (backs freeTextCounts q5/q8)
+  {
+    id: 'otr-mon1-1',
+    surveyId: 'mon1',
+    questionText: 'What would you change about this course?',
+    text: 'Spread the heavy readings out — the middle weeks stack up against the MSK labs.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon1-2',
+    surveyId: 'mon1',
+    questionText: 'What would you change about this course?',
+    text: 'Keep the lab progression as is — each session builds on the last one really well.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-3',
+    surveyId: 'mon1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Dr. Kim explains palpation techniques clearly and checks in with every table.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-4',
+    surveyId: 'mon1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'More practice time before the graded skills check would take the pressure off.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  // s2 — backs freeTextCounts q5/q8
+  {
+    id: 'otr-s2-1',
+    surveyId: 's2',
+    questionText: 'What would you change about this course?',
+    text: 'The weekly quizzes helped me keep up — more of the case-based questions please.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s2-2',
+    surveyId: 's2',
+    questionText: 'What would you change about this course?',
+    text: 'Post the slide decks before lecture so we can annotate during class.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s2-3',
+    surveyId: 's2',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Feedback on assignments was specific and came back quickly.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s2-4',
+    surveyId: 's2',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Sometimes questions in the big lecture hall went unanswered — a follow-up thread would help.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr1',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    text: 'The pacing in the second half of the semester felt rushed. More time on lab applications would help.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr2',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    text: 'More worked examples in the assessments. The gap between lecture content and exam difficulty was significant.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr3',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Very approachable during office hours. Could improve clarity on assignment expectations.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr4',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'This professor is terrible and should not be teaching.',
+    sectionSubject: 'course_instructor',
+    flagged: true,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr5',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Lectures were well-structured and the supplementary readings added real depth.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s1-6',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    text: "Dr. Patel's written feedback on assignments was detailed and returned quickly.",
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s1-7',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    text: 'Spread the heavier topics more evenly across the semester instead of back-loading them.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s1-8',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    text: 'Add more clinical case examples tied to each module.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s1-9',
+    surveyId: 's1',
+    questionText: 'What would improve the lab experience?',
+    text: 'More open lab hours before practical exams would help a lot.',
+    sectionSubject: 'lab_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s1-10',
+    surveyId: 's1',
+    questionText: 'What would improve the lab experience?',
+    text: 'The goniometry equipment was outdated and there were not enough stations.',
+    sectionSubject: 'lab_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s1-11',
+    surveyId: 's1',
+    questionText: 'What would improve the lab experience?',
+    text: 'TAs were great but spread thin during peak times — more coverage would help.',
+    sectionSubject: 'lab_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr6',
+    surveyId: 's5',
+    questionText: 'What would you change about this course?',
+    text: 'Guest lecturers were excellent but the transition between topics could be smoother.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr7',
+    surveyId: 's6',
+    questionText: 'What would you change about this course?',
+    text: 'More clinical examples early on would have helped connect theory to practice.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  // s3 (DPT-602, released) — feeds the post-release Qualitative Feedback view.
+  {
+    id: 'otr-s3-1',
+    surveyId: 's3',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Dr. Williams is an excellent communicator — expectations were always clear.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s3-2',
+    surveyId: 's3',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Office hours were genuinely helpful, especially before the practicum checkpoints.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s3-3',
+    surveyId: 's3',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'The pace of the debrief sessions was sometimes too fast to take notes.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-s3-4',
+    surveyId: 's3',
+    questionText: 'What would you change about this course?',
+    text: 'More worked examples in the assessments would help bridge clinic and coursework.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-s3-5',
+    surveyId: 's3',
+    questionText: 'What would you change about this course?',
+    text: 'Placement site coordination was smooth this year — a big improvement over what classmates described.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s3-6',
+    surveyId: 's3',
+    questionText: 'What would you change about this course?',
+    text: 'Some topics could be covered in more depth before we reach the clinical rotation.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  // s4 (DPT-504, closed) — smaller set, includes one moderated-out response.
+  {
+    id: 'otr-s4-1',
+    surveyId: 's4',
+    questionText: 'What would you change about this course?',
+    text: 'Great course structure overall — the module order made the material build naturally.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s4-2',
+    surveyId: 's4',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'Lectures were engaging and informative; the case walk-throughs were the highlight.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-s4-3',
+    surveyId: 's4',
+    questionText: 'What feedback do you have for the instructor?',
+    text: 'This instructor should not be allowed anywhere near a classroom.',
+    sectionSubject: 'course_instructor',
+    flagged: true,
+    sentiment: 'concern',
+  },
+]
 
 export const MOCK_TEMPLATES: PceTemplate[] = [
   {
     id: 'tmpl1',
+    programId: 'prog1',
     name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
@@ -109,6 +849,8 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [
         { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
@@ -124,9 +866,43 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       ],
       course_director: [],
     },
+    templateSections: [
+      {
+        id: 'ts1-1',
+        subjectKey: 'course_content',
+        title: 'Course Content',
+        order: 0,
+        questions: [
+          { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
+          { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
+          { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
+          { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
+          { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+        ],
+      },
+      {
+        id: 'ts1-2',
+        subjectKey: 'faculty',
+        title: 'Faculty Performance',
+        order: 1,
+        roleSetId: 'rs1-a',
+        questions: [
+          { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
+          { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
+          { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
+        ],
+      },
+    ],
+    facultyRoleSets: [
+      // Instructor + coordinator: end-of-term evals cover both in practice,
+      // and this makes the DEFAULT wizard state exercise the multi-role
+      // Evaluates count and the multi-person Faculty cell.
+      { id: 'rs1-a', roles: ['instructor', 'course-coordinator'] },
+    ],
   },
   {
     id: 'tmpl2',
+    programId: 'prog1',
     name: 'Faculty Midterm Check-In',
     sections: ['faculty_performance'],
     status: 'active',
@@ -135,6 +911,8 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Mar 22, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [],
       faculty_performance: [
@@ -144,9 +922,27 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       ],
       course_director: [],
     },
+    templateSections: [
+      {
+        id: 'ts2-1',
+        subjectKey: 'faculty',
+        title: 'Faculty Performance',
+        order: 0,
+        roleSetId: 'rs2-a',
+        questions: [
+          { id: 'q9',  text: 'The instructor encourages student participation.', answerType: 'likert', order: 0 },
+          { id: 'q10', text: 'The instructor is available during office hours.', answerType: 'likert', order: 1 },
+          { id: 'q11', text: 'Any concerns to share at the midpoint?', answerType: 'free_text', order: 2 },
+        ],
+      },
+    ],
+    facultyRoleSets: [
+      { id: 'rs2-a', roles: ['lab-assistant', 'course-coordinator'] },
+    ],
   },
   {
     id: 'tmpl3',
+    programId: 'prog2',
     name: 'Exit Survey',
     sections: ['course_content', 'faculty_performance', 'course_director'],
     status: 'draft',
@@ -155,34 +951,191 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Apr 28, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [],
       faculty_performance: [],
       course_director: [],
     },
+    templateSections: [],
+  },
+  {
+    id: 'tmpl-gen1',
+    name: 'Alumni Outcomes Survey',
+    sections: ['course_content'] as TemplateSection[],
+    status: 'active' as const,
+    questionCount: 6,
+    usedBySurveyCount: 1,
+    lastModified: 'May 10, 2026',
+    createdBy: 'Dr. Thompson',
+    likertPointer: 5 as const,
+    surveyType: 'programmatic' as SurveyType,
+    questions: {
+      course_content: [
+        { id: 'gq1', text: 'How well did the program prepare you for your career?', answerType: 'likert' as const, order: 0 },
+        { id: 'gq2', text: 'How satisfied are you with the quality of instruction?', answerType: 'likert' as const, order: 1 },
+        { id: 'gq3', text: 'How likely are you to recommend this program?', answerType: 'likert' as const, order: 2 },
+        { id: 'gq4', text: 'What aspects of the program were most valuable?', answerType: 'free_text' as const, order: 3 },
+        { id: 'gq5', text: 'What would you improve about the program?', answerType: 'free_text' as const, order: 4 },
+        { id: 'gq6', text: 'Any additional comments?', answerType: 'free_text' as const, order: 5 },
+      ],
+      faculty_performance: [],
+      course_director: [],
+    },
+  },
+  {
+    id: 'tmpl-gen2',
+    name: 'Preceptor Satisfaction Survey',
+    sections: ['course_content'] as TemplateSection[],
+    status: 'draft' as const,
+    questionCount: 4,
+    usedBySurveyCount: 0,
+    lastModified: 'May 18, 2026',
+    createdBy: 'Dr. Thompson',
+    likertPointer: 5 as const,
+    surveyType: 'programmatic' as SurveyType,
+    questions: {
+      course_content: [
+        { id: 'gq7', text: 'The students arrived well-prepared for clinical rotations.', answerType: 'likert' as const, order: 0 },
+        { id: 'gq8', text: 'Communication with the program office was effective.', answerType: 'likert' as const, order: 1 },
+        { id: 'gq9', text: 'I would accept students from this program again.', answerType: 'likert' as const, order: 2 },
+        { id: 'gq10', text: 'Please share any additional feedback.', answerType: 'free_text' as const, order: 3 },
+      ],
+      faculty_performance: [],
+      course_director: [],
+    },
+  },
+  {
+    id: 'tmplrich',
+    name: 'Comprehensive Course Evaluation',
+    sections: ['course_content', 'faculty_performance', 'course_director'],
+    status: 'active',
+    questionCount: 20,
+    usedBySurveyCount: 1,
+    lastModified: 'Apr 12, 2026',
+    createdBy: 'Dr. Thompson',
+    likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
+    questions: {
+      course_content: [
+        { id: 'c1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
+        { id: 'c2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
+        { id: 'c3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
+        { id: 'c4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
+        { id: 'c5', text: 'The course was well-organized and easy to follow.', answerType: 'likert', order: 4 },
+        { id: 'c6', text: 'The pace of the course was appropriate.', answerType: 'likert', order: 5 },
+        { id: 'c7', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
+      ],
+      faculty_performance: [
+        { id: 'i1', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
+        { id: 'i2', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
+        { id: 'i3', text: 'The instructor was responsive to questions.', answerType: 'likert', order: 2 },
+        { id: 'i4', text: 'The instructor provided helpful, timely feedback.', answerType: 'likert', order: 3 },
+        { id: 'i5', text: 'The instructor treated students with respect.', answerType: 'likert', order: 4 },
+        { id: 'i6', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 5 },
+      ],
+      course_director: [
+        { id: 'o1', text: 'Overall, this was a valuable course.', answerType: 'likert', order: 0 },
+        { id: 'o2', text: 'I would recommend this course to other students.', answerType: 'likert', order: 1 },
+      ],
+    },
+    templateSections: [
+      {
+        id: 'tsr-1', subjectKey: 'course_content', title: 'Course Content', order: 0,
+        questions: [
+          { id: 'c1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
+          { id: 'c2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
+          { id: 'c3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
+          { id: 'c4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
+          { id: 'c5', text: 'The course was well-organized and easy to follow.', answerType: 'likert', order: 4 },
+          { id: 'c6', text: 'The pace of the course was appropriate.', answerType: 'likert', order: 5 },
+          { id: 'c7', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
+        ],
+      },
+      {
+        id: 'tsr-2', subjectKey: 'course_instructor', title: 'Course Instructor', order: 1,
+        questions: [
+          { id: 'i1', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
+          { id: 'i2', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
+          { id: 'i3', text: 'The instructor was responsive to questions.', answerType: 'likert', order: 2 },
+          { id: 'i4', text: 'The instructor provided helpful, timely feedback.', answerType: 'likert', order: 3 },
+          { id: 'i5', text: 'The instructor treated students with respect.', answerType: 'likert', order: 4 },
+          { id: 'i6', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 5 },
+        ],
+      },
+      {
+        id: 'tsr-3', subjectKey: 'lab_instructor', title: 'Labs & Materials', order: 2,
+        questions: [
+          { id: 'l1', text: 'Lab sessions reinforced the lecture content.', answerType: 'likert', order: 0 },
+          { id: 'l2', text: 'Lab equipment and facilities were adequate.', answerType: 'likert', order: 1 },
+          { id: 'l3', text: 'Lab instructions were clear and easy to follow.', answerType: 'likert', order: 2 },
+          { id: 'l4', text: 'Teaching assistants were helpful during labs.', answerType: 'likert', order: 3 },
+          { id: 'l5', text: 'What would improve the lab experience?', answerType: 'free_text', order: 4 },
+        ],
+      },
+      {
+        id: 'tsr-4', subjectKey: 'course_director', title: 'Overall Experience', order: 3,
+        questions: [
+          { id: 'o1', text: 'Overall, this was a valuable course.', answerType: 'likert', order: 0 },
+          { id: 'o2', text: 'I would recommend this course to other students.', answerType: 'likert', order: 1 },
+        ],
+      },
+    ],
   },
 ]
 
 const INSTRUCTORS: Record<string, PceInstructor> = {
-  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary' },
-  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest'   },
-  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' },
-  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary' },
+  /* Portraits vendored to /public/portraits (UX-audit I1: external hosts
+     flake mid-demo; the fallback initials appearing in a review capture was
+     exactly that failure). */
+  patel:    { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', avatarUrl: '/portraits/anita-patel.jpg' },
+  chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest',   avatarUrl: '/portraits/kevin-chen.jpg' },
+  williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', avatarUrl: '/portraits/maria-williams.jpg' },
+  kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', avatarUrl: '/portraits/james-kim.jpg' },
+  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', avatarUrl: '/portraits/rachel-gomez.jpg' },
+  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', avatarUrl: '/portraits/omar-hassan.jpg' },
+}
+
+/** Legacy composite-key lookup (`courseCode-term` → ONE survey). Split flows
+ *  (several surveys sharing an offering) collide on that key, and plain Map
+ *  construction silently keeps whichever seed comes LAST. The representative
+ *  is the flow that OPENS first — the one a student meets first — so pick by
+ *  openDate instead of array order. */
+export function representativeSurveyByKey(surveys: PceSurvey[]): Map<string, PceSurvey> {
+  const m = new Map<string, PceSurvey>()
+  for (const s of surveys) {
+    const k = `${s.courseCode}-${s.term}`
+    const prev = m.get(k)
+    if (!prev || (s.openDate ?? '9999') < (prev.openDate ?? '9999')) m.set(k, s)
+  }
+  return m
 }
 
 export const MOCK_SURVEYS: PceSurvey[] = [
   {
     id: 's1',
-    courseCode: 'BIO 201',
-    courseName: 'Cellular Biology',
+    courseCode: 'DPT-501',
+    courseName: 'Human Anatomy & Kinesiology',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
-    courseType: 'classroom',
+    courseType: 'didactic',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2 },
-      { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2 },
+      {
+        term: 'Spring 2025',
+        courseAvg: 4.1,
+        facultyAvg: 4.2,
+        actionItems: [
+          { text: 'Spread the cadaver-lab units across two weeks', priority: 'high' },
+          { text: 'Refresh the kinesiology reading packet links', priority: 'medium' },
+          { text: 'Add a second weekly office-hour slot', priority: 'low' },
+        ],
+        concerns: ['Pacing', 'Course materials', 'Office hours'],
+      },
     ],
-    templateId: 't1',
+    templateId: 'tmplrich',
     status: 'pending_review',
     instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.chen, role: 'guest' }],
     responseRate: 68,
@@ -190,40 +1143,52 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 50,
     deadline: 'Apr 30, 2026',
     createdAt: 'Jan 15, 2026',
+    createdBy: 'Dr. Anita Patel',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
   {
     id: 's2',
-    courseCode: 'NURS 310',
-    courseName: 'Advanced Patient Care',
+    courseCode: 'DPT-601',
+    courseName: 'Clinical Practicum I',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'practice',
+    courseType: 'clinical',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.6, facultyAvg: 3.8 },
       { term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 4.0 },
     ],
-    templateId: 't1',
+    templateId: 'tmpl1',
     status: 'collecting',
     instructors: [INSTRUCTORS.williams, { ...INSTRUCTORS.chen, role: 'guest' }],
     responseRate: 42,
     responseCount: 21,
     enrollmentCount: 50,
-    deadline: 'May 05, 2026',
+    deadline: 'Jul 11, 2026',
     createdAt: 'Jan 15, 2026',
+    createdBy: 'Dr. Sam Whitfield',
+    lastReminderSentAt: '2026-07-04',
+    nextScheduledReminderAt: '2026-07-10',
+    surveyType: 'course_evaluation',
+    openDate: '2026-06-15',
+    academicYear: '2025–2026',
+    programId: 'prog2',
   },
   {
     id: 's3',
-    courseCode: 'MED 410',
-    courseName: 'Clinical Pharmacology',
+    courseCode: 'DPT-602',
+    courseName: 'Clinical Practicum II',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'practice',
+    courseType: 'clinical',
     priorOfferings: [
       { term: 'Spring 2023', courseAvg: 3.9, facultyAvg: 4.0 },
       { term: 'Spring 2024', courseAvg: 4.1, facultyAvg: 4.4 },
       { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.5 },
     ],
-    templateId: 't2',
+    templateId: 'tmpl1',
     status: 'released',
     instructors: [INSTRUCTORS.williams],
     responseRate: 91,
@@ -231,79 +1196,99 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 50,
     deadline: 'Apr 15, 2026',
     createdAt: 'Jan 15, 2026',
+    createdBy: 'Dr. Anita Patel',
     releasedAt: 'Apr 17, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog3',
   },
   {
     id: 's4',
-    courseCode: 'PHYS 101',
-    courseName: 'Medical Physics',
+    courseCode: 'DPT-504',
+    courseName: 'Neuroanatomy',
     term: 'Fall 2025',
     cohort: 'Class of 2028',
-    courseType: 'classroom',
+    courseType: 'didactic',
     priorOfferings: [
       { term: 'Fall 2022', courseAvg: 4.4, facultyAvg: 4.5 },
       { term: 'Fall 2023', courseAvg: 4.2, facultyAvg: 4.3 },
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.0 },
     ],
-    templateId: 't2',
+    templateId: 'tmpl1',
     status: 'closed',
+    // Gate demo (ST-15): grades not yet submitted → result stays "Review Pending".
+    gradesSubmitted: false,
     instructors: [INSTRUCTORS.kim],
     responseRate: 88,
     responseCount: 44,
     enrollmentCount: 50,
     deadline: 'Dec 10, 2025',
     createdAt: 'Aug 20, 2025',
+    createdBy: 'Dr. Anita Patel',
     releasedAt: 'Dec 14, 2025',
     closedAt: 'Jan 10, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2025-08-21',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
   {
     id: 's5',
-    courseCode: 'NURS 210',
-    courseName: 'Fundamentals of Nursing',
+    courseCode: 'DPT-502',
+    courseName: 'Physiology & Pathophysiology',
     term: 'Spring 2026',
     cohort: 'Class of 2028',
-    courseType: 'classroom',
+    courseType: 'didactic',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.1 },
       { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.0 },
     ],
-    templateId: 't1',
-    status: 'pending_review',
+    templateId: 'tmpl1',
+    status: 'active',
     instructors: [INSTRUCTORS.kim],
     responseRate: 73,
     responseCount: 22,
     enrollmentCount: 30,
-    deadline: 'Apr 22, 2026',
+    deadline: 'Jul 15, 2026',
     createdAt: 'Jan 15, 2026',
+    createdBy: 'Dr. Sam Whitfield',
+    lastReminderSentAt: '2026-07-06',
+    nextScheduledReminderAt: '2026-07-11',
+    surveyType: 'course_evaluation',
+    openDate: '2026-06-15',
+    academicYear: '2025–2026',
+    programId: 'prog2',
   },
   {
     id: 's6',
-    courseCode: 'MED 101',
-    courseName: 'Introduction to Medicine',
-    term: 'Spring 2026',
-    cohort: 'Class of 2028',
-    courseType: 'classroom',
-    priorOfferings: [
-      { term: 'Spring 2025', courseAvg: 3.8, facultyAvg: 4.0 },
-    ],
-    templateId: 't1',
-    status: 'pending_review',
-    instructors: [INSTRUCTORS.kim],
-    responseRate: 80,
-    responseCount: 8,
-    enrollmentCount: 10,
-    deadline: 'Apr 22, 2026',
-    createdAt: 'Jan 15, 2026',
+    courseCode: 'DPT-520',
+    courseName: 'Neurological Physical Therapy',
+    term: 'Summer 2026',
+    cohort: 'Class of 2027',
+    courseType: 'didactic',
+    templateId: 'tmpl1',
+    status: 'scheduled',
+    instructors: [INSTRUCTORS.patel],
+    responseRate: 0,
+    responseCount: 0,
+    enrollmentCount: 28,
+    deadline: 'Jul 18, 2026',
+    createdAt: 'May 26, 2026',
+    createdBy: 'Dr. Anita Patel',
+    surveyType: 'course_evaluation',
+    openDate: '2026-06-30',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
   {
     id: 's7',
-    courseCode: 'BIO 301',
-    courseName: 'Molecular Genetics',
+    courseCode: 'DPT-511',
+    courseName: 'Musculoskeletal Physical Therapy II',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
-    courseType: 'classroom',
-    /* No prior offerings — first time this course is offered. */
-    templateId: 't2',
+    courseType: 'didactic',
+    templateId: 'tmpl1',
     status: 'draft',
     instructors: [INSTRUCTORS.patel],
     responseRate: 0,
@@ -311,10 +1296,154 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 35,
     deadline: 'May 30, 2026',
     createdAt: 'Apr 20, 2026',
+    createdBy: 'Dr. Anita Patel',
+    surveyType: 'course_evaluation',
+    openDate: '2026-04-21',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
+  {
+    id: 'gen-s1',
+    courseCode: 'Alumni Outcomes Survey — Class of 2025',
+    courseName: '',
+    term: 'Spring 2026',
+    templateId: 'tmpl-gen1',
+    status: 'collecting' as SurveyStatus,
+    instructors: [],
+    responseRate: 42,
+    responseCount: 63,
+    enrollmentCount: 150,
+    deadline: 'Jul 14, 2026',
+    createdAt: 'May 1, 2026',
+    createdBy: 'Dr. Anita Patel',
+    lastReminderSentAt: '2026-06-30',
+    surveyType: 'programmatic' as SurveyType,
+    openDate: '2026-05-01',
+    academicYear: '2025–2026',
+  },
+  {
+    id: 'gen-s2',
+    courseCode: 'Preceptor Satisfaction Survey — Spring 2026',
+    courseName: '',
+    term: 'Spring 2026',
+    templateId: 'tmpl-gen1',
+    status: 'draft' as SurveyStatus,
+    instructors: [],
+    responseRate: 0,
+    responseCount: 0,
+    enrollmentCount: 45,
+    deadline: 'Jul 15, 2026',
+    createdAt: 'May 12, 2026',
+    createdBy: 'Dr. Sam Whitfield',
+    surveyType: 'programmatic' as SurveyType,
+    openDate: '2026-06-01',
+    academicYear: '2025–2026',
+  },
+  {
+    id: 'gen-s3',
+    courseCode: 'Program Exit Survey — Spring 2026',
+    courseName: '',
+    term: 'Spring 2026',
+    templateId: 'tmpl-gen1',
+    status: 'scheduled' as SurveyStatus,
+    instructors: [],
+    responseRate: 0,
+    responseCount: 0,
+    enrollmentCount: 80,
+    deadline: 'May 30, 2026',
+    createdAt: 'May 8, 2026',
+    createdBy: 'Dr. Anita Patel',
+    surveyType: 'programmatic' as SurveyType,
+    openDate: '2026-05-27',
+    academicYear: '2025–2026',
+  },
+
+  // ── Monitoring-dashboard fixtures — fuller Spring 2026 cycle + history so the
+  //    Overview distribution + trend read as real data (not 5 sparse points). ──
+  //
+  //    MOCK_CURRENT_USER (Dr. Patel, f1) is deliberately seeded onto Spring 2026
+  //    courses in BOTH course roles, so the faculty view demonstrates the RBAC
+  //    split rather than asserting it: coordinator ('primary') on mon1 → may
+  //    extend the close date; instructor ('guest') on mon6 → may not. Without
+  //    this she taught no LIVE course and the faculty home had no live group at
+  //    all. Co-taught offerings are the norm, and guest instructors were an
+  //    explicit design topic (Apr 21), so this is realistic, not a fixture hack.
+  { id: 'mon1',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.kim, role: 'guest' }], responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Jul 14, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-07-02', nextScheduledReminderAt: '2026-07-09', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 10, responseCount: 4, enrollmentCount: 40, deadline: 'Jul 12, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon3',  courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Jul 22, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon4',  courseCode: 'DPT-505', courseName: 'Biomechanics I',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon5',  courseCode: 'DPT-504', courseName: 'Neuroanatomy',                 term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released',   instructors: [INSTRUCTORS.chen, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 88, responseCount: 57, enrollmentCount: 65, deadline: 'May 15, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-10', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon6',  courseCode: 'DPT-530', courseName: 'Therapeutic Exercise',                term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.hassan, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 73, responseCount: 37, enrollmentCount: 50, deadline: 'Jul 16, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon7',  courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'active',     instructors: [INSTRUCTORS.kim],      responseRate: 62, responseCount: 24, enrollmentCount: 38, deadline: 'Jul 18, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-17', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon8',  courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 58, responseCount: 28, enrollmentCount: 48, deadline: 'Jul 13, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+
+  // history (for the response-rate trend)
+  { id: 'mon9',  courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology',         term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 71, responseCount: 37, enrollmentCount: 52, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon10', courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 80, responseCount: 40, enrollmentCount: 50, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon11', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology',         term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 75, responseCount: 38, enrollmentCount: 50, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon12', courseCode: 'DPT-505', courseName: 'Biomechanics I',                        term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 82, responseCount: 49, enrollmentCount: 60, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  // minimumThreshold above responseCount = gate demo (ST-15): suppressed "Draft" result.
+  { id: 'mon13', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I',  term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 68, responseCount: 37, enrollmentCount: 55, minimumThreshold: 40, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon14', courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 37, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+
+  // Programmatic (institutional) surveys with real response data — feed the
+  // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
+  { id: 'pg1', courseCode: 'End-of-Program Satisfaction — Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
+  { id: 'pg2', courseCode: 'Clinical Site Feedback — DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg3', courseCode: 'Faculty Self-Assessment — All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg4', courseCode: 'Curriculum Effectiveness — All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+
+  // ── Fall 2026 (pt5) — flows already pushed for the upcoming term ──────────
+  // The SAME offering can be covered by SEPARATE push flows, each evaluating a
+  // different evaluatee: `offeringId` ties the flows to the course, `evalScope`
+  // + `instructors` say WHO each one evaluates. The push wizard's Status column
+  // reads these, so setting up a second flow shows what's already out.
+  //   co13 (DPT-510) — two instructor flows, one per teaching block: Dr. Patel
+  //     mid-term, Dr. Chen (guest, second block) end-of-term.
+  //   co17 (DPT-601) — the course-material flow is out; faculty flow is not.
+  // Term starts Aug 24 so nothing can be COLLECTING yet — but statuses still
+  // diverge per evaluatee (Monil's model: each faculty is evaluated in its
+  // own flow with its own lifecycle): Dr. Chen's end-of-term flow is still a
+  // DRAFT while the course + Dr. Patel flows are locked in as scheduled.
+  // Third co13 flow (course-material, early term) — makes DPT-510 the >2-flows
+  // row, exercising the Status cell's "+N more" overflow popover.
+  { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Sep 25, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-09-14', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Oct 23, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-10-12', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'draft', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 4, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-23', academicYear: '2026–2027', programId: 'prog1' },
+  // instructors: [] — a course-scope flow evaluates no PERSON; listing one
+  // would seed a ghost row in that instructor's faculty analytics
+  // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [
+  // ── Live surveys — partial data so "View results" shows the real layout ──
+  {
+    surveyId: 'mon1',
+    sectionScores: [
+      { section: 'course_content', avg: 3.9, count: 23 },
+      { section: 'faculty_performance', avg: 4.1, count: 23 },
+    ],
+    comments: [
+      { section: 'course_content', text: 'The msk labs build on each other really well so far.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Reading load feels heavy for the middle weeks.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f4' },
+    ],
+  },
+  {
+    surveyId: 'mon2',
+    sectionScores: [
+      { section: 'faculty_performance', avg: 3.8, count: 18 },
+    ],
+    comments: [
+      { section: 'faculty_performance', text: 'Great case discussions in the peds unit — the NICU scenarios especially.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Office hours times are hard to make around our Thursday clinical block.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Gomez gives specific, usable feedback after every case presentation.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Would help to get the case write-up rubric earlier in the week.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Pace of the seminar feels about right so far.', sentiment: 'neutral' },
+      { section: 'faculty_performance', text: 'The developmental milestones review session was the best class this term.', sentiment: 'positive' },
+    ],
+  },
   {
     surveyId: 's1',
     sectionScores: [
@@ -322,10 +1451,12 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', avg: 4.3, count: 34 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive' },
-      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Very organized and responsive to questions.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'Could improve pacing in later sessions.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Very approachable during office hours and always available.', sentiment: 'positive', facultyId: 'f1' },
       { section: 'course_content', text: 'Course materials were well-structured and easy to follow.', sentiment: 'positive' },
       { section: 'course_content', text: 'Some lab sessions felt rushed.', sentiment: 'concern' },
+      { section: 'course_content', text: 'The gap between lecture content and exam difficulty was significant.', sentiment: 'concern' },
     ],
   },
   {
@@ -353,6 +1484,71 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', text: 'Lectures were engaging and informative.', sentiment: 'positive' },
     ],
   },
+  {
+    surveyId: 's5',
+    sectionScores: [
+      { section: 'course_content', avg: 3.9, count: 22 },
+      { section: 'faculty_performance', avg: 4.1, count: 22 },
+    ],
+    comments: [
+      { section: 'faculty_performance', text: 'Clear expectations set from day one.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Clinical simulations could be more realistic.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Well-organized course overall.', sentiment: 'positive' },
+    ],
+  },
+  {
+    surveyId: 's6',
+    sectionScores: [
+      { section: 'course_content', avg: 4.2, count: 8 },
+      { section: 'faculty_performance', avg: 4.4, count: 8 },
+    ],
+    comments: [
+      { section: 'course_content', text: 'The intro to medicine course exceeded expectations.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Great communicator and approachable outside class.', sentiment: 'positive' },
+    ],
+  },
+  // Score records for released historical offerings — a "Results Available"
+  // row must never show an em-dash score (results-list credibility).
+  {
+    surveyId: 'mon5',
+    sectionScores: [
+      { section: 'course_content', avg: 4.3, count: 57 },
+      { section: 'faculty_performance', avg: 4.5, count: 57 },
+    ],
+    comments: [],
+  },
+  {
+    surveyId: 'mon9',
+    sectionScores: [
+      { section: 'course_content', avg: 4.0, count: 37 },
+      { section: 'faculty_performance', avg: 4.2, count: 37 },
+    ],
+    comments: [],
+  },
+  {
+    surveyId: 'mon10',
+    sectionScores: [
+      { section: 'course_content', avg: 4.4, count: 40 },
+      { section: 'faculty_performance', avg: 4.6, count: 40 },
+    ],
+    comments: [],
+  },
+  {
+    surveyId: 'mon11',
+    sectionScores: [
+      { section: 'course_content', avg: 3.9, count: 38 },
+      { section: 'faculty_performance', avg: 4.1, count: 38 },
+    ],
+    comments: [],
+  },
+  {
+    surveyId: 'mon12',
+    sectionScores: [
+      { section: 'course_content', avg: 4.1, count: 49 },
+      { section: 'faculty_performance', avg: 4.3, count: 49 },
+    ],
+    comments: [],
+  },
 ]
 
 export const MOCK_TERMS = ['Spring 2026', 'Fall 2025', 'Spring 2025']
@@ -372,39 +1568,72 @@ export interface MasterCourse {
   name: string
   department: string
   status: 'active' | 'inactive'
+  type: 'didactic' | 'clinical' | 'seminar'
   /** Last edited; YYYY-MM-DD */
   lastEdited: string
   /** Editor display name */
   editedBy: string
 }
 
+/** Season half of a term. Kept SEPARATE from academicYear — the push scope rail
+ *  selects Term (season) and Academic Year independently (they are never merged). */
+export type TermSeason = 'Spring' | 'Summer' | 'Fall'
+
 export interface ProgramTerm {
   id: string
   name: string
+  /** Season — the "Term" selector value; independent of academicYear. */
+  season: TermSeason
   academicYear: string
   /** YYYY-MM-DD */
   startDate: string
   endDate: string
   status: 'active' | 'archived'
+  /** Controls whether this term appears in the Activation wizard and product dropdowns */
+  enabledForEval: boolean
+  /** YYYY-MM-DD — date the last ad-hoc reminder email was sent for this term's at-risk courses.
+   *  Shown on the Dashboard term card so admins can gauge whether sending another is premature. */
+  lastReminderSentAt?: string
 }
 
 export const MOCK_MASTER_COURSES: MasterCourse[] = [
-  { id: 'mc1', code: 'BIO 201',   name: 'Cellular Biology',         department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Thompson' },
-  { id: 'mc2', code: 'NURS 310',  name: 'Advanced Patient Care',    department: 'Nursing',             status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Thompson' },
-  { id: 'mc3', code: 'MED 410',   name: 'Clinical Pharmacology',    department: 'Medicine',            status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Thompson' },
-  { id: 'mc4', code: 'PHYS 101',  name: 'Medical Physics',          department: 'Foundations',         status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Thompson' },
-  { id: 'mc5', code: 'NURS 210',  name: 'Fundamentals of Nursing',  department: 'Nursing',             status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
-  { id: 'mc6', code: 'MED 101',   name: 'Introduction to Medicine', department: 'Medicine',            status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
-  { id: 'mc7', code: 'BIO 301',   name: 'Molecular Genetics',       department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Thompson' },
-  { id: 'mc8', code: 'PHARM 210', name: 'Pharmacotherapy I',        department: 'Pharmacy',            status: 'inactive', lastEdited: '2024-08-01', editedBy: 'Dr. Thompson' },
+  // Year 1 — Foundations (Didactic)
+  { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
+  { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
+  { id: 'mc5',  code: 'DPT-505', name: 'Biomechanics I', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
+  // Year 2 — Clinical Sciences (Didactic)
+  { id: 'mc6',  code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I',   department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc7',  code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II',  department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
+  { id: 'mc9',  code: 'DPT-530', name: 'Therapeutic Exercise',     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
+  { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
+  // Specialty Electives (Didactic)
+  { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
+  // Clinical Education (Clinical)
+  { id: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Patel'    },
+  { id: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II',                department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Hassan'   },
+  { id: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2025-12-10', editedBy: 'Dr. Patel'    },
+  // ── Offered but previously uncatalogued ──────────────────────────────────────
+  // These six had offerings and surveys but no master entry, so the catalogue and the data
+  // disagreed about what the program even teaches. Added here rather than deleted from the
+  // offerings: they carry real evaluation history, which makes them real courses.
+  { id: 'mc17', code: 'DPT-506', name: 'Biomechanics II',                     department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
+  { id: 'mc18', code: 'DPT-515', name: 'Pharmacology for Physical Therapists', department: 'Clinical Sciences', type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
+  { id: 'mc19', code: 'DPT-620', name: 'Geriatric Physical Therapy',          department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'   },
+  { id: 'mc20', code: 'DPT-710', name: 'Neurological Rehab',                  department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Kim'      },
+  { id: 'mc21', code: 'DPT-711', name: 'Pediatric Rehab',                     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Williams' },
+  { id: 'mc22', code: 'DPT-801', name: 'Evidence-Based Practice',             department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
-  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active'   },
-  { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived' },
-  { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived' },
-  { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived' },
-  { id: 'pt5', name: 'Fall 2026',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active'   },
+  // endDate Jul 15 keeps the evaluation window (endDate + 7d) ahead of "today"
+  // so the collecting-term demo is date-coherent with its live survey deadlines.
+  { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-07-15', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
+  { id: 'pt2', name: 'Fall 2025',   season: 'Fall',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
+  { id: 'pt3', name: 'Spring 2025', season: 'Spring', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
+  { id: 'pt4', name: 'Fall 2024',   season: 'Fall',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
+  { id: 'pt5', name: 'Fall 2026',   season: 'Fall',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active',   enabledForEval: true  },
 ]
 
 /** LMS-on/off school config. Per workspace ADR-002, default is LMS-on; in this prototype we mock the off state so manual CRUD demos work. Toggle in future via Settings. */
@@ -414,6 +1643,29 @@ export const MOCK_LMS_ENABLED = false
 // Course Offerings — the atomic 4-tuple unit (Aarti 2026-05-08 16:09 D3)
 // ============================================================================
 
+// CB / LB / PB — delivery mode for the push-flow readiness step (§audit spec).
+// VOCABULARY BRIDGE (do not confuse three overlapping type systems):
+//   • DeliveryMode (this)          : 'classroom' | 'lab' | 'practice'   ← the CB/LB/PB the audit uses
+//   • CourseOffering.courseType    : 'didactic' | 'clinical'            ← LEGACY template-matching join key
+//   • MasterCourse.type / CourseTypeFilter : ...'seminar'...            ← LEGACY, courses/templates surfaces
+// deliveryModeOf() maps the legacy pair (didactic→classroom, clinical→practice); 'lab' has NO legacy
+// equivalent, so LB offerings must set deliveryMode explicitly. Unifying these is out of scope here.
+export type DeliveryMode = 'classroom' | 'lab' | 'practice'
+
+/** Short badge codes for the audit Type column. */
+export const COURSE_TYPE_LABEL: Record<DeliveryMode, string> = {
+  classroom: 'CB',
+  lab: 'LB',
+  practice: 'PB',
+}
+
+/** Full names (tooltips / a11y). */
+export const COURSE_TYPE_FULL_LABEL: Record<DeliveryMode, string> = {
+  classroom: 'Classroom based',
+  lab: 'Lab based',
+  practice: 'Practice based',
+}
+
 export interface CourseOffering {
   id: string
   /** FK → MasterCourse */
@@ -422,13 +1674,27 @@ export interface CourseOffering {
   termId: string
   /** Graduating class */
   cohort: string
-  /** Primary faculty (Course Coordinator). FK → INSTRUCTORS */
+  /** Primary faculty (Course Coordinator / PB Clinical Coordinator). FK → INSTRUCTORS */
   primaryFacultyId: string
-  /** Additional collaborators (per Aarti D7). FK → INSTRUCTORS */
+  /** Additional collaborators / instructors (per Aarti D7). FK → INSTRUCTORS */
   collaboratorIds: string[]
   /** Roster size */
   enrolledCount: number
   status: 'planned' | 'active' | 'completed' | 'archived'
+  /** Legacy template-matching join key (didactic↔CB, clinical↔PB). Do not remove — templates match on this. */
+  courseType?: 'didactic' | 'clinical'
+  /** CB/LB/PB. Optional — falls back from courseType via deliveryModeOf(). */
+  deliveryMode?: DeliveryMode
+  /** LB only — lab teaching assistants. FK → INSTRUCTORS */
+  labTaIds?: string[]
+  /** PB only — placement / clinical faculty. FK → INSTRUCTORS */
+  placementFacultyIds?: string[]
+}
+
+/** Resolve an offering's CB/LB/PB: explicit deliveryMode wins, else legacy courseType maps (clinical→PB, else CB). */
+export function deliveryModeOf(o: Pick<CourseOffering, 'deliveryMode' | 'courseType'>): DeliveryMode {
+  if (o.deliveryMode) return o.deliveryMode
+  return o.courseType === 'clinical' ? 'practice' : 'classroom'
 }
 
 // Permissions (entity #6) — role × scope grants
@@ -621,7 +1887,7 @@ export const MOCK_COMPETENCIES: Competency[] = [
   { id: 'cm4', name: 'Quality Improvement',     description: 'Use data to monitor outcomes and improve care quality',                                source: 'IOM',           status: 'active' },
   { id: 'cm5', name: 'Safety',                  description: 'Minimize risk of harm to patients and providers',                                       source: 'IOM',           status: 'active' },
   { id: 'cm6', name: 'Informatics',             description: 'Use information and technology to communicate, manage, and support decision-making',  source: 'IOM',           status: 'active' },
-  { id: 'cm7', name: 'Pharmacological Therapy', description: 'Apply pharmacotherapeutic principles to medication management',                            source: 'NLN',           status: 'active' },
+  { id: 'cm7', name: 'Pharmacological Therapy', description: 'Apply principles of pharmacology to medication management',                            source: 'NLN',           status: 'active' },
   { id: 'cm8', name: 'Patient Education',       description: 'Provide individualized education to promote health',                                    source: 'NLN', parentId: 'cm1', status: 'active' },
 ]
 
@@ -637,14 +1903,90 @@ export const MOCK_STANDARDS: Standard[] = [
 ]
 
 export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
-  { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
-  { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
-  { id: 'co3', masterCourseId: 'mc3', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'completed' },
-  { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived' },
-  { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active' },
-  { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active' },
-  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
-  { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned' },
+  // ── Spring 2026 (pt1) ─────────────────────────────────────────────────────
+  { id: 'co1',  masterCourseId: 'mc1',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co2',  masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 48, status: 'active',    courseType: 'clinical' },
+  { id: 'co3',  masterCourseId: 'mc15', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 46, status: 'completed', courseType: 'clinical' },
+  { id: 'co4',  masterCourseId: 'mc4',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 52, status: 'archived',  courseType: 'didactic' },
+  { id: 'co5',  masterCourseId: 'mc2',  termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co6',  masterCourseId: 'mc6',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co7',  masterCourseId: 'mc7',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co8',  masterCourseId: 'mc8',  termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+
+  // ── Fall 2026 (pt5) — full term ──────────────────────────────────────────
+  // Year 1 — Foundations
+  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Year 1 – Section A', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Year 1 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
+  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1 – Section D', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  // Year 2 — Clinical Sciences
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
+  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2 – Section D', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
+  // Year 3 — Clinical Practicums
+  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Year 3 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
+  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Year 3 – Section B', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
+  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Year 3 – Section C', primaryFacultyId: 'f3', collaboratorIds: ['f4'],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+
+  // ── Lab-based (LB) + Practice-based (PB) — audit readiness fixtures (deliveryMode + one gap each) ──
+  // labTaIds[1] = the Lab Assistant slot (pce-course-readiness) — filled here so
+  // ONE demo row exercises the multi-person Faculty cell when a multi-role
+  // template (Faculty Midterm Check-In) is assigned.
+  { id: 'co20', masterCourseId: 'mc7',  termId: 'pt5', cohort: 'Year 2 – Section E', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5', 'f4'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
+  { id: 'co21', masterCourseId: 'mc4',  termId: 'pt5', cohort: 'Year 1 – Section E', primaryFacultyId: 'f4', collaboratorIds: ['f2','f5'],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
+  { id: 'co22', masterCourseId: 'mc16', termId: 'pt5', cohort: 'Year 3 – Section D', primaryFacultyId: '',   collaboratorIds: ['f6'], placementFacultyIds: ['f6'], enrolledCount: 12, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no clinical coordinator
+  { id: 'co23', masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     placementFacultyIds: [],     enrolledCount: 18, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no placement faculty
+]
+
+// Maps CourseOffering ID → enrolled Student IDs visible in this demo.
+// The real system enrolledCount may be higher — shown as "X of N enrolled in demo".
+export const MOCK_COURSE_ENROLLMENTS: Record<string, string[]> = {
+  // Spring 2026 (pt1)
+  co1: ['st6', 'st7', 'st8', 'st9'],                  // DPT-501, Class of 2027
+  co2: ['st1', 'st2', 'st3', 'st4'],                  // DPT-601, Class of 2026
+  co3: ['st1', 'st2', 'st3', 'st4'],                  // DPT-602, Class of 2026
+  co5: ['st11', 'st12', 'st13', 'st14', 'st15'],      // DPT-502, Class of 2028
+  co6: ['st6', 'st7', 'st8', 'st9'],                  // DPT-510, Class of 2027
+  co7: ['st6', 'st7', 'st8', 'st9'],                  // DPT-511, Class of 2027
+  co8: ['st1', 'st2', 'st3', 'st4'],                  // DPT-520, Class of 2026
+  // Fall 2026 (pt5) — Year 1 (new cohort)
+  co9:  ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-501
+  co10: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-502
+  co11: ['st18', 'st19', 'st20', 'st21'],              // DPT-503
+  co12: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-505
+  co21: ['st19', 'st20', 'st21', 'st22', 'st23'],     // DPT-530 (lab)
+  // Fall 2026 (pt5) — Year 2, Class of 2028
+  co13: ['st11', 'st12', 'st13', 'st14', 'st15'],     // DPT-510
+  co14: ['st11', 'st12', 'st13', 'st14'],             // DPT-520
+  co15: ['st11', 'st12', 'st13'],                     // DPT-530
+  co16: ['st11', 'st12', 'st13', 'st14'],             // DPT-611 (unassigned faculty demo)
+  // Fall 2026 (pt5) — Year 3, Class of 2027
+  co17: ['st6', 'st7', 'st8'],                        // DPT-601
+  co18: ['st6', 'st7', 'st8', 'st9'],                 // DPT-602
+  co19: ['st6', 'st7', 'st8', 'st9'],                 // DPT-550
+}
+
+export interface Personnel {
+  id: string
+  name: string
+  email: string
+  role: string
+  department: string
+  status: 'Active' | 'Inactive'
+}
+
+export const MOCK_PERSONNEL: Personnel[] = [
+  { id: 'p1',  name: 'Sandra Torres',    email: 'storres@school.edu',     role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p2',  name: 'James Whitfield',  email: 'jwhitfield@school.edu',  role: 'Clinical Education Director',  department: 'Clinical Affairs',   status: 'Active'   },
+  { id: 'p3',  name: 'Mei-Lin Cheng',    email: 'mcheng@school.edu',      role: 'Administrative Coordinator',   department: 'Student Services',   status: 'Active'   },
+  { id: 'p4',  name: 'Derek Okafor',     email: 'dokafor@school.edu',     role: 'Accreditation Specialist',     department: 'Academic Affairs',   status: 'Active'   },
+  { id: 'p5',  name: 'Priya Nair',       email: 'pnair@school.edu',       role: 'Curriculum Coordinator',       department: 'Academic Affairs',   status: 'Active'   },
+  { id: 'p6',  name: 'Tom Harrington',   email: 'tharrington@school.edu', role: 'IT Support Specialist',        department: 'Technology',         status: 'Active'   },
+  { id: 'p7',  name: 'Aisha Mukherjee',  email: 'amukherjee@school.edu',  role: 'Student Affairs Coordinator',  department: 'Student Services',   status: 'Active'   },
+  { id: 'p8',  name: 'Carlos Reyes',     email: 'creyes@school.edu',      role: 'Research Coordinator',         department: 'Research',           status: 'Inactive' },
+  { id: 'p9',  name: 'Laura Kwan',       email: 'lkwan@school.edu',       role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p10', name: 'Nathan Brooks',    email: 'nbrooks@school.edu',     role: 'Financial Aid Advisor',        department: 'Student Services',   status: 'Active'   },
 ]
 
 export const SECTION_LABELS: Record<TemplateSection, string> = {
@@ -665,6 +2007,213 @@ export const SECTION_ABBREV: Record<TemplateSection, string> = {
   course_director: 'CD',
 }
 
+// ── Per-question scoring — Evaluation Card (Sections tab) ────────────────────
+
+export interface QuestionScore {
+  questionId: string
+  avg: number
+  count: number
+  /** Response counts for ratings 1–5; index 0 = rating 1. */
+  distribution: [number, number, number, number, number]
+}
+
+export interface InstructorQuestionBlock {
+  instructorId: string
+  scores: QuestionScore[]
+}
+
+export interface SurveyQuestionData {
+  surveyId: string
+  /** Likert question scores keyed by subjectKey (non-faculty sections). */
+  sectionScores: Record<string, QuestionScore[]>
+  /** Faculty section (course_instructor) — one block per instructor. */
+  instructorBlocks?: InstructorQuestionBlock[]
+  /** Open-text response counts keyed by questionId. */
+  freeTextCounts: Record<string, number>
+}
+
+export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
+  // mon1 — DPT-510 live · tmpl1 · Dr. Kim (f4) · 23 partial responses
+  {
+    surveyId: 'mon1',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.0, count: 23, distribution: [0, 1, 5, 10, 7] },
+        { questionId: 'q2', avg: 3.8, count: 23, distribution: [1, 2, 6, 9, 5] },
+        { questionId: 'q3', avg: 3.7, count: 23, distribution: [1, 3, 6, 9, 4] },
+        { questionId: 'q4', avg: 4.1, count: 23, distribution: [0, 1, 4, 10, 8] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f4',
+        scores: [
+          { questionId: 'q6', avg: 4.2, count: 23, distribution: [0, 1, 3, 9, 10] },
+          { questionId: 'q7', avg: 4.0, count: 23, distribution: [0, 2, 4, 9, 8] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 2, q8: 2 },
+  },
+  // mon2 — DPT-611 live · tmpl2 · Dr. Gomez (f5) · mid-collection, 18 of 40
+  {
+    surveyId: 'mon2',
+    sectionScores: {},
+    instructorBlocks: [
+      {
+        instructorId: 'f5',
+        scores: [
+          { questionId: 'q9',  avg: 4.1, count: 18, distribution: [0, 1, 3, 7, 7] },
+          { questionId: 'q10', avg: 3.5, count: 18, distribution: [0, 3, 6, 6, 3] },
+        ],
+      },
+    ],
+    freeTextCounts: { q11: 6 },
+  },
+  {
+    surveyId: 's1',
+    sectionScores: {
+      course_content: [
+        { questionId: 'c1', avg: 4.3, count: 34, distribution: [0, 1, 3, 12, 18] },
+        { questionId: 'c2', avg: 4.1, count: 34, distribution: [0, 2, 4, 15, 13] },
+        { questionId: 'c3', avg: 3.6, count: 34, distribution: [1, 4, 8, 14,  7] },
+        { questionId: 'c4', avg: 3.9, count: 34, distribution: [0, 3, 7, 15,  9] },
+        { questionId: 'c5', avg: 4.2, count: 34, distribution: [0, 2, 3, 13, 16] },
+        { questionId: 'c6', avg: 3.5, count: 34, distribution: [2, 4, 9, 13,  6] },
+      ],
+      lab_instructor: [
+        { questionId: 'l1', avg: 4.0, count: 34, distribution: [0, 2, 6, 14, 12] },
+        { questionId: 'l2', avg: 3.4, count: 34, distribution: [2, 5, 9, 13,  5] },
+        { questionId: 'l3', avg: 3.8, count: 34, distribution: [1, 3, 7, 15,  8] },
+        { questionId: 'l4', avg: 4.4, count: 34, distribution: [0, 1, 2, 12, 19] },
+      ],
+      course_director: [
+        { questionId: 'o1', avg: 4.2, count: 34, distribution: [0, 2, 4, 13, 15] },
+        { questionId: 'o2', avg: 4.0, count: 34, distribution: [0, 3, 5, 14, 12] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f1',
+        scores: [
+          { questionId: 'i1', avg: 4.5, count: 34, distribution: [0, 1, 2, 10, 21] },
+          { questionId: 'i2', avg: 4.2, count: 34, distribution: [0, 2, 4, 13, 15] },
+          { questionId: 'i3', avg: 4.3, count: 34, distribution: [0, 1, 4, 12, 17] },
+          { questionId: 'i4', avg: 4.0, count: 34, distribution: [0, 3, 5, 14, 12] },
+          { questionId: 'i5', avg: 4.6, count: 34, distribution: [0, 0, 2, 10, 22] },
+        ],
+      },
+      {
+        instructorId: 'f2',
+        scores: [
+          { questionId: 'i1', avg: 4.1, count: 34, distribution: [0, 2, 5, 14, 13] },
+          { questionId: 'i2', avg: 3.7, count: 34, distribution: [1, 3, 8, 14,  8] },
+          { questionId: 'i3', avg: 3.9, count: 34, distribution: [0, 3, 7, 14, 10] },
+          { questionId: 'i4', avg: 3.5, count: 34, distribution: [2, 4, 9, 12,  7] },
+          { questionId: 'i5', avg: 4.2, count: 34, distribution: [0, 1, 5, 14, 14] },
+        ],
+      },
+    ],
+    freeTextCounts: { c7: 4, i6: 4, l5: 3 },
+  },
+  // s2 — DPT-601 Clinical Practicum I · Dr. Williams (f3) primary + Dr. Chen (f2) guest · 21 responses
+  {
+    surveyId: 's2',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.1, count: 21, distribution: [ 0,  1,  3, 10,  7] },
+        { questionId: 'q2', avg: 4.0, count: 21, distribution: [ 0,  1,  4, 11,  5] },
+        { questionId: 'q3', avg: 3.9, count: 21, distribution: [ 0,  2,  5,  9,  5] },
+        { questionId: 'q4', avg: 4.2, count: 21, distribution: [ 0,  0,  3, 10,  8] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f3',
+        scores: [
+          { questionId: 'q6', avg: 4.6, count: 21, distribution: [ 0,  0,  1,  8, 12] },
+          { questionId: 'q7', avg: 4.4, count: 21, distribution: [ 0,  0,  2,  8, 11] },
+        ],
+      },
+      {
+        instructorId: 'f2',
+        scores: [
+          { questionId: 'q6', avg: 4.0, count: 21, distribution: [ 0,  1,  4,  9,  7] },
+          { questionId: 'q7', avg: 3.8, count: 21, distribution: [ 0,  2,  5,  9,  5] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 2, q8: 2 },
+  },
+  // s3 — DPT-602 Clinical Practicum II · Dr. Maria Williams (f3) · 46 responses
+  {
+    surveyId: 's3',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 3.8, count: 46, distribution: [ 1,  4,  9, 20, 12] },
+        { questionId: 'q2', avg: 3.7, count: 46, distribution: [ 1,  5, 11, 20,  9] },
+        { questionId: 'q3', avg: 3.8, count: 46, distribution: [ 1,  3, 10, 21, 11] },
+        { questionId: 'q4', avg: 3.9, count: 46, distribution: [ 0,  4,  9, 20, 13] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f3',
+        scores: [
+          { questionId: 'q6', avg: 4.6, count: 46, distribution: [ 0,  1,  3, 12, 30] },
+          { questionId: 'q7', avg: 4.5, count: 46, distribution: [ 0,  1,  4, 16, 25] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 3, q8: 3 },
+  },
+  // s4 — DPT-504 Neuroanatomy · Dr. James Kim (f4) · 44 responses
+  {
+    surveyId: 's4',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.5, count: 44, distribution: [ 0,  1,  3, 17, 23] },
+        { questionId: 'q2', avg: 4.6, count: 44, distribution: [ 0,  0,  4, 14, 26] },
+        { questionId: 'q3', avg: 4.4, count: 44, distribution: [ 0,  1,  5, 19, 19] },
+        { questionId: 'q4', avg: 4.5, count: 44, distribution: [ 0,  1,  4, 17, 22] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f4',
+        scores: [
+          { questionId: 'q6', avg: 4.7, count: 44, distribution: [ 0,  0,  2, 10, 32] },
+          { questionId: 'q7', avg: 4.5, count: 44, distribution: [ 0,  1,  3, 16, 24] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 1, q8: 2 },
+  },
+  // s5 — DPT-502 Physiology & Pathophysiology · Dr. James Kim (f4) · 22 responses
+  {
+    surveyId: 's5',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 3.9, count: 22, distribution: [ 0,  2,  4, 10,  6] },
+        { questionId: 'q2', avg: 3.8, count: 22, distribution: [ 0,  2,  5, 10,  5] },
+        { questionId: 'q3', avg: 4.0, count: 22, distribution: [ 0,  1,  4, 11,  6] },
+        { questionId: 'q4', avg: 3.9, count: 22, distribution: [ 0,  2,  4, 10,  6] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f4',
+        scores: [
+          { questionId: 'q6', avg: 4.2, count: 22, distribution: [ 0,  1,  3,  9,  9] },
+          { questionId: 'q7', avg: 4.0, count: 22, distribution: [ 0,  1,  4, 10,  7] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 1, q8: 0 },
+  },
+]
+
+
 export const MOCK_COURSES = [
   { code: 'BIO 201', name: 'Cellular Biology' },
   { code: 'NURS 310', name: 'Advanced Patient Care' },
@@ -677,10 +2226,416 @@ export const MOCK_COURSES = [
 ]
 
 export const MOCK_FACULTY: PceInstructor[] = [
-  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary' },
-  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary' },
-  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' },
-  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary' },
-  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary' },
-  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary' },
+  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', avatarUrl: '/portraits/anita-patel.jpg',    role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Department Chair',     email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
+  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', avatarUrl: '/portraits/kevin-chen.jpg',     role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core',       rank: 'Associate Professor', position: 'Course Director',      email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
+  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', avatarUrl: '/portraits/maria-williams.jpg', role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Program Director',     email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
+  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', avatarUrl: '/portraits/james-kim.jpg',      role: 'primary', department: 'Clinical Education',      facultyType: 'core',       rank: 'Assistant Professor', position: 'Clinical Coordinator', email: 'james.kim@university.edu',      phone: '+1 (555) 101-1004', employmentStatus: 'active'   },
+  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', avatarUrl: '/portraits/rachel-gomez.jpg',   role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Associate Professor', position: 'Core Faculty',         email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
+  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', avatarUrl: '/portraits/omar-hassan.jpg',    role: 'primary', department: 'Clinical Education',      facultyType: 'associated', rank: 'Lecturer',            position: 'Lab Instructor',       email: 'omar.hassan@university.edu',    phone: '+1 (555) 101-1006', employmentStatus: 'inactive' },
+  /* ── Scale cohort ─────────────────────────────────────────────────────────────
+     Romit, design review 2026-07-15 (Granola 1e018244): a real university or cohort
+     carries faculty "in the 30s", not six. Six was the number every chart on this
+     surface was tuned against, so the leaderboard fit its card by accident of fixture
+     size and would have shipped that way. These 28 exist so the scale is REAL in dev:
+     N=34 is what the expand pattern and the N>30 mark switch are exercised against.
+     f1–f6 keep their exact numbers so no existing demo scenario moves. ─────────── */
+  { id: 'f7', name: 'Dr. Priya Raman',       initials: 'PR', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'priya.raman@university.edu', phone: '+1 (555) 101-1007', employmentStatus: 'active' },
+  { id: 'f8', name: 'Dr. Daniel Okafor',     initials: 'DO', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'daniel.okafor@university.edu', phone: '+1 (555) 101-1008', employmentStatus: 'active' },
+  { id: 'f9', name: 'Dr. Elena Petrova',     initials: 'EP', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'elena.petrova@university.edu', phone: '+1 (555) 101-1009', employmentStatus: 'active' },
+  { id: 'f10', name: 'Dr. Marcus Bell',       initials: 'MB', role: 'primary', department: 'Clinical Education', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'marcus.bell@university.edu', phone: '+1 (555) 101-1010', employmentStatus: 'active' },
+  { id: 'f11', name: 'Dr. Sofia Marino',      initials: 'SM', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'sofia.marino@university.edu', phone: '+1 (555) 101-1011', employmentStatus: 'active' },
+  { id: 'f12', name: 'Dr. Henry Adjei',       initials: 'HA', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'henry.adjei@university.edu', phone: '+1 (555) 101-1012', employmentStatus: 'active' },
+  { id: 'f13', name: 'Dr. Naomi Feldman',     initials: 'NF', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'naomi.feldman@university.edu', phone: '+1 (555) 101-1013', employmentStatus: 'active' },
+  { id: 'f14', name: 'Dr. Victor Ruiz',       initials: 'VR', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Associate Professor', position: 'Clinical Coordinator', email: 'victor.ruiz@university.edu', phone: '+1 (555) 101-1014', employmentStatus: 'active' },
+  { id: 'f15', name: 'Dr. Grace Lin',         initials: 'GL', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'grace.lin@university.edu', phone: '+1 (555) 101-1015', employmentStatus: 'active' },
+  { id: 'f16', name: 'Dr. Samuel Osei',       initials: 'SO', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'associated', rank: 'Lecturer', position: 'Teaching Assistant', email: 'samuel.osei@university.edu', phone: '+1 (555) 101-1016', employmentStatus: 'active' },
+  { id: 'f17', name: 'Dr. Hana Suzuki',       initials: 'HS', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'hana.suzuki@university.edu', phone: '+1 (555) 101-1017', employmentStatus: 'active' },
+  { id: 'f18', name: 'Dr. Liam Doherty',      initials: 'LD', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'liam.doherty@university.edu', phone: '+1 (555) 101-1018', employmentStatus: 'active' },
+  { id: 'f19', name: 'Dr. Amara Nwosu',       initials: 'AN', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'amara.nwosu@university.edu', phone: '+1 (555) 101-1019', employmentStatus: 'active' },
+  { id: 'f20', name: 'Dr. Tomas Novak',       initials: 'TN', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Professor', position: 'Course Director', email: 'tomas.novak@university.edu', phone: '+1 (555) 101-1020', employmentStatus: 'active' },
+  { id: 'f21', name: 'Dr. Yuki Tanaka',       initials: 'YT', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'yuki.tanaka@university.edu', phone: '+1 (555) 101-1021', employmentStatus: 'active' },
+  { id: 'f22', name: 'Dr. Rosa Delgado',      initials: 'RD', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'rosa.delgado@university.edu', phone: '+1 (555) 101-1022', employmentStatus: 'active' },
+  { id: 'f23', name: 'Dr. Ethan Brooks',      initials: 'EB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'ethan.brooks@university.edu', phone: '+1 (555) 101-1023', employmentStatus: 'active' },
+  { id: 'f24', name: 'Dr. Ingrid Larsen',     initials: 'IL', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'ingrid.larsen@university.edu', phone: '+1 (555) 101-1024', employmentStatus: 'active' },
+  { id: 'f25', name: 'Dr. Paulo Ferreira',    initials: 'PF', role: 'primary', department: 'Clinical Education', facultyType: 'associated', rank: 'Lecturer', position: 'Teaching Assistant', email: 'paulo.ferreira@university.edu', phone: '+1 (555) 101-1025', employmentStatus: 'active' },
+  { id: 'f26', name: 'Dr. Mei Zhang',         initials: 'MZ', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'mei.zhang@university.edu', phone: '+1 (555) 101-1026', employmentStatus: 'active' },
+  { id: 'f27', name: 'Dr. Andre Dubois',      initials: 'AD', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'andre.dubois@university.edu', phone: '+1 (555) 101-1027', employmentStatus: 'active' },
+  { id: 'f28', name: 'Dr. Fatima Rahimi',     initials: 'FR', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'fatima.rahimi@university.edu', phone: '+1 (555) 101-1028', employmentStatus: 'active' },
+  { id: 'f29', name: 'Dr. Caleb Morrison',    initials: 'CM', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'caleb.morrison@university.edu', phone: '+1 (555) 101-1029', employmentStatus: 'active' },
+  { id: 'f30', name: 'Dr. Nadia Haddad',      initials: 'NH', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'nadia.haddad@university.edu', phone: '+1 (555) 101-1030', employmentStatus: 'active' },
+  { id: 'f31', name: 'Dr. Oscar Lindqvist',   initials: 'OL', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'oscar.lindqvist@university.edu', phone: '+1 (555) 101-1031', employmentStatus: 'active' },
+  { id: 'f32', name: 'Dr. Talia Bergman',     initials: 'TB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'talia.bergman@university.edu', phone: '+1 (555) 101-1032', employmentStatus: 'active' },
+  { id: 'f33', name: 'Dr. Rohan Mehta',       initials: 'RM', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'rohan.mehta@university.edu', phone: '+1 (555) 101-1033', employmentStatus: 'active' },
+  { id: 'f34', name: 'Dr. Claire Beaumont',   initials: 'CB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'claire.beaumont@university.edu', phone: '+1 (555) 101-1034', employmentStatus: 'active' },
 ]
+
+export interface FacultyOfferingRecord {
+  facultyId: string
+  surveyId?: string
+  courseCode: string
+  courseName: string
+  term: string
+  /** Graduating class taking this offering. The collection grain is course × term × cohort ×
+   *  faculty (Aarti D-1/D3: "it is always on a course offering, which is for a particular
+   *  cohort in a particular term"). */
+  cohort?: string
+  role: 'primary' | 'guest'
+  enrolled: number
+  responseRate: number
+  /** Faculty-performance score, 1–5 — how the INSTRUCTOR was rated. */
+  avgRating: number
+  /** Course-content score, 1–5 — how the COURSE was rated.
+   *  Students rate two distinct entities and they are never combined into one number
+   *  (D27 / D7, Aarti and Monil independently). Carrying both on the offering is also what
+   *  lets every course appear in the course-quality heatmap: this used to live only in
+   *  `PceSurvey.priorOfferings`, which covered 5 of 15 courses, so Overview showed 5 courses
+   *  in the heatmap and 9 in the ranked list. */
+  courseAvg?: number
+}
+
+export const MOCK_FACULTY_OFFERINGS: FacultyOfferingRecord[] = [
+  // Diversified scenarios (2026-07-14). Every faculty owns MULTIPLE courses, each taught to a
+  // cohort across terms — the charts cannot tell a story on a one-course portfolio.
+  // Each row carries BOTH rated entities: avgRating = the instructor, courseAvg = the content.
+  //
+  // The six are deliberately distinguishable, because each exists to prove a different chart:
+  //   f1 Patel   — steady & high (mean 4.43, spread 0.25) ...... the control
+  //   f2 Chen    — declining (3-year mean well above 1-year) ... the drift arrow
+  //   f3 Williams— improving (mirror of Chen) ................. arrows must oppose
+  //   f4 Kim     — VOLATILE (mean 4.15, spread 1.40) .......... the distribution behind the dot
+  //   f5 Gomez   — below median; course strong / faculty gap ... gap quadrant SE
+  //   f6 Hassan  — faculty strong / course gap ................ gap quadrant NW
+  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 72, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f1', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 42, responseRate: 68, avgRating: 4.30, courseAvg: 4.10 },
+  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 66, avgRating: 4.30, courseAvg: 4.15 },
+  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 78, avgRating: 4.45, courseAvg: 4.30 },
+  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 60, avgRating: 3.80, courseAvg: 3.75 },
+  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 20, responseRate: 90, avgRating: 4.80, courseAvg: 4.50 },
+  { facultyId: 'f5', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 60, avgRating: 3.70, courseAvg: 4.35 },
+  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 56, avgRating: 3.60, courseAvg: 4.50 },
+  { facultyId: 'f6', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 22, responseRate: 84, avgRating: 4.55, courseAvg: 3.70 },
+  { facultyId: 'f1', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 44, responseRate: 70, avgRating: 4.35, courseAvg: 4.15 },
+  { facultyId: 'f2', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 74, avgRating: 4.35, courseAvg: 4.20 },
+  { facultyId: 'f3', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 46, responseRate: 64, avgRating: 3.90, courseAvg: 3.85 },
+  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 28, responseRate: 68, avgRating: 3.85, courseAvg: 3.80 },
+  { facultyId: 'f4', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 76, avgRating: 4.60, courseAvg: 4.30 },
+  { facultyId: 'f4', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 16, responseRate: 50, avgRating: 3.40, courseAvg: 3.60 },
+  { facultyId: 'f5', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 26, responseRate: 58, avgRating: 3.50, courseAvg: 4.40 },
+  { facultyId: 'f6', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 80, avgRating: 4.60, courseAvg: 3.60 },
+  { facultyId: 'f6', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 78, avgRating: 4.70, courseAvg: 3.65 },
+  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 74, avgRating: 4.45, courseAvg: 4.25 },
+  { facultyId: 'f1', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 82, avgRating: 4.50, courseAvg: 4.35 },
+  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 58, avgRating: 4.00, courseAvg: 3.95 },
+  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 34, responseRate: 70, avgRating: 4.10, courseAvg: 4.05 },
+  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 60, responseRate: 70, avgRating: 4.15, courseAvg: 4.05 },
+  { facultyId: 'f3', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 86, avgRating: 4.20, courseAvg: 4.10 },
+  { facultyId: 'f4', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 54, avgRating: 3.50, courseAvg: 3.70 },
+  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 18, responseRate: 55, avgRating: 3.50, courseAvg: 3.70 },
+  { facultyId: 'f5', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 62, avgRating: 3.65, courseAvg: 4.35 },
+  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 32, responseRate: 52, avgRating: 3.55, courseAvg: 4.45 },
+  { facultyId: 'f6', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 76, avgRating: 4.50, courseAvg: 3.75 },
+  { facultyId: 'f1', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 73, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f1', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 44, responseRate: 76, avgRating: 4.40, courseAvg: 4.25 },
+  { facultyId: 'f2', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 64, avgRating: 3.95, courseAvg: 3.85 },
+  { facultyId: 'f2', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 28, responseRate: 60, avgRating: 3.85, courseAvg: 3.90 },
+  { facultyId: 'f3', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 76, avgRating: 4.35, courseAvg: 4.20 },
+  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 78, avgRating: 4.20, courseAvg: 4.15 },
+  { facultyId: 'f4', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 58, avgRating: 3.60, courseAvg: 3.80 },
+  { facultyId: 'f4', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 86, avgRating: 4.70, courseAvg: 4.45 },
+  { facultyId: 'f6', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 54, responseRate: 82, avgRating: 4.65, courseAvg: 3.55 },
+  { facultyId: 'f6', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 86, avgRating: 4.60, courseAvg: 3.65 },
+  { facultyId: 'f6', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Fall 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 35, responseRate: 84, avgRating: 4.75, courseAvg: 3.70 },
+  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 78, avgRating: 4.50, courseAvg: 4.30 },
+  { facultyId: 'f1', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 84, avgRating: 4.55, courseAvg: 4.40 },
+  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 50, responseRate: 54, avgRating: 3.70, courseAvg: 3.75 },
+  { facultyId: 'f2', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 58, avgRating: 3.80, courseAvg: 3.70 },
+  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 62, avgRating: 3.75, courseAvg: 3.80 },
+  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 62, responseRate: 80, avgRating: 4.50, courseAvg: 4.35 },
+  { facultyId: 'f3', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 92, avgRating: 4.55, courseAvg: 4.40 },
+  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 84, avgRating: 4.45, courseAvg: 4.30 },
+  { facultyId: 'f4', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 42, responseRate: 82, avgRating: 4.65, courseAvg: 4.35 },
+  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 88, avgRating: 4.60, courseAvg: 4.40 },
+  { facultyId: 'f5', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 64, avgRating: 3.80, courseAvg: 4.40 },
+  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 60, avgRating: 3.70, courseAvg: 4.55 },
+  { facultyId: 'f6', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 47, responseRate: 80, avgRating: 4.60, courseAvg: 3.80 },
+  /* ── Scale cohort offerings (f7–f34) ─────────────────────────────────────────
+     Without these the 28 new faculty exist in the directory but never reach
+     offeringPoints(), so the leaderboard would still draw six and the scale fix
+     would look done while proving nothing. Deterministic LCG, never Math.random —
+     a fixture that shifts per run makes every visual diff noise. ──────────────── */
+  { facultyId: 'f7', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 20, responseRate: 73, avgRating: 3.42, courseAvg: 4.21 },
+  { facultyId: 'f7', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
+  { facultyId: 'f8', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 62, responseRate: 69, avgRating: 3.32, courseAvg: 4.11 },
+  { facultyId: 'f9', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 66, avgRating: 4.71, courseAvg: 4.02 },
+  { facultyId: 'f9', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
+  { facultyId: 'f9', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
+  { facultyId: 'f10', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 62, avgRating: 4.61, courseAvg: 3.92 },
+  { facultyId: 'f11', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 52, responseRate: 59, avgRating: 4.50, courseAvg: 3.83 },
+  { facultyId: 'f11', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
+  { facultyId: 'f11', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
+  { facultyId: 'f12', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 49, responseRate: 55, avgRating: 4.40, courseAvg: 3.73 },
+  { facultyId: 'f12', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
+  { facultyId: 'f13', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 46, responseRate: 51, avgRating: 4.29, courseAvg: 3.64 },
+  { facultyId: 'f14', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 43, responseRate: 48, avgRating: 4.19, courseAvg: 3.54 },
+  { facultyId: 'f14', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
+  { facultyId: 'f14', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.39, courseAvg: 4.18 },
+  { facultyId: 'f15', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 44, avgRating: 4.08, courseAvg: 3.45 },
+  { facultyId: 'f16', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 92, avgRating: 3.98, courseAvg: 4.70 },
+  { facultyId: 'f16', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
+  { facultyId: 'f16', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
+  { facultyId: 'f17', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 33, responseRate: 89, avgRating: 3.87, courseAvg: 4.61 },
+  { facultyId: 'f17', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 75, avgRating: 3.48, courseAvg: 4.25 },
+  { facultyId: 'f18', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 30, responseRate: 85, avgRating: 3.77, courseAvg: 4.51 },
+  { facultyId: 'f19', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 27, responseRate: 81, avgRating: 3.66, courseAvg: 4.42 },
+  { facultyId: 'f19', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 60, responseRate: 68, avgRating: 4.76, courseAvg: 4.06 },
+  { facultyId: 'f19', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 48, responseRate: 54, avgRating: 4.37, courseAvg: 3.71 },
+  { facultyId: 'f20', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 78, avgRating: 3.56, courseAvg: 4.32 },
+  { facultyId: 'f21', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 21, responseRate: 74, avgRating: 3.45, courseAvg: 4.23 },
+  { facultyId: 'f21', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 54, responseRate: 60, avgRating: 4.55, courseAvg: 3.87 },
+  { facultyId: 'f21', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 42, responseRate: 47, avgRating: 4.16, courseAvg: 3.52 },
+  { facultyId: 'f22', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 70, avgRating: 3.35, courseAvg: 4.13 },
+  { facultyId: 'f22', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 51, responseRate: 57, avgRating: 4.45, courseAvg: 3.78 },
+  { facultyId: 'f23', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 67, avgRating: 4.74, courseAvg: 4.04 },
+  { facultyId: 'f24', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 63, avgRating: 4.63, courseAvg: 3.94 },
+  { facultyId: 'f24', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 49, avgRating: 4.24, courseAvg: 3.59 },
+  { facultyId: 'f25', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
+  { facultyId: 'f26', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 56, avgRating: 4.42, courseAvg: 3.76 },
+  { facultyId: 'f26', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 94, avgRating: 4.03, courseAvg: 4.75 },
+  { facultyId: 'f26', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 80, avgRating: 3.63, courseAvg: 4.39 },
+  { facultyId: 'f27', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
+  { facultyId: 'f27', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
+  { facultyId: 'f28', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 48, avgRating: 4.21, courseAvg: 3.57 },
+  { facultyId: 'f29', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
+  { facultyId: 'f29', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
+  { facultyId: 'f30', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
+  { facultyId: 'f31', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 34, responseRate: 89, avgRating: 3.90, courseAvg: 4.63 },
+  { facultyId: 'f31', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 76, avgRating: 3.50, courseAvg: 4.27 },
+  { facultyId: 'f31', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 62, avgRating: 4.60, courseAvg: 3.92 },
+  { facultyId: 'f32', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
+  { facultyId: 'f32', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.40, courseAvg: 4.18 },
+  { facultyId: 'f33', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 82, avgRating: 3.69, courseAvg: 4.44 },
+  { facultyId: 'f34', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
+  { facultyId: 'f34', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
+]
+
+/** Question-level scores for programmatic surveys (gen-s1 = collecting). */
+export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; text: string; avg: number; count: number; distribution: [number, number, number, number, number] }[]> = {
+  'gen-s1': [
+    { questionId: 'gq1', text: 'How well did the program prepare you for your career?',     avg: 4.1, count: 63, distribution: [ 2,  4, 10, 29, 18] },
+    { questionId: 'gq2', text: 'How satisfied are you with the quality of instruction?',    avg: 3.8, count: 63, distribution: [ 3,  7, 14, 26, 13] },
+    { questionId: 'gq3', text: 'How likely are you to recommend this program?',             avg: 4.3, count: 63, distribution: [ 1,  3,  7, 24, 28] },
+  ],
+}
+
+// ── Generated question-level data + comments for EVERY evaluation ─────────────
+// Hand-authored entries cover the deep-dive demos (s1/s3/s4). Every OTHER
+// course evaluation WITH RESPONSES — live ones included (partial, mid-window
+// data) — gets deterministic (hash-seeded, SSR-stable) question scores,
+// section scores, student comments, AND open-text quotes per free-text
+// question, so no evaluation ever renders an empty shell. Programmatic
+// surveys get question scores below. Draft/scheduled stay empty — honest.
+// Runs BEFORE the benchmark derivations below so program avgs include it.
+{
+  const FINISHED_GEN: SurveyStatus[] = ['pending_review', 'closed', 'released', 'active', 'collecting']
+  const djb2 = (str: string) => {
+    let h = 5381
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
+    return h
+  }
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+  const distFor = (avg: number, count: number): [number, number, number, number, number] => {
+    const w = [1, 2, 3, 4, 5].map(v => Math.max(0.02, 1 - Math.abs(v - avg) * 0.42))
+    const t = w.reduce((a, b) => a + b, 0)
+    const raw = w.map(x => (x / t) * count)
+    const fl = raw.map(Math.floor)
+    let rem = count - fl.reduce((a, b) => a + b, 0)
+    raw
+      .map((v, i) => ({ i, f: v - Math.floor(v) }))
+      .sort((a, b) => b.f - a.f)
+      .forEach(({ i }) => { if (rem > 0) { fl[i] += 1; rem -= 1 } })
+    return fl as [number, number, number, number, number]
+  }
+  const COMMENT_POOL: ResponseComment[] = [
+    { section: 'course_content',      text: 'The pacing felt rushed in the final weeks — hard to absorb the last two units.', sentiment: 'concern'  },
+    { section: 'course_content',      text: 'Course materials and readings were well organized and easy to follow.',          sentiment: 'positive' },
+    { section: 'course_content',      text: 'More worked examples before each assessment would help.',                        sentiment: 'concern'  },
+    { section: 'course_content',      text: 'Lab resources were solid; the structure of each module made sense.',             sentiment: 'positive' },
+    { section: 'faculty_performance', text: 'Very engaging lectures and responsive to questions.',                            sentiment: 'positive' },
+    { section: 'faculty_performance', text: 'Office hours were hard to get into during exam weeks.',                          sentiment: 'concern'  },
+    { section: 'faculty_performance', text: 'Approachable and organized — feedback on assignments was quick.',                sentiment: 'positive' },
+    { section: 'faculty_performance', text: 'Clear communicator; would appreciate more clinical examples.',                   sentiment: 'neutral'  },
+  ]
+  const OT_POOL: { text: string; sentiment: 'positive' | 'neutral' | 'concern' }[] = [
+    { text: 'Slow down the pacing before exams — the last unit felt rushed.',            sentiment: 'concern'  },
+    { text: 'More worked examples in lab would make the material stick.',                sentiment: 'concern'  },
+    { text: 'Keep the case-based sessions — easily the most useful part.',               sentiment: 'positive' },
+    { text: 'The readings were well chosen and matched the lectures.',                   sentiment: 'positive' },
+    { text: 'Consider recording sessions so we can review before assessments.',          sentiment: 'neutral'  },
+    { text: 'Office hours earlier in the week would help before quizzes.',               sentiment: 'concern'  },
+  ]
+  for (const s of MOCK_SURVEYS) {
+    if (s.surveyType === 'programmatic') continue
+    if (!FINISHED_GEN.includes(s.status)) continue
+    if (s.responseCount <= 0) continue
+    const tpl = MOCK_TEMPLATES.find(t => t.id === s.templateId)
+    const sections = tpl?.templateSections ?? []
+    const seed = djb2(s.id)
+    if (sections.length > 0 && !MOCK_SURVEY_QUESTION_DATA.some(d => d.surveyId === s.id)) {
+      const base = 3.5 + (seed % 10) / 10 // 3.5..4.4
+      const mkScores = (qs: TemplateQuestion[], bias: number): QuestionScore[] =>
+        qs
+          .filter(q => q.answerType === 'likert')
+          .map(q => {
+            const avg = clamp(
+              Math.round((base + bias + ((djb2(s.id + q.id) % 9) - 4) / 10) * 10) / 10,
+              2.8,
+              4.9,
+            )
+            return { questionId: q.id, avg, count: s.responseCount, distribution: distFor(avg, s.responseCount) }
+          })
+      const sectionScores: Record<string, QuestionScore[]> = {}
+      const freeTextCounts: Record<string, number> = {}
+      for (const sec of sections) {
+        if (!sec.roleSetId) sectionScores[sec.subjectKey] = mkScores(sec.questions, 0)
+        // Open-text quotes per free-text question — the per-question "View
+        // responses" sheet must be able to back every count it shows.
+        for (const q of sec.questions) {
+          if (q.answerType !== 'free_text') continue
+          const n = Math.min(2 + (djb2(s.id + q.id) % 3), s.responseCount)
+          for (let i = 0; i < n; i++) {
+            const pick = OT_POOL[(djb2(s.id + q.id) + i * 5) % OT_POOL.length]
+            MOCK_OPEN_TEXT_RESPONSES.push({
+              id: `gen-ot-${s.id}-${q.id}-${i}`,
+              surveyId: s.id,
+              questionText: q.text,
+              text: pick.text,
+              sectionSubject: sec.subjectKey as SubjectKey,
+              sentiment: pick.sentiment,
+            })
+          }
+          freeTextCounts[q.id] = n
+        }
+      }
+      const roleSections = sections.filter(sec => !!sec.roleSetId)
+      MOCK_SURVEY_QUESTION_DATA.push({
+        surveyId: s.id,
+        sectionScores,
+        instructorBlocks: s.instructors.map(i => ({
+          instructorId: i.id,
+          scores: roleSections.flatMap(sec => mkScores(sec.questions, 0.15)),
+        })),
+        freeTextCounts,
+      })
+    }
+    const pickComments = (n: number) =>
+      Array.from({ length: n }, (_, i) => COMMENT_POOL[(seed + i * 3) % COMMENT_POOL.length])
+    const existing = MOCK_RESPONSES.find(r => r.surveyId === s.id)
+    const qd = MOCK_SURVEY_QUESTION_DATA.find(d => d.surveyId === s.id)
+    const avgOf = (xs?: QuestionScore[]) =>
+      xs && xs.length > 0 ? Math.round((xs.reduce((a, q) => a + q.avg, 0) / xs.length) * 10) / 10 : 4.0
+    if (!existing) {
+      MOCK_RESPONSES.push({
+        surveyId: s.id,
+        sectionScores: [
+          { section: 'course_content',      avg: avgOf(qd?.sectionScores['course_content']), count: s.responseCount },
+          { section: 'faculty_performance', avg: avgOf(qd?.instructorBlocks?.[0]?.scores),    count: s.responseCount },
+        ],
+        comments: pickComments(3 + (seed % 3)),
+      })
+    } else if (existing.comments.length === 0) {
+      existing.comments = pickComments(3 + (seed % 3))
+    }
+  }
+
+  // Programmatic surveys with responses — question scores for the Programmatic
+  // dashboard + detail (gen-s1 stays hand-authored; draft/scheduled stay empty).
+  const PROG_QUESTIONS = [
+    'How well did the program prepare you for your career?',
+    'How satisfied are you with the quality of instruction?',
+    'How likely are you to recommend this program?',
+    'How effective were program resources and support services?',
+  ]
+  for (const s of MOCK_SURVEYS) {
+    if (s.surveyType !== 'programmatic') continue
+    if (s.responseCount <= 0) continue
+    if (MOCK_PROG_QUESTION_SCORES[s.id]) continue
+    const seed = djb2(s.id)
+    MOCK_PROG_QUESTION_SCORES[s.id] = PROG_QUESTIONS.map((text, i) => {
+      const avg = clamp(Math.round((3.6 + ((seed + i * 7) % 10) / 10) * 10) / 10, 3.2, 4.8)
+      return {
+        questionId: `gq-${s.id}-${i + 1}`,
+        text,
+        avg,
+        count: s.responseCount,
+        distribution: distFor(avg, s.responseCount),
+      }
+    })
+  }
+}
+
+// ── Question benchmark derivations (median · program avg) ─────────────────────
+// Both are DERIVED from the distributions above — never seeded — so they can't
+// drift from the underlying response data.
+
+/** The rating (1–5) at a given 1-based position in a distribution's cumulative order. */
+function ratingAtPosition(distribution: readonly number[], position: number): number {
+  let cumulative = 0
+  for (let i = 0; i < distribution.length; i++) {
+    cumulative += distribution[i]
+    if (position <= cumulative) return i + 1
+  }
+  return distribution.length
+}
+
+/** Median rating derived from a 1–5 response distribution. Returns x.0 or x.5; 0 when empty. */
+export function medianFromDistribution(distribution: [number, number, number, number, number]): number {
+  const total = distribution.reduce((a, b) => a + b, 0)
+  if (total === 0) return 0
+  if (total % 2 === 1) return ratingAtPosition(distribution, (total + 1) / 2)
+  return (ratingAtPosition(distribution, total / 2) + ratingAtPosition(distribution, total / 2 + 1)) / 2
+}
+
+/* djb2 — stable tiny hash for the single-survey benchmark offset. */
+function benchmarkHash(str: string): number {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
+  return h
+}
+
+/** Program-wide average for a question — response-weighted across every survey that asked it.
+ *  Returns null when no survey has scored the question.
+ *
+ *  Mock-only benchmark synthesis: when exactly ONE survey carries the question
+ *  (template-unique ids like tmplrich's c/i/l/o), the pooled "program" average
+ *  would collapse to that survey's own value — a benchmark that always equals
+ *  you is no benchmark (Romit 2026-07-18 critique: "why are these numbers
+ *  same?"). We apply a deterministic per-question offset so the demo reads
+ *  like real cross-offering data. When real program data exists, only this
+ *  function changes (same convention as pce-collection.ts). */
+export function programAvgForQuestion(questionId: string): number | null {
+  let weightedSum = 0
+  let responseTotal = 0
+  const contributors = new Set<string>()
+  for (const data of MOCK_SURVEY_QUESTION_DATA) {
+    const scores = [
+      ...Object.values(data.sectionScores).flat(),
+      ...(data.instructorBlocks ?? []).flatMap(b => b.scores),
+    ]
+    for (const s of scores) {
+      if (s.questionId === questionId) {
+        weightedSum += s.avg * s.count
+        responseTotal += s.count
+        contributors.add(data.surveyId)
+      }
+    }
+  }
+  if (responseTotal === 0) return null
+  let avg = weightedSum / responseTotal
+  if (contributors.size === 1) {
+    /* Offset in {−0.4 … +0.3} \ {0}, step 0.1, stable per question id. */
+    const step = (benchmarkHash(questionId) % 7) - 4 // −4 … +2
+    avg += (step >= 0 ? step + 1 : step) / 10 // skip 0 → −0.4…−0.1 or +0.1…+0.3
+    avg = Math.min(5, Math.max(1, avg))
+  }
+  return Math.round(avg * 10) / 10
+}
