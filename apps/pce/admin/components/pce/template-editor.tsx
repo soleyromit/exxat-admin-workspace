@@ -463,6 +463,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // (open while a faculty stop is active or a role set has no roles yet);
   // true/false = the chevron's explicit choice.
   const [facultyManual, setFacultyManual] = useState<boolean | null>(null)
+  // Faculty stops skip the starter-sections gate (Jul 23): a role set with
+  // roles picked but no sections gets a plain "Untitled Section" seeded so
+  // the stage opens straight into the standard empty section card.
+  useEffect(() => {
+    if (variant !== 'tabs' && variant !== 'guided') return
+    if (!template || !activeStop.startsWith('stop-')) return
+    const rsId = activeStop.slice('stop-'.length)
+    const set = (template.facultyRoleSets ?? []).find(rs => rs.id === rsId)
+    if (!set || set.roles.length === 0) return
+    const has = (template.templateSections ?? []).some(s => s.subjectKey === 'faculty' && s.roleSetId === rsId)
+    if (!has) {
+      addTemplateSection(template.id, { subjectKey: 'faculty', title: 'Untitled Section', questions: [], roleSetId: rsId }, `sec-${Date.now()}`)
+    }
+  }, [variant, template, activeStop, addTemplateSection])
   // Document variant — scrollspy for the sticky aspect chip bar.
   const [docAspect, setDocAspect] = useState('course_content')
   useEffect(() => {
@@ -1179,7 +1193,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
           <p className="text-xs text-muted-foreground text-center" style={{ padding: '24px 0' }}>
             Choose who this evaluation covers — pick at least one role above to start adding questions.
           </p>
-        ) : secs.length === 0 ? renderStopGate(stop) : (
+        ) : secs.length === 0 ? (
+          /* Starter gate is Course/General-only — a roled faculty stop gets an
+             "Untitled Section" seeded by the effect above, so this branch only
+             flashes for one render on the faculty path. */
+          stop.subjectKey === 'faculty' ? null : renderStopGate(stop)
+        ) : (
           <>
             {secs.map(sec => renderSectionCard(sec))}
             {/* Full-width dashed row — visible "insert here" affordance in the
