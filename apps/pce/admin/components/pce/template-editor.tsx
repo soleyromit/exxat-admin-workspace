@@ -1131,27 +1131,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     )
   }
 
-  // Generate-from-document strip (tabs/guided) — shown under the section list
-  // while a stop is untouched (0 questions), then quietly disappears.
-  function renderGenerateStrip(stop: { subjectKey: string; roleSetId?: string }) {
-    return (
-      <div className="flex items-center gap-3 rounded-lg border border-dashed border-border" style={{ padding: '10px 14px' }}>
-        <div className="flex flex-col flex-1 min-w-0">
-          <span className="text-sm font-medium">Have a document?</span>
-          <span className="text-xs text-muted-foreground">Generate sections and questions from it — edit them after.</span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0"
-          onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}
-        >
-          <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
-          Generate
-        </Button>
-      </div>
-    )
-  }
 
   // One stop's canvas (tabs/guided variants) — role chips for a faculty stop,
   // then the standard section cards or the decision gate when empty.
@@ -1177,12 +1156,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             {/* Full-width dashed row — visible "insert here" affordance in the
                 flow where the section will appear (a heading-level button would
                 be ambiguous across faculty role sets). */}
-            <Button variant="outline" size="sm" className="w-full font-semibold border-dashed"
-              onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
-              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-              Add section
-            </Button>
-            {stopQuestionCount(stop) === 0 && renderGenerateStrip(stop)}
+            {/* Creation row — both ways to add content, side by side (Jul 23:
+                replaces the full-width "Have a document?" banner). */}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 font-semibold border-dashed"
+                onClick={() => handleAddSection(stop.subjectKey, stop.roleSetId)}>
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Add section
+              </Button>
+              <Button variant="outline" size="sm" className="shrink-0"
+                onClick={() => { uploadTargetRef.current = { subjectKey: stop.subjectKey, roleSetId: stop.roleSetId }; uploadInputRef.current?.click() }}>
+                <i className="fa-light fa-sparkles text-xs" aria-hidden="true" />
+                Generate from document
+              </Button>
+            </div>
           </>
         )}
       </div>
