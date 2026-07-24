@@ -650,6 +650,12 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // there's no audience to generate an evaluation for.
   const curStopRolesPending = curStop.subjectKey === 'faculty'
     && (facultyRoleSets.find(rs => rs.id === curStop.roleSetId)?.roles.length ?? 0) === 0
+  // Every faculty role claimed → "Add role evaluation" is a dead end
+  // (roles are unique across role sets), so the affordance disables.
+  const allFacultyRolesClaimed = (() => {
+    const claimed = new Set(facultyRoleSets.flatMap(rs => rs.roles))
+    return FACULTY_ROLE_OPTIONS.every(o => claimed.has(o.key))
+  })()
   const handleAddRoleStop = () => {
     const newId = handleAddRoleSet()
     setActiveStop(`stop-${newId}`)
@@ -2189,7 +2195,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       )
                     })}
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleAddRoleStop} className="border-dashed">
+                  <Button variant="outline" size="sm" onClick={handleAddRoleStop} className="border-dashed" disabled={allFacultyRolesClaimed}>
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                     Add role evaluation
                   </Button>
@@ -2353,12 +2359,28 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                               tooltip: set && set.roles.length > 1 ? `Evaluating: ${set.roles.map(ROLE_LABEL).join(', ')}` : undefined,
                             })
                           })}
-                          <Button variant="outline" size="sm" onClick={handleAddRoleStop}
-                            className="justify-start border-dashed self-start"
-                            style={{ marginTop: 2 }}>
-                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                            Add role evaluation
-                          </Button>
+                          {allFacultyRolesClaimed ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {/* span wrapper — disabled buttons don't emit
+                                    pointer events for the tooltip */}
+                                <span className="self-start" style={{ marginTop: 2 }}>
+                                  <Button variant="outline" size="sm" disabled className="justify-start border-dashed">
+                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                    Add role evaluation
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="right">Every role is already covered by an evaluation</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={handleAddRoleStop}
+                              className="justify-start border-dashed self-start"
+                              style={{ marginTop: 2 }}>
+                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                              Add role evaluation
+                            </Button>
+                          )}
                         </div>
                       )}
                       {renderRailItem(generalStop, 'General', { icon: ASPECT_ICON.general })}
