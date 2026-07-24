@@ -17,7 +17,8 @@
 import { Suspense, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Badge, Button, Checkbox, Tip, ToggleSwitch,
+  Badge, Button, Checkbox, CheckboxLabel, Tip, ToggleSwitch,
+  AvatarGroup, Collapsible, CollapsibleTrigger, CollapsibleContent,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
@@ -446,8 +447,6 @@ function VariantE() {
   const [adjustOpen, setAdjustOpen] = useState<Record<string, boolean>>({})
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
 
-  // Effective inclusion for E: news = included minus explicit excludes;
-  // dups = course toggle on AND not individually excluded.
   const isIn = (item: Item, course: string) =>
     item.status === 'gap' ? false
       : item.status === 'dup' ? (reEval[course] ?? false) && !excluded.has(item.id)
@@ -469,6 +468,13 @@ function VariantE() {
     }
   }
   const c = eCounts()
+
+  /* "Course material, Dr. A and Dr. B" — names in the sentence, not counts. */
+  const nameList = (items: Item[]) => {
+    const names = items.map(i => (i.kind === 'course' ? 'Course material' : i.name!))
+    if (names.length <= 1) return names[0] ?? ''
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -497,88 +503,114 @@ function VariantE() {
                 <span className="ms-auto"><TemplateSelectMock code={course.code} /></span>
               </div>
 
-              {/* Stacked NEW line — one sentence + faces; Adjust reveals rows. */}
+              {/* New surveys — one two-line block; "Show the list" reveals rows. */}
               {fresh.length > 0 && (
-                <div className="border-b border-border">
-                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 48 }}>
-                    <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
-                    <span className="text-sm">
-                      <span className="font-medium">{freshIn} survey{freshIn !== 1 ? 's' : ''}</span> will be created
+                <Collapsible
+                  open={open}
+                  onOpenChange={(v) => setAdjustOpen(p => ({ ...p, [course.code]: v }))}
+                  className="border-b border-border"
+                >
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <span aria-hidden="true" className="size-1.5 rounded-full shrink-0 mt-0.5 self-start" style={{ background: 'var(--chart-2)', marginTop: 7 }} />
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium">
+                        {freshIn} new survey{freshIn !== 1 ? 's' : ''}
+                      </span>
+                      <span className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                        For {nameList(fresh)}
+                      </span>
                     </span>
-                    <span className="flex -space-x-1.5 items-center">
-                      {fresh.map(i => i.kind === 'person'
-                        ? <PersonAvatar key={i.id} name={i.name!} className="size-6 ring-2 ring-background" />
-                        : (
-                          <span key={i.id} className="size-6 rounded-full flex items-center justify-center border border-border ring-2 ring-background" style={{ background: 'var(--background)' }}>
-                            <i className="fa-light fa-book-open text-[10px]" style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
-                          </span>
-                        ))}
-                    </span>
-                    <span className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
-                      {fresh.map(i => i.kind === 'course' ? 'Course material' : `${i.name} (${i.role})`).join(' · ')}
-                    </span>
-                    <Button
-                      variant="ghost" size="xs" className="ms-auto text-muted-foreground hover:text-foreground shrink-0"
-                      aria-expanded={open}
-                      onClick={() => setAdjustOpen(p => ({ ...p, [course.code]: !open }))}
-                    >
-                      Adjust
-                      <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
-                    </Button>
+                    <AvatarGroup className="ms-auto shrink-0">
+                      {fresh.filter(i => i.kind === 'person').map(i => (
+                        <PersonAvatar key={i.id} name={i.name!} className="size-6" />
+                      ))}
+                    </AvatarGroup>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground shrink-0">
+                        {open ? 'Hide list' : 'Show the list'}
+                        <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
+                      </Button>
+                    </CollapsibleTrigger>
                   </div>
-                  {open && fresh.map(item => (
-                    <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
-                      <Checkbox checked={isIn(item, course.code)} onCheckedChange={() => flip(item)} aria-label={`Create survey — ${label(item)}`} />
-                      <EvaluateeCell item={item} />
-                      {item.role && <span className="ms-auto text-xs" style={{ color: 'var(--muted-foreground)' }}>{item.role}</span>}
-                    </div>
-                  ))}
-                </div>
+                  <CollapsibleContent>
+                    {fresh.map(item => (
+                      <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 44, background: 'var(--card)' }}>
+                        <Checkbox
+                          id={`e-new-${item.id}`}
+                          checked={isIn(item, course.code)}
+                          onCheckedChange={() => flip(item)}
+                        />
+                        <CheckboxLabel htmlFor={`e-new-${item.id}`} className="flex items-center gap-2 font-normal min-w-0">
+                          <EvaluateeCell item={item} />
+                        </CheckboxLabel>
+                        {item.role && <span className="ms-auto text-xs" style={{ color: 'var(--muted-foreground)' }}>{item.role}</span>}
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
-              {/* Stacked DUPLICATE question — yes/no toggle gates the roster. */}
+              {/* Already surveyed — the question sits beside its toggle. */}
               {dups.length > 0 && (
-                <div className="border-b border-border">
-                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 48 }}>
-                    <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                    <span className="text-sm min-w-0 truncate">
-                      <span className="font-medium" style={{ color: 'var(--chip-4)' }}>
-                        {dups.length} evaluatee{dups.length !== 1 ? 's' : ''} already {dups.length !== 1 ? 'have' : 'has'} a survey
+                <Collapsible open={saidYes} className="border-b border-border">
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <i className="fa-solid fa-triangle-exclamation text-xs shrink-0 self-start" style={{ color: 'var(--chip-4)', marginTop: 4 }} aria-hidden="true" />
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium truncate" style={{ color: 'var(--chip-4)' }}>
+                        {nameList(dups)} {dups.length !== 1 ? 'were' : 'was'} already surveyed
                       </span>
-                      <span style={{ color: 'var(--muted-foreground)' }}> ({dups[0].existing}) — evaluate again?</span>
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                        {dups.length !== 1 ? 'Those surveys open' : 'That survey opens'} Dec 4.
+                      </span>
                     </span>
-                    <label htmlFor={`reeval-${course.code}`} className="ms-auto flex items-center gap-2 text-sm shrink-0 cursor-pointer">
+                    <label htmlFor={`reeval-${course.code}`} className="ms-auto flex items-center gap-2.5 text-sm shrink-0 cursor-pointer">
+                      <span className="font-medium">Evaluate again?</span>
                       <span style={{ color: 'var(--muted-foreground)' }}>{saidYes ? 'Yes' : 'No'}</span>
                       <ToggleSwitch
                         id={`reeval-${course.code}`}
                         checked={saidYes}
                         onChange={(v) => {
                           setReEval(p => ({ ...p, [course.code]: v }))
-                          // Fresh intent resets individual excludes for this course.
                           if (v) setExcluded(prev => { const n = new Set(prev); dups.forEach(d => n.delete(d.id)); return n })
                         }}
                       />
-                      <span className="sr-only">Evaluate the already-surveyed evaluatees of {course.code} again</span>
+                      <span className="sr-only">Evaluate the already-surveyed people of {course.code} again</span>
                     </label>
                   </div>
-                  {saidYes && dups.map(item => (
-                    <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
-                      <Checkbox checked={isIn(item, course.code)} onCheckedChange={() => flip(item)} aria-label={`Re-evaluate ${label(item)}${item.role ? ` as ${item.role}` : ''}`} />
-                      <EvaluateeCell item={item} />
-                      <span className="ms-auto text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
-                        {item.role ?? 'Course material'} · {item.existing}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                  <CollapsibleContent>
+                    <p className="ps-9 pe-3 pb-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                      Uncheck anyone who should not get a second survey.
+                    </p>
+                    {dups.map(item => (
+                      <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 44, background: 'var(--card)' }}>
+                        <Checkbox
+                          id={`e-dup-${item.id}`}
+                          checked={isIn(item, course.code)}
+                          onCheckedChange={() => flip(item)}
+                        />
+                        <CheckboxLabel htmlFor={`e-dup-${item.id}`} className="flex items-center gap-2 font-normal min-w-0">
+                          <EvaluateeCell item={item} />
+                        </CheckboxLabel>
+                        <span className="ms-auto text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                          {item.role ?? 'Whole course'}
+                        </span>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
-              {/* Gap line — unchanged from the shared system. */}
+              {/* Missing role — plain statement + the remedy. */}
               {gaps.map(item => (
-                <div key={item.id} className="flex items-center gap-2.5 px-3 border-b border-border" style={{ minHeight: 48 }}>
-                  <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                  <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                    No <span className="font-medium" style={{ color: 'var(--chip-4)' }}>{item.role}</span> assigned in Prism — nothing to evaluate
+                <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-border">
+                  <i className="fa-solid fa-triangle-exclamation text-xs shrink-0 self-start" style={{ color: 'var(--chip-4)', marginTop: 4 }} aria-hidden="true" />
+                  <span className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>
+                      No {item.role} on this course
+                    </span>
+                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                      Add one in Prism to include {item.role === 'Instructor' ? 'an' : 'a'} {item.role} survey.
+                    </span>
                   </span>
                   <span className="ms-auto"><AddFacultyBtn /></span>
                 </div>
