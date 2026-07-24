@@ -35,6 +35,7 @@ import {
   Field,
   FieldLabel,
   FieldDescription,
+  Badge,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -2259,15 +2260,16 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                           )}
                           <span className="text-sm truncate min-w-0" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
-                          {/* Roster pill (TabsCountBadge idiom) — users icon +
-                              TOTAL roles covered ("+N" forced arithmetic;
-                              Romit Jul 23). Inline with the name it belongs
+                          {/* Roster chip — DS Badge (never hand-roll Badge)
+                              with fa-id-badge (roles are titles, not people —
+                              fa-user-group overpromised "N people") + TOTAL
+                              roles covered. Inline with the name it belongs
                               to; the right edge stays the progress column. */}
                           {opts?.rosterCount ? (
-                            <span className="text-xs tabular-nums rounded-full shrink-0 border border-border inline-flex items-center gap-1" style={{ padding: '0 6px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
-                              <i className="fa-light fa-user-group" aria-hidden="true" style={{ fontSize: 10 }} />
+                            <Badge variant="outline" className="shrink-0 tabular-nums">
+                              <i className="fa-light fa-id-badge" aria-hidden="true" />
                               {opts.rosterCount}
-                            </span>
+                            </Badge>
                           ) : null}
                           {doneMeta(stop)}
                         </span>
