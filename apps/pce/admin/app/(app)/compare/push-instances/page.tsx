@@ -14,7 +14,8 @@
 //   · gap rows lose their checkbox — there is nothing to include
 //   · "N surveys", never "N records"
 
-import { useState, type ReactNode } from 'react'
+import { Suspense, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Badge, Button, Checkbox, Tip,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
@@ -432,29 +433,58 @@ function VariantD() {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-export default function PushInstancesComparePage() {
+const VARIANTS = [
+  { tag: 'a', title: 'Quiet ledger', thesis: "Today's anatomy, noise removed — role rides under the name, 'Will be created' is muted text, only duplicates and gaps carry color.", body: <VariantA /> },
+  { tag: 'b', title: 'Decision zones', thesis: "Status-first grouping: an attention zone holding only the decisions (duplicates, gaps), then a calm 'Ready to send' list with no status column at all.", body: <VariantB /> },
+  { tag: 'c', title: 'Course cards', thesis: 'Containment over band tinting: one card per course with the template in its header — instance rows stay one calm line each.', body: <VariantC /> },
+  { tag: 'd', title: 'Plan sentences', thesis: 'The copy does the work: every row is a sentence about what will happen; duplicates read as amber sentences with the opt-in phrased as its consequence.', body: <VariantD /> },
+]
+
+function CompareInner() {
+  // ?v=a|b|c|d shows ONE variant full-width; no param stacks all four.
+  const params = useSearchParams()
+  const only = params?.get('v')?.toLowerCase() ?? null
+  const shown = VARIANTS.filter(v => !only || v.tag === only)
+  const active = shown.length === 1 ? shown[0] : null
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <SiteHeader breadcrumbs={[{ label: 'Compare', href: '/compare/push-instances' }]} title="Survey design table — 4 variants" />
-      <h1 className="sr-only">Survey design table — 4 variants</h1>
+      <SiteHeader
+        breadcrumbs={[{ label: 'Compare', href: '/compare/push-instances' }]}
+        title={active ? `Survey design — ${active.tag.toUpperCase()} · ${active.title}` : 'Survey design table — 4 variants'}
+      />
+      <h1 className="sr-only">{active ? `Survey design variant ${active.tag.toUpperCase()} — ${active.title}` : 'Survey design table — 4 variants'}</h1>
       <div className="flex-1 overflow-auto flex flex-col gap-6" style={{ padding: '24px 40px 64px', maxWidth: 1180 }}>
+        {/* Variant switcher — one link per variant + all. */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {VARIANTS.map(v => (
+            <Button key={v.tag} asChild size="sm" variant={only === v.tag ? 'secondary' : 'outline'}>
+              <a href={`/compare/push-instances?v=${v.tag}`} aria-current={only === v.tag ? 'page' : undefined}>
+                {v.tag.toUpperCase()} — {v.title}
+              </a>
+            </Button>
+          ))}
+          <Button asChild size="sm" variant={!only ? 'secondary' : 'ghost'}>
+            <a href="/compare/push-instances" aria-current={!only ? 'page' : undefined}>All four</a>
+          </Button>
+        </div>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Same data in all four (incl. the DPT-510 late-co-instructor duplicate case). Shared copy system: creation is the quiet default,
+          Same data in {active ? 'every variant' : 'all four'} (incl. the DPT-510 late-co-instructor duplicate case). Shared copy system: creation is the quiet default,
           only exceptions speak, gap rows have no checkbox, bands count surveys not records.
         </p>
-        <VariantFrame tag="a" title="Quiet ledger" thesis="Today's anatomy, noise removed — role rides under the name, 'Will be created' is muted text, only duplicates and gaps carry color.">
-          <VariantA />
-        </VariantFrame>
-        <VariantFrame tag="b" title="Decision zones" thesis="Status-first grouping: an attention zone holding only the decisions (duplicates, gaps), then a calm 'Ready to send' list with no status column at all.">
-          <VariantB />
-        </VariantFrame>
-        <VariantFrame tag="c" title="Course cards" thesis="Containment over band tinting: one card per course with the template in its header — instance rows stay one calm line each.">
-          <VariantC />
-        </VariantFrame>
-        <VariantFrame tag="d" title="Plan sentences" thesis="The copy does the work: every row is a sentence about what will happen; duplicates read as amber sentences with the opt-in phrased as its consequence.">
-          <VariantD />
-        </VariantFrame>
+        {shown.map(v => (
+          <VariantFrame key={v.tag} tag={v.tag} title={v.title} thesis={v.thesis}>
+            {v.body}
+          </VariantFrame>
+        ))}
       </div>
     </div>
+  )
+}
+
+export default function PushInstancesComparePage() {
+  return (
+    <Suspense fallback={<h1 className="sr-only">Survey design table — 4 variants</h1>}>
+      <CompareInner />
+    </Suspense>
   )
 }
