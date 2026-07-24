@@ -17,7 +17,7 @@
 import { Suspense, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Badge, Button, Checkbox, Tip,
+  Badge, Button, Checkbox, Tip, ToggleSwitch,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
@@ -433,11 +433,170 @@ function VariantD() {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
+// ── Variant E — Stacked statuses + course-level question ─────────────────────
+// Romit's Jul 24 direction: instances sharing a status STACK into one line per
+// course. Duplicates become a QUESTION with a yes/no toggle — "evaluate them
+// again?". No (default) keeps them collapsed and skipped; Yes expands the
+// stack so the admin picks WHOM to re-evaluate, person by person. The per-row
+// decision only appears after the course-level intent is stated.
+
+function VariantE() {
+  const { included, toggle } = useIncluded()
+  const [reEval, setReEval] = useState<Record<string, boolean>>({})
+  const [adjustOpen, setAdjustOpen] = useState<Record<string, boolean>>({})
+  const [excluded, setExcluded] = useState<Set<string>>(new Set())
+
+  // Effective inclusion for E: news = included minus explicit excludes;
+  // dups = course toggle on AND not individually excluded.
+  const isIn = (item: Item, course: string) =>
+    item.status === 'gap' ? false
+      : item.status === 'dup' ? (reEval[course] ?? false) && !excluded.has(item.id)
+      : included.has(item.id) && !excluded.has(item.id)
+  const flip = (item: Item) => {
+    if (item.status === 'new') { toggle(item.id); return }
+    setExcluded(prev => {
+      const next = new Set(prev)
+      next.has(item.id) ? next.delete(item.id) : next.add(item.id)
+      return next
+    })
+  }
+  const eCounts = () => {
+    const all = COURSES.flatMap(c => c.items.map(i => ({ i, c: c.code })))
+    return {
+      create: all.filter(({ i, c }) => isIn(i, c)).length,
+      reEvals: all.filter(({ i, c }) => i.status === 'dup' && isIn(i, c)).length,
+      skipped: all.filter(({ i, c }) => i.status === 'dup' && !isIn(i, c)).length,
+    }
+  }
+  const c = eCounts()
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm tabular-nums">
+        <span className="font-semibold">{c.create} surveys</span> will be created
+        {c.reEvals > 0 && <span style={{ color: 'var(--chip-4)' }}> · {c.reEvals} re-evaluation{c.reEvals !== 1 ? 's' : ''}</span>}
+        {c.skipped > 0 && <span style={{ color: 'var(--muted-foreground)' }}> · {c.skipped} duplicate{c.skipped !== 1 ? 's' : ''} skipped</span>}
+        <span style={{ color: 'var(--chip-4)' }}> · 1 role unassigned</span>
+      </p>
+      <div className="rounded-lg border border-border overflow-hidden">
+        {COURSES.map(course => {
+          const fresh = course.items.filter(i => i.status === 'new')
+          const dups = course.items.filter(i => i.status === 'dup')
+          const gaps = course.items.filter(i => i.status === 'gap')
+          const freshIn = fresh.filter(i => isIn(i, course.code)).length
+          const open = adjustOpen[course.code] ?? false
+          const saidYes = reEval[course.code] ?? false
+          return (
+            <div key={course.code}>
+              <div className="flex items-center gap-3 px-3 py-2 border-b border-border" style={{ background: 'var(--muted)' }}>
+                <span className="text-sm font-semibold">
+                  <span className="font-mono text-xs tabular-nums">{course.code}</span>
+                  <span className="mx-1.5" aria-hidden="true">·</span>
+                  {course.name}
+                </span>
+                <span className="ms-auto"><TemplateSelectMock code={course.code} /></span>
+              </div>
+
+              {/* Stacked NEW line — one sentence + faces; Adjust reveals rows. */}
+              {fresh.length > 0 && (
+                <div className="border-b border-border">
+                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 48 }}>
+                    <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
+                    <span className="text-sm">
+                      <span className="font-medium">{freshIn} survey{freshIn !== 1 ? 's' : ''}</span> will be created
+                    </span>
+                    <span className="flex -space-x-1.5 items-center">
+                      {fresh.map(i => i.kind === 'person'
+                        ? <PersonAvatar key={i.id} name={i.name!} className="size-6 ring-2 ring-background" />
+                        : (
+                          <span key={i.id} className="size-6 rounded-full flex items-center justify-center border border-border ring-2 ring-background" style={{ background: 'var(--background)' }}>
+                            <i className="fa-light fa-book-open text-[10px]" style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
+                          </span>
+                        ))}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                      {fresh.map(i => i.kind === 'course' ? 'Course material' : `${i.name} (${i.role})`).join(' · ')}
+                    </span>
+                    <Button
+                      variant="ghost" size="xs" className="ms-auto text-muted-foreground hover:text-foreground shrink-0"
+                      aria-expanded={open}
+                      onClick={() => setAdjustOpen(p => ({ ...p, [course.code]: !open }))}
+                    >
+                      Adjust
+                      <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
+                    </Button>
+                  </div>
+                  {open && fresh.map(item => (
+                    <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
+                      <Checkbox checked={isIn(item, course.code)} onCheckedChange={() => flip(item)} aria-label={`Create survey — ${label(item)}`} />
+                      <EvaluateeCell item={item} />
+                      {item.role && <span className="ms-auto text-xs" style={{ color: 'var(--muted-foreground)' }}>{item.role}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Stacked DUPLICATE question — yes/no toggle gates the roster. */}
+              {dups.length > 0 && (
+                <div className="border-b border-border">
+                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 48 }}>
+                    <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                    <span className="text-sm min-w-0 truncate">
+                      <span className="font-medium" style={{ color: 'var(--chip-4)' }}>
+                        {dups.length} evaluatee{dups.length !== 1 ? 's' : ''} already {dups.length !== 1 ? 'have' : 'has'} a survey
+                      </span>
+                      <span style={{ color: 'var(--muted-foreground)' }}> ({dups[0].existing}) — evaluate again?</span>
+                    </span>
+                    <label htmlFor={`reeval-${course.code}`} className="ms-auto flex items-center gap-2 text-sm shrink-0 cursor-pointer">
+                      <span style={{ color: 'var(--muted-foreground)' }}>{saidYes ? 'Yes' : 'No'}</span>
+                      <ToggleSwitch
+                        id={`reeval-${course.code}`}
+                        checked={saidYes}
+                        onChange={(v) => {
+                          setReEval(p => ({ ...p, [course.code]: v }))
+                          // Fresh intent resets individual excludes for this course.
+                          if (v) setExcluded(prev => { const n = new Set(prev); dups.forEach(d => n.delete(d.id)); return n })
+                        }}
+                      />
+                      <span className="sr-only">Evaluate the already-surveyed evaluatees of {course.code} again</span>
+                    </label>
+                  </div>
+                  {saidYes && dups.map(item => (
+                    <div key={item.id} className="flex items-center gap-2.5 ps-9 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
+                      <Checkbox checked={isIn(item, course.code)} onCheckedChange={() => flip(item)} aria-label={`Re-evaluate ${label(item)}${item.role ? ` as ${item.role}` : ''}`} />
+                      <EvaluateeCell item={item} />
+                      <span className="ms-auto text-xs whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>
+                        {item.role ?? 'Course material'} · {item.existing}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Gap line — unchanged from the shared system. */}
+              {gaps.map(item => (
+                <div key={item.id} className="flex items-center gap-2.5 px-3 border-b border-border" style={{ minHeight: 48 }}>
+                  <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                  <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                    No <span className="font-medium" style={{ color: 'var(--chip-4)' }}>{item.role}</span> assigned in Prism — nothing to evaluate
+                  </span>
+                  <span className="ms-auto"><AddFacultyBtn /></span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const VARIANTS = [
   { tag: 'a', title: 'Quiet ledger', thesis: "Today's anatomy, noise removed — role rides under the name, 'Will be created' is muted text, only duplicates and gaps carry color.", body: <VariantA /> },
   { tag: 'b', title: 'Decision zones', thesis: "Status-first grouping: an attention zone holding only the decisions (duplicates, gaps), then a calm 'Ready to send' list with no status column at all.", body: <VariantB /> },
   { tag: 'c', title: 'Course cards', thesis: 'Containment over band tinting: one card per course with the template in its header — instance rows stay one calm line each.', body: <VariantC /> },
   { tag: 'd', title: 'Plan sentences', thesis: 'The copy does the work: every row is a sentence about what will happen; duplicates read as amber sentences with the opt-in phrased as its consequence.', body: <VariantD /> },
+  { tag: 'e', title: 'Stacked question', thesis: "Common statuses stack into one line per course. Duplicates become a question — 'evaluate again?' with a yes/no toggle; Yes reveals the people so you pick whom to re-evaluate.", body: <VariantE /> },
 ]
 
 function CompareInner() {
