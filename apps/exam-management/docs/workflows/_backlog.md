@@ -236,6 +236,26 @@ Source: `docs/research/meetings/2026-07-19-modular-strategy-ai-capabilities.md` 
 |---|---|
 | T101 | New layout direction from Aarti Jul 19: no-scroll, 2-column grid, interactive diagram, subscribed=grayed/non-subscribed=emphasized. See T106 for full spec. Full review still deferred to August. D_EM_0719_01–03. |
 
+## Phase 1 design tasks — added 2026-07-23
+
+Source: `docs/research/meetings/2026-07-23-exam-management-weekly-call.md` (Granola `0261fe62`)
+
+> Exam management weekly call. Aarti domain walkthrough: faculty grading journey, grade book, LMS integration, manual score override requirement. Bhargav flagged Cronbach's alpha as a new ExamSoft parity metric. Cohere presentation planning. Timelines reconfirmed.
+
+### Updates to existing tasks (Jul 23)
+
+| # | Update |
+|---|---|
+| T98 | **Aarti explicitly confirmed**: Cohere screens needed for BOTH day 1 leadership session (Aarti's presentation) and day 2 demo sessions. "Invite David and Kanti" to review calls going forward — add them to the recurring review cadence. D_EM_0723_07. |
+| T69 | **Download NOT in Jan reconfirmed.** Aarti: "we have decided that the download capability will not be part of Jan." March (limited availability) remains the target. No change to T69. D_EM_0723_05. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T107 | Cronbach's alpha research — Vishal + Nipun to investigate ExamSoft's new consistency metric | Engineering | Assessment analytics | P1 — RESEARCH TASK | Aarti Jul 23: "look into it Vishal and Nipun and see what it measures and whether we also want to introduce that in our exam management. It will definitely be a parity item with ExamSoft." No design task until research complete. D_EM_0723_03. |
+| T108 | Faculty post-exam score override — per-student manual score adjustment in assessment analytics / curving surface | Admin / Faculty | Assessment analytics (`assessments/[id]/analytics/`) | P1 — DESIGN-REVIEW | Aarti: "There should always be a way for a faculty to review and say yeah publish this… faculty could also increase it or decrease it the total score." Two operations needed: (a) class-wide question removal / point bonus (question-level panel — partially handled by curving tab), (b) per-student individual score override. Current `analytics-client.tsx` handles (a) in the curve tab but (b) is absent. Requires new UX within the analytics surface. D_EM_0723_01. |
+
 ### Priority clarification (Jul 2026)
 
 | # | Update |

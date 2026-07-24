@@ -1461,6 +1461,53 @@ All AI features across the product must have a point-and-click equivalent. AI su
 | Aarti in India | Last week of August + first week of September |
 | Module launcher full review | Deferred to August — aligned with T101 |
 
+### 5.65 Faculty post-exam score override, Cronbach's alpha, and Cohere planning (2026-07-23)
+
+Source: `docs/research/meetings/2026-07-23-exam-management-weekly-call.md` (Granola `0261fe62`)
+
+**Faculty must always have manual score override capability (D_EM_0723_01)**
+
+Aarti confirmed this is a hard requirement — there must never be a grading screen that locks faculty out of making manual adjustments after the system has auto-graded.
+
+Two distinct operations needed:
+1. **Class-wide question adjustment** — remove a wrong question from calculation or give everyone a bonus point. This changes all students' scores simultaneously. Partially handled by the curving tab but must be confirmed complete.
+2. **Per-student score override** — individual score change for one student only. Not currently designed for exam management analytics surface.
+
+| Decision | Detail |
+|---|---|
+| Manual override required at all times (D_EM_0723_01) | "There should always be a way for a faculty to review and say yeah publish this." Cannot hard-lock any score at any stage. |
+| Per-student override supported (D_EM_0723_01) | "Faculty could also mark — if a student has scored 80 out of 100, faculty could increase it or decrease it — the total score." Must be explicit UI. |
+| Faculty choice on where to make the final override (D_EM_0723_01) | Faculty can make the override in exam management then push to LMS, OR push to LMS and adjust there. Both paths valid. Our product must support the first. |
+
+> "We cannot give them an exam management grading screen or grade book screen where they are not able to manually make any changes — that would not be a good design." — Aarti, 2026-07-23
+
+**Cronbach's alpha — new ExamSoft parity metric (D_EM_0723_03)**
+
+Bhargav flagged that ExamSoft has added a Cronbach's alpha metric. Aarti directed Vishal + Nipun to research it.
+
+| Decision | Detail |
+|---|---|
+| Research task before design (D_EM_0723_03) | Vishal + Nipun to investigate what Cronbach's alpha measures and whether it applies to our assessment analytics. No design task until research complete. |
+| Parity item if relevant (D_EM_0723_03) | "It will definitely be a parity item with ExamSoft." If confirmed useful, add to assessment-level analytics summary. |
+
+**Cohere presentation planning (D_EM_0723_07)**
+
+| Decision | Detail |
+|---|---|
+| Screens needed for both day 1 and day 2 (D_EM_0723_07) | Aarti: "I'm also looking forward to having at least a couple of screens for each of these modules to include in my presentation on day one." Day 2 demo sessions also need screens. |
+| Invite Kanti + David to review calls (D_EM_0723_07) | "Please invite David and Kanti." Both should be in the recurring review cadence going forward. |
+
+> "I just came back from the AACP annual conference — a lot of deans and associate deans came to me and asked, is your exam management ready? So there's a lot of curiosity so I think we should use Cohere to build on that curiosity." — Aarti, 2026-07-23
+
+**What is already confirmed NOT in scope**
+
+| Item | Status |
+|---|---|
+| Grade book | NOT in scope. "Grade book is not part of our current plan." |
+| Download capability in Jan MVP | NOT in Jan. "We have decided that the download capability will not be part of Jan." March (limited availability) target unchanged. |
+| Pop quizzes / climate gauging tools | Not exam management scope — faculty use Kahoot/Mentimeter/LMS for in-lecture gauging. |
+| Exam review session scheduling (complex) | Phase 1 = simple coordinator-schedules-review. Don't build complex per-faculty-section routing. |
+
 ---
 
 ## Appendix — source meetings
@@ -1503,6 +1550,7 @@ All AI features across the product must have a point-and-click equivalent. AI su
 | 2026-07-06 10:00 | Priority and governance update 1:1 — Arun and Romit | `e69904b6` | Arun + Romit |
 | 2026-07-07 09:30 | Exam management priority sync and governance change | `91c567e8` | Vishal + Romit |
 | 2026-07-19 10:04 | Modular product strategy — pricing tiers, upsell opportunities, and AI capabilities | `1bc03a5a` | Aarti + Romit |
+| 2026-07-23 10:30 | Exam management weekly call — faculty grading journey, score override, Cronbach's alpha, Cohere planning | `0261fe62` | Aarti + Bhargav + Vishal + Nipun + David + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

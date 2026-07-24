@@ -442,6 +442,27 @@ Source: `docs/research/meetings/2026-07-21-course-eval-sync-up.md` (Granola `0a8
 | T127 | Dashboard / course-readiness table: "Needs Setup" + "Ready to Send" status labels need better visual prominence; course name must be bold | Admin | Setup evaluations course-readiness table (prototype / T124 surface) | P1 — DESIGN-REVIEW | Arun: "I'm not seeing needs set up at all. Right. So if I scroll through, I don't see read ready to send at all." Course name is currently not bold. Status labels are buried inside a gray-bar grouping row. Romit to align with Himanshu on DS gray-bar pattern before applying. Applies to the T124 prototype design, not existing code (screen not yet built). D_PCE_0721_02. |
 | T128 | Template builder redesign: explore sequential / tabbed approach (one aspect at a time) | Admin | Template editor (`templates/[id]/page.tsx`) | P1 — DESIGN-REVIEW | Current builder is "loaded" — upload document, opening instructions, add section, rule set, faculty roles all visible simultaneously. Two competing simplification approaches: (A) Romit's nested/row proposal (one aspect row as entry point); (B) Monil's horizontal-tabs proposal (sequential aspect-by-aspect). Arun: "run this through before you design all of this... you both discuss and then come up with something. All of us can look at that." Romit to do rough prototype with Monil first, then bring to Arun for alignment. Do NOT change `templates/[id]/page.tsx` until approach is agreed. D_PCE_0721_01, D_PCE_0721_03, D_PCE_0721_04. |
 
+## Phase 1 design tasks — added 2026-07-24 (Survey evaluation step separation — Monil)
+
+Source: `docs/research/meetings/2026-07-24-survey-evaluation-step-separation-duplicate-detection.md` (Granola `10d48960`)
+
+> Monil + Romit design review (Jul 24 4:50 AM EDT). Internal review of T124 (combined step) found it asks too many user actions. Decision: reverse to 4 separate steps. New Step 2 adds soft duplicate warning for evaluatees already in a live survey.
+
+### Updates to existing tasks (Jul 24)
+
+| # | Update |
+|---|---|
+| T124 | **SUPERSEDED by T129.** Combined step design (T124) is reversed. Internal review: "this screen is asking for too many actions." 4 steps are SEPARATE. D_PCE_0724_01. |
+| T110 | **"What to evaluate" field REMOVED from Step 1.** T110 was about redesigning the selector to a scalable dropdown. Field is now eliminated entirely — evaluatees are derived from the template selected in Step 2. D_PCE_0724_02. |
+| T49 | Step names updated per Jul 24 separation decision: Step 1 = courses only, Step 2 = template + faculty + duplicate detection, Step 3 = communication, Step 4 = review/summary. D_PCE_0724_01. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T129 | Setup evaluations wizard: re-confirm 4 SEPARATE steps — SUPERSEDES T124 combined-step approach | Admin | Setup evaluations wizard | **P0 — DESIGN-REVIEW** | Step 1: course selection only (zero-student hard block indicator, backend only). Step 2: template assignment per course + missing faculty association + soft duplicate warning per evaluatee row. Step 3: communication. Step 4: review/summary (courses, template, window, student count, evaluity count). Reverses T124. Monil: "separating step one into step one and step two." D_PCE_0724_01, D_PCE_0724_02, D_PCE_0724_05. |
+| T130 | Soft duplicate warning in Step 2 of setup evaluations wizard | Admin | Setup evaluations Step 2 | P1 — DESIGN-REVIEW | Trigger: unique triplet (course_offering_id + faculty_role_type + person_id) already exists in a live survey. Show inline warning per evaluatee row in Step 2. Admin can uncheck that evaluatee to skip re-evaluation and proceed. If admin proceeds past warning, Step 4 (review) surfaces a consent acknowledgment before final push. Hard block explicitly NOT the approach — soft warning is reversible. Monil: "it's a combination of these three things — these three things can only exist once in the database." D_PCE_0724_03, D_PCE_0724_04. |
+
 ---
 
 ## Open product questions
