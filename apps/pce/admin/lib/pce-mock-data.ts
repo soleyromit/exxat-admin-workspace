@@ -363,6 +363,12 @@ export interface PceSurvey {
   /** 'course' | 'instructor' when the offering splits its surveys —
    *  lib/pce-results.ts reads both onto the derived EvalResult. */
   evalScope?: 'course' | 'instructor'
+  /** Readiness criterion id ('instructor' / 'coordinator' / …) for instructor-
+   *  scope flows created after the instance split. Duplicate detection keys on
+   *  offering + THIS + person: the same person under a different role is a new
+   *  combination, so role-less name matching can't tell them apart. Kept as a
+   *  string to avoid a type import cycle with pce-course-readiness. */
+  evalRole?: string
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number

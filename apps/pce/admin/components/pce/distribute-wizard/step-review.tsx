@@ -43,7 +43,13 @@ interface StepReviewProps {
   evaluateSummary?: string
   subjectIssues?: CourseIssue[]
   windowIssues?: CourseIssue[]
+  /** Course-grained duplicate ACK (term-setup wizard — still on the merged
+   *  step). The push wizard resolves duplicates per-instance upstream and
+   *  passes skippedDuplicateCount instead. */
   duplicateIssues?: CourseIssue[]
+  /** Instances the Survey design step skipped as duplicates — informational
+   *  only (nothing overlapping is created), so no acknowledgement gate. */
+  skippedDuplicateCount?: number
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -131,6 +137,7 @@ export function StepReview({
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
   cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
+  skippedDuplicateCount = 0,
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -239,6 +246,14 @@ export function StepReview({
           ['Email', templateName
             ? <>{templateName}{isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}</>
             : muted('Not set')],
+          // Informational, not a gate: the Survey design step already excluded
+          // these — nothing overlapping gets created.
+          ...(skippedDuplicateCount > 0
+            ? ([[
+                'Duplicates',
+                muted(`${skippedDuplicateCount} skipped — already exist for this term`),
+              ]] as [string, React.ReactNode][])
+            : []),
         ]}
       />
 
@@ -386,6 +401,9 @@ export function StepReview({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Email preview</DialogTitle>
+            <DialogDescription>
+              Preview the invitation and reminder emails students will receive.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <ToggleGroup

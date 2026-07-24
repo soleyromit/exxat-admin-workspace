@@ -12,10 +12,12 @@ import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey
 import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
-import { StepCoursesEvaluatees } from '@/components/pce/courses-evaluatees/step-courses-evaluatees'
-// Pre-ledger layout kept for comparison (Romit, Jul 22) — reach it with
-// ?layout=classic. Delete both once the ledger design is signed off.
-import { StepCoursesEvaluateesClassic } from '@/components/pce/courses-evaluatees/step-courses-evaluatees-classic'
+// Two-step split (Jul 2026): step 1 scopes courses + students, step 2 designs
+// the survey instances (template per course, duplicates auto-skipped at the
+// offering+role+person grain). The merged step lives on in the term-setup
+// wizard (step-courses-evaluatees.tsx) until it adopts the same split.
+import { StepScopeCourses } from '@/components/pce/courses-evaluatees/step-scope-courses'
+import { StepSurveyInstances } from '@/components/pce/courses-evaluatees/step-survey-instances'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
@@ -30,7 +32,7 @@ import {
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
-import { subjectDataIssues, windowIssues, duplicateFlowIssues } from '@/lib/pce-push-validation'
+import { subjectDataIssues, windowIssues, expandInstances } from '@/lib/pce-push-validation'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
 const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
@@ -43,10 +45,11 @@ const INITIAL_EMAIL_CONTACTS: EmailContact[] = []
 const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
   .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
-// Steps 1 and 2 merged (Jul 2026): course selection, per-row template
-// assignment, and template-driven validation are ONE step, so the internal
-// numbering skips 2 (WizardNav renders display numbers sequentially).
-type WizardStep = 1 | 3 | 4 | 'success'
+// Two-step split (Jul 2026, reversing the earlier merge on Romit's directive):
+// 1 = Courses & students (scope + roster), 2 = Survey design (instances +
+// duplicate skip), 3 = Communication, 4 = Review. Sequential again for the CE
+// flow; the programmatic flow still skips 2 (1 → 3 → 4).
+type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
 // Pre-assign a default template to every (non-archived) offering in a term, so
 // the merged "Scope and design" step shows assignments immediately. One template
@@ -108,13 +111,8 @@ function PushSurveyInner() {
   const params = useSearchParams()
   const pathname = usePathname()
   const surveyMode: 'course_evaluation' | 'general' =
-    pathname.startsWith('/surveys/programmatic') || params.get('mode') === 'programmatic'
+    pathname?.startsWith('/surveys/programmatic') || params?.get('mode') === 'programmatic'
       ? 'general' : 'course_evaluation'
-  // ?layout=classic renders the pre-ledger step for side-by-side comparison.
-  const StepVariant = params?.get('layout') === 'classic'
-    ? StepCoursesEvaluateesClassic
-    : StepCoursesEvaluatees
-
   const publishedTemplates = templates.filter(t =>
     t.status === 'active' && (
       surveyMode === 'general'
@@ -176,6 +174,9 @@ function PushSurveyInner() {
     surveyMode === 'general' ? '' : initialTerm?.academicYear ?? ''
   )
   const [ceCohorts, setCeCohorts] = useState<string[]>([])
+  // Students added per offering in THIS wizard run (Courses & students step's
+  // in-app roster fix) — page-owned so steps 2/Review count the same reach.
+  const [addedStudents, setAddedStudents] = useState<Record<string, string[]>>({})
 
   // Step 4 — Communication — defaults pre-filled from Central Settings
   const settingsWindow = useMemo(() => windowFromSettings(initialTermId), [initialTermId])
@@ -250,9 +251,12 @@ function PushSurveyInner() {
   // StepCommunication's default so Review shows the same reach.
   const prismStudentCount = useMemo(() => {
     const seen = new Set<string>()
-    for (const o of selectedOfferings) for (const sid of MOCK_COURSE_ENROLLMENTS[o.id] ?? []) seen.add(sid)
+    for (const o of selectedOfferings) {
+      for (const sid of MOCK_COURSE_ENROLLMENTS[o.id] ?? []) seen.add(sid)
+      for (const sid of addedStudents[o.id] ?? []) seen.add(sid)
+    }
     return seen.size
-  }, [selectedOfferings])
+  }, [selectedOfferings, addedStudents])
   // Default template per course (by type) — for the Template column's "Default"
   // chips + Reset to defaults. CE covers every SCOPED course (not just selected):
   // a deselected row keeps a sensible default in its Template cell.
@@ -271,6 +275,25 @@ function PushSurveyInner() {
   function handleResetTemplateDefaults() {
     setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
   }
+
+  // ── Survey-instance plan (Survey design step + push) ───────────────────────
+  // Each selected offering × its effective template expands into the survey
+  // instances a push would create, checked per offering+role+person against
+  // the existing flows. The SAME list renders step 2 and drives handlePush,
+  // so what the admin reviewed is exactly what gets created.
+  const instancePlan = useMemo(() => {
+    if (surveyMode === 'general') return []
+    const byId = new Map(publishedTemplates.map(t => [t.id, t]))
+    return selectedOfferings.flatMap(o => {
+      const raw = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+      return expandInstances(o, byId.get(raw) ?? null, surveys)
+    })
+  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys])
+
+  const skippedDuplicateCount = useMemo(
+    () => instancePlan.filter(i => i.status === 'duplicate').length,
+    [instancePlan],
+  )
 
   const selectedInvitationTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === emailTemplateId) ?? null
   const isEmailEdited = !!selectedInvitationTemplate &&
@@ -301,12 +324,9 @@ function PushSurveyInner() {
     () => (surveyMode === 'general' ? [] : windowIssues(selectedOfferings, openDate)),
     [selectedOfferings, openDate, surveyMode],
   )
-  // (C) courses already covered by a scheduled/live flow — pushing again
-  // creates an overlapping survey, so it gates behind its own acknowledgement.
-  const reviewDuplicateIssues = useMemo(
-    () => (surveyMode === 'general' ? [] : duplicateFlowIssues(selectedOfferings, surveys)),
-    [selectedOfferings, surveys, surveyMode],
-  )
+  // (C) duplicates are RESOLVED in the Survey design step now — instances that
+  // match an open flow's offering+role+person key are skipped at insert, so
+  // Review only states the skip count (no acknowledgement to extract).
 
   // CE Review identity line: cohort + evaluate summaries (CE mode only).
   // What's evaluated is no longer picked directly — it's the union of what the
@@ -384,6 +404,17 @@ function PushSurveyInner() {
       programId: '',
       courseOfferingIds: selectedOfferings.map(o => o.id),
       templateAssignments,
+      // The Survey design step's plan, minus duplicates and unstaffed roles —
+      // exactly what the admin previewed. General mode keeps the legacy
+      // one-flow-per-offering path.
+      instances: surveyMode === 'general' ? undefined : instancePlan
+        .filter(i => i.status === 'new')
+        .map(i => ({
+          offeringId: i.offeringId,
+          scope: i.scope,
+          role: i.criterion,
+          personName: i.personName ?? undefined,
+        })),
       openDate: openYmd,
       closeDate: closeYmd,
       emailSubject,
@@ -407,6 +438,7 @@ function PushSurveyInner() {
     )
     setGeneralTemplateId('')
     setSelectedCourseIds(new Set())
+    setAddedStudents({})
     const w = windowFromSettings(LATEST_TERM_ID)
     setOpenDate(w.open)
     setCloseDate(w.close)
@@ -460,7 +492,7 @@ function PushSurveyInner() {
             <div className="flex flex-col gap-6 flex-1" style={{ maxWidth: 680 }}>
               {/* Step header */}
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h2 className="text-xl font-semibold font-heading">
                   Basic Details
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -482,7 +514,7 @@ function PushSurveyInner() {
 
               {/* Design */}
               <div className="border-t border-border pt-6 flex flex-col gap-1">
-                <h3 className="text-base font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="text-base font-semibold font-heading">
                   Design
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -513,27 +545,27 @@ function PushSurveyInner() {
           ) : (
             <div className="flex flex-col gap-6 flex-1">
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Courses &amp; survey design
+                <h2 className="text-xl font-semibold font-heading">
+                  Courses &amp; students
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Choose the term and assign a template to each course. Courses load live from Prism, and each row validates against what its template evaluates.
+                  Choose the term and the courses to evaluate. Courses load live from Prism; a course needs students on its roster before a survey can reach anyone.
                 </p>
               </div>
 
-              <StepVariant
+              <StepScopeCourses
                 season={ceSeason}
                 academicYear={ceAcademicYear}
                 cohorts={ceCohorts}
                 cohortOptions={ceCohortOpts}
                 scoped={ceScoped}
-                publishedTemplates={publishedTemplates}
-                templateAssignments={templateAssignments}
-                defaultAssignments={defaultAssignments}
-                onTemplateChange={(offeringId, tmplId) =>
-                  setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+                addedStudents={addedStudents}
+                onAddStudents={(offeringId, studentIds) =>
+                  setAddedStudents(prev => ({
+                    ...prev,
+                    [offeringId]: [...(prev[offeringId] ?? []), ...studentIds],
+                  }))
                 }
-                onResetDefaults={handleResetTemplateDefaults}
                 onSeasonChange={setCeSeason}
                 onAcademicYearChange={setCeAcademicYear}
                 onToggleCohort={(c) =>
@@ -542,6 +574,38 @@ function PushSurveyInner() {
                 onSelectionChange={setSelectedCourseIds}
                 onContinue={() => {
                   if (!surveyTitle.trim() && ceScopeTerm) setSurveyTitle(`${ceScopeTerm.name} Course Evaluations`)
+                  setStep(2)
+                }}
+              />
+            </div>
+          ))}
+
+          {step === 2 && surveyMode !== 'general' && (
+            <div className="flex flex-col gap-6 flex-1">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold font-heading">
+                  Survey design
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  Each course expands into the surveys its template creates — one for the course material, plus one per faculty role and person. Surveys that already exist for the same course, role and person are skipped automatically.
+                </p>
+              </div>
+
+              <StepSurveyInstances
+                selectedOfferings={selectedOfferings}
+                instances={instancePlan}
+                publishedTemplates={publishedTemplates}
+                templateAssignments={templateAssignments}
+                defaultAssignments={defaultAssignments}
+                onTemplateChange={(offeringId, tmplId) =>
+                  setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+                }
+                onResetDefaults={handleResetTemplateDefaults}
+                onBack={() => setStep(1)}
+                onContinue={() => {
+                  // Materialize type-defaults into explicit assignments so the
+                  // push (which reads templateAssignments) creates exactly what
+                  // this step previewed.
                   setTemplateAssignments(prev => {
                     const next = { ...prev }
                     for (const o of selectedOfferings) if (!next[o.id]) next[o.id] = defaultAssignments[o.id]
@@ -551,7 +615,7 @@ function PushSurveyInner() {
                 }}
               />
             </div>
-          ))}
+          )}
 
           {step === 3 && (
             <StepCommunication
@@ -583,7 +647,7 @@ function PushSurveyInner() {
               onRemindersChange={setReminders}
               onEmailContactsChange={setEmailContacts}
               title={surveyMode === 'general' ? 'Distribution' : 'Communication'}
-              onBack={() => setStep(1)}
+              onBack={() => setStep(surveyMode === 'general' ? 1 : 2)}
               onNext={() => setStep(4)}
             />
           )}
@@ -612,14 +676,14 @@ function PushSurveyInner() {
               reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
-              onEdit={(n) => setStep((n === 2 ? 1 : n) as WizardStep)}
+              onEdit={(n) => setStep((surveyMode === 'general' && n === 2 ? 1 : n) as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}
               cohortSummary={cohortSummary}
               evaluateSummary={evaluateSummary}
               subjectIssues={reviewSubjectIssues}
               windowIssues={reviewWindowIssues}
-              duplicateIssues={reviewDuplicateIssues}
+              skippedDuplicateCount={skippedDuplicateCount}
             />
           )}
 

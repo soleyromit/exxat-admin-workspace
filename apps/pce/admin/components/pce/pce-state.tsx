@@ -51,6 +51,16 @@ const INITIAL_SETUP_DEFAULTS: SetupDefaults = {
   activeReminderIntervals: [14, 7, 3],
 }
 
+/** One survey to create — the Survey design step's instance grain. */
+export interface PushInstance {
+  offeringId: string
+  scope: 'course' | 'instructor'
+  /** Readiness criterion id — stamped onto the flow as evalRole so FUTURE
+   *  duplicate checks can match the full offering+role+person key. */
+  role?: string
+  personName?: string
+}
+
 export interface PushWizardConfig {
   surveyType: SurveyType
   termId: string
@@ -58,6 +68,10 @@ export interface PushWizardConfig {
   programId: string
   courseOfferingIds: string[]
   templateAssignments: Record<string, string>  // offeringId → templateId
+  /** Instance-level plan from the Survey design step (duplicates already
+   *  excluded there). When present, one survey is created PER INSTANCE —
+   *  split flows — instead of one combined flow per offering. */
+  instances?: PushInstance[]
   openDate: string   // YYYY-MM-DD
   closeDate: string  // YYYY-MM-DD
   emailSubject: string
@@ -520,6 +534,61 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     const status: SurveyStatus = openDate > today ? 'scheduled' : 'collecting'
 
     const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
+
+    // Instance-level plan (Survey design step): one survey PER INSTANCE —
+    // split flows with evalScope + evalRole stamped so later pushes can match
+    // the full offering+role+person duplicate key. Duplicates were already
+    // excluded upstream; whatever arrives here gets created.
+    if (config.instances?.length) {
+      const stamp = Date.now()
+      setSurveys(ss => [
+        ...ss,
+        ...config.instances!.map((inst, i): PceSurvey => {
+          const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === inst.offeringId)
+          const masterCourse = offering ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId) : null
+          const person = inst.personName ? MOCK_FACULTY.find(f => f.name === inst.personName) : null
+          return {
+            id: `s${stamp}-${inst.offeringId}-${i}`,
+            offeringId: inst.offeringId,
+            evalScope: inst.scope,
+            evalRole: inst.role,
+            courseCode: masterCourse?.code ?? inst.offeringId,
+            courseName: masterCourse?.name ?? '',
+            term: term?.name ?? academicYear,
+            cohort: offering?.cohort,
+            surveyType,
+            openDate,
+            academicYear,
+            programId,
+            templateId: templateAssignments[inst.offeringId] ?? '',
+            status,
+            // Course-scope flows carry NO instructors (seed pf3 convention —
+            // a person listed on a course-scope flow ghosts into faculty
+            // analytics); instructor-scope flows carry exactly the evaluatee.
+            instructors: inst.scope === 'instructor' && person
+              ? [{ id: person.id, name: person.name, initials: person.initials, role: 'primary' as const }]
+              : [],
+            // A split flow IS a single evaluation type — without this override
+            // evaluationsFor() derives BOTH types from the roll-up and
+            // resurrects the half this flow deliberately excludes.
+            evaluations: [{
+              type: inst.scope === 'course' ? 'course_material' as const : 'faculty_roles' as const,
+              status,
+              responseRate: 0,
+              responseCount: 0,
+              enrollmentCount: offering?.enrolledCount ?? 0,
+              deadline: closeDate,
+            }],
+            responseRate: 0,
+            responseCount: 0,
+            enrollmentCount: offering?.enrolledCount ?? 0,
+            deadline: closeDate,
+            createdAt: today,
+          }
+        }),
+      ])
+      return
+    }
 
     setSurveys(ss => {
       const newSurveys: PceSurvey[] = courseOfferingIds.map(offeringId => {

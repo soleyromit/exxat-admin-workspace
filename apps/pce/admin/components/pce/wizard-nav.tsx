@@ -15,11 +15,13 @@ interface WizardNavProps {
 }
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
-  // Course selection + per-row template assignment + template-driven validation
-  // are ONE step (merged Jul 2026). The `n` values stay aligned to the internal
-  // wizard steps (1 → 3 → 4), same convention as the programmatic flow below.
+  // Two-step split (Jul 2026, reversing the earlier merge): step 1 scopes the
+  // COURSES (term + cohort + roster), step 2 designs the SURVEY INSTANCES
+  // (template per course; duplicates auto-skipped at the offering+role+person
+  // grain). Internal step numbers are sequential again for this flow.
   course_evaluation: [
-    { n: 1, label: 'Courses & Survey Design' },
+    { n: 1, label: 'Courses & Students' },
+    { n: 2, label: 'Survey Design' },
     { n: 3, label: 'Communication' },
     { n: 4, label: 'Review' },
   ],

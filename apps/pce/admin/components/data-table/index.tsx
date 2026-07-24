@@ -633,6 +633,12 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
    * --icon-disc-* bg tokens with their --chip-* inks).
    */
   groupHeaderStyles?: Record<string, React.CSSProperties>
+  /** PCE extension — extra content rendered inline in the group band after the
+   *  label (e.g. the Survey design step's per-course template Select). Portal-
+   *  based controls (DS Select/Popover) are safe here: their floating content
+   *  escapes the scroll container via the Radix portal, and the band already
+   *  hosts an interactive control (the group select-all Checkbox). */
+  groupHeaderSlot?: (groupKey: string) => React.ReactNode
   /** Per-row class hook (PCE extension) — e.g. state tints/accent borders. */
   getRowClassName?: (row: TData) => string | undefined
   /**
@@ -674,6 +680,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   state,
   groupIcons,
   groupHeaderStyles,
+  groupHeaderSlot,
   getRowClassName,
   edgeInset = true,
   stickyHeader = true,
@@ -1080,6 +1087,15 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       )}>
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
+                      {/* PCE extension — per-group inline slot (see prop doc). */}
+                      {groupKey != null && groupHeaderSlot != null && (
+                        <span
+                          className="ml-3 inline-flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {groupHeaderSlot(groupKey)}
+                        </span>
+                      )}
                     </>
                   )
                   return (
