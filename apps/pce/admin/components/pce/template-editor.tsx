@@ -650,7 +650,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // there's no audience to generate an evaluation for.
   const curStopRolesPending = curStop.subjectKey === 'faculty'
     && (facultyRoleSets.find(rs => rs.id === curStop.roleSetId)?.roles.length ?? 0) === 0
-  // Every faculty role claimed → "Add role evaluation" is a dead end
+  // Every faculty role claimed → "Evaluate more roles" is a dead end
   // (roles are unique across role sets), so the affordance disables.
   const allFacultyRolesClaimed = (() => {
     const claimed = new Set(facultyRoleSets.flatMap(rs => rs.roles))
@@ -2197,7 +2197,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   </div>
                   <Button variant="outline" size="sm" onClick={handleAddRoleStop} className="border-dashed" disabled={allFacultyRolesClaimed}>
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Add role evaluation
+                    Evaluate more roles
                   </Button>
                 </div>
                 <div className="flex items-center justify-between gap-3" style={{ margin: '12px 0' }}>
@@ -2367,7 +2367,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                                 <span className="self-start" style={{ marginTop: 2 }}>
                                   <Button variant="outline" size="sm" disabled className="justify-start border-dashed">
                                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                                    Add role evaluation
+                                    Evaluate more roles
                                   </Button>
                                 </span>
                               </TooltipTrigger>
@@ -2378,7 +2378,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                               className="justify-start border-dashed self-start"
                               style={{ marginTop: 2 }}>
                               <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                              Add role evaluation
+                              Evaluate more roles
                             </Button>
                           )}
                         </div>
