@@ -2327,7 +2327,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           aria-label={facultyExpanded ? 'Hide faculty evaluations' : 'Show faculty evaluations'}
                           aria-expanded={facultyExpanded}
                           aria-controls="guided-rail-faculty-group"
-                          className="shrink-0"
+                          /* DS ghost styles aria-expanded with a persistent
+                             fill (open-menu affordance) — wrong signal on a
+                             disclosure whose state the rotated caret + visible
+                             tree already show. Suppress the fill only. */
+                          className="shrink-0 aria-expanded:bg-transparent"
                           onClick={() => setFacultyManual(!facultyExpanded)}
                         >
                           <i className={`fa-light fa-chevron-${facultyExpanded ? 'down' : 'right'} text-xs`} aria-hidden="true" />
