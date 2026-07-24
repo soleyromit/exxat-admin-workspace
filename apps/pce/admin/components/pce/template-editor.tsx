@@ -2242,7 +2242,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
                     </span>
                   ) : null
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string; plusCount?: number }) => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string; rosterCount?: number }) => {
                     const cur = stop.key === curStop.key
                     const item = (
                       <Button
@@ -2259,12 +2259,14 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                           )}
                           <span className="text-sm truncate min-w-0" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
-                          {/* Roster-overflow count pill (TabsCountBadge idiom) —
-                              inline with the name it completes; the right edge
-                              stays the progress column. */}
-                          {opts?.plusCount ? (
-                            <span className="text-xs tabular-nums rounded-full shrink-0 border border-border" style={{ padding: '0 6px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
-                              +{opts.plusCount}
+                          {/* Roster pill (TabsCountBadge idiom) — users icon +
+                              TOTAL roles covered ("+N" forced arithmetic;
+                              Romit Jul 23). Inline with the name it belongs
+                              to; the right edge stays the progress column. */}
+                          {opts?.rosterCount ? (
+                            <span className="text-xs tabular-nums rounded-full shrink-0 border border-border inline-flex items-center gap-1" style={{ padding: '0 6px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+                              <i className="fa-light fa-user-group" aria-hidden="true" style={{ fontSize: 10 }} />
+                              {opts.rosterCount}
                             </span>
                           ) : null}
                           {doneMeta(stop)}
@@ -2355,7 +2357,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             const pending = !set || set.roles.length === 0
                             return renderRailItem(stop, set ? roleSetLabel(set) : 'Choose roles…', {
                               amber: pending,
-                              plusCount: set && set.roles.length > 1 ? set.roles.length - 1 : undefined,
+                              rosterCount: set && set.roles.length > 1 ? set.roles.length : undefined,
                               tooltip: set && set.roles.length > 1 ? `Evaluating: ${set.roles.map(ROLE_LABEL).join(', ')}` : undefined,
                             })
                           })}
