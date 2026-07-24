@@ -35,7 +35,6 @@ import {
   Field,
   FieldLabel,
   FieldDescription,
-  Badge,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -2243,7 +2242,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
                     </span>
                   ) : null
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string; rosterCount?: number }) => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string }) => {
                     const cur = stop.key === curStop.key
                     const item = (
                       <Button
@@ -2260,17 +2259,6 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                           )}
                           <span className="text-sm truncate min-w-0" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
-                          {/* Roster chip — DS Badge (never hand-roll Badge)
-                              with fa-id-badge (roles are titles, not people —
-                              fa-user-group overpromised "N people") + TOTAL
-                              roles covered. Inline with the name it belongs
-                              to; the right edge stays the progress column. */}
-                          {opts?.rosterCount ? (
-                            <Badge variant="outline" className="shrink-0 tabular-nums">
-                              <i className="fa-light fa-id-badge" aria-hidden="true" />
-                              {opts.rosterCount}
-                            </Badge>
-                          ) : null}
                           {doneMeta(stop)}
                         </span>
                       </Button>
@@ -2284,11 +2272,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       </Tooltip>
                     ) : item
                   }
-                  // Compact label = first role; roster overflow renders as an
-                  // inline count pill, full roster rides in the tooltip. A
-                  // role-less set is labeled by its one to-do.
+                  // "First +N" label with a leading role icon; hovering the
+                  // tab reveals the full roster (chip removed — Romit Jul 23).
+                  // A role-less set is labeled by its one to-do.
                   const roleSetLabel = (set: PceTemplateRoleSet) =>
-                    set.roles.length === 0 ? 'Choose roles…' : ROLE_LABEL(set.roles[0])
+                    set.roles.length === 0 ? 'Choose roles…'
+                      : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
+                      : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
                   const courseStop = builderStops.find(s => s.key === 'course')!
                   const generalStop = builderStops.find(s => s.key === 'general')!
                   const facultyCur = curStop.subjectKey === 'faculty'
@@ -2359,7 +2349,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             const pending = !set || set.roles.length === 0
                             return renderRailItem(stop, set ? roleSetLabel(set) : 'Choose roles…', {
                               amber: pending,
-                              rosterCount: set && set.roles.length > 1 ? set.roles.length : undefined,
+                              icon: 'fa-id-badge',
                               tooltip: set && set.roles.length > 1 ? `Evaluating: ${set.roles.map(ROLE_LABEL).join(', ')}` : undefined,
                             })
                           })}
