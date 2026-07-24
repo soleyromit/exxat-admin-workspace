@@ -43,6 +43,7 @@ interface StepReviewProps {
   evaluateSummary?: string
   subjectIssues?: CourseIssue[]
   windowIssues?: CourseIssue[]
+  duplicateIssues?: CourseIssue[]
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -129,7 +130,7 @@ export function StepReview({
   templateName, emailSubject, emailBody, isEmailEdited, reminders,
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
-  cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [],
+  cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -142,6 +143,7 @@ export function StepReview({
   // accepted before Push (Dropbox multi-ack model).
   const [ackSubject, setAckSubject] = useState(false)
   const [ackWindow, setAckWindow] = useState(false)
+  const [ackDuplicate, setAckDuplicate] = useState(false)
 
   const scheduleComplete = !!openDate && !!closeDate && !!releaseDate
   const coursesComplete = surveyMode !== 'course_evaluation' || courseGroups.length > 0
@@ -149,8 +151,9 @@ export function StepReview({
   const recipientsComplete = totalRecipients > 0
   const subjectAck = subjectIssues.length === 0 || ackSubject
   const windowAck = windowIssues.length === 0 || ackWindow
-  const allReady = scheduleComplete && coursesComplete && emailComplete && recipientsComplete && subjectAck && windowAck
-  const hasWarnings = subjectIssues.length > 0 || windowIssues.length > 0
+  const duplicateAck = duplicateIssues.length === 0 || ackDuplicate
+  const allReady = scheduleComplete && coursesComplete && emailComplete && recipientsComplete && subjectAck && windowAck && duplicateAck
+  const hasWarnings = subjectIssues.length > 0 || windowIssues.length > 0 || duplicateIssues.length > 0
 
   const heading = surveyTitle.trim() || (surveyMode === 'course_evaluation' ? termName || 'Course evaluation' : 'Untitled survey')
 
@@ -279,7 +282,7 @@ export function StepReview({
                       <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(', ')}</span>
                     </span>
                     <Button asChild variant="link" size="xs" className="shrink-0">
-                      <a href={iss.prismHref} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism — opens in a new tab">
+                      <a href={iss.prismHref ?? '#'} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism — opens in a new tab">
                         Fix in Prism
                         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
                         <span className="sr-only"> (opens in new tab)</span>
@@ -290,7 +293,34 @@ export function StepReview({
               </div>
             </AckGroup>
           )}
-          {subjectIssues.length > 0 && windowIssues.length > 0 && (
+          {duplicateIssues.length > 0 && (
+            <>
+              {subjectIssues.length > 0 && <div className="border-t border-border" />}
+              <AckGroup
+                id="ack-duplicate"
+                title={`${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
+                reason="Pushing again creates a second, overlapping survey — students in these courses will receive both."
+                ackLabel="I understand this creates a second evaluation for these courses"
+                checked={ackDuplicate}
+                onChange={setAckDuplicate}
+                action={
+                  <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(1)}>
+                    Edit selection
+                  </Button>
+                }
+              >
+                <div className="flex flex-col gap-1">
+                  {duplicateIssues.map(iss => (
+                    <div key={iss.id} className="text-sm min-w-0 truncate">
+                      {iss.courseLabel}
+                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(' · ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </AckGroup>
+            </>
+          )}
+          {windowIssues.length > 0 && (subjectIssues.length > 0 || duplicateIssues.length > 0) && (
             <div className="border-t border-border" />
           )}
           {windowIssues.length > 0 && (
@@ -332,7 +362,7 @@ export function StepReview({
             <p className="text-xs flex items-center gap-1.5 min-w-0" style={{ color: 'var(--insight-severity-warning-fg)' }}>
               <i className="fa-solid fa-circle-exclamation text-xs" aria-hidden="true" />
               <span className="truncate">
-                {!subjectAck || !windowAck
+                {!subjectAck || !windowAck || !duplicateAck
                   ? 'Acknowledge the flagged warnings above to continue.'
                   : 'Resolve the flagged sections before pushing.'}
               </span>

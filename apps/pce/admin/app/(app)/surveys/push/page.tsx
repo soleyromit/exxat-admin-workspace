@@ -30,7 +30,7 @@ import {
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
-import { subjectDataIssues, windowIssues } from '@/lib/pce-push-validation'
+import { subjectDataIssues, windowIssues, duplicateFlowIssues } from '@/lib/pce-push-validation'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
 const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
@@ -104,7 +104,7 @@ function remindersFromSettings(intervals: number[]): Reminder[] {
 }
 
 function PushSurveyInner() {
-  const { templates, pushSurveyBatch, setupDefaults } = usePce()
+  const { templates, surveys, pushSurveyBatch, setupDefaults } = usePce()
   const params = useSearchParams()
   const pathname = usePathname()
   const surveyMode: 'course_evaluation' | 'general' =
@@ -300,6 +300,12 @@ function PushSurveyInner() {
   const reviewWindowIssues = useMemo(
     () => (surveyMode === 'general' ? [] : windowIssues(selectedOfferings, openDate)),
     [selectedOfferings, openDate, surveyMode],
+  )
+  // (C) courses already covered by a scheduled/live flow — pushing again
+  // creates an overlapping survey, so it gates behind its own acknowledgement.
+  const reviewDuplicateIssues = useMemo(
+    () => (surveyMode === 'general' ? [] : duplicateFlowIssues(selectedOfferings, surveys)),
+    [selectedOfferings, surveys, surveyMode],
   )
 
   // CE Review identity line: cohort + evaluate summaries (CE mode only).
@@ -613,6 +619,7 @@ function PushSurveyInner() {
               evaluateSummary={evaluateSummary}
               subjectIssues={reviewSubjectIssues}
               windowIssues={reviewWindowIssues}
+              duplicateIssues={reviewDuplicateIssues}
             />
           )}
 

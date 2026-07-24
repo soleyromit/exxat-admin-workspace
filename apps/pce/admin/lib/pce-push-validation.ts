@@ -8,10 +8,16 @@
 //      faculty (no one to evaluate). Intrinsic to the course; knowable in Step 1.
 //   B. Survey-window misalignment — the survey opens after a course has already
 //      ended. Needs the schedule, so it's only computable at Review.
+//   C. Duplicate flows — a selected course already has a scheduled/live
+//      evaluation from an earlier push; pushing again sends students a second,
+//      overlapping survey. The Step-1 Status column shows the coverage; this
+//      gate makes creating the overlap a conscious choice.
 // ============================================================================
 
 import {
   type CourseOffering,
+  type PceSurvey,
+  type SurveyStatus,
   MOCK_PROGRAM_TERMS,
 } from './pce-mock-data'
 import { courseLabelOf, prismAddHref } from './pce-course-readiness'
@@ -21,8 +27,9 @@ export interface CourseIssue {
   courseLabel: string
   /** Plain-language reasons, e.g. ["no faculty assigned", "no students enrolled"]. */
   reasons: string[]
-  /** New-tab Prism deep-link to fix the course. */
-  prismHref: string
+  /** New-tab Prism deep-link to fix the course — absent when Prism isn't the
+   *  fix (duplicate flows are resolved by editing the selection, not Prism). */
+  prismHref?: string
 }
 
 function hasFaculty(o: CourseOffering): boolean {
@@ -81,6 +88,60 @@ export function courseDates(o: CourseOffering): { start: Date; end: Date } | nul
   const start = new Date(end)
   start.setDate(start.getDate() - 98)
   return { start, end }
+}
+
+// A flow in any of these states still reaches (or will reach) students — a new
+// push over it creates a real overlap. Released/closed runs are history, and
+// per the lifecycle rule a push-born flow starts at 'scheduled', never 'draft'.
+const OPEN_FLOW_STATUSES: ReadonlySet<SurveyStatus> = new Set([
+  'scheduled', 'active', 'collecting', 'pending_review',
+])
+
+const OPEN_FLOW_WORD: Partial<Record<SurveyStatus, string>> = {
+  scheduled: 'scheduled',
+  active: 'live',
+  collecting: 'live',
+  pending_review: 'in review',
+}
+
+/** YYYY-MM-DD → "Dec 4" without the UTC-midnight day shift of new Date(iso). */
+function fmtYmd(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function flowSummary(f: PceSurvey): string {
+  const who = f.evalScope === 'instructor'
+    ? (f.instructors[0]?.name ?? 'Instructor')
+    : 'Course'
+  const opens = f.status === 'scheduled' && f.openDate ? ` (opens ${fmtYmd(f.openDate)})` : ''
+  return `${who} — ${OPEN_FLOW_WORD[f.status] ?? f.status}${opens}`
+}
+
+/**
+ * C. Duplicate flows — selected courses that already carry a scheduled/live
+ * evaluation flow from an earlier push (matched by the survey's offeringId FK).
+ */
+export function duplicateFlowIssues(
+  offerings: CourseOffering[],
+  surveys: PceSurvey[],
+): CourseIssue[] {
+  const openByOffering = new Map<string, PceSurvey[]>()
+  for (const s of surveys) {
+    if (!s.offeringId || !OPEN_FLOW_STATUSES.has(s.status)) continue
+    openByOffering.set(s.offeringId, [...(openByOffering.get(s.offeringId) ?? []), s])
+  }
+  const out: CourseIssue[] = []
+  for (const o of offerings) {
+    const open = openByOffering.get(o.id)
+    if (!open || open.length === 0) continue
+    out.push({
+      id: o.id,
+      courseLabel: courseLabelOf(o),
+      reasons: open.map(flowSummary),
+    })
+  }
+  return out
 }
 
 /**

@@ -54,7 +54,7 @@ import {
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope, TERM_SEASONS } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
-import { subjectDataIssues, windowIssues } from '@/lib/pce-push-validation'
+import { subjectDataIssues, windowIssues, duplicateFlowIssues } from '@/lib/pce-push-validation'
 
 type WizardStep = 1 | 2 | 3 | 4 | 'success' | 'saved'
 
@@ -119,7 +119,7 @@ function windowFromEnd(endYmd: string | undefined): { open?: Date; close?: Date;
 
 function TermSetupInner() {
   const params = useSearchParams()
-  const { templates, pushSurveyBatch, setupDefaults, addProgramTerm } = usePce()
+  const { templates, surveys, pushSurveyBatch, setupDefaults, addProgramTerm } = usePce()
 
   const publishedTemplates = templates.filter(
     t => t.status === 'active' && (!t.surveyType || t.surveyType === 'course_evaluation'),
@@ -241,6 +241,7 @@ function TermSetupInner() {
 
   const reviewSubjectIssues = useMemo(() => subjectDataIssues(selectedOfferings), [selectedOfferings])
   const reviewWindowIssues = useMemo(() => windowIssues(selectedOfferings, openDate), [selectedOfferings, openDate])
+  const reviewDuplicateIssues = useMemo(() => duplicateFlowIssues(selectedOfferings, surveys), [selectedOfferings, surveys])
   const cohortSummary = ceCohorts.join(' · ')
   // What's evaluated = the union of what the selected courses' templates evaluate.
   const evaluateSummary = useMemo(() => {
@@ -555,6 +556,7 @@ function TermSetupInner() {
               evaluateSummary={evaluateSummary}
               subjectIssues={reviewSubjectIssues}
               windowIssues={reviewWindowIssues}
+              duplicateIssues={reviewDuplicateIssues}
             />
           )}
 
