@@ -2210,19 +2210,20 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const facultyStops = builderStops.filter(s => s.subjectKey === 'faculty')
                   const anyRolesPending = facultyRoleSets.some(rs => rs.roles.length === 0)
                   const facultyExpanded = facultyManual ?? (curStop.subjectKey === 'faculty' || anyRolesPending)
-                  // Left active bar — neutral foreground (brand stays on CTAs).
-                  const activeBar = (on: boolean) => (
-                    <span aria-hidden="true" className="rounded-full" style={{
-                      position: 'absolute', left: 0, top: 7, bottom: 7, width: 2.5,
-                      background: on ? 'var(--foreground)' : 'transparent',
-                    }} />
-                  )
+                  // Aspect icons differentiate the top-level tabs (no active
+                  // bar — Romit Jul 23); role-set children are tree nodes on a
+                  // guide line instead.
+                  const ASPECT_ICON: Record<string, string> = {
+                    course_content: 'fa-book-open',
+                    faculty: 'fa-chalkboard-user',
+                    general: 'fa-building-columns',
+                  }
                   const doneMeta = (stop: typeof builderStops[number]) => stopQuestionCount(stop) > 0 ? (
                     <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: 'var(--brand-color)' }}>
                       <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
                     </span>
                   ) : null
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { indent?: boolean; amber?: boolean }) => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string }) => {
                     const cur = stop.key === curStop.key
                     return (
                       <Button
@@ -2231,14 +2232,13 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         size="sm"
                         onClick={() => setActiveStop(stop.key)}
                         aria-current={cur ? 'step' : undefined}
-                        className={`relative h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${cur ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
-                        style={{
-                          background: cur ? 'var(--muted)' : 'transparent',
-                          marginLeft: opts?.indent ? 14 : 0,
-                        }}
+                        className={`h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${cur ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
+                        style={{ background: cur ? 'var(--muted)' : 'transparent' }}
                       >
-                        {activeBar(cur)}
-                        <span className="flex items-center gap-2 w-full min-w-0">
+                        <span className="flex items-center gap-2.5 w-full min-w-0">
+                          {opts?.icon && (
+                            <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
+                          )}
                           <span className="text-sm truncate" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
                           {doneMeta(stop)}
                         </span>
@@ -2259,7 +2259,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const pendingCount = facultyRoleSets.filter(rs => rs.roles.length === 0).length
                   return (
                     <>
-                      {renderRailItem(courseStop, 'Course')}
+                      {renderRailItem(courseStop, 'Course', { icon: ASPECT_ICON.course_content })}
                       {/* Faculty peer row — the main button enters the aspect
                           (first role set, creating one if none exist); the
                           chevron only toggles the group. aria-current surfaces
@@ -2275,11 +2275,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             else handleAddRoleStop()
                           }}
                           aria-current={facultyCur && !facultyExpanded ? 'step' : undefined}
-                          className={`relative h-auto flex-1 justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${facultyCur && !facultyExpanded ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
+                          className={`h-auto flex-1 justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${facultyCur && !facultyExpanded ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
                           style={{ background: facultyCur && !facultyExpanded ? 'var(--muted)' : 'transparent' }}
                         >
-                          {activeBar(facultyCur && !facultyExpanded)}
-                          <span className="flex items-center gap-2 w-full">
+                          <span className="flex items-center gap-2.5 w-full">
+                            <i className={`fa-light ${ASPECT_ICON.faculty} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                             <span className="text-sm">Faculty</span>
                             <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: anyRolesPending ? 'var(--chip-4)' : facultyDone ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
                               {anyRolesPending
@@ -2301,24 +2301,30 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         </Button>
                       </div>
                       {facultyExpanded && (
-                        <div id="guided-rail-faculty-group" role="group" aria-labelledby="guided-rail-faculty" className="flex flex-col gap-1">
+                        /* Role sets are tree nodes — vertical guide anchored
+                           under the Faculty icon (outline-tree vocabulary),
+                           children + the add-a-tab affordance sit on it. */
+                        <div
+                          id="guided-rail-faculty-group"
+                          role="group"
+                          aria-labelledby="guided-rail-faculty"
+                          className="flex flex-col gap-1"
+                          style={{ marginLeft: 21, paddingLeft: 7, borderInlineStart: '1px solid var(--border)' }}
+                        >
                           {facultyStops.map(stop => {
                             const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
                             const pending = !set || set.roles.length === 0
-                            return renderRailItem(stop, set ? shortRoleLabel(set) : 'Choose roles…', { indent: true, amber: pending })
+                            return renderRailItem(stop, set ? shortRoleLabel(set) : 'Choose roles…', { amber: pending })
                           })}
-                          {/* Add-a-tab affordance — part of the tab group, set
-                              apart from nav rows by the dashed outline (Romit,
-                              Jul 23). */}
                           <Button variant="outline" size="sm" onClick={handleAddRoleStop}
                             className="justify-start border-dashed self-start"
-                            style={{ marginLeft: 14, marginTop: 2 }}>
+                            style={{ marginTop: 2 }}>
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Evaluate another role
                           </Button>
                         </div>
                       )}
-                      {renderRailItem(generalStop, 'General')}
+                      {renderRailItem(generalStop, 'General', { icon: ASPECT_ICON.general })}
                     </>
                   )
                 })()}
