@@ -2223,9 +2223,9 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
                     </span>
                   ) : null
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; wrap?: boolean }) => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string }) => {
                     const cur = stop.key === curStop.key
-                    return (
+                    const item = (
                       <Button
                         key={stop.key}
                         variant="ghost"
@@ -2235,21 +2235,30 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         className={`h-auto justify-start text-left rounded-lg px-3 py-2 hover:bg-muted/60 ${cur ? 'font-semibold' : 'font-medium text-muted-foreground hover:text-foreground'}`}
                         style={{ background: cur ? 'var(--muted)' : 'transparent' }}
                       >
-                        <span className={`flex ${opts?.wrap ? 'items-start' : 'items-center'} gap-2.5 w-full min-w-0`}>
+                        <span className="flex items-center gap-2.5 w-full min-w-0">
                           {opts?.icon && (
                             <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                           )}
-                          <span className={`text-sm min-w-0 ${opts?.wrap ? 'whitespace-normal' : 'truncate'}`} style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
+                          <span className="text-sm truncate min-w-0" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
                           {doneMeta(stop)}
                         </span>
                       </Button>
                     )
+                    // "+N" compresses the roster; the tooltip carries the full
+                    // list of roles this evaluation covers (Romit, Jul 23).
+                    return opts?.tooltip ? (
+                      <Tooltip key={stop.key}>
+                        <TooltipTrigger asChild>{item}</TooltipTrigger>
+                        <TooltipContent side="right">{opts.tooltip}</TooltipContent>
+                      </Tooltip>
+                    ) : item
                   }
-                  // The role list IS the tab's name — enumerate every role and
-                  // let it wrap ("+N" hid what the evaluation covers, Romit
-                  // Jul 23). A role-less set is labeled by its one to-do.
+                  // Compact "First +N" label; the full roster rides in the
+                  // row's tooltip. A role-less set is labeled by its one to-do.
                   const roleSetLabel = (set: PceTemplateRoleSet) =>
-                    set.roles.length === 0 ? 'Choose roles…' : set.roles.map(ROLE_LABEL).join(', ')
+                    set.roles.length === 0 ? 'Choose roles…'
+                      : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
+                      : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
                   const courseStop = builderStops.find(s => s.key === 'course')!
                   const generalStop = builderStops.find(s => s.key === 'general')!
                   const facultyCur = curStop.subjectKey === 'faculty'
@@ -2312,7 +2321,10 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           {facultyStops.map(stop => {
                             const set = facultyRoleSets.find(rs => rs.id === stop.roleSetId)
                             const pending = !set || set.roles.length === 0
-                            return renderRailItem(stop, set ? roleSetLabel(set) : 'Choose roles…', { amber: pending, wrap: true })
+                            return renderRailItem(stop, set ? roleSetLabel(set) : 'Choose roles…', {
+                              amber: pending,
+                              tooltip: set && set.roles.length > 1 ? `Evaluating: ${set.roles.map(ROLE_LABEL).join(', ')}` : undefined,
+                            })
                           })}
                           <Button variant="outline" size="sm" onClick={handleAddRoleStop}
                             className="justify-start border-dashed self-start"
