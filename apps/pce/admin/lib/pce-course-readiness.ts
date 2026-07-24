@@ -91,6 +91,10 @@ interface CriterionResolver {
   label: string
   /** Live value if present in Prism, else null (= gap). */
   resolve: (o: CourseOffering) => string | null
+  /** EVERY person holding this role (survey-instance expansion) — a role can be
+   *  held by several people at once (late-added co-instructor, UC2). Absent =
+   *  single-person role; expansion falls back to [resolve(o)]. */
+  resolveAll?: (o: CourseOffering) => string[]
   /** Prism deep-link segment used by prismAddHref(). */
   prismTarget: string
 }
@@ -98,6 +102,18 @@ interface CriterionResolver {
 function facultyName(id?: string | null): string | null {
   if (!id) return null
   return MOCK_FACULTY.find((f) => f.id === id)?.name ?? null
+}
+
+/** All instructors on an offering: the primary association slot plus any
+ *  co-instructors added later in Prism (UC2 — late-added co-instructor). */
+function instructorNames(primary: string | undefined, o: CourseOffering): string[] {
+  const ids = [primary, ...(o.coInstructorIds ?? [])]
+  const names: string[] = []
+  for (const id of ids) {
+    const n = facultyName(id)
+    if (n && !names.includes(n)) names.push(n)
+  }
+  return names
 }
 
 /**
@@ -141,21 +157,36 @@ const guestLecturer: CriterionResolver = {
 export const CRITERION_BY_TYPE: Record<DeliveryMode, Partial<Record<Criterion, CriterionResolver>>> = {
   classroom: {
     students: roster,
-    instructor: { label: 'Instructor', resolve: (o) => facultyName(o.collaboratorIds[0]), prismTarget: 'instructor' },
+    instructor: {
+      label: 'Instructor',
+      resolve: (o) => facultyName(o.collaboratorIds[0]),
+      resolveAll: (o) => instructorNames(o.collaboratorIds[0], o),
+      prismTarget: 'instructor',
+    },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
     teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
     // no labAssistant / siteCoordinator / preceptor — not applicable to a lecture
   },
   lab: {
     students: roster,
-    instructor: { label: 'Lab Instructor', resolve: (o) => facultyName(o.collaboratorIds[0] ?? o.labTaIds?.[0]), prismTarget: 'lab-instructor' },
+    instructor: {
+      label: 'Lab Instructor',
+      resolve: (o) => facultyName(o.collaboratorIds[0] ?? o.labTaIds?.[0]),
+      resolveAll: (o) => instructorNames(o.collaboratorIds[0] ?? o.labTaIds?.[0], o),
+      prismTarget: 'lab-instructor',
+    },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
     labAssistant: { label: 'Lab Assistant', resolve: (o) => facultyName(o.labTaIds?.[1]), prismTarget: 'lab-assistant' },
     teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
   },
   practice: {
     students: roster,
-    instructor: { label: 'Placement Faculty', resolve: (o) => facultyName(o.placementFacultyIds?.[0]), prismTarget: 'placement-faculty' },
+    instructor: {
+      label: 'Placement Faculty',
+      resolve: (o) => facultyName(o.placementFacultyIds?.[0]),
+      resolveAll: (o) => instructorNames(o.placementFacultyIds?.[0], o),
+      prismTarget: 'placement-faculty',
+    },
     coordinator: { label: 'Clinical Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'clinical-coordinator' },
     siteCoordinator: { label: 'Site Coordinator', resolve: (o) => facultyName(o.placementFacultyIds?.[1]), prismTarget: 'site-coordinator' },
     preceptor: { label: 'Preceptor', resolve: (o) => facultyName(o.placementFacultyIds?.[2]), prismTarget: 'preceptor' },

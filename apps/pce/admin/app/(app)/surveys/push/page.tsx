@@ -32,7 +32,8 @@ import {
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
-import { subjectDataIssues, windowIssues, expandInstances } from '@/lib/pce-push-validation'
+import { subjectDataIssues, windowIssues, expandInstances, existingFlowSummary, type CourseIssue } from '@/lib/pce-push-validation'
+import { courseLabelOf } from '@/lib/pce-course-readiness'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
 const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
@@ -290,9 +291,42 @@ function PushSurveyInner() {
     })
   }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys])
 
+  // Instance keys the admin checked in the Survey design step (UC4 soft
+  // warning): new instances arrive checked, duplicates unchecked; a checked
+  // duplicate is an explicit re-evaluation and re-surfaces as a Review ack.
+  const [includedInstanceKeys, setIncludedInstanceKeys] = useState<Set<string>>(new Set())
+
+  const pushInstances = useMemo(
+    () => instancePlan.filter(i => i.status !== 'gap' && includedInstanceKeys.has(i.key)),
+    [instancePlan, includedInstanceKeys],
+  )
+  // Accepted duplicates → explicit re-consent at Review (UC5), grouped per
+  // course with the exact person · role · existing-flow line from step 2.
+  const acceptedDuplicateIssues = useMemo<CourseIssue[]>(() => {
+    const byOffering = new Map<string, CourseIssue>()
+    for (const i of instancePlan) {
+      if (i.status !== 'duplicate' || !includedInstanceKeys.has(i.key)) continue
+      const offering = selectedOfferings.find(o => o.id === i.offeringId)
+      if (!byOffering.has(i.offeringId)) {
+        byOffering.set(i.offeringId, {
+          id: i.offeringId,
+          courseLabel: offering ? courseLabelOf(offering) : i.offeringId,
+          reasons: [],
+        })
+      }
+      const flow = i.existing ? existingFlowSummary(i.existing) : 'Open'
+      byOffering.get(i.offeringId)!.reasons.push(
+        i.scope === 'course'
+          ? `Course material — running again over an existing survey (${flow})`
+          : `${i.personName} · ${i.roleLabel} — re-evaluating over an existing survey (${flow})`,
+      )
+    }
+    return [...byOffering.values()]
+  }, [instancePlan, includedInstanceKeys, selectedOfferings])
+
   const skippedDuplicateCount = useMemo(
-    () => instancePlan.filter(i => i.status === 'duplicate').length,
-    [instancePlan],
+    () => instancePlan.filter(i => i.status === 'duplicate' && !includedInstanceKeys.has(i.key)).length,
+    [instancePlan, includedInstanceKeys],
   )
 
   const selectedInvitationTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === emailTemplateId) ?? null
@@ -404,11 +438,10 @@ function PushSurveyInner() {
       programId: '',
       courseOfferingIds: selectedOfferings.map(o => o.id),
       templateAssignments,
-      // The Survey design step's plan, minus duplicates and unstaffed roles —
-      // exactly what the admin previewed. General mode keeps the legacy
-      // one-flow-per-offering path.
-      instances: surveyMode === 'general' ? undefined : instancePlan
-        .filter(i => i.status === 'new')
+      // Exactly the instances the admin left CHECKED in Survey design —
+      // new ones plus any explicitly accepted re-evaluations (UC4). General
+      // mode keeps the legacy one-flow-per-offering path.
+      instances: surveyMode === 'general' ? undefined : pushInstances
         .map(i => ({
           offeringId: i.offeringId,
           scope: i.scope,
@@ -439,6 +472,7 @@ function PushSurveyInner() {
     setGeneralTemplateId('')
     setSelectedCourseIds(new Set())
     setAddedStudents({})
+    setIncludedInstanceKeys(new Set())
     const w = windowFromSettings(LATEST_TERM_ID)
     setOpenDate(w.open)
     setCloseDate(w.close)
@@ -601,6 +635,7 @@ function PushSurveyInner() {
                   setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
                 }
                 onResetDefaults={handleResetTemplateDefaults}
+                onIncludedChange={setIncludedInstanceKeys}
                 onBack={() => setStep(1)}
                 onContinue={() => {
                   // Materialize type-defaults into explicit assignments so the
@@ -683,7 +718,10 @@ function PushSurveyInner() {
               evaluateSummary={evaluateSummary}
               subjectIssues={reviewSubjectIssues}
               windowIssues={reviewWindowIssues}
+              duplicateIssues={acceptedDuplicateIssues}
+              duplicateTitle={`${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0)} accepted re-evaluation${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0) !== 1 ? 's' : ''} will run over an existing survey`}
               skippedDuplicateCount={skippedDuplicateCount}
+              instanceCount={pushInstances.length}
             />
           )}
 

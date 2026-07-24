@@ -43,13 +43,18 @@ interface StepReviewProps {
   evaluateSummary?: string
   subjectIssues?: CourseIssue[]
   windowIssues?: CourseIssue[]
-  /** Course-grained duplicate ACK (term-setup wizard — still on the merged
-   *  step). The push wizard resolves duplicates per-instance upstream and
-   *  passes skippedDuplicateCount instead. */
+  /** Duplicate ACK gate. Term-setup passes course-grained issues (merged
+   *  step); the push wizard passes the duplicates the admin explicitly
+   *  ACCEPTED in Survey design (UC5 — re-consent, never new discovery). */
   duplicateIssues?: CourseIssue[]
-  /** Instances the Survey design step skipped as duplicates — informational
+  /** Override for the duplicate AckGroup heading (instance-grained flows
+   *  word it as re-evaluations; the default copy is course-grained). */
+  duplicateTitle?: string
+  /** Duplicates the admin left UNCHECKED in Survey design — informational
    *  only (nothing overlapping is created), so no acknowledgement gate. */
   skippedDuplicateCount?: number
+  /** Surveys that will actually be created (evaluity count, UC5 summary). */
+  instanceCount?: number
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -137,7 +142,7 @@ export function StepReview({
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
   cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
-  skippedDuplicateCount = 0,
+  duplicateTitle, skippedDuplicateCount = 0, instanceCount,
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -233,7 +238,7 @@ export function StepReview({
               ] as [string, React.ReactNode][])
             : []),
           ['Reach', recipientsComplete
-            ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
+            ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${instanceCount != null ? ` · ${instanceCount} evaluation${instanceCount !== 1 ? 's' : ''}` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
             : muted('No recipients yet')],
         ]}
       />
@@ -313,13 +318,17 @@ export function StepReview({
               {subjectIssues.length > 0 && <div className="border-t border-border" />}
               <AckGroup
                 id="ack-duplicate"
-                title={`${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
+                title={duplicateTitle ?? `${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
                 reason="Pushing again creates a second, overlapping survey — students in these courses will receive both."
-                ackLabel="I understand this creates a second evaluation for these courses"
+                ackLabel={duplicateTitle
+                  ? 'I understand these evaluatees receive a second survey'
+                  : 'I understand this creates a second evaluation for these courses'}
                 checked={ackDuplicate}
                 onChange={setAckDuplicate}
                 action={
-                  <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(1)}>
+                  /* Instance-grained flows resolve duplicates in Survey design
+                     (step 2); the course-grained term-setup edits step 1. */
+                  <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(duplicateTitle ? 2 : 1)}>
                     Edit selection
                   </Button>
                 }

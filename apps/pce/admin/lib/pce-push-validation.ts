@@ -217,8 +217,12 @@ export function expandInstances(
       })
       continue
     }
-    const personName = spec.resolve(offering)
-    if (!personName) {
+    // EVERY person holding the role — a role can be held by several people at
+    // once (late-added co-instructor, UC2), and each person is their own
+    // instance with their own duplicate verdict.
+    const single = spec.resolve(offering)
+    const persons = spec.resolveAll?.(offering) ?? (single ? [single] : [])
+    if (persons.length === 0) {
       out.push({
         key: `${offering.id}|${criterion}|`,
         offeringId: offering.id,
@@ -232,19 +236,21 @@ export function expandInstances(
       })
       continue
     }
-    const existing = surveys.find(s =>
-      coversInstance(s, offering.id, 'instructor', criterion, personName)) ?? null
-    out.push({
-      key: `${offering.id}|${criterion}|${personName}`,
-      offeringId: offering.id,
-      scope: 'instructor',
-      criterion,
-      roleLabel: spec.label,
-      personName,
-      status: existing ? 'duplicate' : 'new',
-      existing,
-      prismHref: null,
-    })
+    for (const personName of persons) {
+      const existing = surveys.find(s =>
+        coversInstance(s, offering.id, 'instructor', criterion, personName)) ?? null
+      out.push({
+        key: `${offering.id}|${criterion}|${personName}`,
+        offeringId: offering.id,
+        scope: 'instructor',
+        criterion,
+        roleLabel: spec.label,
+        personName,
+        status: existing ? 'duplicate' : 'new',
+        existing,
+        prismHref: null,
+      })
+    }
   }
   return out
 }

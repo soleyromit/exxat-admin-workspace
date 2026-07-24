@@ -1087,17 +1087,15 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       )}>
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
-                      {/* PCE extension — per-group inline slot (see prop doc). */}
-                      {groupKey != null && groupHeaderSlot != null && (
-                        <span
-                          className="ml-3 inline-flex items-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {groupHeaderSlot(groupKey)}
-                        </span>
-                      )}
                     </>
                   )
+                  /* PCE extension — per-group slot (see prop doc). Rendered
+                     OUTSIDE the label flow and pinned to the band's right edge
+                     so an interactive control (e.g. a template Select) sits at
+                     the SAME x on every band, regardless of label length. */
+                  const slotContent = groupKey != null && groupHeaderSlot != null
+                    ? groupHeaderSlot(groupKey)
+                    : null
                   return (
                     <tr>
                       {hasSelectCell ? (
@@ -1119,9 +1117,19 @@ function DataTableInner<TData extends Record<string, unknown>>({
                                horizontal scroll the label rode off-screen leaving a
                                blank colored band. The inner sticky span pins the
                                text to the visible edge (past the 40px select col)
-                               while the cell itself scrolls. */}
-                            <span className="sticky inline-flex items-center" style={{ left: 52 }}>
+                               while the cell itself scrolls. With a slot, the span
+                               goes full-width flex so the slot pins to the right
+                               edge at a fixed x on every band. */}
+                            <span
+                              className={cn("sticky items-center", slotContent ? "flex w-full pe-1" : "inline-flex")}
+                              style={{ left: 52 }}
+                            >
                               {labelContent}
+                              {slotContent && (
+                                <span className="ms-auto inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+                                  {slotContent}
+                                </span>
+                              )}
                             </span>
                           </td>
                         </>
@@ -1132,8 +1140,16 @@ function DataTableInner<TData extends Record<string, unknown>>({
                               {groupCheckbox}
                             </span>
                           )}
-                          <span className="sticky inline-flex items-center" style={{ left: 12 }}>
+                          <span
+                            className={cn("sticky items-center", slotContent ? "flex w-full pe-1" : "inline-flex")}
+                            style={{ left: 12 }}
+                          >
                             {labelContent}
+                            {slotContent && (
+                              <span className="ms-auto inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+                                {slotContent}
+                              </span>
+                            )}
                           </span>
                         </td>
                       )}

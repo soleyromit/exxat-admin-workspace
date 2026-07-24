@@ -10,14 +10,17 @@
 // Instances group under their course; the group band carries the course's
 // template Select, so changing a template regenerates that course's rows live.
 //
-// Duplicate logic (engineering feedback, Jul 2026): the composite key is
-// offering + role + person. An instance whose key matches an OPEN flow is
-// flagged "Duplicate — skipped" and never created — no per-row Yes/No
-// interrogation, no override. Only truly new combinations get inserted; the
-// skip count surfaces in the banner and the footer. Import-review pattern
-// (Remote / Intercom): per-row verdict, issues filter, CTA restates the count.
+// Duplicate logic (engineering feedback + UC2–UC5, Jul 2026): the composite
+// key is offering + role + person. An instance whose key matches an OPEN flow
+// gets a SOFT warning (UC4), not a hard block: it renders "Duplicate" with the
+// existing flow named, and its checkbox defaults UNCHECKED — only truly new
+// combinations are created unless the admin explicitly checks a duplicate to
+// re-evaluate (a late-added co-instructor's colleagues, UC2). Accepted
+// duplicates re-surface as an acknowledgement at Review (UC5); unchecked ones
+// stay an informational skip count. Import-review pattern (Remote / Intercom):
+// per-row verdict, issues filter, CTA restates the count.
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, Button, LocalBanner,
@@ -57,6 +60,9 @@ interface StepSurveyInstancesProps {
   defaultAssignments: Record<string, string>
   onTemplateChange: (offeringId: string, templateId: string) => void
   onResetDefaults: () => void
+  /** Instance keys the admin is INCLUDING in the push (reported on change) —
+   *  new instances default checked, duplicates default unchecked (UC4). */
+  onIncludedChange: (keys: Set<string>) => void
   onBack: () => void
   onContinue: () => void
 }
@@ -66,7 +72,7 @@ const STATUS_ORDER: Record<InstanceRow['statusKey'], number> = { gap: 0, duplica
 export function StepSurveyInstances({
   selectedOfferings, instances, publishedTemplates,
   templateAssignments, defaultAssignments, onTemplateChange, onResetDefaults,
-  onBack, onContinue,
+  onIncludedChange, onBack, onContinue,
 }: StepSurveyInstancesProps) {
   // In-step template creation — the SAME create flow + builder as Settings >
   // Templates (ported from the merged step; the wizard page never unmounts, so
@@ -113,15 +119,15 @@ export function StepSurveyInstances({
     [instances, issuesOnly, offeringsById],
   )
 
-  // Counts always come from the FULL plan, not the filtered view.
+  // Classification counts always come from the FULL plan, not the filtered view.
   const counts = useMemo(() => {
-    let created = 0, duplicates = 0, gaps = 0
+    let fresh = 0, duplicates = 0, gaps = 0
     for (const i of instances) {
-      if (i.status === 'new') created++
+      if (i.status === 'new') fresh++
       else if (i.status === 'duplicate') duplicates++
       else gaps++
     }
-    return { created, duplicates, gaps }
+    return { fresh, duplicates, gaps }
   }, [instances])
 
   // Selected courses with no effective template — they expand to nothing, so
@@ -147,8 +153,12 @@ export function StepSurveyInstances({
     [selectedOfferings],
   )
 
-  // Width budget: 280+170+310+150 = 910 ≤ ~1110 — no horizontal scroll.
+  // Width budget: 40+280+170+310+150 = 950 ≤ ~1110 — no horizontal scroll.
   const columns = useMemo<ColumnDef<InstanceRow>[]>(() => [
+    // The checkbox IS the soft-warning control (UC4): checked = this survey
+    // gets created. New instances default checked; duplicates default
+    // unchecked — checking one is the explicit "re-evaluate anyway".
+    { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
     {
       key: 'evaluatee', label: 'Evaluatee', sortable: false, width: 280,
       cell: r => {
@@ -201,32 +211,34 @@ export function StepSurveyInstances({
           return (
             <Badge variant="outline" className="gap-1.5 font-normal">
               <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />
-              New — will be created
+              New — no survey exists yet
             </Badge>
           )
         }
         if (r.statusKey === 'duplicate') {
-          // The verdict + WHICH flow it duplicates, so the admin can verify
-          // it's the survey they think it is. Muted, not amber: nothing is
-          // wrong — the system resolved it.
+          // Soft warning (UC4): name the exact overlap — who, which role,
+          // which flow — so "duplicate" is a fact the admin can verify, not
+          // a verdict to trust. Amber icon = needs a decision; the checkbox
+          // beside the row IS that decision.
+          const word = r.inst.existing ? existingFlowSummary(r.inst.existing) : 'Open'
           return (
             <span className="flex flex-col items-start gap-0.5 py-0.5">
-              <Badge variant="outline" className="gap-1.5 font-normal">
-                <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--muted-foreground)' }} />
-                Duplicate — skipped
-              </Badge>
-              {r.inst.existing && (
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  Existing survey: {existingFlowSummary(r.inst.existing)}
-                </span>
-              )}
+              <span className="flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--chip-4)' }}>
+                <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />
+                Duplicate — survey already exists
+              </span>
+              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {r.inst.scope === 'course'
+                  ? <>This course&apos;s survey: {word}. Check the box to run it again.</>
+                  : <>{r.inst.personName}&apos;s {r.roleLabel} survey: {word}. Check the box to re-evaluate.</>}
+              </span>
             </span>
           )
         }
         return (
           <span className="flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--chip-4)' }}>
             <i className="fa-solid fa-triangle-exclamation text-xs" aria-hidden="true" />
-            Role unassigned — no survey until staffed
+            No {r.roleLabel} assigned — nothing to create
           </span>
         )
       },
@@ -252,6 +264,39 @@ export function StepSurveyInstances({
   const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize))
   const safePage = Math.min(page, totalPages)
 
+  // Default inclusion (UC4): new instances checked; duplicates and gaps
+  // unchecked — only truly new combinations are created unless the admin
+  // explicitly opts a duplicate in. Re-derived when the plan itself changes
+  // (template/selection edits); manual checks survive view-filter changes.
+  const planSig = instances.map(i => `${i.key}:${i.status}`).join('\0')
+  const lastPlanSig = useRef('')
+  useEffect(() => {
+    if (lastPlanSig.current === planSig) return
+    lastPlanSig.current = planSig
+    tableState.setSelected(new Set(instances.filter(i => i.status === 'new').map(i => i.key)))
+  }, [planSig, instances, tableState])
+
+  // Report inclusion up (de-duped) — the page pushes exactly this set.
+  const lastReported = useRef('')
+  useEffect(() => {
+    const sig = [...tableState.selected].map(String).sort().join('\0')
+    if (lastReported.current === sig) return
+    lastReported.current = sig
+    onIncludedChange(new Set([...tableState.selected].map(String)))
+  }, [tableState.selected, onIncludedChange])
+
+  // Push-plan counts follow the checkboxes; classification counts stay fixed.
+  const included = tableState.selected
+  const toCreate = useMemo(
+    () => instances.filter(i => i.status !== 'gap' && included.has(i.key)).length,
+    [instances, included],
+  )
+  const reEvals = useMemo(
+    () => instances.filter(i => i.status === 'duplicate' && included.has(i.key)).length,
+    [instances, included],
+  )
+  const skippedDup = counts.duplicates - reEvals
+
   // Per-course template Select, rendered inside the course's group band via the
   // DataTable groupHeaderSlot extension (safe: DS Select portals its floating
   // content; the band already hosts interactive controls).
@@ -264,6 +309,7 @@ export function StepSurveyInstances({
     const edited = !!templateId && templateId !== defaultAssignments[offeringId]
     const tally = instances.filter(i => i.offeringId === offeringId)
     const newCount = tally.filter(i => i.status === 'new').length
+    const dupCount = tally.filter(i => i.status === 'duplicate').length
 
     if (publishedTemplates.length === 0) {
       return (
@@ -311,7 +357,7 @@ export function StepSurveyInstances({
         </Select>
         {templateId && (
           <span className="text-[12px] font-normal normal-case tracking-normal whitespace-nowrap">
-            {newCount} of {tally.length} new
+            {newCount} new{dupCount > 0 ? ` · ${dupCount} duplicate${dupCount !== 1 ? 's' : ''}` : ''}
           </span>
         )}
       </span>
@@ -350,9 +396,12 @@ export function StepSurveyInstances({
       {/* ── Plan summary + table actions ──────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm tabular-nums">
-          <span className="font-semibold">{counts.created} survey{counts.created !== 1 ? 's' : ''}</span> will be created
-          {counts.duplicates > 0 && (
-            <span style={{ color: 'var(--muted-foreground)' }}> · {counts.duplicates} duplicate{counts.duplicates !== 1 ? 's' : ''} skipped</span>
+          <span className="font-semibold">{toCreate} survey{toCreate !== 1 ? 's' : ''}</span> will be created
+          {reEvals > 0 && (
+            <span style={{ color: 'var(--chip-4)' }}> · {reEvals} re-evaluation{reEvals !== 1 ? 's' : ''}</span>
+          )}
+          {skippedDup > 0 && (
+            <span style={{ color: 'var(--muted-foreground)' }}> · {skippedDup} duplicate{skippedDup !== 1 ? 's' : ''} skipped</span>
           )}
           {counts.gaps > 0 && (
             <span style={{ color: 'var(--chip-4)' }}> · {counts.gaps} role{counts.gaps !== 1 ? 's' : ''} unassigned</span>
@@ -396,8 +445,9 @@ export function StepSurveyInstances({
 
       {counts.duplicates > 0 && (
         <LocalBanner variant="info">
-          {counts.duplicates} of these surveys already exist for this term and will be skipped —
-          only new course–role–person combinations are created.
+          {counts.duplicates} evaluatee{counts.duplicates !== 1 ? 's' : ''} already {counts.duplicates !== 1 ? 'have' : 'has'} a
+          live or scheduled survey for the same course and role. {counts.duplicates !== 1 ? 'They start' : 'It starts'} unchecked
+          so only new combinations are created — check one to re-evaluate anyway.
         </LocalBanner>
       )}
 
@@ -411,14 +461,11 @@ export function StepSurveyInstances({
             columns={columns}
             state={tableState}
             getRowId={r => r.id}
+            getRowSelectionLabel={r => `${r.evaluatee} — ${r.roleLabel || 'Course material'} (${r.courseLabel})`}
             emptyState={issuesOnly
               ? 'No duplicates or unassigned roles — every instance is new.'
               : 'No survey instances — assign a template to each course band.'}
-            /* No row selection — instances aren't individually included or
-               excluded; exclusion happens by course (step 1) or by template.
-               DataTable defaults selectable to true, which would render an
-               orphan select-all checkbox in each group band. */
-            selectable={false}
+            selectable
             searchable
             hideBulkActions
             hasFooter
@@ -442,8 +489,9 @@ export function StepSurveyInstances({
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <div className="sticky bottom-0 mt-auto bg-background border-t border-border py-4 flex items-center justify-between gap-4">
         <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-          {counts.created} survey{counts.created !== 1 ? 's' : ''} across {selectedOfferings.length} course{selectedOfferings.length !== 1 ? 's' : ''}
-          {counts.duplicates > 0 && <> · {counts.duplicates} skipped</>}
+          {toCreate} survey{toCreate !== 1 ? 's' : ''} across {selectedOfferings.length} course{selectedOfferings.length !== 1 ? 's' : ''}
+          {reEvals > 0 && <> · {reEvals} re-evaluation{reEvals !== 1 ? 's' : ''}</>}
+          {skippedDup > 0 && <> · {skippedDup} duplicate{skippedDup !== 1 ? 's' : ''} skipped</>}
           {missingTemplate > 0 && (
             <>
               {' · '}
@@ -461,7 +509,7 @@ export function StepSurveyInstances({
           <Button
             variant="default"
             size="sm"
-            disabled={missingTemplate > 0 || counts.created === 0}
+            disabled={missingTemplate > 0 || toCreate === 0}
             onClick={onContinue}
           >
             Continue

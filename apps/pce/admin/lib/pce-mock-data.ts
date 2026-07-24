@@ -1713,6 +1713,10 @@ export interface CourseOffering {
   primaryFacultyId: string
   /** Additional collaborators / instructors (per Aarti D7). FK → INSTRUCTORS */
   collaboratorIds: string[]
+  /** Co-instructors holding the SAME Instructor association as collaboratorIds[0]
+   *  — added later in Prism (UC2: late-added co-instructor after a survey is
+   *  live). Each expands to its own survey instance in the push wizard. */
+  coInstructorIds?: string[]
   /** Roster size */
   enrolledCount: number
   status: 'planned' | 'active' | 'completed' | 'archived'
@@ -1955,7 +1959,10 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
   { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1 – Section D', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
   // Year 2 — Clinical Sciences
-  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  // UC2 demo (late-added co-instructor): pf1/pf2 already cover course13's
+  // Instructor surveys for Chen; Gomez was added in Prism AFTER those went out,
+  // so a re-run shows Chen = duplicate (soft warning) and Gomez = new.
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], coInstructorIds: ['f5'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
   { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
   { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
   { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2 – Section D', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
