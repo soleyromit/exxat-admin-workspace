@@ -2236,7 +2236,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       <i className="fa-solid fa-check text-xs" aria-hidden="true" /> {stopQuestionCount(stop)}
                     </span>
                   ) : null
-                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string }) => {
+                  const renderRailItem = (stop: typeof builderStops[number], label: string, opts?: { amber?: boolean; icon?: string; tooltip?: string; plusCount?: number }) => {
                     const cur = stop.key === curStop.key
                     const item = (
                       <Button
@@ -2253,6 +2253,14 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             <i className={`fa-light ${opts.icon} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                           )}
                           <span className="text-sm truncate min-w-0" style={opts?.amber ? { color: 'var(--chip-4)' } : undefined}>{label}</span>
+                          {/* Roster-overflow count pill (TabsCountBadge idiom) —
+                              inline with the name it completes; the right edge
+                              stays the progress column. */}
+                          {opts?.plusCount ? (
+                            <span className="text-xs tabular-nums rounded-full shrink-0 border border-border" style={{ padding: '0 6px', background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+                              +{opts.plusCount}
+                            </span>
+                          ) : null}
                           {doneMeta(stop)}
                         </span>
                       </Button>
@@ -2266,12 +2274,11 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       </Tooltip>
                     ) : item
                   }
-                  // Compact "First +N" label; the full roster rides in the
-                  // row's tooltip. A role-less set is labeled by its one to-do.
+                  // Compact label = first role; roster overflow renders as an
+                  // inline count pill, full roster rides in the tooltip. A
+                  // role-less set is labeled by its one to-do.
                   const roleSetLabel = (set: PceTemplateRoleSet) =>
-                    set.roles.length === 0 ? 'Choose roles…'
-                      : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
-                      : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
+                    set.roles.length === 0 ? 'Choose roles…' : ROLE_LABEL(set.roles[0])
                   const courseStop = builderStops.find(s => s.key === 'course')!
                   const generalStop = builderStops.find(s => s.key === 'general')!
                   const facultyCur = curStop.subjectKey === 'faculty'
@@ -2302,9 +2309,15 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             <i className={`fa-light ${ASPECT_ICON.faculty} text-sm shrink-0`} aria-hidden="true" style={{ width: 18, textAlign: 'center' }} />
                             <span className="text-sm">Faculty</span>
                             <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: anyRolesPending ? 'var(--chip-4)' : facultyDone ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
-                              {anyRolesPending
-                                ? `${pendingCount} need${pendingCount === 1 ? 's' : ''} roles`
-                                : `${facultyDone ? '✓ ' : ''}${facultyRoleSets.length} role${facultyRoleSets.length !== 1 ? 's' : ''}`}
+                              {(() => {
+                                // Roll-up counts ROLES COVERED, not sets — "2
+                                // roles" for 2 sets covering 5 was a lie
+                                // (visual review, Jul 23).
+                                const totalRoles = facultyRoleSets.reduce((n, rs) => n + rs.roles.length, 0)
+                                return anyRolesPending
+                                  ? `${pendingCount} need${pendingCount === 1 ? 's' : ''} roles`
+                                  : `${facultyDone ? '✓ ' : ''}${totalRoles} role${totalRoles !== 1 ? 's' : ''}`
+                              })()}
                             </span>
                           </span>
                         </Button>
@@ -2336,6 +2349,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             const pending = !set || set.roles.length === 0
                             return renderRailItem(stop, set ? roleSetLabel(set) : 'Choose roles…', {
                               amber: pending,
+                              plusCount: set && set.roles.length > 1 ? set.roles.length - 1 : undefined,
                               tooltip: set && set.roles.length > 1 ? `Evaluating: ${set.roles.map(ROLE_LABEL).join(', ')}` : undefined,
                             })
                           })}
