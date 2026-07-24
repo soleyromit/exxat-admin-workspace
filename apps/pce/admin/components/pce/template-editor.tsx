@@ -763,12 +763,20 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   // ── Role picker — checkmark list, multi-select (operates on a role SET) ─────
   function renderRolePickerContent(set: PceTemplateRoleSet) {
     const selected = new Set(set.roles ?? [])
+    // A role belongs to at most ONE evaluation — roles claimed by other role
+    // sets are shown disabled with their owner (Romit, Jul 23).
+    const claimedElsewhere = new Map<string, string>()
+    facultyRoleSets.forEach(rs => {
+      if (rs.id === set.id) return
+      rs.roles.forEach(r => { if (!claimedElsewhere.has(r)) claimedElsewhere.set(r, rs.roles.map(ROLE_LABEL).join(', ')) })
+    })
     const allRoles = [...FACULTY_ROLE_OPTIONS].sort((a, b) => a.label.localeCompare(b.label))
     const filtered = roleSearch
       ? allRoles.filter(s => s.label.toLowerCase().includes(roleSearch.toLowerCase()))
       : allRoles
 
     function toggleRole(roleKey: string) {
+      if (claimedElsewhere.has(roleKey)) return
       toggleRoleSetRole(set, roleKey)
     }
 
@@ -787,8 +795,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             <CommandGroup>
               {filtered.map(s => {
                 const checked = selected.has(s.key)
+                const taken = claimedElsewhere.has(s.key)
                 return (
-                  <CommandItem key={s.key} value={s.key} onSelect={() => toggleRole(s.key)} aria-selected={checked}>
+                  <CommandItem key={s.key} value={s.key} onSelect={() => toggleRole(s.key)} aria-selected={checked} disabled={taken}>
                     {/* Non-interactive decorative checkbox — avoids nested-interactive WCAG violation.
                         CommandItem (role="option") handles all selection semantics. */}
                     <span
@@ -796,12 +805,16 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                       style={{
                         borderColor: checked ? 'var(--primary)' : 'var(--border-control-35)',
                         background: checked ? 'var(--primary)' : 'transparent',
+                        opacity: taken ? 0.5 : undefined,
                       }}
                       aria-hidden="true"
                     >
                       {checked && <i className="fa-solid fa-check text-[9px]" style={{ color: 'var(--primary-foreground)' }} aria-hidden="true" />}
                     </span>
-                    <span className="flex-1 ml-2 truncate">{s.label}</span>
+                    <span className={`flex-1 ml-2 truncate ${taken ? 'text-muted-foreground' : ''}`}>{s.label}</span>
+                    {taken && (
+                      <span className="text-xs text-muted-foreground shrink-0">already covered</span>
+                    )}
                   </CommandItem>
                 )
               })}
@@ -2178,7 +2191,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   </div>
                   <Button variant="outline" size="sm" onClick={handleAddRoleStop} className="border-dashed">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Evaluate another role
+                    Add role evaluation
                   </Button>
                 </div>
                 <div className="flex items-center justify-between gap-3" style={{ margin: '12px 0' }}>
@@ -2330,7 +2343,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                             className="justify-start border-dashed self-start"
                             style={{ marginTop: 2 }}>
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                            Evaluate another role
+                            Add role evaluation
                           </Button>
                         </div>
                       )}
