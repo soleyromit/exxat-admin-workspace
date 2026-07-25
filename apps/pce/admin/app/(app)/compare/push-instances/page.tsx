@@ -489,8 +489,6 @@ function VariantE() {
     setExcluded(prev => {
       const next = new Set(prev)
       next.has(item.id) ? next.delete(item.id) : next.add(item.id)
-      // "Yes" with nobody selected is a contradiction — unchecking the last
-      // person flips the course back to No (collapsed).
       if (courseDups && courseCode && courseDups.every(d => next.has(d.id))) {
         setReEval(r => ({ ...r, [courseCode]: false }))
         courseDups.forEach(d => next.delete(d.id))
@@ -506,22 +504,47 @@ function VariantE() {
   const names = (items: Item[]) =>
     items.map(i => (i.kind === 'course' ? 'Course material' : i.name!)).join(', ')
 
-  /* Ledger line — the settled flow-ledger anatomy (readiness step / term
-     workspace): 20px glyph disc or avatar · name · muted role suffix. */
+  /* Ledger line — settled flow-ledger anatomy: 20px disc/avatar · name · role. */
   const LedgerLine = ({ item }: { item: Item }) => (
     <span className="flex items-center gap-1.5 min-w-0">
       {item.kind === 'course'
         ? (
-          <span className="size-5 rounded-full flex items-center justify-center shrink-0 border border-border" style={{ background: 'var(--background)' }}>
-            <i className="fa-light fa-book-open" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} aria-hidden="true" />
+          <span className="size-5 rounded-full flex items-center justify-center shrink-0 border border-border bg-background">
+            <i className="fa-light fa-book-open text-[9px] text-muted-foreground" aria-hidden="true" />
           </span>
         )
         : <PersonAvatar name={item.name!} className="size-5" />}
       <span className="text-sm truncate">
         {item.kind === 'course' ? 'Course material' : item.name}
-        {item.role && <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}> · {item.role}</span>}
+        {item.role && <span className="text-xs text-muted-foreground"> · {item.role}</span>}
       </span>
     </span>
+  )
+
+  /* Every line shares ONE two-zone grid: content (primary + secondary type
+     scale) on the left, a single fixed control lane on the right. Actions
+     never sit inside the content flow. */
+  const Line = ({ icon, primary, primaryClass, secondary, control, indent = false }: {
+    icon: ReactNode
+    primary: ReactNode
+    primaryClass?: string
+    secondary?: ReactNode
+    control?: ReactNode
+    indent?: boolean
+  }) => (
+    <div
+      className={`grid items-center gap-3 pe-3 py-2 ${indent ? 'ps-8' : 'ps-3'}`}
+      style={{ gridTemplateColumns: 'minmax(0,1fr) 230px', minHeight: 44 }}
+    >
+      <div className="flex items-start gap-2.5 min-w-0">
+        <span className="shrink-0 flex items-center justify-center" style={{ width: 16, marginTop: 3 }}>{icon}</span>
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className={`text-sm font-medium ${primaryClass ?? ''}`}>{primary}</span>
+          {secondary && <span className="text-xs text-muted-foreground truncate">{secondary}</span>}
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-2">{control}</div>
+    </div>
   )
 
   return (
@@ -529,7 +552,7 @@ function VariantE() {
       <p className="text-sm tabular-nums">
         <span className="font-semibold">{create} evaluation{create !== 1 ? 's' : ''}</span> will be set up
         {reEvals > 0 && <span style={{ color: 'var(--insight-severity-info-fg)' }}> · {reEvals} evaluated again</span>}
-        {skipped > 0 && <span style={{ color: 'var(--muted-foreground)' }}> · {skipped} already covered</span>}
+        {skipped > 0 && <span className="text-muted-foreground"> · {skipped} already covered</span>}
         <span style={{ color: 'var(--chip-4)' }}> · 1 role unassigned</span>
       </p>
       <div className="rounded-lg border border-border overflow-hidden">
@@ -542,7 +565,7 @@ function VariantE() {
           const saidYes = reEval[course.code] ?? false
           return (
             <div key={course.code}>
-              <div className="flex items-center gap-3 px-3 py-2 border-b border-border" style={{ background: 'var(--muted)' }}>
+              <div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted">
                 <span className="text-sm font-semibold">
                   <span className="font-mono text-xs tabular-nums">{course.code}</span>
                   <span className="mx-1.5" aria-hidden="true">·</span>
@@ -551,101 +574,113 @@ function VariantE() {
                 <span className="ms-auto"><TemplateSelectMock code={course.code} /></span>
               </div>
 
-              {/* New surveys — one line; the list opens on demand. */}
+              {/* New evaluations — content left, the one action right. */}
               {fresh.length > 0 && (
                 <Collapsible
                   open={open}
                   onOpenChange={(v) => setAdjustOpen(p => ({ ...p, [course.code]: v }))}
                   className="border-b border-border"
                 >
-                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 46 }}>
-                    <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
-                    <span className="text-sm shrink-0 font-medium">{freshIn} new evaluation{freshIn !== 1 ? 's' : ''}</span>
-                    <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{names(fresh)}</span>
-                    <AvatarGroup className="ms-auto shrink-0">
-                      {fresh.filter(i => i.kind === 'person').map(i => (
-                        <PersonAvatar key={i.id} name={i.name!} className="size-5" />
-                      ))}
-                    </AvatarGroup>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground shrink-0">
-                        {open ? 'Hide' : 'Edit'}
-                        <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
+                  <Line
+                    icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />}
+                    primary={`${freshIn} new evaluation${freshIn !== 1 ? 's' : ''}`}
+                    secondary={names(fresh)}
+                    control={
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground">
+                          {open ? 'Hide list' : 'Edit list'}
+                          <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    }
+                  />
                   <CollapsibleContent>
                     {fresh.map(item => (
-                      <div key={item.id} className="flex items-center gap-2.5 ps-8 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
-                        <Checkbox
-                          id={`e-new-${item.id}`}
-                          checked={isIn(item, course.code)}
-                          onCheckedChange={() => flip(item)}
-                        />
-                        <CheckboxLabel htmlFor={`e-new-${item.id}`} className="flex items-center font-normal min-w-0">
-                          <LedgerLine item={item} />
-                        </CheckboxLabel>
+                      <div key={item.id} className="border-t border-border bg-card">
+                        <div className="grid items-center gap-3 ps-8 pe-3" style={{ gridTemplateColumns: 'minmax(0,1fr) 230px', minHeight: 42 }}>
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            <Checkbox
+                              id={`e-new-${item.id}`}
+                              checked={isIn(item, course.code)}
+                              onCheckedChange={() => flip(item)}
+                            />
+                            <CheckboxLabel htmlFor={`e-new-${item.id}`} className="flex items-center font-normal min-w-0">
+                              <LedgerLine item={item} />
+                            </CheckboxLabel>
+                          </span>
+                          <span />
+                        </div>
                       </div>
                     ))}
                   </CollapsibleContent>
                 </Collapsible>
               )}
 
-              {/* Already surveyed — the question, its status chip, its toggle. */}
+              {/* Existing evaluations — info statement left, the decision right. */}
               {dups.length > 0 && (
                 <Collapsible open={saidYes} className="border-b border-border">
-                  <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 46 }}>
-                    {/* Info, not warning: an existing evaluation is the system
-                        doing its job — the line asks a question, nothing is
-                        wrong. Amber stays reserved for missing data (gaps). */}
-                    <i className="fa-solid fa-circle-info text-xs shrink-0" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
-                    <span className="text-sm shrink-0 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>Evaluation already exists</span>
-                    <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{names(dups)}</span>
-                    <span className="shrink-0 flex items-center gap-1.5">
-                      <SurveyStatusBadgeOS status="scheduled" />
-                      <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Opens Dec 4</span>
-                    </span>
-                    <label htmlFor={`reeval-${course.code}`} className="ms-auto flex items-center gap-2 text-sm shrink-0 cursor-pointer">
-                      <span className="font-medium">Evaluate again?</span>
-                      <span style={{ color: 'var(--muted-foreground)' }}>{saidYes ? 'Yes' : 'No'}</span>
-                      <ToggleSwitch
-                        id={`reeval-${course.code}`}
-                        checked={saidYes}
-                        onChange={(v) => {
-                          setReEval(p => ({ ...p, [course.code]: v }))
-                          if (v) setExcluded(prev => { const n = new Set(prev); dups.forEach(d => n.delete(d.id)); return n })
-                        }}
-                      />
-                      <span className="sr-only">Evaluate the already-surveyed people of {course.code} again</span>
-                    </label>
-                  </div>
+                  <Line
+                    icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+                    primary="Evaluation already exists"
+                    primaryClass=""
+                    secondary={
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{names(dups)}</span>
+                        <SurveyStatusBadgeOS status="scheduled" />
+                        <span className="tabular-nums whitespace-nowrap">Opens Dec 4</span>
+                      </span>
+                    }
+                    control={
+                      <label htmlFor={`reeval-${course.code}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <span className="font-medium whitespace-nowrap">Evaluate again?</span>
+                        <span className="text-muted-foreground">{saidYes ? 'Yes' : 'No'}</span>
+                        <ToggleSwitch
+                          id={`reeval-${course.code}`}
+                          checked={saidYes}
+                          onChange={(v) => {
+                            setReEval(p => ({ ...p, [course.code]: v }))
+                            if (v) setExcluded(prev => { const n = new Set(prev); dups.forEach(d => n.delete(d.id)); return n })
+                          }}
+                        />
+                        <span className="sr-only">Evaluate the already-covered people of {course.code} again</span>
+                      </label>
+                    }
+                  />
                   <CollapsibleContent>
                     {dups.map(item => (
-                      <div key={item.id} className="flex items-center gap-2.5 ps-8 pe-3 border-t border-border" style={{ minHeight: 42, background: 'var(--card)' }}>
-                        <Checkbox
-                          id={`e-dup-${item.id}`}
-                          checked={isIn(item, course.code)}
-                          onCheckedChange={() => flip(item, dups, course.code)}
-                        />
-                        <CheckboxLabel htmlFor={`e-dup-${item.id}`} className="flex items-center font-normal min-w-0">
-                          <LedgerLine item={item} />
-                        </CheckboxLabel>
-                        <span className="ms-auto shrink-0 flex items-center gap-1.5">
-                          <SurveyStatusBadgeOS status="scheduled" />
-                          <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Opens Dec 4</span>
-                        </span>
+                      <div key={item.id} className="border-t border-border bg-card">
+                        <div className="grid items-center gap-3 ps-8 pe-3" style={{ gridTemplateColumns: 'minmax(0,1fr) 230px', minHeight: 42 }}>
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            <Checkbox
+                              id={`e-dup-${item.id}`}
+                              checked={isIn(item, course.code)}
+                              onCheckedChange={() => flip(item, dups, course.code)}
+                            />
+                            <CheckboxLabel htmlFor={`e-dup-${item.id}`} className="flex items-center font-normal min-w-0">
+                              <LedgerLine item={item} />
+                            </CheckboxLabel>
+                          </span>
+                          <span className="flex items-center justify-end gap-1.5">
+                            <SurveyStatusBadgeOS status="scheduled" />
+                            <span className="text-xs tabular-nums text-muted-foreground">Opens Dec 4</span>
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </CollapsibleContent>
                 </Collapsible>
               )}
 
-              {/* Missing role — one line, the button is the fix. */}
+              {/* Missing role — the gap left, the remedy right. */}
               {gaps.map(item => (
-                <div key={item.id} className="flex items-center gap-2.5 px-3 border-b border-border" style={{ minHeight: 46 }}>
-                  <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                  <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.role} assigned</span>
-                  <span className="ms-auto"><AddFacultyBtn /></span>
+                <div key={item.id} className="border-b border-border">
+                  <Line
+                    icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
+                    primary={`No ${item.role} assigned`}
+                    primaryClass=""
+                    secondary="Add one in Prism to evaluate this role."
+                    control={<AddFacultyBtn />}
+                  />
                 </div>
               ))}
             </div>
