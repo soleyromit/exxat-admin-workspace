@@ -546,11 +546,11 @@ function VariantA({ model }: { model: PlanModel }) {
 // VARIANT B — DECISION QUEUE: exceptions first, the happy path folds away.
 // ═════════════════════════════════════════════════════════════════════════════
 
-function VariantB({ model }: { model: PlanModel }) {
+/** The decision queue — shared by Variant B and the Synthesis (H). */
+function DecisionQueueSection({ model }: { model: PlanModel }) {
   const gapItems = model.instances.filter(i => i.status === 'gap')
   const dupItems = model.instances.filter(i => i.status === 'duplicate')
   const openDecisions = gapItems.length + dupItems.filter(d => !model.included.has(d.key)).length
-  const [planOpen, setPlanOpen] = useState(false)
   const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
 
   const QueueRow = ({ icon, primary, secondary, control }: {
@@ -567,9 +567,7 @@ function VariantB({ model }: { model: PlanModel }) {
   )
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* The queue — every open decision is one row with its control. */}
-      <section aria-label="Decisions">
+    <section aria-label="Decisions">
         <div className="flex items-baseline gap-2 pb-2">
           <h3 className="text-sm font-semibold">Decisions</h3>
           <span className="text-xs tabular-nums text-muted-foreground">
@@ -628,7 +626,15 @@ function VariantB({ model }: { model: PlanModel }) {
             })}
           </div>
         )}
-      </section>
+    </section>
+  )
+}
+
+function VariantB({ model }: { model: PlanModel }) {
+  const [planOpen, setPlanOpen] = useState(false)
+  return (
+    <div className="flex flex-col gap-4">
+      <DecisionQueueSection model={model} />
 
       {/* The plan — collapsed by default; open it to audit or exclude. */}
       <section aria-label="The plan">
@@ -1013,22 +1019,25 @@ function VariantE({ model }: { model: PlanModel }) {
 // VARIANT F — COVERAGE GRID: courses × evaluation targets; click a cell to act.
 // ═════════════════════════════════════════════════════════════════════════════
 
-function VariantF({ model }: { model: PlanModel }) {
-  // Ordered columns: course material first, then roles as encountered.
+/** The coverage matrix — shared by Variant F and the Synthesis (H).
+ *  Columns key on the ROLE LABEL, not the criterion: 'instructor' resolves to
+ *  "Instructor" on didactic courses but "Placement Faculty" on practice ones —
+ *  merging them under one header would mislabel half the column. */
+function CoverageGridSection({ model }: { model: PlanModel }) {
   const cols = useMemo(() => {
     const seen = new Map<string, string>()
     for (const i of model.instances) {
-      const key = i.scope === 'course' ? 'course' : i.criterion
+      const key = i.scope === 'course' ? 'course' : i.roleLabel
       if (!seen.has(key)) seen.set(key, i.scope === 'course' ? 'Course' : i.roleLabel)
     }
     return [...seen.entries()].sort((a, b) => (a[0] === 'course' ? -1 : b[0] === 'course' ? 1 : 0))
   }, [model.instances])
   const cellOf = (o: CourseOffering, colKey: string) =>
     (model.byOffering.get(o.id) ?? []).filter(i =>
-      colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.criterion === colKey)
+      colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.roleLabel === colKey)
   const colGapCount = (colKey: string) =>
     model.instances.filter(i =>
-      (colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.criterion === colKey) && i.status === 'gap').length
+      (colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.roleLabel === colKey) && i.status === 'gap').length
   const gridTemplate = `240px repeat(${cols.length}, minmax(96px, 1fr)) 200px`
 
   const Glyph = ({ item }: { item: SurveyInstance }) =>
@@ -1146,6 +1155,10 @@ function VariantF({ model }: { model: PlanModel }) {
   )
 }
 
+function VariantF({ model }: { model: PlanModel }) {
+  return <CoverageGridSection model={model} />
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // VARIANT G — FOCUS FLOW: one decision at a time; the rest waits its turn.
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1254,6 +1267,46 @@ function VariantG({ model }: { model: PlanModel }) {
   )
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// VARIANT H — SYNTHESIS (the recommendation): narrative → work → audit.
+// E's lead states what will happen; B's queue holds the open decisions with
+// their controls inline; F's coverage grid is the always-visible audit of the
+// whole plan. One page answers all three questions in reading order:
+// "what am I doing?" → "what do I need to decide?" → "is the plan right?"
+// ═════════════════════════════════════════════════════════════════════════════
+
+function VariantH({ model }: { model: PlanModel }) {
+  const templatesInUse = new Set(model.courses.map(o => model.templateIdFor(o)).filter(Boolean))
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Narrative — what pressing Continue will do. */}
+      <div className="flex flex-col gap-1 pt-2">
+        <p className="text-xl leading-snug">
+          You&apos;re setting up <span className="font-semibold tabular-nums">{model.counts.toCreate} evaluations</span> across{' '}
+          <span className="font-semibold tabular-nums">{model.courses.length} courses</span> for Fall 2026–2027.
+        </p>
+        <p className="text-sm text-muted-foreground tabular-nums">
+          {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
+          {model.counts.reEvals > 0 && <> · {model.counts.reEvals} evaluated again</>}
+          {model.counts.skipped > 0 && <> · {model.counts.skipped} already covered stay untouched</>}
+        </p>
+      </div>
+
+      {/* Work — the open decisions, each with its control. */}
+      <DecisionQueueSection model={model} />
+
+      {/* Audit — the whole plan, one glance; click a cell to adjust. */}
+      <section aria-label="The plan">
+        <div className="flex items-baseline gap-2 pb-2">
+          <h3 className="text-sm font-semibold">The plan</h3>
+          <span className="text-xs text-muted-foreground">Every course × who gets evaluated — click any cell to adjust.</span>
+        </div>
+        <CoverageGridSection model={model} />
+      </section>
+    </div>
+  )
+}
+
 // ── Page shell ───────────────────────────────────────────────────────────────
 
 const VARIANTS = [
@@ -1264,10 +1317,11 @@ const VARIANTS = [
   { id: 'e', name: 'Briefing', hint: 'the plan in plain language' },
   { id: 'f', name: 'Coverage grid', hint: 'courses × roles matrix' },
   { id: 'g', name: 'Focus flow', hint: 'one decision at a time' },
+  { id: 'h', name: 'Synthesis', hint: 'recommended: brief → decide → audit' },
 ] as const
 
 function CompareInner() {
-  const v = (useSearchParams()?.get('v') ?? 'a') as 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g'
+  const v = (useSearchParams()?.get('v') ?? 'a') as 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
   const model = usePlanModel()
 
   return (
@@ -1306,6 +1360,7 @@ function CompareInner() {
       {v === 'e' && <VariantE model={model} />}
       {v === 'f' && <VariantF model={model} />}
       {v === 'g' && <VariantG model={model} />}
+      {v === 'h' && <VariantH model={model} />}
 
       <StepFooter model={model} />
     </div>
