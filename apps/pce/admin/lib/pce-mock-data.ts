@@ -1635,6 +1635,7 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   // Year 1 — Foundations (Didactic)
   { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
   { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc3',  code: 'DPT-503', name: 'Pharmacology for Physical Therapists', department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Williams' },
   { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
   { id: 'mc5',  code: 'DPT-505', name: 'Biomechanics I', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
   // Year 2 — Clinical Sciences (Didactic)
@@ -1643,6 +1644,7 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
   { id: 'mc9',  code: 'DPT-530', name: 'Therapeutic Exercise',     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
   { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
+  { id: 'mc11', code: 'DPT-610', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-12', editedBy: 'Dr. Gomez'    },
   // Specialty Electives (Didactic)
   { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
   // Clinical Education (Clinical)
