@@ -439,7 +439,7 @@ function CourseCard({
           <Collapsible open={saidYes} className={fresh.length > 0 ? 'border-t border-border' : ''}>
             <div className="p-2.5">
               <div className="rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5" style={{ background: 'var(--insight-severity-info-bg)' }}>
-                <i className="fa-solid fa-circle-info text-xs shrink-0" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
+                <i className="fa-solid fa-clock-rotate-left text-xs shrink-0" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-sm font-medium">Evaluation already exists</span>
                   <span className="text-xs text-muted-foreground flex items-center gap-2 min-w-0">
@@ -479,7 +479,7 @@ function CourseCard({
           <div className={`p-2.5 flex flex-col gap-2 ${fresh.length > 0 || dups.length > 0 ? 'border-t border-border' : ''}`}>
             {gaps.map(item => (
               <div key={item.key} className="rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2" style={{ background: 'var(--group-band-attention-bg)' }}>
-                <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                <i className="fa-solid fa-user-slash text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                 <div className="flex flex-col gap-0 min-w-0">
                   <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
                   <span className="text-xs text-muted-foreground">Add one in Prism to evaluate this role.</span>
@@ -595,7 +595,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
                 <QueueRow
                   key={item.key}
                   tone="gap"
-                  icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
+                  icon={<i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
                   primary={<>No {item.roleLabel} assigned</>}
                   secondary={<><span className="font-mono tabular-nums">{code}</span>{name && <span className="truncate">{name}</span>}</>}
                   control={item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
@@ -609,7 +609,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
                 <QueueRow
                   key={item.key}
                   tone="dup"
-                  icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+                  icon={<i className="fa-solid fa-clock-rotate-left text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
                   primary={
                     <span className="flex items-center gap-1.5 min-w-0">
                       <EvaluateeDisc item={item} size={4} />
@@ -756,7 +756,7 @@ function VariantC({ model }: { model: PlanModel }) {
                         {item.status === 'duplicate' ? (
                           <>
                             <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--insight-severity-info-fg)' }}>
-                              <i className="fa-solid fa-circle-info text-xs" aria-hidden="true" />
+                              <i className="fa-solid fa-clock-rotate-left text-xs" aria-hidden="true" />
                               {model.included.has(item.key) ? 'Evaluated again' : 'Already covered'}
                             </span>
                             <ExistingFacts item={item} />
@@ -902,7 +902,7 @@ function VariantE({ model }: { model: PlanModel }) {
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm" className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50" aria-expanded={!!open[k]}>
             <div className="flex items-center gap-3 px-4 py-3.5">
-              <span className="shrink-0 flex items-center justify-center" style={{ width: 16 }}>{icon}</span>
+              <span className="shrink-0 flex items-center justify-center">{icon}</span>
               <div className="flex flex-col gap-0.5 min-w-0">
                 <span className="text-sm font-medium">{title}</span>
                 <span className="text-xs text-muted-foreground truncate">{sub}</span>
@@ -936,7 +936,11 @@ function VariantE({ model }: { model: PlanModel }) {
       {gapItems.length > 0 && (
         <Section
           k="gaps"
-          icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
+          icon={
+            <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-attention-bg)' }}>
+              <i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+            </span>
+          }
           title={`${gapItems.length} role${gapItems.length !== 1 ? 's have' : ' has'} no one assigned`}
           sub="These evaluations can't be created until someone is added in Prism."
         >
@@ -960,7 +964,11 @@ function VariantE({ model }: { model: PlanModel }) {
       {dupItems.length > 0 && (
         <Section
           k="dups"
-          icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+          icon={
+            <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--insight-severity-info-bg)' }}>
+              <i className="fa-solid fa-clock-rotate-left text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
+            </span>
+          }
           title={`${dupItems.length} evaluation${dupItems.length !== 1 ? 's' : ''} already exist${dupItems.length === 1 ? 's' : ''}`}
           sub="Skipped by default — flip any you want to run again."
         >
@@ -994,7 +1002,11 @@ function VariantE({ model }: { model: PlanModel }) {
 
       <Section
         k="ready"
-        icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-2)' }} />}
+        icon={
+          <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-done-bg)' }}>
+            <i className="fa-solid fa-paper-plane text-xs" style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
+          </span>
+        }
         title={`${model.instances.filter(i => i.status === 'new' && model.included.has(i.key)).length} new evaluations are ready`}
         sub="Open to check who's evaluated in each course, or change a template."
       >
@@ -1053,9 +1065,9 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
 
   const Glyph = ({ item }: { item: SurveyInstance }) =>
     item.status === 'gap'
-      ? <i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+      ? <i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
       : item.status === 'duplicate'
-        ? <i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)', opacity: model.included.has(item.key) ? 1 : 0.55 }} aria-hidden="true" />
+        ? <i className="fa-solid fa-clock-rotate-left text-xs" style={{ color: 'var(--insight-severity-info-fg)', opacity: model.included.has(item.key) ? 1 : 0.55 }} aria-hidden="true" />
         : <i className={`fa-${model.included.has(item.key) ? 'solid' : 'light'} fa-circle-check text-xs`} style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
 
   const cellSummary = (items: SurveyInstance[], code: string, label: string) => {
@@ -1160,8 +1172,8 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
       {/* Legend — the grid's vocabulary, said once. */}
       <p className="text-xs text-muted-foreground flex items-center gap-x-4 gap-y-1 flex-wrap">
         <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-circle-check" style={{ color: 'var(--chip-2)' }} aria-hidden="true" /> will be created</span>
-        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-circle-info" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" /> already exists</span>
-        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-triangle-exclamation" style={{ color: 'var(--chip-4)' }} aria-hidden="true" /> no one assigned</span>
+        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" /> already exists</span>
+        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-user-slash" style={{ color: 'var(--chip-4)' }} aria-hidden="true" /> no one assigned</span>
         <span className="inline-flex items-center gap-1.5">— not in this course&apos;s template</span>
       </p>
     </div>
@@ -1221,8 +1233,8 @@ function VariantG({ model }: { model: PlanModel }) {
           <div className="flex items-start gap-3">
             <span className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ background: current.status === 'gap' ? 'var(--group-band-attention-bg)' : 'var(--insight-severity-info-bg)' }}>
               {current.status === 'gap'
-                ? <i className="fa-solid fa-triangle-exclamation text-sm" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                : <i className="fa-solid fa-circle-info text-sm" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+                ? <i className="fa-solid fa-user-slash text-sm" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                : <i className="fa-solid fa-clock-rotate-left text-sm" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
             </span>
             <div className="flex flex-col gap-1 min-w-0">
               <p className="text-base font-semibold">
