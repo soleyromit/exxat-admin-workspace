@@ -504,6 +504,25 @@ function VariantE() {
   const names = (items: Item[]) =>
     items.map(i => (i.kind === 'course' ? 'Course material' : i.name!)).join(', ')
 
+  /* Secondary-line roster: each evaluatee is a face + name pair, so identity
+     travels with the label instead of a detached avatar cluster. */
+  const NamesInline = ({ items }: { items: Item[] }) => (
+    <span className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap min-w-0">
+      {items.map(i => (
+        <span key={i.id} className="inline-flex items-center gap-1 min-w-0">
+          {i.kind === 'course'
+            ? (
+              <span className="size-4 rounded-full flex items-center justify-center shrink-0 border border-border bg-background">
+                <i className="fa-light fa-book-open text-[8px] text-muted-foreground" aria-hidden="true" />
+              </span>
+            )
+            : <PersonAvatar name={i.name!} className="size-4" />}
+          <span className="truncate">{i.kind === 'course' ? 'Course material' : i.name}</span>
+        </span>
+      ))}
+    </span>
+  )
+
   /* Ledger line — settled flow-ledger anatomy: 20px disc/avatar · name · role. */
   const LedgerLine = ({ item }: { item: Item }) => (
     <span className="flex items-center gap-1.5 min-w-0">
@@ -584,10 +603,11 @@ function VariantE() {
                   <Line
                     icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />}
                     primary={`${freshIn} new evaluation${freshIn !== 1 ? 's' : ''}`}
-                    secondary={names(fresh)}
+                    secondary={<NamesInline items={fresh} />}
                     control={
                       <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground">
+                        <Button variant="outline" size="xs">
+                          <i className="fa-light fa-list-check text-xs" aria-hidden="true" />
                           {open ? 'Hide list' : 'Edit list'}
                           <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
                         </Button>
@@ -624,10 +644,13 @@ function VariantE() {
                     primary="Evaluation already exists"
                     primaryClass=""
                     secondary={
-                      <span className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate">{names(dups)}</span>
+                      <span className="flex items-center gap-2 min-w-0">
+                        <NamesInline items={dups} />
                         <SurveyStatusBadgeOS status="scheduled" />
-                        <span className="tabular-nums whitespace-nowrap">Opens Dec 4</span>
+                        <span className="inline-flex items-center gap-1 tabular-nums whitespace-nowrap">
+                          <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
+                          Opens Dec 4
+                        </span>
                       </span>
                     }
                     control={
@@ -662,7 +685,10 @@ function VariantE() {
                           </span>
                           <span className="flex items-center justify-end gap-1.5">
                             <SurveyStatusBadgeOS status="scheduled" />
-                            <span className="text-xs tabular-nums text-muted-foreground">Opens Dec 4</span>
+                            <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1">
+                              <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
+                              Opens Dec 4
+                            </span>
                           </span>
                         </div>
                       </div>
