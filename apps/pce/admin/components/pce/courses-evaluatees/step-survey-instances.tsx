@@ -129,6 +129,8 @@ export function StepSurveyInstances({
   const [openStacks, setOpenStacks] = useState<Record<string, boolean>>({})
   // Card filter — scan only the courses that need work.
   const [cardFilter, setCardFilter] = useState<'all' | 'needs' | 'ready'>('all')
+  // Master list selection — the detail panel shows ONE course at a time.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // ── Derived counts (the footer/summary speak for the full plan) ────────────
   const toCreate = useMemo(
@@ -177,6 +179,7 @@ export function StepSurveyInstances({
   const needsCount = courses.filter(needsSetup).length
   const shownCourses = courses.filter(o =>
     cardFilter === 'all' ? true : cardFilter === 'needs' ? needsSetup(o) : !needsSetup(o))
+  const detailOffering = shownCourses.find(o => o.id === selectedId) ?? shownCourses[0] ?? null
 
   // ── Shared line pieces (promoted from /compare/push-instances Variant E) ───
 
@@ -329,8 +332,79 @@ export function StepSurveyInstances({
       {courses.length === 0 ? (
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
-        <div className="grid gap-3 items-start" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
-          {shownCourses.map(offering => {
+        <div className="flex gap-4 items-start">
+          {/* ── Master list: the scannable index — checkbox · course · chip.
+                 Answers "which ones are ready" with zero scroll. ─────────── */}
+          <div className="rounded-lg border border-border overflow-hidden shrink-0" style={{ width: 400 }}>
+            {shownCourses.map(o => {
+              const oLabel = courseLabelOf(o)
+              const [oCode] = oLabel.split(' – ')
+              const oAll = byOffering.get(o.id) ?? []
+              const oKeys = (oAll.some(i => i.status === 'new')
+                ? oAll.filter(i => i.status === 'new')
+                : oAll.filter(i => i.status === 'duplicate')).map(i => i.key)
+              const oIncluded = oKeys.filter(k => included.has(k)).length
+              const oNeeds = needsSetup(o)
+              const oHasQuestion = oAll.some(i => i.status === 'duplicate')
+              const isActive = detailOffering?.id === o.id
+              return (
+                <div
+                  key={o.id}
+                  className={`flex items-center gap-2.5 ps-3 pe-2.5 border-b border-border last:border-b-0 ${isActive ? 'bg-secondary' : ''}`}
+                  style={{ minHeight: 46 }}
+                >
+                  <Checkbox
+                    checked={oKeys.length === 0 ? false : oIncluded === oKeys.length ? true : oIncluded > 0 ? 'indeterminate' : false}
+                    onCheckedChange={(v) => {
+                      if (v) setMany(oKeys, true)
+                      else setMany(oAll.filter(i => i.status !== 'gap').map(i => i.key), false)
+                    }}
+                    aria-label={`Include ${oCode} in this push`}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`flex-1 h-auto min-w-0 justify-start gap-2 px-1.5 py-1.5 font-normal ${isActive ? 'font-medium' : ''}`}
+                    aria-current={isActive ? 'true' : undefined}
+                    onClick={() => setSelectedId(o.id)}
+                  >
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{oCode}</span>
+                    <span className="truncate text-sm">{oLabel.includes(' – ') ? oLabel.split(' – ').slice(1).join(' – ') : ''}</span>
+                    <span className="ms-auto inline-flex items-center gap-1.5 shrink-0">
+                      {oHasQuestion && (
+                        <i
+                          className="fa-solid fa-circle-info text-xs"
+                          style={{ color: 'var(--insight-severity-info-fg)' }}
+                          aria-hidden="true"
+                          title="An evaluation already exists — decision inside"
+                        />
+                      )}
+                      {oIncluded === 0 && oKeys.length > 0 ? (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap bg-muted text-muted-foreground">Excluded</span>
+                      ) : oNeeds ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--group-band-attention-bg)', color: 'var(--chip-4)' }}>
+                          <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-4)' }} />
+                          Needs setup
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--group-band-done-bg)', color: 'var(--chip-2)' }}>
+                          <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-2)' }} />
+                          Ready
+                        </span>
+                      )}
+                    </span>
+                  </Button>
+                </div>
+              )
+            })}
+            {shownCourses.length === 0 && (
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No courses match this filter.</p>
+            )}
+          </div>
+
+          {/* ── Detail panel: ONE course's full story, sticky beside the list. */}
+          <div className="flex-1 min-w-0 sticky" style={{ top: 16 }}>
+          {(detailOffering ? [detailOffering] : []).map(offering => {
             const courseLabel = courseLabelOf(offering)
             const [code] = courseLabel.split(' – ')
             const rawId = templateAssignments[offering.id] ?? defaultAssignments[offering.id] ?? ''
@@ -358,27 +432,20 @@ export function StepSurveyInstances({
               <Card key={offering.id} size="sm" className="overflow-hidden py-0 gap-0">
                 {/* Header: identity carries the hierarchy — no band tint. */}
                 <CardHeader className="flex flex-row items-center gap-2.5 space-y-0 border-b border-border" style={{ padding: '10px 12px 10px 12px' }}>
-                  {/* Course include/exclude — the DataTable's selection, back.
-                      Reflects the course's default plan (new evaluations);
-                      unchecking pulls EVERYTHING (incl. accepted re-evals). */}
-                  <Checkbox
-                    checked={courseKeys.length === 0
-                      ? false
-                      : courseIncluded === courseKeys.length ? true : courseIncluded > 0 ? 'indeterminate' : false}
-                    onCheckedChange={(v) => {
-                      if (v) setMany(courseKeys, true)
-                      else setMany(all.filter(i => i.status !== 'gap').map(i => i.key), false)
-                    }}
-                    aria-label={`Include ${code} in this push`}
-                  />
                   <CardTitle className="text-sm font-semibold flex items-baseline gap-2 min-w-0" title={courseLabel}>
                     <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                     {courseLabel.includes(' – ') && (
                       <span className="truncate">{courseLabel.split(' – ').slice(1).join(' – ')}</span>
                     )}
                   </CardTitle>
-                  {/* Readiness at a glance — settled chip vocabulary. */}
-                  {isNeedsSetup ? (
+                  {/* Readiness at a glance — settled chip vocabulary.
+                      An excluded course says so and visually recedes: the
+                      click must be answerable at a glance, not via footer math. */}
+                  {courseIncluded === 0 && courseKeys.length > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 bg-muted text-muted-foreground">
+                      Excluded
+                    </span>
+                  ) : isNeedsSetup ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0" style={{ background: 'var(--group-band-attention-bg)', color: 'var(--chip-4)' }}>
                       <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-4)' }} />
                       Needs setup
@@ -409,7 +476,7 @@ export function StepSurveyInstances({
                             : `min-w-0 [&>span]:truncate [&>span]:min-w-0 ${edited ? 'bg-secondary' : 'bg-background'}`}
                           style={{
                             height: 28, fontSize: 12,
-                            ...(templateId ? { width: 224 } : {
+                            ...(templateId ? { width: 180 } : {
                               paddingInline: 10,
                               background: 'var(--insight-severity-info-bg)',
                             }),
@@ -432,7 +499,7 @@ export function StepSurveyInstances({
                   </span>
                 </CardHeader>
 
-                <CardContent className="p-0">
+                <CardContent className={`p-0 ${courseIncluded === 0 && courseKeys.length > 0 ? 'opacity-50' : ''}`}>
                   {!templateId && publishedTemplates.length > 0 && (
                     <p className="px-4 py-3 text-sm text-muted-foreground">
                       Assign a template to plan this course&apos;s evaluations.
@@ -453,7 +520,6 @@ export function StepSurveyInstances({
                           aria-expanded={stackOpen}
                         >
                           <div className="flex items-center gap-3 pe-4 ps-4 py-2.5" style={{ minHeight: 46 }}>
-                            <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
                             <div className="flex flex-col gap-0.5 min-w-0">
                               <span className="text-sm font-medium">{freshIn} new evaluation{freshIn !== 1 ? 's' : ''}</span>
                               <span className="text-xs text-muted-foreground truncate"><NamesInline items={fresh} /></span>
@@ -568,6 +634,7 @@ export function StepSurveyInstances({
               </Card>
             )
           })}
+          </div>
         </div>
       )}
 
