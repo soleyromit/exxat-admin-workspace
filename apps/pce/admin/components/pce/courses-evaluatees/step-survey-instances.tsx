@@ -127,6 +127,8 @@ export function StepSurveyInstances({
 
   // New-stack disclosure (per offering).
   const [openStacks, setOpenStacks] = useState<Record<string, boolean>>({})
+  // Card filter — scan only the courses that need work.
+  const [cardFilter, setCardFilter] = useState<'all' | 'needs' | 'ready'>('all')
 
   // ── Derived counts (the footer/summary speak for the full plan) ────────────
   const toCreate = useMemo(
@@ -162,6 +164,19 @@ export function StepSurveyInstances({
     for (const i of instances) m.set(i.offeringId, [...(m.get(i.offeringId) ?? []), i])
     return m
   }, [instances])
+
+  // A course "needs setup" when its plan is incomplete: no template yet, or a
+  // role the template evaluates is unstaffed. Existing-evaluation questions
+  // are decisions, not blockers — they don't flip readiness.
+  const needsSetup = (o: CourseOffering) => {
+    const tid = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+    const hasTemplate = !!tid && publishedTemplates.some(t => t.id === tid)
+    if (!hasTemplate) return true
+    return (byOffering.get(o.id) ?? []).some(i => i.status === 'gap')
+  }
+  const needsCount = courses.filter(needsSetup).length
+  const shownCourses = courses.filter(o =>
+    cardFilter === 'all' ? true : cardFilter === 'needs' ? needsSetup(o) : !needsSetup(o))
 
   // ── Shared line pieces (promoted from /compare/push-instances Variant E) ───
 
@@ -279,6 +294,24 @@ export function StepSurveyInstances({
         </div>
       </div>
 
+      {/* Card filter — one selected at a time; counts answer "which ones". */}
+      <div className="flex items-center gap-1.5" role="group" aria-label="Filter courses by readiness">
+        {([['all', `All courses (${courses.length})`], ['needs', `Needs setup (${needsCount})`], ['ready', `Ready (${courses.length - needsCount})`]] as const).map(([key, label]) => (
+          <Button
+            key={key}
+            variant={cardFilter === key ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={cardFilter === key}
+            onClick={() => setCardFilter(key)}
+          >
+            {key === 'needs' && needsCount > 0 && (
+              <i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+            )}
+            {label}
+          </Button>
+        ))}
+      </div>
+
       {notice && (
         <LocalBanner
           variant={notice.kind === 'published' ? 'success' : 'info'}
@@ -296,8 +329,8 @@ export function StepSurveyInstances({
       {courses.length === 0 ? (
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
-        <div className="flex flex-col gap-3">
-          {courses.map(offering => {
+        <div className="grid gap-3 items-start" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
+          {shownCourses.map(offering => {
             const courseLabel = courseLabelOf(offering)
             const [code] = courseLabel.split(' – ')
             const rawId = templateAssignments[offering.id] ?? defaultAssignments[offering.id] ?? ''
@@ -311,6 +344,11 @@ export function StepSurveyInstances({
             const stackOpen = openStacks[offering.id] ?? false
             // DERIVED: the course says Yes while any duplicate is included.
             const saidYes = dups.some(d => included.has(d.key))
+            // Course checkbox reflects the default plan (its new evaluations;
+            // dup-only courses fall back to their duplicates).
+            const courseKeys = (fresh.length > 0 ? fresh : dups).map(i => i.key)
+            const courseIncluded = courseKeys.filter(k => included.has(k)).length
+            const isNeedsSetup = needsSetup(offering)
             const dupStatuses = [...new Set(dups.map(d => d.existing?.status ?? 'scheduled'))]
             const dupOpens = [...new Set(dups.map(d => (d.existing ? openPhrase(d.existing) : null)))]
             const sharedStatus = dupStatuses.length === 1 ? dupStatuses[0] : null
@@ -319,14 +357,39 @@ export function StepSurveyInstances({
             return (
               <Card key={offering.id} size="sm" className="overflow-hidden py-0 gap-0">
                 {/* Header: identity carries the hierarchy — no band tint. */}
-                <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border" style={{ padding: '10px 16px' }}>
-                  <CardTitle className="text-sm font-semibold flex items-baseline gap-2 min-w-0">
+                <CardHeader className="flex flex-row items-center gap-2.5 space-y-0 border-b border-border" style={{ padding: '10px 12px 10px 12px' }}>
+                  {/* Course include/exclude — the DataTable's selection, back.
+                      Reflects the course's default plan (new evaluations);
+                      unchecking pulls EVERYTHING (incl. accepted re-evals). */}
+                  <Checkbox
+                    checked={courseKeys.length === 0
+                      ? false
+                      : courseIncluded === courseKeys.length ? true : courseIncluded > 0 ? 'indeterminate' : false}
+                    onCheckedChange={(v) => {
+                      if (v) setMany(courseKeys, true)
+                      else setMany(all.filter(i => i.status !== 'gap').map(i => i.key), false)
+                    }}
+                    aria-label={`Include ${code} in this push`}
+                  />
+                  <CardTitle className="text-sm font-semibold flex items-baseline gap-2 min-w-0" title={courseLabel}>
                     <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                     {courseLabel.includes(' – ') && (
                       <span className="truncate">{courseLabel.split(' – ').slice(1).join(' – ')}</span>
                     )}
                   </CardTitle>
-                  <span onClick={e => e.stopPropagation()}>
+                  {/* Readiness at a glance — settled chip vocabulary. */}
+                  {isNeedsSetup ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0" style={{ background: 'var(--group-band-attention-bg)', color: 'var(--chip-4)' }}>
+                      <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-4)' }} />
+                      Needs setup
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0" style={{ background: 'var(--group-band-done-bg)', color: 'var(--chip-2)' }}>
+                      <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-2)' }} />
+                      Ready
+                    </span>
+                  )}
+                  <span className="ms-auto" onClick={e => e.stopPropagation()}>
                     {publishedTemplates.length === 0 ? (
                       <Button
                         variant="outline"
