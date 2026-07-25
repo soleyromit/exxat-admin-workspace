@@ -527,9 +527,9 @@ function VariantE() {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm tabular-nums">
-        <span className="font-semibold">{create} surveys</span> will be created
-        {reEvals > 0 && <span style={{ color: 'var(--chip-4)' }}> · {reEvals} re-evaluation{reEvals !== 1 ? 's' : ''}</span>}
-        {skipped > 0 && <span style={{ color: 'var(--muted-foreground)' }}> · {skipped} duplicate{skipped !== 1 ? 's' : ''} skipped</span>}
+        <span className="font-semibold">{create} evaluation{create !== 1 ? 's' : ''}</span> will be set up
+        {reEvals > 0 && <span style={{ color: 'var(--insight-severity-info-fg)' }}> · {reEvals} evaluated again</span>}
+        {skipped > 0 && <span style={{ color: 'var(--muted-foreground)' }}> · {skipped} already covered</span>}
         <span style={{ color: 'var(--chip-4)' }}> · 1 role unassigned</span>
       </p>
       <div className="rounded-lg border border-border overflow-hidden">
@@ -560,7 +560,7 @@ function VariantE() {
                 >
                   <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 46 }}>
                     <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
-                    <span className="text-sm shrink-0 font-medium">{freshIn} new survey{freshIn !== 1 ? 's' : ''}</span>
+                    <span className="text-sm shrink-0 font-medium">{freshIn} new evaluation{freshIn !== 1 ? 's' : ''}</span>
                     <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{names(fresh)}</span>
                     <AvatarGroup className="ms-auto shrink-0">
                       {fresh.filter(i => i.kind === 'person').map(i => (
@@ -595,12 +595,15 @@ function VariantE() {
               {dups.length > 0 && (
                 <Collapsible open={saidYes} className="border-b border-border">
                   <div className="flex items-center gap-2.5 px-3" style={{ minHeight: 46 }}>
-                    <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                    <span className="text-sm shrink-0 font-medium" style={{ color: 'var(--chip-4)' }}>Already surveyed</span>
+                    {/* Info, not warning: an existing evaluation is the system
+                        doing its job — the line asks a question, nothing is
+                        wrong. Amber stays reserved for missing data (gaps). */}
+                    <i className="fa-solid fa-circle-info text-xs shrink-0" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
+                    <span className="text-sm shrink-0 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>Evaluation already exists</span>
                     <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{names(dups)}</span>
                     <span className="shrink-0 flex items-center gap-1.5">
                       <SurveyStatusBadgeOS status="scheduled" />
-                      <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Dec 4</span>
+                      <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Opens Dec 4</span>
                     </span>
                     <label htmlFor={`reeval-${course.code}`} className="ms-auto flex items-center gap-2 text-sm shrink-0 cursor-pointer">
                       <span className="font-medium">Evaluate again?</span>
@@ -629,7 +632,7 @@ function VariantE() {
                         </CheckboxLabel>
                         <span className="ms-auto shrink-0 flex items-center gap-1.5">
                           <SurveyStatusBadgeOS status="scheduled" />
-                          <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Dec 4</span>
+                          <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>Opens Dec 4</span>
                         </span>
                       </div>
                     ))}
