@@ -24,6 +24,23 @@
 //                           footer walks the needs-setup queue. Analogy:
 //                           Klaviyo campaign review, Linear list + detail.
 //
+// Round 2 (same day — "don't limit yourself"): three models that break the
+// card/list frame entirely:
+//   ?v=e  BRIEFING       — the plan in plain language: one lead sentence, three
+//                          drill-in sections (missing roles / already exist /
+//                          ready). Analogy: Lemon Squeezy "You're almost
+//                          ready", Zillow lease review, TurboTax.
+//   ?v=f  COVERAGE GRID  — courses × evaluation-target matrix; glyph cells,
+//                          click a cell to act in a popover. The only form
+//                          that exposes systemic patterns ("Coordinator
+//                          missing in 5 courses"). Analogy: permissions
+//                          matrices, Airtable grid.
+//   ?v=g  FOCUS FLOW     — one decision at a time with an Up-next stack and
+//                          a done state. Fastest hands-on path through the 11
+//                          decisions. Analogy: Superhuman triage. (Note: the
+//                          Jul rounds rejected nested sub-steps; this is NOT a
+//                          stepper — free navigation, decisions optional.)
+//
 // All four run the REAL pt5 machinery — offeringsForScope → template defaults
 // → expandInstances vs open flows — so duplicate/gap verdicts and counts match
 // the live wizard, and template changes re-derive the plan live.
@@ -39,6 +56,7 @@ import {
   Card, CardHeader, CardTitle, CardContent,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Popover, PopoverTrigger, PopoverContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
@@ -846,6 +864,396 @@ function VariantD({ model }: { model: PlanModel }) {
   )
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// VARIANT E — BRIEFING: the plan in plain language; numbers you can open.
+// ═════════════════════════════════════════════════════════════════════════════
+
+function VariantE({ model }: { model: PlanModel }) {
+  const [open, setOpen] = useState<Record<string, boolean>>({})
+  const gapItems = model.instances.filter(i => i.status === 'gap')
+  const dupItems = model.instances.filter(i => i.status === 'duplicate')
+  const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
+  const templatesInUse = new Set(model.courses.map(o => model.templateIdFor(o)).filter(Boolean))
+  const freshOf = (o: CourseOffering) => (model.byOffering.get(o.id) ?? []).filter(i => i.status === 'new')
+  const readyCourses = model.courses.filter(o => freshOf(o).length > 0)
+
+  const Section = ({ k, icon, title, sub, children }: {
+    k: string; icon: ReactNode; title: string; sub: string; children: ReactNode
+  }) => (
+    <Card size="sm" className="py-0 gap-0 overflow-hidden">
+      <Collapsible open={!!open[k]} onOpenChange={v => setOpen(p => ({ ...p, [k]: v }))}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50" aria-expanded={!!open[k]}>
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <span className="shrink-0 flex items-center justify-center" style={{ width: 16 }}>{icon}</span>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium">{title}</span>
+                <span className="text-xs text-muted-foreground truncate">{sub}</span>
+              </div>
+              <i className={`fa-light fa-chevron-${open[k] ? 'up' : 'down'} text-xs text-muted-foreground ms-auto`} aria-hidden="true" />
+            </div>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="border-t border-border">{children}</div>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  )
+
+  return (
+    <div className="flex flex-col gap-5 mx-auto w-full" style={{ maxWidth: 760 }}>
+      {/* The lead — what pressing Continue will do, in one sentence. */}
+      <div className="flex flex-col gap-1 pt-2">
+        <p className="text-xl leading-snug">
+          You&apos;re setting up <span className="font-semibold tabular-nums">{model.counts.toCreate} evaluations</span> across{' '}
+          <span className="font-semibold tabular-nums">{model.courses.length} courses</span> for Fall 2026–2027.
+        </p>
+        <p className="text-sm text-muted-foreground tabular-nums">
+          {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
+          {model.counts.reEvals > 0 && <> · {model.counts.reEvals} evaluated again</>}
+          {model.counts.skipped > 0 && <> · {model.counts.skipped} already covered stay untouched</>}
+        </p>
+      </div>
+
+      {gapItems.length > 0 && (
+        <Section
+          k="gaps"
+          icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
+          title={`${gapItems.length} role${gapItems.length !== 1 ? 's have' : ' has'} no one assigned`}
+          sub="These evaluations can't be created until someone is added in Prism."
+        >
+          {gapItems.map(item => {
+            const { code, name } = splitLabel(courseOf(item))
+            return (
+              <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
+                  <span className="text-xs text-muted-foreground"><span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}</span>
+                </div>
+                <span className="ms-auto shrink-0">
+                  {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
+                </span>
+              </div>
+            )
+          })}
+        </Section>
+      )}
+
+      {dupItems.length > 0 && (
+        <Section
+          k="dups"
+          icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+          title={`${dupItems.length} evaluation${dupItems.length !== 1 ? 's' : ''} already exist${dupItems.length === 1 ? 's' : ''}`}
+          sub="Skipped by default — flip any you want to run again."
+        >
+          {dupItems.map(item => {
+            const { code, name } = splitLabel(courseOf(item))
+            const on = model.included.has(item.key)
+            return (
+              <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
+                <EvaluateeDisc item={item} />
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {instanceLabel(item)}
+                    {item.roleLabel && <span className="text-xs text-muted-foreground font-normal"> · {item.roleLabel}</span>}
+                  </span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
+                    <span className="font-mono tabular-nums">{code}</span>
+                    {name && <span className="truncate">{name}</span>}
+                    <ExistingFacts item={item} />
+                  </span>
+                </div>
+                <label htmlFor={`ve-${item.key}`} className="ms-auto flex items-center gap-2 text-sm cursor-pointer shrink-0">
+                  <span className="text-muted-foreground">{on ? 'Yes' : 'No'}</span>
+                  <ToggleSwitch id={`ve-${item.key}`} checked={on} onChange={() => model.flip(item.key)} />
+                  <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
+                </label>
+              </div>
+            )
+          })}
+        </Section>
+      )}
+
+      <Section
+        k="ready"
+        icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chip-2)' }} />}
+        title={`${model.instances.filter(i => i.status === 'new' && model.included.has(i.key)).length} new evaluations are ready`}
+        sub="Open to check who's evaluated in each course, or change a template."
+      >
+        {readyCourses.map(o => {
+          const { code, name } = splitLabel(o)
+          const fresh = freshOf(o)
+          const keys = fresh.map(i => i.key)
+          const inCount = keys.filter(k => model.included.has(k)).length
+          return (
+            <div key={o.id} className="flex items-center gap-2.5 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 52 }}>
+              <Checkbox
+                checked={inCount === keys.length ? true : inCount > 0 ? 'indeterminate' : false}
+                onCheckedChange={v => model.setMany(keys, !!v)}
+                aria-label={`Include ${code} in this push`}
+              />
+              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                <span className="text-sm font-medium flex items-baseline gap-2 min-w-0">
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
+                  {name && <span className="truncate">{name}</span>}
+                </span>
+                <span className="text-xs text-muted-foreground"><NamesInline items={fresh} /></span>
+              </div>
+              <TemplateSelect model={model} offering={o} />
+            </div>
+          )
+        })}
+      </Section>
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VARIANT F — COVERAGE GRID: courses × evaluation targets; click a cell to act.
+// ═════════════════════════════════════════════════════════════════════════════
+
+function VariantF({ model }: { model: PlanModel }) {
+  // Ordered columns: course material first, then roles as encountered.
+  const cols = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const i of model.instances) {
+      const key = i.scope === 'course' ? 'course' : i.criterion
+      if (!seen.has(key)) seen.set(key, i.scope === 'course' ? 'Course' : i.roleLabel)
+    }
+    return [...seen.entries()].sort((a, b) => (a[0] === 'course' ? -1 : b[0] === 'course' ? 1 : 0))
+  }, [model.instances])
+  const cellOf = (o: CourseOffering, colKey: string) =>
+    (model.byOffering.get(o.id) ?? []).filter(i =>
+      colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.criterion === colKey)
+  const colGapCount = (colKey: string) =>
+    model.instances.filter(i =>
+      (colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.criterion === colKey) && i.status === 'gap').length
+  const gridTemplate = `240px repeat(${cols.length}, minmax(96px, 1fr)) 200px`
+
+  const Glyph = ({ item }: { item: SurveyInstance }) =>
+    item.status === 'gap'
+      ? <i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+      : item.status === 'duplicate'
+        ? <i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)', opacity: model.included.has(item.key) ? 1 : 0.55 }} aria-hidden="true" />
+        : <i className={`fa-${model.included.has(item.key) ? 'solid' : 'light'} fa-circle-check text-xs`} style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
+
+  const cellSummary = (items: SurveyInstance[], code: string, label: string) => {
+    const parts = items.map(i =>
+      i.status === 'gap' ? `${i.roleLabel} unassigned`
+        : i.status === 'duplicate' ? `${instanceLabel(i)} already covered`
+          : `${instanceLabel(i)} will be evaluated`)
+    return `${code} · ${label}: ${parts.join('; ')}`
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <div style={{ minWidth: 240 + cols.length * 96 + 200 }}>
+          {/* Header — role columns carry the systemic insight. */}
+          <div className="grid items-end gap-2 px-3 py-2 border-b border-border bg-muted/60" style={{ gridTemplateColumns: gridTemplate }}>
+            <span className="text-xs font-medium text-muted-foreground">Course</span>
+            {cols.map(([key, label]) => {
+              const missing = colGapCount(key)
+              return (
+                <span key={key} className="flex flex-col items-center gap-0.5 text-center">
+                  <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                  {missing > 0 && (
+                    <span className="text-xs tabular-nums" style={{ color: 'var(--chip-4)' }}>{missing} missing</span>
+                  )}
+                </span>
+              )
+            })}
+            <span className="text-xs font-medium text-muted-foreground text-end">Template</span>
+          </div>
+
+          {model.courses.map(o => {
+            const { code, name } = splitLabel(o)
+            return (
+              <div key={o.id} className="grid items-center gap-2 px-3 border-b border-border/60 last:border-b-0" style={{ gridTemplateColumns: gridTemplate, minHeight: 44 }}>
+                <span className="text-sm font-medium flex items-baseline gap-2 min-w-0" title={courseLabelOf(o)}>
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
+                  {name && <span className="truncate font-normal">{name}</span>}
+                </span>
+                {cols.map(([key, label]) => {
+                  const items = cellOf(o, key)
+                  if (items.length === 0) {
+                    return <span key={key} className="text-center text-xs text-muted-foreground/60" aria-hidden="true">—</span>
+                  }
+                  return (
+                    <span key={key} className="flex justify-center">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 px-2 gap-1.5" aria-label={cellSummary(items, code, label)}>
+                            {items.map(i => <Glyph key={i.key} item={i} />)}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="center" className="w-96 p-2 flex flex-col gap-1" aria-label={`${code} — ${label} evaluations`}>
+                          {items.map(item => (
+                            <div key={item.key} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md" style={{ minHeight: 40 }}>
+                              {item.status === 'gap' ? (
+                                <>
+                                  <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--group-band-attention-bg)' }}>
+                                    <i className="fa-light fa-user-slash text-[9px]" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                                  </span>
+                                  <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
+                                  <span className="ms-auto shrink-0">
+                                    {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
+                                  </span>
+                                </>
+                              ) : item.status === 'duplicate' ? (
+                                <>
+                                  <EvaluateeDisc item={item} />
+                                  <span className="flex flex-col gap-0.5 min-w-0">
+                                    <span className="text-sm font-medium truncate">{instanceLabel(item)}</span>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1.5">Already covered <ExistingFacts item={item} /></span>
+                                  </span>
+                                  <label htmlFor={`vf-${item.key}`} className="ms-auto flex items-center gap-1.5 text-xs cursor-pointer shrink-0">
+                                    <span className="text-muted-foreground">Again?</span>
+                                    <ToggleSwitch id={`vf-${item.key}`} checked={model.included.has(item.key)} onChange={() => model.flip(item.key)} />
+                                  </label>
+                                </>
+                              ) : (
+                                <>
+                                  <Checkbox id={`vf-${item.key}`} checked={model.included.has(item.key)} onCheckedChange={() => model.flip(item.key)} />
+                                  <CheckboxLabel htmlFor={`vf-${item.key}`} className="flex items-center font-normal min-w-0">
+                                    <LedgerLine item={item} />
+                                  </CheckboxLabel>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
+                    </span>
+                  )
+                })}
+                <span className="flex justify-end"><TemplateSelect model={model} offering={o} /></span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Legend — the grid's vocabulary, said once. */}
+      <p className="text-xs text-muted-foreground flex items-center gap-x-4 gap-y-1 flex-wrap">
+        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-circle-check" style={{ color: 'var(--chip-2)' }} aria-hidden="true" /> will be created</span>
+        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-circle-info" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" /> already exists</span>
+        <span className="inline-flex items-center gap-1.5"><i className="fa-solid fa-triangle-exclamation" style={{ color: 'var(--chip-4)' }} aria-hidden="true" /> no one assigned</span>
+        <span className="inline-flex items-center gap-1.5">— not in this course&apos;s template</span>
+      </p>
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VARIANT G — FOCUS FLOW: one decision at a time; the rest waits its turn.
+// ═════════════════════════════════════════════════════════════════════════════
+
+function VariantG({ model }: { model: PlanModel }) {
+  const decisions = useMemo(
+    () => [
+      ...model.instances.filter(i => i.status === 'gap'),
+      ...model.instances.filter(i => i.status === 'duplicate'),
+    ],
+    [model.instances],
+  )
+  const [cursor, setCursor] = useState(0)
+  const done = cursor >= decisions.length
+  const current = decisions[cursor]
+  const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
+
+  if (decisions.length === 0 || done) {
+    return (
+      <div className="mx-auto w-full flex flex-col items-center gap-3 py-10 text-center" style={{ maxWidth: 560 }}>
+        <span className="size-10 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-done-bg)' }}>
+          <i className="fa-solid fa-check text-sm" style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
+        </span>
+        <p className="text-base font-semibold">
+          {decisions.length === 0 ? 'Nothing needs your attention' : `All ${decisions.length} decisions reviewed`}
+        </p>
+        <SummaryLine counts={model.counts} />
+        {decisions.length > 0 && (
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setCursor(0)}>
+            <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
+            Review again
+          </Button>
+        )}
+      </div>
+    )
+  }
+
+  const { code, name } = splitLabel(courseOf(current))
+  const upNext = decisions.slice(cursor + 1, cursor + 3)
+
+  return (
+    <div className="mx-auto w-full flex flex-col gap-4 pt-2" style={{ maxWidth: 620 }}>
+      <p className="text-xs tabular-nums text-muted-foreground">Decision {cursor + 1} of {decisions.length}</p>
+
+      <Card size="sm" className="py-0 gap-0">
+        <CardContent className="flex flex-col gap-4 px-5 py-5">
+          <div className="flex items-start gap-3">
+            <span className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ background: current.status === 'gap' ? 'var(--group-band-attention-bg)' : 'var(--insight-severity-info-bg)' }}>
+              {current.status === 'gap'
+                ? <i className="fa-solid fa-triangle-exclamation text-sm" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                : <i className="fa-solid fa-circle-info text-sm" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
+            </span>
+            <div className="flex flex-col gap-1 min-w-0">
+              <p className="text-base font-semibold">
+                {current.status === 'gap'
+                  ? <>No {current.roleLabel} assigned</>
+                  : <>{instanceLabel(current)} is already being evaluated</>}
+              </p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                <span className="font-mono text-xs tabular-nums">{code}</span>
+                {name && <span>{name}</span>}
+                {current.status === 'duplicate' && <ExistingFacts item={current} />}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {current.status === 'gap'
+                  ? 'This evaluation can’t be created until someone holds the role. Add them in Prism and this plan updates live — or skip and push without it.'
+                  : 'Skipping keeps the existing evaluation untouched. Evaluating again creates a second, separate evaluation.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ps-12">
+            {current.status === 'gap' ? (
+              <>
+                {current.prismHref && <AddInPrismButton href={current.prismHref} label="Add faculty" roles={[current.roleLabel]} />}
+                <Button variant="outline" size="xs" onClick={() => setCursor(c => c + 1)}>
+                  Skip for now
+                  <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="secondary" size="xs" onClick={() => { model.setMany([current.key], false); setCursor(c => c + 1) }}>
+                  Keep existing
+                </Button>
+                <Button variant="outline" size="xs" onClick={() => { model.setMany([current.key], true); setCursor(c => c + 1) }}>
+                  Evaluate again
+                </Button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" disabled={cursor === 0} onClick={() => setCursor(c => c - 1)}>
+          <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+          Previous
+        </Button>
+        {upNext.length > 0 && (
+          <span className="ms-auto text-xs text-muted-foreground truncate">
+            Up next: {upNext.map(i => (i.status === 'gap' ? `${splitLabel(courseOf(i)).code} — no ${i.roleLabel}` : `${splitLabel(courseOf(i)).code} — already covered`)).join(' · ')}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Page shell ───────────────────────────────────────────────────────────────
 
 const VARIANTS = [
@@ -853,10 +1261,13 @@ const VARIANTS = [
   { id: 'b', name: 'Decision queue', hint: 'exceptions first' },
   { id: 'c', name: 'Worksheet', hint: 'one sheet, sticky bands' },
   { id: 'd', name: 'Split, grown up', hint: 'refined list + detail' },
+  { id: 'e', name: 'Briefing', hint: 'the plan in plain language' },
+  { id: 'f', name: 'Coverage grid', hint: 'courses × roles matrix' },
+  { id: 'g', name: 'Focus flow', hint: 'one decision at a time' },
 ] as const
 
 function CompareInner() {
-  const v = (useSearchParams()?.get('v') ?? 'a') as 'a' | 'b' | 'c' | 'd'
+  const v = (useSearchParams()?.get('v') ?? 'a') as 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g'
   const model = usePlanModel()
 
   return (
@@ -892,6 +1303,9 @@ function CompareInner() {
       {v === 'b' && <VariantB model={model} />}
       {v === 'c' && <VariantC model={model} />}
       {v === 'd' && <VariantD model={model} />}
+      {v === 'e' && <VariantE model={model} />}
+      {v === 'f' && <VariantF model={model} />}
+      {v === 'g' && <VariantG model={model} />}
 
       <StepFooter model={model} />
     </div>
