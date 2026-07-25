@@ -61,8 +61,11 @@ import {
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { usePce } from '@/components/pce/pce-state'
-import { AddInPrismButton } from '@/components/pce/courses-evaluatees/scope-controls'
-import { MOCK_PROGRAM_TERMS, type CourseOffering, type PceSurvey, type PceTemplate } from '@/lib/pce-mock-data'
+import { AddInPrismButton, TypePill } from '@/components/pce/courses-evaluatees/scope-controls'
+import {
+  MOCK_PROGRAM_TERMS, deliveryModeOf, COURSE_TYPE_FULL_LABEL,
+  type CourseOffering, type PceSurvey, type PceTemplate,
+} from '@/lib/pce-mock-data'
 import { offeringsForScope } from '@/lib/pce-course-scope'
 import { courseLabelOf } from '@/lib/pce-course-readiness'
 import { expandInstances, type SurveyInstance } from '@/lib/pce-push-validation'
@@ -553,11 +556,17 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
   const openDecisions = gapItems.length + dupItems.filter(d => !model.included.has(d.key)).length
   const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
 
-  const QueueRow = ({ icon, primary, secondary, control }: {
-    icon: ReactNode; primary: ReactNode; secondary: ReactNode; control: ReactNode
+  const QueueRow = ({ tone, icon, primary, secondary, control }: {
+    tone: 'gap' | 'dup'; icon: ReactNode; primary: ReactNode; secondary: ReactNode; control: ReactNode
   }) => (
-    <div className="flex items-center gap-3 ps-3 pe-3 py-2 border-b border-border last:border-b-0" style={{ minHeight: 52 }}>
-      <span className="shrink-0 flex items-center justify-center" style={{ width: 16 }}>{icon}</span>
+    <div className="flex items-center gap-3 ps-3 pe-3 py-2 border-b border-border last:border-b-0" style={{ minHeight: 56 }}>
+      {/* Color is an object you look at — the disc, not a wash behind the row. */}
+      <span
+        className="size-8 rounded-full flex items-center justify-center shrink-0"
+        style={{ background: tone === 'gap' ? 'var(--group-band-attention-bg)' : 'var(--insight-severity-info-bg)' }}
+      >
+        {icon}
+      </span>
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="text-sm font-medium">{primary}</span>
         <span className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">{secondary}</span>
@@ -569,7 +578,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
   return (
     <section aria-label="Decisions">
         <div className="flex items-baseline gap-2 pb-2">
-          <h3 className="text-sm font-semibold">Decisions</h3>
+          <h3 className="text-base font-semibold font-heading">Decisions</h3>
           <span className="text-xs tabular-nums text-muted-foreground">
             {openDecisions === 0 ? 'none left — the plan is ready' : `${openDecisions} to review`}
           </span>
@@ -585,6 +594,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
               return (
                 <QueueRow
                   key={item.key}
+                  tone="gap"
                   icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
                   primary={<>No {item.roleLabel} assigned</>}
                   secondary={<><span className="font-mono tabular-nums">{code}</span>{name && <span className="truncate">{name}</span>}</>}
@@ -598,6 +608,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
               return (
                 <QueueRow
                   key={item.key}
+                  tone="dup"
                   icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
                   primary={
                     <span className="flex items-center gap-1.5 min-w-0">
@@ -911,7 +922,7 @@ function VariantE({ model }: { model: PlanModel }) {
     <div className="flex flex-col gap-5 mx-auto w-full" style={{ maxWidth: 760 }}>
       {/* The lead — what pressing Continue will do, in one sentence. */}
       <div className="flex flex-col gap-1 pt-2">
-        <p className="text-xl leading-snug">
+        <p className="text-2xl leading-snug font-heading">
           You&apos;re setting up <span className="font-semibold tabular-nums">{model.counts.toCreate} evaluations</span> across{' '}
           <span className="font-semibold tabular-nums">{model.courses.length} courses</span> for Fall 2026–2027.
         </p>
@@ -1038,7 +1049,7 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
   const colGapCount = (colKey: string) =>
     model.instances.filter(i =>
       (colKey === 'course' ? i.scope === 'course' : i.scope !== 'course' && i.roleLabel === colKey) && i.status === 'gap').length
-  const gridTemplate = `240px repeat(${cols.length}, minmax(96px, 1fr)) 200px`
+  const gridTemplate = `280px repeat(${cols.length}, minmax(86px, 1fr)) 196px`
 
   const Glyph = ({ item }: { item: SurveyInstance }) =>
     item.status === 'gap'
@@ -1058,7 +1069,7 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-lg border border-border overflow-x-auto">
-        <div style={{ minWidth: 240 + cols.length * 96 + 200 }}>
+        <div style={{ minWidth: 280 + cols.length * 86 + 196 }}>
           {/* Header — role columns carry the systemic insight. */}
           <div className="grid items-end gap-2 px-3 py-2 border-b border-border bg-muted/60" style={{ gridTemplateColumns: gridTemplate }}>
             <span className="text-xs font-medium text-muted-foreground">Course</span>
@@ -1078,11 +1089,13 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
 
           {model.courses.map(o => {
             const { code, name } = splitLabel(o)
+            const mode = deliveryModeOf(o)
             return (
               <div key={o.id} className="grid items-center gap-2 px-3 border-b border-border/60 last:border-b-0" style={{ gridTemplateColumns: gridTemplate, minHeight: 44 }}>
-                <span className="text-sm font-medium flex items-baseline gap-2 min-w-0" title={courseLabelOf(o)}>
+                <span className="text-sm font-medium flex items-center gap-2 min-w-0" title={courseLabelOf(o)}>
                   <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                   {name && <span className="truncate font-normal">{name}</span>}
+                  <TypePill deliveryMode={mode} label={COURSE_TYPE_FULL_LABEL[mode]} />
                 </span>
                 {cols.map(([key, label]) => {
                   const items = cellOf(o, key)
@@ -1281,7 +1294,7 @@ function VariantH({ model }: { model: PlanModel }) {
     <div className="flex flex-col gap-6">
       {/* Narrative — what pressing Continue will do. */}
       <div className="flex flex-col gap-1 pt-2">
-        <p className="text-xl leading-snug">
+        <p className="text-2xl leading-snug font-heading">
           You&apos;re setting up <span className="font-semibold tabular-nums">{model.counts.toCreate} evaluations</span> across{' '}
           <span className="font-semibold tabular-nums">{model.courses.length} courses</span> for Fall 2026–2027.
         </p>
@@ -1298,7 +1311,7 @@ function VariantH({ model }: { model: PlanModel }) {
       {/* Audit — the whole plan, one glance; click a cell to adjust. */}
       <section aria-label="The plan">
         <div className="flex items-baseline gap-2 pb-2">
-          <h3 className="text-sm font-semibold">The plan</h3>
+          <h3 className="text-base font-semibold font-heading">The plan</h3>
           <span className="text-xs text-muted-foreground">Every course × who gets evaluated — click any cell to adjust.</span>
         </div>
         <CoverageGridSection model={model} />
@@ -1328,7 +1341,7 @@ function CompareInner() {
     <div className="flex flex-col gap-4 p-6 min-h-svh">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div>
-          <h1 className="text-lg font-semibold">Survey design — Jul 25 variants</h1>
+          <h1 className="text-xl font-semibold font-heading">Survey design — Jul 25 variants</h1>
           <p className="text-sm text-muted-foreground">
             Real pt5 plan (Fall 2026–2027). Compare, then promote one into the wizard.
           </p>
