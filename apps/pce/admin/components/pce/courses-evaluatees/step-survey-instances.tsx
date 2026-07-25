@@ -25,6 +25,7 @@ import { useMemo, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Button, Checkbox, CheckboxLabel, LocalBanner, ToggleSwitch,
+  Card, CardHeader, CardTitle, CardContent,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
@@ -290,11 +291,12 @@ export function StepSurveyInstances({
         </LocalBanner>
       )}
 
-      {/* ── Courses ───────────────────────────────────────────────────────── */}
+      {/* ── Courses — one card per course, whitespace between (figure/ground);
+             exceptions are inset callouts, not full-width washes ───────────── */}
       {courses.length === 0 ? (
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="flex flex-col gap-3">
           {courses.map(offering => {
             const courseLabel = courseLabelOf(offering)
             const [code] = courseLabel.split(' – ')
@@ -307,26 +309,24 @@ export function StepSurveyInstances({
             const gaps = all.filter(i => i.status === 'gap')
             const freshIn = fresh.filter(i => included.has(i.key)).length
             const stackOpen = openStacks[offering.id] ?? false
-            // DERIVED: the course says Yes while any duplicate is included —
-            // unchecking the last one flips it back to No, no state to desync.
+            // DERIVED: the course says Yes while any duplicate is included.
             const saidYes = dups.some(d => included.has(d.key))
-            // One shared status/date on the question line only when unanimous;
-            // otherwise the revealed rows carry their own chips.
             const dupStatuses = [...new Set(dups.map(d => d.existing?.status ?? 'scheduled'))]
             const dupOpens = [...new Set(dups.map(d => (d.existing ? openPhrase(d.existing) : null)))]
             const sharedStatus = dupStatuses.length === 1 ? dupStatuses[0] : null
             const sharedOpen = dupOpens.length === 1 ? dupOpens[0] : null
 
             return (
-              <div key={offering.id}>
-                {/* Band: course identity + the per-course setting (template). */}
-                <div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted">
-                  <span className="text-sm font-semibold">
-                    <span className="font-mono text-xs tabular-nums">{code}</span>
-                    <span className="mx-1.5" aria-hidden="true">·</span>
-                    {courseLabel.split(' – ').slice(1).join(' – ')}
-                  </span>
-                  <span className="ms-auto" onClick={e => e.stopPropagation()}>
+              <Card key={offering.id} size="sm" className="overflow-hidden py-0 gap-0">
+                {/* Header: identity carries the hierarchy — no band tint. */}
+                <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border" style={{ padding: '10px 16px' }}>
+                  <CardTitle className="text-sm font-semibold flex items-baseline gap-2 min-w-0">
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
+                    {courseLabel.includes(' – ') && (
+                      <span className="truncate">{courseLabel.split(' – ').slice(1).join(' – ')}</span>
+                    )}
+                  </CardTitle>
+                  <span onClick={e => e.stopPropagation()}>
                     {publishedTemplates.length === 0 ? (
                       <Button
                         variant="outline"
@@ -367,115 +367,105 @@ export function StepSurveyInstances({
                       </Select>
                     )}
                   </span>
-                </div>
+                </CardHeader>
 
-                {/* No effective template → the plan can't expand yet. */}
-                {!templateId && publishedTemplates.length > 0 && (
-                  <p className="px-3 py-3 text-sm text-muted-foreground border-b border-border">
-                    Assign a template to plan this course&apos;s evaluations.
-                  </p>
-                )}
+                <CardContent className="p-0">
+                  {!templateId && publishedTemplates.length > 0 && (
+                    <p className="px-4 py-3 text-sm text-muted-foreground">
+                      Assign a template to plan this course&apos;s evaluations.
+                    </p>
+                  )}
 
-                {/* New evaluations — the whole row is a disclosure trigger. */}
-                {fresh.length > 0 && (
-                  <Collapsible
-                    open={stackOpen}
-                    onOpenChange={(v) => setOpenStacks(p => ({ ...p, [offering.id]: v }))}
-                    className="border-b border-border"
-                  >
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50"
-                        aria-expanded={stackOpen}
-                      >
-                        <Line
-                          icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />}
-                          primary={`${freshIn} new evaluation${freshIn !== 1 ? 's' : ''}`}
-                          secondary={<NamesInline items={fresh} />}
-                          control={
+                  {/* New evaluations — plain paper row; whole row = disclosure. */}
+                  {fresh.length > 0 && (
+                    <Collapsible
+                      open={stackOpen}
+                      onOpenChange={(v) => setOpenStacks(p => ({ ...p, [offering.id]: v }))}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50"
+                          aria-expanded={stackOpen}
+                        >
+                          <div className="flex items-center gap-3 pe-4 ps-4 py-2.5" style={{ minHeight: 46 }}>
+                            <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chart-2)' }} />
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-sm font-medium">{freshIn} new evaluation{freshIn !== 1 ? 's' : ''}</span>
+                              <span className="text-xs text-muted-foreground truncate"><NamesInline items={fresh} /></span>
+                            </div>
                             <i
-                              className={`fa-light fa-chevron-${stackOpen ? 'up' : 'down'} text-xs text-muted-foreground`}
+                              className={`fa-light fa-chevron-${stackOpen ? 'up' : 'down'} text-xs text-muted-foreground ms-auto`}
                               aria-hidden="true"
                             />
-                          }
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      {fresh.map(item => (
-                        <div key={item.key} className="border-t border-border bg-card">
-                          <div className="grid items-center gap-3 ps-8 pe-3" style={{ gridTemplateColumns: 'minmax(0,1fr) 230px', minHeight: 42 }}>
-                            <span className="flex items-center gap-2.5 min-w-0">
-                              <Checkbox
-                                id={`inst-${item.key}`}
-                                checked={included.has(item.key)}
-                                onCheckedChange={() => flip(item.key)}
-                              />
-                              <CheckboxLabel htmlFor={`inst-${item.key}`} className="flex items-center font-normal min-w-0">
-                                <LedgerLine item={item} />
-                              </CheckboxLabel>
-                            </span>
-                            <span />
                           </div>
-                        </div>
-                      ))}
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {fresh.map(item => (
+                          <div key={item.key} className="flex items-center gap-2.5 ps-9 pe-4 border-t border-border" style={{ minHeight: 42 }}>
+                            <Checkbox
+                              id={`inst-${item.key}`}
+                              checked={included.has(item.key)}
+                              onCheckedChange={() => flip(item.key)}
+                            />
+                            <CheckboxLabel htmlFor={`inst-${item.key}`} className="flex items-center font-normal min-w-0">
+                              <LedgerLine item={item} />
+                            </CheckboxLabel>
+                          </div>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
 
-                {/* Existing evaluations — info statement left, the decision right. */}
-                {dups.length > 0 && (
-                  <Collapsible open={saidYes} className="border-b border-border">
-                    {/* Info wash (settled E1 band vocabulary): this line asks a
-                        question — the tint calls it out; new lines stay white
-                        so the calm default stays calm. */}
-                    <div style={{ background: 'var(--insight-severity-info-bg)' }}>
-                    <Line
-                      icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
-                      primary={`Evaluation already exists`}
-                      secondary={
-                        <span className="flex items-center gap-2 min-w-0">
-                          <NamesInline items={dups} />
-                          {sharedStatus && <SurveyStatusBadgeOS status={sharedStatus} />}
-                          {sharedOpen && (
-                            <span className="inline-flex items-center gap-1 tabular-nums whitespace-nowrap">
-                              <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
-                              {sharedOpen}
+                  {/* Existing evaluations — an inset info CALLOUT: a tinted
+                      object holding the question + its toggle, not a stripe. */}
+                  {dups.length > 0 && (
+                    <Collapsible open={saidYes} className={fresh.length > 0 ? 'border-t border-border' : ''}>
+                      <div className="p-2.5">
+                        <div
+                          className="rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5"
+                          style={{ background: 'var(--insight-severity-info-bg)' }}
+                        >
+                          <i className="fa-solid fa-circle-info text-xs shrink-0" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-sm font-medium">Evaluation already exists</span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-2 min-w-0">
+                              <NamesInline items={dups} />
+                              {sharedStatus && <SurveyStatusBadgeOS status={sharedStatus} />}
+                              {sharedOpen && (
+                                <span className="inline-flex items-center gap-1 tabular-nums whitespace-nowrap">
+                                  <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
+                                  {sharedOpen}
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
-                      }
-                      control={
-                        <label htmlFor={`reeval-${offering.id}`} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <span className="font-medium whitespace-nowrap">Evaluate again?</span>
-                          <span className="text-muted-foreground">{saidYes ? 'Yes' : 'No'}</span>
-                          <ToggleSwitch
-                            id={`reeval-${offering.id}`}
-                            checked={saidYes}
-                            onChange={(v) => setMany(dups.map(d => d.key), v)}
-                          />
-                          <span className="sr-only">Evaluate the already-covered evaluatees of {code} again</span>
-                        </label>
-                      }
-                    />
-                    </div>
-                    <CollapsibleContent>
-                      {dups.map(item => (
-                        <div key={item.key} className="border-t border-border bg-card">
-                          <div className="grid items-center gap-3 ps-8 pe-3" style={{ gridTemplateColumns: 'minmax(0,1fr) 230px', minHeight: 42 }}>
-                            <span className="flex items-center gap-2.5 min-w-0">
-                              <Checkbox
-                                id={`inst-${item.key}`}
-                                checked={included.has(item.key)}
-                                onCheckedChange={() => flip(item.key)}
-                              />
-                              <CheckboxLabel htmlFor={`inst-${item.key}`} className="flex items-center font-normal min-w-0">
-                                <LedgerLine item={item} />
-                              </CheckboxLabel>
-                            </span>
-                            <span className="flex items-center justify-end gap-1.5">
+                          </div>
+                          <label htmlFor={`reeval-${offering.id}`} className="ms-auto flex items-center gap-2 text-sm cursor-pointer shrink-0">
+                            <span className="font-medium whitespace-nowrap">Evaluate again?</span>
+                            <span className="text-muted-foreground">{saidYes ? 'Yes' : 'No'}</span>
+                            <ToggleSwitch
+                              id={`reeval-${offering.id}`}
+                              checked={saidYes}
+                              onChange={(v) => setMany(dups.map(d => d.key), v)}
+                            />
+                            <span className="sr-only">Evaluate the already-covered evaluatees of {code} again</span>
+                          </label>
+                        </div>
+                      </div>
+                      <CollapsibleContent>
+                        {dups.map(item => (
+                          <div key={item.key} className="flex items-center gap-2.5 ps-9 pe-4 border-t border-border" style={{ minHeight: 42 }}>
+                            <Checkbox
+                              id={`inst-${item.key}`}
+                              checked={included.has(item.key)}
+                              onCheckedChange={() => flip(item.key)}
+                            />
+                            <CheckboxLabel htmlFor={`inst-${item.key}`} className="flex items-center font-normal min-w-0">
+                              <LedgerLine item={item} />
+                            </CheckboxLabel>
+                            <span className="ms-auto flex items-center gap-1.5">
                               {item.existing && <SurveyStatusBadgeOS status={item.existing.status} />}
                               {item.existing && openPhrase(item.existing) && (
                                 <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1">
@@ -485,26 +475,34 @@ export function StepSurveyInstances({
                               )}
                             </span>
                           </div>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* Missing roles — an inset amber CALLOUT with the fix beside it. */}
+                  {gaps.length > 0 && (
+                    <div className={`p-2.5 flex flex-col gap-2 ${fresh.length > 0 || dups.length > 0 ? 'border-t border-border' : ''}`}>
+                      {gaps.map(item => (
+                        <div
+                          key={item.key}
+                          className="rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2"
+                          style={{ background: 'var(--group-band-attention-bg)' }}
+                        >
+                          <i className="fa-solid fa-triangle-exclamation text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
+                          <div className="flex flex-col gap-0 min-w-0">
+                            <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
+                            <span className="text-xs text-muted-foreground">Add one in Prism to evaluate this role.</span>
+                          </div>
+                          <span className="ms-auto shrink-0">
+                            {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
+                          </span>
                         </div>
                       ))}
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-
-                {/* Missing roles — the gap left, the remedy right. */}
-                {gaps.map(item => (
-                  <div key={item.key} className="border-b border-border" style={{ background: 'var(--group-band-attention-bg)' }}>
-                    <Line
-                      icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
-                      primary={`No ${item.roleLabel} assigned`}
-                      secondary="Add one in Prism to evaluate this role."
-                      control={item.prismHref
-                        ? <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />
-                        : null}
-                    />
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )
           })}
         </div>
