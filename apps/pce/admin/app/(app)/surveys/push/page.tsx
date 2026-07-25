@@ -621,7 +621,7 @@ function PushSurveyInner() {
                   Survey design
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Each course expands into the surveys its template creates — one for the course material, plus one per faculty role and person. Surveys that already exist for the same course, role and person are skipped automatically.
+                  Each course expands into the evaluations its template covers — the course material, plus each faculty role and person. Where an evaluation already exists, you decide whether to run it again.
                 </p>
               </div>
 
