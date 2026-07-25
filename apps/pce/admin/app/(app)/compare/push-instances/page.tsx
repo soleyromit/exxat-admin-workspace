@@ -600,20 +600,29 @@ function VariantE() {
                   onOpenChange={(v) => setAdjustOpen(p => ({ ...p, [course.code]: v }))}
                   className="border-b border-border"
                 >
-                  <Line
-                    icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />}
-                    primary={`${freshIn} new evaluation${freshIn !== 1 ? 's' : ''}`}
-                    secondary={<NamesInline items={fresh} />}
-                    control={
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" size="xs">
-                          <i className="fa-light fa-list-check text-xs" aria-hidden="true" />
-                          {open ? 'Hide list' : 'Edit list'}
-                          <i className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs`} aria-hidden="true" />
-                        </Button>
-                      </CollapsibleTrigger>
-                    }
-                  />
+                  {/* Disclosure, not an action: the whole row is the trigger,
+                      announced by a quiet trailing chevron — the lane keeps
+                      its buttons for real actions only. */}
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50"
+                      aria-expanded={open}
+                    >
+                      <Line
+                        icon={<span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: 'var(--chart-2)' }} />}
+                        primary={`${freshIn} new evaluation${freshIn !== 1 ? 's' : ''}`}
+                        secondary={<NamesInline items={fresh} />}
+                        control={
+                          <i
+                            className={`fa-light fa-chevron-${open ? 'up' : 'down'} text-xs text-muted-foreground`}
+                            aria-hidden="true"
+                          />
+                        }
+                      />
+                    </Button>
+                  </CollapsibleTrigger>
                   <CollapsibleContent>
                     {fresh.map(item => (
                       <div key={item.id} className="border-t border-border bg-card">
