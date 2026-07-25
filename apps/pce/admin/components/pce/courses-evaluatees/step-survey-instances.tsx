@@ -428,6 +428,10 @@ export function StepSurveyInstances({
                 {/* Existing evaluations — info statement left, the decision right. */}
                 {dups.length > 0 && (
                   <Collapsible open={saidYes} className="border-b border-border">
+                    {/* Info wash (settled E1 band vocabulary): this line asks a
+                        question — the tint calls it out; new lines stay white
+                        so the calm default stays calm. */}
+                    <div style={{ background: 'var(--insight-severity-info-bg)' }}>
                     <Line
                       icon={<i className="fa-solid fa-circle-info text-xs" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
                       primary={`Evaluation already exists`}
@@ -456,6 +460,7 @@ export function StepSurveyInstances({
                         </label>
                       }
                     />
+                    </div>
                     <CollapsibleContent>
                       {dups.map(item => (
                         <div key={item.key} className="border-t border-border bg-card">
@@ -488,7 +493,7 @@ export function StepSurveyInstances({
 
                 {/* Missing roles — the gap left, the remedy right. */}
                 {gaps.map(item => (
-                  <div key={item.key} className="border-b border-border">
+                  <div key={item.key} className="border-b border-border" style={{ background: 'var(--group-band-attention-bg)' }}>
                     <Line
                       icon={<i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
                       primary={`No ${item.roleLabel} assigned`}
