@@ -109,7 +109,7 @@ interface PlanModel {
   flip: (key: string) => void
   setMany: (keys: string[], on: boolean) => void
   needsSetup: (o: CourseOffering) => boolean
-  counts: { toCreate: number; reEvals: number; skipped: number; gaps: number; needsCount: number }
+  counts: { toCreate: number; reEvals: number; skipped: number; gaps: number; pendingGaps: number; needsCount: number }
 }
 
 function usePlanModel(): PlanModel {
@@ -190,12 +190,16 @@ function usePlanModel(): PlanModel {
   const reEvals = instances.filter(i => i.status === 'duplicate' && included.has(i.key)).length
   const dupTotal = instances.filter(i => i.status === 'duplicate').length
   const gaps = instances.filter(i => i.status === 'gap').length
+  // A gap can be INCLUDED (Romit Jul 25): the admin commits to the evaluation
+  // now and staffs the role later — it queues until someone is assigned.
+  // Opt-in like duplicates: default unchecked, nothing materializes silently.
+  const pendingGaps = instances.filter(i => i.status === 'gap' && included.has(i.key)).length
   const needsCount = courses.filter(needsSetup).length
 
   return {
     courses, byOffering, instances, publishedTemplates, templateIdFor, setTemplate,
     included, flip, setMany, needsSetup,
-    counts: { toCreate, reEvals, skipped: dupTotal - reEvals, gaps, needsCount },
+    counts: { toCreate, reEvals, skipped: dupTotal - reEvals, gaps, pendingGaps, needsCount },
   }
 }
 
@@ -313,7 +317,12 @@ function SummaryLine({ counts }: { counts: PlanModel['counts'] }) {
       <span className="font-semibold">{counts.toCreate} evaluation{counts.toCreate !== 1 ? 's' : ''}</span> will be set up
       {counts.reEvals > 0 && <span style={{ color: 'var(--insight-severity-info-fg)' }}> · {counts.reEvals} evaluated again</span>}
       {counts.skipped > 0 && <span className="text-muted-foreground"> · {counts.skipped} already covered</span>}
-      {counts.gaps > 0 && <span style={{ color: 'var(--chip-4)' }}> · {counts.gaps} role{counts.gaps !== 1 ? 's' : ''} unassigned</span>}
+      {counts.gaps - counts.pendingGaps > 0 && (
+        <span style={{ color: 'var(--chip-4)' }}> · {counts.gaps - counts.pendingGaps} role{counts.gaps - counts.pendingGaps !== 1 ? 's' : ''} unassigned</span>
+      )}
+      {counts.pendingGaps > 0 && (
+        <span style={{ color: 'var(--chip-4)' }}> · {counts.pendingGaps} queued until faculty is added</span>
+      )}
     </p>
   )
 }
@@ -326,6 +335,7 @@ function StepFooter({ model }: { model: PlanModel }) {
         {counts.toCreate} evaluation{counts.toCreate !== 1 ? 's' : ''} across {courses.length} course{courses.length !== 1 ? 's' : ''}
         {counts.reEvals > 0 && <> · {counts.reEvals} evaluated again</>}
         {counts.skipped > 0 && <> · {counts.skipped} already covered</>}
+        {counts.pendingGaps > 0 && <> · {counts.pendingGaps} queued until faculty is added</>}
       </span>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" disabled>
@@ -378,7 +388,7 @@ function CourseCard({
           checked={courseKeys.length === 0 ? false : courseIncluded === courseKeys.length ? true : courseIncluded > 0 ? 'indeterminate' : false}
           onCheckedChange={v => {
             if (v) model.setMany(courseKeys, true)
-            else model.setMany(all.filter(i => i.status !== 'gap').map(i => i.key), false)
+            else model.setMany(all.map(i => i.key), false)
           }}
           aria-label={`Include ${code} in this push`}
         />
@@ -480,10 +490,20 @@ function CourseCard({
           <div className={`p-2.5 flex flex-col gap-2 ${fresh.length > 0 || dups.length > 0 ? 'border-t border-border' : ''}`}>
             {gaps.map(item => (
               <div key={item.key} className="rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2" style={{ background: 'var(--group-band-attention-bg)' }}>
+                <Checkbox
+                  id={`gap-${item.key}`}
+                  checked={model.included.has(item.key)}
+                  onCheckedChange={() => model.flip(item.key)}
+                  aria-label={`Create the ${item.roleLabel} evaluation of ${code} once someone is assigned`}
+                />
                 <i className="fa-solid fa-user-slash text-xs shrink-0" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                 <div className="flex flex-col gap-0 min-w-0">
                   <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
-                  <span className="text-xs text-muted-foreground">Add one in Prism to evaluate this role.</span>
+                  <span className="text-xs text-muted-foreground">
+                    {model.included.has(item.key)
+                      ? 'Queued — it runs once someone is assigned.'
+                      : 'Add one in Prism, or include it now and it queues until someone is assigned.'}
+                  </span>
                 </div>
                 <span className="ms-auto shrink-0">
                   {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
@@ -557,10 +577,11 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
   const openDecisions = gapItems.length + dupItems.filter(d => !model.included.has(d.key)).length
   const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
 
-  const QueueRow = ({ tone, icon, primary, secondary, control }: {
-    tone: 'gap' | 'dup'; icon: ReactNode; primary: ReactNode; secondary: ReactNode; control: ReactNode
+  const QueueRow = ({ tone, lead, icon, primary, secondary, control }: {
+    tone: 'gap' | 'dup'; lead?: ReactNode; icon: ReactNode; primary: ReactNode; secondary: ReactNode; control: ReactNode
   }) => (
     <div className="flex items-center gap-3 ps-3 pe-3 py-2 border-b border-border last:border-b-0" style={{ minHeight: 56 }}>
+      {lead}
       {/* Color is an object you look at — the disc, not a wash behind the row. */}
       <span
         className="size-8 rounded-full flex items-center justify-center shrink-0"
@@ -596,9 +617,24 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
                 <QueueRow
                   key={item.key}
                   tone="gap"
+                  lead={
+                    <Checkbox
+                      checked={model.included.has(item.key)}
+                      onCheckedChange={() => model.flip(item.key)}
+                      aria-label={`Create the ${item.roleLabel} evaluation of ${code} once someone is assigned`}
+                    />
+                  }
                   icon={<i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />}
                   primary={<>No {item.roleLabel} assigned</>}
-                  secondary={<><span className="font-mono tabular-nums">{code}</span>{name && <span className="truncate">{name}</span>}</>}
+                  secondary={
+                    <>
+                      <span className="font-mono tabular-nums">{code}</span>
+                      {name && <span className="truncate">{name}</span>}
+                      {model.included.has(item.key) && (
+                        <span className="whitespace-nowrap" style={{ color: 'var(--chip-4)' }}>Queued until faculty is added</span>
+                      )}
+                    </>
+                  }
                   control={item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
                 />
               )
@@ -727,13 +763,12 @@ function VariantC({ model }: { model: PlanModel }) {
                   style={{ gridTemplateColumns: '16px minmax(0,1fr) 300px', minHeight: 40 }}
                 >
                   <span className="flex items-center">
-                    {item.status !== 'gap' && (
-                      <Checkbox
-                        id={`vc-${item.key}`}
-                        checked={model.included.has(item.key)}
-                        onCheckedChange={() => model.flip(item.key)}
-                      />
-                    )}
+                    <Checkbox
+                      id={`vc-${item.key}`}
+                      checked={model.included.has(item.key)}
+                      onCheckedChange={() => model.flip(item.key)}
+                      aria-label={item.status === 'gap' ? `Create the ${item.roleLabel} evaluation once someone is assigned` : undefined}
+                    />
                   </span>
                   {item.status === 'gap' ? (
                     <>
@@ -743,7 +778,10 @@ function VariantC({ model }: { model: PlanModel }) {
                         </span>
                         <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
                       </span>
-                      <span className="flex items-center justify-end">
+                      <span className="flex items-center justify-end gap-2">
+                        {model.included.has(item.key) && (
+                          <span className="text-xs whitespace-nowrap" style={{ color: 'var(--chip-4)' }}>Queued until added</span>
+                        )}
                         {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
                       </span>
                     </>
@@ -948,9 +986,20 @@ function VariantE({ model }: { model: PlanModel }) {
             const { code, name } = splitLabel(courseOf(item))
             return (
               <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
+                <Checkbox
+                  id={`ve-gap-${item.key}`}
+                  checked={model.included.has(item.key)}
+                  onCheckedChange={() => model.flip(item.key)}
+                  aria-label={`Create the ${item.roleLabel} evaluation of ${code} once someone is assigned`}
+                />
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
-                  <span className="text-xs text-muted-foreground"><span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}</span>
+                  <span className="text-xs text-muted-foreground">
+                    <span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}
+                    {model.included.has(item.key) && (
+                      <span style={{ color: 'var(--chip-4)' }}> · queued until faculty is added</span>
+                    )}
+                  </span>
                 </div>
                 <span className="ms-auto shrink-0">
                   {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
@@ -1128,10 +1177,21 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
                             <div key={item.key} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md" style={{ minHeight: 40 }}>
                               {item.status === 'gap' ? (
                                 <>
+                                  <Checkbox
+                                    id={`vf-gap-${item.key}`}
+                                    checked={model.included.has(item.key)}
+                                    onCheckedChange={() => model.flip(item.key)}
+                                    aria-label={`Create the ${item.roleLabel} evaluation once someone is assigned`}
+                                  />
                                   <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--icon-disc-chart-4-bg)' }}>
                                     <i className="fa-light fa-user-slash text-[9px]" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                                   </span>
-                                  <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
+                                  <span className="flex flex-col gap-0.5 min-w-0">
+                                    <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
+                                    {model.included.has(item.key) && (
+                                      <span className="text-xs" style={{ color: 'var(--chip-4)' }}>Queued until added</span>
+                                    )}
+                                  </span>
                                   <span className="ms-auto shrink-0">
                                     {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
                                   </span>
@@ -1250,7 +1310,7 @@ function VariantG({ model }: { model: PlanModel }) {
               </p>
               <p className="text-xs text-muted-foreground">
                 {current.status === 'gap'
-                  ? 'This evaluation can’t be created until someone holds the role. Add them in Prism and this plan updates live — or skip and push without it.'
+                  ? 'Add them in Prism and this plan updates live. You can also include the evaluation now — it queues until someone is assigned — or skip it.'
                   : 'Skipping keeps the existing evaluation untouched. Evaluating again creates a second, separate evaluation.'}
               </p>
             </div>
@@ -1259,7 +1319,13 @@ function VariantG({ model }: { model: PlanModel }) {
             {current.status === 'gap' ? (
               <>
                 {current.prismHref && <AddInPrismButton href={current.prismHref} label="Add faculty" roles={[current.roleLabel]} />}
-                <Button variant="outline" size="xs" onClick={() => setCursor(c => c + 1)}>
+                <Button
+                  variant="outline" size="xs"
+                  onClick={() => { model.setMany([current.key], true); setCursor(c => c + 1) }}
+                >
+                  Include — queue until added
+                </Button>
+                <Button variant="outline" size="xs" onClick={() => { model.setMany([current.key], false); setCursor(c => c + 1) }}>
                   Skip for now
                   <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
                 </Button>
