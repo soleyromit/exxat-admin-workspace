@@ -57,6 +57,7 @@ import {
   Collapsible, CollapsibleTrigger, CollapsibleContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Popover, PopoverTrigger, PopoverContent,
+  Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
@@ -642,36 +643,35 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
 }
 
 function VariantB({ model }: { model: PlanModel }) {
-  const [planOpen, setPlanOpen] = useState(false)
   return (
     <div className="flex flex-col gap-4">
       <DecisionQueueSection model={model} />
 
-      {/* The plan — collapsed by default; open it to audit or exclude. */}
+      {/* The plan — collapsed by default; DS Accordion carries the trigger
+          color, focus ring, and chevron. */}
       <section aria-label="The plan">
-        <Collapsible open={planOpen} onOpenChange={setPlanOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full h-auto p-0 block text-start font-normal rounded-lg border border-border hover:bg-muted/50" aria-expanded={planOpen}>
-              <div className="flex items-center gap-3 px-3 py-3">
+        <Accordion type="multiple">
+          <AccordionItem value="plan" className="border-b-0">
+            <AccordionTrigger className="rounded-lg border border-border px-3 py-3 items-center hover:no-underline">
+              <span className="flex items-center gap-3 flex-1 min-w-0 text-start">
                 <span aria-hidden="true" className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--chip-2)' }} />
-                <div className="flex flex-col gap-0.5">
+                <span className="flex flex-col gap-0.5">
                   <span className="text-sm font-medium">
                     {model.counts.toCreate} evaluation{model.counts.toCreate !== 1 ? 's' : ''} ready across {model.courses.length} courses
                   </span>
-                  <span className="text-xs text-muted-foreground">Open to audit the full plan or exclude someone.</span>
-                </div>
-                <i className={`fa-light fa-chevron-${planOpen ? 'up' : 'down'} text-xs text-muted-foreground ms-auto`} aria-hidden="true" />
+                  <span className="text-xs text-muted-foreground font-normal">Open to audit the full plan or exclude someone.</span>
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="p-0 text-foreground">
+              <div className="flex flex-col gap-3 pt-3">
+                {model.courses.map(o => (
+                  <CourseCard key={o.id} model={model} offering={o} />
+                ))}
               </div>
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="flex flex-col gap-3 pt-3">
-              {model.courses.map(o => (
-                <CourseCard key={o.id} model={model} offering={o} />
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </section>
     </div>
   )
@@ -886,7 +886,6 @@ function VariantD({ model }: { model: PlanModel }) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function VariantE({ model }: { model: PlanModel }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({})
   const gapItems = model.instances.filter(i => i.status === 'gap')
   const dupItems = model.instances.filter(i => i.status === 'duplicate')
   const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
@@ -894,28 +893,28 @@ function VariantE({ model }: { model: PlanModel }) {
   const freshOf = (o: CourseOffering) => (model.byOffering.get(o.id) ?? []).filter(i => i.status === 'new')
   const readyCourses = model.courses.filter(o => freshOf(o).length > 0)
 
+  /** DS Accordion carries the trigger color, hover, focus ring, and rotating
+   *  chevron — same composition as evaluation-card-sheet (rich trigger →
+   *  hover:no-underline). Cards keep the briefing's one-panel-per-topic look. */
   const Section = ({ k, icon, title, sub, children }: {
     k: string; icon: ReactNode; title: string; sub: string; children: ReactNode
   }) => (
-    <Card size="sm" className="py-0 gap-0 overflow-hidden">
-      <Collapsible open={!!open[k]} onOpenChange={v => setOpen(p => ({ ...p, [k]: v }))}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="w-full h-auto p-0 block text-start font-normal rounded-none hover:bg-muted/50" aria-expanded={!!open[k]}>
-            <div className="flex items-center gap-3 px-4 py-3.5">
-              <span className="shrink-0 flex items-center justify-center">{icon}</span>
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-sm font-medium">{title}</span>
-                <span className="text-xs text-muted-foreground truncate">{sub}</span>
-              </div>
-              <i className={`fa-light fa-chevron-${open[k] ? 'up' : 'down'} text-xs text-muted-foreground ms-auto`} aria-hidden="true" />
-            </div>
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
+    <AccordionItem value={k} className="border-b-0">
+      <Card size="sm" className="py-0 gap-0 overflow-hidden">
+        <AccordionTrigger className="px-4 py-3.5 items-center hover:no-underline">
+          <span className="flex items-center gap-3 flex-1 min-w-0 text-start">
+            <span className="shrink-0 flex items-center justify-center">{icon}</span>
+            <span className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-sm font-medium">{title}</span>
+              <span className="text-xs text-muted-foreground truncate font-normal">{sub}</span>
+            </span>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="p-0 text-foreground">
           <div className="border-t border-border">{children}</div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+        </AccordionContent>
+      </Card>
+    </AccordionItem>
   )
 
   return (
@@ -933,6 +932,7 @@ function VariantE({ model }: { model: PlanModel }) {
         </p>
       </div>
 
+      <Accordion type="multiple" className="flex flex-col gap-5">
       {gapItems.length > 0 && (
         <Section
           k="gaps"
@@ -1034,6 +1034,7 @@ function VariantE({ model }: { model: PlanModel }) {
           )
         })}
       </Section>
+      </Accordion>
     </div>
   )
 }
