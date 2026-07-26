@@ -563,7 +563,7 @@ function DecisionQueueSection({ model }: { model: PlanModel }) {
       {/* Color is an object you look at — the disc, not a wash behind the row. */}
       <span
         className="size-8 rounded-full flex items-center justify-center shrink-0"
-        style={{ background: tone === 'gap' ? 'var(--group-band-attention-bg)' : 'var(--insight-severity-info-bg)' }}
+        style={{ background: tone === 'gap' ? 'var(--icon-disc-chart-4-bg)' : 'var(--insight-severity-info-bg)' }}
       >
         {icon}
       </span>
@@ -738,7 +738,7 @@ function VariantC({ model }: { model: PlanModel }) {
                   {item.status === 'gap' ? (
                     <>
                       <span className="flex items-center gap-1.5 min-w-0">
-                        <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--group-band-attention-bg)' }}>
+                        <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--icon-disc-chart-4-bg)' }}>
                           <i className="fa-light fa-user-slash text-[9px]" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                         </span>
                         <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
@@ -937,7 +937,7 @@ function VariantE({ model }: { model: PlanModel }) {
         <Section
           k="gaps"
           icon={
-            <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-attention-bg)' }}>
+            <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--icon-disc-chart-4-bg)' }}>
               <i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
             </span>
           }
@@ -1003,7 +1003,7 @@ function VariantE({ model }: { model: PlanModel }) {
       <Section
         k="ready"
         icon={
-          <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-done-bg)' }}>
+          <span className="size-8 rounded-full flex items-center justify-center" style={{ background: 'var(--icon-disc-chart-2-bg)' }}>
             <i className="fa-solid fa-paper-plane text-xs" style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
           </span>
         }
@@ -1127,7 +1127,7 @@ function CoverageGridSection({ model }: { model: PlanModel }) {
                             <div key={item.key} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md" style={{ minHeight: 40 }}>
                               {item.status === 'gap' ? (
                                 <>
-                                  <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--group-band-attention-bg)' }}>
+                                  <span className="size-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--icon-disc-chart-4-bg)' }}>
                                     <i className="fa-light fa-user-slash text-[9px]" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                                   </span>
                                   <span className="text-sm font-medium" style={{ color: 'var(--chip-4)' }}>No {item.roleLabel} assigned</span>
@@ -1204,7 +1204,7 @@ function VariantG({ model }: { model: PlanModel }) {
   if (decisions.length === 0 || done) {
     return (
       <div className="mx-auto w-full flex flex-col items-center gap-3 py-10 text-center" style={{ maxWidth: 560 }}>
-        <span className="size-10 rounded-full flex items-center justify-center" style={{ background: 'var(--group-band-done-bg)' }}>
+        <span className="size-10 rounded-full flex items-center justify-center" style={{ background: 'var(--icon-disc-chart-2-bg)' }}>
           <i className="fa-solid fa-check text-sm" style={{ color: 'var(--chip-2)' }} aria-hidden="true" />
         </span>
         <p className="text-base font-semibold">
@@ -1231,7 +1231,7 @@ function VariantG({ model }: { model: PlanModel }) {
       <Card size="sm" className="py-0 gap-0">
         <CardContent className="flex flex-col gap-4 px-5 py-5">
           <div className="flex items-start gap-3">
-            <span className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ background: current.status === 'gap' ? 'var(--group-band-attention-bg)' : 'var(--insight-severity-info-bg)' }}>
+            <span className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ background: current.status === 'gap' ? 'var(--icon-disc-chart-4-bg)' : 'var(--insight-severity-info-bg)' }}>
               {current.status === 'gap'
                 ? <i className="fa-solid fa-user-slash text-sm" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                 : <i className="fa-solid fa-clock-rotate-left text-sm" style={{ color: 'var(--insight-severity-info-fg)' }} aria-hidden="true" />}
