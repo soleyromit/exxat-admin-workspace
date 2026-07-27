@@ -450,9 +450,8 @@ export function StepSurveyInstances({
                           )}
                         </span>
                       </div>
-                      {/* Decision lane — hairline sets the action apart from the facts;
-                          constant label width keeps the toggles in a column. */}
-                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 self-stretch border-s border-border/60 ps-3 ms-1">
+                      {/* Decision lane — constant label width keeps the toggles in a column. */}
+                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Evaluate again</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
                         <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
