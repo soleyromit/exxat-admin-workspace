@@ -109,7 +109,11 @@ interface PlanModel {
   flip: (key: string) => void
   setMany: (keys: string[], on: boolean) => void
   needsSetup: (o: CourseOffering) => boolean
-  counts: { toCreate: number; reEvals: number; skipped: number; gaps: number; pendingGaps: number; needsCount: number }
+  resetDefaults: () => void
+  counts: {
+    toCreate: number; reEvals: number; skipped: number; gaps: number
+    pendingGaps: number; needsCount: number; missingTemplate: number
+  }
 }
 
 function usePlanModel(): PlanModel {
@@ -195,11 +199,15 @@ function usePlanModel(): PlanModel {
   // Opt-in like duplicates: default unchecked, nothing materializes silently.
   const pendingGaps = instances.filter(i => i.status === 'gap' && included.has(i.key)).length
   const needsCount = courses.filter(needsSetup).length
+  // Same gate as the live step: a course with no effective template expands to
+  // nothing — the plan silently under-counts, so it blocks Continue.
+  const missingTemplate = courses.filter(o => !templateIdFor(o)).length
 
   return {
     courses, byOffering, instances, publishedTemplates, templateIdFor, setTemplate,
     included, flip, setMany, needsSetup,
-    counts: { toCreate, reEvals, skipped: dupTotal - reEvals, gaps, pendingGaps, needsCount },
+    resetDefaults: () => setAssignments({}),
+    counts: { toCreate, reEvals, skipped: dupTotal - reEvals, gaps, pendingGaps, needsCount, missingTemplate },
   }
 }
 
@@ -336,13 +344,21 @@ function StepFooter({ model }: { model: PlanModel }) {
         {counts.reEvals > 0 && <> · {counts.reEvals} evaluated again</>}
         {counts.skipped > 0 && <> · {counts.skipped} already covered</>}
         {counts.pendingGaps > 0 && <> · {counts.pendingGaps} queued until faculty is added</>}
+        {counts.missingTemplate > 0 && (
+          <>
+            {' · '}
+            <span className="font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+              {counts.missingTemplate} course{counts.missingTemplate !== 1 ? 's' : ''} without a template
+            </span>
+          </>
+        )}
       </span>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" disabled>
           <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
           Back
         </Button>
-        <Button variant="default" size="sm" disabled={counts.toCreate === 0}>
+        <Button variant="default" size="sm" disabled={counts.toCreate === 0 || counts.missingTemplate > 0}>
           Continue
           <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
         </Button>
@@ -929,13 +945,12 @@ function VariantE({ model }: { model: PlanModel }) {
   const courseOf = (i: SurveyInstance) => model.courses.find(o => o.id === i.offeringId)!
   const templatesInUse = new Set(model.courses.map(o => model.templateIdFor(o)).filter(Boolean))
   const freshOf = (o: CourseOffering) => (model.byOffering.get(o.id) ?? []).filter(i => i.status === 'new')
-  const readyCourses = model.courses.filter(o => freshOf(o).length > 0)
 
   /** DS Accordion carries the trigger color, hover, focus ring, and rotating
    *  chevron — same composition as evaluation-card-sheet (rich trigger →
    *  hover:no-underline). Cards keep the briefing's one-panel-per-topic look. */
-  const Section = ({ k, icon, title, sub, children }: {
-    k: string; icon: ReactNode; title: string; sub: string; children: ReactNode
+  const Section = ({ k, icon, title, sub, chip, children }: {
+    k: string; icon: ReactNode; title: string; sub: string; chip?: ReactNode; children: ReactNode
   }) => (
     <AccordionItem value={k} className="border-b-0">
       <Card size="sm" className="py-0 gap-0 overflow-hidden">
@@ -946,6 +961,8 @@ function VariantE({ model }: { model: PlanModel }) {
               <span className="text-sm font-medium">{title}</span>
               <span className="text-xs text-muted-foreground truncate font-normal">{sub}</span>
             </span>
+            {/* Resolution state stays readable while collapsed (Zillow review). */}
+            {chip && <span className="ms-auto shrink-0">{chip}</span>}
           </span>
         </AccordionTrigger>
         <AccordionContent className="p-0 text-foreground">
@@ -970,7 +987,20 @@ function VariantE({ model }: { model: PlanModel }) {
         </p>
       </div>
 
-      <Accordion type="multiple" className="flex flex-col gap-5">
+      <div className="flex items-center justify-end">
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={model.resetDefaults}>
+          <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
+          Reset to defaults
+        </Button>
+      </div>
+
+      {/* Sections with open decisions start OPEN (Zillow: incomplete sections
+          expand by default) — the work is visible without a click. */}
+      <Accordion
+        type="multiple"
+        className="flex flex-col gap-5"
+        defaultValue={[...(gapItems.length > 0 ? ['gaps'] : []), ...(dupItems.length > 0 ? ['dups'] : [])]}
+      >
       {gapItems.length > 0 && (
         <Section
           k="gaps"
@@ -980,7 +1010,12 @@ function VariantE({ model }: { model: PlanModel }) {
             </span>
           }
           title={`${gapItems.length} role${gapItems.length !== 1 ? 's have' : ' has'} no one assigned`}
-          sub="These evaluations can't be created until someone is added in Prism."
+          sub="Add faculty in Prism, or include an evaluation now — it queues until someone is assigned."
+          chip={model.counts.pendingGaps > 0 && (
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' }}>
+              {model.counts.pendingGaps} queued
+            </span>
+          )}
         >
           {gapItems.map(item => {
             const { code, name } = splitLabel(courseOf(item))
@@ -1020,6 +1055,11 @@ function VariantE({ model }: { model: PlanModel }) {
           }
           title={`${dupItems.length} evaluation${dupItems.length !== 1 ? 's' : ''} already exist${dupItems.length === 1 ? 's' : ''}`}
           sub="Skipped by default — flip any you want to run again."
+          chip={model.counts.reEvals > 0 && (
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--insight-severity-info-bg)', color: 'var(--insight-severity-info-fg)' }}>
+              {model.counts.reEvals} run again
+            </span>
+          )}
         >
           {dupItems.map(item => {
             const { code, name } = splitLabel(courseOf(item))
@@ -1057,26 +1097,44 @@ function VariantE({ model }: { model: PlanModel }) {
           </span>
         }
         title={`${model.instances.filter(i => i.status === 'new' && model.included.has(i.key)).length} new evaluations are ready`}
-        sub="Open to check who's evaluated in each course, or change a template."
+        sub="Every course, who's evaluated, and its template."
+        chip={model.counts.missingTemplate > 0 && (
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' }}>
+            {model.counts.missingTemplate} without a template
+          </span>
+        )}
       >
-        {readyCourses.map(o => {
+        {/* ALL courses — dup-only and template-less courses must keep their
+            template select reachable (audit fix: they vanished before). */}
+        {model.courses.map(o => {
           const { code, name } = splitLabel(o)
           const fresh = freshOf(o)
           const keys = fresh.map(i => i.key)
           const inCount = keys.filter(k => model.included.has(k)).length
+          const templateId = model.templateIdFor(o)
           return (
             <div key={o.id} className="flex items-center gap-2.5 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 52 }}>
-              <Checkbox
-                checked={inCount === keys.length ? true : inCount > 0 ? 'indeterminate' : false}
-                onCheckedChange={v => model.setMany(keys, !!v)}
-                aria-label={`Include ${code} in this push`}
-              />
+              {fresh.length > 0 ? (
+                <Checkbox
+                  checked={inCount === keys.length ? true : inCount > 0 ? 'indeterminate' : false}
+                  onCheckedChange={v => model.setMany(keys, !!v)}
+                  aria-label={`Include ${code} in this push`}
+                />
+              ) : (
+                <span aria-hidden="true" style={{ width: 16 }} />
+              )}
               <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                 <span className="text-sm font-medium flex items-baseline gap-2 min-w-0">
                   <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                   {name && <span className="truncate">{name}</span>}
                 </span>
-                <span className="text-xs text-muted-foreground"><NamesInline items={fresh} /></span>
+                <span className="text-xs text-muted-foreground">
+                  {!templateId
+                    ? 'Assign a template to plan this course’s evaluations.'
+                    : fresh.length > 0
+                      ? <NamesInline items={fresh} />
+                      : 'All covered — nothing new to create.'}
+                </span>
               </div>
               <TemplateSelect model={model} offering={o} />
             </div>
