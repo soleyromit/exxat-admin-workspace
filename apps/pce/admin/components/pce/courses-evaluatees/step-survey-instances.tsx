@@ -275,6 +275,13 @@ export function StepSurveyInstances({
   )
   const gapItems = useMemo(() => instances.filter(i => i.status === 'gap'), [instances])
   const dupItems = useMemo(() => instances.filter(i => i.status === 'duplicate'), [instances])
+  // One row per COURSE in the gaps section — a course missing two roles is one
+  // problem with two parts, not two problems (Romit Jul 27, DPT-611).
+  const gapsByCourse = useMemo(() => {
+    const m = new Map<string, SurveyInstance[]>()
+    for (const i of instances) if (i.status === 'gap') m.set(i.offeringId, [...(m.get(i.offeringId) ?? []), i])
+    return [...m.entries()]
+  }, [instances])
   const freshByOffering = useMemo(() => {
     const m = new Map<string, SurveyInstance[]>()
     for (const i of instances) if (i.status === 'new') m.set(i.offeringId, [...(m.get(i.offeringId) ?? []), i])
@@ -388,28 +395,39 @@ export function StepSurveyInstances({
                   </span>
                 )}
               >
-                {gapItems.map(item => {
-                  const offering = courseOf(item)
-                  const { code, name } = offering ? splitLabel(offering) : { code: item.offeringId, name: '' }
+                {gapsByCourse.map(([offeringId, items]) => {
+                  const offering = courses.find(o => o.id === offeringId)
+                  const { code, name } = offering ? splitLabel(offering) : { code: offeringId, name: '' }
+                  const roles = items.map(i => i.roleLabel)
+                  const keys = items.map(i => i.key)
+                  const inCount = keys.filter(k => included.has(k)).length
+                  const rolePhrase = roles.length === 1
+                    ? roles[0]
+                    : roles.length === 2
+                      ? `${roles[0]} or ${roles[1]}`
+                      : `${roles.slice(0, -1).join(', ')}, or ${roles[roles.length - 1]}`
+                  const prismHref = items.find(i => i.prismHref)?.prismHref
                   return (
-                    <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
+                    <div key={offeringId} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
                       <Checkbox
-                        id={`gap-${item.key}`}
-                        checked={included.has(item.key)}
-                        onCheckedChange={() => flip(item.key)}
-                        aria-label={`Create the ${item.roleLabel} evaluation of ${code} once someone is assigned`}
+                        id={`gap-${offeringId}`}
+                        checked={inCount === keys.length ? true : inCount > 0 ? 'indeterminate' : false}
+                        onCheckedChange={v => setMany(keys, !!v)}
+                        aria-label={`Create the ${roles.join(' and ')} evaluation${roles.length !== 1 ? 's' : ''} of ${code} once someone is assigned`}
                       />
+                      {/* Course leads — the admin scans by course; the gap explains it. */}
                       <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-sm font-medium">No {item.roleLabel} assigned</span>
+                        <span className="text-sm font-medium flex items-baseline gap-2 min-w-0">
+                          <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
+                          {name && <span className="truncate">{name}</span>}
+                        </span>
                         <span className="text-xs text-muted-foreground">
-                          <span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}
-                          {included.has(item.key) && (
-                            <span style={{ color: 'var(--chip-4)' }}> · Queued until faculty is added</span>
-                          )}
+                          No {rolePhrase} assigned
+                          {inCount > 0 && <span style={{ color: 'var(--chip-4)' }}> · Queued until faculty is added</span>}
                         </span>
                       </div>
                       <span className="ms-auto shrink-0">
-                        {item.prismHref && <AddInPrismButton href={item.prismHref} label="Add faculty" roles={[item.roleLabel]} />}
+                        {prismHref && <AddInPrismButton href={prismHref} label="Add faculty" roles={roles} />}
                       </span>
                     </div>
                   )
@@ -448,14 +466,17 @@ export function StepSurveyInstances({
                         <span className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
                           <span className="font-mono tabular-nums">{code}</span>
                           {name && <span className="truncate">{name}</span>}
-                          <ExistingFacts item={item} />
                         </span>
                       </div>
-                      <label htmlFor={`reeval-${item.key}`} className="ms-auto flex items-center gap-2 text-sm cursor-pointer shrink-0">
+                      {/* Facts anchor in the control lane, not mid-sentence. */}
+                      <span className="ms-auto flex items-center gap-3 shrink-0">
+                        <ExistingFacts item={item} />
+                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 text-sm cursor-pointer shrink-0">
                         <span className="text-muted-foreground">{on ? 'Yes' : 'No'}</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
                         <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
                       </label>
+                      </span>
                     </div>
                   )
                 })}
