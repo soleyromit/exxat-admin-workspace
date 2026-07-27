@@ -146,7 +146,9 @@ function Section({ k, icon, title, sub, chip, children }: {
           </span>
         </AccordionTrigger>
         <AccordionContent className="p-0 text-foreground">
-          <div className="border-t border-border">{children}</div>
+          {/* Real terms run 50–100 offerings — a section scrolls in place past
+              ~9 rows instead of stretching the page (Romit Jul 27). */}
+          <div className="border-t border-border overflow-y-auto" style={{ maxHeight: 480 }}>{children}</div>
         </AccordionContent>
       </Card>
     </AccordionItem>
@@ -336,14 +338,13 @@ export function StepSurveyInstances({
       {courses.length === 0 ? (
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
-        /* Left-aligned with the page — the wizard is a left-aligned document;
-           the 760px measure keeps the prose readable. */
-        <div className="flex flex-col gap-5 w-full" style={{ maxWidth: 760 }}>
-          {/* The lead IS the step heading — one headline, not two. */}
+        <div className="flex flex-col gap-5 w-full">
+          {/* The lead IS the step heading — one headline, not two; scale and
+              weight match the other steps' h2 ("Courses & students"). */}
           <div className="flex flex-col gap-1">
-            <h2 className="text-2xl leading-snug font-heading font-normal">
-              You&apos;re setting up <span className="font-semibold tabular-nums">{toCreate} evaluation{toCreate !== 1 ? 's' : ''}</span> across{' '}
-              <span className="font-semibold tabular-nums">{courses.length} course{courses.length !== 1 ? 's' : ''}</span>.
+            <h2 className="text-xl font-semibold font-heading">
+              You&apos;re setting up <span className="tabular-nums">{toCreate} evaluation{toCreate !== 1 ? 's' : ''}</span> across{' '}
+              <span className="tabular-nums">{courses.length} course{courses.length !== 1 ? 's' : ''}</span>.
             </h2>
             <p className="text-sm text-muted-foreground tabular-nums">
               {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
