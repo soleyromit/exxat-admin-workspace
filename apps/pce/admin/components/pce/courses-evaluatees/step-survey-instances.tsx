@@ -123,7 +123,7 @@ function ExistingFacts({ item }: { item: SurveyInstance }) {
   return (
     <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap text-end shrink-0">
       {status}
-      {phrase && <> · {phrase.replace(/^Opens/, 'opens')}</>}
+      {phrase && <> · {phrase}</>}
     </span>
   )
 }
@@ -339,8 +339,8 @@ export function StepSurveyInstances({
           onDismiss={() => setNotice(null)}
         >
           {notice.kind === 'published'
-            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the course list below.</>
-            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+            ? <>&ldquo;{notice.name}&rdquo; is published. Assign it in the course list below.</>
+            : <>&ldquo;{notice.name}&rdquo; is saved as a draft. Publish it from Settings &rsaquo; Templates to make it assignable.</>}
         </LocalBanner>
       )}
 
@@ -356,10 +356,10 @@ export function StepSurveyInstances({
               <span className="tabular-nums">{courses.length} course{courses.length !== 1 ? 's' : ''}</span>.
             </h2>
             <p className="text-sm text-muted-foreground tabular-nums">
-              {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
-              {reEvals > 0 && <> · {reEvals} evaluated again</>}
-              {skipped > 0 && <> · {skipped} existing evaluations stay untouched</>}
-              {pendingGaps > 0 && <> · {pendingGaps} queued until faculty is added</>}
+              {templatesInUse.size === 1 ? 'Every course uses the same template.' : `${templatesInUse.size} templates are in use.`}
+              {reEvals > 0 && <> {reEvals} existing evaluation{reEvals !== 1 ? 's' : ''} will be evaluated again.</>}
+              {skipped > 0 && <> {skipped} existing evaluation{skipped !== 1 ? 's' : ''} will be skipped.</>}
+              {pendingGaps > 0 && <> {pendingGaps} will be created once faculty is assigned.</>}
             </p>
           </div>
 
@@ -389,11 +389,11 @@ export function StepSurveyInstances({
                     <i className="fa-solid fa-user-slash text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
                   </span>
                 }
-                title={`${gapItems.length} role${gapItems.length !== 1 ? 's have' : ' has'} no one assigned`}
-                sub="Add faculty in Prism, or include an evaluation now — it queues until someone is assigned."
+                title={`${gapItems.length} role${gapItems.length !== 1 ? 's have' : ' has'} no faculty assigned`}
+                sub="Add faculty in Prism, or select an evaluation to create it once faculty is assigned."
                 chip={pendingGaps > 0 && (
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' }}>
-                    {pendingGaps} queued
+                    {pendingGaps} selected
                   </span>
                 )}
               >
@@ -425,7 +425,7 @@ export function StepSurveyInstances({
                         </span>
                         <span className="text-xs text-muted-foreground">
                           No {rolePhrase} assigned
-                          {inCount > 0 && <span style={{ color: 'var(--chip-4)' }}> · Queued until faculty is added</span>}
+                          {inCount > 0 && <span style={{ color: 'var(--chip-4)' }}> · Will be created once faculty is assigned</span>}
                         </span>
                       </div>
                       <span className="ms-auto shrink-0">
@@ -446,10 +446,10 @@ export function StepSurveyInstances({
                   </span>
                 }
                 title={`${dupItems.length} evaluation${dupItems.length !== 1 ? 's' : ''} already exist${dupItems.length === 1 ? 's' : ''}`}
-                sub="Skipped by default — flip any you want to run again."
+                sub="These evaluations already exist and are skipped by default. Turn on Evaluate again to create a new one."
                 chip={reEvals > 0 && (
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--insight-severity-info-bg)', color: 'var(--insight-severity-info-fg)' }}>
-                    {reEvals} will run again
+                    {reEvals} selected
                   </span>
                 )}
               >
@@ -475,7 +475,7 @@ export function StepSurveyInstances({
                       </div>
                       <ExistingFacts item={item} />
                       <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Run again?</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Evaluate again</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
                         <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
                       </label>
@@ -493,7 +493,7 @@ export function StepSurveyInstances({
                 </span>
               }
               title={`${freshIn} new evaluation${freshIn !== 1 ? 's are' : ' is'} ready`}
-              sub="Every course, who's evaluated, and its template."
+              sub="Review each course, who will be evaluated, and its template."
               chip={missingTemplate > 0 && (
                 <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--icon-disc-chart-4-bg)', color: 'var(--chip-4)' }}>
                   {missingTemplate} without a template
@@ -529,7 +529,7 @@ export function StepSurveyInstances({
                           ? 'Assign a template to plan this course’s evaluations.'
                           : fresh.length > 0
                             ? <NamesInline items={fresh} />
-                            : 'All covered — nothing new to create.'}
+                            : 'All evaluations for this course already exist.'}
                       </span>
                     </div>
                     <TemplateControl
@@ -553,8 +553,8 @@ export function StepSurveyInstances({
         <span className="text-xs tabular-nums text-muted-foreground">
           {toCreate} evaluation{toCreate !== 1 ? 's' : ''} across {courses.length} course{courses.length !== 1 ? 's' : ''}
           {reEvals > 0 && <> · {reEvals} evaluated again</>}
-          {skipped > 0 && <> · {skipped} already covered</>}
-          {pendingGaps > 0 && <> · {pendingGaps} queued until faculty is added</>}
+          {skipped > 0 && <> · {skipped} skipped</>}
+          {pendingGaps > 0 && <> · {pendingGaps} awaiting faculty</>}
           {missingTemplate > 0 && (
             <>
               {' · '}
