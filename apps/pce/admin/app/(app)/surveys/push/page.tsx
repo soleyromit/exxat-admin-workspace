@@ -317,8 +317,8 @@ function PushSurveyInner() {
       const flow = i.existing ? existingFlowSummary(i.existing) : 'Open'
       byOffering.get(i.offeringId)!.reasons.push(
         i.scope === 'course'
-          ? `Course material — running again over an existing survey (${flow})`
-          : `${i.personName} · ${i.roleLabel} — re-evaluating over an existing survey (${flow})`,
+          ? `Course material · running again over an existing survey (${flow})`
+          : `${i.personName} · ${i.roleLabel} · re-evaluating over an existing survey (${flow})`,
       )
     }
     return [...byOffering.values()]

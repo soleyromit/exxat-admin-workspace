@@ -86,7 +86,7 @@ export function prismHubMetaForSegment(segment: string): PrismHubMeta {
         .split("-")
         .map(w => w.charAt(0).toUpperCase() + w.slice(1))
         .join(" "),
-      description: "This hub is not wired yet — replace with a real list surface when ready.",
+      description: "This hub is not wired yet. Replace with a real list surface when ready.",
     }
   )
 }

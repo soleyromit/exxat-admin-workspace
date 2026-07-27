@@ -338,7 +338,7 @@ function TermWorkspaceInner() {
       id: 'pending', label: 'Still to respond',
       value: stillToRespond.toLocaleString(),
       delta: '', trend: 'neutral',
-      description: 'students — reminders reach them',
+      description: 'students · reminders reach them',
     },
     {
       id: 'coverage', label: 'Courses with evaluations',

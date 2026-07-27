@@ -256,7 +256,7 @@ export function AddInPrismButton({ href, label, roles }: { href: string; label: 
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}
-        {missing && <span className="sr-only"> — {missing}</span>}
+        {missing && <span className="sr-only"> · {missing}</span>}
         <span className="sr-only"> (opens in new tab)</span>
         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
       </a>

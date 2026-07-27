@@ -522,8 +522,8 @@ export function RatingCell({
 export function BooleanToggleCell({
   checked,
   onChange,
-  labelOn = "On — click to turn off",
-  labelOff = "Off — click to turn on",
+  labelOn = "On, click to turn off",
+  labelOff = "Off, click to turn on",
 }: {
   checked: boolean
   onChange: (next: boolean) => void

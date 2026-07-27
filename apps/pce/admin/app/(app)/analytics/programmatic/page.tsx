@@ -61,10 +61,10 @@ const PROG_TREND_LEO: ChartLeoInsight = (() => {
   return {
     headline:
       collected != null && collected < RESPONSE_TARGET
-        ? `Alumni Outcomes is at ${collected}% in ${last.term} — ${RESPONSE_TARGET - collected}% under target`
+        ? `Alumni Outcomes is at ${collected}% in ${last.term}, ${RESPONSE_TARGET - collected}% under target`
         : `Programmatic response rates are at or above the ${RESPONSE_TARGET}% target`,
     explanation:
-      'Preceptor Satisfaction and Program Exit haven\'t started collecting this term — the alumni series is the only live signal, and it is still mid-collection.',
+      'Preceptor Satisfaction and Program Exit haven\'t started collecting this term. The alumni series is the only live signal, and it is still mid-collection.',
     kind: collected != null && collected < RESPONSE_TARGET ? 'dip' : 'trend',
     delta: delta != null ? { value: `${delta >= 0 ? '+' : ''}${delta}%`, label: `vs ${prev.term}` } : undefined,
     bullets: [
@@ -187,17 +187,17 @@ export default function ProgrammaticAnalyticsPage() {
                   : `Every question scores at or above the 3.7 tier`,
               explanation:
                 lowest.avg < 3.7
-                  ? `"${lowest.text}" is dragging the survey average — its distribution shows where the dissatisfaction concentrates.`
+                  ? `"${lowest.text}" is dragging the survey average. Its distribution shows where the dissatisfaction concentrates.`
                   : `"${highest.text}" leads at ${highest.avg.toFixed(1)}/5.`,
               kind: lowest.avg < 3.7 ? 'anomaly' : 'trend',
               delta: { value: (highest.avg - lowest.avg).toFixed(1), label: 'spread across questions' },
-              bullets: scores.map(q => `${q.avg.toFixed(1)}/5 — ${q.text}`),
+              bullets: scores.map(q => `${q.avg.toFixed(1)}/5 · ${q.text}`),
             }
             return (
               <ChartCard
                 key={survey.id}
                 variant="normal"
-                title={`Question scores — ${surveyTypeName(survey.courseCode)}`}
+                title={`Question scores · ${surveyTypeName(survey.courseCode)}`}
                 description={`Avg score (1–5 scale) from ${survey.responseCount} responses. ${survey.enrollmentCount - survey.responseCount} not yet responded.`}
                 leoInsight={questionLeo}
               >

@@ -134,11 +134,11 @@ export function EntityTrendExplorer({
         </Select>
         {selected ? (
           <Button variant="link" size="sm" onClick={() => setSelected(null)}>
-            Clear highlight — {selected}
+            Clear highlight · {selected}
           </Button>
         ) : (
           <span className="text-sm text-muted-foreground">
-            {entities.length} {entityNoun} — select one to trace their line
+            {entities.length} {entityNoun}. Select one to trace their line
           </span>
         )}
       </div>

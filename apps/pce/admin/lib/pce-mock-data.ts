@@ -256,7 +256,7 @@ export interface TemplateImportDoc {
 export const TEMPLATE_IMPORT_LIBRARY: Record<string, TemplateImportDoc[]> = {
   course_content: [
     {
-      id: 'imp-course-standard', name: 'Course Evaluation — Standard.docx',
+      id: 'imp-course-standard', name: 'Course Evaluation · Standard.docx',
       sections: [
         { title: 'Course Content & Organization', questions: [
           { text: 'The course objectives were clearly stated.', answerType: 'likert' },
@@ -468,7 +468,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
   {
     key: 'course_content',
     label: 'Course',
-    description: 'Evaluates the course itself — structure, materials, objectives, workload.',
+    description: 'Evaluates the course itself: structure, materials, objectives, workload.',
     isGeneral: true,
     perLabel: 'course',
   },
@@ -553,7 +553,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-2',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'No major concerns so far — would appreciate the case write-up rubric a week earlier.',
+    text: 'No major concerns so far. Would appreciate the case write-up rubric a week earlier.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'neutral',
@@ -562,7 +562,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-3',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'The case discussions are the highlight — real charts make the material stick.',
+    text: 'The case discussions are the highlight. Real charts make the material stick.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'positive',
@@ -580,7 +580,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-5',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'Nothing blocking — the pediatric gait analysis lab was excellent.',
+    text: 'Nothing blocking. The pediatric gait analysis lab was excellent.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'positive',
@@ -599,7 +599,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon1-1',
     surveyId: 'mon1',
     questionText: 'What would you change about this course?',
-    text: 'Spread the heavy readings out — the middle weeks stack up against the MSK labs.',
+    text: 'Spread the heavy readings out. The middle weeks stack up against the MSK labs.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'concern',
@@ -608,7 +608,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon1-2',
     surveyId: 'mon1',
     questionText: 'What would you change about this course?',
-    text: 'Keep the lab progression as is — each session builds on the last one really well.',
+    text: 'Keep the lab progression as is. Each session builds on the last one really well.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -636,7 +636,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s2-1',
     surveyId: 's2',
     questionText: 'What would you change about this course?',
-    text: 'The weekly quizzes helped me keep up — more of the case-based questions please.',
+    text: 'The weekly quizzes helped me keep up: more of the case-based questions please.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -663,7 +663,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s2-4',
     surveyId: 's2',
     questionText: 'What feedback do you have for the instructor?',
-    text: 'Sometimes questions in the big lecture hall went unanswered — a follow-up thread would help.',
+    text: 'Sometimes questions in the big lecture hall went unanswered. A follow-up thread would help.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'neutral',
@@ -762,7 +762,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s1-11',
     surveyId: 's1',
     questionText: 'What would improve the lab experience?',
-    text: 'TAs were great but spread thin during peak times — more coverage would help.',
+    text: 'TAs were great but spread thin during peak times. More coverage would help.',
     sectionSubject: 'lab_instructor',
     flagged: false,
     sentiment: 'concern',
@@ -790,7 +790,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s3-1',
     surveyId: 's3',
     questionText: 'What feedback do you have for the instructor?',
-    text: 'Dr. Williams is an excellent communicator — expectations were always clear.',
+    text: 'Dr. Williams is an excellent communicator. Expectations were always clear.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'positive',
@@ -826,7 +826,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s3-5',
     surveyId: 's3',
     questionText: 'What would you change about this course?',
-    text: 'Placement site coordination was smooth this year — a big improvement over what classmates described.',
+    text: 'Placement site coordination was smooth this year, a big improvement over what classmates described.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -845,7 +845,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s4-1',
     surveyId: 's4',
     questionText: 'What would you change about this course?',
-    text: 'Great course structure overall — the module order made the material build naturally.',
+    text: 'Great course structure overall. The module order made the material build naturally.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -1337,7 +1337,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s1',
-    courseCode: 'Alumni Outcomes Survey — Class of 2025',
+    courseCode: 'Alumni Outcomes Survey · Class of 2025',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1356,7 +1356,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s2',
-    courseCode: 'Preceptor Satisfaction Survey — Spring 2026',
+    courseCode: 'Preceptor Satisfaction Survey · Spring 2026',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1374,7 +1374,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s3',
-    courseCode: 'Program Exit Survey — Spring 2026',
+    courseCode: 'Program Exit Survey · Spring 2026',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1421,10 +1421,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
 
   // Programmatic (institutional) surveys with real response data — feed the
   // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
-  { id: 'pg1', courseCode: 'End-of-Program Satisfaction — Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
-  { id: 'pg2', courseCode: 'Clinical Site Feedback — DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
-  { id: 'pg3', courseCode: 'Faculty Self-Assessment — All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
-  { id: 'pg4', courseCode: 'Curriculum Effectiveness — All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg1', courseCode: 'End-of-Program Satisfaction · Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
+  { id: 'pg2', courseCode: 'Clinical Site Feedback · DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg3', courseCode: 'Faculty Self-Assessment · All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg4', courseCode: 'Curriculum Effectiveness · All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
 
   // ── Fall 2026 (pt5) — flows already pushed for the upcoming term ──────────
   // The SAME offering can be covered by SEPARATE push flows, each evaluating a
@@ -1471,7 +1471,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', avg: 3.8, count: 18 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Great case discussions in the peds unit — the NICU scenarios especially.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Great case discussions in the peds unit, the NICU scenarios especially.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Office hours times are hard to make around our Thursday clinical block.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Gomez gives specific, usable feedback after every case presentation.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Would help to get the case write-up rubric earlier in the week.', sentiment: 'concern' },
@@ -1772,8 +1772,8 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<RoleKey, string> = {
   'admin':                 'Full access to all program-level entities + cross-product modules.',
-  'course-coordinator':    'Whole-and-soul navigator of an assigned offering — full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
-  'instructor':            'Limited access on assigned offerings (exact capabilities TBD with Vishaka — see R7).',
+  'course-coordinator':    'Whole-and-soul navigator of an assigned offering: full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
+  'instructor':            'Limited access on assigned offerings (exact capabilities TBD with Vishaka, see R7).',
   'collaborator-readonly': 'View-only access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
   'collaborator-edit':     'Co-edit access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
 }
@@ -1830,7 +1830,7 @@ export const MOCK_ACCOMMODATIONS: MasterAccommodation[] = [
   { id: 'ac9', code: 'LRG', name: 'Large print',                 description: 'Test materials in larger font size',             category: 'format',        isCustom: false, status: 'active' },
   { id: 'ac10', code: 'BRL', name: 'Braille',                     description: 'Test materials in Braille',                      category: 'format',        isCustom: false, status: 'active' },
   { id: 'ac11', code: 'ASL', name: 'ASL interpreter',             description: 'American Sign Language interpreter present',     category: 'assistive-tech', isCustom: false, status: 'active' },
-  { id: 'ac12', code: 'CST', name: 'Custom — service animal',    description: 'Service animal accommodation per school policy', category: 'other',         isCustom: true,  status: 'active' },
+  { id: 'ac12', code: 'CST', name: 'Custom · service animal',    description: 'Service animal accommodation per school policy', category: 'other',         isCustom: true,  status: 'active' },
 ]
 
 // Students (entity #4) — typically LMS-synced; large roster
@@ -2500,19 +2500,19 @@ export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; tex
     return fl as [number, number, number, number, number]
   }
   const COMMENT_POOL: ResponseComment[] = [
-    { section: 'course_content',      text: 'The pacing felt rushed in the final weeks — hard to absorb the last two units.', sentiment: 'concern'  },
+    { section: 'course_content',      text: 'The pacing felt rushed in the final weeks, hard to absorb the last two units.', sentiment: 'concern'  },
     { section: 'course_content',      text: 'Course materials and readings were well organized and easy to follow.',          sentiment: 'positive' },
     { section: 'course_content',      text: 'More worked examples before each assessment would help.',                        sentiment: 'concern'  },
     { section: 'course_content',      text: 'Lab resources were solid; the structure of each module made sense.',             sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Very engaging lectures and responsive to questions.',                            sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Office hours were hard to get into during exam weeks.',                          sentiment: 'concern'  },
-    { section: 'faculty_performance', text: 'Approachable and organized — feedback on assignments was quick.',                sentiment: 'positive' },
+    { section: 'faculty_performance', text: 'Approachable and organized. Feedback on assignments was quick.',                sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Clear communicator; would appreciate more clinical examples.',                   sentiment: 'neutral'  },
   ]
   const OT_POOL: { text: string; sentiment: 'positive' | 'neutral' | 'concern' }[] = [
-    { text: 'Slow down the pacing before exams — the last unit felt rushed.',            sentiment: 'concern'  },
+    { text: 'Slow down the pacing before exams. The last unit felt rushed.',            sentiment: 'concern'  },
     { text: 'More worked examples in lab would make the material stick.',                sentiment: 'concern'  },
-    { text: 'Keep the case-based sessions — easily the most useful part.',               sentiment: 'positive' },
+    { text: 'Keep the case-based sessions, easily the most useful part.',               sentiment: 'positive' },
     { text: 'The readings were well chosen and matched the lectures.',                   sentiment: 'positive' },
     { text: 'Consider recording sessions so we can review before assessments.',          sentiment: 'neutral'  },
     { text: 'Office hours earlier in the week would help before quizzes.',               sentiment: 'concern'  },

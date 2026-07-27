@@ -584,7 +584,7 @@ export default function SetupOverviewPage() {
                   <span className="flex items-center gap-2">
                     {t.name}
                     {hasSurveys && (
-                      <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ backgroundColor: 'var(--chart-2)' }} aria-label="has evaluations" />
+                      <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ backgroundColor: 'var(--chart-2)' }} aria-label="Has evaluations" />
                     )}
                   </span>
                 </SelectItem>

@@ -35,7 +35,7 @@ export const DEFAULT_SETUP_EMAIL_SUBJECT =
 
 export const DEFAULT_SETUP_EMAIL_BODY = `Hi {{student_first_name}},
 
-Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous — your name will never be attached to your answers.
+Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous. Your name will never be attached to your answers.
 
 Take the survey: {{survey_link}}`
 

@@ -303,7 +303,7 @@ function AttributesPanel({
                   <span>{EVAL_DEFAULT_SCALE.points} · {EVAL_DEFAULT_SCALE.labels[EVAL_DEFAULT_SCALE.labels.length - 1]}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {EVAL_DEFAULT_SCALE.points}-point scale — set program-wide in{' '}
+                  {EVAL_DEFAULT_SCALE.points}-point scale. Set program-wide in{' '}
                   <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Settings</Link>.
                 </p>
               </div>
@@ -585,9 +585,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
 
   // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
   const ASPECT_INFO: Record<string, string> = {
-    course_content: 'Evaluates the course itself — asked once per course.',
-    faculty:        'Evaluates teaching staff — sections group into role sets that evaluate one or more roles.',
-    general:        'Evaluates the program overall — asked once per evaluation.',
+    course_content: 'Evaluates the course itself. Asked once per course.',
+    faculty:        'Evaluates teaching staff. Sections group into role sets that evaluate one or more roles.',
+    general:        'Evaluates the program overall. Asked once per evaluation.',
   }
   const aspectCounts = (key: string) => {
     const secs = sections.filter(s => s.subjectKey === key)
@@ -707,7 +707,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       <i className="fa-light fa-cloud-arrow-up" aria-hidden="true" style={{ fontSize: 18, color: 'var(--muted-foreground)' }} />
       <div className="flex flex-col flex-1 min-w-0">
         <span className="text-sm font-medium">Upload a document</span>
-        <span className="text-xs text-muted-foreground">Generate sections and questions automatically — edit them after.</span>
+        <span className="text-xs text-muted-foreground">Generate sections and questions automatically. Edit them after.</span>
       </div>
       <Button
         variant="outline"
@@ -943,7 +943,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
               // one aspect — the stamp would repeat the stage heading on every
               // card, so it only renders in the long-scroll variants.
               const singleAspectStage = variant === 'tabs' || variant === 'guided'
-              const cardStamp = isProgrammatic || !stampGroup || singleAspectStage ? '' : stampRoles ? `${stampGroup} — ${stampRoles}` : stampGroup
+              const cardStamp = isProgrammatic || !stampGroup || singleAspectStage ? '' : stampRoles ? `${stampGroup} · ${stampRoles}` : stampGroup
               return (
                 <div
                   key={q.id}
@@ -1074,7 +1074,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       <div className="rounded-lg border border-border flex flex-col gap-2" style={{ padding: '10px 12px', background: 'var(--card)' }}>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-muted-foreground">
-            Opening instruction — shown to students at the start of {aspectLabel}
+            Opening instruction: shown to students at the start of {aspectLabel}
           </span>
           <Button variant="ghost" size="icon-xs" aria-label="Collapse opening instruction"
             onClick={() => setOpenInstruction(p => ({ ...p, [key]: false }))}>
@@ -1084,7 +1084,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         <Input
           value={aspectInstructions[key]?.title ?? ''}
           onChange={e => setAspectInstruction(key, { title: e.target.value })}
-          placeholder="Title (optional) — e.g. About this section"
+          placeholder="Title (optional): e.g. About this section"
           className="h-8 text-sm"
           aria-label={`Opening instruction title for ${key}`}
         />
@@ -1168,7 +1168,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         {set && renderRoleSetHeader(set)}
         {rolesPending ? (
           <p className="text-xs text-muted-foreground text-center" style={{ padding: '24px 0' }}>
-            Choose who this evaluation covers — pick at least one role above to start adding questions.
+            Choose who this evaluation covers. Pick at least one role above to start adding questions.
           </p>
         ) : (
           <>
@@ -1211,7 +1211,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
           </Button>
         ) : (
-          <span className="text-xs text-muted-foreground">All aspects covered — continue to Review</span>
+          <span className="text-xs text-muted-foreground">All aspects covered. Continue to Review</span>
         )}
       </div>
     )
@@ -1482,7 +1482,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             courseType mirrors the pick so bulk-assign matching keeps working. */}
         {!isProgrammatic && (
           <SettingsSection label="Course type"
-            hint="Optional — matches this template to courses of the same type.">
+            hint="Optional. Matches this template to courses of the same type.">
             <div className="grid grid-cols-3 gap-2" role="group" aria-label="Course type (optional)">
               {(['classroom', 'practice', 'lab'] as DeliveryMode[]).map((m) => {
                 const active = t.deliveryMode === m
@@ -1513,7 +1513,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             <p className="text-xs text-muted-foreground">
               {t.deliveryMode
                 ? `Applies to ${COURSE_TYPE_FULL_LABEL[t.deliveryMode].toLowerCase()} courses.`
-                : 'No type selected — template will apply to all course types.'}
+                : 'No type selected. Template will apply to all course types.'}
             </p>
             <div className="flex items-center gap-3">
               {/* DS ToggleSwitch has no disabled prop (checked/onChange/id only) —
@@ -1542,7 +1542,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
 
         {isProgrammatic && (
         <SettingsSection label="Survey type"
-          hint="What this survey is for — determines how it's used across the program.">
+          hint="What this survey is for: determines how it's used across the program.">
           <RadioGroup
             value={t.surveyPurpose ?? ''}
             onValueChange={v => updateTemplate(t.id, { surveyPurpose: v as SurveyPurpose })}
@@ -1656,7 +1656,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
             <ReviewRow label="Survey type">{surveyTypeLabel ?? <span className="text-muted-foreground">Not set</span>}</ReviewRow>
           )}
           {isProgrammatic && (
-            <ReviewRow label="Access">{(t.access ?? 'program') === 'private' ? 'Private — only you' : 'Program — shared with admins & coordinators'}</ReviewRow>
+            <ReviewRow label="Access">{(t.access ?? 'program') === 'private' ? 'Private: only you' : 'Program: shared with admins & coordinators'}</ReviewRow>
           )}
           <ReviewRow label="Cover image">{coverImage ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
           <ReviewRow label="University logo">{universityLogo ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
@@ -1852,7 +1852,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                         {g.key === 'faculty' ? (
                           facultyRoleSets.length === 0 ? (
                             <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
-                              No role sets yet — add one to start building faculty questions.
+                              No role sets yet. Add one to start building faculty questions.
                             </p>
                           ) : (
                             facultyRoleSets.map(set => {
@@ -1878,7 +1878,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           )
                         ) : groupSections.length === 0 ? (
                           <p className="text-xs text-muted-foreground" style={{ padding: '10px 0' }}>
-                            No sections yet — add one or generate from a document.
+                            No sections yet. Add one or generate from a document.
                           </p>
                         ) : (
                           groupSections.map(sec => renderSectionCard(sec))
@@ -2462,7 +2462,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
                           Opening instruction · shown at the start of {subjectGroups.find(g => g.key === activeGroup)?.label}
                           {(aspectInstructions[activeGroup]?.title || aspectInstructions[activeGroup]?.text) && (
-                            <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
+                            <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="Has content" />
                           )}
                         </span>
                         <i className={`fa-light fa-chevron-${(openInstruction[activeGroup] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
@@ -2472,7 +2472,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       <Input
                         value={aspectInstructions[activeGroup]?.title ?? ''}
                         onChange={e => setAspectInstruction(activeGroup, { title: e.target.value })}
-                        placeholder="Title (optional) — e.g. About this section"
+                        placeholder="Title (optional): e.g. About this section"
                         className="h-8 text-sm"
                         aria-label={`Opening instruction title for ${activeGroup}`}
                       />
@@ -2497,7 +2497,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                     <>
                       <p className="text-xs text-muted-foreground">
                         <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-                        Pick one or more roles per set, then build its sections — one role for role-specific
+                        Pick one or more roles per set, then build its sections. One role for role-specific
                         questions, multiple roles for shared questions.
                       </p>
                       {facultyRoleSets.map(set => {
@@ -2676,7 +2676,7 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
           ) : t.status === 'active' ? (
             <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
               <i className="fa-solid fa-circle-check" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
-              Published — Unpublish from the header to make changes
+              Published. Unpublish from the header to make changes
             </span>
           ) : (
             <Tooltip>

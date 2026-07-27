@@ -100,7 +100,7 @@ export function CountdownView({ selectedTermName, termSurveys, facultyForTerm, a
       {/* Projected impact table */}
       <div>
         <p className="text-xs font-medium mb-3" style={{ color: 'var(--muted-foreground)' }}>
-          PROJECTED IMPACT — SEND REMINDER TODAY
+          PROJECTED IMPACT · SEND REMINDER TODAY
         </p>
         <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 24px 80px 120px', borderBottom: '1px solid var(--border)', padding: '6px 16px', backgroundColor: 'var(--muted)' }}>

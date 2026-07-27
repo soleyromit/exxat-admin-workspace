@@ -141,7 +141,7 @@ export default function StudentProfile() {
             <p className="text-sm font-semibold">Evaluations <span className="text-muted-foreground font-normal">({evalRows.length})</span></p>
             <p className="text-xs text-muted-foreground mt-0.5">
               <i className="fa-light fa-lock text-xs mr-1" aria-hidden="true" />
-              Individual responses are anonymous — participation status only.
+              Individual responses are anonymous, participation status only.
             </p>
           </div>
           {/* -mx cancels the DataTable's own mx-4/6 so its border aligns flush with the heading */}

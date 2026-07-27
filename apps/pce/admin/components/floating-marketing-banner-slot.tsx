@@ -90,7 +90,7 @@ export function FloatingMarketingBannerSlot() {
       dismissible
       onDismiss={handleDismiss}
     >
-      Plot insights on hover — you stay in control.
+      Plot insights on hover. You stay in control.
     </MarketingBanner>,
     document.body,
   )

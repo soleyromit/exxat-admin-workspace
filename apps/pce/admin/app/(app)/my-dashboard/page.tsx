@@ -244,7 +244,7 @@ export default function MyDashboardPage() {
                 ? `Rated ${diff.toFixed(2)} above the faculty median in ${lastWithFaculty.term}`
                 : `Right on the faculty median in ${lastWithFaculty.term}`,
           explanation:
-            'The grey band is the full faculty distribution per term — position within the band matters more than the absolute number.',
+            'The grey band is the full faculty distribution per term. Position within the band matters more than the absolute number.',
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
@@ -296,7 +296,7 @@ export default function MyDashboardPage() {
           <ChartCard
             variant="normal"
             title="Rating over time"
-            description="Faculty boxplot per term — box = middle 50%, line = median, whisker = full range · your dot (amber = below median) · click a term for details"
+            description="Faculty boxplot per term: box = middle 50%, line = median, whisker = full range · your dot (amber = below median) · click a term for details"
             leoInsight={bandLeo}
           >
             <ChartFigure
@@ -368,7 +368,7 @@ export default function MyDashboardPage() {
                     ))}
                     {mixByTerm.length === 0 && (
                       <p className="text-sm text-muted-foreground py-3">
-                        No rating data yet — the mix appears once your evaluations collect responses.
+                        No rating data yet. The mix appears once your evaluations collect responses.
                       </p>
                     )}
                   </div>
@@ -387,7 +387,7 @@ export default function MyDashboardPage() {
             <CardHeader>
               <CardTitle className="text-sm" aria-level={2}>Collecting now</CardTitle>
               <CardDescription>
-                Live evaluations for your courses — results appear in My Results after close.
+                Live evaluations for your courses. Results appear in My Results after close.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
@@ -404,7 +404,7 @@ export default function MyDashboardPage() {
                       className="grid grid-cols-[minmax(180px,1fr)_minmax(200px,260px)_auto] items-center gap-6 py-3 border-b border-border last:border-0 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:bg-muted/40 -mx-2 px-2"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{s.courseCode} — {s.courseName}</p>
+                        <p className="text-sm font-medium truncate">{s.courseCode} · {s.courseName}</p>
                         <p className="text-xs text-muted-foreground">
                           {s.deadline ? `Closes ${s.deadline}` : s.term}
                         </p>
@@ -435,7 +435,7 @@ export default function MyDashboardPage() {
             <CardContent className="pt-0">
               {followUps.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">
-                  No follow-ups — no concerns were logged for your courses last term.
+                  No follow-ups. No concerns were logged for your courses last term.
                 </p>
               ) : (
                 <div className="flex flex-col">

@@ -309,7 +309,7 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
               </SelectTrigger>
               <SelectContent>
                 {MOCK_COURSES.map(c => (
-                  <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                  <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -585,11 +585,11 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
       >
         <SheetHeader>
           <SheetTitle>
-            {bulk ? `Send reminders — ${surveys.length} courses` : `Send reminder — ${surveys[0].courseCode}`}
+            {bulk ? `Send reminders · ${surveys.length} courses` : `Send reminder · ${surveys[0].courseCode}`}
           </SheetTitle>
           <SheetDescription>
-            Out-of-schedule email to students who haven’t responded. Responses stay anonymous —
-            completion status is tracked separately.
+            Out-of-schedule email to students who haven’t responded. Responses stay anonymous.
+            Completion status is tracked separately.
           </SheetDescription>
         </SheetHeader>
 
@@ -615,7 +615,7 @@ export function SendReminderDialog({ open, onOpenChange, surveys, onSent }: Send
                       <div className="min-w-0 flex flex-col gap-0.5">
                         <p className="text-xs font-medium truncate">
                           {s.courseCode}
-                          <span className="text-muted-foreground font-normal"> — {s.courseName}</span>
+                          <span className="text-muted-foreground font-normal"> · {s.courseName}</span>
                         </p>
                         <p className="text-xs text-muted-foreground tabular-nums">
                           {count} of {s.enrollmentCount} pending
@@ -797,7 +797,7 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
             ) : (
               <>
                 <strong>{single.courseCode}</strong> currently closes{' '}
-                <strong>{single.deadline}</strong> — it&rsquo;s at{' '}
+                <strong>{single.deadline}</strong>. It&rsquo;s at{' '}
                 <strong>{single.responseRate}% response</strong> ({single.responseCount} of {single.enrollmentCount};{' '}
                 {singlePending} still pending). Students can keep responding until the new date.
               </>
@@ -818,7 +818,7 @@ export function EditEndDateDialog({ open, onOpenChange, surveys }: EditEndDateDi
         </Field>
 
         <p className="text-xs text-muted-foreground">
-          Scheduled reminders are anchored to the close date — extending it shifts the remaining
+          Scheduled reminders are anchored to the close date. Extending it shifts the remaining
           reminder schedule with it.
         </p>
 
@@ -857,7 +857,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle>Release responses</SheetTitle>
           <p className="text-sm text-muted-foreground">
-            {survey.courseCode} — {survey.term}
+            {survey.courseCode} · {survey.term}
           </p>
         </SheetHeader>
 

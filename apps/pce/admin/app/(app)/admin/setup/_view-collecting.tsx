@@ -56,7 +56,7 @@ export function CollectingView({
       {/* Faculty × Course Heatmap */}
       <div>
         <p className="text-xs font-medium mb-3" style={{ color: 'var(--muted-foreground)' }}>
-          COMPLETION BY FACULTY & COURSE — {selectedTermName}
+          COMPLETION BY FACULTY & COURSE · {selectedTermName}
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 400 }}>
@@ -121,7 +121,7 @@ export function CollectingView({
       {attentionCount > 0 && (
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
-            NEEDS A REMINDER — {attentionCount} BELOW {THRESHOLD}%
+            NEEDS A REMINDER · {attentionCount} BELOW {THRESHOLD}%
           </p>
           <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
             {facultyForTerm.filter(f => f.needsAttention).slice(0, 3).map((f, i) => (

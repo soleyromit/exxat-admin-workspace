@@ -176,7 +176,7 @@ export default function ModerationPage() {
               >
                 <div>
                   <p className="text-sm font-semibold">
-                    {selectedSurvey.courseCode} — {selectedSurvey.courseName}
+                    {selectedSurvey.courseCode} · {selectedSurvey.courseName}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {selectedSurvey.term} · {selectedSurvey.enrollmentCount} enrolled
@@ -242,7 +242,7 @@ export default function ModerationPage() {
                             <Button
                               variant={isFlagged ? 'outline' : 'ghost'}
                               size="sm"
-                              aria-label={isFlagged ? 'Remove flag — show to faculty' : 'Flag response — hide from faculty'}
+                              aria-label={isFlagged ? 'Remove flag: show to faculty' : 'Flag response: hide from faculty'}
                               onClick={() => toggleFlag(response.id)}
                               className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                               style={isFlagged
@@ -276,7 +276,7 @@ export default function ModerationPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
                     {surveyFlaggedCount > 0
-                      ? `${surveyFlaggedCount} response${surveyFlaggedCount !== 1 ? 's' : ''} flagged — hidden from faculty`
+                      ? `${surveyFlaggedCount} response${surveyFlaggedCount !== 1 ? 's' : ''} flagged, hidden from faculty`
                       : 'All responses will be shared with faculty'
                     }
                   </p>
@@ -313,7 +313,7 @@ export default function ModerationPage() {
           <DialogDescription>
             {selectedSurvey && surveyResponses.length < 5 ? (
               <>
-                Only <strong>{surveyResponses.length}</strong> {surveyResponses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                Only <strong>{surveyResponses.length}</strong> {surveyResponses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
                 {' '}Faculty will see aggregate scores based on this small sample.
               </>
             ) : (

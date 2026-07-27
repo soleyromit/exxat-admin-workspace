@@ -468,7 +468,7 @@ function FacultyResults({
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                          {r.courseCode} — {r.courseName}
+                          {r.courseCode} · {r.courseName}
                           <ResultStatusBadge r={r} />
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -500,7 +500,7 @@ function FacultyResults({
                 <Card className="mb-2 gap-2 py-3">
                   <CardHeader className="px-4">
                     <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                      {g.courseCode} — {g.courseName}
+                      {g.courseCode} · {g.courseName}
                       <StatusBadge {...OFFERING_BADGE[g.offeringState]} />
                     </CardTitle>
                     <CardDescription className="text-xs">

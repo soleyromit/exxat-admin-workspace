@@ -135,7 +135,7 @@ function TemplateControl({ offering, templateId, edited, publishedTemplates, onT
       <Button
         variant="outline"
         size="xs"
-        aria-label={`Create a template — none exist yet to assign to ${code}`}
+        aria-label={`Create a template. None exist yet to assign to ${code}`}
         onClick={onCreate}
       >
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
@@ -146,7 +146,7 @@ function TemplateControl({ offering, templateId, edited, publishedTemplates, onT
   return (
     <Select value={templateId} onValueChange={v => onTemplateChange(offering.id, v)}>
       <SelectTrigger
-        aria-label={`Template for ${code}${!templateId ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+        aria-label={`Template for ${code}${!templateId ? ' · required' : ''}${edited ? ' · changed from default' : ''}`}
         className={!templateId
           ? 'w-fit min-w-0 border-0 shadow-none'
           : `min-w-0 [&>span]:truncate [&>span]:min-w-0 ${edited ? 'bg-secondary' : 'bg-background'}`}

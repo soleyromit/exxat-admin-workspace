@@ -196,7 +196,7 @@ export function StepReview({
   }, [previewMode, emailSubject, emailBody, reminderSameAsInvite, reminderSubject, reminderBody])
 
   const assignmentSummary = surveyMode === 'course_evaluation' && courseGroups.length > 0
-    ? courseGroups.map(g => `${g.codes.length} course${g.codes.length !== 1 ? 's' : ''} — ${g.templateTitle}`).join(' · ')
+    ? courseGroups.map(g => `${g.codes.length} course${g.codes.length !== 1 ? 's' : ''} · ${g.templateTitle}`).join(' · ')
     : null
 
   return (
@@ -256,7 +256,7 @@ export function StepReview({
           ...(skippedDuplicateCount > 0
             ? ([[
                 'Duplicates',
-                muted(`${skippedDuplicateCount} skipped — already exist for this term`),
+                muted(`${skippedDuplicateCount} skipped: already exist for this term`),
               ]] as [string, React.ReactNode][])
             : []),
         ]}
@@ -289,7 +289,7 @@ export function StepReview({
             <AckGroup
               id="ack-subject-data"
               title={`${subjectIssues.length} course${subjectIssues.length !== 1 ? 's are' : ' is'} missing subject data`}
-              reason="They may reach no one, or have no one to evaluate. You can still push — they'll be skipped."
+              reason="They may reach no one, or have no one to evaluate. You can still push. They'll be skipped."
               ackLabel="I understand these courses are missing faculty or student data"
               checked={ackSubject}
               onChange={setAckSubject}
@@ -299,10 +299,10 @@ export function StepReview({
                   <div key={iss.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate">
                       {iss.courseLabel}
-                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(', ')}</span>
+                      <span style={{ color: 'var(--muted-foreground)' }}> · {iss.reasons.join(', ')}</span>
                     </span>
                     <Button asChild variant="link" size="xs" className="shrink-0">
-                      <a href={iss.prismHref ?? '#'} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism — opens in a new tab">
+                      <a href={iss.prismHref ?? '#'} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism · opens in a new tab">
                         Fix in Prism
                         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
                         <span className="sr-only"> (opens in new tab)</span>
@@ -319,7 +319,7 @@ export function StepReview({
               <AckGroup
                 id="ack-duplicate"
                 title={duplicateTitle ?? `${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
-                reason="Pushing again creates a second, overlapping survey — students in these courses will receive both."
+                reason="Pushing again creates a second, overlapping survey. Students in these courses will receive both."
                 ackLabel={duplicateTitle
                   ? 'I understand these evaluatees receive a second survey'
                   : 'I understand this creates a second evaluation for these courses'}
@@ -337,7 +337,7 @@ export function StepReview({
                   {duplicateIssues.map(iss => (
                     <div key={iss.id} className="text-sm min-w-0 truncate">
                       {iss.courseLabel}
-                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(' · ')}</span>
+                      <span style={{ color: 'var(--muted-foreground)' }}> · {iss.reasons.join(' · ')}</span>
                     </div>
                   ))}
                 </div>

@@ -83,7 +83,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-healthy',
     name: 'Johns Hopkins DPT',
-    blurb: 'Steady state — current, last & upcoming all present (default)',
+    blurb: 'Steady state: current, last & upcoming all present (default)',
     terms: MOCK_PROGRAM_TERMS,
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: MOCK_SURVEYS,
@@ -91,7 +91,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-fresh',
     name: 'Riverside DPT',
-    blurb: 'Brand-new program — no terms set up yet',
+    blurb: 'Brand-new program: no terms set up yet',
     terms: [],
     offerings: [],
     surveys: [],
@@ -115,7 +115,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-upcoming-only',
     name: 'Cascade Nursing',
-    blurb: 'Pre-launch — an upcoming term only, no current or history',
+    blurb: 'Pre-launch: an upcoming term only, no current or history',
     terms: [FALL26],
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: [],
@@ -123,7 +123,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-between',
     name: 'Harbor DPT',
-    blurb: 'Between terms — last term done, next scheduled, none active',
+    blurb: 'Between terms: last term done, next scheduled, none active',
     terms: [FALL25, FALL26],
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: MOCK_SURVEYS,
@@ -131,7 +131,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-nolast',
     name: 'Metro DPT',
-    blurb: 'First term running — live now, no prior term',
+    blurb: 'First term running: live now, no prior term',
     terms: [SPRING26, FALL26],
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: MOCK_SURVEYS,

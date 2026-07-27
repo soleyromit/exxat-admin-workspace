@@ -161,8 +161,8 @@ function QualitativeFeedback({ responses }: { responses: PceOpenTextResponse[] }
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold">Student comments</h2>
         <p className="text-xs text-muted-foreground">
-          {hiddenCount} response{hiddenCount !== 1 ? 's were' : ' was'} hidden during moderation —
-          none are available for display.
+          {hiddenCount} response{hiddenCount !== 1 ? 's were' : ' was'} hidden during moderation.
+          None are available for display.
         </p>
       </div>
     )
@@ -173,7 +173,7 @@ function QualitativeFeedback({ responses }: { responses: PceOpenTextResponse[] }
       <div>
         <h2 className="text-sm font-semibold">Student comments</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Anonymized responses — individual authorship cannot be identified.
+          Anonymized responses. Individual authorship cannot be identified.
           {hiddenCount > 0 && ` ${hiddenCount} response${hiddenCount !== 1 ? 's' : ''} hidden during moderation.`}
         </p>
       </div>
@@ -437,7 +437,7 @@ export default function SurveyDetailPage() {
             ? { label: 'Dashboard', href: '/analytics/programmatic' }
             : { label: 'Dashboard', href: '/course-evaluation/dashboard' },
         ]}
-        title={`${survey.courseCode} — ${survey.courseName}`}
+        title={`${survey.courseCode} · ${survey.courseName}`}
       />
 
       {/* ── Title row — h1 + badge left, actions right (matches templates/[id] pattern) ── */}
@@ -453,7 +453,7 @@ export default function SurveyDetailPage() {
               lineHeight: 1.2,
             }}
           >
-            {survey.courseCode} — {survey.courseName}
+            {survey.courseCode} · {survey.courseName}
           </h1>
           <SurveyStatusBadge status={survey.status} />
           <div className="flex items-center gap-2 ml-auto shrink-0">
@@ -792,13 +792,13 @@ export default function SurveyDetailPage() {
               <div>
                 <h2 className="text-sm font-semibold">Download reports</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Exports are anonymized — student names are never attached to responses.
+                  Exports are anonymized. Student names are never attached to responses.
                 </p>
               </div>
               {reportReady && (
                 <LocalBanner variant="success">
                   {reportReady === 'pdf' ? 'Full survey report' : 'Raw responses export'} for{' '}
-                  {survey.courseCode} is being prepared — it will download shortly.
+                  {survey.courseCode} is being prepared. It will download shortly.
                 </LocalBanner>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

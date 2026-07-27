@@ -650,7 +650,7 @@ export function SettingsAppearanceCard({
         <p className="text-sm text-muted-foreground">
           {showProducts && !showDisplay
             ? productAuthoringEnabled
-              ? "Workspace-wide — shared across every product in this browser. Add products, set default startup, and tune panel tints."
+              ? "Workspace-wide, shared across every product in this browser. Add products, set default startup, and tune panel tints."
               : "Products shipped on this deploy are listed below. Builders author and rebrand them in dev, then commit and redeploy."
             : "Saved in this browser."}
         </p>
@@ -763,14 +763,14 @@ export function SettingsAppearanceCard({
                               className="text-xs font-medium text-muted-foreground"
                               aria-hidden="true"
                             >
-                              — {option.scope}
+                              · {option.scope}
                             </span>
                           )}
                         </span>
                         <div className="flex flex-wrap items-center gap-1.5">
                           {isActive ? (
                             <Tip
-                              label="Currently active product — chrome reflects this color"
+                              label="Currently active product. Chrome reflects this color"
                               side="top"
                             >
                               <span
@@ -975,7 +975,7 @@ export function SettingsAppearanceCard({
                                   // path).
                                   if (isBuilderDevSyncEnvironment()) {
                                     setPublishHint(
-                                      "Saved to ignored public/tenant-products.json on the dev server — force-add it only when you intend to ship this product.",
+                                      "Saved to ignored public/tenant-products.json on the dev server. Force-add it only when you intend to ship this product.",
                                     )
                                   } else {
                                     downloadShippedTenantCatalog()
@@ -983,7 +983,7 @@ export function SettingsAppearanceCard({
                                       tenantRecordFromCustomBrand(suffix, brandColor),
                                     )
                                     setPublishHint(
-                                      "Downloaded public/tenant-products.json and scaffold files — force-add the catalog only when you intend to ship it, then pnpm build and deploy.",
+                                      "Downloaded public/tenant-products.json and scaffold files. Force-add the catalog only when you intend to ship it, then pnpm build and deploy.",
                                     )
                                   }
                                 }
@@ -999,7 +999,7 @@ export function SettingsAppearanceCard({
                             <p className="text-xs text-muted-foreground">{addProductBlockedReason}</p>
                           ) : (
                             <p className="text-xs text-muted-foreground">
-                              Type the suffix after Exxat — wordmark stays Exxat pink; the
+                              Type the suffix after Exxat. Wordmark stays Exxat pink; the
                               panel tint follows your brand color. After Add, review the generated{" "}
                               <span className="font-mono">public/tenant-products.json</span> and
                               force-add it only for a deploy that should ship this product.
@@ -1098,7 +1098,7 @@ export function SettingsAppearanceCard({
 
             <SettingsFormRow
               label="Shell layout"
-              description="Classic sidebar keeps everything in the rail. Utility-bar modes move search, Ask Leo, and notifications to the bar — product switcher stays in the sidebar (recommended) or moves to the bar."
+              description="Classic sidebar keeps everything in the rail. Utility-bar modes move search, Ask Leo, and notifications to the bar. Product switcher stays in the sidebar (recommended) or moves to the bar."
             >
               <RadioGroup
                 value={shellLayoutVariant}
@@ -1117,13 +1117,13 @@ export function SettingsAppearanceCard({
                 <RadioRow
                   value="utility-sidebar"
                   id="shell-layout-utility-sidebar"
-                  label="Utility bar — product in sidebar"
+                  label="Utility bar · product in sidebar"
                   iconClass="fa-table-columns"
                 />
                 <RadioRow
                   value="utility-bar"
                   id="shell-layout-utility-bar"
-                  label="Utility bar — product on bar"
+                  label="Utility bar · product on bar"
                   iconClass="fa-window-maximize"
                 />
               </RadioGroup>

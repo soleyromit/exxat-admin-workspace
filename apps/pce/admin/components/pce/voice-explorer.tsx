@@ -295,7 +295,7 @@ export function VoiceExplorer({
       </p>
 
       <ChartCardActions
-        title={`Student voice — ${scopeLabel}`}
+        title={`Student voice · ${scopeLabel}`}
         formats={['pdf', 'excel', 'csv']}
         table={{
           headers: ['Comment', 'Section', 'Sentiment', 'Course', 'Term'],
@@ -330,7 +330,7 @@ export function VoiceExplorerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[min(1100px,92vw)]">
         <DialogHeader>
-          <DialogTitle>Student voice — {scopeLabel}</DialogTitle>
+          <DialogTitle>Student voice · {scopeLabel}</DialogTitle>
           <DialogDescription>
             Every open-text comment in scope, filterable by keyword theme, sentiment, section and
             term. Each quote links to its survey result.

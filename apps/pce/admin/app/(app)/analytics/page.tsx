@@ -348,7 +348,7 @@ function AnalyticsInner() {
               <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">Course</label>
               <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>
                 <SelectTrigger id="course-select" className="h-8 w-64 text-sm" aria-label="Select course"><SelectValue /></SelectTrigger>
-                <SelectContent>{distinctCourses.map(c => <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{distinctCourses.map(c => <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
 
@@ -381,7 +381,7 @@ function AnalyticsInner() {
                 <>
                   Send an immediate reminder to{' '}
                   <strong>{nudgeTarget.nonResponders} non-responder{nudgeTarget.nonResponders !== 1 ? 's' : ''}</strong>{' '}
-                  in <strong>{nudgeTarget.courseCode} — {nudgeTarget.courseName}</strong>. This is an out-of-schedule nudge.
+                  in <strong>{nudgeTarget.courseCode} · {nudgeTarget.courseName}</strong>. This is an out-of-schedule nudge.
                 </>
               )}
             </AlertDialogDescription>

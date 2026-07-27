@@ -74,7 +74,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
         >
           <SheetHeader className="shrink-0 px-6 py-4 border-b border-border">
             <SheetTitle className="text-base font-semibold">
-              Review responses — {survey?.courseCode}
+              Review responses · {survey?.courseCode}
             </SheetTitle>
             {survey && (
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -128,7 +128,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
                         <Button
                           variant={isHidden ? 'outline' : 'ghost'}
                           size="sm"
-                          aria-label={isHidden ? 'Unhide — show to faculty' : 'Hide from faculty'}
+                          aria-label={isHidden ? 'Unhide: show to faculty' : 'Hide from faculty'}
                           onClick={() => toggleHidden(response.id)}
                           className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                           style={isHidden
@@ -155,7 +155,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
           <div className="shrink-0 border-t border-border px-6 py-4 flex flex-col gap-3">
             {responses.length < 5 && responses.length > 0 && (
               <LocalBanner variant="warning">
-                Only {responses.length} {responses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                Only {responses.length} {responses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
               </LocalBanner>
             )}
             <div className="flex items-center justify-between gap-3">
@@ -186,7 +186,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
             <DialogDescription>
               {survey && responses.length < 5 ? (
                 <>
-                  Only <strong>{responses.length}</strong> {responses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                  Only <strong>{responses.length}</strong> {responses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
                   {' '}Faculty will see aggregate scores based on this small sample.
                 </>
               ) : (

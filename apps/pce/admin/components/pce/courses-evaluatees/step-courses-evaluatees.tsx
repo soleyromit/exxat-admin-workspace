@@ -303,7 +303,7 @@ export function StepCoursesEvaluatees({
                     <i className="fa-light fa-user-slash" style={{ fontSize: 9, color: 'var(--chip-4)' }} aria-hidden="true" />
                   </span>
                   <span className="text-sm font-medium truncate" style={{ color: 'var(--chip-4)' }}>
-                    {cell.label}<span className="font-normal"> — not assigned</span>
+                    {cell.label}<span className="font-normal"> · not assigned</span>
                   </span>
                 </span>,
               )
@@ -349,7 +349,7 @@ export function StepCoursesEvaluatees({
               variant="outline"
               size="xs"
               className="justify-start"
-              aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+              aria-label={`Create a template. None exist yet to assign to ${r.code}`}
               onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
             >
               <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
@@ -368,7 +368,7 @@ export function StepCoursesEvaluatees({
                 state alone — the label and accessible name say it (1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
-                aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+                aria-label={`Template for ${r.code}${unassigned ? ' · required' : ''}${edited ? ' · changed from default' : ''}`}
                 /* [&>span]:truncate: a long template name ellipsizes instead of
                    hard-clipping mid-letter ("Faculty Midterm Check-Ir"). */
                 /* border/shadow removal rides className, NOT the style prop:
@@ -650,8 +650,8 @@ export function StepCoursesEvaluatees({
           onDismiss={() => setNotice(null)}
         >
           {notice.kind === 'published'
-            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the Template column below.</>
-            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+            ? <>&ldquo;{notice.name}&rdquo; published. Assign it in the Template column below.</>
+            : <>&ldquo;{notice.name}&rdquo; saved as a draft. Publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
         </LocalBanner>
       )}
 

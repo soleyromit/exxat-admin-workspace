@@ -46,17 +46,17 @@ export function RetrospectiveView({
 
   const insights = [
     facultyForTerm.length > 0 ? {
-      text: `${facultyForTerm.reduce((best, f) => f.avgCompletion > best.avgCompletion ? f : best).name} achieved ${Math.max(...facultyForTerm.map(f => f.avgCompletion))}% — highest this term. Consider their approach as a benchmark.`,
+      text: `${facultyForTerm.reduce((best, f) => f.avgCompletion > best.avgCompletion ? f : best).name} achieved ${Math.max(...facultyForTerm.map(f => f.avgCompletion))}%, the highest this term. Consider their approach as a benchmark.`,
       color: 'var(--chart-2)',
     } : null,
     {
       text: attentionCount > 0
-        ? `${attentionCount} faculty finished below ${THRESHOLD}% — plan earlier nudges next term.`
-        : `All faculty finished above ${THRESHOLD}% — strong completion across the board.`,
+        ? `${attentionCount} faculty finished below ${THRESHOLD}%. Plan earlier nudges next term.`
+        : `All faculty finished above ${THRESHOLD}%, strong completion across the board.`,
       color: attentionCount > 0 ? 'var(--chart-4)' : 'var(--chart-2)',
     },
     completionDelta !== null ? {
-      text: `Response rate ${completionDelta >= 0 ? 'improved' : 'declined'} ${Math.abs(completionDelta)}% from ${priorTermName ?? 'last term'}${completionDelta >= 0 ? ' — trend is positive.' : ' — worth investigating.'}`,
+      text: `Response rate ${completionDelta >= 0 ? 'improved' : 'declined'} ${Math.abs(completionDelta)}% from ${priorTermName ?? 'last term'}${completionDelta >= 0 ? '. Trend is positive.' : '. Worth investigating.'}`,
       color: completionDelta >= 0 ? 'var(--chart-2)' : 'var(--chart-4)',
     } : null,
   ].filter(Boolean) as { text: string; color: string }[]
@@ -66,9 +66,9 @@ export function RetrospectiveView({
       {/* Hero 3-number summary */}
       <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid var(--border)', paddingBottom: 20 }}>
         {[
-          { value: `${avgCompletion}%`, label: 'avg completion', color: completionColor(avgCompletion) },
+          { value: `${avgCompletion}%`, label: 'Avg completion', color: completionColor(avgCompletion) },
           { value: completionDelta !== null ? `${completionDelta >= 0 ? '+' : ''}${completionDelta}%` : '—', label: `vs ${priorTermName?.replace('Spring','Spr').replace('Fall','Fal') ?? 'last term'}`, color: completionDelta !== null ? (completionDelta >= 0 ? 'var(--chart-2)' : 'var(--chart-4)') : 'var(--muted-foreground)' },
-          { value: String(statusCounts.released), label: 'evaluations released', color: 'var(--foreground)' },
+          { value: String(statusCounts.released), label: 'Evaluations released', color: 'var(--foreground)' },
         ].map((item, i) => (
           <div key={i} style={{ flex: 1, paddingLeft: i > 0 ? 24 : 0, borderLeft: i > 0 ? '1px solid var(--border)' : undefined, marginLeft: i > 0 ? 24 : 0 }}>
             <p style={{ fontSize: 28, fontWeight: 800, color: item.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{item.value}</p>
@@ -81,7 +81,7 @@ export function RetrospectiveView({
       {priorFaculty.some(f => f.priorRate !== null) && (
         <div>
           <p className="text-xs font-medium mb-3" style={{ color: 'var(--muted-foreground)' }}>
-            FACULTY COMPLETION — {priorTermName?.replace('Spring','Spr').replace('Fall','Fal') ?? 'PRIOR'} → {selectedTermName.replace('Spring','Spr').replace('Fall','Fal')}
+            FACULTY COMPLETION · {priorTermName?.replace('Spring','Spr').replace('Fall','Fal') ?? 'PRIOR'} → {selectedTermName.replace('Spring','Spr').replace('Fall','Fal')}
           </p>
           <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ overflow: 'visible' }}>
             {/* Threshold line */}
@@ -136,7 +136,7 @@ export function RetrospectiveView({
         <CardContent className="flex items-center gap-4 py-4">
           <div className="flex-1">
             <p className="text-sm font-medium">Ready to set up the next term?</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>All configuration is ready — activate when your scheduling is confirmed.</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>All configuration is ready. Activate when your scheduling is confirmed.</p>
           </div>
           <Button variant="outline" size="sm" className="shrink-0" asChild>
             <Link href="/surveys/push">Set up next term</Link>

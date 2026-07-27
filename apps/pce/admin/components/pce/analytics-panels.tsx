@@ -498,7 +498,7 @@ export function ByTermPanel({
       explanation:
         fallers.length > 0
           ? `${worst.courseCode} fell furthest, ${Math.abs(worst.delta).toFixed(2)}. A ranked list would show it as "low" ` +
-            `and an aggregate trend would average it away — only the slope shows it MOVED, which is the difference ` +
+            `and an aggregate trend would average it away. Only the slope shows it MOVED, which is the difference ` +
             `between a course that is hard and a course that broke.`
           : `${risers.length} course${risers.length === 1 ? '' : 's'} improved and the rest held. Flat lines are stability, not missing data.`,
       kind: fallers.length > 0 ? 'dip' : 'trend',
@@ -568,7 +568,7 @@ export function ByTermPanel({
     return {
       headline: `${widest.courseCode} scores ${gap.toFixed(2)} higher on teaching than on content this term`,
       explanation:
-        `When the instructor rates well above the material, coaching the person will not move the number — the ` +
+        `When the instructor rates well above the material, coaching the person will not move the number. The ` +
         `content needs work. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} in ${value} sit below both term means.`,
       kind: 'anomaly',
       delta: { value: `+${gap.toFixed(2)}`, label: 'faculty over content' },
@@ -664,11 +664,11 @@ export function ByTermPanel({
       explanation: recovered
         ? `Collection bottomed out at ${lowest}% in ${trough.term} and has climbed to ${last}% since. ` +
           `A single delta would have shown ${last - first >= 0 ? '+' : ''}${last - first} points and hidden the dip ` +
-          `entirely — a drop-and-recovery and a flat line produce the same number.`
+          `entirely. A drop-and-recovery and a flat line produce the same number.`
         : `Collection runs from ${first}% to ${last}%, with the low at ${lowest}% in ${trough.term}. ` +
           `Read the path: the target is what a rate means, not the rate on its own.`,
       kind: below > 0 ? 'dip' : 'trend',
-      delta: { value: `${lowest}%`, label: `low — ${trough.short}` },
+      delta: { value: `${lowest}%`, label: `low · ${trough.short}` },
       bullets: [
         `Latest ${last}% · low ${lowest}% (${trough.term}) · target ${RESPONSE_TARGET}%.`,
         `${below} of ${rows.length} terms below target.`,
@@ -692,7 +692,7 @@ export function ByTermPanel({
             : `Course ratings held steady in ${last.term}`,
       explanation:
         gap != null && gap > 0
-          ? `Faculty ratings run ${gap.toFixed(2)} above course ratings in the latest term — students consistently rate people higher than course structure. Course-content follow-ups usually close this gap.`
+          ? `Faculty ratings run ${gap.toFixed(2)} above course ratings in the latest term. Students consistently rate people higher than course structure. Course-content follow-ups usually close this gap.`
           : 'Course and faculty ratings are moving together across terms.',
       kind: delta < 0 ? 'dip' : 'trend',
       delta: { value: `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`, label: `vs ${prev.term}` },
@@ -717,7 +717,7 @@ export function ByTermPanel({
       explanation:
         belowTier > 0
           ? `${belowTier} course${belowTier !== 1 ? 's sit' : ' sits'} below the 3.7 tier. Their open-text feedback is the first place to look for what to change next offering.`
-          : 'Every course is at or above the 3.7 tier — the spread below is a quality band, not a problem list.',
+          : 'Every course is at or above the 3.7 tier. The spread below is a quality band, not a problem list.',
       kind: lowest.avg < 3.7 ? 'anomaly' : 'trend',
       delta: { value: (top.avg - lowest.avg).toFixed(2), label: 'spread, top to bottom' },
       bullets: [
@@ -741,7 +741,7 @@ export function ByTermPanel({
           : `${top.name} leads faculty ratings at ${top.avg.toFixed(2)}/5`,
       explanation:
         belowTier > 0
-          ? 'Below-tier faculty ratings usually track specific sections — check the per-section breakdown before drawing conclusions about the person.'
+          ? 'Below-tier faculty ratings usually track specific sections. Check the per-section breakdown before drawing conclusions about the person.'
           : 'All faculty rate at or above the 3.7 tier across their weighted offerings.',
       kind: belowTier > 0 ? 'anomaly' : 'trend',
       delta: { value: (top.avg - lowest.avg).toFixed(2), label: 'spread, top to bottom' },
@@ -788,7 +788,7 @@ export function ByTermPanel({
         description={
           axis === 'term'
             ? 'Course rating vs. faculty rating across terms.'
-            : `Course rating vs. faculty rating across terms — program-wide, not ${value}. The numbers above are this cohort's.`
+            : `Course rating vs. faculty rating across terms, program-wide, not ${value}. The numbers above are this cohort's.`
         }
         leoInsight={programTrendLeo}
       >
@@ -801,7 +801,7 @@ export function ByTermPanel({
             <>
               {programTrendData.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  No term history yet — the trend appears once a second term closes.
+                  No term history yet. The trend appears once a second term closes.
                 </p>
               ) : (
               <div className="relative w-full">
@@ -877,8 +877,8 @@ export function ByTermPanel({
            description: they go looking for it. */
         description={
           axis === 'term'
-            ? `The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. The band marks ${value}.`
-            : `The collection path against the ${RESPONSE_TARGET}% target — the shape, not a single delta. Program-wide across all terms, not scoped to ${value}.`
+            ? `The collection path against the ${RESPONSE_TARGET}% target: the shape, not a single delta. The band marks ${value}.`
+            : `The collection path against the ${RESPONSE_TARGET}% target: the shape, not a single delta. Program-wide across all terms, not scoped to ${value}.`
         }
         leoInsight={responseTrendLeo}
       >
@@ -936,7 +936,7 @@ export function ByTermPanel({
         <>
           <ChartCard
             variant="normal"
-            title={`Who answered — ${value}`}
+            title={`Who answered · ${value}`}
             description="One square is one student"
           >
             <ChartFigure
@@ -961,7 +961,7 @@ export function ByTermPanel({
                     ]}
                   />
                   <ChartCardActions
-                    title={`Who answered — ${value}`}
+                    title={`Who answered · ${value}`}
                     table={{
                       headers: ['Status', 'Students'],
                       rows: [
@@ -984,7 +984,7 @@ export function ByTermPanel({
                  surveys you can push (5), while this ranks every course the class has been
                  evaluated on (7). Two panels, one title, two numbers is how a reader concludes
                  the page is broken. The title names the metric; the table names the worklist. */
-              title={`Course scores — ${value}`}
+              title={`Course scores · ${value}`}
               description={`The lowest of ${cohortCourses.length} courses, ranked · content score`}
             >
               <ChartFigure
@@ -1002,13 +1002,13 @@ export function ByTermPanel({
                       caption={`Courses in ${value}`}
                       headers={['Course', 'Content score', 'Response rate']}
                       rows={cohortCourses.map(c => [
-                        `${c.courseCode} — ${c.courseName}`,
+                        `${c.courseCode} · ${c.courseName}`,
                         c.score.weighted.toFixed(2),
                         `${c.responseRate}%`,
                       ])}
                     />
                     <ChartCardActions
-                      title={`Course scores — ${value}`}
+                      title={`Course scores · ${value}`}
                       description={`All ${cohortCourses.length} courses this class was evaluated on, ranked.`}
                       detail={
                         <CourseRankDots
@@ -1021,7 +1021,7 @@ export function ByTermPanel({
                       table={{
                         headers: ['Course', 'Content score', 'Response rate'],
                         rows: cohortCourses.map((c) => [
-                          `${c.courseCode} — ${c.courseName}`,
+                          `${c.courseCode} · ${c.courseName}`,
                           c.score.weighted.toFixed(2),
                           `${c.responseRate}%`,
                         ]),
@@ -1034,7 +1034,7 @@ export function ByTermPanel({
 
             <ChartCard
               variant="normal"
-              title={`Teaching scores — ${value}`}
+              title={`Teaching scores · ${value}`}
               description={`${cohortFaculty.length} faculty · vs the class median`}
             >
               <ChartFigure
@@ -1059,7 +1059,7 @@ export function ByTermPanel({
                       ])}
                     />
                     <ChartCardActions
-                      title={`Teaching scores — ${value}`}
+                      title={`Teaching scores · ${value}`}
                       description={`All ${cohortFaculty.length} faculty who taught this class, ranked.`}
                       detail={
                         <FacultyLeaderboardDots
@@ -1094,7 +1094,7 @@ export function ByTermPanel({
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <ChartCard
             variant="normal"
-            title={termSlopeData ? `What moved — ${termSlopeData.from} → ${value}` : `What moved — ${value}`}
+            title={termSlopeData ? `What moved · ${termSlopeData.from} → ${value}` : `What moved · ${value}`}
             description="Previous term to this one · crossings are rank swaps"
             leoInsight={termSlopeLeo}
           >
@@ -1111,7 +1111,7 @@ export function ByTermPanel({
               {() =>
                 !termSlopeData ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
-                    {value} is the earliest term with data — nothing to compare it against yet.
+                    {value} is the earliest term with data, nothing to compare it against yet.
                   </p>
                 ) : (
                   <>
@@ -1129,7 +1129,7 @@ export function ByTermPanel({
                       caption={`Course content score, ${termSlopeData.from} to ${value}`}
                       headers={['Course', termSlopeData.from, value, 'Change']}
                       rows={termSlopeData.rows.map(r => [
-                        `${r.courseCode} — ${r.courseName}`,
+                        `${r.courseCode} · ${r.courseName}`,
                         r.from.toFixed(2),
                         r.to.toFixed(2),
                         `${r.delta >= 0 ? '+' : ''}${r.delta.toFixed(2)}`,
@@ -1148,7 +1148,7 @@ export function ByTermPanel({
                       table={{
                         headers: ['Course', termSlopeData.from, value, 'Change'],
                         rows: termSlopeData.rows.map((r) => [
-                          `${r.courseCode} — ${r.courseName}`,
+                          `${r.courseCode} · ${r.courseName}`,
                           r.from.toFixed(2),
                           r.to.toFixed(2),
                           `${r.delta >= 0 ? '+' : ''}${r.delta.toFixed(2)}`,
@@ -1163,7 +1163,7 @@ export function ByTermPanel({
 
           <ChartCard
             variant="normal"
-            title={`Content vs teaching — ${value}`}
+            title={`Content vs teaching · ${value}`}
             description="One dot per course · split at the scope means"
             leoInsight={termGapLeo}
           >
@@ -1184,14 +1184,14 @@ export function ByTermPanel({
                     caption={`Content versus teaching in ${value}`}
                     headers={['Course', 'Content', 'Teaching', 'Enrolled']}
                     rows={termGaps.map(g => [
-                      `${g.courseCode} — ${g.courseName}`,
+                      `${g.courseCode} · ${g.courseName}`,
                       g.courseAvg.toFixed(2),
                       g.facultyAvg.toFixed(2),
                       g.enrolled,
                     ])}
                   />
                   <ChartCardActions
-                    title={`Content vs teaching — ${value}`}
+                    title={`Content vs teaching · ${value}`}
                     description="Each dot is one course in this scope, split at the scope means."
                     detail={
                       <GapQuadrant
@@ -1204,7 +1204,7 @@ export function ByTermPanel({
                     table={{
                       headers: ['Course', 'Course score', 'Faculty score'],
                       rows: termGaps.map((g) => [
-                        `${g.courseCode} — ${g.courseName}`,
+                        `${g.courseCode} · ${g.courseName}`,
                         g.courseAvg.toFixed(2),
                         g.facultyAvg.toFixed(2),
                       ]),
@@ -1241,7 +1241,7 @@ export function ByTermPanel({
           <h2 className="text-sm font-semibold">Where {value} needs attention</h2>
           <p className="text-xs text-muted-foreground">
             Every course in the term, weakest content score first. Content and teaching are scored
-            separately — they rarely fail together, and the fix differs.
+            separately. They rarely fail together, and the fix differs.
           </p>
           <div className="-mx-4 lg:-mx-6">
             <DataTablePaginated<TermBreakdownRow>
@@ -1420,7 +1420,7 @@ export function ByFacultyPanel({
           Offerings by {faculty.name.split(' ').slice(1).join(' ') || faculty.name}
         </h2>
         <p className="text-xs text-muted-foreground">
-          Rows with <i className="fa-light fa-chevron-right" aria-hidden="true" /> have evaluation data — click to open the card.
+          Rows with <i className="fa-light fa-chevron-right" aria-hidden="true" /> have evaluation data. Click to open the card.
         </p>
         <div className="-mx-4 lg:-mx-6">
           <DataTablePaginated<FacultyOfferingRow>
@@ -1510,7 +1510,7 @@ export function ByCoursePanel({
           : `${courseCode} scores consistently across its ${courseFaculty.length} instructors`,
       explanation:
         spread >= 0.4
-          ? 'A course that scores very differently by instructor is a staffing question, not a content one — the material is evidently teachable.'
+          ? 'A course that scores very differently by instructor is a staffing question, not a content one. The material is evidently teachable.'
           : 'Instructors land close together, so the score is a property of the course rather than of who is in front of it. That points at content.',
       kind: spread >= 0.4 ? 'anomaly' : 'trend',
       delta: { value: spread.toFixed(2), label: 'best to worst' },
@@ -1642,7 +1642,7 @@ export function ByCoursePanel({
                 : `${courseCode} has held steady since ${first.term}`,
           explanation:
             slope < 0
-              ? 'A multi-term slide is a stronger signal than one bad offering — compare what changed in staffing or structure between the peak term and now.'
+              ? 'A multi-term slide is a stronger signal than one bad offering. Compare what changed in staffing or structure between the peak term and now.'
               : 'Enrollment-weighted per term, so larger sections carry more weight in each point.',
           kind: slope < 0 ? 'dip' : 'trend',
           delta: { value: `${slope >= 0 ? '+' : ''}${slope.toFixed(2)}`, label: `since ${first.term}` },
@@ -1655,7 +1655,7 @@ export function ByCoursePanel({
         return (
           <ChartCard
             variant="normal"
-            title={`Score trend — ${courseCode}`}
+            title={`Score trend · ${courseCode}`}
             description="Content, teaching and response rate by term"
             leoInsight={courseTrendLeo}
           >
@@ -1680,8 +1680,8 @@ export function ByCoursePanel({
                     ])}
                   />
                   <ChartCardActions
-                    title={`Score trend — ${courseCode}`}
-                    description="Content and teaching scores by term — every point labelled with its exact value."
+                    title={`Score trend · ${courseCode}`}
+                    description="Content and teaching scores by term: every point labelled with its exact value."
                     detail={<CourseTrendStack rows={courseTrendRows} detail />}
                     table={{
                       headers: ['Term', 'Content', 'Teaching', 'Response rate', 'Faculty'],

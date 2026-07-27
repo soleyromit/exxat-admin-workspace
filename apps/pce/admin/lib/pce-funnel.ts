@@ -130,7 +130,7 @@ export function responseFunnel(scope?: {
 /** Human copy for what each drop-off actually means — the action differs per stage. */
 export const FUNNEL_STAGE_MEANING: Record<FunnelStage, string> = {
   Invited: 'Every enrolled student is invited when the survey opens.',
-  Opened: 'Never opened the invitation — a deliverability or timing problem, not an opinion.',
-  Started: 'Opened it and walked away — the ask looked too long, or the moment was wrong.',
+  Opened: 'Never opened the invitation: a deliverability or timing problem, not an opinion.',
+  Started: 'Opened it and walked away: the ask looked too long, or the moment was wrong.',
   Completed: 'Finished and submitted. This is the number every response rate on this page uses.',
 }

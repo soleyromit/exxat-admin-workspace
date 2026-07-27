@@ -574,7 +574,7 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
                   isActive={iconRailActive}
                   aria-current={iconRailActive ? "page" : undefined}
                   aria-haspopup="dialog"
-                  aria-label={`${item.title} — open subpages`}
+                  aria-label={`${item.title}, open subpages`}
                 >
                   <span
                     key={iconRailActive ? "active" : "idle"}
@@ -1383,7 +1383,7 @@ function ProductLogoButton() {
                 className="shrink-0 text-xs font-medium text-muted-foreground"
                 aria-hidden="true"
               >
-                — {p.scope}
+                · {p.scope}
               </span>
             )}
             {isCurrentProduct(p) && (

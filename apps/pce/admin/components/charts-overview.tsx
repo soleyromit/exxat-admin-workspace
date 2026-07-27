@@ -1642,7 +1642,7 @@ export const CHART_GALLERY_LEO_DONUT: ChartLeoInsight = {
   delta: { value: "+12%", label: "vs. last month" },
   bullets: [
     "Confirmed count has grown steadily across nursing, PT, and OT programs.",
-    "Rejection rate remains low at 1% — applications are well-qualified.",
+    "Rejection rate remains low at 1%. Applications are well-qualified.",
   ],
   anchor: chartLeoPeakAnchor(),
 }
@@ -1654,8 +1654,8 @@ export const CHART_GALLERY_LEO_APPLICATIONS: ChartLeoInsight = {
   kind: "trend",
   delta: { value: "+8%", label: "new vs. prior period" },
   bullets: [
-    "Nursing: 34 new, 22 returned — highest volume and strong re-engagement.",
-    "PT and OT: steady demand — balanced load across clinical programs.",
+    "Nursing: 34 new, 22 returned, highest volume and strong re-engagement.",
+    "PT and OT: steady demand, balanced load across clinical programs.",
   ],
   anchor: { xValue: "Nursing", yDataKeys: ["new", "returned"], yCombine: "sum" },
 }
@@ -1676,7 +1676,7 @@ export const CHART_GALLERY_LEO_LINE: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_COMPLIANCE: ChartLeoInsight = {
   headline: "PT/OT programs lead compliance scoring",
   explanation:
-    "PT and OT average 88–89% compliance, outpacing Nursing (82%) and Pharmacy (76%). Radiology lags at 71% — may need targeted support.",
+    "PT and OT average 88–89% compliance, outpacing Nursing (82%) and Pharmacy (76%). Radiology lags at 71%, may need targeted support.",
   kind: "dip",
   delta: { value: "-8%", label: "Radiology vs. PT/OT" },
   bullets: [
@@ -1708,7 +1708,7 @@ export const CHART_GALLERY_LEO_COMPOSED: ChartLeoInsight = {
   delta: { value: "+6%", label: "fill rate increase" },
   bullets: [
     "March shows the strongest fill rate at 84%.",
-    "Only 2 sites are below 70% utilization — opportunity to rebalance.",
+    "Only 2 sites are below 70% utilization, opportunity to rebalance.",
   ],
   anchor: { xValue: "Mar", yDataKeys: ["rate"], yValue: 94 },
 }
@@ -1721,7 +1721,7 @@ export const CHART_GALLERY_LEO_RADAR: ChartLeoInsight = {
   delta: { value: "—", label: "strong across programs" },
   bullets: [
     "6-dimension average: Nursing 84%, PT/OT 86%.",
-    "Lowest dimension: patient care (Nursing 79%) — room to develop.",
+    "Lowest dimension: patient care (Nursing 79%), room to develop.",
   ],
   anchor: chartLeoPeakAnchor(),
 }
@@ -1742,7 +1742,7 @@ export const CHART_GALLERY_LEO_SCATTER: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_FUNNEL: ChartLeoInsight = {
   headline: "Funnel shape is expected; strong at top of pipe",
   explanation:
-    "4,200 applications narrow to 842 offers (20% funnel rate) and 604 confirmed placements (72% offer acceptance). Losses are proportional—no anomalous drops.",
+    "4,200 applications narrow to 842 offers (20% funnel rate) and 604 confirmed placements (72% offer acceptance). Losses are proportional, no anomalous drops.",
   kind: "trend",
   delta: { value: "+8%", label: "application volume" },
   bullets: [
@@ -1767,13 +1767,13 @@ export const CHART_GALLERY_LEO_QUOTA: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_TRENDS: ChartLeoInsight = {
   headline: "December dips across placements, applications, and reviews",
   explanation:
-    "All three series pull back in December—often seasonal (holidays, academic breaks) or a real pipeline stall. Worth confirming whether approvals or site capacity paused.",
+    "All three series pull back in December, often seasonal (holidays, academic breaks) or a real pipeline stall. Worth confirming whether approvals or site capacity paused.",
   kind: "dip",
   delta: { value: "-24%", label: "vs. November" },
   bullets: [
     "Placements are 18% below the 6-month trailing average.",
     "Reviews dropped sharply in the last 2 weeks of the month.",
-    "Same pattern appeared in Dec '24 — seasonal signal is plausible.",
+    "Same pattern appeared in Dec '24. Seasonal signal is plausible.",
   ],
   anchor: {
     xValue: "Dec",
@@ -1785,12 +1785,12 @@ export const CHART_GALLERY_LEO_TRENDS: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_REVIEWS: ChartLeoInsight = {
   headline: "December is the low point in review throughput",
   explanation:
-    "Totals drop before recovering — worth confirming whether fewer submissions arrived or reviewers were out. Pending and rejected slices still matter once volume returns.",
+    "Totals drop before recovering. Worth confirming whether fewer submissions arrived or reviewers were out. Pending and rejected slices still matter once volume returns.",
   kind: "dip",
   delta: { value: "-31%", label: "vs. November total" },
   bullets: [
     "Approved reviews fell from 68 to 47 month-over-month.",
-    "Pending queue grew by 9 items — backlog forming.",
+    "Pending queue grew by 9 items, backlog forming.",
     "Two reviewers were OOO for most of the last two weeks.",
   ],
   anchor: {
@@ -1803,7 +1803,7 @@ export const CHART_GALLERY_LEO_REVIEWS: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_WATERFALL: ChartLeoInsight = {
   headline: "New placements drove the largest positive step this cycle",
   explanation:
-    "After opening at 120 placements, the New step adds 44 — the biggest single increase before renewals and closures adjust the total to 158.",
+    "After opening at 120 placements, the New step adds 44, the biggest single increase before renewals and closures adjust the total to 158.",
   kind: "spike",
   delta: { value: "+37%", label: "vs. opening total" },
   bullets: [
@@ -1816,11 +1816,11 @@ export const CHART_GALLERY_LEO_WATERFALL: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_TREEMAP: ChartLeoInsight = {
   headline: "Nursing occupies the largest share of program volume",
   explanation:
-    "The treemap shows Nursing at 34 — roughly one-third of the combined program share — with PT and OT as the next largest tiles.",
+    "The treemap shows Nursing at 34, roughly one-third of the combined program share, with PT and OT as the next largest tiles.",
   kind: "trend",
   delta: { value: "34", label: "Nursing share" },
   bullets: [
-    "Tile area tracks proportional share — Nursing leads by a wide margin.",
+    "Tile area tracks proportional share. Nursing leads by a wide margin.",
     "Smaller programs still appear as readable tiles with labels.",
   ],
   anchor: chartLeoPeakAnchor(),
@@ -1829,12 +1829,12 @@ export const CHART_GALLERY_LEO_TREEMAP: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_HEATMAP: ChartLeoInsight = {
   headline: "Wednesday afternoon shows the busiest activity window",
   explanation:
-    "Mid-week cells around 12p–2p run hotter than early-morning slots — useful when scheduling coordinator coverage.",
+    "Mid-week cells around 12p–2p run hotter than early-morning slots, useful when scheduling coordinator coverage.",
   kind: "spike",
   delta: { value: "53", label: "Wed 2p peak" },
   bullets: [
     "Peak intensity clusters on Wed between 12p and 2p.",
-    "Monday mornings stay lighter — good for async review work.",
+    "Monday mornings stay lighter, good for async review work.",
   ],
   anchor: chartLeoPeakAnchor(),
 }
@@ -1855,12 +1855,12 @@ export const CHART_GALLERY_LEO_SANKEY: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_TIMELINE: ChartLeoInsight = {
   headline: "Placement completes around day 56 on average",
   explanation:
-    "Milestones cluster on a single lane with the longest gap between Placed and Complete — worth monitoring for cycle-time SLAs.",
+    "Milestones cluster on a single lane with the longest gap between Placed and Complete, worth monitoring for cycle-time SLAs.",
   kind: "trend",
   delta: { value: "56d", label: "to complete" },
   bullets: [
     "Matched → Placed spans ~13 days in this sample.",
-    "Complete lands near day 56 — use for cohort planning.",
+    "Complete lands near day 56. Use for cohort planning.",
   ],
   anchor: { xValue: "56", yDataKeys: ["lane"], yValue: 1 },
 }
@@ -1868,11 +1868,11 @@ export const CHART_GALLERY_LEO_TIMELINE: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_BUBBLE: ChartLeoInsight = {
   headline: "West region combines high fill rate with strong student volume",
   explanation:
-    "The West bubble sits high on fill rate (82%) with 52 students — an efficient site cluster worth replicating.",
+    "The West bubble sits high on fill rate (82%) with 52 students, an efficient site cluster worth replicating.",
   kind: "spike",
   bullets: [
     "West: 82% fill rate at mid-range capacity.",
-    "South shows low fill despite available capacity — investigate demand.",
+    "South shows low fill despite available capacity. Investigate demand.",
   ],
   anchor: { xValue: "West", yDataKeys: ["fillRate"], yValue: 82 },
 }
@@ -1880,12 +1880,12 @@ export const CHART_GALLERY_LEO_BUBBLE: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_BOXPLOT: ChartLeoInsight = {
   headline: "Nursing scores show the tightest interquartile spread",
   explanation:
-    "Nursing’s Q1–Q3 band is narrow relative to Pharm — consistent performance across the cohort.",
+    "Nursing’s Q1–Q3 band is narrow relative to Pharm, consistent performance across the cohort.",
   kind: "trend",
   delta: { value: "Q1–Q3", label: "Nursing band" },
   bullets: [
     "Nursing median sits highest in the set.",
-    "Pharm shows the widest whisker span — more variance to investigate.",
+    "Pharm shows the widest whisker span, more variance to investigate.",
   ],
   anchor: { xValue: "Nursing", yDataKeys: ["median"] },
 }
@@ -1893,12 +1893,12 @@ export const CHART_GALLERY_LEO_BOXPLOT: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_RANGE: ChartLeoInsight = {
   headline: "May shows the widest capacity band in the series",
   explanation:
-    "The range between low and high capacity peaks in May — plan staffing for the upper band while monitoring June tightening.",
+    "The range between low and high capacity peaks in May. Plan staffing for the upper band while monitoring June tightening.",
   kind: "trend",
   delta: { value: "91", label: "May high" },
   bullets: [
     "May high band reaches 91 on this scale.",
-    "June compresses slightly — confirm whether demand eased.",
+    "June compresses slightly. Confirm whether demand eased.",
   ],
   anchor: { xValue: "May", yDataKeys: ["high"] },
 }
@@ -1906,12 +1906,12 @@ export const CHART_GALLERY_LEO_RANGE: ChartLeoInsight = {
 export const CHART_GALLERY_LEO_BULLET: ChartLeoInsight = {
   headline: "Compliance is closest to its target of the three KPIs",
   explanation:
-    "Compliance at 86% is 6 points under the 92% target — narrower gap than Placements or Reviews.",
+    "Compliance at 86% is 6 points under the 92% target, narrower gap than Placements or Reviews.",
   kind: "dip",
   delta: { value: "−6 pts", label: "vs. compliance target" },
   bullets: [
     "Compliance: 86 actual vs. 92 target.",
-    "Reviews trail furthest — prioritize review throughput.",
+    "Reviews trail furthest. Prioritize review throughput.",
   ],
   anchor: { xValue: "Compliance", yDataKeys: ["value"], yValue: 86 },
 }
@@ -1958,7 +1958,7 @@ function ChartRows({ v }: { v: ChartCardVariant }) {
               key="area"
               variant={v}
               title="Placement Trends"
-              description="Aug 2025 — Mar 2026"
+              description="Aug 2025 – Mar 2026"
               leoInsight={CHART_GALLERY_LEO_TRENDS}
               trendContent={<AreaLineTrendContent />}
               tabOptions={isTabs ? [
@@ -2101,7 +2101,7 @@ function ChartRows({ v }: { v: ChartCardVariant }) {
               {() => <RadialBarContent />}
             </ChartCard>
           ) : (
-            <ChartCard key="radial" variant={v} title="Compliance Scores" description="By program — current cycle"
+            <ChartCard key="radial" variant={v} title="Compliance Scores" description="By program · current cycle"
               leoInsight={CHART_GALLERY_LEO_COMPLIANCE}
               trendContent={<RadialLineTrend />}
               tabOptions={isTabs ? [

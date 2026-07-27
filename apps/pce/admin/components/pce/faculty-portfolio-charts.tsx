@@ -64,9 +64,9 @@ export function FacultyPortfolioCharts({
         explanation:
           lens === 'admin'
             ? 'Position against two benchmarks, not a rank. Each grey dot is another faculty member with ' +
-              'no name attached — the shape shows whether the department is tightly clustered (a small gap ' +
+              'no name attached. The shape shows whether the department is tightly clustered (a small gap ' +
               'means a lot) or widely spread (it means little).'
-            : 'Position against the department and university averages. No peer ranking is shown — a small ' +
+            : 'Position against the department and university averages. No peer ranking is shown. A small ' +
               'gap and a large one mean different things depending on how spread the department is.',
         kind: avgRating >= bench.department ? 'trend' : 'dip',
         delta: {
@@ -91,15 +91,15 @@ export function FacultyPortfolioCharts({
             ? `${best.courseCode} is the only course in this portfolio`
             : `${worst.courseCode} is the weakest of ${courseRank.length} courses at ${fmt2(worst.score.weighted)}`,
           explanation: single
-            ? 'A one-course portfolio cannot be ranked, and the spread between courses — usually the most ' +
-              'useful signal about a person — is not available. The per-term trend is the only comparison here.'
+            ? 'A one-course portfolio cannot be ranked, and the spread between courses, usually the most ' +
+              'useful signal about a person, is not available. The per-term trend is the only comparison here.'
             : `The gap between ${best.courseCode} (${fmt2(best.score.weighted)}) and ${worst.courseCode} ` +
               `(${fmt2(worst.score.weighted)}) is ${fmt2(best.score.weighted - worst.score.weighted)}. ` +
               'A person strong in one course and weak in another is a course-fit conversation, not a teaching one.',
           kind: single ? 'trend' : 'anomaly',
           delta: {
             value: fmt2(worst.score.weighted),
-            label: single ? best.courseCode : `lowest — ${worst.courseCode}`,
+            label: single ? best.courseCode : `lowest · ${worst.courseCode}`,
           },
           bullets: courseRank.map(
             (c) => `${c.courseCode}: ${fmt2(c.score.weighted)}/5 across ${c.terms} term${c.terms === 1 ? '' : 's'}.`,
@@ -130,7 +130,7 @@ export function FacultyPortfolioCharts({
           title="Standing vs benchmarks"
           description={
             lens === 'admin'
-              ? 'Position against the department and university averages — not a rank. Each grey dot is an unnamed faculty member.'
+              ? 'Position against the department and university averages, not a rank. Each grey dot is an unnamed faculty member.'
               : 'Your average against the department and university averages.'
           }
           leoInsight={benchLeo}
@@ -147,7 +147,7 @@ export function FacultyPortfolioCharts({
           >
             {() =>
               avgRating == null ? (
-                <ChartEmpty note="No evaluated offerings yet — nothing to place against a benchmark." />
+                <ChartEmpty note="No evaluated offerings yet, nothing to place against a benchmark." />
               ) : (
                 <>
                   <BenchmarkDistribution
@@ -203,7 +203,7 @@ export function FacultyPortfolioCharts({
           title="Courses taught"
           description={
             courseRank.length === 1
-              ? 'One course in this portfolio — ranking needs at least two, so the per-term trend is the comparison.'
+              ? 'One course in this portfolio. Ranking needs at least two, so the per-term trend is the comparison.'
               : 'Ranked best to worst, each with its own trend. Strong in one course and weak in another is a course-fit problem, not a teaching one.'
           }
           leoInsight={courseRankLeo}
@@ -255,7 +255,7 @@ export function FacultyPortfolioCharts({
                     headers={['Rank', 'Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
                     rows={courseRank.map((c, i) => [
                       i + 1,
-                      `${c.courseCode} — ${c.courseName}`,
+                      `${c.courseCode} · ${c.courseName}`,
                       fmt2(c.score.weighted),
                       fmt2(c.score.simple),
                       c.terms,
@@ -269,7 +269,7 @@ export function FacultyPortfolioCharts({
                       headers: ['Rank', 'Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
                       rows: courseRank.map((c, i) => [
                         i + 1,
-                        `${c.courseCode} — ${c.courseName}`,
+                        `${c.courseCode} · ${c.courseName}`,
                         fmt2(c.score.weighted),
                         fmt2(c.score.simple),
                         c.terms,
@@ -329,7 +329,7 @@ export function FacultyPortfolioCharts({
               const table = {
                 headers: ['Course', 'Term', 'Response rate'],
                 rows: courseResponse.map((r) => [
-                  `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
+                  `${r.courseCode} · ${r.courseName}`, r.term, `${r.responseRate}%`,
                 ] as (string | number)[]),
               }
               return (
@@ -345,7 +345,7 @@ export function FacultyPortfolioCharts({
                     caption="Response rate by course and term"
                     headers={['Course', 'Term', 'Response rate']}
                     rows={courseResponse.map((r) => [
-                      `${r.courseCode} — ${r.courseName}`, r.term, `${r.responseRate}%`,
+                      `${r.courseCode} · ${r.courseName}`, r.term, `${r.responseRate}%`,
                     ])}
                   />
                   <ChartCardActions

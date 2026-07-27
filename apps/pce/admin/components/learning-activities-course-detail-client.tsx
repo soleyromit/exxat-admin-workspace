@@ -182,7 +182,7 @@ function ModuleDisabledBanner({
     >
       <span className="font-medium text-foreground">{learningActivityTypeLabel(module)}</span> is not
       enabled for this offering
-      {action.disabledReason ? ` — ${action.disabledReason}` : "."}
+      {action.disabledReason ? `, ${action.disabledReason}` : "."}
     </div>
   )
 }
@@ -641,7 +641,7 @@ function FormReviewStatusCell({
       />
       <Button type="button" variant="outline" size="sm">
         {FORM_REVIEW_STATUS_ACTION[resolved]}
-        <span className="sr-only"> — {formKey}</span>
+        <span className="sr-only"> · {formKey}</span>
       </Button>
     </div>
   )
@@ -872,7 +872,7 @@ function PracticumLogTable({
             <div
               className="flex flex-wrap gap-1.5"
               role="group"
-              aria-label={`Timesheet hours — draft ${hours.draft}, submitted ${hours.submitted}, pending ${hours.pending}, rejected ${hours.rejected}, approved ${hours.approved}`}
+              aria-label={`Timesheet hours: draft ${hours.draft}, submitted ${hours.submitted}, pending ${hours.pending}, rejected ${hours.rejected}, approved ${hours.approved}`}
             >
               {items.map(item => (
                 <StatusBadge key={item.key} label={item.value} tone={item.tone} size="sm" />
@@ -955,7 +955,7 @@ function GradebookTable({
       },
       {
         key: "patientLogCalScore",
-        label: "Patient log — cal. score",
+        label: "Patient log · cal. score",
         width: 150,
         minWidth: 130,
         cell: row => (
@@ -964,7 +964,7 @@ function GradebookTable({
       },
       {
         key: "patientLogWtScore",
-        label: "Patient log — wt. score",
+        label: "Patient log · wt. score",
         width: 150,
         minWidth: 130,
         cell: row => (
@@ -1096,7 +1096,7 @@ function ReviewPanel({
           </Button>
         </div>
         <div className="mb-4">
-          <h2 className="text-base font-semibold text-foreground">Review — all forms</h2>
+          <h2 className="text-base font-semibold text-foreground">Review · all forms</h2>
           <p className="text-sm text-muted-foreground">
             Per-student completion across every form in this offering.
           </p>

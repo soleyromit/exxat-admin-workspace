@@ -138,7 +138,7 @@ export function AskLeoSidebar() {
         dataSlot="ask-leo-panel"
         widthPersistKey={ASK_LEO_PANEL_WIDTH_KEY}
         widthDefault={ASK_LEO_PANEL_WIDTH_DEFAULT}
-        aria-label="Ask Leo — AI assistant"
+        aria-label="Ask Leo · AI assistant"
         contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <div className="flex min-h-0 flex-1 flex-col">

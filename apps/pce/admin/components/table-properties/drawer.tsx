@@ -443,7 +443,7 @@ function FilterPanel({
               {idx > 0 && leftId && (
                 <div className="flex items-center gap-2 py-1">
                   <div className="flex-1 h-px bg-border" aria-hidden="true" />
-                  <Tip label="Click to switch: AND — every filter must match; OR — any matching filter is enough." side="top">
+                  <Tip label="Click to switch: AND, every filter must match; OR, any matching filter is enough." side="top">
                     <Button
                       type="button"
                       variant="outline"
@@ -568,7 +568,7 @@ function FilterCard({
             type="button"
             variant="ghost"
             size="xs"
-            aria-label={`Operator: ${OPERATOR_LABELS[filter.operator]} — click to cycle`}
+            aria-label={`Operator: ${OPERATOR_LABELS[filter.operator]}, click to cycle`}
             onClick={cycleOperator}
             className="h-auto py-0 px-1 -ms-1 text-xs text-muted-foreground font-normal"
           >
@@ -653,7 +653,7 @@ function FilterCard({
           ) : fieldDef.type === "date" ? (
             <div className="p-2">
               <FilterDateCalendar
-                label={`${fieldDef.label} — choose date`}
+                label={`${fieldDef.label}, choose date`}
                 valueYmd={filter.values[0]}
                 onChangeYmd={(ymd) => onUpdate(filter.id, { values: ymd ? [ymd] : [] })}
               />
@@ -763,7 +763,7 @@ function SortPanel({
                         type="button"
                         variant="ghost"
                         size="xs"
-                        aria-label={`Direction: ${rule.direction === "asc" ? "Ascending" : "Descending"} — click to toggle`}
+                        aria-label={`Direction: ${rule.direction === "asc" ? "Ascending" : "Descending"}, click to toggle`}
                         onClick={() => onToggleSortDir(rule.id)}
                         className="h-auto py-0 px-1 -ms-1 text-xs text-muted-foreground font-normal hover:text-interactive-hover-foreground mt-0.5"
                       >

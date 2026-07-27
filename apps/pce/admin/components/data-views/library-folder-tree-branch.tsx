@@ -225,7 +225,7 @@ function LibraryFolderTreeBranchInner({
             <button
               type="button"
               className="icon-button-chrome flex size-8 shrink-0 self-start items-center justify-center transition-colors hover:text-interactive-hover-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`${folder.name} — expand or collapse`}
+              aria-label={`${folder.name}, expand or collapse`}
             >
               <i
                 className="fa-light fa-chevron-right text-xs transition-transform duration-150 group-data-[state=open]/collapsible:rotate-90"

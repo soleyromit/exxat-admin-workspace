@@ -16,10 +16,10 @@ const ADMIN_ENTITY_ROUTES = [
 ]
 
 const PAGE_ROUTES = [
-  { id: "page-ce-dashboard",      label: "Course Evaluation — Dashboard",        href: "/course-evaluation/dashboard", icon: "fa-light fa-grid-2" },
+  { id: "page-ce-dashboard",      label: "Course Evaluation · Dashboard",        href: "/course-evaluation/dashboard", icon: "fa-light fa-grid-2" },
   ...termsOrdered.map((t) => ({
     id: `page-term-${t.id}`,
-    label: `${t.name} — Term Workspace`,
+    label: `${t.name} · Term Workspace`,
     keywords: "term workspace evaluations response rate",
     href: `/course-evaluation/term/${t.id}`,
     icon: "fa-light fa-calendar-days",
@@ -31,13 +31,13 @@ const PAGE_ROUTES = [
   { id: "page-templates",         label: "Templates",                            href: "/admin/eval-settings?section=templates", icon: "fa-light fa-rectangle-list" },
   { id: "page-moderation",        label: "Moderation",                           href: "/moderation",                icon: "fa-light fa-shield-check" },
   { id: "page-results",           label: "Results",                              href: "/results",                   icon: "fa-light fa-square-poll-vertical" },
-  { id: "page-analytics-ce",      label: "Analytics — Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
-  { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
+  { id: "page-analytics-ce",      label: "Analytics · Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
+  { id: "page-analytics-ps",      label: "Analytics · Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
   { id: "page-email-templates",   label: "Email Templates",                      href: "/admin/email-templates",     icon: "fa-light fa-envelope" },
   { id: "page-reminder-schedule", label: "Reminder Schedule",                    href: "/admin/reminder-schedule",   icon: "fa-light fa-bell" },
-  { id: "page-compare-push-flow-rows", label: "Compare — Push flow rows (Variant B)", keywords: "variant compare per-flow evaluatee monil", href: "/compare/push-flow-rows", icon: "fa-light fa-table-list" },
-  { id: "page-compare-push-course-ledger", label: "Compare — Course flow ledger (Variant C)", keywords: "variant compare ledger course flows monil", href: "/compare/push-course-ledger", icon: "fa-light fa-table-list" },
-  { id: "page-compare-fix-affordance", label: "Compare — Fix affordance (3 treatments)", keywords: "variant compare add faculty students action density", href: "/compare/fix-affordance", icon: "fa-light fa-table-list" },
+  { id: "page-compare-push-flow-rows", label: "Compare · Push flow rows (Variant B)", keywords: "variant compare per-flow evaluatee monil", href: "/compare/push-flow-rows", icon: "fa-light fa-table-list" },
+  { id: "page-compare-push-course-ledger", label: "Compare · Course flow ledger (Variant C)", keywords: "variant compare ledger course flows monil", href: "/compare/push-course-ledger", icon: "fa-light fa-table-list" },
+  { id: "page-compare-fix-affordance", label: "Compare · Fix affordance (3 treatments)", keywords: "variant compare add faculty students action density", href: "/compare/fix-affordance", icon: "fa-light fa-table-list" },
   { id: "page-settings",          label: "Settings",                             href: "/settings",                  icon: "fa-light fa-gear" },
   { id: "page-help",              label: "Help",                                 href: "/help",                      icon: "fa-light fa-circle-question" },
 ]
@@ -49,7 +49,7 @@ export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [
     searchOnly: true,
     items: MOCK_SURVEYS.map(s => ({
       id: `survey-${s.id}`,
-      label: `${s.courseCode} — ${s.courseName}`,
+      label: `${s.courseCode} · ${s.courseName}`,
       keywords: s.term,
       icon: "fa-light fa-paper-plane",
       href: `/surveys/${s.id}`,
