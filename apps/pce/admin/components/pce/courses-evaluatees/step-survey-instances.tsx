@@ -346,7 +346,7 @@ export function StepSurveyInstances({
             <p className="text-sm text-muted-foreground tabular-nums">
               {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
               {reEvals > 0 && <> · {reEvals} evaluated again</>}
-              {skipped > 0 && <> · {skipped} already covered stay untouched</>}
+              {skipped > 0 && <> · {skipped} existing evaluations stay untouched</>}
               {pendingGaps > 0 && <> · {pendingGaps} queued until faculty is added</>}
             </p>
           </div>
@@ -401,7 +401,7 @@ export function StepSurveyInstances({
                         <span className="text-xs text-muted-foreground">
                           <span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}
                           {included.has(item.key) && (
-                            <span style={{ color: 'var(--chip-4)' }}> · queued until faculty is added</span>
+                            <span style={{ color: 'var(--chip-4)' }}> · Queued until faculty is added</span>
                           )}
                         </span>
                       </div>
@@ -426,7 +426,7 @@ export function StepSurveyInstances({
                 sub="Skipped by default — flip any you want to run again."
                 chip={reEvals > 0 && (
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--insight-severity-info-bg)', color: 'var(--insight-severity-info-fg)' }}>
-                    {reEvals} run again
+                    {reEvals} will run again
                   </span>
                 )}
               >

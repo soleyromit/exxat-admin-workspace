@@ -983,7 +983,7 @@ function VariantE({ model }: { model: PlanModel }) {
         <p className="text-sm text-muted-foreground tabular-nums">
           {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
           {model.counts.reEvals > 0 && <> · {model.counts.reEvals} evaluated again</>}
-          {model.counts.skipped > 0 && <> · {model.counts.skipped} already covered stay untouched</>}
+          {model.counts.skipped > 0 && <> · {model.counts.skipped} existing evaluations stay untouched</>}
         </p>
       </div>
 
@@ -1032,7 +1032,7 @@ function VariantE({ model }: { model: PlanModel }) {
                   <span className="text-xs text-muted-foreground">
                     <span className="font-mono tabular-nums">{code}</span>{name && <> {name}</>}
                     {model.included.has(item.key) && (
-                      <span style={{ color: 'var(--chip-4)' }}> · queued until faculty is added</span>
+                      <span style={{ color: 'var(--chip-4)' }}> · Queued until faculty is added</span>
                     )}
                   </span>
                 </div>
@@ -1057,7 +1057,7 @@ function VariantE({ model }: { model: PlanModel }) {
           sub="Skipped by default — flip any you want to run again."
           chip={model.counts.reEvals > 0 && (
             <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--insight-severity-info-bg)', color: 'var(--insight-severity-info-fg)' }}>
-              {model.counts.reEvals} run again
+              {model.counts.reEvals} will run again
             </span>
           )}
         >
@@ -1409,7 +1409,7 @@ function VariantG({ model }: { model: PlanModel }) {
         </Button>
         {upNext.length > 0 && (
           <span className="ms-auto text-xs text-muted-foreground truncate">
-            Up next: {upNext.map(i => (i.status === 'gap' ? `${splitLabel(courseOf(i)).code} — no ${i.roleLabel}` : `${splitLabel(courseOf(i)).code} — already covered`)).join(' · ')}
+            Up next: {upNext.map(i => (i.status === 'gap' ? `${splitLabel(courseOf(i)).code} — No ${i.roleLabel} assigned` : `${splitLabel(courseOf(i)).code} — Already covered`)).join(' · ')}
           </span>
         )}
       </div>
@@ -1438,7 +1438,7 @@ function VariantH({ model }: { model: PlanModel }) {
         <p className="text-sm text-muted-foreground tabular-nums">
           {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
           {model.counts.reEvals > 0 && <> · {model.counts.reEvals} evaluated again</>}
-          {model.counts.skipped > 0 && <> · {model.counts.skipped} already covered stay untouched</>}
+          {model.counts.skipped > 0 && <> · {model.counts.skipped} existing evaluations stay untouched</>}
         </p>
       </div>
 
@@ -1460,14 +1460,14 @@ function VariantH({ model }: { model: PlanModel }) {
 // ── Page shell ───────────────────────────────────────────────────────────────
 
 const VARIANTS = [
-  { id: 'a', name: 'Anchor ledger', hint: 'all cards + jump rail' },
-  { id: 'b', name: 'Decision queue', hint: 'exceptions first' },
-  { id: 'c', name: 'Worksheet', hint: 'one sheet, sticky bands' },
-  { id: 'd', name: 'Split, grown up', hint: 'refined list + detail' },
-  { id: 'e', name: 'Briefing', hint: 'the plan in plain language' },
-  { id: 'f', name: 'Coverage grid', hint: 'courses × roles matrix' },
-  { id: 'g', name: 'Focus flow', hint: 'one decision at a time' },
-  { id: 'h', name: 'Synthesis', hint: 'recommended: brief → decide → audit' },
+  { id: 'a', name: 'Anchor ledger', hint: 'All cards + a jump rail' },
+  { id: 'b', name: 'Decision queue', hint: 'Exceptions first' },
+  { id: 'c', name: 'Worksheet', hint: 'One sheet with sticky bands' },
+  { id: 'd', name: 'Split, grown up', hint: 'Refined list + detail' },
+  { id: 'e', name: 'Briefing', hint: 'The plan in plain language' },
+  { id: 'f', name: 'Coverage grid', hint: 'Courses × roles matrix' },
+  { id: 'g', name: 'Focus flow', hint: 'One decision at a time' },
+  { id: 'h', name: 'Synthesis', hint: 'Recommended — brief → decide → audit' },
 ] as const
 
 function CompareInner() {
