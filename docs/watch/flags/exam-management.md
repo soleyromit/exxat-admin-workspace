@@ -430,3 +430,10 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** Raise with Nipun and Bhargav. Designs for result publishing should not be finalized until this is answered. Two flow variants may be needed: (a) release per-submission (faculty grades as they go — students see results immediately), (b) release all at once after all submissions graded (batch release). RBAC implications: only the faculty/coordinator should trigger the release, not students. Confirm whether the EM POC Demo scope item "RBAC - role and scope based" includes this gating behaviour.
 
 ---
+
+## DECISION CONFLICT — 2026-07-27
+**Old decision (exam-decision-001):** Exam download capability is in scope for phase 1 — students must be able to download the exam to their local device within a coordinator-defined download window before the exam. Taking the exam must not require active Internet once downloaded. (Source: May 19 + May 21, 2026 transcripts. Status: now SUPERSEDED.)
+**New directive from Vishal (PM) in Exam management weekly call — Jul 23, 2026:** "We are not building the download assessment functionality" for the Jan MVP. Students take exams online with a password. Download is targeted for limited availability in March.
+**Action:** exam-decision-001 has been marked superseded by exam-decision-017. Confirm whether the March download target is firm (speaker questioned it before leaving the call) and update exam-decision-017 when the date is locked. Any design work on the offline download flow (student-side download prompt, coordinator download window) should be deferred until the March scope is confirmed.
+
+---

@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-07-20",
+  "lastUpdated": "2026-07-27",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -181,7 +181,8 @@
       "source": "Assessment creation workflows and question bank design transcript — May 19, 2026; confirmed in Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft transcript — May 21, 2026",
       "sourceType": "transcript",
       "date": "2026-05-19",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "exam-decision-017"
     },
     {
       "id": "exam-decision-002",
@@ -813,6 +814,107 @@
       "source": "Course evaluation setup — design feedback and UX refinement transcript — Jul 14, 2026",
       "sourceType": "transcript",
       "date": "2026-07-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-064",
+      "product": "pce",
+      "text": "Dashboard term cards must show a 'create template' CTA in states where no template has yet been created — specifically for upcoming terms or programs setting up their first evaluation. This CTA appears alongside 'setup evaluations'. It does NOT appear for programs or terms where a prior survey has already been pushed (a template already exists for those).",
+      "stakeholder": "Vishal (PM)",
+      "source": "Vishal PM sync transcript — Jul 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-065",
+      "product": "pce",
+      "text": "Setup survey wizard is finalized as 4 steps: (1) Course selection + zero-student identification; (2) Template assignment per course + evaluity (what to evaluate) derived from template + duplicate soft warning; (3) Communication (email, reminders, dates); (4) Review and consent for any warnings. The 'what to evaluate' field is removed from step 1 — it is now derived automatically from the template selected in step 2. Step 1 is course readiness only.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Survey evaluation workflow — step separation and duplicate detection transcript — Jul 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-066",
+      "product": "pce",
+      "text": "A duplicate evaluation is defined as the combination of (course offering ID + faculty role type + person ID). A soft warning is shown in step 2 of the setup wizard when this exact triple already has a live survey. It is NOT a hard block — the admin can proceed. This rule may be hardened to a block later if data supports it.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Survey evaluation workflow — step separation and duplicate detection transcript — Jul 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-067",
+      "product": "pce",
+      "text": "Template creation step order is restored to: (1) Template settings (name, course type, and metadata) FIRST; (2) Template builder (FaaS UI with sections and questions) SECOND. This reverses any prior exploration of putting the builder before settings.",
+      "stakeholder": "Vishal (PM)",
+      "source": "PCE template creation — step order and analytics filter hierarchy transcript — Jul 22, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-22",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-068",
+      "product": "pce",
+      "text": "Single-survey analytics faculty filter follows a two-level hierarchy: faculty role type first, then person within that role. Example: selecting 'Instructor' as the role shows Dr. John and Dr. David; selecting 'Coordinator' shows Dr. Maya. The filter is not a flat list of all faculty.",
+      "stakeholder": "Vishal (PM)",
+      "source": "PCE template creation — step order and analytics filter hierarchy transcript — Jul 22, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-22",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-069",
+      "product": "pce",
+      "text": "One template = one survey is the confirmed publishing architecture. Multiple templates per survey are not supported. Trade-off accepted: template creation may be more complex (each template fully specifies one survey), but publishing is simple — the admin makes one template selection per course with no further multi-template choices. Vishal: 'One template means one survey. So if we have multiple templates, then template creation might be complex. But while publishing a survey, the user will not have multiple selections to do.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Course Eval sync up transcript — Jul 21, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-21",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-017",
+      "product": "exam-management",
+      "text": "Exam download capability is removed from the MVP (Jan 20 launch). Students take exams online with a password for the Jan launch. Download functionality is targeted for limited availability in March. SUPERSEDES exam-decision-001.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Exam management weekly call transcript — Jul 23, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-23",
+      "status": "confirmed",
+      "supersedes": "exam-decision-001"
+    },
+    {
+      "id": "exam-decision-018",
+      "product": "exam-management",
+      "text": "Faculty must be able to manually adjust scores at two levels in the grade review screen before LMS push: (1) question level — remove a question from scoring entirely or award bonus points to everyone; (2) individual student level — override a specific student's score. Both adjustment types are required.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Exam management weekly call transcript — Jul 23, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-019",
+      "product": "exam-management",
+      "text": "Point-by-serial (PBS) is calculated at the per-assessment level (specific class + assessment instance) as the primary metric. Historical PBS across all uses of the same assessment is secondary context. Both the per-assessment PBS and the historical PBS should be available in the analytics view.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Exam management weekly call transcript — Jul 23, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-020",
+      "product": "exam-management",
+      "text": "Cronbach's alpha is to be researched as a potential assessment-level quality metric (internal consistency measure), in parity with ExamSoft. This is a research action item — Aarti directed Vishal and Nipun to investigate it before it becomes a design decision.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 23, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-23",
       "status": "confirmed"
     }
   ]

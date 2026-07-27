@@ -482,3 +482,12 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Update PRD §4 Step 1 to clarify the upload placement OR confirm with Monil and Vishaka which scope wins before building the template creation screen. Vishaka's directive is the current authoritative decision (pce-decision-028). If Monil's per-aspect proposal supersedes it, update pce-decision-028 accordingly.
 
 ---
+
+## MOOT GUIDANCE NOTICE — 2026-07-27
+**Affected decision:** pce-decision-062
+**Guidance now moot:** pce-decision-062 states that the "what to evaluate" selector (faculty role type) must not use horizontal radio buttons because there can be 45–50 faculty role types — it requires a scalable UI pattern (dropdown or similar).
+**Why it's moot:** pce-decision-065 (Jul 24, 2026) removes the "what to evaluate" field from step 1 of the setup wizard entirely. It is no longer a user-entered field — it is derived automatically from the template selected in step 2. There is no UI to design for this field in step 1.
+**What still applies from pce-decision-062:** The cohort guidance in pce-decision-062 (scalable selector for cohort, which can also have many entries) remains valid for any cohort selection UI.
+**Action:** No design work needed for the "what to evaluate" step-1 UI. If a "what to evaluate" selector appears anywhere else in the product (outside of step 1 context), apply the scalable pattern from pce-decision-062.
+
+---

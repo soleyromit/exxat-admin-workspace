@@ -1390,6 +1390,21 @@
             "files": [
                 "docs/watch/stakeholder-decisions.json"
             ]
+        },
+        {
+            "id": "2026-07-27-granola-intake-001",
+            "date": "2026-07-27",
+            "product": "pce, exam-management",
+            "type": "decision-extracted",
+            "title": "Granola intake \u2014 10 new decisions (6 PCE, 4 Exam), 1 conflict flagged",
+            "what": "Extracted 10 confirmed design decisions from 6 meeting transcripts (Vishal PM sync Jul 20; Course Eval sync up Jul 21 with Vishal; PCE template creation and analytics filter Jul 22 with Vishal; Exam management weekly call Jul 23 with Vishaka/Aarti/Vishal; Survey evaluation workflow step separation and duplicate detection Jul 24 with Vishal; 1:1 with Arun Jul 20 \u2014 skipped, leadership/teamwork discussion only). New PCE decisions (pce-decision-064 to pce-decision-069): dashboard term cards show 'create template' CTA when no template exists; setup wizard finalized as 4 steps with 'what to evaluate' removed from step 1 and derived from template in step 2; duplicate evaluation defined as (course offering ID + faculty role type + person ID) with soft warning in step 2; template creation step order restored (settings first, builder second); single-survey analytics faculty filter is two-level hierarchy (role then person); one template = one survey architecture confirmed. New Exam decisions (exam-decision-017 to exam-decision-020): download removed from Jan MVP (online with password; March for download); faculty manual score adjustment at question level and individual student level required before LMS push; PBS calculated per-assessment as primary with historical as secondary context; Cronbach's alpha research action item (parity with ExamSoft). CONFLICT: exam-decision-001 (download in phase 1 scope, May 2026) superseded by exam-decision-017 (download removed from Jan MVP, Jul 23 2026). Flagged in docs/watch/flags/exam-management.md. MOOT GUIDANCE: pce-decision-062 'what to evaluate' UI guidance is now moot because field removed from step 1 per pce-decision-065. Noted in docs/watch/flags/pce.md.",
+            "source": "Vishal PM sync transcript \u2014 Jul 20, 2026; Course Eval sync up transcript \u2014 Jul 21, 2026; PCE template creation \u2014 step order and analytics filter hierarchy transcript \u2014 Jul 22, 2026; Exam management weekly call transcript \u2014 Jul 23, 2026; Survey evaluation workflow \u2014 step separation and duplicate detection transcript \u2014 Jul 24, 2026",
+            "severity": "conflict",
+            "files": [
+                "docs/watch/stakeholder-decisions.json",
+                "docs/watch/flags/exam-management.md",
+                "docs/watch/flags/pce.md"
+            ]
         }
     ]
 }
