@@ -81,6 +81,131 @@ function openPhrase(f: PceSurvey): string | null {
 const instanceLabel = (i: SurveyInstance) =>
   i.scope === 'course' ? 'Course material' : (i.personName ?? 'No one assigned')
 
+// ── Row/section pieces — MODULE scope on purpose ─────────────────────────────
+// Defining these inside the component gives them a fresh identity every
+// render: React then unmounts/remounts the whole accordion subtree on each
+// click, replaying the open animation from height 0 and yanking the scroll
+// ("checkbox clicks scroll the page up", Jul 27). Keep them here.
+
+function EvaluateeDisc({ item, size = 5 }: { item: SurveyInstance; size?: 4 | 5 }) {
+  return item.scope === 'course' ? (
+    <span className={`size-${size} rounded-full flex items-center justify-center shrink-0 border border-border bg-background`}>
+      <i className={`fa-light fa-book-open ${size === 5 ? 'text-[9px]' : 'text-[8px]'} text-muted-foreground`} aria-hidden="true" />
+    </span>
+  ) : (
+    <PersonAvatar name={item.personName!} className={`size-${size}`} />
+  )
+}
+
+function NamesInline({ items }: { items: SurveyInstance[] }) {
+  return (
+    <span className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap min-w-0">
+      {items.map(i => (
+        <span key={i.key} className="inline-flex items-center gap-1 min-w-0">
+          <EvaluateeDisc item={i} size={4} />
+          <span className="truncate">{instanceLabel(i)}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function ExistingFacts({ item }: { item: SurveyInstance }) {
+  if (!item.existing) return null
+  const phrase = openPhrase(item.existing)
+  return (
+    <span className="flex items-center gap-1.5 shrink-0">
+      <SurveyStatusBadgeOS status={item.existing.status} />
+      {phrase && (
+        <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
+          <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
+          {phrase}
+        </span>
+      )}
+    </span>
+  )
+}
+
+/** DS Accordion carries the trigger color, hover, focus ring, and rotating
+ *  chevron (composition mirrors evaluation-card-sheet). Collapsed triggers
+ *  keep a resolution chip readable (Zillow review model). */
+function Section({ k, icon, title, sub, chip, children }: {
+  k: string; icon: ReactNode; title: string; sub: string; chip?: ReactNode; children: ReactNode
+}) {
+  return (
+    <AccordionItem value={k} className="border-b-0">
+      <Card size="sm" className="py-0 gap-0 overflow-hidden">
+        <AccordionTrigger className="px-4 py-3.5 items-center hover:no-underline">
+          <span className="flex items-center gap-3 flex-1 min-w-0 text-start">
+            <span className="shrink-0 flex items-center justify-center">{icon}</span>
+            <span className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-sm font-medium">{title}</span>
+              <span className="text-xs text-muted-foreground truncate font-normal">{sub}</span>
+            </span>
+            {chip && <span className="ms-auto shrink-0">{chip}</span>}
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="p-0 text-foreground">
+          <div className="border-t border-border">{children}</div>
+        </AccordionContent>
+      </Card>
+    </AccordionItem>
+  )
+}
+
+function TemplateControl({ offering, templateId, edited, publishedTemplates, onTemplateChange, onCreate }: {
+  offering: CourseOffering
+  templateId: string
+  edited: boolean
+  publishedTemplates: PceTemplate[]
+  onTemplateChange: (offeringId: string, templateId: string) => void
+  onCreate: () => void
+}) {
+  const { code } = splitLabel(offering)
+  if (publishedTemplates.length === 0) {
+    return (
+      <Button
+        variant="outline"
+        size="xs"
+        aria-label={`Create a template — none exist yet to assign to ${code}`}
+        onClick={onCreate}
+      >
+        <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
+        Create template
+      </Button>
+    )
+  }
+  return (
+    <Select value={templateId} onValueChange={v => onTemplateChange(offering.id, v)}>
+      <SelectTrigger
+        aria-label={`Template for ${code}${!templateId ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+        className={!templateId
+          ? 'w-fit min-w-0 border-0 shadow-none'
+          : `min-w-0 [&>span]:truncate [&>span]:min-w-0 ${edited ? 'bg-secondary' : 'bg-background'}`}
+        style={{
+          height: 28, fontSize: 12,
+          ...(templateId ? { width: 180 } : {
+            paddingInline: 10,
+            background: 'var(--insight-severity-info-bg)',
+          }),
+        }}
+      >
+        <SelectValue
+          placeholder={
+            <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+              Assign template
+            </span>
+          }
+        />
+      </SelectTrigger>
+      <SelectContent>
+        {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  )
+}
+
 /** code + name split; master courses missing from the catalog fall back to the
  *  raw id — show it as the code so the row never goes blank. */
 function splitLabel(o: CourseOffering): { code: string; name: string } {
@@ -166,117 +291,6 @@ export function StepSurveyInstances({
   const missingTemplate = courses.filter(o => !templateIdFor(o)).length
   const templatesInUse = new Set(courses.map(o => templateIdFor(o)).filter(Boolean))
   const courseOf = (i: SurveyInstance) => courses.find(o => o.id === i.offeringId)
-
-  // ── Shared pieces (promoted from /compare/push-survey-design?v=e) ─────────
-
-  const EvaluateeDisc = ({ item, size = 5 }: { item: SurveyInstance; size?: 4 | 5 }) =>
-    item.scope === 'course' ? (
-      <span className={`size-${size} rounded-full flex items-center justify-center shrink-0 border border-border bg-background`}>
-        <i className={`fa-light fa-book-open ${size === 5 ? 'text-[9px]' : 'text-[8px]'} text-muted-foreground`} aria-hidden="true" />
-      </span>
-    ) : (
-      <PersonAvatar name={item.personName!} className={`size-${size}`} />
-    )
-
-  const NamesInline = ({ items }: { items: SurveyInstance[] }) => (
-    <span className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap min-w-0">
-      {items.map(i => (
-        <span key={i.key} className="inline-flex items-center gap-1 min-w-0">
-          <EvaluateeDisc item={i} size={4} />
-          <span className="truncate">{instanceLabel(i)}</span>
-        </span>
-      ))}
-    </span>
-  )
-
-  const ExistingFacts = ({ item }: { item: SurveyInstance }) => {
-    if (!item.existing) return null
-    const phrase = openPhrase(item.existing)
-    return (
-      <span className="flex items-center gap-1.5 shrink-0">
-        <SurveyStatusBadgeOS status={item.existing.status} />
-        {phrase && (
-          <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
-            <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
-            {phrase}
-          </span>
-        )}
-      </span>
-    )
-  }
-
-  const TemplateControl = ({ offering }: { offering: CourseOffering }) => {
-    const { code } = splitLabel(offering)
-    const templateId = templateIdFor(offering)
-    const edited = !!templateId && templateId !== defaultAssignments[offering.id]
-    if (publishedTemplates.length === 0) {
-      return (
-        <Button
-          variant="outline"
-          size="xs"
-          aria-label={`Create a template — none exist yet to assign to ${code}`}
-          onClick={() => { setNotice(null); setSubView('create') }}
-        >
-          <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
-          Create template
-        </Button>
-      )
-    }
-    return (
-      <Select value={templateId} onValueChange={v => onTemplateChange(offering.id, v)}>
-        <SelectTrigger
-          aria-label={`Template for ${code}${!templateId ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
-          className={!templateId
-            ? 'w-fit min-w-0 border-0 shadow-none'
-            : `min-w-0 [&>span]:truncate [&>span]:min-w-0 ${edited ? 'bg-secondary' : 'bg-background'}`}
-          style={{
-            height: 28, fontSize: 12,
-            ...(templateId ? { width: 180 } : {
-              paddingInline: 10,
-              background: 'var(--insight-severity-info-bg)',
-            }),
-          }}
-        >
-          <SelectValue
-            placeholder={
-              <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Assign template
-              </span>
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {publishedTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-        </SelectContent>
-      </Select>
-    )
-  }
-
-  /** DS Accordion carries the trigger color, hover, focus ring, and rotating
-   *  chevron (composition mirrors evaluation-card-sheet). Collapsed triggers
-   *  keep a resolution chip readable (Zillow review model). */
-  const Section = ({ k, icon, title, sub, chip, children }: {
-    k: string; icon: ReactNode; title: string; sub: string; chip?: ReactNode; children: ReactNode
-  }) => (
-    <AccordionItem value={k} className="border-b-0">
-      <Card size="sm" className="py-0 gap-0 overflow-hidden">
-        <AccordionTrigger className="px-4 py-3.5 items-center hover:no-underline">
-          <span className="flex items-center gap-3 flex-1 min-w-0 text-start">
-            <span className="shrink-0 flex items-center justify-center">{icon}</span>
-            <span className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm font-medium">{title}</span>
-              <span className="text-xs text-muted-foreground truncate font-normal">{sub}</span>
-            </span>
-            {chip && <span className="ms-auto shrink-0">{chip}</span>}
-          </span>
-        </AccordionTrigger>
-        <AccordionContent className="p-0 text-foreground">
-          <div className="border-t border-border">{children}</div>
-        </AccordionContent>
-      </Card>
-    </AccordionItem>
-  )
 
   // ── Create sub-view: same chooser + builder as Settings > Templates ────────
   if (subView !== 'assign') {
@@ -492,7 +506,14 @@ export function StepSurveyInstances({
                             : 'All covered — nothing new to create.'}
                       </span>
                     </div>
-                    <TemplateControl offering={o} />
+                    <TemplateControl
+                      offering={o}
+                      templateId={templateId}
+                      edited={!!templateId && templateId !== defaultAssignments[o.id]}
+                      publishedTemplates={publishedTemplates}
+                      onTemplateChange={onTemplateChange}
+                      onCreate={() => { setNotice(null); setSubView('create') }}
+                    />
                   </div>
                 )
               })}
