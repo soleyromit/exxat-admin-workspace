@@ -2,7 +2,7 @@
 
 // Wizard step shell — hand-roll justified (no DS step-frame organism), see
 // docs/governance/ds-adoption.md §PCE. Composes DS Accordion/ToggleSwitch/
-// Checkbox+CheckboxLabel/Select/Button/Card/LocalBanner + SurveyStatusBadgeOS.
+// Checkbox+CheckboxLabel/Select/Button/Card/LocalBanner + SurveyStatusDateBadgeOS.
 //
 // Step 2 of the push wizard — "Survey design", the promoted BRIEFING (Romit
 // Jul 27 — /compare/push-survey-design?v=e after the A–H rounds): the plan in
@@ -32,11 +32,11 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
-import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
+import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
-import { type CourseOffering, type PceTemplate, type PceSurvey } from '@/lib/pce-mock-data'
+import { type CourseOffering, type PceTemplate } from '@/lib/pce-mock-data'
 import { courseLabelOf } from '@/lib/pce-course-readiness'
 import { type SurveyInstance } from '@/lib/pce-push-validation'
 import { AddInPrismButton, EmptyHint } from './scope-controls'
@@ -58,24 +58,6 @@ interface StepSurveyInstancesProps {
   onIncludedChange: (keys: Set<string>) => void
   onBack: () => void
   onContinue: () => void
-}
-
-/** "YYYY-MM-DD" → "Dec 4" without the UTC-midnight day shift. */
-function fmtOpen(iso?: string): string | null {
-  if (!iso) return null
-  const [y, m, d] = iso.split('-').map(Number)
-  if (!y || !m || !d) return null
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-/** The date fact that matters for an existing flow: when it opens (scheduled)
- *  or that it's already reaching students (live states carry no date here). */
-function openPhrase(f: PceSurvey): string | null {
-  if (f.status === 'scheduled') {
-    const d = fmtOpen(f.openDate)
-    return d ? `Opens ${d}` : null
-  }
-  return null
 }
 
 const instanceLabel = (i: SurveyInstance) =>
@@ -110,16 +92,15 @@ function NamesInline({ items }: { items: SurveyInstance[] }) {
   )
 }
 
-/** Facts group: the canonical survey-status badge (pce-badges is the source
- *  of truth for status rendering) + the open date as its muted qualifier.
- *  Always rendered per row — one layout whether dates match or differ. */
+/** The one fact about the existing flow: a single canonical badge. Scheduled
+ *  flows read "Opens Dec 4" (the date IS the status) with the status word in
+ *  the tooltip; live states show their canonical label (pce-badges is the
+ *  source of truth for status rendering). */
 function ExistingFacts({ item }: { item: SurveyInstance }) {
   if (!item.existing) return null
-  const phrase = openPhrase(item.existing)
   return (
-    <span className="flex items-center gap-2 shrink-0">
-      <SurveyStatusBadgeOS status={item.existing.status} />
-      {phrase && <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">{phrase}</span>}
+    <span className="flex items-center shrink-0">
+      <SurveyStatusDateBadgeOS status={item.existing.status} openDate={item.existing.openDate} />
     </span>
   )
 }
@@ -466,11 +447,14 @@ export function StepSurveyInstances({
                           <span className="truncate">
                             {instanceLabel(item)}
                             {item.roleLabel && <> · {item.roleLabel}</>}
+                            {on && <span style={{ color: 'var(--insight-severity-info-fg)' }}> · A new evaluation will be created</span>}
                           </span>
                         </span>
                       </div>
                       <ExistingFacts item={item} />
-                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
+                      {/* Decision lane — hairline sets the action apart from the facts;
+                          constant label width keeps the toggles in a column. */}
+                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 self-stretch border-s border-border/60 ps-3 ms-1">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Evaluate again</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
                         <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
