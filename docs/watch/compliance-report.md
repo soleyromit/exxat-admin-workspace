@@ -1,4 +1,4 @@
-# Compliance Report — 2026-07-20
+# Compliance Report — 2026-07-27
 
 ## Summary
 P1 (blocks release): 0
@@ -128,10 +128,10 @@ _None._
 
 ## Resolved since last report
 
-_None — 0 violations resolved since 2026-07-13 sweep._
+_None — 0 violations resolved since 2026-07-20 sweep._
 
 ---
 
-## Observation: long-standing violations approaching 4-week threshold
+## Observation: long-standing violations now at 5-week threshold
 
-All 47 open violations have been present since either 2026-06-22 (4 weeks) or 2026-07-13 (1 week). The P2 raw-button violations in `data-table/index.tsx` and `data-table/pagination.tsx` affect every page in both products and are the highest-leverage fix. The P3 FA icon violations are a one-liner fix per file (`aria-hidden="true"`) and could be batched across all 28 affected files in a single pass.
+All 47 open violations have been present since either 2026-06-22 (5 weeks) or 2026-07-13 (2 weeks). The P2 raw-button violations in `data-table/index.tsx` and `data-table/pagination.tsx` affect every page in both products and are the highest-leverage fix. The P3 FA icon violations are a one-liner fix per file (`aria-hidden="true"`) and could be batched across all 28 affected files in a single pass. FERPA check clean — no files combining student identifiers with response body content.
