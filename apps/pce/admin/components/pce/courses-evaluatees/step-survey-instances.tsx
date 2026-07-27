@@ -92,19 +92,6 @@ function NamesInline({ items }: { items: SurveyInstance[] }) {
   )
 }
 
-/** The one fact about the existing flow: a single canonical badge. Scheduled
- *  flows read "Opens Dec 4" (the date IS the status) with the status word in
- *  the tooltip; live states show their canonical label (pce-badges is the
- *  source of truth for status rendering). */
-function ExistingFacts({ item }: { item: SurveyInstance }) {
-  if (!item.existing) return null
-  return (
-    <span className="flex items-center shrink-0">
-      <SurveyStatusDateBadgeOS status={item.existing.status} openDate={item.existing.openDate} />
-    </span>
-  )
-}
-
 /** DS Accordion carries the trigger color, hover, focus ring, and rotating
  *  chevron (composition mirrors evaluation-card-sheet). Collapsed triggers
  *  keep a resolution chip readable (Zillow review model). */
@@ -442,16 +429,27 @@ export function StepSurveyInstances({
                           <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                           {name && <span className="truncate">{name}</span>}
                         </span>
+                        {/* All facts live on the meta line (Linear/Todoist model) —
+                            identity truncates first, the date fact never does. */}
                         <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
                           <EvaluateeDisc item={item} size={4} />
                           <span className="truncate">
                             {instanceLabel(item)}
                             {item.roleLabel && <> · {item.roleLabel}</>}
-                            {on && <span style={{ color: 'var(--insight-severity-info-fg)' }}> · A new evaluation will be created</span>}
                           </span>
+                          {item.existing && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <SurveyStatusDateBadgeOS status={item.existing.status} openDate={item.existing.openDate} inline />
+                            </>
+                          )}
+                          {on && (
+                            <span className="whitespace-nowrap" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                              · A new evaluation will be created
+                            </span>
+                          )}
                         </span>
                       </div>
-                      <ExistingFacts item={item} />
                       {/* Decision lane — hairline sets the action apart from the facts;
                           constant label width keeps the toggles in a column. */}
                       <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 self-stretch border-s border-border/60 ps-3 ms-1">
