@@ -110,11 +110,13 @@ function NamesInline({ items }: { items: SurveyInstance[] }) {
   )
 }
 
+/** Stacked facts column — chip over date, right-aligned: one visual group,
+ *  clearly separate from the decision control beside it. */
 function ExistingFacts({ item }: { item: SurveyInstance }) {
   if (!item.existing) return null
   const phrase = openPhrase(item.existing)
   return (
-    <span className="flex items-center gap-1.5 shrink-0">
+    <span className="flex flex-col items-end gap-0.5 shrink-0">
       <SurveyStatusBadgeOS status={item.existing.status} />
       {phrase && (
         <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
@@ -456,27 +458,28 @@ export function StepSurveyInstances({
                   const { code, name } = offering ? splitLabel(offering) : { code: item.offeringId, name: '' }
                   const on = included.has(item.key)
                   return (
-                    <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 48 }}>
-                      <EvaluateeDisc item={item} />
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-sm font-medium truncate">
-                          {instanceLabel(item)}
-                          {item.roleLabel && <span className="text-xs text-muted-foreground font-normal"> · {item.roleLabel}</span>}
-                        </span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
-                          <span className="font-mono tabular-nums">{code}</span>
+                    <div key={item.key} className="flex items-center gap-3 px-4 py-2 border-b border-border/60 last:border-b-0" style={{ minHeight: 56 }}>
+                      {/* Course-first — same hierarchy as the gaps and plan rows. */}
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <span className="text-sm font-medium flex items-baseline gap-2 min-w-0">
+                          <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                           {name && <span className="truncate">{name}</span>}
                         </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                          <EvaluateeDisc item={item} size={4} />
+                          <span className="truncate">
+                            {instanceLabel(item)}
+                            {item.roleLabel && <> · {item.roleLabel}</>}
+                          </span>
+                        </span>
                       </div>
-                      {/* Facts anchor in the control lane, not mid-sentence. */}
-                      <span className="ms-auto flex items-center gap-3 shrink-0">
-                        <ExistingFacts item={item} />
-                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 text-sm cursor-pointer shrink-0">
-                        <span className="text-muted-foreground">{on ? 'Yes' : 'No'}</span>
+                      {/* Lane hierarchy: stacked facts group, then the labeled decision. */}
+                      <ExistingFacts item={item} />
+                      <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Run again?</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
                         <span className="sr-only">Evaluate {instanceLabel(item)} in {code} again</span>
                       </label>
-                      </span>
                     </div>
                   )
                 })}
