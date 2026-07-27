@@ -336,13 +336,15 @@ export function StepSurveyInstances({
       {courses.length === 0 ? (
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
-        <div className="flex flex-col gap-5 mx-auto w-full" style={{ maxWidth: 760 }}>
-          {/* The lead — what pressing Continue will do, in one sentence. */}
-          <div className="flex flex-col gap-1 pt-2">
-            <p className="text-2xl leading-snug font-heading">
+        /* Left-aligned with the page — the wizard is a left-aligned document;
+           the 760px measure keeps the prose readable. */
+        <div className="flex flex-col gap-5 w-full" style={{ maxWidth: 760 }}>
+          {/* The lead IS the step heading — one headline, not two. */}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl leading-snug font-heading font-normal">
               You&apos;re setting up <span className="font-semibold tabular-nums">{toCreate} evaluation{toCreate !== 1 ? 's' : ''}</span> across{' '}
               <span className="font-semibold tabular-nums">{courses.length} course{courses.length !== 1 ? 's' : ''}</span>.
-            </p>
+            </h2>
             <p className="text-sm text-muted-foreground tabular-nums">
               {templatesInUse.size === 1 ? 'Every course uses the same template' : `${templatesInUse.size} templates in play`}
               {reEvals > 0 && <> · {reEvals} evaluated again</>}

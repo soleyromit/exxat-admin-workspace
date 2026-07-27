@@ -616,15 +616,9 @@ function PushSurveyInner() {
 
           {step === 2 && surveyMode !== 'general' && (
             <div className="flex flex-col gap-6 flex-1">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold font-heading">
-                  Survey design
-                </h2>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Each course expands into the evaluations its template covers — the course material, plus each faculty role and person. Where an evaluation already exists, you decide whether to run it again.
-                </p>
-              </div>
-
+              {/* No separate step header — the Briefing's lead sentence IS the
+                  headline (the stepper above already names the step). A second
+                  serif title + explainer double-headlined the page (Jul 27). */}
               <StepSurveyInstances
                 selectedOfferings={selectedOfferings}
                 instances={instancePlan}
