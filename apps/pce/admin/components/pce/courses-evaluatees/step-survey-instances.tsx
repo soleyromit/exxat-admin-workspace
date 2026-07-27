@@ -32,6 +32,7 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
+import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
@@ -109,21 +110,16 @@ function NamesInline({ items }: { items: SurveyInstance[] }) {
   )
 }
 
-const EXISTING_STATUS_LABEL: Record<string, string> = {
-  scheduled: 'Scheduled', active: 'Live', collecting: 'Collecting responses', pending_review: 'Awaiting review',
-}
-
-/** One muted phrase per row — "Scheduled · opens Dec 4". Always rendered, so
- *  rows with different statuses/dates read the same layout as uniform ones
- *  (no adaptive branching — Romit Jul 27); quiet enough to repeat. */
+/** Facts group: the canonical survey-status badge (pce-badges is the source
+ *  of truth for status rendering) + the open date as its muted qualifier.
+ *  Always rendered per row — one layout whether dates match or differ. */
 function ExistingFacts({ item }: { item: SurveyInstance }) {
   if (!item.existing) return null
   const phrase = openPhrase(item.existing)
-  const status = EXISTING_STATUS_LABEL[item.existing.status] ?? item.existing.status
   return (
-    <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap text-end shrink-0">
-      {status}
-      {phrase && <> · {phrase}</>}
+    <span className="flex items-center gap-2 shrink-0">
+      <SurveyStatusBadgeOS status={item.existing.status} />
+      {phrase && <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">{phrase}</span>}
     </span>
   )
 }
