@@ -32,7 +32,6 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
-import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
@@ -110,20 +109,21 @@ function NamesInline({ items }: { items: SurveyInstance[] }) {
   )
 }
 
-/** Stacked facts column — chip over date, right-aligned: one visual group,
- *  clearly separate from the decision control beside it. */
+const EXISTING_STATUS_LABEL: Record<string, string> = {
+  scheduled: 'Scheduled', active: 'Live', collecting: 'Collecting responses', pending_review: 'Awaiting review',
+}
+
+/** One muted phrase per row — "Scheduled · opens Dec 4". Always rendered, so
+ *  rows with different statuses/dates read the same layout as uniform ones
+ *  (no adaptive branching — Romit Jul 27); quiet enough to repeat. */
 function ExistingFacts({ item }: { item: SurveyInstance }) {
   if (!item.existing) return null
   const phrase = openPhrase(item.existing)
+  const status = EXISTING_STATUS_LABEL[item.existing.status] ?? item.existing.status
   return (
-    <span className="flex flex-col items-end gap-0.5 shrink-0">
-      <SurveyStatusBadgeOS status={item.existing.status} />
-      {phrase && (
-        <span className="text-xs tabular-nums text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
-          <i className="fa-light fa-clock text-[10px]" aria-hidden="true" />
-          {phrase}
-        </span>
-      )}
+    <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap text-end shrink-0">
+      {status}
+      {phrase && <> · {phrase.replace(/^Opens/, 'opens')}</>}
     </span>
   )
 }
@@ -277,19 +277,6 @@ export function StepSurveyInstances({
   )
   const gapItems = useMemo(() => instances.filter(i => i.status === 'gap'), [instances])
   const dupItems = useMemo(() => instances.filter(i => i.status === 'duplicate'), [instances])
-  // Shared reason once, per-row only what differs (settled check-row model):
-  // when every existing evaluation shares one status + open date, those facts
-  // live in the section sub and the rows keep only identity + decision.
-  const dupShared = useMemo(() => {
-    if (dupItems.length === 0) return null
-    const statuses = new Set(dupItems.map(d => d.existing?.status ?? 'scheduled'))
-    const phrases = new Set(dupItems.map(d => (d.existing ? openPhrase(d.existing) : null)))
-    if (statuses.size !== 1 || phrases.size !== 1) return null
-    const statusText = ({ scheduled: 'scheduled', active: 'live', collecting: 'collecting responses', pending_review: 'awaiting review' } as Record<string, string>)[[...statuses][0] as string] ?? [...statuses][0]
-    const phrase = [...phrases][0]
-    return { text: `Already ${statusText}${phrase ? ` — ${phrase.replace(/^Opens/, 'opens')}` : ''}. Flip any you want to run again.` }
-  }, [dupItems])
-
   // One row per COURSE in the gaps section — a course missing two roles is one
   // problem with two parts, not two problems (Romit Jul 27, DPT-611).
   const gapsByCourse = useMemo(() => {
@@ -459,7 +446,7 @@ export function StepSurveyInstances({
                   </span>
                 }
                 title={`${dupItems.length} evaluation${dupItems.length !== 1 ? 's' : ''} already exist${dupItems.length === 1 ? 's' : ''}`}
-                sub={dupShared?.text ?? 'Skipped by default — flip any you want to run again.'}
+                sub="Skipped by default — flip any you want to run again."
                 chip={reEvals > 0 && (
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: 'var(--insight-severity-info-bg)', color: 'var(--insight-severity-info-fg)' }}>
                     {reEvals} will run again
@@ -486,8 +473,7 @@ export function StepSurveyInstances({
                           </span>
                         </span>
                       </div>
-                      {/* Facts only when this row DIFFERS from the shared story. */}
-                      {!dupShared && <ExistingFacts item={item} />}
+                      <ExistingFacts item={item} />
                       <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Run again?</span>
                         <ToggleSwitch id={`reeval-${item.key}`} checked={on} onChange={() => flip(item.key)} />
