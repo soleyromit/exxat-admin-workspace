@@ -551,7 +551,7 @@ function FacultyResults({
                 <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
                 <p className="text-sm font-medium">No results available</p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>
-                  Evaluation results will appear here once surveys close and grades are submitted.
+                  Evaluation results will appear here once surveys close and final grades are released.
                 </p>
               </div>
             }
