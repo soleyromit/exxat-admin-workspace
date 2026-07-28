@@ -1392,6 +1392,19 @@
             ]
         },
         {
+            "id": "2026-07-28-prd-diff-clean-001",
+            "date": "2026-07-28",
+            "product": "pce, exam-management",
+            "type": "prd-diff-clean",
+            "title": "Transcript-PRD diff — 2026-07-28 — 0 conflicts found",
+            "what": "Reviewed 8 product-relevant meeting transcripts from Jul 14–28, 2026 (Survey evaluation workflow Jul 24; Exam management weekly call Jul 23; PCE template creation Jul 22; Course Eval sync up Jul 21; Survey design Jul 20; Vishal PM sync Jul 20; Course Eval sync up Jul 16; Post-Course Survey BiWeekly Jul 14; 1:1 Arun Jul 20 — skipped, no product directives). Extracted all directives from Aarti/Vishaka. All potential conflicts were already superseded in stakeholder-decisions.json (pce-decision-054 through pce-decision-069; exam-decision-015, exam-decision-017 through exam-decision-020). PRD snapshots (pce-prd-monil.txt, exam-prd-nipun.txt) have known open deltas already flagged in prior runs. No new conflicts this week.",
+            "source": "Granola transcripts Jul 14–28, 2026",
+            "severity": "clean",
+            "files": [
+                "docs/watch/flags/system.md"
+            ]
+        },
+        {
             "id": "2026-07-27-granola-intake-001",
             "date": "2026-07-27",
             "product": "pce, exam-management",
