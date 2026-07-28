@@ -291,7 +291,7 @@ export function StepReview({
           ...(skippedDuplicateCount > 0
             ? ([[
                 'Skipped',
-                muted(`${skippedDuplicateCount} already exist for this term`),
+                muted(`${skippedDuplicateCount} already exist${skippedDuplicateCount === 1 ? 's' : ''} for this term`),
               ]] as [string, React.ReactNode][])
             : []),
           ...(pendingGapCount > 0

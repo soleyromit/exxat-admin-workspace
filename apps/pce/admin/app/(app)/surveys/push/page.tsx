@@ -756,7 +756,12 @@ function PushSurveyInner() {
               subjectIssues={reviewSubjectIssues}
               windowIssues={reviewWindowIssues}
               duplicateIssues={acceptedDuplicateIssues}
-              duplicateTitle={`${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0)} accepted re-evaluation${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0) !== 1 ? 's' : ''} will run over an existing survey`}
+              duplicateTitle={(() => {
+                const n = acceptedDuplicateIssues.reduce((sum, c) => sum + c.reasons.length, 0)
+                return n === 1
+                  ? '1 accepted re-evaluation will run over an existing survey'
+                  : `${n} accepted re-evaluations will each run over an existing survey`
+              })()}
               skippedDuplicateCount={skippedDuplicateCount}
               instanceCount={pushInstances.length}
               reEvalCount={reEvalCount}
