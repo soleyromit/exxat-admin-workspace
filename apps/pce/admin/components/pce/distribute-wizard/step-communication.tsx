@@ -439,7 +439,7 @@ export function StepCommunication({
             </div>
           </div>
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            Set the date when results become visible to instructors. Ensure this is after final grades are submitted.
+            Set the date when results become visible to instructors. We recommend a date after final grades are released.
           </p>
           </CardContent>
         </Card>
