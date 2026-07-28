@@ -55,6 +55,12 @@ interface StepReviewProps {
   skippedDuplicateCount?: number
   /** Surveys that will actually be created (evaluity count, UC5 summary). */
   instanceCount?: number
+  /** Accepted re-evaluations (subset of instanceCount) — stated in the plan
+   *  rows; the acknowledgement gate below carries the consent. */
+  reEvalCount?: number
+  /** Gaps the admin queued in Survey design: evaluations created once
+   *  faculty is assigned. Informational — the decision was made in step 2. */
+  pendingGapCount?: number
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -142,7 +148,7 @@ export function StepReview({
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
   cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
-  duplicateTitle, skippedDuplicateCount = 0, instanceCount,
+  duplicateTitle, skippedDuplicateCount = 0, instanceCount, reEvalCount = 0, pendingGapCount = 0,
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -195,10 +201,6 @@ export function StepReview({
     return { subject: emailSubject, body: emailBody }
   }, [previewMode, emailSubject, emailBody, reminderSameAsInvite, reminderSubject, reminderBody])
 
-  const assignmentSummary = surveyMode === 'course_evaluation' && courseGroups.length > 0
-    ? courseGroups.map(g => `${g.codes.length} course${g.codes.length !== 1 ? 's' : ''} · ${g.templateTitle}`).join(' · ')
-    : null
-
   return (
     /* Full-bleed step — the three summary sections sit side-by-side in a grid
        so label/value rows keep a readable width without capping the page.
@@ -213,12 +215,29 @@ export function StepReview({
         {academicYear && <p className="text-sm text-muted-foreground">{academicYear}</p>}
         {totalRecipients > 0 && !!openDate && !!closeDate && (
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            Sending to{' '}
-            <span className="font-medium" style={{ color: 'var(--foreground)' }}>
-              {totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}
-            </span>
-            {surveyMode === 'course_evaluation' && offeringCount > 0 && (
-              <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+            {/* Instance-grain flows lead with the step-2 grammar: the count of
+                evaluations IS the plan; people and dates qualify it. */}
+            {instanceCount != null && surveyMode === 'course_evaluation' ? (
+              <>
+                Creating{' '}
+                <span className="font-medium tabular-nums" style={{ color: 'var(--foreground)' }}>
+                  {instanceCount} evaluation{instanceCount !== 1 ? 's' : ''}
+                </span>
+                {offeringCount > 0 && (
+                  <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+                )}
+                {' '}· reaching <span className="font-medium" style={{ color: 'var(--foreground)' }}>{totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}</span>
+              </>
+            ) : (
+              <>
+                Sending to{' '}
+                <span className="font-medium" style={{ color: 'var(--foreground)' }}>
+                  {totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}
+                </span>
+                {surveyMode === 'course_evaluation' && offeringCount > 0 && (
+                  <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+                )}
+              </>
             )}
             {' '}· opens <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(openDate)}</span>
             {' '}· closes <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(closeDate)}</span>
@@ -244,21 +263,46 @@ export function StepReview({
       />
 
       <Section
-        title="Survey"
+        title="Survey design"
         onEdit={() => onEdit(2)}
         rows={[
-          ['Template', assignmentSummary ?? muted('No courses assigned')],
+          // One line per template group — the joined single string hid which
+          // courses ran which template once step 2 went instance-grain.
+          ['Templates', surveyMode === 'course_evaluation' && courseGroups.length > 0
+            ? (
+                <span className="flex flex-col gap-0.5 min-w-0">
+                  {courseGroups.map(g => (
+                    <span key={g.templateTitle} className="min-w-0 truncate">
+                      {g.templateTitle}
+                      <span className="text-muted-foreground"> · {g.codes.join(', ')}</span>
+                    </span>
+                  ))}
+                </span>
+              )
+            : muted('No courses assigned')],
+          // The step-2 outcome ledger: what this push creates, re-runs, skips,
+          // and defers — restated, never re-decided (UC5).
+          ...(reEvalCount > 0
+            ? ([[
+                'Evaluated again',
+                <span key="re">{reEvalCount} over existing survey{reEvalCount !== 1 ? 's' : ''}</span>,
+              ]] as [string, React.ReactNode][])
+            : []),
+          ...(skippedDuplicateCount > 0
+            ? ([[
+                'Skipped',
+                muted(`${skippedDuplicateCount} already exist for this term`),
+              ]] as [string, React.ReactNode][])
+            : []),
+          ...(pendingGapCount > 0
+            ? ([[
+                'Awaiting faculty',
+                muted(`${pendingGapCount} created once faculty is assigned`),
+              ]] as [string, React.ReactNode][])
+            : []),
           ['Email', templateName
             ? <>{templateName}{isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}</>
             : muted('Not set')],
-          // Informational, not a gate: the Survey design step already excluded
-          // these — nothing overlapping gets created.
-          ...(skippedDuplicateCount > 0
-            ? ([[
-                'Duplicates',
-                muted(`${skippedDuplicateCount} skipped: already exist for this term`),
-              ]] as [string, React.ReactNode][])
-            : []),
         ]}
       />
 

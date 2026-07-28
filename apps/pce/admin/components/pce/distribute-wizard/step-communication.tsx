@@ -14,7 +14,8 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleSwitch,
 } from '@exxatdesignux/ui'
-import type { CourseOffering, ReminderFrequency, ReminderAnchor } from '@/lib/pce-mock-data'
+import type { CourseOffering, ReminderFrequency, ReminderAnchor, SurveyStatus } from '@/lib/pce-mock-data'
+import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
 import {
   MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, MOCK_MASTER_COURSES, EVAL_EMAIL_TEMPLATES,
   EVAL_REMINDER_CADENCE, REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
@@ -74,6 +75,20 @@ function ReminderThumbnail() {
 
 export type Reminder = { id: string; daysBefore: number }
 export type EmailContact = { id: string; firstName: string; lastName: string; email: string }
+
+/** An existing open survey already messaging students in the selected courses.
+ *  Rules render read-only beside the form: per-survey rules are legal and
+ *  expected — the rail exists for visibility, never unification. */
+export type ExistingCommStream = {
+  id: string
+  /** "Course evaluation · DPT-510" */
+  label: string
+  status: SurveyStatus
+  openDate?: string
+  /** "Until Dec 4" (its close date). */
+  untilLabel?: string
+  cadence: { frequency: ReminderFrequency; anchor: ReminderAnchor; startDaysBefore: number }
+}
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
 function PrismIconMark({ size = 32 }: { size?: number }) {
@@ -153,6 +168,9 @@ interface StepCommunicationProps {
   onNext: () => void
   /** Step title — "Distribution" for programmatic surveys, else "Communication". */
   title?: string
+  /** Open surveys already messaging students in the selected courses —
+   *  rendered as a read-only context rail in the Reminders section. */
+  existingStreams?: ExistingCommStream[]
 }
 
 export function StepCommunication({
@@ -165,6 +183,7 @@ export function StepCommunication({
   onSenderNameChange, onEmailTemplateChange, onEmailSubjectChange, onEmailBodyChange,
   onRemindersChange, onEmailContactsChange, onBack, onNext,
   title = 'Communication',
+  existingStreams = [],
 }: StepCommunicationProps) {
   // ── Auto-populate Prism recipients ────────────────────────────────────────
   const autoRecipients = useMemo<PrismRecipient[]>(() => {
@@ -286,6 +305,16 @@ export function StepCommunication({
     onRemindersChange(days.map(d => ({ id: `r-${d}`, daysBefore: d })))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reminderFrequency, reminderStartDays])
+
+  // ── Existing streams — the delta only speaks when every overlapping survey
+  //    agrees on one frequency AND it differs from the current choice.
+  //    Divergence between surveys is legal; the rail rows already state each.
+  const sharedExistingCadence = useMemo(() => {
+    if (existingStreams.length === 0) return null
+    const first = existingStreams[0].cadence
+    return existingStreams.every(s => s.cadence.frequency === first.frequency) ? first : null
+  }, [existingStreams])
+  const cadenceDiffers = sharedExistingCadence != null && sharedExistingCadence.frequency !== reminderFrequency
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const dateOrderError   = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
@@ -467,6 +496,38 @@ export function StepCommunication({
       <div className="flex flex-col gap-3">
         <FieldLegend variant="label">Reminders</FieldLegend>
 
+        {/* Existing streams — surveys already messaging these students. Rules
+            are per-survey (visibility, never unification): each row states an
+            open survey's cadence as read-only facts. */}
+        {existingStreams.length > 0 && (
+          <Card className="shadow-none">
+            <CardContent className="flex flex-col gap-3" style={{ padding: 16 }}>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-semibold">Already messaging these students</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  {existingStreams.length === 1
+                    ? '1 open survey for the selected courses sends reminders on its own schedule.'
+                    : `${existingStreams.length} open surveys for the selected courses send reminders on their own schedules.`}
+                </p>
+              </div>
+              <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 168 }}>
+                {existingStreams.map(s => (
+                  <div key={s.id} className="flex items-center gap-3 py-2 border-t border-border/60 first:border-t-0" style={{ minHeight: 40 }}>
+                    <span className="text-sm min-w-0 truncate">{s.label}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
+                      {s.untilLabel && <> · {s.untilLabel}</>}
+                    </span>
+                    <span className="ms-auto shrink-0">
+                      <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Reminder email — its own template, or reuse the invitation's */}
         <Card className="overflow-hidden shadow-none">
           <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
@@ -569,6 +630,31 @@ export function StepCommunication({
                 ))}
               </div>
             </div>
+
+            {/* Delta vs existing streams — a fact in info tone, never amber:
+                diverging is legal; one action aligns if that's the intent. */}
+            {cadenceDiffers && sharedExistingCadence && (
+              <div
+                className="flex items-center justify-between gap-3 rounded-md flex-wrap"
+                style={{ padding: '8px 12px', background: 'var(--insight-severity-info-bg)' }}
+              >
+                <p className="text-xs min-w-0" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                  Existing surveys for these students remind {REMINDER_FREQUENCY_LABELS[sharedExistingCadence.frequency].toLowerCase()}.
+                </p>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="shrink-0 bg-transparent"
+                  onClick={() => {
+                    setReminderFrequency(sharedExistingCadence.frequency)
+                    setReminderAnchor(sharedExistingCadence.anchor)
+                    setReminderStartDays(sharedExistingCadence.startDaysBefore)
+                  }}
+                >
+                  Match existing cadence
+                </Button>
+              </div>
+            )}
 
             <div style={{ borderTop: '1px solid var(--border)' }} />
 

@@ -9,7 +9,7 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
-import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
+import { StepCommunication, type Reminder, type EmailContact, type ExistingCommStream } from '@/components/pce/distribute-wizard/step-communication'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 // Two-step split (Jul 2026): step 1 scopes courses + students, step 2 designs
@@ -26,6 +26,7 @@ import {
   MOCK_MASTER_COURSES,
   EVAL_DATE_RULES,
   EVAL_EMAIL_TEMPLATES,
+  EVAL_REMINDER_CADENCE,
   type SurveyType,
   type PceTemplate,
   type TermSeason,
@@ -328,6 +329,38 @@ function PushSurveyInner() {
     () => instancePlan.filter(i => i.status === 'duplicate' && !includedInstanceKeys.has(i.key)).length,
     [instancePlan, includedInstanceKeys],
   )
+  // Step-2 outcome counts restated on Review — the ledger, never re-decided.
+  const reEvalCount = useMemo(
+    () => instancePlan.filter(i => i.status === 'duplicate' && includedInstanceKeys.has(i.key)).length,
+    [instancePlan, includedInstanceKeys],
+  )
+  const pendingGapCount = useMemo(
+    () => instancePlan.filter(i => i.status === 'gap' && includedInstanceKeys.has(i.key)).length,
+    [instancePlan, includedInstanceKeys],
+  )
+
+  // Open surveys already messaging students in the selected courses — the
+  // Communication step renders them as a read-only rail (per-survey rules are
+  // legal; the rail is visibility, never unification). Mock flows were pushed
+  // under the program default cadence, so that is the cadence they report.
+  const existingStreams = useMemo<ExistingCommStream[]>(() => {
+    const openSet = new Set(['scheduled', 'active', 'collecting', 'pending_review'])
+    const offeringIds = new Set(selectedOfferings.map(o => o.id))
+    return surveys
+      .filter(s => s.offeringId && offeringIds.has(s.offeringId) && openSet.has(s.status))
+      .map(s => ({
+        id: s.id,
+        // Same course can carry several flows — the evaluatee tells them apart.
+        label: `${s.courseCode} · ${
+          s.evalScope === 'instructor' ? (s.instructors[0]?.name ?? 'Faculty') : 'Course material'
+        }`,
+        status: s.status,
+        openDate: s.openDate,
+        // deadline is already a display string ("Apr 30, 2026") — drop the year.
+        untilLabel: s.deadline ? `until ${s.deadline.replace(/, \d{4}$/, '')}` : undefined,
+        cadence: EVAL_REMINDER_CADENCE,
+      }))
+  }, [surveys, selectedOfferings])
 
   const selectedInvitationTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === emailTemplateId) ?? null
   const isEmailEdited = !!selectedInvitationTemplate &&
@@ -350,8 +383,15 @@ function PushSurveyInner() {
   // CE Review — two pre-flight validation categories surfaced as acknowledgement
   // gates: (A) courses missing subject data (no faculty / no students), and
   // (B) courses whose survey window opens after the course has already ended.
+  // Student-data problems only: faculty gaps are resolved consciously in the
+  // Survey design gap lane (queue or leave out), and Review never re-asks a
+  // decision the admin already made there (UC5).
   const reviewSubjectIssues = useMemo(
-    () => (surveyMode === 'general' ? [] : subjectDataIssues(selectedOfferings)),
+    () => (surveyMode === 'general'
+      ? []
+      : subjectDataIssues(selectedOfferings)
+          .map(iss => ({ ...iss, reasons: iss.reasons.filter(r => r.includes('student')) }))
+          .filter(iss => iss.reasons.length > 0)),
     [selectedOfferings, surveyMode],
   )
   const reviewWindowIssues = useMemo(
@@ -649,6 +689,7 @@ function PushSurveyInner() {
           {step === 3 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
+              existingStreams={existingStreams}
               openDate={openDate}
               closeDate={closeDate}
               releaseDate={releaseDate}
@@ -716,6 +757,8 @@ function PushSurveyInner() {
               duplicateTitle={`${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0)} accepted re-evaluation${acceptedDuplicateIssues.reduce((n, c) => n + c.reasons.length, 0) !== 1 ? 's' : ''} will run over an existing survey`}
               skippedDuplicateCount={skippedDuplicateCount}
               instanceCount={pushInstances.length}
+              reEvalCount={reEvalCount}
+              pendingGapCount={pendingGapCount}
             />
           )}
 
