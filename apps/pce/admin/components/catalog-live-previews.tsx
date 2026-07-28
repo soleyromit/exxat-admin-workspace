@@ -370,7 +370,7 @@ export function CatalogDataTablePreview({ className }: { className?: string }) {
   return (
     <div className={cn("flex min-h-0 flex-col gap-2", className)}>
       <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">DataTable</span> — the grid primitive. List hubs compose it
+        <span className="font-medium text-foreground">DataTable</span>, the grid primitive. List hubs compose it
         via <span className="font-medium text-foreground">HubTable</span> (toolbar + Properties + board/list/dashboard).
       </p>
       <div className="overflow-hidden rounded-lg border border-border bg-background">

@@ -3,9 +3,7 @@
 import { useMemo, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Skeleton, Button, InputGroup, Tip, LocalBanner,
-  Popover, PopoverTrigger, PopoverContent, PopoverAnchor,
-  Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
+  Skeleton, Button, Tip, LocalBanner,
 } from '@exxatdesignux/ui'
 import { NumericCell } from '@/components/data-views/table-cells'
 import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
@@ -30,11 +28,13 @@ import {
   FACULTY_CRITERIA, deriveReadiness, prismAddFacultyHref, templateCriteria,
 } from '@/lib/pce-course-readiness'
 import { courseDates } from '@/lib/pce-push-validation'
-
-/** Above this count a picker gains a search field. */
-const COHORT_SEARCH_THRESHOLD = 8
-
-const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+// Shared scope-band + table furniture — extracted to scope-controls.tsx for
+// the two-step split (Jul 2026); this merged step (term-setup wizard) and the
+// split steps render the same controls from one source.
+import {
+  TokenSelect, type TokenOption, TypePill, AddInPrismButton, EmptyHint,
+  SCOPE_FIELD_WIDTH, COHORT_SEARCH_THRESHOLD, fmtD,
+} from './scope-controls'
 
 interface ReadinessRow extends Record<string, unknown> {
   id: string
@@ -57,254 +57,6 @@ interface ReadinessRow extends Record<string, unknown> {
   /** Evaluation flows ALREADY pushed for this offering (other wizard runs) —
    *  the same course can be covered by several, each with its own evaluatee. */
   flows: PceSurvey[]
-}
-
-interface TokenOption {
-  value: string
-  label: string
-  /** Optional heading this option sits under in the dropdown. */
-  group?: string
-}
-
-interface TokenSelectProps {
-  /** id of the field's visible label — names both the field and the popup. */
-  labelId: string
-  /** Resting text when nothing is chosen (e.g. "All cohorts"). */
-  placeholder: string
-  options: TokenOption[]
-  selected: string[]
-  onToggle: (value: string) => void
-  onClear?: () => void
-  groupOrder?: readonly string[]
-  /** Above this many options the dropdown gains a search field. */
-  searchThreshold?: number
-  /** Block removing the last chip (required fields). */
-  minOne?: boolean
-  contentLabel: string
-}
-
-/** One width for every control in the scope band — Term, Academic Year,
- *  Cohort, What-to-evaluate — so the row reads as a set, not a ragged line. */
-const SCOPE_FIELD_WIDTH = 224
-
-/** Type-column pill tints — chart-hue wash + matching --chip ink (the DS
- *  icon-disc pairing). srgb mix (the oklch form is banned in product code);
- *  chart-4 amber is excluded — it belongs to the warning vocabulary. */
-const TYPE_PILL_TINT: Record<DeliveryMode, { bg: string; fg: string }> = {
-  classroom: { bg: 'color-mix(in srgb, var(--chart-1) 12%, transparent)', fg: 'var(--chip-1)' },
-  lab:       { bg: 'var(--icon-disc-chart-2-bg)',                          fg: 'var(--chip-2)' },
-  practice:  { bg: 'color-mix(in srgb, var(--chart-5) 12%, transparent)', fg: 'var(--chip-5)' },
-}
-
-/** Px estimate of one chip: badge chrome (padding, border, gap, ×-button ≈32)
- *  + ~6.5px per character at text-xs, capped at the chip's 150px maxWidth. */
-const estChipWidth = (label: string) => Math.min(32 + label.length * 6.5, 150)
-/** Shell padding + the chevron trigger's minimum are spoken for. */
-const CHIP_BUDGET = SCOPE_FIELD_WIDTH - 46
-const OVERFLOW_BADGE_WIDTH = 38
-
-/**
- * One control for both scope fields: chosen values are chips INSIDE the field,
- * the full option list lives in a searchable, grouped popup.
- *
- * Cohort and What-to-evaluate are different jobs, but they are the same *job
- * shape* — pick several from many — so they get the same control; the label and
- * the required marker carry the difference. Convergent across Gusto, Juicebox,
- * Contra, Udemy and Upwork.
- *
- * Chips and the popup trigger are SIBLINGS inside the shell, never nested: the
- * chip's remove button inside a trigger button would trip nested-interactive.
- */
-function TokenSelect({
-  labelId, placeholder, options, selected, onToggle, onClear,
-  groupOrder, searchThreshold = 8, minOne = false, contentLabel,
-}: TokenSelectProps) {
-  const [open, setOpen] = useState(false)
-  const byValue = useMemo(() => new Map(options.map(o => [o.value, o])), [options])
-  const groups = useMemo(() => {
-    if (!groupOrder?.length) return [{ heading: undefined as string | undefined, items: options }]
-    return groupOrder
-      .map(g => ({ heading: g as string | undefined, items: options.filter(o => o.group === g) }))
-      .filter(g => g.items.length > 0)
-  }, [options, groupOrder])
-
-  // Fill the fixed shell with as many chips as fit, then tuck the rest into
-  // "+N" — a lone chip beside "+N" with dead space after it reads broken.
-  // Estimated, not measured: chips shrink+truncate, so a near-miss degrades
-  // into slight truncation rather than overflow.
-  const shown = useMemo(() => {
-    const labels = selected.map(v => byValue.get(v)?.label ?? v)
-    const widthOf = (n: number) =>
-      labels.slice(0, n).reduce((sum, l) => sum + estChipWidth(l), 0) + Math.max(0, n - 1) * 4
-    if (widthOf(selected.length) <= CHIP_BUDGET) return selected
-    let n = 1
-    while (n < selected.length && widthOf(n + 1) + 4 + OVERFLOW_BADGE_WIDTH <= CHIP_BUDGET) n++
-    return selected.slice(0, n)
-  }, [selected, byValue])
-  const overflow = selected.length - shown.length
-  // The last chip of a required field must stay put; the field's helper line
-  // explains why rather than a title tooltip that never fires on keyboard.
-  const atMin = minOne && selected.length === 1
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverAnchor>
-        <InputGroup
-          className="flex flex-nowrap items-center gap-1 py-1 ps-1.5 pe-1 overflow-hidden"
-          style={{ width: SCOPE_FIELD_WIDTH }}
-        >
-          {shown.map(v => {
-            const o = byValue.get(v)
-            if (!o) return null
-            return (
-              /* outline, not secondary: every filled neutral in this theme is
-                 brand-tinted (--secondary oklch .012 @345, --muted .008 @345),
-                 so a filled chip is always pink. outline = white + --border
-                 (chroma .002) = actually neutral, and it's a real DS variant
-                 rather than a className override of one. */
-              <Badge key={v} variant="outline" className="gap-1 ps-2 pe-0.5 py-0.5 font-normal min-w-0 shrink" style={{ maxWidth: 150 }}>
-                {/* Long values truncate rather than force the field wider — a
-                    cohort can be "Class of 2027 – Group B". */}
-                <span className="truncate" title={o.label}>{o.label}</span>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="size-4 p-0 shrink-0"
-                  style={{ backgroundColor: 'transparent' }}
-                  disabled={atMin}
-                  aria-label={`Remove ${o.label}`}
-                  onClick={() => onToggle(v)}
-                >
-                  <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                </Button>
-              </Badge>
-            )
-          })}
-          {overflow > 0 && (
-            <Badge variant="outline" className="font-normal shrink-0">
-              +{overflow}<span className="sr-only"> more selected</span>
-            </Badge>
-          )}
-          {/* The chevron lives INSIDE the trigger. It was previously a sibling in
-              an InputGroupAddon — a plain div — so the one affordance that reads
-              as "open me" was not clickable, and the only hit area was a ~20px
-              invisible strip beside it.
-              justify-end when chips are shown: the visible label is sr-only
-              (out of flex flow), so justify-between would leave the chevron —
-              the only in-flow child — stranded at the start of the field. */}
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-haspopup="listbox"
-              aria-expanded={open}
-              aria-labelledby={labelId}
-              className={`flex-1 gap-1 px-1 font-normal ${selected.length === 0 ? 'justify-between' : 'justify-end'}`}
-              style={{ minWidth: selected.length === 0 ? 64 : 32, backgroundColor: 'transparent' }}
-            >
-              {selected.length === 0
-                ? <span style={{ color: 'var(--muted-foreground)' }}>{placeholder}</span>
-                : <span className="sr-only">Change selection</span>}
-              <i
-                className="fa-light fa-chevron-down text-xs shrink-0"
-                aria-hidden="true"
-                style={{ color: 'var(--muted-foreground)' }}
-              />
-            </Button>
-          </PopoverTrigger>
-        </InputGroup>
-      </PopoverAnchor>
-
-      {/* Hugs its content instead of a fixed width: "Course / Instructor" needs
-          far less room than a cohort name, and a half-empty menu reads broken.
-          Bounded so a long role still wraps sanely. */}
-      <PopoverContent
-        align="start"
-        className="p-0 w-auto min-w-44 max-w-80"
-        aria-label={contentLabel}
-      >
-        <Command>
-          {options.length > searchThreshold && <CommandInput placeholder="Search" />}
-          <CommandList>
-            <CommandEmpty>No matches.</CommandEmpty>
-            {groups.map(({ heading, items }) => (
-              <CommandGroup key={heading ?? '_'} heading={heading}>
-                {items.map(o => {
-                  const checked = selected.includes(o.value)
-                  return (
-                    /* Check glyph, not a DS Checkbox — Checkbox is a button and
-                       would nest inside role="option". cmdk owns aria-selected
-                       for its highlight, so state rides in the accessible name. */
-                    <CommandItem key={o.value} value={o.label} onSelect={() => onToggle(o.value)}>
-                      <i
-                        className={`fa-solid fa-check text-xs ${checked ? '' : 'opacity-0'}`}
-                        aria-hidden="true"
-                      />
-                      <span className="truncate">{o.label}</span>
-                      {checked && <span className="sr-only">, selected</span>}
-                    </CommandItem>
-                  )
-                })}
-              </CommandGroup>
-            ))}
-          </CommandList>
-          {onClear && selected.length > 0 && (
-            <>
-              <CommandSeparator />
-              <div className="p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start font-normal"
-                  onClick={onClear}
-                >
-                  Clear
-                </Button>
-              </div>
-            </>
-          )}
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-/**
- * Fix action for the Actions column — opens Prism in a new tab.
- *
- * The label stays generic ("Add faculty") because a course can be missing
- * several roles at once and naming one of them lies. `roles` names them on
- * hover/focus instead, so the CTA still tells you WHAT to add. DS Tip rather
- * than a native title: title never fires on keyboard focus.
- */
-function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
-  const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
-  const trigger = (
-    /* Neutral DS chrome: the amber FACT line above the button carries the
-       attention; the button is the remedy, not the alarm. */
-    <Button asChild variant="outline" size="xs" className="justify-start">
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
-        {label}
-        {missing && <span className="sr-only"> — {missing}</span>}
-        <span className="sr-only"> (opens in new tab)</span>
-        <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
-      </a>
-    </Button>
-  )
-  return (
-    <Tip
-      label={
-        <>
-          {missing ?? `${label} in Exxat Prism`}
-          <span className="block opacity-70">Opens Exxat Prism in a new tab</span>
-        </>
-      }
-      side="left"
-    >
-      {trigger}
-    </Tip>
-  )
 }
 
 interface StepCoursesEvaluateesProps {
@@ -551,7 +303,7 @@ export function StepCoursesEvaluatees({
                     <i className="fa-light fa-user-slash" style={{ fontSize: 9, color: 'var(--chip-4)' }} aria-hidden="true" />
                   </span>
                   <span className="text-sm font-medium truncate" style={{ color: 'var(--chip-4)' }}>
-                    {cell.label}<span className="font-normal"> — not assigned</span>
+                    {cell.label}<span className="font-normal"> · not assigned</span>
                   </span>
                 </span>,
               )
@@ -597,7 +349,7 @@ export function StepCoursesEvaluatees({
               variant="outline"
               size="xs"
               className="justify-start"
-              aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+              aria-label={`Create a template. None exist yet to assign to ${r.code}`}
               onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
             >
               <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
@@ -616,7 +368,7 @@ export function StepCoursesEvaluatees({
                 state alone — the label and accessible name say it (1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
-                aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+                aria-label={`Template for ${r.code}${unassigned ? ' · required' : ''}${edited ? ' · changed from default' : ''}`}
                 /* [&>span]:truncate: a long template name ellipsizes instead of
                    hard-clipping mid-letter ("Faculty Midterm Check-Ir"). */
                 /* border/shadow removal rides className, NOT the style prop:
@@ -658,27 +410,15 @@ export function StepCoursesEvaluatees({
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
-            { value: 'Classroom based', label: 'Classroom based' },
-            { value: 'Lab based', label: 'Lab based' },
-            { value: 'Practice based', label: 'Practice based' },
+            { value: 'Classroom', label: 'Classroom' },
+            { value: 'Lab', label: 'Lab' },
+            { value: 'Practice', label: 'Practice' },
           ],
         },
-        // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
-        // the matching --chip ink (the DS icon-disc pairing, AA-safe). Amber
-        // (chart-4) is deliberately NOT in the map: it stays the warning hue.
-        // Short display label ("Classroom", not "Classroom based");
-        // sorting/filtering still ride the full typeLabel value.
-        cell: r => {
-          const tint = TYPE_PILL_TINT[r.deliveryMode]
-          return (
-            <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
-              style={{ background: tint.bg, color: tint.fg }}
-            >
-              {r.typeLabel.replace(/ based$/, '')}
-            </span>
-          )
-        },
+        // D5 (Romit, Jul 21): tinted categorical pill — shared TypePill
+        // (scope-controls). Short display label; sorting/filtering still ride
+        // the full typeLabel value.
+        cell: r => <TypePill deliveryMode={r.deliveryMode} label={r.typeLabel} />,
       },
       {
         // Fixes in ONE scannable lane (Romit, Jul 22 — fix-affordance variant
@@ -910,8 +650,8 @@ export function StepCoursesEvaluatees({
           onDismiss={() => setNotice(null)}
         >
           {notice.kind === 'published'
-            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the Template column below.</>
-            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+            ? <>&ldquo;{notice.name}&rdquo; published. Assign it in the Template column below.</>
+            : <>&ldquo;{notice.name}&rdquo; saved as a draft. Publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
         </LocalBanner>
       )}
 
@@ -1072,45 +812,6 @@ export function StepCoursesEvaluatees({
           <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
         </Button>
       </div>
-    </div>
-  )
-}
-
-function EmptyHint({ heading, sub }: { heading: string; sub: string }) {
-  return (
-    <div
-      className="flex flex-col items-center justify-center gap-4 text-center rounded-lg border border-dashed border-border"
-      style={{ minHeight: 300, padding: 40 }}
-    >
-      <CourseTablePlaceholder />
-      <div className="flex flex-col gap-1" style={{ maxWidth: 340 }}>
-        <p className="text-sm font-medium">{heading}</p>
-        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{sub}</p>
-      </div>
-    </div>
-  )
-}
-
-/** Tokenised mini course-table mockup — gives the empty course area a visual identity. */
-function CourseTablePlaceholder() {
-  const line = (w: string, muted = false) => (
-    <div style={{ height: 6, width: w, borderRadius: 2, background: muted ? 'var(--border)' : 'var(--border-control-35)' }} />
-  )
-  return (
-    <div
-      aria-hidden="true"
-      className="rounded-md border border-border overflow-hidden"
-      style={{ width: 220, background: 'var(--card)' }}
-    >
-      <div className="flex items-center gap-3" style={{ height: 26, padding: '0 12px', background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
-        {line('34%')}{line('22%')}{line('22%')}
-      </div>
-      {[0, 1, 2].map(i => (
-        <div key={i} className="flex items-center gap-3" style={{ padding: '11px 12px', borderBottom: i < 2 ? '1px solid var(--border)' : undefined }}>
-          {line('40%', true)}{line('26%', true)}
-          <span style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: i === 2 ? 'var(--border)' : 'var(--chart-2)', opacity: i === 2 ? 1 : 0.7 }} />
-        </div>
-      ))}
     </div>
   )
 }

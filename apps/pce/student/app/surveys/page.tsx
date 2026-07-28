@@ -106,7 +106,7 @@ export default function SurveysPage() {
               style={{ fontSize: 40, color: 'var(--brand-color)' }}
             />
             <p className="text-base font-semibold text-foreground">
-              All done — no surveys to complete
+              All done. No surveys to complete
             </p>
             <p className="text-sm text-muted-foreground">
               Check back after your courses conclude for new evaluations.

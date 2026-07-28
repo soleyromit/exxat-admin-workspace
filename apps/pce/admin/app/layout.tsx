@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { DevInit } from './dev-init'
 
 export const metadata: Metadata = {
-  title: 'PCE — Admin',
+  title: 'PCE Admin',
 }
 
 export default function RootLayout({

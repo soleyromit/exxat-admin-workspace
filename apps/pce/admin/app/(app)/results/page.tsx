@@ -468,7 +468,7 @@ function FacultyResults({
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                          {r.courseCode} — {r.courseName}
+                          {r.courseCode} · {r.courseName}
                           <ResultStatusBadge r={r} />
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -500,7 +500,7 @@ function FacultyResults({
                 <Card className="mb-2 gap-2 py-3">
                   <CardHeader className="px-4">
                     <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                      {g.courseCode} — {g.courseName}
+                      {g.courseCode} · {g.courseName}
                       <StatusBadge {...OFFERING_BADGE[g.offeringState]} />
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -551,7 +551,7 @@ function FacultyResults({
                 <i className="fa-light fa-square-poll-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
                 <p className="text-sm font-medium">No results available</p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>
-                  Evaluation results will appear here once surveys close and grades are submitted.
+                  Evaluation results will appear here once surveys close and final grades are released.
                 </p>
               </div>
             }

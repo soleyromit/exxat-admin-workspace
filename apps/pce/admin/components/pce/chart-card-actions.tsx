@@ -157,10 +157,10 @@ function ChartExportMenu({
             download(`${base}_${date}.png`, png)
           }}
         >
-          PNG — slide-ready image
+          PNG · slide-ready image
         </DropdownMenuItem>}
         {formats.includes('pdf') && (
-          <DropdownMenuItem onSelect={onPrint}>PDF — print-ready</DropdownMenuItem>
+          <DropdownMenuItem onSelect={onPrint}>PDF · print-ready</DropdownMenuItem>
         )}
         {formats.includes('excel') && <DropdownMenuItem
           onSelect={() =>
@@ -174,7 +174,7 @@ function ChartExportMenu({
             )
           }
         >
-          Excel — formatted rows
+          Excel · formatted rows
         </DropdownMenuItem>}
         {formats.includes('csv') && (
           <DropdownMenuItem
@@ -185,7 +185,7 @@ function ChartExportMenu({
               )
             }
           >
-            CSV — raw rows
+            CSV · raw rows
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
@@ -300,7 +300,7 @@ export function ChartCardActions({
             ref={dialogRef}
             tabIndex={0}
             role="region"
-            aria-label={`${title} — full detail`}
+            aria-label={`${title} · full detail`}
             className="max-h-[70vh] overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ minHeight: CHART_DIALOG_PLOT_MIN_PX }}
           >

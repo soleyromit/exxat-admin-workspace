@@ -42,7 +42,7 @@ export function SettingsOrganizationClient() {
           Organization settings
         </h1>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Workspace-wide products and branding — shared across Exxat Prism, Exxat One — Schools, Exxat One — Sites, and
+          Workspace-wide products and branding, shared across Exxat Prism, Exxat One · Schools, Exxat One · Sites, and
           custom products in this browser. Personal theme and tours live in{" "}
           <Link
             to="/settings/profile"

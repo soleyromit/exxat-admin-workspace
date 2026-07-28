@@ -354,8 +354,8 @@ function useColumns(
         <BooleanToggleCell
           checked={Boolean((row as Record<string, unknown>).published)}
           onChange={() => onTogglePublished(row)}
-          labelOn="Active — click to disable"
-          labelOff="Inactive — click to activate"
+          labelOn="Active, click to disable"
+          labelOff="Inactive, click to activate"
         />
       ),
     },

@@ -35,7 +35,7 @@ export default function ProgrammaticSurveysPage() {
             <h2 className="text-base font-semibold">Programmatic surveys are coming soon</h2>
             <p className="text-sm text-muted-foreground">
               Annual student, preceptor, alumni, and faculty surveys will live here.
-              Course Evaluation is fully available — start there for end-of-term feedback.
+              Course Evaluation is fully available. Start there for end-of-term feedback.
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>

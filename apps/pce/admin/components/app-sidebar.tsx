@@ -451,7 +451,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     size="lg"
                     className="sidebar-brand-btn"
                     tooltip="Exxat Prism"
-                    aria-label="Exxat Prism — go to dashboard"
+                    aria-label="Exxat Prism, go to dashboard"
                   >
                     <motion.div
                       key="prism-logo"

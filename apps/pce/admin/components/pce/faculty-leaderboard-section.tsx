@@ -172,13 +172,13 @@ export function FacultyLeaderboardSection({
       headline: `${below.length} of ${faculty.length} faculty sit below the ${fmt2(median)} median`,
       explanation:
         widest && spread >= 0.4
-          ? `${widest.name} has the widest spread — ${fmt2(spread)} between their best and worst offering. ` +
+          ? `${widest.name} has the widest spread, ${fmt2(spread)} between their best and worst offering. ` +
             `A mean hides that: someone steady at ${fmt2(widest.score.weighted)} and someone swinging ${fmt2(spread)} ` +
             `around the same mean are different conversations. Read the faint dots, not just the solid one.`
-          : `Every faculty member's offerings cluster tightly around their mean, so the ranking is stable — ` +
-            `no one here is being averaged out of a problem.`,
+          : `Every faculty member's offerings cluster tightly around their mean, so the ranking is stable. ` +
+            `No one here is being averaged out of a problem.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(lowest.score.weighted), label: `lowest — ${lowest.name}` },
+      delta: { value: fmt2(lowest.score.weighted), label: `lowest · ${lowest.name}` },
       bullets: [
         `${lowest.name}: ${fmt2(lowest.score.weighted)} weighted across ${lowest.offerings} offering${lowest.offerings === 1 ? '' : 's'}.`,
         `Median ${fmt2(median)} · department mean ${fmt2(bench.department)}.`,
@@ -197,7 +197,7 @@ export function FacultyLeaderboardSection({
       explanation:
         `One panel each rather than six lines on one chart: the DS ships five series colours, so a sixth ` +
         `faculty would silently reuse one and two people would look like the same line. Peers stay ghosted ` +
-        `behind each panel, and the dashed rule is the program mean — so "above or below" reads without a legend.`,
+        `behind each panel, and the dashed rule is the program mean, so "above or below" reads without a legend.`,
       kind: 'trend',
       delta: { value: fmt2(bench.university), label: 'program mean' },
       bullets: [
@@ -221,11 +221,11 @@ export function FacultyLeaderboardSection({
       // Frequency count, not a percentage — Aarti D17.
       headline: `${below.length} of ${responseSeries.length} faculty-terms came in under the ${RESPONSE_TARGET}% target`,
       explanation:
-        `${worst.name} averages ${worst.mean.toFixed(0)}% across their terms — the lowest on the roster. ` +
+        `${worst.name} averages ${worst.mean.toFixed(0)}% across their terms, the lowest on the roster. ` +
         `A collection problem is not a teaching problem, and the leaderboard above will not surface it: a ` +
         `faculty member can be rated perfectly well by the handful of students who answered.`,
       kind: below.length > 0 ? 'dip' : 'trend',
-      delta: { value: `${worst.mean.toFixed(0)}%`, label: `lowest — ${worst.name}` },
+      delta: { value: `${worst.mean.toFixed(0)}%`, label: `lowest · ${worst.name}` },
       bullets: [
         `${worst.name}: ${worst.mean.toFixed(0)}% average response.`,
         `Target ${RESPONSE_TARGET}% · ${below.length} of ${responseSeries.length} faculty-terms below it.`,
@@ -296,7 +296,7 @@ export function FacultyLeaderboardSection({
         <p className="text-xs text-muted-foreground">
           {term
             ? `${faculty.length} faculty ${roleLabel ? `taught as ${roleLabel}` : 'taught'} in ${term}.`
-            : `${faculty.length} faculty ${roleLabel ? `as ${roleLabel} ` : ''}across all terms — 1-year and 3-year windows always span full history.`}
+            : `${faculty.length} faculty ${roleLabel ? `as ${roleLabel} ` : ''}across all terms. 1-year and 3-year windows always span full history.`}
         </p>
       </div>
 
@@ -398,14 +398,14 @@ export function FacultyLeaderboardSection({
               {isLarge && (
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   Showing the {collapsedRows.length} lowest of {faculty.length}. The strip above
-                  is all {faculty.length} — Expand for the full ranked list.
+                  is all {faculty.length}. Expand for the full ranked list.
                 </p>
               )}
               <ChartCardActions
                 title="Faculty leaderboard"
                 description={
                   faculty.length
-                    ? `All ${faculty.length} faculty ranked against the ${fmt2(median)} median — every offering behind each mean as a faint dot.`
+                    ? `All ${faculty.length} faculty ranked against the ${fmt2(median)} median: every offering behind each mean as a faint dot.`
                     : 'No faculty evaluated in this scope yet.'
                 }
                 detail={

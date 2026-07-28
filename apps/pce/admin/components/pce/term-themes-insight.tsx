@@ -98,12 +98,12 @@ export function TermThemesInsight({
           <p className="text-sm">
             <strong>{top.label}</strong> came up in{' '}
             <strong>{top.courseCodes.join(', ')}</strong>
-            {top.sentiment === 'concern' ? ' — with concerns.' : '.'}
+            {top.sentiment === 'concern' ? ', with concerns.' : '.'}
           </p>
           {data.quote && (
             <blockquote className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
               “{data.quote.text}”
-              <span className="text-xs"> — {data.quote.code}</span>
+              <span className="text-xs"> · {data.quote.code}</span>
             </blockquote>
           )}
           <div className="flex flex-col gap-1.5">

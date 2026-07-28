@@ -43,7 +43,24 @@ interface StepReviewProps {
   evaluateSummary?: string
   subjectIssues?: CourseIssue[]
   windowIssues?: CourseIssue[]
+  /** Duplicate ACK gate. Term-setup passes course-grained issues (merged
+   *  step); the push wizard passes the duplicates the admin explicitly
+   *  ACCEPTED in Survey design (UC5 — re-consent, never new discovery). */
   duplicateIssues?: CourseIssue[]
+  /** Override for the duplicate AckGroup heading (instance-grained flows
+   *  word it as re-evaluations; the default copy is course-grained). */
+  duplicateTitle?: string
+  /** Duplicates the admin left UNCHECKED in Survey design — informational
+   *  only (nothing overlapping is created), so no acknowledgement gate. */
+  skippedDuplicateCount?: number
+  /** Surveys that will actually be created (evaluity count, UC5 summary). */
+  instanceCount?: number
+  /** Accepted re-evaluations (subset of instanceCount) — stated in the plan
+   *  rows; the acknowledgement gate below carries the consent. */
+  reEvalCount?: number
+  /** Gaps the admin queued in Survey design: evaluations created once
+   *  faculty is assigned. Informational — the decision was made in step 2. */
+  pendingGapCount?: number
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -131,6 +148,7 @@ export function StepReview({
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
   cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
+  duplicateTitle, skippedDuplicateCount = 0, instanceCount, reEvalCount = 0, pendingGapCount = 0,
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -183,10 +201,6 @@ export function StepReview({
     return { subject: emailSubject, body: emailBody }
   }, [previewMode, emailSubject, emailBody, reminderSameAsInvite, reminderSubject, reminderBody])
 
-  const assignmentSummary = surveyMode === 'course_evaluation' && courseGroups.length > 0
-    ? courseGroups.map(g => `${g.codes.length} course${g.codes.length !== 1 ? 's' : ''} — ${g.templateTitle}`).join(' · ')
-    : null
-
   return (
     /* Full-bleed step — the three summary sections sit side-by-side in a grid
        so label/value rows keep a readable width without capping the page.
@@ -201,12 +215,29 @@ export function StepReview({
         {academicYear && <p className="text-sm text-muted-foreground">{academicYear}</p>}
         {totalRecipients > 0 && !!openDate && !!closeDate && (
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            Sending to{' '}
-            <span className="font-medium" style={{ color: 'var(--foreground)' }}>
-              {totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}
-            </span>
-            {surveyMode === 'course_evaluation' && offeringCount > 0 && (
-              <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+            {/* Instance-grain flows lead with the step-2 grammar: the count of
+                evaluations IS the plan; people and dates qualify it. */}
+            {instanceCount != null && surveyMode === 'course_evaluation' ? (
+              <>
+                Creating{' '}
+                <span className="font-medium tabular-nums" style={{ color: 'var(--foreground)' }}>
+                  {instanceCount} evaluation{instanceCount !== 1 ? 's' : ''}
+                </span>
+                {offeringCount > 0 && (
+                  <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+                )}
+                {' '}· reaching <span className="font-medium" style={{ color: 'var(--foreground)' }}>{totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}</span>
+              </>
+            ) : (
+              <>
+                Sending to{' '}
+                <span className="font-medium" style={{ color: 'var(--foreground)' }}>
+                  {totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}
+                </span>
+                {surveyMode === 'course_evaluation' && offeringCount > 0 && (
+                  <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+                )}
+              </>
             )}
             {' '}· opens <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(openDate)}</span>
             {' '}· closes <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(closeDate)}</span>
@@ -225,17 +256,50 @@ export function StepReview({
                 ['Evaluating', [cohortSummary, evaluateSummary].filter(Boolean).join(' · ') || muted('—')],
               ] as [string, React.ReactNode][])
             : []),
-          ['Reach', recipientsComplete
-            ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
+          ['Audience', recipientsComplete
+            ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${instanceCount != null ? ` · ${instanceCount} evaluation${instanceCount !== 1 ? 's' : ''}` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
             : muted('No recipients yet')],
         ]}
       />
 
       <Section
-        title="Survey"
+        title="Survey design"
         onEdit={() => onEdit(2)}
         rows={[
-          ['Template', assignmentSummary ?? muted('No courses assigned')],
+          // One line per template group — the joined single string hid which
+          // courses ran which template once step 2 went instance-grain.
+          ['Templates', surveyMode === 'course_evaluation' && courseGroups.length > 0
+            ? (
+                <span className="flex flex-col gap-0.5 min-w-0">
+                  {courseGroups.map(g => (
+                    <span key={g.templateTitle} className="min-w-0 truncate">
+                      {g.templateTitle}
+                      <span className="text-muted-foreground"> · {g.codes.join(', ')}</span>
+                    </span>
+                  ))}
+                </span>
+              )
+            : muted('No courses assigned')],
+          // The step-2 outcome ledger: what this push creates, re-runs, skips,
+          // and defers — restated, never re-decided (UC5).
+          ...(reEvalCount > 0
+            ? ([[
+                'Evaluated again',
+                <span key="re">{reEvalCount} over existing survey{reEvalCount !== 1 ? 's' : ''}</span>,
+              ]] as [string, React.ReactNode][])
+            : []),
+          ...(skippedDuplicateCount > 0
+            ? ([[
+                'Skipped',
+                muted(`${skippedDuplicateCount} already exist${skippedDuplicateCount === 1 ? 's' : ''} for this term`),
+              ]] as [string, React.ReactNode][])
+            : []),
+          ...(pendingGapCount > 0
+            ? ([[
+                'Awaiting faculty',
+                muted(`${pendingGapCount} created once faculty is assigned`),
+              ]] as [string, React.ReactNode][])
+            : []),
           ['Email', templateName
             ? <>{templateName}{isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}</>
             : muted('Not set')],
@@ -269,8 +333,8 @@ export function StepReview({
             <AckGroup
               id="ack-subject-data"
               title={`${subjectIssues.length} course${subjectIssues.length !== 1 ? 's are' : ' is'} missing subject data`}
-              reason="They may reach no one, or have no one to evaluate. You can still push — they'll be skipped."
-              ackLabel="I understand these courses are missing faculty or student data"
+              reason="They have no students to survey or no one to evaluate. You can still continue; these courses are skipped."
+              ackLabel="I understand no evaluations will be created for these courses until their missing data is added"
               checked={ackSubject}
               onChange={setAckSubject}
             >
@@ -279,10 +343,10 @@ export function StepReview({
                   <div key={iss.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate">
                       {iss.courseLabel}
-                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(', ')}</span>
+                      <span style={{ color: 'var(--muted-foreground)' }}> · {iss.reasons.join(', ')}</span>
                     </span>
                     <Button asChild variant="link" size="xs" className="shrink-0">
-                      <a href={iss.prismHref ?? '#'} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism — opens in a new tab">
+                      <a href={iss.prismHref ?? '#'} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism · opens in a new tab">
                         Fix in Prism
                         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
                         <span className="sr-only"> (opens in new tab)</span>
@@ -298,13 +362,17 @@ export function StepReview({
               {subjectIssues.length > 0 && <div className="border-t border-border" />}
               <AckGroup
                 id="ack-duplicate"
-                title={`${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
-                reason="Pushing again creates a second, overlapping survey — students in these courses will receive both."
-                ackLabel="I understand this creates a second evaluation for these courses"
+                title={duplicateTitle ?? `${duplicateIssues.length} course${duplicateIssues.length !== 1 ? 's' : ''} already ${duplicateIssues.length !== 1 ? 'have' : 'has'} an evaluation scheduled or live this term`}
+                reason="Pushing again creates a second, overlapping survey. Students in these courses will receive both."
+                ackLabel={duplicateTitle
+                  ? 'I understand these evaluatees receive a second survey'
+                  : 'I understand this creates a second evaluation for these courses'}
                 checked={ackDuplicate}
                 onChange={setAckDuplicate}
                 action={
-                  <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(1)}>
+                  /* Instance-grained flows resolve duplicates in Survey design
+                     (step 2); the course-grained term-setup edits step 1. */
+                  <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(duplicateTitle ? 2 : 1)}>
                     Edit selection
                   </Button>
                 }
@@ -313,7 +381,7 @@ export function StepReview({
                   {duplicateIssues.map(iss => (
                     <div key={iss.id} className="text-sm min-w-0 truncate">
                       {iss.courseLabel}
-                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(' · ')}</span>
+                      <span style={{ color: 'var(--muted-foreground)' }}> · {iss.reasons.join(' · ')}</span>
                     </div>
                   ))}
                 </div>
@@ -327,8 +395,8 @@ export function StepReview({
             <AckGroup
               id="ack-window"
               title={`${windowIssues.length} course${windowIssues.length !== 1 ? 's’' : '’s'} survey window doesn’t align with the course dates`}
-              reason="The survey opens after these courses have already ended."
-              ackLabel="I understand the survey window doesn't align with these courses' dates"
+              reason="The survey opens after these courses have already ended, so it may reach students at the wrong time relative to the course."
+              ackLabel="I understand students in these courses may receive the survey at the wrong time"
               checked={ackWindow}
               onChange={setAckWindow}
               action={
@@ -386,6 +454,9 @@ export function StepReview({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Email preview</DialogTitle>
+            <DialogDescription>
+              Preview the invitation and reminder emails students will receive.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <ToggleGroup

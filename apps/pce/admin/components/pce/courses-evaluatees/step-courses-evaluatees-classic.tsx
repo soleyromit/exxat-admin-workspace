@@ -285,7 +285,7 @@ function AddInPrismButton({ href, label, roles }: { href: string; label: string;
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}
-        {missing && <span className="sr-only"> — {missing}</span>}
+        {missing && <span className="sr-only"> · {missing}</span>}
         <span className="sr-only"> (opens in new tab)</span>
         <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
       </a>
@@ -594,7 +594,7 @@ export function StepCoursesEvaluateesClassic({
                 state alone — the label and accessible name say it (1.4.1). */}
             <Select value={r.templateId} onValueChange={v => onTemplateChange(r.id, v)}>
               <SelectTrigger
-                aria-label={`Template for ${r.code}${unassigned ? ' — required' : ''}${edited ? ' — changed from default' : ''}`}
+                aria-label={`Template for ${r.code}${unassigned ? ' · required' : ''}${edited ? ' · changed from default' : ''}`}
                 /* [&>span]:truncate: a long template name ellipsizes instead of
                    hard-clipping mid-letter ("Faculty Midterm Check-Ir"). */
                 /* border/shadow removal rides className, NOT the style prop:
@@ -697,16 +697,15 @@ export function StepCoursesEvaluateesClassic({
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
-            { value: 'Classroom based', label: 'Classroom based' },
-            { value: 'Lab based', label: 'Lab based' },
-            { value: 'Practice based', label: 'Practice based' },
+            { value: 'Classroom', label: 'Classroom' },
+            { value: 'Lab', label: 'Lab' },
+            { value: 'Practice', label: 'Practice' },
           ],
         },
         // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
         // the matching --chip ink (the DS icon-disc pairing, AA-safe). Amber
         // (chart-4) is deliberately NOT in the map: it stays the warning hue.
-        // Short display label ("Classroom", not "Classroom based");
-        // sorting/filtering still ride the full typeLabel value.
+        // Pill shows the type label; sorting/filtering ride the same value.
         cell: r => {
           const tint = TYPE_PILL_TINT[r.deliveryMode]
           return (
@@ -737,7 +736,7 @@ export function StepCoursesEvaluateesClassic({
                   variant="outline"
                   size="xs"
                   className="justify-start"
-                  aria-label={`Create a template — none exist yet to assign to ${r.code}`}
+                  aria-label={`Create a template. None exist yet to assign to ${r.code}`}
                   onClick={e => { e.stopPropagation(); setNotice(null); setSubView('create') }}
                 >
                   <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
@@ -961,8 +960,8 @@ export function StepCoursesEvaluateesClassic({
           onDismiss={() => setNotice(null)}
         >
           {notice.kind === 'published'
-            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the Template column below.</>
-            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+            ? <>&ldquo;{notice.name}&rdquo; published. Assign it in the Template column below.</>
+            : <>&ldquo;{notice.name}&rdquo; saved as a draft. Publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
         </LocalBanner>
       )}
 

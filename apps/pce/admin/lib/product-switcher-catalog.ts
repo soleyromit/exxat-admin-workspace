@@ -14,8 +14,8 @@ export type SwitcherProductEntry = {
 /** Built-in rows for the sidebar switcher + Settings → Products list (custom slots expand at runtime). */
 export const BUILTIN_SWITCHER_PRODUCTS: SwitcherProductEntry[] = [
   { id: "exxat-prism", label: "Exxat Prism" },
-  { id: "exxat-one-schools", label: "Exxat One — Schools", scope: "Schools" },
-  { id: "exxat-one-sites", label: "Exxat One — Sites", scope: "Sites" },
+  { id: "exxat-one-schools", label: "Exxat One · Schools", scope: "Schools" },
+  { id: "exxat-one-sites", label: "Exxat One · Sites", scope: "Sites" },
   { id: "exxat-design-os", label: "Design OS" },
   { id: "exxat-custom", label: "Custom product" },
 ]

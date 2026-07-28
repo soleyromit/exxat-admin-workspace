@@ -326,7 +326,7 @@ export function SystemBannerSettingsCard() {
                 </SystemBanner>
               ) : (
                 <p className="text-sm text-muted-foreground py-2 text-center">
-                  Banner hidden — turn on “Show banner” to preview.
+                  Banner hidden. Turn on “Show banner” to preview.
                 </p>
               )}
             </div>
@@ -404,7 +404,7 @@ function BuilderOnboardingSection() {
       <FieldGroup>
         <SettingsFormRow
           label="First-run setup"
-          description="Restarting clears the per-device gate flag and routes to the onboarding screen. Existing custom products stay intact — manage them in organization settings."
+          description="Restarting clears the per-device gate flag and routes to the onboarding screen. Existing custom products stay intact. Manage them in organization settings."
         >
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant={completed ? "secondary" : "default"} className="h-5 text-xs">

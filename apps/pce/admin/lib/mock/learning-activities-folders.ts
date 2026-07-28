@@ -10,7 +10,7 @@ export { newFolderId }
 export const DEFAULT_LEARNING_ACTIVITY_GROUPS: LibraryFolder[] = [
   {
     id: "lag-eval-cohort",
-    name: "DPT Class of 2026 — Evaluations",
+    name: "DPT Class of 2026 · Evaluations",
     parentId: null,
     icon: "fa-folder",
     colorKey: "brand",

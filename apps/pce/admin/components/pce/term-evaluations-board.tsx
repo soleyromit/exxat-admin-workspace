@@ -105,7 +105,7 @@ function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; 
     <ListPageBoardCard className="relative w-full">
       <Link
         href={href}
-        aria-label={`Open results for ${s.courseCode} — ${EVALUATION_TYPE_LABEL[e.type]}`}
+        aria-label={`Open results for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`}
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       <ListPageBoardCardHeader>
@@ -130,7 +130,7 @@ function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; 
         )}
         {col === 'scheduled' && (
           e.status === 'draft'
-            ? <ListPageBoardCardSecondary>Draft — not scheduled yet</ListPageBoardCardSecondary>
+            ? <ListPageBoardCardSecondary>Draft · not scheduled yet</ListPageBoardCardSecondary>
             : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={e.deadline ? `Closes ${e.deadline}` : undefined} />
         )}
         {showGauge && (

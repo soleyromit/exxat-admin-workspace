@@ -102,8 +102,8 @@ export function FacultyProfileDashboard({
             : `${strongest.name} is the strongest dimension at ${strongest.score.toFixed(1)}/5`,
         explanation:
           weakest.score < 3.7
-            ? `The other dimensions hold up — targeted feedback on ${weakest.name.toLowerCase()} would move the overall rating fastest.`
-            : 'All dimensions sit at or above the 3.7 tier — a balanced profile.',
+            ? `The other dimensions hold up. Targeted feedback on ${weakest.name.toLowerCase()} would move the overall rating fastest.`
+            : 'All dimensions sit at or above the 3.7 tier, a balanced profile.',
         kind: weakest.score < 3.7 ? 'anomaly' : 'trend',
         delta: { value: (strongest.score - weakest.score).toFixed(1), label: 'spread across dimensions' },
         bullets: radarData.map(d => `${d.name}: ${d.score.toFixed(1)}/5.`),
@@ -122,7 +122,7 @@ export function FacultyProfileDashboard({
                 ? `Rated ${diff.toFixed(2)} above the faculty median in ${lastWithFaculty.term}`
                 : `Right on the faculty median in ${lastWithFaculty.term}`,
           explanation:
-            'The grey band is the full faculty distribution per term — position within the band matters more than the absolute number.',
+            'The grey band is the full faculty distribution per term. Position within the band matters more than the absolute number.',
           kind: diff < 0 ? 'dip' : 'trend',
           delta: { value: `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, label: 'vs median' },
           bullets: [
@@ -165,12 +165,12 @@ export function FacultyProfileDashboard({
       <ChartCard
         variant="normal"
         title="Rating over time"
-        description="Faculty boxplot per term — box = middle 50%, line = median, whisker = full range · this faculty\u2019s dot (amber = below median) · click a term for details"
+        description="Faculty boxplot per term: box = middle 50%, line = median, whisker = full range · this faculty\u2019s dot (amber = below median) · click a term for details"
         leoInsight={bandLeo}
       >
         <ChartFigure
           label="Rating over time"
-          summary="This faculty member's rating per term shown as a dot inside the full faculty boxplot — box is the middle fifty percent, line the median, whisker the full range."
+          summary="This faculty member's rating per term shown as a dot inside the full faculty boxplot: box is the middle fifty percent, line the median, whisker the full range."
           dataLength={trendData.length}
         >
           {() => (

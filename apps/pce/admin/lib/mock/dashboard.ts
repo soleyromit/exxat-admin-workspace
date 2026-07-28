@@ -13,7 +13,7 @@ export const DASHBOARD_METRICS: MetricItem[] = [
 
 export const DASHBOARD_INSIGHT: MetricInsight = {
   title:       "Throughput note",
-  description: "Demo insight card — wire real KPIs from your product domain.",
+  description: "Demo insight card. Wire real KPIs from your product domain.",
   href:        "/prism/dashboard",
   severity:    "warning",
   actionLabel: "Ask Leo",

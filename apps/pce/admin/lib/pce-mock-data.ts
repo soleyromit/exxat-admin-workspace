@@ -28,7 +28,7 @@ export interface EvaluationInstance {
   deadline: string
 }
 
-// Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
+// Classroom (didactic) · Practice (clinical) · Lab (seminar).
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
 export interface PceSubject {
@@ -256,7 +256,7 @@ export interface TemplateImportDoc {
 export const TEMPLATE_IMPORT_LIBRARY: Record<string, TemplateImportDoc[]> = {
   course_content: [
     {
-      id: 'imp-course-standard', name: 'Course Evaluation — Standard.docx',
+      id: 'imp-course-standard', name: 'Course Evaluation · Standard.docx',
       sections: [
         { title: 'Course Content & Organization', questions: [
           { text: 'The course objectives were clearly stated.', answerType: 'likert' },
@@ -363,6 +363,12 @@ export interface PceSurvey {
   /** 'course' | 'instructor' when the offering splits its surveys —
    *  lib/pce-results.ts reads both onto the derived EvalResult. */
   evalScope?: 'course' | 'instructor'
+  /** Readiness criterion id ('instructor' / 'coordinator' / …) for instructor-
+   *  scope flows created after the instance split. Duplicate detection keys on
+   *  offering + THIS + person: the same person under a different role is a new
+   *  combination, so role-less name matching can't tell them apart. Kept as a
+   *  string to avoid a type import cycle with pce-course-readiness. */
+  evalRole?: string
   instructors: PceInstructor[]
   responseRate: number
   responseCount: number
@@ -384,6 +390,10 @@ export interface PceSurvey {
   lastReminderSentAt?: string
   /** YYYY-MM-DD — next cadence reminder scheduled from Settings (anchored to close date). */
   nextScheduledReminderAt?: string
+  /** Per-survey reminder cadence. Absent = the survey runs the program
+   *  default (EVAL_REMINDER_CADENCE). Communication rules are per-survey —
+   *  two flows may legitimately differ (Decisions/pce/2026-07-27). */
+  reminderCadence?: { frequency: ReminderFrequency; anchor: ReminderAnchor; startDaysBefore: number }
   /** Admin who set up / pushed this survey — drives the "Created by" column + filter. */
   createdBy?: string
   /** Close date before the most recent extension. Set once, on the first "Edit end date". */
@@ -462,7 +472,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
   {
     key: 'course_content',
     label: 'Course',
-    description: 'Evaluates the course itself — structure, materials, objectives, workload.',
+    description: 'Evaluates the course itself: structure, materials, objectives, workload.',
     isGeneral: true,
     perLabel: 'course',
   },
@@ -547,7 +557,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-2',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'No major concerns so far — would appreciate the case write-up rubric a week earlier.',
+    text: 'No major concerns so far. Would appreciate the case write-up rubric a week earlier.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'neutral',
@@ -556,7 +566,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-3',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'The case discussions are the highlight — real charts make the material stick.',
+    text: 'The case discussions are the highlight. Real charts make the material stick.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'positive',
@@ -574,7 +584,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-5',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'Nothing blocking — the pediatric gait analysis lab was excellent.',
+    text: 'Nothing blocking. The pediatric gait analysis lab was excellent.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'positive',
@@ -593,7 +603,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon1-1',
     surveyId: 'mon1',
     questionText: 'What would you change about this course?',
-    text: 'Spread the heavy readings out — the middle weeks stack up against the MSK labs.',
+    text: 'Spread the heavy readings out. The middle weeks stack up against the MSK labs.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'concern',
@@ -602,7 +612,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon1-2',
     surveyId: 'mon1',
     questionText: 'What would you change about this course?',
-    text: 'Keep the lab progression as is — each session builds on the last one really well.',
+    text: 'Keep the lab progression as is. Each session builds on the last one really well.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -630,7 +640,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s2-1',
     surveyId: 's2',
     questionText: 'What would you change about this course?',
-    text: 'The weekly quizzes helped me keep up — more of the case-based questions please.',
+    text: 'The weekly quizzes helped me keep up: more of the case-based questions please.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -657,7 +667,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s2-4',
     surveyId: 's2',
     questionText: 'What feedback do you have for the instructor?',
-    text: 'Sometimes questions in the big lecture hall went unanswered — a follow-up thread would help.',
+    text: 'Sometimes questions in the big lecture hall went unanswered. A follow-up thread would help.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'neutral',
@@ -756,7 +766,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s1-11',
     surveyId: 's1',
     questionText: 'What would improve the lab experience?',
-    text: 'TAs were great but spread thin during peak times — more coverage would help.',
+    text: 'TAs were great but spread thin during peak times. More coverage would help.',
     sectionSubject: 'lab_instructor',
     flagged: false,
     sentiment: 'concern',
@@ -784,7 +794,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s3-1',
     surveyId: 's3',
     questionText: 'What feedback do you have for the instructor?',
-    text: 'Dr. Williams is an excellent communicator — expectations were always clear.',
+    text: 'Dr. Williams is an excellent communicator. Expectations were always clear.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'positive',
@@ -820,7 +830,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s3-5',
     surveyId: 's3',
     questionText: 'What would you change about this course?',
-    text: 'Placement site coordination was smooth this year — a big improvement over what classmates described.',
+    text: 'Placement site coordination was smooth this year, a big improvement over what classmates described.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -839,7 +849,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-s4-1',
     surveyId: 's4',
     questionText: 'What would you change about this course?',
-    text: 'Great course structure overall — the module order made the material build naturally.',
+    text: 'Great course structure overall. The module order made the material build naturally.',
     sectionSubject: 'course_content',
     flagged: false,
     sentiment: 'positive',
@@ -1331,7 +1341,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s1',
-    courseCode: 'Alumni Outcomes Survey — Class of 2025',
+    courseCode: 'Alumni Outcomes Survey · Class of 2025',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1350,7 +1360,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s2',
-    courseCode: 'Preceptor Satisfaction Survey — Spring 2026',
+    courseCode: 'Preceptor Satisfaction Survey · Spring 2026',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1368,7 +1378,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'gen-s3',
-    courseCode: 'Program Exit Survey — Spring 2026',
+    courseCode: 'Program Exit Survey · Spring 2026',
     courseName: '',
     term: 'Spring 2026',
     templateId: 'tmpl-gen1',
@@ -1415,10 +1425,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
 
   // Programmatic (institutional) surveys with real response data — feed the
   // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
-  { id: 'pg1', courseCode: 'End-of-Program Satisfaction — Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
-  { id: 'pg2', courseCode: 'Clinical Site Feedback — DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
-  { id: 'pg3', courseCode: 'Faculty Self-Assessment — All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
-  { id: 'pg4', courseCode: 'Curriculum Effectiveness — All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg1', courseCode: 'End-of-Program Satisfaction · Class of 2026', courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'released',   instructors: [], responseRate: 85, responseCount: 142, enrollmentCount: 168, deadline: 'May 15, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-04-01', academicYear: '2025–2026' },
+  { id: 'pg2', courseCode: 'Clinical Site Feedback · DPT Year 3',         courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 88, responseCount: 84,  enrollmentCount: 96,  deadline: 'Jul 13, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg3', courseCode: 'Faculty Self-Assessment · All Faculty',       courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 69, responseCount: 22,  enrollmentCount: 32,  deadline: 'Jul 16, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
+  { id: 'pg4', courseCode: 'Curriculum Effectiveness · All Students',      courseName: '', term: 'Spring 2026', templateId: 'tmpl-gen1', status: 'collecting', instructors: [], responseRate: 70, responseCount: 218, enrollmentCount: 312, deadline: 'Jul 20, 2026', createdAt: 'Feb 1, 2026', surveyType: 'programmatic', openDate: '2026-05-01', academicYear: '2025–2026' },
 
   // ── Fall 2026 (pt5) — flows already pushed for the upcoming term ──────────
   // The SAME offering can be covered by SEPARATE push flows, each evaluating a
@@ -1438,11 +1448,14 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // row, exercising the Status cell's "+N more" overflow popover.
   { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
-  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  // Kevin's flow runs its OWN window + cadence — the wizard surfaces must show
+  // per-survey rules diverging, not one uniform Dec 4 story.
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
   // instructors: [] — a course-scope flow evaluates no PERSON; listing one
   // would seed a ghost row in that instructor's faculty analytics
   // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
-  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  // The practicum closes later and nudges weekly — a second distinct rule set.
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 22, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-08', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'every_7_days', anchor: 'survey_close', startDaysBefore: 14 } },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [
@@ -1465,7 +1478,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', avg: 3.8, count: 18 },
     ],
     comments: [
-      { section: 'faculty_performance', text: 'Great case discussions in the peds unit — the NICU scenarios especially.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Great case discussions in the peds unit, the NICU scenarios especially.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Office hours times are hard to make around our Thursday clinical block.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Gomez gives specific, usable feedback after every case presentation.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Would help to get the case write-up rubric earlier in the week.', sentiment: 'concern' },
@@ -1629,6 +1642,7 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   // Year 1 — Foundations (Didactic)
   { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
   { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc3',  code: 'DPT-503', name: 'Pharmacology for Physical Therapists', department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Williams' },
   { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
   { id: 'mc5',  code: 'DPT-505', name: 'Biomechanics I', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
   // Year 2 — Clinical Sciences (Didactic)
@@ -1637,6 +1651,7 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
   { id: 'mc9',  code: 'DPT-530', name: 'Therapeutic Exercise',     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
   { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
+  { id: 'mc11', code: 'DPT-610', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-12', editedBy: 'Dr. Gomez'    },
   // Specialty Electives (Didactic)
   { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
   // Clinical Education (Clinical)
@@ -1690,9 +1705,9 @@ export const COURSE_TYPE_LABEL: Record<DeliveryMode, string> = {
 
 /** Full names (tooltips / a11y). */
 export const COURSE_TYPE_FULL_LABEL: Record<DeliveryMode, string> = {
-  classroom: 'Classroom based',
-  lab: 'Lab based',
-  practice: 'Practice based',
+  classroom: 'Classroom',
+  lab: 'Lab',
+  practice: 'Practice',
 }
 
 export interface CourseOffering {
@@ -1707,6 +1722,10 @@ export interface CourseOffering {
   primaryFacultyId: string
   /** Additional collaborators / instructors (per Aarti D7). FK → INSTRUCTORS */
   collaboratorIds: string[]
+  /** Co-instructors holding the SAME Instructor association as collaboratorIds[0]
+   *  — added later in Prism (UC2: late-added co-instructor after a survey is
+   *  live). Each expands to its own survey instance in the push wizard. */
+  coInstructorIds?: string[]
   /** Roster size */
   enrolledCount: number
   status: 'planned' | 'active' | 'completed' | 'archived'
@@ -1760,8 +1779,8 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<RoleKey, string> = {
   'admin':                 'Full access to all program-level entities + cross-product modules.',
-  'course-coordinator':    'Whole-and-soul navigator of an assigned offering — full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
-  'instructor':            'Limited access on assigned offerings (exact capabilities TBD with Vishaka — see R7).',
+  'course-coordinator':    'Full ownership of an assigned offering: full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
+  'instructor':            'Limited access on assigned offerings.',
   'collaborator-readonly': 'View-only access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
   'collaborator-edit':     'Co-edit access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
 }
@@ -1818,7 +1837,7 @@ export const MOCK_ACCOMMODATIONS: MasterAccommodation[] = [
   { id: 'ac9', code: 'LRG', name: 'Large print',                 description: 'Test materials in larger font size',             category: 'format',        isCustom: false, status: 'active' },
   { id: 'ac10', code: 'BRL', name: 'Braille',                     description: 'Test materials in Braille',                      category: 'format',        isCustom: false, status: 'active' },
   { id: 'ac11', code: 'ASL', name: 'ASL interpreter',             description: 'American Sign Language interpreter present',     category: 'assistive-tech', isCustom: false, status: 'active' },
-  { id: 'ac12', code: 'CST', name: 'Custom — service animal',    description: 'Service animal accommodation per school policy', category: 'other',         isCustom: true,  status: 'active' },
+  { id: 'ac12', code: 'CST', name: 'Custom · service animal',    description: 'Service animal accommodation per school policy', category: 'other',         isCustom: true,  status: 'active' },
 ]
 
 // Students (entity #4) — typically LMS-synced; large roster
@@ -1949,7 +1968,10 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
   { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1 – Section D', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
   // Year 2 — Clinical Sciences
-  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  // UC2 demo (late-added co-instructor): pf1/pf2 already cover course13's
+  // Instructor surveys for Chen; Gomez was added in Prism AFTER those went out,
+  // so a re-run shows Chen = duplicate (soft warning) and Gomez = new.
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], coInstructorIds: ['f5'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
   { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
   { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
   { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2 – Section D', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
@@ -2485,19 +2507,19 @@ export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; tex
     return fl as [number, number, number, number, number]
   }
   const COMMENT_POOL: ResponseComment[] = [
-    { section: 'course_content',      text: 'The pacing felt rushed in the final weeks — hard to absorb the last two units.', sentiment: 'concern'  },
+    { section: 'course_content',      text: 'The pacing felt rushed in the final weeks, hard to absorb the last two units.', sentiment: 'concern'  },
     { section: 'course_content',      text: 'Course materials and readings were well organized and easy to follow.',          sentiment: 'positive' },
     { section: 'course_content',      text: 'More worked examples before each assessment would help.',                        sentiment: 'concern'  },
     { section: 'course_content',      text: 'Lab resources were solid; the structure of each module made sense.',             sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Very engaging lectures and responsive to questions.',                            sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Office hours were hard to get into during exam weeks.',                          sentiment: 'concern'  },
-    { section: 'faculty_performance', text: 'Approachable and organized — feedback on assignments was quick.',                sentiment: 'positive' },
+    { section: 'faculty_performance', text: 'Approachable and organized. Feedback on assignments was quick.',                sentiment: 'positive' },
     { section: 'faculty_performance', text: 'Clear communicator; would appreciate more clinical examples.',                   sentiment: 'neutral'  },
   ]
   const OT_POOL: { text: string; sentiment: 'positive' | 'neutral' | 'concern' }[] = [
-    { text: 'Slow down the pacing before exams — the last unit felt rushed.',            sentiment: 'concern'  },
+    { text: 'Slow down the pacing before exams. The last unit felt rushed.',            sentiment: 'concern'  },
     { text: 'More worked examples in lab would make the material stick.',                sentiment: 'concern'  },
-    { text: 'Keep the case-based sessions — easily the most useful part.',               sentiment: 'positive' },
+    { text: 'Keep the case-based sessions, easily the most useful part.',               sentiment: 'positive' },
     { text: 'The readings were well chosen and matched the lectures.',                   sentiment: 'positive' },
     { text: 'Consider recording sessions so we can review before assessments.',          sentiment: 'neutral'  },
     { text: 'Office hours earlier in the week would help before quizzes.',               sentiment: 'concern'  },

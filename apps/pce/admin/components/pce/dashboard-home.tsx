@@ -241,7 +241,7 @@ function CurrentTermCard({
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">No survey templates yet</p>
                 <p className="text-xs text-muted-foreground">
-                  Create a template to define what evaluations ask — the first step before sending them.
+                  Create a template to define what evaluations ask. It's the first step before sending them.
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild className="self-start">

@@ -142,7 +142,7 @@ const tierColor       = (avg: number) => avg >= 4.3 ? 'var(--chart-2)' : avg >= 
 const completionColor = (pct: number) => pct >= 80 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'
 function initials(first: string, last: string) { return (first[0] + last[0]).toUpperCase() }
 
-const TYPE_LABELS: Record<string, string> = { didactic: 'Classroom based', clinical: 'Practice based', seminar: 'Lab based' }
+const TYPE_LABELS: Record<string, string> = { didactic: 'Classroom', clinical: 'Practice', seminar: 'Lab' }
 const barConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(--brand-color)' } }
 const THRESHOLD = 60
 const PRISM_BASE = 'https://app.exxat.com/prism/dpt'
@@ -584,7 +584,7 @@ export default function SetupOverviewPage() {
                   <span className="flex items-center gap-2">
                     {t.name}
                     {hasSurveys && (
-                      <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ backgroundColor: 'var(--chart-2)' }} aria-label="has evaluations" />
+                      <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ backgroundColor: 'var(--chart-2)' }} aria-label="Has evaluations" />
                     )}
                   </span>
                 </SelectItem>

@@ -344,7 +344,7 @@ export function GapQuadrant({
           stroke: theme.card,
           strokeWidth: 1.25,
           channels: {
-            Course: (d: GapPoint) => `${d.courseCode} — ${d.courseName}`,
+            Course: (d: GapPoint) => `${d.courseCode} · ${d.courseName}`,
             Terms: 'terms',
             'Course score': (d: GapPoint) => fmt2(d.courseAvg),
             'Faculty score': (d: GapPoint) => fmt2(d.facultyAvg),
@@ -1217,7 +1217,7 @@ export function CourseTrendStack({
     [rows, termOrder, responseTarget, detail],
   )
 
-  if (rows.length < 2) return <ChartEmpty note="One term of history — a trend needs at least two." />
+  if (rows.length < 2) return <ChartEmpty note="One term of history. A trend needs at least two." />
 
   return (
     <div className="flex flex-col">
@@ -1848,7 +1848,7 @@ export function KpiSpark({
   if (points.length < 3) {
     return (
       <p className="py-2 text-xs text-muted-foreground">
-        {points.length <= 1 ? 'One term of data — no trend yet.' : 'Two terms of data — not enough for a trend.'}
+        {points.length <= 1 ? 'One term of data. No trend yet.' : 'Two terms of data. Not enough for a trend.'}
       </p>
     )
   }
@@ -1918,7 +1918,7 @@ export function CourseRankDots({
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {
-            Course: (d: CourseStat) => `${d.courseCode} — ${d.courseName}`,
+            Course: (d: CourseStat) => `${d.courseCode} · ${d.courseName}`,
             Weighted: (d: CourseStat) => fmt2(d.score.weighted),
             'Simple mean': (d: CourseStat) => fmt2(d.score.simple),
             Terms: 'terms',

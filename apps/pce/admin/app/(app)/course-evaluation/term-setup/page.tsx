@@ -333,7 +333,7 @@ function TermSetupInner() {
                   Term details
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Name the term and set its dates. The evaluation window is derived from the term end date.
+                  Name the term and set its dates. The evaluation window follows the term end date.
                 </p>
               </div>
 
@@ -344,8 +344,8 @@ function TermSetupInner() {
                     aria-hidden="true"
                   />
                   <span>
-                    Detected from your academic calendar — review and confirm. Terms
-                    roll forward each cycle, so the next one is pre-filled.
+                    Pre-filled from your previous term&apos;s calendar. Review the
+                    dates and confirm.
                   </span>
                 </div>
 
@@ -392,12 +392,17 @@ function TermSetupInner() {
                 {derivedWindow && (
                   <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
                     <p className="text-xs font-medium text-foreground">
-                      {name ? `${name} — evaluation window (derived)` : 'Evaluation window (derived)'}
+                      {name ? `${name} · evaluation window` : 'Evaluation window'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Opens {formatYmd(derivedWindow.open)} · closes{' '}
-                      {formatYmd(derivedWindow.close)} — {EVAL_WINDOW_OFFSET_DAYS} days
-                      around the term end. Change the rule in Settings.
+                      Opens {formatYmd(derivedWindow.open)} · closes {formatYmd(derivedWindow.close)}.
+                      Your program rule sets the window {EVAL_WINDOW_OFFSET_DAYS} days around the term end.{' '}
+                      <Link
+                        href="/admin/eval-settings"
+                        className="underline underline-offset-2 text-foreground hover:text-interactive-hover-foreground"
+                      >
+                        Change this rule in Settings
+                      </Link>
                     </p>
                   </div>
                 )}
@@ -424,7 +429,7 @@ function TermSetupInner() {
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {name || 'The new term'}&rsquo;s course offerings, loaded live from Prism.
-                  Assign a template to each course — every row validates against what its template evaluates.
+                  Assign a template to each course. Every row validates against what its template evaluates.
                 </p>
               </div>
 
@@ -437,7 +442,7 @@ function TermSetupInner() {
                     <div className="flex flex-col items-center gap-1">
                       <p className="text-sm font-medium text-foreground">No course offerings in Prism yet</p>
                       <p className="text-sm text-muted-foreground" style={{ maxWidth: 380, textAlign: 'center' }}>
-                        {name || 'This term'} can join the calendar now — courses appear here
+                        {name || 'This term'} can join the calendar now. Courses appear here
                         once Prism loads them, and you can run readiness then.
                       </p>
                     </div>

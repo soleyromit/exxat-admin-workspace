@@ -127,12 +127,12 @@ export function AnalyticsOverviewPanel() {
           : 'started and abandoned'
     const fix =
       w.after === 'Invited'
-        ? 'That is a deliverability or timing problem, not an opinion — students who never saw the ask cannot have declined it. Check send time and whether the invite is reaching inboxes before writing survey copy.'
+        ? 'That is a deliverability or timing problem, not an opinion. Students who never saw the ask cannot have declined it. Check send time and whether the invite is reaching inboxes before writing survey copy.'
         : w.after === 'Opened'
           ? 'They saw the ask and judged it not worth starting. That points at length or framing in the invitation, not at the questions themselves.'
-          : 'They committed and still quit partway. That is the survey being too long or too repetitive — the only stage where the instrument itself is the suspect.'
+          : 'They committed and still quit partway. That is the survey being too long or too repetitive: the only stage where the instrument itself is the suspect.'
     return {
-      headline: `${w.value.toLocaleString()} students ${where} — ${w.pct}% of everyone invited`,
+      headline: `${w.value.toLocaleString()} students ${where}, ${w.pct}% of everyone invited`,
       explanation: `${fix} The response rate on this page counts only the final stage, so every stage above it is invisible in that one number.`,
       kind: 'anomaly',
       delta: { value: `${w.pct}%`, label: `lost after ${w.after}` },
@@ -194,13 +194,13 @@ export function AnalyticsOverviewPanel() {
     return {
       headline: `${widest.courseCode} scores ${fmt2(gap)} higher on teaching than on content`,
       explanation:
-        `Students rate two different things — the course and the person teaching it. When faculty score runs ` +
+        `Students rate two different things: the course and the person teaching it. When faculty score runs ` +
         `well above course score, the instructor is carrying material that needs a redesign; coaching the person ` +
         `will not move it. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} sit in the both-need-attention quadrant.`,
       kind: 'anomaly',
       delta: { value: `+${fmt2(gap)}`, label: 'faculty over course' },
       bullets: [
-        `${widest.courseCode} — ${widest.courseName}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)} across ${widest.terms} term${widest.terms === 1 ? '' : 's'}.`,
+        `${widest.courseCode} · ${widest.courseName}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)} across ${widest.terms} term${widest.terms === 1 ? '' : 's'}.`,
         `${bothLow.length} of ${gaps.length} courses are below both program means.`,
         'Dots off the shaded band are anomalous for their kind, not merely low.',
       ],
@@ -245,7 +245,7 @@ export function AnalyticsOverviewPanel() {
       headline: `${worst.courseCode} in ${worst.term} is the weakest cell at ${fmt2(worst.courseAvg)}`,
       explanation:
         `Rows are ordered worst to best, so the courses that need work band together at the top rather than ` +
-        `scattering alphabetically. ${filled} of ${possible} course-term cells carry data — the blanks are terms ` +
+        `scattering alphabetically. ${filled} of ${possible} course-term cells carry data. The blanks are terms ` +
         `a course was not offered or not evaluated.`,
       kind: 'anomaly',
       delta: { value: fmt2(worst.courseAvg), label: `${worst.courseCode} · ${worst.term}` },
@@ -291,7 +291,7 @@ export function AnalyticsOverviewPanel() {
           : `Every faculty member is level or improving vs their three-year mean`,
       explanation:
         `The arrow runs from a person's 3-year mean to their 1-year mean, so direction and size read in one mark. ` +
-        `A short arrow is stability, not a lack of data. Start with the longest amber arrow — that is the biggest ` +
+        `A short arrow is stability, not a lack of data. Start with the longest amber arrow. That is the biggest ` +
         `change in the shortest time.`,
       kind: declining.length > 0 ? 'dip' : 'trend',
       delta: { value: `${worst.drift >= 0 ? '+' : ''}${fmt2(worst.drift)}`, label: worst.label },
@@ -312,12 +312,12 @@ export function AnalyticsOverviewPanel() {
       headline: `${below.length} of ${courses.length} courses sit below the ${fmt2(courseMedian)} median`,
       explanation:
         `${worst.courseCode} is lowest at ${fmt2(worst.score.weighted)}. Course scores that fall while faculty ` +
-        `scores hold usually mean content or workload, not teaching — check the open-text before booking a ` +
+        `scores hold usually mean content or workload, not teaching. Check the open-text before booking a ` +
         `conversation with the instructor.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
       delta: { value: fmt2(worst.score.weighted), label: worst.courseCode },
       bullets: [
-        `Lowest: ${worst.courseCode} — ${worst.courseName} at ${fmt2(worst.score.weighted)}.`,
+        `Lowest: ${worst.courseCode} · ${worst.courseName} at ${fmt2(worst.score.weighted)}.`,
         `Median across ${courses.length} courses: ${fmt2(courseMedian)}.`,
       ],
       anchor: { yValue: worst.score.weighted },
@@ -397,7 +397,7 @@ export function AnalyticsOverviewPanel() {
             detail={courses.length ? <CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} /> : <p className="py-8 text-center text-sm text-muted-foreground">No course data yet.</p>}
             table={{
               headers: ['Course', 'Weighted score', 'Terms'],
-              rows: courses.map((c) => [`${c.courseCode} — ${c.courseName}`, fmt2(c.score.weighted), c.terms]),
+              rows: courses.map((c) => [`${c.courseCode} · ${c.courseName}`, fmt2(c.score.weighted), c.terms]),
             }}
           />
         </ChartCard>
@@ -424,7 +424,7 @@ export function AnalyticsOverviewPanel() {
           />
           <ChartCardActions
             title="Overall response rate"
-            description={`Response rate by term against the ${RESPONSE_TARGET}% target — the trend behind the tile's number.`}
+            description={`Response rate by term against the ${RESPONSE_TARGET}% target: the trend behind the tile's number.`}
             detail={series.length ? <ProgramResponseTrend series={series} target={RESPONSE_TARGET} height={420} /> : <p className="py-8 text-center text-sm text-muted-foreground">No term history yet.</p>}
             table={{
               headers: ['Term', 'Response rate', 'Responded', 'Enrolled'],
@@ -584,7 +584,7 @@ export function AnalyticsOverviewPanel() {
                   caption={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} lowest-scoring courses against the program median`}
                   headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
                   rows={lowestCourses.map((c) => [
-                    `${c.courseCode} — ${c.courseName}`,
+                    `${c.courseCode} · ${c.courseName}`,
                     fmt2(c.score.weighted),
                     fmt2(c.score.simple),
                     c.terms,
@@ -598,7 +598,7 @@ export function AnalyticsOverviewPanel() {
                   table={{
                     headers: ['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
                     rows: courses.map((c) => [
-                      `${c.courseCode} — ${c.courseName}`,
+                      `${c.courseCode} · ${c.courseName}`,
                       fmt2(c.score.weighted),
                       fmt2(c.score.simple),
                       c.terms,
@@ -654,7 +654,7 @@ export function AnalyticsOverviewPanel() {
               />
               <ChartCardActions
                 title="Program trajectory"
-                description="Scores and response rate by term — every point labelled with its exact value."
+                description="Scores and response rate by term: every point labelled with its exact value."
                 detail={<ProgramTrendStack series={series} detail />}
                 table={{
                   headers: ['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled'],
@@ -699,7 +699,7 @@ export function AnalyticsOverviewPanel() {
                 caption="Course score versus faculty score, by course"
                 headers={['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled']}
                 rows={gaps.map((g) => [
-                  `${g.courseCode} — ${g.courseName}`,
+                  `${g.courseCode} · ${g.courseName}`,
                   g.terms,
                   fmt2(g.courseAvg),
                   fmt2(g.facultyAvg),
@@ -721,7 +721,7 @@ export function AnalyticsOverviewPanel() {
                 table={{
                   headers: ['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled'],
                   rows: gaps.map((g) => [
-                    `${g.courseCode} — ${g.courseName}`,
+                    `${g.courseCode} · ${g.courseName}`,
                     g.terms,
                     fmt2(g.courseAvg),
                     fmt2(g.facultyAvg),
@@ -747,7 +747,7 @@ export function AnalyticsOverviewPanel() {
         title="Where responses are lost"
         description={
           funnel.worst
-            ? `Biggest leak: ${funnel.worst.after === 'Invited' ? 'students who never opened the invitation' : funnel.worst.after === 'Opened' ? 'students who opened it but never started' : 'students who started and abandoned'} — ${funnel.worst.value.toLocaleString()} students, ${funnel.worst.pct}% of everyone invited.`
+            ? `Biggest leak: ${funnel.worst.after === 'Invited' ? 'students who never opened the invitation' : funnel.worst.after === 'Opened' ? 'students who opened it but never started' : 'students who started and abandoned'}, ${funnel.worst.value.toLocaleString()} students, ${funnel.worst.pct}% of everyone invited.`
             : 'Every invited student completed the survey.'
         }
         leoInsight={funnelLeo}
@@ -765,7 +765,7 @@ export function AnalyticsOverviewPanel() {
                   Frequency counts, not percentages alone — Aarti D17. */}
               {funnel.worst && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Largest drop-off: after <span className="font-medium text-foreground">{funnel.worst.after}</span> —{' '}
+                  Largest drop-off: after <span className="font-medium text-foreground">{funnel.worst.after}</span>,{' '}
                   {funnel.worst.value.toLocaleString()} of {funnel.counts.invited.toLocaleString()} students ({funnel.worst.pct}%).
                 </p>
               )}
@@ -781,7 +781,7 @@ export function AnalyticsOverviewPanel() {
               />
               <ChartCardActions
                 title="Where responses are lost"
-                description="The response funnel at full height — stage counts and losses read without hovering."
+                description="The response funnel at full height: stage counts and losses read without hovering."
                 detail={<ResponseFunnelSankey funnel={funnel} height={520} />}
                 table={{
                   headers: ['Stage', 'Students', 'Lost after this stage'],
@@ -870,7 +870,7 @@ export function AnalyticsOverviewPanel() {
               />
               <ChartCardActions
                 title="Course quality across terms"
-                description={`All ${matrix.courses.length} courses across ${matrix.terms.length} terms, weakest first. The tinted grid IS the accessible artefact — sortable, selectable, screen-readable.`}
+                description={`All ${matrix.courses.length} courses across ${matrix.terms.length} terms, weakest first. The tinted grid IS the accessible artefact: sortable, selectable, screen-readable.`}
                 detail={
                   /* Deliberately NOT paginated (verification-review flagged the count claim):
                      this is a matrix, not a register — paginating a heatmap severs the row-to-row

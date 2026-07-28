@@ -17,10 +17,18 @@
 import {
   type CourseOffering,
   type PceSurvey,
+  type PceTemplate,
   type SurveyStatus,
   MOCK_PROGRAM_TERMS,
+  deliveryModeOf,
 } from './pce-mock-data'
-import { courseLabelOf, prismAddHref } from './pce-course-readiness'
+import {
+  type Criterion,
+  CRITERION_BY_TYPE,
+  courseLabelOf,
+  prismAddHref,
+  templateCriteria,
+} from './pce-course-readiness'
 
 export interface CourseIssue {
   id: string
@@ -118,9 +126,149 @@ function flowSummary(f: PceSurvey): string {
   return `${who} — ${OPEN_FLOW_WORD[f.status] ?? f.status}${opens}`
 }
 
+// ── Survey instances (the Survey design step's row grain) ────────────────────
+// A push doesn't create "a survey per course" — it creates one survey INSTANCE
+// per (course offering × evaluatee), where the evaluatees are what the assigned
+// template demands: one course-material instance, plus one per faculty role the
+// template evaluates × the person staffed in that role. Duplicates are defined
+// at THIS grain (engineering feedback, Jul 2026): the composite key is
+// offering + role + person — a second Instructor survey for the same person is
+// a duplicate; the same person under a different role is not; a new person
+// under an already-surveyed role is not.
+
+export type InstanceStatus = 'new' | 'duplicate' | 'gap'
+
+export interface SurveyInstance {
+  /** `offeringId|criterion|person` — the composite identity duplicates key on.
+   *  Person rides the NAME: the mock readiness resolvers return names, not ids
+   *  (see CRITERION_BY_TYPE); swap to personId when real association data lands. */
+  key: string
+  offeringId: string
+  scope: 'course' | 'instructor'
+  /** Readiness criterion this instance evaluates ('students' = course material). */
+  criterion: Criterion
+  /** Type-aware role label ("Clinical Coordinator"); '' for course material. */
+  roleLabel: string
+  /** Person evaluated — null for course material and for unstaffed roles. */
+  personName: string | null
+  status: InstanceStatus
+  /** The open flow this instance would duplicate (status 'duplicate' only). */
+  existing: PceSurvey | null
+  /** New-tab Prism deep-link to staff the missing role (status 'gap' only). */
+  prismHref: string | null
+}
+
+/** Does an existing flow cover this prospective instance's composite key? */
+function coversInstance(
+  s: PceSurvey,
+  offeringId: string,
+  scope: 'course' | 'instructor',
+  criterion: Criterion,
+  personName: string | null,
+): boolean {
+  if (s.offeringId !== offeringId || !OPEN_FLOW_STATUSES.has(s.status)) return false
+  if (scope === 'course') {
+    // Course material is covered by a course-scope flow or a combined flow
+    // (evalScope undefined = the pre-split shape that evaluated everything).
+    return s.evalScope !== 'instructor'
+  }
+  if (s.evalScope === 'course') return false
+  if (s.evalRole) {
+    // Role-stamped flows (created after the split) match the full key.
+    return s.evalRole === criterion && s.instructors.some(p => p.name === personName)
+  }
+  // Legacy flows carry no role. A person-only match can only vouch for the
+  // 'instructor' criterion (the role those flows were pushed for) — the same
+  // person under a DIFFERENT role is a genuinely new combination, not a dup.
+  return criterion === 'instructor' && s.instructors.some(p => p.name === personName)
+}
+
+/**
+ * Expand one course offering × its assigned template into the survey instances
+ * a push would create, each checked against the existing flows. Pure; recompute
+ * on any assignment/selection/data change. No template → no instances (the
+ * step gates on assignment before this matters).
+ */
+export function expandInstances(
+  offering: CourseOffering,
+  template: PceTemplate | null | undefined,
+  surveys: PceSurvey[],
+): SurveyInstance[] {
+  if (!template) return []
+  const mode = deliveryModeOf(offering)
+  const out: SurveyInstance[] = []
+  for (const criterion of templateCriteria(template)) {
+    const spec = CRITERION_BY_TYPE[mode][criterion]
+    // Role not applicable to this course type (≠ a gap) — no instance.
+    if (!spec) continue
+    if (criterion === 'students') {
+      const existing = surveys.find(s =>
+        coversInstance(s, offering.id, 'course', criterion, null)) ?? null
+      out.push({
+        key: `${offering.id}|course`,
+        offeringId: offering.id,
+        scope: 'course',
+        criterion,
+        roleLabel: '',
+        personName: null,
+        status: existing ? 'duplicate' : 'new',
+        existing,
+        prismHref: null,
+      })
+      continue
+    }
+    // EVERY person holding the role — a role can be held by several people at
+    // once (late-added co-instructor, UC2), and each person is their own
+    // instance with their own duplicate verdict.
+    const single = spec.resolve(offering)
+    const persons = spec.resolveAll?.(offering) ?? (single ? [single] : [])
+    if (persons.length === 0) {
+      out.push({
+        key: `${offering.id}|${criterion}|`,
+        offeringId: offering.id,
+        scope: 'instructor',
+        criterion,
+        roleLabel: spec.label,
+        personName: null,
+        status: 'gap',
+        existing: null,
+        prismHref: prismAddHref(offering, criterion),
+      })
+      continue
+    }
+    for (const personName of persons) {
+      const existing = surveys.find(s =>
+        coversInstance(s, offering.id, 'instructor', criterion, personName)) ?? null
+      out.push({
+        key: `${offering.id}|${criterion}|${personName}`,
+        offeringId: offering.id,
+        scope: 'instructor',
+        criterion,
+        roleLabel: spec.label,
+        personName,
+        status: existing ? 'duplicate' : 'new',
+        existing,
+        prismHref: null,
+      })
+    }
+  }
+  return out
+}
+
+/** One-line description of the open flow an instance duplicates ("Live · opened Jul 2"). */
+export function existingFlowSummary(f: PceSurvey): string {
+  const word = OPEN_FLOW_WORD[f.status] ?? f.status
+  const opened = f.openDate ? ` · opens ${fmtYmd(f.openDate)}` : ''
+  const capitalized = word.charAt(0).toUpperCase() + word.slice(1)
+  return f.status === 'scheduled' ? `${capitalized}${opened}` : capitalized
+}
+
 /**
  * C. Duplicate flows — selected courses that already carry a scheduled/live
  * evaluation flow from an earlier push (matched by the survey's offeringId FK).
+ * Course-grained; kept for the term-setup wizard, which still runs the merged
+ * step. The push wizard resolves duplicates per-INSTANCE in its Survey design
+ * step (expandInstances above) and skips them at insert.
  */
 export function duplicateFlowIssues(
   offerings: CourseOffering[],

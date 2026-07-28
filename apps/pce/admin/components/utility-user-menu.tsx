@@ -39,7 +39,7 @@ export function UtilityUserMenu() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`${user.name} — open profile and settings menu`}
+              aria-label={`${user.name}, open profile and settings menu`}
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
                 utilityBarActionButtonClass,

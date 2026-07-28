@@ -633,6 +633,12 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
    * --icon-disc-* bg tokens with their --chip-* inks).
    */
   groupHeaderStyles?: Record<string, React.CSSProperties>
+  /** PCE extension — extra content rendered inline in the group band after the
+   *  label (e.g. the Survey design step's per-course template Select). Portal-
+   *  based controls (DS Select/Popover) are safe here: their floating content
+   *  escapes the scroll container via the Radix portal, and the band already
+   *  hosts an interactive control (the group select-all Checkbox). */
+  groupHeaderSlot?: (groupKey: string) => React.ReactNode
   /** Per-row class hook (PCE extension) — e.g. state tints/accent borders. */
   getRowClassName?: (row: TData) => string | undefined
   /**
@@ -674,6 +680,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   state,
   groupIcons,
   groupHeaderStyles,
+  groupHeaderSlot,
   getRowClassName,
   edgeInset = true,
   stickyHeader = true,
@@ -1082,6 +1089,13 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       </span>
                     </>
                   )
+                  /* PCE extension — per-group slot (see prop doc). Rendered
+                     OUTSIDE the label flow and pinned to the band's right edge
+                     so an interactive control (e.g. a template Select) sits at
+                     the SAME x on every band, regardless of label length. */
+                  const slotContent = groupKey != null && groupHeaderSlot != null
+                    ? groupHeaderSlot(groupKey)
+                    : null
                   return (
                     <tr>
                       {hasSelectCell ? (
@@ -1103,9 +1117,19 @@ function DataTableInner<TData extends Record<string, unknown>>({
                                horizontal scroll the label rode off-screen leaving a
                                blank colored band. The inner sticky span pins the
                                text to the visible edge (past the 40px select col)
-                               while the cell itself scrolls. */}
-                            <span className="sticky inline-flex items-center" style={{ left: 52 }}>
+                               while the cell itself scrolls. With a slot, the span
+                               goes full-width flex so the slot pins to the right
+                               edge at a fixed x on every band. */}
+                            <span
+                              className={cn("sticky items-center", slotContent ? "flex w-full pe-1" : "inline-flex")}
+                              style={{ left: 52 }}
+                            >
                               {labelContent}
+                              {slotContent && (
+                                <span className="ms-auto inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+                                  {slotContent}
+                                </span>
+                              )}
                             </span>
                           </td>
                         </>
@@ -1116,8 +1140,16 @@ function DataTableInner<TData extends Record<string, unknown>>({
                               {groupCheckbox}
                             </span>
                           )}
-                          <span className="sticky inline-flex items-center" style={{ left: 12 }}>
+                          <span
+                            className={cn("sticky items-center", slotContent ? "flex w-full pe-1" : "inline-flex")}
+                            style={{ left: 12 }}
+                          >
                             {labelContent}
+                            {slotContent && (
+                              <span className="ms-auto inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+                                {slotContent}
+                              </span>
+                            )}
                           </span>
                         </td>
                       )}

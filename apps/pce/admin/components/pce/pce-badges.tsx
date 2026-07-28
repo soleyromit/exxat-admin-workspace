@@ -1,6 +1,6 @@
 'use client'
 
-import { StatusBadge } from '@exxatdesignux/ui'
+import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@exxatdesignux/ui'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import type { SurveyStatus } from '@/lib/pce-mock-data'
@@ -88,4 +88,64 @@ export function SurveyStatusBadgeOS({
 }) {
   const s = SURVEY_STATUS_BADGE[status]
   return <StatusBadge label={s.label} tone={SURVEY_STATUS_TONE[status]} icon={s.icon} size={size} />
+}
+
+/** "YYYY-MM-DD" → "Dec 4" / "December 4, 2026" without the UTC-midnight shift. */
+function fmtOpenDate(iso: string, style: 'short' | 'long'): string | null {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d).toLocaleDateString(
+    'en-US',
+    style === 'short'
+      ? { month: 'short', day: 'numeric' }
+      : { month: 'long', day: 'numeric', year: 'numeric' },
+  )
+}
+
+/** Scheduled surveys where the DATE is the fact that matters (push wizard,
+ *  inline rows): "Opens Dec 4" with the canonical status word in the tooltip.
+ *  Two renderings — `inline` tucks the fact into a row's secondary meta line
+ *  as muted icon + text (Linear/Todoist model: the right rail stays
+ *  action-only), the default is a StatusBadge in the scheduled tone. Every
+ *  other status, and a scheduled survey with no date, renders the plain
+ *  SurveyStatusBadgeOS so the app-wide vocabulary stays one set. */
+export function SurveyStatusDateBadgeOS({
+  status,
+  openDate,
+  size = 'sm',
+  inline = false,
+}: {
+  status: SurveyStatus
+  openDate?: string
+  size?: 'sm' | 'md'
+  inline?: boolean
+}) {
+  const short = status === 'scheduled' && openDate ? fmtOpenDate(openDate, 'short') : null
+  if (!short) return <SurveyStatusBadgeOS status={status} size={size} />
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {inline ? (
+          <span className="inline-flex items-center gap-1 cursor-default whitespace-nowrap text-xs text-muted-foreground">
+            <i className="fa-light fa-calendar-day text-xs" aria-hidden="true" />
+            <span className="tabular-nums">Opens {short}</span>
+            <span className="sr-only">, scheduled</span>
+          </span>
+        ) : (
+          <span className="inline-flex cursor-default">
+            <StatusBadge
+              label={`Opens ${short}`}
+              tone={SURVEY_STATUS_TONE.scheduled}
+              icon="fa-calendar-day"
+              size={size}
+            />
+            <span className="sr-only">, scheduled</span>
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent>
+        Scheduled to open to students on {fmtOpenDate(openDate!, 'long')}.
+      </TooltipContent>
+    </Tooltip>
+  )
 }

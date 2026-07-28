@@ -545,7 +545,7 @@ function StatusResultScreen({
         title={survey.courseCode}
       />
       <PageHeader
-        title={`${survey.courseCode} — ${survey.courseName}`}
+        title={`${survey.courseCode} · ${survey.courseName}`}
         subtitle={`${survey.term}${survey.academicYear ? ` · AY ${survey.academicYear}` : ''}${program ? ` · ${program}` : ''}`}
         actions={
           isPD ? (
@@ -592,11 +592,11 @@ function StatusResultScreen({
                     </span>
                   </>
                 }
-                caption="responses"
+                caption="Responses"
               />
               <StatBlock
                 value={`${survey.responseRate}%`}
-                caption="response rate · target 70%"
+                caption="Response rate · target 70%"
                 color={rateColor(survey.responseRate)}
               />
               {survey.deadline && (
@@ -892,7 +892,7 @@ function ScoreTile({
               <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
               <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
             </Avatar>
-            <span className="sr-only">{label} — </span>
+            <span className="sr-only">{label}: </span>
             <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
           </p>
         ) : (
@@ -1100,7 +1100,7 @@ function ThemeBoxplotChart({
     headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)} — open the theme for its questions.`
+        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)}. Open the theme for its questions.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
   }
@@ -1381,7 +1381,7 @@ function ScaleTrackPlot({
   const gapLine = (v: number) =>
     programAvg == null ? null : (
       <PopoverStatRow
-        label="vs program"
+        label="Vs program"
         value={
           Math.abs(v - programAvg) > 0.05 ? (
             <>
@@ -1475,7 +1475,7 @@ function ScaleTrackPlot({
       {programAvg != null && (
         <Popover>
           <PopoverTrigger
-            aria-label={`Program average ${programAvg.toFixed(1)} — details`}
+            aria-label={`Program average ${programAvg.toFixed(1)}, details`}
             className={`absolute top-0 flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
             style={{ left: `${scaleX(programAvg)}%` }}
           >
@@ -1533,7 +1533,7 @@ function ScaleTrackPlot({
       {/* middle 50% band — click for the formatted distribution popover */}
       <Popover>
         <PopoverTrigger
-          aria-label={`${detailTitle} — distribution details`}
+          aria-label={`${detailTitle}, distribution details`}
           className={`absolute top-7 h-2.5 -translate-y-1/2 rounded-full ${PLOT_TRIGGER_RING}`}
           style={{
             left: `${scaleX(p25)}%`,
@@ -1558,8 +1558,8 @@ function ScaleTrackPlot({
           <PopoverTrigger
             aria-label={
               m.person
-                ? `${m.person.name} — average ${m.value.toFixed(1)}, details`
-                : `Course average ${m.value.toFixed(1)} — details`
+                ? `${m.person.name}, average ${m.value.toFixed(1)}, details`
+                : `Course average ${m.value.toFixed(1)}, details`
             }
             className={`absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
             style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
@@ -1658,7 +1658,7 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
           <p className="text-sm">{row.label}</p>
           <p className="text-xs text-muted-foreground tabular-nums">
             {count === 0
-              ? 'Written responses — none yet'
+              ? 'Written responses · none yet'
               : `${count} written response${count !== 1 ? 's' : ''}`}
             {positives > 0 && <> · {positives} positive</>}
             {concerns > 0 && <> · {concerns} constructive</>}
@@ -1833,7 +1833,7 @@ function QuestionBreakdownTable({
               ...(r.counts ?? [0, 0, 0, 0, 0]),
             ],
             ...(r.perFaculty ?? []).map((f) => [
-              `${r.label} — ${f.name}`,
+              `${r.label} · ${f.name}`,
               r.group,
               f.avg.toFixed(1),
               '—',
@@ -1881,8 +1881,8 @@ function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
   const behind = survey.responseRate < 70
   const paceLeo: ChartLeoInsight = {
     headline: behind
-      ? `${survey.responseRate}% collected — behind the 70% target`
-      : `${survey.responseRate}% collected — on target`,
+      ? `${survey.responseRate}% collected · behind the 70% target`
+      : `${survey.responseRate}% collected · on target`,
     explanation: pace
       ? `About ${pace.perDay} response${pace.perDay !== 1 ? 's' : ''}/day needed by close${daysLeft != null && daysLeft > 0 ? ` (${daysLeft}d left)` : ''}. A reminder typically lifts the daily count.`
       : 'The collection window has ended.',
@@ -2529,10 +2529,10 @@ function ResultDetail({
     viewerComments.find((c) => c.sentiment === 'concern') ?? viewerComments[0] ?? null
 
   const RECOMMENDATION: Record<string, string> = {
-    Pacing: 'Revisit the weekly cadence — students flagged pacing; consider spreading the heaviest units.',
+    Pacing: 'Revisit the weekly cadence. Students flagged pacing; consider spreading the heaviest units.',
     'Faculty engagement': 'Keep the engagement practices students praised; share them at the next faculty meeting.',
     'Course materials': 'Refresh the flagged materials and confirm every resource link works before next term.',
-    'Assessment quality': 'Review the flagged assessments — align difficulty and add worked examples.',
+    'Assessment quality': 'Review the flagged assessments. Align difficulty and add worked examples.',
     'Office hours': 'Consider adding or re-announcing office-hour slots; availability came up in comments.',
   }
   const recommendations = (concernThemes.length > 0 ? concernThemes : topThemes)
@@ -2711,14 +2711,14 @@ function ResultDetail({
         (survey.instructors.length > 1
           ? `${roleScopedInstructors.length} ${roleScopeLabel ? `× ${roleScopeLabel}` : 'instructors'}${
               roleScopedInstructors.length <= 3
-                ? ' — photo marker per instructor'
+                ? ', photo marker per instructor'
                 : isPD
-                  ? ' — use the instructor selector above for per-person scores'
+                  ? ', use the instructor selector above for per-person scores'
                   : ''
             }`
           : undefined),
       anchorId: 'group-faculty',
-      contextLine: `Faculty evaluation${scopedFacultyName ? ` — ${scopedFacultyName}` : ''}`,
+      contextLine: `Faculty evaluation${scopedFacultyName ? ` · ${scopedFacultyName}` : ''}`,
     },
     General: {
       icon: 'fa-comments',
@@ -2763,7 +2763,7 @@ function ResultDetail({
              classes, or the page loses its heading and serif treatment. */
           <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="line-clamp-2 min-w-0 overflow-hidden break-words font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
-              {`${result.courseCode} — ${result.courseName}`}
+              {`${result.courseCode} · ${result.courseName}`}
             </h1>
             {inCollection ? (
               <SurveyStatusBadgeOS status={survey.status} />
@@ -2991,7 +2991,7 @@ function ResultDetail({
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-sm font-semibold text-foreground">Early signal</h2>
                     <span className="text-xs text-muted-foreground">
-                      Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far — expect movement until close
+                      Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far. Expect movement until close
                     </span>
                   </div>
                 ) : (
@@ -3171,7 +3171,7 @@ function ResultDetail({
                             label="Filter student comments by sentiment"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Anonymized — individual authorship cannot be identified.
+                            Anonymized. Individual authorship cannot be identified.
                           </p>
                         </div>
                         {/* One group per evaluation type; faculty comments
@@ -3197,7 +3197,7 @@ function ResultDetail({
                           />
                         ))}
                         <CommentList
-                          title="Faculty evaluation — not attributed to one instructor"
+                          title="Faculty evaluation: not attributed to one instructor"
                           icon={EVALUATION_TYPE_ICON.faculty_roles}
                           comments={unattributedFacultyComments}
                           hiddenIdx={hiddenIdx}
@@ -3332,7 +3332,7 @@ function ResultDetail({
                           {questionIndexGroups.map((g) => {
                             const label =
                               g.key === 'Faculty' && scopedFacultyName
-                                ? `Faculty evaluation — ${scopedFacultyName}`
+                                ? `Faculty evaluation · ${scopedFacultyName}`
                                 : groupMeta[g.key]?.label ?? g.key
                             const open = !!railGroupsOpen[g.key]
                             return (
@@ -3431,7 +3431,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Full Survey Report</CardTitle>
                     <CardDescription>
-                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only. ` : ''}
                       Complete results including scores, question breakdown, and student comments.
                     </CardDescription>
                   </CardHeader>
@@ -3452,7 +3452,7 @@ function ResultDetail({
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm" aria-level={2}>Raw Responses</CardTitle>
                     <CardDescription>
-                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only — ` : ''}
+                      {result.evalScope ? `${EVAL_SCOPE_LABEL[result.evalScope]} only. ` : ''}
                       Export all anonymized responses as a spreadsheet for further analysis.
                     </CardDescription>
                   </CardHeader>
