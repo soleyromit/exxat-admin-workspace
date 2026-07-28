@@ -333,7 +333,7 @@ function TermSetupInner() {
                   Term details
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Name the term and set its dates. The evaluation window is derived from the term end date.
+                  Name the term and set its dates. The evaluation window follows the term end date.
                 </p>
               </div>
 
@@ -344,8 +344,8 @@ function TermSetupInner() {
                     aria-hidden="true"
                   />
                   <span>
-                    Detected from your academic calendar. Review and confirm. Terms
-                    roll forward each cycle, so the next one is pre-filled.
+                    Pre-filled from your previous term&apos;s calendar. Review the
+                    dates and confirm.
                   </span>
                 </div>
 
@@ -392,12 +392,17 @@ function TermSetupInner() {
                 {derivedWindow && (
                   <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
                     <p className="text-xs font-medium text-foreground">
-                      {name ? `${name} · evaluation window (derived)` : 'Evaluation window (derived)'}
+                      {name ? `${name} · evaluation window` : 'Evaluation window'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Opens {formatYmd(derivedWindow.open)} · closes{' '}
-                      {formatYmd(derivedWindow.close)}: {EVAL_WINDOW_OFFSET_DAYS} days
-                      around the term end. Change the rule in Settings.
+                      Opens {formatYmd(derivedWindow.open)} · closes {formatYmd(derivedWindow.close)}.
+                      Your program rule sets the window {EVAL_WINDOW_OFFSET_DAYS} days around the term end.{' '}
+                      <Link
+                        href="/admin/eval-settings"
+                        className="underline underline-offset-2 text-foreground hover:text-interactive-hover-foreground"
+                      >
+                        Change this rule in Settings
+                      </Link>
                     </p>
                   </div>
                 )}
