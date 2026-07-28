@@ -697,16 +697,15 @@ export function StepCoursesEvaluateesClassic({
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
-            { value: 'Classroom based', label: 'Classroom based' },
-            { value: 'Lab based', label: 'Lab based' },
-            { value: 'Practice based', label: 'Practice based' },
+            { value: 'Classroom', label: 'Classroom' },
+            { value: 'Lab', label: 'Lab' },
+            { value: 'Practice', label: 'Practice' },
           ],
         },
         // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
         // the matching --chip ink (the DS icon-disc pairing, AA-safe). Amber
         // (chart-4) is deliberately NOT in the map: it stays the warning hue.
-        // Short display label ("Classroom", not "Classroom based");
-        // sorting/filtering still ride the full typeLabel value.
+        // Pill shows the type label; sorting/filtering ride the same value.
         cell: r => {
           const tint = TYPE_PILL_TINT[r.deliveryMode]
           return (

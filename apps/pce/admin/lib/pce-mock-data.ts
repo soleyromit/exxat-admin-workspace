@@ -28,7 +28,7 @@ export interface EvaluationInstance {
   deadline: string
 }
 
-// Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
+// Classroom (didactic) · Practice (clinical) · Lab (seminar).
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
 export interface PceSubject {
@@ -1705,9 +1705,9 @@ export const COURSE_TYPE_LABEL: Record<DeliveryMode, string> = {
 
 /** Full names (tooltips / a11y). */
 export const COURSE_TYPE_FULL_LABEL: Record<DeliveryMode, string> = {
-  classroom: 'Classroom based',
-  lab: 'Lab based',
-  practice: 'Practice based',
+  classroom: 'Classroom',
+  lab: 'Lab',
+  practice: 'Practice',
 }
 
 export interface CourseOffering {

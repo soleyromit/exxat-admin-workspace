@@ -410,9 +410,9 @@ export function StepCoursesEvaluatees({
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
-            { value: 'Classroom based', label: 'Classroom based' },
-            { value: 'Lab based', label: 'Lab based' },
-            { value: 'Practice based', label: 'Practice based' },
+            { value: 'Classroom', label: 'Classroom' },
+            { value: 'Lab', label: 'Lab' },
+            { value: 'Practice', label: 'Practice' },
           ],
         },
         // D5 (Romit, Jul 21): tinted categorical pill — shared TypePill

@@ -23,7 +23,7 @@ import { MOCK_MASTER_COURSES, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data
 
 const PRISM_BASE = 'https://app.exxat.com/prism/dpt/course'
 
-const TYPE_LABELS: Record<string, string> = { didactic: 'Classroom based', clinical: 'Practice based', seminar: 'Lab based' }
+const TYPE_LABELS: Record<string, string> = { didactic: 'Classroom', clinical: 'Practice', seminar: 'Lab' }
 
 const TERM_ORDER = [
   'Spring 2022', 'Fall 2022', 'Spring 2023', 'Fall 2023',

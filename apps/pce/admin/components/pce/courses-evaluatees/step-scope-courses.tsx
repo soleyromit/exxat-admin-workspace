@@ -143,9 +143,9 @@ export function StepScopeCourses({
       filter: {
         type: 'select', icon: 'fa-shapes',
         options: [
-          { value: 'Classroom based', label: 'Classroom based' },
-          { value: 'Lab based', label: 'Lab based' },
-          { value: 'Practice based', label: 'Practice based' },
+          { value: 'Classroom', label: 'Classroom' },
+          { value: 'Lab', label: 'Lab' },
+          { value: 'Practice', label: 'Practice' },
         ],
       },
       cell: r => <TypePill deliveryMode={r.deliveryMode} label={r.typeLabel} />,

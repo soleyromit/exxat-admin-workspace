@@ -20,9 +20,9 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 
 const TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom based',
-  clinical: 'Practice based',
-  seminar:  'Lab based',
+  didactic: 'Classroom',
+  clinical: 'Practice',
+  seminar:  'Lab',
 }
 
 interface StepDistributionProps {
