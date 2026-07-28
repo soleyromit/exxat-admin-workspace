@@ -1772,8 +1772,8 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<RoleKey, string> = {
   'admin':                 'Full access to all program-level entities + cross-product modules.',
-  'course-coordinator':    'Whole-and-soul navigator of an assigned offering: full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
-  'instructor':            'Limited access on assigned offerings (exact capabilities TBD with Vishaka, see R7).',
+  'course-coordinator':    'Full ownership of an assigned offering: full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
+  'instructor':            'Limited access on assigned offerings.',
   'collaborator-readonly': 'View-only access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
   'collaborator-edit':     'Co-edit access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
 }

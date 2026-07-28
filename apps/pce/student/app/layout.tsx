@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'PCE — Student Portal',
+  title: 'PCE Student Portal',
   description: 'Exxat Post Course Evaluation Student Portal',
 }
 
