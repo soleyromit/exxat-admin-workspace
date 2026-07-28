@@ -33,6 +33,9 @@ import {
 } from '@exxatdesignux/ui'
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
+import {
+  CommRulesPopover, commRulesOfSurvey, commCadenceOfSurvey, commUntilOfSurvey,
+} from '@/components/pce/existing-comm-rules'
 import { usePce } from '@/components/pce/pce-state'
 import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
@@ -450,6 +453,22 @@ export function StepSurveyInstances({
                           )}
                         </span>
                       </div>
+                      {/* The existing survey's communication rules — same popover
+                          anatomy as the step-3 rail (facts, no control). */}
+                      {item.existing && (
+                        <CommRulesPopover
+                          courseCode={code}
+                          courseName={name || undefined}
+                          evaluatees={[item.scope === 'course'
+                            ? { scope: 'course' }
+                            : { scope: 'person', personName: item.personName ?? undefined }]}
+                          status={item.existing.status}
+                          openDate={item.existing.openDate}
+                          untilLabel={commUntilOfSurvey(item.existing)}
+                          cadence={commCadenceOfSurvey(item.existing)}
+                          rules={commRulesOfSurvey(item.existing)}
+                        />
+                      )}
                       {/* Decision lane — constant label width keeps the toggles in a column. */}
                       <label htmlFor={`reeval-${item.key}`} className="flex items-center gap-2 cursor-pointer shrink-0 ps-2">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Evaluate again</span>

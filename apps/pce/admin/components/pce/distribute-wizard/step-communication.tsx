@@ -11,12 +11,15 @@ import {
   FieldLegend,
   Input,
   LocalBanner,
-  Popover, PopoverContent, PopoverTrigger,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleSwitch,
 } from '@exxatdesignux/ui'
 import type { CourseOffering, ReminderFrequency, ReminderAnchor, SurveyStatus } from '@/lib/pce-mock-data'
 import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
+import {
+  CommRulesPopover, EvaluateeMark, evaluateeLabel,
+  type CommCadence, type CommRules, type CommEvaluatee,
+} from '@/components/pce/existing-comm-rules'
 import {
   MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, MOCK_MASTER_COURSES, EVAL_EMAIL_TEMPLATES,
   EVAL_REMINDER_CADENCE, REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
@@ -79,26 +82,20 @@ export type EmailContact = { id: string; firstName: string; lastName: string; em
 
 /** An existing open survey already messaging students in the selected courses.
  *  Rules render read-only beside the form: per-survey rules are legal and
- *  expected — the rail exists for visibility, never unification. */
+ *  expected — the rail exists for visibility, never unification. Same-course
+ *  streams sharing one rule set collapse into a single row (the popover
+ *  carries the roster). */
 export type ExistingCommStream = {
   id: string
-  /** "Course evaluation · DPT-510" */
-  label: string
+  courseCode: string
+  courseName?: string
+  evaluatee: CommEvaluatee
   status: SurveyStatus
   openDate?: string
-  /** "Until Dec 4" (its close date). */
+  /** "until Dec 4" (its close date). */
   untilLabel?: string
-  cadence: { frequency: ReminderFrequency; anchor: ReminderAnchor; startDaysBefore: number }
-  /** Full rule set behind the row's View rules popover. */
-  rules?: {
-    inviteTemplate: string
-    sender: string
-    reminderTemplate: string
-    /** "Dec 7" — next cadence send, when the survey is live. */
-    nextReminder?: string
-    /** "Jul 4" — last manual out-of-schedule nudge, if any. */
-    lastManualNudge?: string
-  }
+  cadence: CommCadence
+  rules: CommRules
 }
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
@@ -327,6 +324,27 @@ export function StepCommunication({
   }, [existingStreams])
   const cadenceDiffers = sharedExistingCadence != null && sharedExistingCadence.frequency !== reminderFrequency
 
+  // Same-course streams under identical rules collapse into ONE row — three
+  // DPT-510 flows on one cadence are one story, not three (the popover
+  // carries the roster). Different rules keep separate rows.
+  const streamGroups = useMemo(() => {
+    const sig = (s: ExistingCommStream) => [
+      s.courseCode, s.status, s.openDate ?? '', s.untilLabel ?? '',
+      s.cadence.frequency, s.cadence.anchor, s.cadence.startDaysBefore,
+      s.rules.inviteTemplate, s.rules.reminderTemplate, s.rules.sender,
+    ].join('|')
+    const m = new Map<string, ExistingCommStream[]>()
+    for (const s of existingStreams) { const k = sig(s); m.set(k, [...(m.get(k) ?? []), s]) }
+    return [...m.values()]
+  }, [existingStreams])
+  // Per-survey reminder facts survive grouping only when every flow agrees.
+  const groupRules = (g: ExistingCommStream[]): CommRules => {
+    if (g.length === 1) return g[0].rules
+    const shared = (pick: (r: CommRules) => string | undefined) =>
+      g.every(x => pick(x.rules) === pick(g[0].rules)) ? pick(g[0].rules) : undefined
+    return { ...g[0].rules, nextReminder: shared(r => r.nextReminder), lastManualNudge: shared(r => r.lastManualNudge) }
+  }
+
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const dateOrderError   = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
   const releaseDateError = releaseDate && closeDate && releaseDate < closeDate ? 'Result release date must be on or after the close date.' : null
@@ -522,49 +540,42 @@ export function StepCommunication({
                 </p>
               </div>
               <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 168 }}>
-                {existingStreams.map(s => (
-                  <div key={s.id} className="flex items-center gap-3 py-2 border-t border-border/60 first:border-t-0" style={{ minHeight: 40 }}>
-                    <span className="text-sm min-w-0 truncate">{s.label}</span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
-                      {s.untilLabel && <> · {s.untilLabel}</>}
-                    </span>
-                    <span className="ms-auto shrink-0 flex items-center gap-2">
-                      {s.rules && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="xs"
-                              className="text-muted-foreground hover:text-foreground"
-                              aria-label={`View communication rules for ${s.label}`}
-                            >
-                              View rules
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="end" className="w-80 p-4">
-                            <div className="flex flex-col gap-2.5">
-                              <p className="text-sm font-semibold">{s.label}</p>
-                              {([
-                                ['Invitation', `${s.rules.inviteTemplate} · from ${s.rules.sender}`],
-                                ['Reminder email', s.rules.reminderTemplate],
-                                ['Cadence', `${REMINDER_FREQUENCY_LABELS[s.cadence.frequency]}, starting ${s.cadence.startDaysBefore} days before ${REMINDER_ANCHOR_LABELS[s.cadence.anchor].toLowerCase()}${s.untilLabel ? ` · ${s.untilLabel}` : ''}`],
-                                ...(s.rules.nextReminder ? [['Next reminder', s.rules.nextReminder]] : []),
-                                ...(s.rules.lastManualNudge ? [['Last manual nudge', s.rules.lastManualNudge]] : []),
-                              ] as [string, string][]).map(([k, v]) => (
-                                <div key={k} className="flex items-baseline gap-3 text-sm">
-                                  <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)', width: 104 }}>{k}</span>
-                                  <span className="min-w-0">{v}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                      <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
-                    </span>
-                  </div>
-                ))}
+                {streamGroups.map(group => {
+                  const s = group[0]
+                  const single = group.length === 1
+                  return (
+                    <div key={s.id} className="flex items-center gap-3 py-2 border-t border-border/60 first:border-t-0" style={{ minHeight: 40 }}>
+                      <span className="flex -space-x-1.5 shrink-0">
+                        {group.slice(0, 3).map(g => (
+                          <span key={g.id} className="rounded-full ring-2 ring-background">
+                            <EvaluateeMark evaluatee={g.evaluatee} size={5} />
+                          </span>
+                        ))}
+                      </span>
+                      <span className="text-sm min-w-0 truncate">
+                        {s.courseCode} · {single ? evaluateeLabel(s.evaluatee) : (s.courseName ?? `${group.length} evaluations`)}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {!single && <>{group.length} evaluations · </>}
+                        Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
+                        {s.untilLabel && <> · {s.untilLabel}</>}
+                      </span>
+                      <span className="ms-auto shrink-0 flex items-center gap-2">
+                        <CommRulesPopover
+                          courseCode={s.courseCode}
+                          courseName={s.courseName}
+                          evaluatees={group.map(g => g.evaluatee)}
+                          status={s.status}
+                          openDate={s.openDate}
+                          untilLabel={s.untilLabel}
+                          cadence={s.cadence}
+                          rules={groupRules(group)}
+                        />
+                        <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

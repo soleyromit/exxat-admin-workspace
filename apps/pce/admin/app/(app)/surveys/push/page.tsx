@@ -10,6 +10,7 @@ import { StepProperties } from '@/components/pce/distribute-wizard/step-properti
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication, type Reminder, type EmailContact, type ExistingCommStream } from '@/components/pce/distribute-wizard/step-communication'
+import { commRulesOfSurvey, commCadenceOfSurvey, commUntilOfSurvey } from '@/components/pce/existing-comm-rules'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 // Two-step split (Jul 2026): step 1 scopes courses + students, step 2 designs
@@ -26,7 +27,6 @@ import {
   MOCK_MASTER_COURSES,
   EVAL_DATE_RULES,
   EVAL_EMAIL_TEMPLATES,
-  EVAL_REMINDER_CADENCE,
   type SurveyType,
   type PceTemplate,
   type TermSeason,
@@ -346,36 +346,21 @@ function PushSurveyInner() {
   const existingStreams = useMemo<ExistingCommStream[]>(() => {
     const openSet = new Set(['scheduled', 'active', 'collecting', 'pending_review'])
     const offeringIds = new Set(selectedOfferings.map(o => o.id))
-    const fmtDay = (iso?: string) => {
-      if (!iso) return undefined
-      const [y, m, d] = iso.split('-').map(Number)
-      if (!y || !m || !d) return undefined
-      return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }
-    // Mock flows were pushed under the program defaults — those ARE their
-    // rules; the per-survey reminder timestamps are real fields.
-    const defaultInvite = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation')?.name ?? 'Invitation'
-    const defaultReminder = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'reminder')?.name ?? 'Reminder'
     return surveys
       .filter(s => s.offeringId && offeringIds.has(s.offeringId) && openSet.has(s.status))
       .map(s => ({
         id: s.id,
+        courseCode: s.courseCode,
+        courseName: s.courseName,
         // Same course can carry several flows — the evaluatee tells them apart.
-        label: `${s.courseCode} · ${
-          s.evalScope === 'instructor' ? (s.instructors[0]?.name ?? 'Faculty') : 'Course material'
-        }`,
+        evaluatee: s.evalScope === 'instructor'
+          ? { scope: 'person' as const, personName: s.instructors[0]?.name }
+          : { scope: 'course' as const },
         status: s.status,
         openDate: s.openDate,
-        // deadline is already a display string ("Apr 30, 2026") — drop the year.
-        untilLabel: s.deadline ? `until ${s.deadline.replace(/, \d{4}$/, '')}` : undefined,
-        cadence: EVAL_REMINDER_CADENCE,
-        rules: {
-          inviteTemplate: defaultInvite,
-          sender: 'Exxat Surveys',
-          reminderTemplate: defaultReminder,
-          nextReminder: fmtDay(s.nextScheduledReminderAt),
-          lastManualNudge: fmtDay(s.lastReminderSentAt),
-        },
+        untilLabel: commUntilOfSurvey(s),
+        cadence: commCadenceOfSurvey(s),
+        rules: commRulesOfSurvey(s),
       }))
   }, [surveys, selectedOfferings])
 
