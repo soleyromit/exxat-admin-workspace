@@ -153,8 +153,8 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
     const fp = response?.sectionScores.find(s => s.section === 'faculty_performance')
     return [
       { id: 'rate',   label: 'Completion',  value: `${survey.responseRate}%`, delta: '', trend: 'neutral', description: `${survey.responseCount} of ${survey.enrollmentCount}` },
-      { id: 'cc-avg', label: 'Course avg',  value: cc ? `${cc.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'course questions' },
-      { id: 'fp-avg', label: 'Faculty avg', value: fp ? `${fp.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'faculty questions' },
+      { id: 'cc-avg', label: 'Course avg',  value: cc ? `${cc.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'Course questions' },
+      { id: 'fp-avg', label: 'Faculty avg', value: fp ? `${fp.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'Faculty questions' },
     ]
   }, [survey, response])
 

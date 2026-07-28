@@ -592,11 +592,11 @@ function StatusResultScreen({
                     </span>
                   </>
                 }
-                caption="responses"
+                caption="Responses"
               />
               <StatBlock
                 value={`${survey.responseRate}%`}
-                caption="response rate · target 70%"
+                caption="Response rate · target 70%"
                 color={rateColor(survey.responseRate)}
               />
               {survey.deadline && (
@@ -1381,7 +1381,7 @@ function ScaleTrackPlot({
   const gapLine = (v: number) =>
     programAvg == null ? null : (
       <PopoverStatRow
-        label="vs program"
+        label="Vs program"
         value={
           Math.abs(v - programAvg) > 0.05 ? (
             <>

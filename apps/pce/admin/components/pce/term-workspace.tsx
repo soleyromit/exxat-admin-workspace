@@ -332,25 +332,25 @@ function TermWorkspaceInner() {
       delta: '', trend: 'neutral', metricVariant: 'hero',
       description: enrolledTotal > 0
         ? `${responsesCollected.toLocaleString()} of ${enrolledTotal.toLocaleString()} students · target ${RESPONSE_TARGET}%`
-        : `target ${RESPONSE_TARGET}%`,
+        : `Target ${RESPONSE_TARGET}%`,
     },
     {
       id: 'pending', label: 'Still to respond',
       value: stillToRespond.toLocaleString(),
       delta: '', trend: 'neutral',
-      description: 'students · reminders reach them',
+      description: 'Students · reminders reach them',
     },
     {
       id: 'coverage', label: 'Courses with evaluations',
       value: coverage ? `${coverage.surveyed} of ${coverage.total}` : '—',
       delta: '', trend: 'neutral',
-      description: notSetUp > 0 ? `${notSetUp} not set up yet` : 'every course is set up',
+      description: notSetUp > 0 ? `${notSetUp} not set up yet` : 'Every course is set up',
     },
     {
       id: 'closing', label: 'Closing this week',
       value: closingSoon.length,
       delta: '', trend: 'neutral',
-      description: closingSoon.length > 0 ? 'evaluations end within 7 days' : 'no windows ending soon',
+      description: closingSoon.length > 0 ? 'Evaluations end within 7 days' : 'No windows ending soon',
     },
   ]
 

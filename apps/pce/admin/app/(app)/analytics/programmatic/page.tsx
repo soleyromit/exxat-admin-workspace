@@ -88,9 +88,9 @@ export default function ProgrammaticAnalyticsPage() {
     const active         = progSurveys.filter(s => s.status === 'collecting').length
     return [
       { id: 'rate',      label: 'Response rate',   value: `${overallRate}%`,  delta: '', trend: 'neutral', description: `${totalSent} invited` },
-      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: '', trend: 'neutral', description: 'across all surveys' },
-      { id: 'active',    label: 'Collecting',      value: active,             delta: '', trend: 'neutral', description: 'currently open' },
-      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: '', trend: 'neutral', description: 'this period' },
+      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: '', trend: 'neutral', description: 'Across all surveys' },
+      { id: 'active',    label: 'Collecting',      value: active,             delta: '', trend: 'neutral', description: 'Currently open' },
+      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: '', trend: 'neutral', description: 'This period' },
     ]
   }, [progSurveys])
 

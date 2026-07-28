@@ -453,14 +453,14 @@ export function ByTermPanel({
         delta: signed(t.courseDelta), trend: dir(t.courseDelta),
         // informational: an arrow tinted red on a score is banned (VIZ-004, Aarti).
         trendPolarity: 'informational',
-        description: axis === 'term' ? 'content · vs prior term' : 'content · vs prior cohort',
+        description: axis === 'term' ? 'Content · vs prior term' : 'Content · vs prior cohort',
       },
       {
         id: 'term-faculty-avg', label: 'Faculty score',
         value: t.facultyAvg != null ? t.facultyAvg.toFixed(2) : '—',
         delta: signed(t.facultyDelta), trend: dir(t.facultyDelta),
         trendPolarity: 'informational',
-        description: axis === 'term' ? 'teaching · vs prior term' : 'teaching · vs prior cohort',
+        description: axis === 'term' ? 'Teaching · vs prior term' : 'Teaching · vs prior cohort',
       },
       {
         id: 'term-response', label: 'Response rate',
@@ -1352,11 +1352,11 @@ export function ByFacultyPanel({
       { id: 'f-courses', label: 'Courses taught', value: stat.courses, delta: '', trend: 'neutral',
         description: `${stat.offerings} offering${stat.offerings === 1 ? '' : 's'} across ${stat.terms} term${stat.terms === 1 ? '' : 's'}` },
       ...(heroCarriesRating ? [] : [{ id: 'f-rating', label: 'Avg faculty rating', value: fmt2(stat.score.weighted), delta: '', trend: 'neutral',
-        description: 'weighted by class size' }]),
+        description: 'Weighted by class size' }]),
       { id: 'f-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
-        description: `target ${RESPONSE_TARGET}%` },
+        description: `Target ${RESPONSE_TARGET}%` },
       { id: 'f-terms', label: 'Terms active', value: stat.terms, delta: '', trend: 'neutral',
-        description: 'term appearances' },
+        description: 'Term appearances' },
     ]
   }, [faculty, facultyId, heroCarriesRating])
 
@@ -1562,7 +1562,7 @@ export function ByCoursePanel({
       last?.courseAvg != null && prev?.courseAvg != null ? last.courseAvg - prev.courseAvg : null
     return [
       { id: 'c-count', label: 'Times offered', value: stat.terms, delta: '', trend: 'neutral',
-        description: 'all terms' },
+        description: 'All terms' },
       { id: 'c-rating', label: 'Course content score', value: fmt2(stat.score.weighted),
         delta: delta == null ? '' : `${delta >= 0 ? '+' : ''}${fmt2(delta)}`,
         // Aarti dislikes red in score viz (VIZ-004); the DS maps 'down' to its own warn tone,
@@ -1570,7 +1570,7 @@ export function ByCoursePanel({
         trend: delta == null ? 'neutral' : delta >= 0 ? 'up' : 'down',
         description: prev ? `weighted by class size · vs ${prev.short}` : 'weighted by class size' },
       { id: 'c-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
-        description: `target ${RESPONSE_TARGET}%` },
+        description: `Target ${RESPONSE_TARGET}%` },
       { id: 'c-faculty', label: 'Instructors', value: courseFaculty.length, delta: '', trend: 'neutral',
         description: courseFaculty.length === 1 ? 'one has taught it' : 'have taught it' },
     ]

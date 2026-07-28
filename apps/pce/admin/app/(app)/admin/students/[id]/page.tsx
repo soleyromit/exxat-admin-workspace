@@ -101,7 +101,7 @@ export default function StudentProfile() {
     { id: 'courses', label: 'Courses enrolled', value: evalRows.length, delta: '', trend: 'neutral' },
     { id: 'done',    label: 'Evals completed',  value: completed,        delta: '', trend: 'neutral' },
     { id: 'open',    label: 'Evals open',       value: open,             delta: '', trend: 'neutral' },
-    { id: 'rate',    label: 'Participation',     value: participation != null ? `${participation}%` : '—', delta: '', trend: 'neutral', description: 'of in-flight evals' },
+    { id: 'rate',    label: 'Participation',     value: participation != null ? `${participation}%` : '—', delta: '', trend: 'neutral', description: 'Share of in-flight evaluations' },
   ]
 
   return (
