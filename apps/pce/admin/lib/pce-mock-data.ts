@@ -390,6 +390,10 @@ export interface PceSurvey {
   lastReminderSentAt?: string
   /** YYYY-MM-DD — next cadence reminder scheduled from Settings (anchored to close date). */
   nextScheduledReminderAt?: string
+  /** Per-survey reminder cadence. Absent = the survey runs the program
+   *  default (EVAL_REMINDER_CADENCE). Communication rules are per-survey —
+   *  two flows may legitimately differ (Decisions/pce/2026-07-27). */
+  reminderCadence?: { frequency: ReminderFrequency; anchor: ReminderAnchor; startDaysBefore: number }
   /** Admin who set up / pushed this survey — drives the "Created by" column + filter. */
   createdBy?: string
   /** Close date before the most recent extension. Set once, on the first "Edit end date". */
@@ -1444,11 +1448,14 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // row, exercising the Status cell's "+N more" overflow popover.
   { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
-  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  // Kevin's flow runs its OWN window + cadence — the wizard surfaces must show
+  // per-survey rules diverging, not one uniform Dec 4 story.
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
   // instructors: [] — a course-scope flow evaluates no PERSON; listing one
   // would seed a ghost row in that instructor's faculty analytics
   // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
-  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  // The practicum closes later and nudges weekly — a second distinct rule set.
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 22, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-08', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'every_7_days', anchor: 'survey_close', startDaysBefore: 14 } },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [

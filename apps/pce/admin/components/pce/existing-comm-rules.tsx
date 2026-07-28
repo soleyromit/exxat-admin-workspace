@@ -51,7 +51,8 @@ export function commRulesOfSurvey(s: PceSurvey): CommRules {
   }
 }
 
-export const commCadenceOfSurvey = (_s: PceSurvey): CommCadence => EVAL_REMINDER_CADENCE
+export const commCadenceOfSurvey = (s: PceSurvey): CommCadence =>
+  s.reminderCadence ?? EVAL_REMINDER_CADENCE
 
 /** "until Dec 18" — deadline is already a display string ("Dec 18, 2026"). */
 export function commUntilOfSurvey(s: PceSurvey): string | undefined {
