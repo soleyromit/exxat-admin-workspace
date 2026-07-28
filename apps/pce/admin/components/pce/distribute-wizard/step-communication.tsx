@@ -11,6 +11,7 @@ import {
   FieldLegend,
   Input,
   LocalBanner,
+  Popover, PopoverContent, PopoverTrigger,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleSwitch,
 } from '@exxatdesignux/ui'
@@ -88,6 +89,16 @@ export type ExistingCommStream = {
   /** "Until Dec 4" (its close date). */
   untilLabel?: string
   cadence: { frequency: ReminderFrequency; anchor: ReminderAnchor; startDaysBefore: number }
+  /** Full rule set behind the row's View rules popover. */
+  rules?: {
+    inviteTemplate: string
+    sender: string
+    reminderTemplate: string
+    /** "Dec 7" — next cadence send, when the survey is live. */
+    nextReminder?: string
+    /** "Jul 4" — last manual out-of-schedule nudge, if any. */
+    lastManualNudge?: string
+  }
 }
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
@@ -518,7 +529,38 @@ export function StepCommunication({
                       Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
                       {s.untilLabel && <> · {s.untilLabel}</>}
                     </span>
-                    <span className="ms-auto shrink-0">
+                    <span className="ms-auto shrink-0 flex items-center gap-2">
+                      {s.rules && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              className="text-muted-foreground hover:text-foreground"
+                              aria-label={`View communication rules for ${s.label}`}
+                            >
+                              View rules
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-80 p-4">
+                            <div className="flex flex-col gap-2.5">
+                              <p className="text-sm font-semibold">{s.label}</p>
+                              {([
+                                ['Invitation', `${s.rules.inviteTemplate} · from ${s.rules.sender}`],
+                                ['Reminder email', s.rules.reminderTemplate],
+                                ['Cadence', `${REMINDER_FREQUENCY_LABELS[s.cadence.frequency]}, starting ${s.cadence.startDaysBefore} days before ${REMINDER_ANCHOR_LABELS[s.cadence.anchor].toLowerCase()}${s.untilLabel ? ` · ${s.untilLabel}` : ''}`],
+                                ...(s.rules.nextReminder ? [['Next reminder', s.rules.nextReminder]] : []),
+                                ...(s.rules.lastManualNudge ? [['Last manual nudge', s.rules.lastManualNudge]] : []),
+                              ] as [string, string][]).map(([k, v]) => (
+                                <div key={k} className="flex items-baseline gap-3 text-sm">
+                                  <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)', width: 104 }}>{k}</span>
+                                  <span className="min-w-0">{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
                       <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
                     </span>
                   </div>
