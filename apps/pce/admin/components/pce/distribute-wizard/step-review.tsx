@@ -256,7 +256,7 @@ export function StepReview({
                 ['Evaluating', [cohortSummary, evaluateSummary].filter(Boolean).join(' · ') || muted('—')],
               ] as [string, React.ReactNode][])
             : []),
-          ['Reach', recipientsComplete
+          ['Audience', recipientsComplete
             ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${instanceCount != null ? ` · ${instanceCount} evaluation${instanceCount !== 1 ? 's' : ''}` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
             : muted('No recipients yet')],
         ]}
@@ -333,8 +333,8 @@ export function StepReview({
             <AckGroup
               id="ack-subject-data"
               title={`${subjectIssues.length} course${subjectIssues.length !== 1 ? 's are' : ' is'} missing subject data`}
-              reason="They may reach no one, or have no one to evaluate. You can still push. They'll be skipped."
-              ackLabel="I understand these courses are missing faculty or student data"
+              reason="They have no students to survey or no one to evaluate. You can still continue; these courses are skipped."
+              ackLabel="I understand no evaluations will be created for these courses until their missing data is added"
               checked={ackSubject}
               onChange={setAckSubject}
             >
@@ -395,8 +395,8 @@ export function StepReview({
             <AckGroup
               id="ack-window"
               title={`${windowIssues.length} course${windowIssues.length !== 1 ? 's’' : '’s'} survey window doesn’t align with the course dates`}
-              reason="The survey opens after these courses have already ended."
-              ackLabel="I understand the survey window doesn't align with these courses' dates"
+              reason="The survey opens after these courses have already ended, so it may reach students at the wrong time relative to the course."
+              ackLabel="I understand students in these courses may receive the survey at the wrong time"
               checked={ackWindow}
               onChange={setAckWindow}
               action={
