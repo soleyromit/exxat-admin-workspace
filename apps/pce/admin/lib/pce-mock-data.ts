@@ -39,8 +39,8 @@ export interface PceSurvey {
   term: string
   /** Cohort = graduating class (e.g., "Class of 2027"). Per Aarti 2026-05-08 16:09 D3, the atomic unit for evaluation is course × term × cohort × faculty. */
   cohort?: string
-  /** Per UC-14 + workspace ADR-002: practice | classroom | lab (optional, extensible). Updated per PRD §2 Key Decision #5 (14 Jun 2026) — replaces Didactic/Clinical taxonomy. */
-  courseType?: 'practice' | 'classroom' | 'lab'
+  /** Per UC-14 + workspace ADR-002: experiential | classroom | lab (optional, extensible). Updated per PRD §2 Key Decision #5 (14 Jun 2026) — replaces Didactic/Clinical taxonomy. "Experiential" replaces "Practice" per 2026-07-28 cadence call (Monil/Vishaka/David). */
+  courseType?: 'experiential' | 'classroom' | 'lab'
   /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
   priorOfferings?: PriorOffering[]
   templateId: string
@@ -197,7 +197,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Advanced Patient Care',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'practice',
+    courseType: 'experiential',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.6, facultyAvg: 3.8 },
       { term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 4.0 },
@@ -217,7 +217,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Clinical Pharmacology',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'practice',
+    courseType: 'experiential',
     priorOfferings: [
       { term: 'Spring 2023', courseAvg: 3.9, facultyAvg: 4.0 },
       { term: 'Spring 2024', courseAvg: 4.1, facultyAvg: 4.4 },

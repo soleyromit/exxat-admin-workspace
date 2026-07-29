@@ -463,6 +463,44 @@ Source: `docs/research/meetings/2026-07-24-survey-evaluation-step-separation-dup
 | T129 | Setup evaluations wizard: re-confirm 4 SEPARATE steps — SUPERSEDES T124 combined-step approach | Admin | Setup evaluations wizard | **P0 — DESIGN-REVIEW** | Step 1: course selection only (zero-student hard block indicator, backend only). Step 2: template assignment per course + missing faculty association + soft duplicate warning per evaluatee row. Step 3: communication. Step 4: review/summary (courses, template, window, student count, evaluity count). Reverses T124. Monil: "separating step one into step one and step two." D_PCE_0724_01, D_PCE_0724_02, D_PCE_0724_05. |
 | T130 | Soft duplicate warning in Step 2 of setup evaluations wizard | Admin | Setup evaluations Step 2 | P1 — DESIGN-REVIEW | Trigger: unique triplet (course_offering_id + faculty_role_type + person_id) already exists in a live survey. Show inline warning per evaluatee row in Step 2. Admin can uncheck that evaluatee to skip re-evaluation and proceed. If admin proceeds past warning, Step 4 (review) surfaces a consent acknowledgment before final push. Hard block explicitly NOT the approach — soft warning is reversible. Monil: "it's a combination of these three things — these three things can only exist once in the database." D_PCE_0724_03, D_PCE_0724_04. |
 
+## Phase 1 design tasks — added 2026-07-28 (Course eval sync up — Monil)
+
+Source: `docs/research/meetings/2026-07-28-course-eval-sync-up.md` (Granola `bfaa2076`)
+
+> Monil status call (Jul 28 9:30 AM). Analytics requirements not yet frozen — design hold. Central settings architecture confirmed. Verbiage hold in effect.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T131 | Analytics design ON HOLD — pause T100 / T116 / T117 until Monil shares written stories | Admin | Analytics | **P0 HOLD** | D_PCE_0728A_01. Monil: "I have to freeze analytics requirement. So right now, I don't want you to work on analytics because it might change. The screens will definitely change." Do not pick up any analytics design tasks until stories land. |
+| T132 | Central settings: email templates + reminders = global defaults, NOT per-survey | Admin | Settings / Setup (Phase 2) | P2 — Phase 2 design note | D_PCE_0728A_02. Architecture clarification for T81/T82 when Phase 2 resumes. Settings are a central store; step 3 of wizard FETCHES from this store. Per-distribution override is NOT the design. |
+| T133 | OPEN QUESTION — approved template editability | Admin | Template editor | P1 UNRESOLVED | D_PCE_0728A_04. David raised: once a template is approved, can admin still edit it, or is it locked? Monil to review and share opinion. No design change until resolved. |
+
+## Phase 1 design tasks — added 2026-07-28 (Post-Course Survey Cadence — Vishaka + David + Monil + Vishal)
+
+Source: `docs/research/meetings/2026-07-28-post-course-survey-cadence-vishaka-david.md` (Granola `f2964952`)
+
+> Bi-weekly cadence call. Template creation role-play with Vishaka as admin. Multiple template builder UX issues surfaced. Faculty role direction reversed. "Experiential" term confirmed. DCE scope clarified.
+
+### Updates to existing tasks (Jul 28)
+
+| # | Update |
+|---|---|
+| T62 | **REVERSED.** Faculty role selector in template builder must be SINGLE SELECT (add one at a time), NOT multi-select. Vishaka (Jul 28): "this should not be multi-select because then it makes me think that I select all of them at once." T136 is the new active direction. D_PCE_0728B_03. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T134 | Course type in template creation → MULTI-SELECT | Admin | Template creation (Lovable prototype) | P1 — DESIGN-REVIEW | D_PCE_0728B_01. A single course can have multiple types simultaneously (classroom + lab + experiential). Current single-select must be redesigned. Vishaka: "It's single select. It's not multi select. So I am not able to pick all three components." |
+| T135 | Remove "mark as default for this course type" toggle from template creation | Admin | Template creation (Lovable prototype) | P1 — DESIGN-REVIEW | D_PCE_0728B_02. Both Vishaka and David found it confusing. Monil: "remove it completely." If ever needed, put it on the template LIST screen instead. |
+| T136 | Faculty role selector in template builder → SINGLE SELECT + clone | Admin | Template editor | P1 — DESIGN-REVIEW | D_PCE_0728B_03. REVERSES T62. Admin adds one faculty role → configures questions → adds next role → option to clone question set from previous role. Consistent with T88. Vishaka: "clone or copy forward from course coordinator." |
+| T137 | Template builder navigation — "Next" button must guide through ALL sections | Admin | Template editor | P1 — DESIGN-REVIEW | D_PCE_0728B_04. Vishaka didn't know to click left panel for faculty section: "I didn't realize I had to go on the left hand panel, click faculty and complete that." Reinforces T128 redesign direction. |
+| T138 | DCE evaluation → general survey scope (keep out of PCE) | Admin | General survey module | P1 — logged | D_PCE_0728B_05. Vishaka confirmed: "Is it right to say DC evaluation is scope of general survey? Yes." Annual, not per-course/term. No PCE design work needed. |
+| T139 | Guest lecturer evaluation: admin-triggered, custom date window | Admin | Template creation / setup | P1 — DESIGN-REVIEW | D_PCE_0728B_06. NOT student-initiated (T39 stays killed). Admin CAN include guest lecturer as evaluatee in PCE with a custom date window independent of term end date. Monil: "They can do like guest lecture evaluation for a custom window that they want to do it for." Clarifies T39. |
+| T140 | Student-initiated evaluations confirmed NOT Phase 1 | Admin | — | P1 — logged | D_PCE_0728B_07. Monil with Vishaka + David: "Right now we will not support student initiated evaluations. All of them are triggered by admin for a specific window." Existing direction; now confirmed in user-presence session. |
+| T141 | ✅ APPLIED — "Practice" → "Experiential" course type label | Admin | `analytics/page.tsx`, `pce-mock-data.ts` | — ✅ APPLIED Jul 28 | D_PCE_0728B_08. Renamed `'practice'` → `'experiential'` type value + UI label. Drove by: "Experiential is what we should call to keep it. Let's note it down and change it to experiential." (Monil, Jul 28) |
+| T142 | Analytics: same-role comparison only (instructor vs. instructor) | Admin | Analytics | P1 — DESIGN-REVIEW | D_PCE_0728B_09. David + Vishaka: "course coordinators should be compared with course coordinators. Instructors should be compared with instructors." Do not mix roles across analytics charts. Affects T105, T106 design. |
+
 ---
 
 ## Open product questions
@@ -470,3 +508,4 @@ Source: `docs/research/meetings/2026-07-24-survey-evaluation-step-separation-dup
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
 - Grade-lock workflow — was a PCE PRD feature; Aarti didn't reaffirm in 2026-05-08; treat as deferred until reconfirmed
 - "Notes" concept — Aarti said "low priority placeholder" for action-plan content (D32)
+- T133 — Approved template editability: can admin edit after approval? Awaiting Monil opinion (raised 2026-07-28).
