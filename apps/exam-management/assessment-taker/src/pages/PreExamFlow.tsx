@@ -1,8 +1,10 @@
 /**
  * PRE-EXAM FLOW — two focused screens before entering the exam engine.
  *
- *   1. Password   — faculty-announced class password (a deliberate, supervised
- *                   gate). Narrow centered form (Mobbin verification pattern).
+ *   1. Password   — faculty-announced class password. The field is captured for
+ *                   the record but is not enforced: any value (or none)
+ *                   continues. Narrow centered form (Mobbin verification
+ *                   pattern).
  *   2. Before you begin — everything to review on one screen: instructions,
  *                   reference materials, and accommodations (if any), with the
  *                   attestation + "Start exam" pinned in a footer so they stay
@@ -37,22 +39,11 @@ function StartNote() {
 // ─── Screen 1: Password ───────────────────────────────────────────────────────
 function ExamPassword({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
-  const [checking, setChecking] = useState(false);
 
-  const MOCK_PASSWORD = 'EXAM2026';
-
+  // The password is recorded, not verified — no value is rejected and an empty
+  // field still continues.
   function handleSubmit() {
-    setChecking(true);
-    setTimeout(() => {
-      if (password.toUpperCase() === MOCK_PASSWORD) {
-        setError(false);
-        onNext();
-      } else {
-        setError(true);
-        setChecking(false);
-      }
-    }, 600);
+    onNext();
   }
 
   return (
@@ -79,13 +70,12 @@ function ExamPassword({ exam, onNext }: { exam: Assessment; onNext: () => void }
           type="text"
           placeholder="Enter password"
           value={password}
-          onChange={e => { setPassword(e.target.value); setError(false); }}
-          onKeyDown={e => { if (e.key === 'Enter' && password) handleSubmit(); }}
+          onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
           autoComplete="off"
           autoCapitalize="characters"
           aria-label="Exam password"
-          aria-invalid={error}
-          aria-describedby={error ? 'pw-error' : 'pw-hint'}
+          aria-describedby="pw-hint"
           className="w-full"
         />
 
@@ -93,22 +83,14 @@ function ExamPassword({ exam, onNext }: { exam: Assessment; onNext: () => void }
           variant="default"
           size="lg"
           onClick={handleSubmit}
-          disabled={!password || checking}
           className="w-full mt-3"
         >
-          {checking ? 'Verifying…' : 'Continue'}
+          Continue
         </Button>
 
-        {error ? (
-          <p id="pw-error" role="alert" className="flex items-center justify-center gap-1.5 mt-3 text-center" style={{ fontSize: 13, color: 'var(--destructive)' }}>
-            <i className="fa-light fa-circle-xmark" aria-hidden="true" />
-            Incorrect password. Ask your faculty to confirm.
-          </p>
-        ) : (
-          <p id="pw-hint" className="mt-3 text-center" style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-            The password is announced verbally in class — do not share it with anyone who is not present.
-          </p>
-        )}
+        <p id="pw-hint" className="mt-3 text-center" style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          Your faculty announces the password in class. Do not share it with anyone who is not present.
+        </p>
       </div>
     </div>
   );

@@ -349,7 +349,7 @@ No reference materials are permitted for this section — the approved formula a
     questionCount: 60,
     passingScore: 75,
     instructions:
-      'This exam covers Modules 1–3: drug classifications, mechanisms of action, pharmacokinetics, and adverse effects. No external materials permitted. Password required at exam start.',
+      'This exam covers Modules 1–3: drug classifications, mechanisms of action, pharmacokinetics, and adverse effects. No external materials permitted. A password field appears at exam start.',
     allowedAttempts: 1,
     allowComments: false,
     accommodation: {
