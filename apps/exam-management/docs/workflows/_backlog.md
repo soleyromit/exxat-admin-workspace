@@ -256,6 +256,18 @@ Source: `docs/research/meetings/2026-07-23-exam-management-weekly-call.md` (Gran
 | T107 | Cronbach's alpha research — Vishal + Nipun to investigate ExamSoft's new consistency metric | Engineering | Assessment analytics | P1 — RESEARCH TASK | Aarti Jul 23: "look into it Vishal and Nipun and see what it measures and whether we also want to introduce that in our exam management. It will definitely be a parity item with ExamSoft." No design task until research complete. D_EM_0723_03. |
 | T108 | Faculty post-exam score override — per-student manual score adjustment in assessment analytics / curving surface | Admin / Faculty | Assessment analytics (`assessments/[id]/analytics/`) | P1 — DESIGN-REVIEW | Aarti: "There should always be a way for a faculty to review and say yeah publish this… faculty could also increase it or decrease it the total score." Two operations needed: (a) class-wide question removal / point bonus (question-level panel — partially handled by curving tab), (b) per-student individual score override. Current `analytics-client.tsx` handles (a) in the curve tab but (b) is absent. Requires new UX within the analytics surface. D_EM_0723_01. |
 
+## Phase 1 design tasks — added 2026-07-30
+
+Source: `docs/research/meetings/2026-07-30-exam-management-weekly-call.md` (Granola `afac83e4`)
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T109 | "Copy existing" — expand to cross-course import from any associated course | Faculty | Assessment creation modal (`create-assessment-modal.tsx`) | P1 — DESIGN-REVIEW | Current modal restricts to same `courseId`: `create-assessment-modal.tsx:97` — `courseAssessments.filter(a => a.courseId === courseId)`. Directive: faculty can copy from ANY course they are associated with. No topic/subject restrictions — only access permissions apply. New cross-course assessment browser UI needed (list of all associated courses → select course → show that course's assessments). Sequential imports remain the pattern; no simultaneous multi-assessment picker. D_EM_0730_02, D_EM_0730_03. |
+| T110 | AI blueprint planning — scope capture + lecture-based QB filtering | Faculty | Assessment creation flow (new step, pre-builder) | P1 — DESIGN-REVIEW — NEW FEATURE | When creating from scratch via QB: (1) pull course objectives from Prism course details if available; (2) faculty defines scope by lecture range (e.g. lectures 1–14 for midterm 1); (3) AI surfaces most relevant QB questions from the course folder based on scope; (4) faculty can still access all other folders without restriction. Requires new UX step in the assessment creation flow (between "create from scratch" selection and entering the builder). AI generate modal exists (`ai-generate-modal.tsx`) but blueprint scope capture from course objectives + lecture range is not yet designed. D_EM_0730_04, D_EM_0730_05. |
+| T111 | Admin-configurable PB flag threshold in Settings | Admin / Faculty | Admin Settings + assessment builder question picker | P1 — DESIGN-REVIEW — NEW FEATURE | Admin sets a point-biserial threshold in Settings (e.g. "flag any question with P-bis ≤ 0"). System flags questions below threshold before faculty include them in an assessment — faculty must make a deliberate choice to keep flagged questions. Two surfaces needed: (a) new Settings UI for admin to configure threshold; (b) flag indicator in builder question picker at point of selection. Note: P-bis is already displayed (red if negative) in the builder per §5.51 / T71 ✅ applied — this adds a configurable threshold flag separate from the existing display. D_EM_0730_06. |
+
 ### Priority clarification (Jul 2026)
 
 | # | Update |

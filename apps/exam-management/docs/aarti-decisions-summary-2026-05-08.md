@@ -1510,6 +1510,87 @@ Bhargav flagged that ExamSoft has added a Cronbach's alpha metric. Aarti directe
 
 ---
 
+### 5.66 Assessment repurposing as primary use case + cross-course import (2026-07-30)
+
+Source: `docs/research/meetings/2026-07-30-exam-management-weekly-call.md` (Granola `afac83e4`)
+
+**Repurposing is the primary faculty use case (D_EM_0730_01)**
+
+90–95% of faculty start from a prior assessment, not from scratch. AI and the creation UX must optimise for repurposing first.
+
+> "If this is not their first faculty position and their first course where they're teaching in their first exam, they probably already have questions… they're just going to want to start from that and make tweaks to it so they are not going to create an assessment from scratch." — Aarti, 2026-07-30
+
+**No topic or course restrictions on "Copy existing" (D_EM_0730_02)**
+
+Faculty must be able to copy from ANY course they have access to (any course they are associated with). Current code restricts the "Copy existing" modal to the same `courseId` — this is a confirmed gap. Only access permissions apply (courses the faculty is assigned to), not topic or subject matching.
+
+| Decision | Detail |
+|---|---|
+| No course/topic restrictions (D_EM_0730_02) | "Why should we limit them? We should not build any constraints or restrictions based on the topic." Gap: `create-assessment-modal.tsx:97` — `courseAssessments.filter(a => a.courseId === courseId)`. T109 added. |
+| Access permission only (D_EM_0730_02) | Only restriction is that faculty must be associated with the source course. No subject/discipline filtering. |
+
+> "Why should we limit them that oh since this is a microbiology course we will only allow you to import an assessment from microbiology course offering? We should not build any constraints or restrictions based on the topic." — Aarti, 2026-07-30
+
+**Import entire assessment at a time; sequential imports allowed (D_EM_0730_03)**
+
+Primary use case is importing ALL questions from one prior assessment, then tweaking. If faculty want questions from two assessments they import one at a time sequentially. Pick-and-choose from multiple assessments simultaneously redirects to the question bank path — it is NOT the primary copy workflow.
+
+| Decision | Detail |
+|---|---|
+| Import whole assessment, then tweak (D_EM_0730_03) | "Focus on importing the entire assessment and then tweaking." No multi-assessment picker. |
+| Sequential imports OK (D_EM_0730_03) | "If they want to import 50 questions from a midterm and then 20 from midterm two… allow that but give them importing one assessment at a time." |
+| Pick-and-choose → QB path (D_EM_0730_03) | "If they really want to pick and choose the option to create an assessment is a better option where they're picking and choosing from their question bank." |
+
+---
+
+### 5.67 AI blueprint planning — two-path model and lecture-scoped QB filtering (2026-07-30)
+
+Source: `docs/research/meetings/2026-07-30-exam-management-weekly-call.md` (Granola `afac83e4`)
+
+**Two-path AI model confirmed (D_EM_0730_04)**
+
+| Path | Description |
+|---|---|
+| Path A (primary) | Repurpose existing assessment — import all, then AI assists with tweaks. |
+| Path B1 (secondary — scratch via QB) | Faculty picks from QB; AI filters by course objectives + lecture scope and surfaces the most relevant questions. Faculty can still access all other folders without restriction. |
+| Path B2 (secondary — scratch via generation) | AI generates new questions based on scope. |
+
+Both paths have AI assistance. Path A is primary per D_EM_0730_01.
+
+**Blueprint scope = course objectives + lecture numbers (D_EM_0730_05)**
+
+When creating from scratch, the system should pull course objectives from Prism course details if available. Faculty defines scope by lecture range (e.g. lectures 1–14 for midterm 1). AI uses this scope to bubble up the most relevant questions from the course QB folder.
+
+| Decision | Detail |
+|---|---|
+| Pull from Prism course details if available (D_EM_0730_05) | "The ideal case is if I'm using exact Prism and I already have my syllabus and my course objectives in the course details section. I would want my exam management to refer to that." |
+| Scope by lecture range (D_EM_0730_05) | Faculty specifies lecture range (e.g. 1–14) to define blueprint scope. No hard block — just AI prioritisation. |
+| AI bubbles relevant questions, doesn't restrict (D_EM_0730_05) | "AI will help them bubble up the most relevant information based on what they provide us… but not limit or restrict if they still want to pick questions from another course folder." |
+
+> "The ideal case is if I'm using exact Prism and I already have my syllabus and my course objectives in the course details section. I would want my exam management to refer to that." — Aarti, 2026-07-30
+
+---
+
+### 5.68 Admin-configurable point-biserial flag threshold (2026-07-30)
+
+Source: `docs/research/meetings/2026-07-30-exam-management-weekly-call.md` (Granola `afac83e4`)
+
+**PB flag threshold must be admin-configurable (D_EM_0730_06)**
+
+Before faculty include questions in a new assessment, the system should flag questions whose point-biserial falls below an admin-configured threshold. Faculty must make a deliberate choice to include flagged questions — the flag cannot be silently bypassed. Admin sets the threshold in Settings.
+
+| Decision | Detail |
+|---|---|
+| Admin-configurable threshold (D_EM_0730_06) | "I like the idea to make that threshold customizable wherein if the school says that any question that has a point by serial of zero or less, we want to bring that in our radar." Default = 0 or below. |
+| Faculty must acknowledge flag (D_EM_0730_06) | Flag surfaces before inclusion. Faculty makes deliberate choice to keep or discard the question. |
+| New Settings UI + builder flag indicator needed (D_EM_0730_06) | No configurable threshold currently exists in Settings. T111 added. |
+
+Note: P-bis is already displayed as a number in the assessment builder question picker (red if negative) per §5.51 / T71 ✅ applied. This decision adds a configurable PRE-ASSESSMENT flag at the point of selection, separate from the existing builder display.
+
+> "I like the idea to make that threshold customizable wherein if the school says that any question that has a point by serial of zero or less, we want to bring that in our radar. Then I think that's a good feature to have." — Aarti, 2026-07-30
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1551,6 +1632,7 @@ Bhargav flagged that ExamSoft has added a Cronbach's alpha metric. Aarti directe
 | 2026-07-07 09:30 | Exam management priority sync and governance change | `91c567e8` | Vishal + Romit |
 | 2026-07-19 10:04 | Modular product strategy — pricing tiers, upsell opportunities, and AI capabilities | `1bc03a5a` | Aarti + Romit |
 | 2026-07-23 10:30 | Exam management weekly call — faculty grading journey, score override, Cronbach's alpha, Cohere planning | `0261fe62` | Aarti + Bhargav + Vishal + Nipun + David + Romit |
+| 2026-07-30 10:30 | Exam management weekly call — assessment repurposing, cross-course import, AI blueprint planning, PB flag threshold | `afac83e4` | Aarti + Nipun + Bhargav + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
