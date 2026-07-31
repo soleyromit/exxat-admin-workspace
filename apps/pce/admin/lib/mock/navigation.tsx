@@ -172,8 +172,8 @@ export const NAV_SITES: NavSite[] = [
     logo: logoDevUrl("massgeneralbrigham.org"),
     initials: "MG",
     locations: [
-      { id: "mgh-main",   name: "Mass General — Boston" },
-      { id: "bwh",        name: "Brigham and Women's — Boston" },
+      { id: "mgh-main",   name: "Mass General · Boston" },
+      { id: "bwh",        name: "Brigham and Women's · Boston" },
       { id: "mgh-salem",  name: "Salem Hospital" },
     ],
   },
@@ -183,7 +183,7 @@ export const NAV_SITES: NavSite[] = [
     logo: logoDevUrl("clevelandclinic.org"),
     initials: "CC",
     locations: [
-      { id: "ccf-main",   name: "Main Campus — Cleveland" },
+      { id: "ccf-main",   name: "Main Campus · Cleveland" },
       { id: "ccf-fairview", name: "Fairview Hospital" },
     ],
   },

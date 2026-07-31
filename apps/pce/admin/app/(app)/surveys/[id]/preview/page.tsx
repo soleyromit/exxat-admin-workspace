@@ -149,7 +149,7 @@ export default function SurveyPreviewPage() {
         <div className="max-w-2xl mx-auto w-full px-6 pt-6 pb-2 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">
-              {survey.courseCode} — {survey.courseName}
+              {survey.courseCode} · {survey.courseName}
             </p>
             <p className="text-xs text-muted-foreground">{survey.term}</p>
           </div>
@@ -226,7 +226,7 @@ export default function SurveyPreviewPage() {
             </div>
             {section.subtitle && (
               <p className="text-sm text-muted-foreground">
-                These questions are answered separately for each faculty member — you&apos;re viewing the set for {section.subtitle}.
+                These questions are answered separately for each faculty member. You&apos;re viewing the set for {section.subtitle}.
               </p>
             )}
             {/* Per-question completion dots — student pattern */}

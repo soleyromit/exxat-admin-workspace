@@ -215,7 +215,7 @@ function ReminderCadence() {
               <div key={d} className="flex items-center gap-2 text-sm">
                 <i className="fa-light fa-bell text-xs text-muted-foreground" aria-hidden="true" />
                 <span className="tabular-nums">{d} day{d !== 1 ? 's' : ''} before {anchorLabel}</span>
-                <span className="text-xs text-muted-foreground">— reminder sent</span>
+                <span className="text-xs text-muted-foreground">· reminder sent</span>
               </div>
             ))}
           </div>

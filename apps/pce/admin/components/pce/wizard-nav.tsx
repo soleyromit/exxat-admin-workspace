@@ -8,11 +8,19 @@ interface WizardNavProps {
   onStepClick: (n: number) => void
   mode?: 'course_evaluation' | 'general'
   steps?: { n: number; label: string }[]
+  /** Landmark label. Override when TWO steppers coexist on one page (the
+   *  template builder embeds inside a wizard step) — duplicate nav labels
+   *  fail axe landmark-unique. */
+  ariaLabel?: string
 }
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
+  // Two-step split (Jul 2026, reversing the earlier merge): step 1 scopes the
+  // COURSES (term + cohort + roster), step 2 designs the SURVEY INSTANCES
+  // (template per course; duplicates auto-skipped at the offering+role+person
+  // grain). Internal step numbers are sequential again for this flow.
   course_evaluation: [
-    { n: 1, label: 'Courses & Evaluatees' },
+    { n: 1, label: 'Courses & Students' },
     { n: 2, label: 'Survey Design' },
     { n: 3, label: 'Communication' },
     { n: 4, label: 'Review' },
@@ -26,12 +34,12 @@ const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   ],
 }
 
-export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps }: WizardNavProps) {
+export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps, ariaLabel = 'Wizard steps' }: WizardNavProps) {
   const STEPS = steps ?? DEFAULT_STEPS[mode]
 
   return (
     <nav
-      aria-label="Wizard steps"
+      aria-label={ariaLabel}
       className="shrink-0 border-b border-border flex items-center"
       style={{ height: 52, padding: '0 40px', background: 'var(--background)', gap: 0 }}
     >
@@ -74,7 +82,9 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
                     : 'var(--muted-foreground)',
                 }}
               >
-                {isCompleted ? (
+                {/* Current step shows its number, never a check — a check on the
+                    active step reads as "already done". */}
+                {isCompleted && !isCurrent ? (
                   <i className="fa-solid fa-check text-xs" aria-hidden="true" />
                 ) : (
                   displayNum

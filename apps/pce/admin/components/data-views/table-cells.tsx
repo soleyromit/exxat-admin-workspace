@@ -26,7 +26,7 @@
  */
 
 import * as React from "react"
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage, AvatarInitials } from "@/components/ui/avatar"
+import { AvatarGroup, AvatarGroupCount, AvatarInitials } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -247,8 +247,6 @@ export function SignalBarsCell({
 export interface PersonStub {
   name: string
   initials: string
-  /** Optional photo — rendered with the initials as fallback. */
-  avatarUrl?: string
 }
 
 /**
@@ -261,38 +259,26 @@ export function PeopleAvatarRailCell({
   visibleMax = 3,
   size = "sm",
   emptyLabel = "No people",
-  overlap = false,
 }: {
   people: PersonStub[] | undefined
   /** How many faces to show before `+N`. Default 3. */
   visibleMax?: number
   size?: "sm" | "md"
   emptyLabel?: string
-  /** Adjoined cluster (-space-x + background ring) instead of the default
-   *  gapped rail — opt-in for dense identity-only columns (Romit, Jul 22). */
-  overlap?: boolean
 }) {
   if (!people?.length) return <EmptyCell label={emptyLabel} />
   const visible = people.slice(0, visibleMax)
   const overflow = people.length - visible.length
-  const ringClass = overlap ? " ring-2 ring-background" : ""
-  const sizeClass = (size === "md" ? "size-7 text-xs" : "size-6 text-xs") + ringClass
+  const sizeClass = size === "md" ? "size-7 text-xs" : "size-6 text-xs"
   return (
-    <AvatarGroup data-size={size} className={overlap ? "-space-x-1.5" : "gap-1"}>
+    <AvatarGroup data-size={size} className="gap-1">
       {visible.map((p) => (
         <Tip key={`${p.name}-${p.initials}`} side="top" label={p.name}>
-          {p.avatarUrl ? (
-            <Avatar className={sizeClass}>
-              <AvatarImage src={p.avatarUrl} alt="" />
-              <AvatarFallback className="text-xs">{p.initials}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <AvatarInitials
-              initials={p.initials}
-              className={sizeClass}
-              fallbackClassName="text-xs"
-            />
-          )}
+          <AvatarInitials
+            initials={p.initials}
+            className={sizeClass}
+            fallbackClassName="text-xs"
+          />
         </Tip>
       ))}
       {overflow > 0 && (
@@ -369,16 +355,14 @@ export function FavoriteNameCell({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pe-1">
         <div className="flex min-w-0 items-center gap-1.5">
           {interactive ? (
-            <Button
+            <button
               type="button"
-              variant="link"
-              size="sm"
-              className="h-auto min-w-0 justify-start truncate p-0 text-sm font-medium text-interactive no-underline hover:text-interactive-hover-foreground"
+              className="min-w-0 break-words wrap-break-word truncate text-left text-sm font-medium text-interactive hover:text-interactive-hover-foreground"
             >
               {label}
-            </Button>
+            </button>
           ) : (
-            <span className="line-clamp-2 text-sm font-medium text-foreground">{label}</span>
+            <span className="line-clamp-2 min-w-0 break-words wrap-break-word text-sm font-medium text-foreground">{label}</span>
           )}
           {badge}
         </div>
@@ -538,8 +522,8 @@ export function RatingCell({
 export function BooleanToggleCell({
   checked,
   onChange,
-  labelOn = "On — click to turn off",
-  labelOff = "Off — click to turn on",
+  labelOn = "On, click to turn off",
+  labelOff = "Off, click to turn on",
 }: {
   checked: boolean
   onChange: (next: boolean) => void

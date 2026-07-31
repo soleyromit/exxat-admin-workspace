@@ -46,7 +46,7 @@ export function oneSitesHubMetaForSegment(segment: string): OneSitesHubMeta {
         .split("-")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" "),
-      description: "This hub is not wired yet — replace with a real list surface when ready.",
+      description: "This hub is not wired yet. Replace with a real list surface when ready.",
     }
   )
 }

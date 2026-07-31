@@ -61,10 +61,10 @@ const PROG_TREND_LEO: ChartLeoInsight = (() => {
   return {
     headline:
       collected != null && collected < RESPONSE_TARGET
-        ? `Alumni Outcomes is at ${collected}% in ${last.term} — ${RESPONSE_TARGET - collected}% under target`
+        ? `Alumni Outcomes is at ${collected}% in ${last.term}, ${RESPONSE_TARGET - collected}% under target`
         : `Programmatic response rates are at or above the ${RESPONSE_TARGET}% target`,
     explanation:
-      'Preceptor Satisfaction and Program Exit haven\'t started collecting this term — the alumni series is the only live signal, and it is still mid-collection.',
+      'Preceptor Satisfaction and Program Exit haven\'t started collecting this term. The alumni series is the only live signal, and it is still mid-collection.',
     kind: collected != null && collected < RESPONSE_TARGET ? 'dip' : 'trend',
     delta: delta != null ? { value: `${delta >= 0 ? '+' : ''}${delta}%`, label: `vs ${prev.term}` } : undefined,
     bullets: [
@@ -88,9 +88,9 @@ export default function ProgrammaticAnalyticsPage() {
     const active         = progSurveys.filter(s => s.status === 'collecting').length
     return [
       { id: 'rate',      label: 'Response rate',   value: `${overallRate}%`,  delta: '', trend: 'neutral', description: `${totalSent} invited` },
-      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: '', trend: 'neutral', description: 'across all surveys' },
-      { id: 'active',    label: 'Collecting',      value: active,             delta: '', trend: 'neutral', description: 'currently open' },
-      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: '', trend: 'neutral', description: 'this period' },
+      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: '', trend: 'neutral', description: 'Across all surveys' },
+      { id: 'active',    label: 'Collecting',      value: active,             delta: '', trend: 'neutral', description: 'Currently open' },
+      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: '', trend: 'neutral', description: 'This period' },
     ]
   }, [progSurveys])
 
@@ -106,7 +106,7 @@ export default function ProgrammaticAnalyticsPage() {
       <SiteHeader title="Dashboard" />
 
       <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           Dashboard
         </h1>
         <Button variant="outline" size="sm">
@@ -187,17 +187,17 @@ export default function ProgrammaticAnalyticsPage() {
                   : `Every question scores at or above the 3.7 tier`,
               explanation:
                 lowest.avg < 3.7
-                  ? `"${lowest.text}" is dragging the survey average — its distribution shows where the dissatisfaction concentrates.`
+                  ? `"${lowest.text}" is dragging the survey average. Its distribution shows where the dissatisfaction concentrates.`
                   : `"${highest.text}" leads at ${highest.avg.toFixed(1)}/5.`,
               kind: lowest.avg < 3.7 ? 'anomaly' : 'trend',
               delta: { value: (highest.avg - lowest.avg).toFixed(1), label: 'spread across questions' },
-              bullets: scores.map(q => `${q.avg.toFixed(1)}/5 — ${q.text}`),
+              bullets: scores.map(q => `${q.avg.toFixed(1)}/5 · ${q.text}`),
             }
             return (
               <ChartCard
                 key={survey.id}
                 variant="normal"
-                title={`Question scores — ${surveyTypeName(survey.courseCode)}`}
+                title={`Question scores · ${surveyTypeName(survey.courseCode)}`}
                 description={`Avg score (1–5 scale) from ${survey.responseCount} responses. ${survey.enrollmentCount - survey.responseCount} not yet responded.`}
                 leoInsight={questionLeo}
               >

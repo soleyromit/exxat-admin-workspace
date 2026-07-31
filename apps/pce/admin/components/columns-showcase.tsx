@@ -327,6 +327,7 @@ function useColumns(
             <ListHubStatusBadge
               label={STATUS_LABEL[k]}
               tintClassName={STATUS_TINT[k]}
+              icon={STATUS_ICON[k]}
             />
           ),
         })),
@@ -337,6 +338,7 @@ function useColumns(
           <ListHubStatusBadge
             label={STATUS_LABEL[s]}
             tintClassName={STATUS_TINT[s]}
+            icon={STATUS_ICON[s]}
           />
         )
       },
@@ -352,8 +354,8 @@ function useColumns(
         <BooleanToggleCell
           checked={Boolean((row as Record<string, unknown>).published)}
           onChange={() => onTogglePublished(row)}
-          labelOn="Active — click to disable"
-          labelOff="Inactive — click to activate"
+          labelOn="Active, click to disable"
+          labelOff="Inactive, click to activate"
         />
       ),
     },

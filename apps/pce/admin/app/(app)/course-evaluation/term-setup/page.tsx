@@ -5,13 +5,14 @@
 //
 //   1. Term details      — name + academic year + dates (evaluation window is
 //                          DERIVED from term end ±7d, not asked).
-//   2. Course readiness  — the SAME Courses & Evaluatees DataTable the push
+//   2. Courses & Survey design — the SAME merged Courses DataTable the push
 //                          wizard uses (StepCoursesEvaluatees, scope locked to
-//                          the step-1 term).
-//   3–5. Survey design → Communication → Review — the exact send-evaluation
-//        steps, reused as components but instantiated HERE with independent
-//        state. This route never shares state with /surveys/push: same steps,
-//        separate wizard, no field or interaction overrides between the two.
+//                          the step-1 term): course selection, per-row template
+//                          assignment, and template-driven validation in one step.
+//   3–4. Communication → Review — the exact send-evaluation steps, reused as
+//        components but instantiated HERE with independent state. This route
+//        never shares state with /surveys/push: same steps, separate wizard,
+//        no field or interaction overrides between the two.
 //
 // Entry: /course-evaluation/term-setup (?phase=readiness jumps to step 2 —
 // the dashboard's "Add missing info" path).
@@ -39,7 +40,6 @@ import { SiteHeader } from '@/components/site-header'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { usePce } from '@/components/pce/pce-state'
 import { StepCoursesEvaluatees } from '@/components/pce/courses-evaluatees/step-courses-evaluatees'
-import { StepSurveyDesignAssign } from '@/components/pce/distribute-wizard/step-survey-design-assign'
 import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
@@ -53,17 +53,18 @@ import {
   type TermSeason,
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope, TERM_SEASONS } from '@/lib/pce-course-scope'
-import { type Criterion, CRITERION_TOGGLE_LABEL } from '@/lib/pce-course-readiness'
+import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
 import { subjectDataIssues, windowIssues } from '@/lib/pce-push-validation'
 
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 'success' | 'saved'
+type WizardStep = 1 | 2 | 3 | 4 | 'success' | 'saved'
 
+// Course readiness + Survey design merged into one step (Jul 2026): course
+// selection, per-row template assignment, template-driven validation.
 const STEPS = [
   { n: 1, label: 'Term details' },
-  { n: 2, label: 'Course readiness' },
-  { n: 3, label: 'Survey Design' },
-  { n: 4, label: 'Communication' },
-  { n: 5, label: 'Review' },
+  { n: 2, label: 'Courses & Survey Design' },
+  { n: 3, label: 'Communication' },
+  { n: 4, label: 'Review' },
 ]
 
 // Evaluation window opens 7d before term end, closes 7d after (REQ-07).
@@ -157,11 +158,9 @@ function TermSetupInner() {
       ? { open: addDaysYmd(endYmd, -EVAL_WINDOW_OFFSET_DAYS), close: addDaysYmd(endYmd, EVAL_WINDOW_OFFSET_DAYS) }
       : null
 
-  // ── Step 2 — Courses & Evaluatees (scope LOCKED to the step-1 term) ───────
+  // ── Step 2 — Courses & Survey design (scope LOCKED to the step-1 term) ────
   const ceSeason = season
   const [ceCohorts, setCeCohorts] = useState<string[]>([])
-  // Course + Instructor pre-selected — the common evaluation targets.
-  const [ceCriteria, setCeCriteria] = useState<Criterion[]>(['students', 'instructor'])
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
 
   const ceScopeTerm = useMemo(() => resolveTerm(ceSeason, academicYear), [ceSeason, academicYear])
@@ -176,19 +175,20 @@ function TermSetupInner() {
     [selectedCourseIds],
   )
 
-  // ── Step 3 — survey design (template per course) ──────────────────────────
+  // Template per course — lives IN step 2 now. Defaults cover every SCOPED
+  // course (not just selected) so deselected rows keep a sensible default.
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>({})
   const defaultAssignments = useMemo(() => {
     const result: Record<string, string> = {}
     if (publishedTemplates.length === 0) return result
     const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
-    for (const o of selectedOfferings) {
+    for (const o of ceScoped) {
       if (single) { result[o.id] = single.id; continue }
       const matched = o.courseType ? publishedTemplates.find(t => t.courseType === o.courseType) : undefined
       result[o.id] = (matched ?? publishedTemplates[0]).id
     }
     return result
-  }, [selectedOfferings, publishedTemplates])
+  }, [ceScoped, publishedTemplates])
 
   // ── Step 4 — communication (window follows the step-1 END date) ───────────
   const initialWindow = useMemo(() => windowFromEnd(SEED_TERM.endDate), [])
@@ -242,7 +242,16 @@ function TermSetupInner() {
   const reviewSubjectIssues = useMemo(() => subjectDataIssues(selectedOfferings), [selectedOfferings])
   const reviewWindowIssues = useMemo(() => windowIssues(selectedOfferings, openDate), [selectedOfferings, openDate])
   const cohortSummary = ceCohorts.join(' · ')
-  const evaluateSummary = ceCriteria.map((c) => CRITERION_TOGGLE_LABEL[c]).join(', ')
+  // What's evaluated = the union of what the selected courses' templates evaluate.
+  const evaluateSummary = useMemo(() => {
+    const found = new Set<Criterion>()
+    for (const o of selectedOfferings) {
+      const tid = templateAssignments[o.id] ?? defaultAssignments[o.id]
+      const t = publishedTemplates.find(x => x.id === tid)
+      if (t) for (const c of templateCriteria(t)) found.add(c)
+    }
+    return ALL_CRITERIA.filter(c => found.has(c)).map(c => CRITERION_TOGGLE_LABEL[c]).join(', ')
+  }, [selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   function goToReadiness() {
@@ -293,8 +302,8 @@ function TermSetupInner() {
     setStep('success')
   }
 
-  const currentStepNum = step === 'success' || step === 'saved' ? 6 : step
-  const completedUpTo = step === 'success' || step === 'saved' ? 5 : (step as number) - 1
+  const currentStepNum = step === 'success' || step === 'saved' ? 5 : step
+  const completedUpTo = step === 'success' || step === 'saved' ? 4 : (step as number) - 1
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -404,17 +413,17 @@ function TermSetupInner() {
             </>
           )}
 
-          {/* ── Step 2 · Course readiness — the same Courses & Evaluatees
+          {/* ── Step 2 · Courses & Survey design — the same merged Courses
                  DataTable as the push wizard, term locked to step 1 ── */}
           {step === 2 && (
             <>
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Course readiness
+                  Courses &amp; survey design
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {name || 'The new term'}&rsquo;s course offerings, loaded live from Prism.
-                  Choose what to evaluate — readiness updates as you select.
+                  Assign a template to each course — every row validates against what its template evaluates.
                 </p>
               </div>
 
@@ -449,15 +458,22 @@ function TermSetupInner() {
                 season={ceSeason}
                 academicYear={academicYear}
                 cohorts={ceCohorts}
-                criteria={ceCriteria}
                 cohortOptions={ceCohortOpts}
                 scoped={ceScoped}
+                publishedTemplates={publishedTemplates}
+                templateAssignments={templateAssignments}
+                defaultAssignments={defaultAssignments}
+                onTemplateChange={(offeringId, tmplId) =>
+                  setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+                }
+                onResetDefaults={() =>
+                  setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
+                }
                 onSeasonChange={() => {}}
                 onAcademicYearChange={() => {}}
                 onToggleCohort={(c) =>
                   setCeCohorts(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
                 }
-                onCriteriaChange={setCeCriteria}
                 onSelectionChange={setSelectedCourseIds}
                 onContinue={() => {
                   setTemplateAssignments(prev => {
@@ -472,25 +488,8 @@ function TermSetupInner() {
             </>
           )}
 
-          {/* ── Steps 3–5 · the send-evaluation steps, independent instance ── */}
+          {/* ── Steps 3–4 · the send-evaluation steps, independent instance ── */}
           {step === 3 && (
-            <StepSurveyDesignAssign
-              selectedOfferings={selectedOfferings}
-              publishedTemplates={publishedTemplates}
-              templateAssignments={templateAssignments}
-              defaultAssignments={defaultAssignments}
-              onTemplateChange={(offeringId, tmplId) =>
-                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-              }
-              onResetDefaults={() =>
-                setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
-              }
-              onBack={() => setStep(2)}
-              onNext={() => setStep(4)}
-            />
-          )}
-
-          {step === 4 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
               openDate={openDate}
@@ -520,12 +519,12 @@ function TermSetupInner() {
               onRemindersChange={setReminders}
               onEmailContactsChange={setEmailContacts}
               title="Communication"
-              onBack={() => setStep(3)}
-              onNext={() => setStep(5)}
+              onBack={() => setStep(2)}
+              onNext={() => setStep(4)}
             />
           )}
 
-          {step === 5 && (
+          {step === 4 && (
             <StepReview
               surveyMode="course_evaluation"
               surveyTitle={name.trim() ? `${name} Course Evaluations` : ''}
@@ -549,8 +548,8 @@ function TermSetupInner() {
               reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
-              onEdit={(n) => setStep((n + 1) as WizardStep)}
-              onBack={() => setStep(4)}
+              onEdit={(n) => setStep((n >= 3 ? 3 : 2) as WizardStep)}
+              onBack={() => setStep(3)}
               onPush={handlePush}
               cohortSummary={cohortSummary}
               evaluateSummary={evaluateSummary}

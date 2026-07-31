@@ -28,13 +28,14 @@ import {
   MOCK_MASTER_COURSES,
   MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
+import { CRITERION_GROUP, templateCriteria } from '@/lib/pce-course-readiness'
 
 export const DEFAULT_SETUP_EMAIL_SUBJECT =
   'Your course evaluation for {{course_name}} is now open'
 
 export const DEFAULT_SETUP_EMAIL_BODY = `Hi {{student_first_name}},
 
-Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous — your name will never be attached to your answers.
+Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous. Your name will never be attached to your answers.
 
 Take the survey: {{survey_link}}`
 
@@ -50,6 +51,16 @@ const INITIAL_SETUP_DEFAULTS: SetupDefaults = {
   activeReminderIntervals: [14, 7, 3],
 }
 
+/** One survey to create — the Survey design step's instance grain. */
+export interface PushInstance {
+  offeringId: string
+  scope: 'course' | 'instructor'
+  /** Readiness criterion id — stamped onto the flow as evalRole so FUTURE
+   *  duplicate checks can match the full offering+role+person key. */
+  role?: string
+  personName?: string
+}
+
 export interface PushWizardConfig {
   surveyType: SurveyType
   termId: string
@@ -57,6 +68,10 @@ export interface PushWizardConfig {
   programId: string
   courseOfferingIds: string[]
   templateAssignments: Record<string, string>  // offeringId → templateId
+  /** Instance-level plan from the Survey design step (duplicates already
+   *  excluded there). When present, one survey is created PER INSTANCE —
+   *  split flows — instead of one combined flow per offering. */
+  instances?: PushInstance[]
   openDate: string   // YYYY-MM-DD
   closeDate: string  // YYYY-MM-DD
   emailSubject: string
@@ -143,6 +158,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     setActiveAccountId(acc.id)      // module register — feeds the term helpers
     setAccountId(acc.id)
     setSurveys(acc.surveys)
+    setTemplates(acc.templates ?? MOCK_TEMPLATES)
     setProgramTerms(acc.terms)
     setHiddenComments({})
     if (typeof window !== 'undefined') {
@@ -160,8 +176,26 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
+  // ── Role toggle — persisted like the demo account (SSR + first client
+  //    render stay on the default admin role so hydration matches; the stored
+  //    choice applies post-mount). Without this, any full page load silently
+  //    dropped the user back to Admin view. ──
+  const ROLE_STORAGE_KEY = 'pce.role'
   const toggleRole = useCallback(() => {
-    setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
+    setUser(u => {
+      const role = u.role === 'admin' ? ('faculty' as const) : ('admin' as const)
+      if (typeof window !== 'undefined') {
+        try { window.localStorage.setItem(ROLE_STORAGE_KEY, role) } catch { /* ignore */ }
+      }
+      return { ...u, role }
+    })
+  }, [])
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(ROLE_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored === 'faculty' || stored === 'admin') {
+      setUser(u => (u.role === stored ? u : { ...u, role: stored }))
+    }
   }, [])
 
   const releaseSurvey = useCallback((id: string) => {
@@ -501,6 +535,61 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
 
     const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
 
+    // Instance-level plan (Survey design step): one survey PER INSTANCE —
+    // split flows with evalScope + evalRole stamped so later pushes can match
+    // the full offering+role+person duplicate key. Duplicates were already
+    // excluded upstream; whatever arrives here gets created.
+    if (config.instances?.length) {
+      const stamp = Date.now()
+      setSurveys(ss => [
+        ...ss,
+        ...config.instances!.map((inst, i): PceSurvey => {
+          const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === inst.offeringId)
+          const masterCourse = offering ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId) : null
+          const person = inst.personName ? MOCK_FACULTY.find(f => f.name === inst.personName) : null
+          return {
+            id: `s${stamp}-${inst.offeringId}-${i}`,
+            offeringId: inst.offeringId,
+            evalScope: inst.scope,
+            evalRole: inst.role,
+            courseCode: masterCourse?.code ?? inst.offeringId,
+            courseName: masterCourse?.name ?? '',
+            term: term?.name ?? academicYear,
+            cohort: offering?.cohort,
+            surveyType,
+            openDate,
+            academicYear,
+            programId,
+            templateId: templateAssignments[inst.offeringId] ?? '',
+            status,
+            // Course-scope flows carry NO instructors (seed pf3 convention —
+            // a person listed on a course-scope flow ghosts into faculty
+            // analytics); instructor-scope flows carry exactly the evaluatee.
+            instructors: inst.scope === 'instructor' && person
+              ? [{ id: person.id, name: person.name, initials: person.initials, role: 'primary' as const }]
+              : [],
+            // A split flow IS a single evaluation type — without this override
+            // evaluationsFor() derives BOTH types from the roll-up and
+            // resurrects the half this flow deliberately excludes.
+            evaluations: [{
+              type: inst.scope === 'course' ? 'course_material' as const : 'faculty_roles' as const,
+              status,
+              responseRate: 0,
+              responseCount: 0,
+              enrollmentCount: offering?.enrolledCount ?? 0,
+              deadline: closeDate,
+            }],
+            responseRate: 0,
+            responseCount: 0,
+            enrollmentCount: offering?.enrolledCount ?? 0,
+            deadline: closeDate,
+            createdAt: today,
+          }
+        }),
+      ])
+      return
+    }
+
     setSurveys(ss => {
       const newSurveys: PceSurvey[] = courseOfferingIds.map(offeringId => {
         const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
@@ -508,8 +597,23 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
         const faculty = offering ? MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId) : null
         const templateId = templateAssignments[offeringId] ?? ''
 
+        // Scope from what the assigned template evaluates: course-only /
+        // faculty-only templates make a single-evaluatee flow; a template that
+        // covers both leaves evalScope undefined (a combined flow). offeringId
+        // ties every flow to its course so the push wizard's Status column can
+        // show what's already out when a LATER flow targets the same course.
+        const tmpl = templates.find(t => t.id === templateId)
+        const crits = tmpl ? templateCriteria(tmpl) : []
+        const hasCourse = crits.some(c => CRITERION_GROUP[c] === 'Course')
+        const hasFaculty = crits.some(c => CRITERION_GROUP[c] === 'Faculty')
+        const evalScope = hasCourse && !hasFaculty ? ('course' as const)
+          : hasFaculty && !hasCourse ? ('instructor' as const)
+          : undefined
+
         return {
           id: `s${Date.now()}-${offeringId}`,
+          offeringId,
+          evalScope,
           courseCode: masterCourse?.code ?? offeringId,
           courseName: masterCourse?.name ?? '',
           term: term?.name ?? academicYear,
@@ -532,7 +636,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       })
       return [...ss, ...newSurveys]
     })
-  }, [])
+  }, [templates])
 
   // ── Survey intervention actions ───────────────────────────────────────────
 

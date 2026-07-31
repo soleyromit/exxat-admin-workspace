@@ -8,21 +8,36 @@
 //      faculty (no one to evaluate). Intrinsic to the course; knowable in Step 1.
 //   B. Survey-window misalignment — the survey opens after a course has already
 //      ended. Needs the schedule, so it's only computable at Review.
+//   C. Duplicate flows — a selected course already has a scheduled/live
+//      evaluation from an earlier push; pushing again sends students a second,
+//      overlapping survey. The Step-1 Status column shows the coverage; this
+//      gate makes creating the overlap a conscious choice.
 // ============================================================================
 
 import {
   type CourseOffering,
+  type PceSurvey,
+  type PceTemplate,
+  type SurveyStatus,
   MOCK_PROGRAM_TERMS,
+  deliveryModeOf,
 } from './pce-mock-data'
-import { courseLabelOf, prismAddHref } from './pce-course-readiness'
+import {
+  type Criterion,
+  CRITERION_BY_TYPE,
+  courseLabelOf,
+  prismAddHref,
+  templateCriteria,
+} from './pce-course-readiness'
 
 export interface CourseIssue {
   id: string
   courseLabel: string
   /** Plain-language reasons, e.g. ["no faculty assigned", "no students enrolled"]. */
   reasons: string[]
-  /** New-tab Prism deep-link to fix the course. */
-  prismHref: string
+  /** New-tab Prism deep-link to fix the course — absent when Prism isn't the
+   *  fix (duplicate flows are resolved by editing the selection, not Prism). */
+  prismHref?: string
 }
 
 function hasFaculty(o: CourseOffering): boolean {
@@ -83,25 +98,228 @@ export function courseDates(o: CourseOffering): { start: Date; end: Date } | nul
   return { start, end }
 }
 
+// A flow in any of these states still reaches (or will reach) students — a new
+// push over it creates a real overlap. Released/closed runs are history, and
+// per the lifecycle rule a push-born flow starts at 'scheduled', never 'draft'.
+const OPEN_FLOW_STATUSES: ReadonlySet<SurveyStatus> = new Set([
+  'scheduled', 'active', 'collecting', 'pending_review',
+])
+
+const OPEN_FLOW_WORD: Partial<Record<SurveyStatus, string>> = {
+  scheduled: 'scheduled',
+  active: 'live',
+  collecting: 'live',
+  pending_review: 'in review',
+}
+
+/** YYYY-MM-DD → "Dec 4" without the UTC-midnight day shift of new Date(iso). */
+function fmtYmd(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function flowSummary(f: PceSurvey): string {
+  const who = f.evalScope === 'instructor'
+    ? (f.instructors[0]?.name ?? 'Instructor')
+    : 'Course'
+  const opens = f.status === 'scheduled' && f.openDate ? ` (opens ${fmtYmd(f.openDate)})` : ''
+  return `${who} — ${OPEN_FLOW_WORD[f.status] ?? f.status}${opens}`
+}
+
+// ── Survey instances (the Survey design step's row grain) ────────────────────
+// A push doesn't create "a survey per course" — it creates one survey INSTANCE
+// per (course offering × evaluatee), where the evaluatees are what the assigned
+// template demands: one course-material instance, plus one per faculty role the
+// template evaluates × the person staffed in that role. Duplicates are defined
+// at THIS grain (engineering feedback, Jul 2026): the composite key is
+// offering + role + person — a second Instructor survey for the same person is
+// a duplicate; the same person under a different role is not; a new person
+// under an already-surveyed role is not.
+
+export type InstanceStatus = 'new' | 'duplicate' | 'gap'
+
+export interface SurveyInstance {
+  /** `offeringId|criterion|person` — the composite identity duplicates key on.
+   *  Person rides the NAME: the mock readiness resolvers return names, not ids
+   *  (see CRITERION_BY_TYPE); swap to personId when real association data lands. */
+  key: string
+  offeringId: string
+  scope: 'course' | 'instructor'
+  /** Readiness criterion this instance evaluates ('students' = course material). */
+  criterion: Criterion
+  /** Type-aware role label ("Clinical Coordinator"); '' for course material. */
+  roleLabel: string
+  /** Person evaluated — null for course material and for unstaffed roles. */
+  personName: string | null
+  status: InstanceStatus
+  /** The open flow this instance would duplicate (status 'duplicate' only). */
+  existing: PceSurvey | null
+  /** New-tab Prism deep-link to staff the missing role (status 'gap' only). */
+  prismHref: string | null
+}
+
+/** Does an existing flow cover this prospective instance's composite key? */
+function coversInstance(
+  s: PceSurvey,
+  offeringId: string,
+  scope: 'course' | 'instructor',
+  criterion: Criterion,
+  personName: string | null,
+): boolean {
+  if (s.offeringId !== offeringId || !OPEN_FLOW_STATUSES.has(s.status)) return false
+  if (scope === 'course') {
+    // Course material is covered by a course-scope flow or a combined flow
+    // (evalScope undefined = the pre-split shape that evaluated everything).
+    return s.evalScope !== 'instructor'
+  }
+  if (s.evalScope === 'course') return false
+  if (s.evalRole) {
+    // Role-stamped flows (created after the split) match the full key.
+    return s.evalRole === criterion && s.instructors.some(p => p.name === personName)
+  }
+  // Legacy flows carry no role. A person-only match can only vouch for the
+  // 'instructor' criterion (the role those flows were pushed for) — the same
+  // person under a DIFFERENT role is a genuinely new combination, not a dup.
+  return criterion === 'instructor' && s.instructors.some(p => p.name === personName)
+}
+
 /**
- * B. Survey-window misalignment — the survey opens after a course has already
- * ended (students would be asked to evaluate a course that's over).
+ * Expand one course offering × its assigned template into the survey instances
+ * a push would create, each checked against the existing flows. Pure; recompute
+ * on any assignment/selection/data change. No template → no instances (the
+ * step gates on assignment before this matters).
  */
+export function expandInstances(
+  offering: CourseOffering,
+  template: PceTemplate | null | undefined,
+  surveys: PceSurvey[],
+): SurveyInstance[] {
+  if (!template) return []
+  const mode = deliveryModeOf(offering)
+  const out: SurveyInstance[] = []
+  for (const criterion of templateCriteria(template)) {
+    const spec = CRITERION_BY_TYPE[mode][criterion]
+    // Role not applicable to this course type (≠ a gap) — no instance.
+    if (!spec) continue
+    if (criterion === 'students') {
+      const existing = surveys.find(s =>
+        coversInstance(s, offering.id, 'course', criterion, null)) ?? null
+      out.push({
+        key: `${offering.id}|course`,
+        offeringId: offering.id,
+        scope: 'course',
+        criterion,
+        roleLabel: '',
+        personName: null,
+        status: existing ? 'duplicate' : 'new',
+        existing,
+        prismHref: null,
+      })
+      continue
+    }
+    // EVERY person holding the role — a role can be held by several people at
+    // once (late-added co-instructor, UC2), and each person is their own
+    // instance with their own duplicate verdict.
+    const single = spec.resolve(offering)
+    const persons = spec.resolveAll?.(offering) ?? (single ? [single] : [])
+    if (persons.length === 0) {
+      out.push({
+        key: `${offering.id}|${criterion}|`,
+        offeringId: offering.id,
+        scope: 'instructor',
+        criterion,
+        roleLabel: spec.label,
+        personName: null,
+        status: 'gap',
+        existing: null,
+        prismHref: prismAddHref(offering, criterion),
+      })
+      continue
+    }
+    for (const personName of persons) {
+      const existing = surveys.find(s =>
+        coversInstance(s, offering.id, 'instructor', criterion, personName)) ?? null
+      out.push({
+        key: `${offering.id}|${criterion}|${personName}`,
+        offeringId: offering.id,
+        scope: 'instructor',
+        criterion,
+        roleLabel: spec.label,
+        personName,
+        status: existing ? 'duplicate' : 'new',
+        existing,
+        prismHref: null,
+      })
+    }
+  }
+  return out
+}
+
+/** One-line description of the open flow an instance duplicates ("Live · opened Jul 2"). */
+export function existingFlowSummary(f: PceSurvey): string {
+  const word = OPEN_FLOW_WORD[f.status] ?? f.status
+  const opened = f.openDate ? ` · opens ${fmtYmd(f.openDate)}` : ''
+  const capitalized = word.charAt(0).toUpperCase() + word.slice(1)
+  return f.status === 'scheduled' ? `${capitalized}${opened}` : capitalized
+}
+
+/**
+ * C. Duplicate flows — selected courses that already carry a scheduled/live
+ * evaluation flow from an earlier push (matched by the survey's offeringId FK).
+ * Course-grained; kept for the term-setup wizard, which still runs the merged
+ * step. The push wizard resolves duplicates per-INSTANCE in its Survey design
+ * step (expandInstances above) and skips them at insert.
+ */
+export function duplicateFlowIssues(
+  offerings: CourseOffering[],
+  surveys: PceSurvey[],
+): CourseIssue[] {
+  const openByOffering = new Map<string, PceSurvey[]>()
+  for (const s of surveys) {
+    if (!s.offeringId || !OPEN_FLOW_STATUSES.has(s.status)) continue
+    openByOffering.set(s.offeringId, [...(openByOffering.get(s.offeringId) ?? []), s])
+  }
+  const out: CourseIssue[] = []
+  for (const o of offerings) {
+    const open = openByOffering.get(o.id)
+    if (!open || open.length === 0) continue
+    out.push({
+      id: o.id,
+      courseLabel: courseLabelOf(o),
+      reasons: open.map(flowSummary),
+    })
+  }
+  return out
+}
+
+/**
+ * B. Survey-window misalignment — the survey opens MORE THAN TWO WEEKS after a
+ * course ended. Opening shortly after course end is business-normal for
+ * end-of-term evaluations (the standard eval window runs ~2 weeks at course
+ * end), so only long gaps — where recall fades and cohorts disperse — warrant
+ * an acknowledgement.
+ */
+const WINDOW_GAP_DAYS = 14
+
 export function windowIssues(
   offerings: CourseOffering[],
   openDate: Date | undefined,
 ): CourseIssue[] {
   if (!openDate) return []
+  const DAY = 86_400_000
   const out: CourseIssue[] = []
   for (const o of offerings) {
     const end = courseEndDate(o)
     if (!end) continue
-    if (openDate.getTime() > end.getTime()) {
+    const gapDays = Math.floor((openDate.getTime() - end.getTime()) / DAY)
+    if (gapDays > WINDOW_GAP_DAYS) {
+      const weeks = Math.round(gapDays / 7)
       out.push({
         id: o.id,
         courseLabel: courseLabelOf(o),
-        reasons: ['survey opens after the course has already ended'],
-        prismHref: prismAddHref(o, 'students'),
+        // Per-course evidence for the review disclosure: when it ended and how
+        // stale the responses would be.
+        reasons: [`ended ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${weeks} week${weeks !== 1 ? 's' : ''} before open`],
       })
     }
   }

@@ -13,7 +13,7 @@ import type { ColumnDef } from "@/components/data-table/types"
 import { PageHeader } from "@/components/page-header"
 import { PageTitleRecordSwitcher } from "@/components/page-breadcrumb-trail"
 import { PrimaryPageTemplate } from "@/components/templates/primary-page-template"
-import { AvatarInitials } from "@/components/ui/avatar"
+import { PersonAvatar } from "@/components/pce/person-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -606,9 +606,10 @@ function FormsReviewTable({
         defaultPin: "left",
         cell: row => (
           <div className="flex min-w-0 items-start gap-2.5">
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="mt-0.5 size-8 shrink-0 text-xs"
+              className="mt-0.5 size-8 text-xs"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
@@ -718,9 +719,10 @@ function PracticumLogTable({
         defaultPin: "left",
         cell: row => (
           <div className="flex min-w-0 items-start gap-2.5">
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="mt-0.5 size-8 shrink-0 text-xs"
+              className="mt-0.5 size-8 text-xs"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
@@ -878,9 +880,10 @@ function GradebookTable({
         cell: row => (
           <div className="flex min-w-0 items-center gap-2.5">
             {row.isNew ? <TableNewRowDot className="mt-1" /> : null}
-            <AvatarInitials
+            <PersonAvatar
+              name={row.studentName}
               initials={initialsFromDisplayName(row.studentName)}
-              className="size-8 shrink-0 text-xs"
+              className="size-8 text-xs"
             />
             <span className="truncate text-sm font-medium text-foreground">{row.studentName}</span>
           </div>

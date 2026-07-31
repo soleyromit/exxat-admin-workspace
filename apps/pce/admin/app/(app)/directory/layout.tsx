@@ -8,8 +8,9 @@ export default function DirectoryLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader title="Directory" />
-      <DirectoryTabs />
-      <div className="flex-1 overflow-hidden flex flex-col">{children}</div>
+      {/* children render inside DirectoryTabs' TabsContent — see the note there:
+          a TabsList with no TabsContent left aria-controls dangling (axe critical). */}
+      <DirectoryTabs>{children}</DirectoryTabs>
     </div>
   )
 }

@@ -3,10 +3,19 @@
 import { useState } from 'react'
 import {
   Button, LocalBanner,
-  SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
+// Sidebar parts MUST come from '@/components/ui/sidebar' (which re-exports the
+// '@exxatdesignux/ui/components/sidebar' subpath), never the main barrel. The barrel
+// and the subpath are separate module instances holding separate SidebarContext
+// objects, so barrel-imported parts call useSidebar against a context that
+// SidebarProvider — mounted from the subpath in components/sidebar/sidebar-shell.tsx —
+// never fills. That threw "useSidebar must be used within a SidebarProvider" and 500'd
+// this route on every request.
+import {
+  SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+} from '@/components/ui/sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { TruncatedText } from '@/components/truncated-text'
 import { EmptyState } from '@/components/empty-state'
@@ -167,7 +176,7 @@ export default function ModerationPage() {
               >
                 <div>
                   <p className="text-sm font-semibold">
-                    {selectedSurvey.courseCode} — {selectedSurvey.courseName}
+                    {selectedSurvey.courseCode} · {selectedSurvey.courseName}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {selectedSurvey.term} · {selectedSurvey.enrollmentCount} enrolled
@@ -233,7 +242,7 @@ export default function ModerationPage() {
                             <Button
                               variant={isFlagged ? 'outline' : 'ghost'}
                               size="sm"
-                              aria-label={isFlagged ? 'Remove flag — show to faculty' : 'Flag response — hide from faculty'}
+                              aria-label={isFlagged ? 'Remove flag: show to faculty' : 'Flag response: hide from faculty'}
                               onClick={() => toggleFlag(response.id)}
                               className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                               style={isFlagged
@@ -267,7 +276,7 @@ export default function ModerationPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
                     {surveyFlaggedCount > 0
-                      ? `${surveyFlaggedCount} response${surveyFlaggedCount !== 1 ? 's' : ''} flagged — hidden from faculty`
+                      ? `${surveyFlaggedCount} response${surveyFlaggedCount !== 1 ? 's' : ''} flagged, hidden from faculty`
                       : 'All responses will be shared with faculty'
                     }
                   </p>
@@ -304,7 +313,7 @@ export default function ModerationPage() {
           <DialogDescription>
             {selectedSurvey && surveyResponses.length < 5 ? (
               <>
-                Only <strong>{surveyResponses.length}</strong> {surveyResponses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                Only <strong>{surveyResponses.length}</strong> {surveyResponses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
                 {' '}Faculty will see aggregate scores based on this small sample.
               </>
             ) : (

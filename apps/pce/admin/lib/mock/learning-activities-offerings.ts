@@ -47,7 +47,7 @@ export function getCourseOfferingById(id: string): CourseOffering | undefined {
 }
 
 export function offeringDisplayTitle(offering: CourseOffering): string {
-  return `${offering.courseNumber} — ${offering.courseName}`
+  return `${offering.courseNumber} · ${offering.courseName}`
 }
 
 function makeActivityActions(
@@ -103,7 +103,7 @@ const COHORT = {
   class2023: "Class of 2023",
   class2027: "Class of 2027",
   summer2023: "Summer 2023 Cohort",
-  class2026Eval: "Class of 2026 — Evaluations",
+  class2026Eval: "Class of 2026 · Evaluations",
 } as const
 
 export const LEARNING_ACTIVITY_OFFERINGS: CourseOffering[] = [

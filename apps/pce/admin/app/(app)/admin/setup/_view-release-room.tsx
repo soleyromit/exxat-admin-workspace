@@ -91,7 +91,7 @@ export function ReleaseRoomView({ selectedTermName, termSurveys, onOpenSurvey }:
         </div>
         {surveys.map((s, i) => {
           const leftColor = s.isReady ? 'var(--chart-2)' : s.isLowN ? 'var(--chart-4)' : 'var(--border)'
-          const statusLabel = s.isReady ? 'Ready to release' : s.isLowN ? 'Low n — hold?' : 'Pending review'
+          const statusLabel = s.isReady ? 'Ready to release' : s.isLowN ? 'Low n · hold?' : 'Pending review'
           const statusBg = s.isReady ? 'rgba(22,163,74,0.1)' : s.isLowN ? 'rgba(217,119,6,0.1)' : 'var(--muted)'
           const statusColor = s.isReady ? 'var(--chart-2)' : s.isLowN ? 'var(--chart-4)' : 'var(--muted-foreground)'
           return (
@@ -129,7 +129,7 @@ export function ReleaseRoomView({ selectedTermName, termSurveys, onOpenSurvey }:
       {lowNCount > 0 && (
         <details className="rounded-lg border" style={{ borderColor: 'rgba(217,119,6,0.3)', backgroundColor: 'rgba(217,119,6,0.04)' }}>
           <summary style={{ padding: '10px 16px', fontSize: 13, color: 'var(--chart-4)', cursor: 'pointer', fontWeight: 500 }}>
-            ⚠ {lowNCount} evaluation{lowNCount > 1 ? 's have' : ' has'} fewer than {LOW_N_THRESHOLD} responses — guidance
+            ⚠ {lowNCount} evaluation{lowNCount > 1 ? 's have' : ' has'} fewer than {LOW_N_THRESHOLD} responses: guidance available
           </summary>
           <p style={{ padding: '0 16px 12px', fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
             Evaluations with fewer than {LOW_N_THRESHOLD} responses may not fairly represent a faculty member's performance. Consider waiting for any pending responses, or marking the evaluation as insufficient data before releasing to the faculty member.

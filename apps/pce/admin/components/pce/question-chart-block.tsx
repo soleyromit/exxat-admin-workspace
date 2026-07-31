@@ -4,8 +4,10 @@ import { BarChart, Bar, XAxis, YAxis } from 'recharts'
 import {
   Button,
   ChartContainer,
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+  StatusBadge,
 } from '@exxatdesignux/ui'
+import { SENTIMENT_CHIP } from '@/components/pce/pce-badges'
 import type { ChartConfig } from '@exxatdesignux/ui'
 import type { TemplateQuestion, QuestionScore } from '@/lib/pce-mock-data'
 import {
@@ -72,7 +74,6 @@ interface QuestionChartBlockProps {
   question: TemplateQuestion
   questionNumber: number
   score?: QuestionScore
-  freeTextCount?: number
   surveyId: string
   isLast?: boolean
   /** Scroll anchor id — target for the survey response rail (scrollspy). */
@@ -83,7 +84,6 @@ export function QuestionChartBlock({
   question,
   questionNumber,
   score,
-  freeTextCount,
   surveyId,
   isLast,
   anchorId,
@@ -96,7 +96,9 @@ export function QuestionChartBlock({
       )
     : []
 
-  const count = freeTextCount ?? freeTextResponses.length
+  // Count comes from the actual records — the sheet must always be able to
+  // back the number this block claims.
+  const count = freeTextResponses.length
 
   return (
     <div
@@ -129,11 +131,6 @@ export function QuestionChartBlock({
             <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}> / 5</span>
           </div>
         )}
-        {isFreeText && (
-          <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-            {count} response{count !== 1 ? 's' : ''}
-          </span>
-        )}
       </div>
 
       {/* Body */}
@@ -154,10 +151,13 @@ export function QuestionChartBlock({
         ) : !isFreeText ? (
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>No data yet</p>
         ) : (
+          count === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>No responses yet</p>
+          ) : (
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 -ml-2">
-                <span className="text-xs">View responses</span>
+              <Button variant="outline" size="sm">
+                View {count} response{count !== 1 ? 's' : ''}
                 <i className="fa-light fa-arrow-right" aria-hidden="true" />
               </Button>
             </SheetTrigger>
@@ -166,29 +166,26 @@ export function QuestionChartBlock({
                 <SheetTitle className="text-sm font-semibold leading-snug pr-6">
                   {question.text}
                 </SheetTitle>
+                <SheetDescription className="text-sm text-muted-foreground">
+                  {count} written response{count !== 1 ? 's' : ''} · anonymized
+                </SheetDescription>
               </SheetHeader>
+              {/* Same row anatomy as the results-page comment list — quote
+                  first, sentiment chip on the meta line beneath. */}
               <div className="flex flex-col overflow-y-auto mt-4">
-                {freeTextResponses.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-                    <i className="fa-light fa-comment-lines text-3xl text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm text-muted-foreground">No responses yet.</p>
-                  </div>
-                ) : (
-                  freeTextResponses.map((r, i) => (
-                    <div
-                      key={r.id}
-                      className="py-3 text-sm"
-                      style={{
-                        borderBottom: i < freeTextResponses.length - 1 ? '1px solid var(--border)' : 'none',
-                      }}
-                    >
-                      {r.text}
+                {freeTextResponses.map((r) => {
+                  const chip = r.sentiment ? SENTIMENT_CHIP[r.sentiment] : null
+                  return (
+                    <div key={r.id} className="flex flex-col gap-2 py-3 border-b border-border last:border-0">
+                      <p className="text-sm leading-relaxed">&ldquo;{r.text}&rdquo;</p>
+                      {chip && <StatusBadge label={chip.label} tone={chip.tone} className="self-start" />}
                     </div>
-                  ))
-                )}
+                  )
+                })}
               </div>
             </SheetContent>
           </Sheet>
+          )
         )}
       </div>
     </div>

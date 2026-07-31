@@ -5,20 +5,30 @@ import Link from 'next/link'
 import {
   Badge,
   Button,
+  Calendar,
   Card,
   CardContent,
   DatePickerField,
   FieldLegend,
   Input,
+  InputGroup,
   LocalBanner,
+  Popover, PopoverTrigger, PopoverContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleSwitch,
+  formatDateFromDate,
 } from '@exxatdesignux/ui'
-import type { CourseOffering, ReminderFrequency, ReminderAnchor } from '@/lib/pce-mock-data'
+import type { CourseOffering, ReminderFrequency, ReminderAnchor, SurveyStatus } from '@/lib/pce-mock-data'
+import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
+import {
+  CommRulesPopover, EvaluateeMark, evaluateeLabel,
+  type CommCadence, type CommRules, type CommEvaluatee,
+} from '@/components/pce/existing-comm-rules'
 import {
   MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, MOCK_MASTER_COURSES, EVAL_EMAIL_TEMPLATES,
   EVAL_REMINDER_CADENCE, REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
 } from '@/lib/pce-mock-data'
+import { courseDates } from '@/lib/pce-push-validation'
 import { ExxatPrismSheet, type PrismRecipient } from './exxat-prism-sheet'
 import { EmailTemplateSheet } from './email-template-sheet'
 
@@ -75,6 +85,24 @@ function ReminderThumbnail() {
 export type Reminder = { id: string; daysBefore: number }
 export type EmailContact = { id: string; firstName: string; lastName: string; email: string }
 
+/** An existing open survey already messaging students in the selected courses.
+ *  Rules render read-only beside the form: per-survey rules are legal and
+ *  expected — the rail exists for visibility, never unification. Same-course
+ *  streams sharing one rule set collapse into a single row (the popover
+ *  carries the roster). */
+export type ExistingCommStream = {
+  id: string
+  courseCode: string
+  courseName?: string
+  evaluatee: CommEvaluatee
+  status: SurveyStatus
+  openDate?: string
+  /** "until Dec 4" (its close date). */
+  untilLabel?: string
+  cadence: CommCadence
+  rules: CommRules
+}
+
 // ── Prism icon mark ───────────────────────────────────────────────────────────
 function PrismIconMark({ size = 32 }: { size?: number }) {
   return (
@@ -120,6 +148,62 @@ function EmailChip({ contact, onRemove }: { contact: EmailContact; onRemove: () 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/* Trigger classes mirrored 1:1 from the DS DatePickerField (fieldControlInnerClass()
+   + its trigger utilities) — the DS component has no popover footer slot, so this
+   file composes DS Popover + Calendar instead (same gap-composition precedent as
+   Popover+Command for the missing MultiSelect). Candidate DS extension:
+   `popoverFooter` on DatePickerField. */
+const DATE_TRIGGER_CLASS =
+  'border-0 bg-transparent shadow-none ring-0 focus-visible:border-transparent focus-visible:ring-0 ' +
+  'disabled:bg-transparent dark:bg-transparent dark:disabled:bg-transparent ' +
+  'flex min-w-0 flex-1 items-center justify-between gap-2 px-2.5 text-start text-sm font-normal text-foreground outline-none ' +
+  'disabled:cursor-not-allowed disabled:opacity-50 [&_span]:truncate'
+
+/** DatePickerField with a footer slot inside the popover (suggested dates). */
+function DatePickerFieldWithFooter({
+  value, onChange, footer, open, onOpenChange, ...aria
+}: {
+  value: Date | undefined
+  onChange: (d: Date | undefined) => void
+  footer?: React.ReactNode
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  'aria-labelledby'?: string
+  'aria-required'?: boolean | 'true' | 'false'
+}) {
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <InputGroup className="w-full">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            data-slot="input-group-control"
+            className={DATE_TRIGGER_CLASS}
+            aria-label={value ? formatDateFromDate(value) : 'Pick a date'}
+            {...aria}
+          >
+            <span className={!value ? 'text-muted-foreground' : undefined}>
+              {value ? formatDateFromDate(value) : 'MM/DD/YYYY'}
+            </span>
+            <i className="fa-light fa-calendar shrink-0 text-muted-foreground text-xs" aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+      </InputGroup>
+      <PopoverContent className="z-[80] w-auto overflow-hidden p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          initialFocus
+          fromYear={2020}
+          toYear={2032}
+          captionLayout="dropdown"
+        />
+        {footer}
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 interface StepCommunicationProps {
   selectedOfferings: CourseOffering[]
@@ -153,6 +237,9 @@ interface StepCommunicationProps {
   onNext: () => void
   /** Step title — "Distribution" for programmatic surveys, else "Communication". */
   title?: string
+  /** Open surveys already messaging students in the selected courses —
+   *  rendered as a read-only context rail in the Reminders section. */
+  existingStreams?: ExistingCommStream[]
 }
 
 export function StepCommunication({
@@ -165,6 +252,7 @@ export function StepCommunication({
   onSenderNameChange, onEmailTemplateChange, onEmailSubjectChange, onEmailBodyChange,
   onRemindersChange, onEmailContactsChange, onBack, onNext,
   title = 'Communication',
+  existingStreams = [],
 }: StepCommunicationProps) {
   // ── Auto-populate Prism recipients ────────────────────────────────────────
   const autoRecipients = useMemo<PrismRecipient[]>(() => {
@@ -287,6 +375,92 @@ export function StepCommunication({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reminderFrequency, reminderStartDays])
 
+  // ── Existing streams — the delta only speaks when every overlapping survey
+  //    agrees on one frequency AND it differs from the current choice.
+  //    Divergence between surveys is legal; the rail rows already state each.
+  const sharedExistingCadence = useMemo(() => {
+    if (existingStreams.length === 0) return null
+    const first = existingStreams[0].cadence
+    return existingStreams.every(s => s.cadence.frequency === first.frequency) ? first : null
+  }, [existingStreams])
+  const cadenceDiffers = sharedExistingCadence != null && sharedExistingCadence.frequency !== reminderFrequency
+
+  // Same-course streams under identical rules collapse into ONE row — three
+  // DPT-510 flows on one cadence are one story, not three (the popover
+  // carries the roster). Different rules keep separate rows.
+  const streamGroups = useMemo(() => {
+    const sig = (s: ExistingCommStream) => [
+      s.courseCode, s.status, s.openDate ?? '', s.untilLabel ?? '',
+      s.cadence.frequency, s.cadence.anchor, s.cadence.startDaysBefore,
+      s.rules.inviteTemplate, s.rules.reminderTemplate, s.rules.sender,
+    ].join('|')
+    const m = new Map<string, ExistingCommStream[]>()
+    for (const s of existingStreams) { const k = sig(s); m.set(k, [...(m.get(k) ?? []), s]) }
+    return [...m.values()]
+  }, [existingStreams])
+  // Per-survey reminder facts survive grouping only when every flow agrees.
+  const groupRules = (g: ExistingCommStream[]): CommRules => {
+    if (g.length === 1) return g[0].rules
+    const shared = (pick: (r: CommRules) => string | undefined) =>
+      g.every(x => pick(x.rules) === pick(g[0].rules)) ? pick(g[0].rules) : undefined
+    return { ...g[0].rules, nextReminder: shared(r => r.nextReminder), lastManualNudge: shared(r => r.lastManualNudge) }
+  }
+
+  // ── Course end dates → suggested open dates ────────────────────────────────
+  // Most selected courses share a term-end date; surfacing the distribution
+  // (and one-click suggestions derived from it) beats making the admin
+  // cross-reference 13 course records to pick a window that lands after class.
+  const endDateInfo = useMemo(() => {
+    const ends = selectedOfferings
+      .map(o => courseDates(o)?.end)
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => a.getTime() - b.getTime())
+    if (ends.length === 0) return null
+    const byDay = new Map<string, { date: Date; count: number }>()
+    for (const d of ends) {
+      const key = d.toDateString()
+      const entry = byDay.get(key)
+      if (entry) entry.count += 1
+      else byDay.set(key, { date: new Date(d), count: 1 })
+    }
+    const common = [...byDay.values()].sort((a, b) => b.count - a.count || a.date.getTime() - b.date.getTime())[0]
+    const earliest = ends[0]
+    const latest = ends[ends.length - 1]
+    // "Most courses" = the 75th-percentile end date, not the mode — with
+    // scattered ends the mode can be 2 of 13, and a chip claiming "most"
+    // off that count would be false.
+    const p75 = ends[Math.min(ends.length - 1, Math.ceil(ends.length * 0.75) - 1)]
+    const dayAfter = (d: Date) => { const n = new Date(d); n.setDate(n.getDate() + 1); return n }
+    return {
+      total: ends.length,
+      common,
+      earliest,
+      latest,
+      allSameDay: byDay.size === 1,
+      commonIsMajority: common.count * 2 >= ends.length,
+      afterMost: dayAfter(p75),
+      afterLatest: dayAfter(latest),
+    }
+  }, [selectedOfferings])
+  const fmtSuggest = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const [openPickerOpen, setOpenPickerOpen] = useState(false)
+  // A suggestion must not leave the form in an error state — it re-derives the
+  // full trio: window length and release offset carry over when the current
+  // dates are valid, else fall back to the Settings prefill (14 days, +7).
+  function applySuggestedOpen(next: Date) {
+    const DAY = 86_400_000
+    const windowLen = openDate && closeDate && closeDate > openDate
+      ? closeDate.getTime() - openDate.getTime()
+      : 14 * DAY
+    const releaseOffset = closeDate && releaseDate && releaseDate >= closeDate
+      ? releaseDate.getTime() - closeDate.getTime()
+      : 7 * DAY
+    const nextClose = new Date(next.getTime() + windowLen)
+    onOpenDateChange(next)
+    onCloseDateChange(nextClose)
+    onReleaseDateChange(new Date(nextClose.getTime() + releaseOffset))
+  }
+
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const dateOrderError   = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
   const releaseDateError = releaseDate && closeDate && releaseDate < closeDate ? 'Result release date must be on or after the close date.' : null
@@ -340,7 +514,7 @@ export function StepCommunication({
           <i className="fa-light fa-gear me-1" aria-hidden="true" />
           Window, email and reminders are pre-filled from{' '}
           <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Settings</Link>
-          {' '}— adjust below as needed.
+          . Adjust below as needed.
         </p>
       </div>
 
@@ -363,7 +537,45 @@ export function StepCommunication({
                 Opens on <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
                 <span className="sr-only">(required)</span>
               </p>
-              <DatePickerField value={openDate} onChange={onOpenDateChange} aria-labelledby="label-opens-on" aria-required="true" />
+              <DatePickerFieldWithFooter
+                value={openDate}
+                onChange={onOpenDateChange}
+                open={openPickerOpen}
+                onOpenChange={setOpenPickerOpen}
+                aria-labelledby="label-opens-on"
+                aria-required="true"
+                footer={endDateInfo ? (
+                  <div className="border-t border-border px-3 py-2.5 flex flex-col gap-2" style={{ maxWidth: 300 }}>
+                    <p className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
+                      {endDateInfo.allSameDay
+                        ? `All ${endDateInfo.total} courses end ${fmtSuggest(endDateInfo.latest)}.`
+                        : endDateInfo.commonIsMajority
+                          ? `${endDateInfo.common.count} of ${endDateInfo.total} courses end ${fmtSuggest(endDateInfo.common.date)} · latest ends ${fmtSuggest(endDateInfo.latest)}.`
+                          : `Courses end between ${fmtSuggest(endDateInfo.earliest)} and ${fmtSuggest(endDateInfo.latest)}.`}
+                    </p>
+                    <div className="flex flex-col items-stretch gap-1.5">
+                      {!endDateInfo.allSameDay && endDateInfo.afterMost.getTime() !== endDateInfo.afterLatest.getTime() && (
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          className="justify-start"
+                          onClick={() => { applySuggestedOpen(endDateInfo.afterMost); setOpenPickerOpen(false) }}
+                        >
+                          Open {fmtSuggest(endDateInfo.afterMost)} · after most courses end
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        className="justify-start"
+                        onClick={() => { applySuggestedOpen(endDateInfo.afterLatest); setOpenPickerOpen(false) }}
+                      >
+                        Open {fmtSuggest(endDateInfo.afterLatest)} · after all courses end
+                      </Button>
+                    </div>
+                  </div>
+                ) : undefined}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <p id="label-closes-on" className="text-sm font-medium">
@@ -381,7 +593,7 @@ export function StepCommunication({
             </div>
           </div>
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            Set the date when results become visible to instructors. Ensure this is after final grades are submitted.
+            Set the date when results become visible to instructors. We recommend a date after final grades are released.
           </p>
           </CardContent>
         </Card>
@@ -466,6 +678,62 @@ export function StepCommunication({
       {/* ── Reminders ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <FieldLegend variant="label">Reminders</FieldLegend>
+
+        {/* Existing streams — surveys already messaging these students. Rules
+            are per-survey (visibility, never unification): each row states an
+            open survey's cadence as read-only facts. */}
+        {existingStreams.length > 0 && (
+          <Card className="shadow-none">
+            <CardContent className="flex flex-col gap-3" style={{ padding: 16 }}>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-semibold">Already messaging these students</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  {existingStreams.length === 1
+                    ? '1 open survey for the selected courses sends reminders on its own schedule.'
+                    : `${existingStreams.length} open surveys for the selected courses send reminders on their own schedules.`}
+                </p>
+              </div>
+              <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 168 }}>
+                {streamGroups.map(group => {
+                  const s = group[0]
+                  const single = group.length === 1
+                  return (
+                    <div key={s.id} className="flex items-center gap-3 py-2 border-t border-border/60 first:border-t-0" style={{ minHeight: 40 }}>
+                      <span className="flex -space-x-1.5 shrink-0">
+                        {group.slice(0, 3).map(g => (
+                          <span key={g.id} className="rounded-full ring-2 ring-background">
+                            <EvaluateeMark evaluatee={g.evaluatee} size={5} />
+                          </span>
+                        ))}
+                      </span>
+                      <span className="text-sm min-w-0 truncate">
+                        {s.courseCode} · {single ? evaluateeLabel(s.evaluatee) : (s.courseName ?? `${group.length} evaluations`)}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {!single && <>{group.length} evaluations · </>}
+                        Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
+                        {s.untilLabel && <> · {s.untilLabel}</>}
+                      </span>
+                      <span className="ms-auto shrink-0 flex items-center gap-2">
+                        <CommRulesPopover
+                          courseCode={s.courseCode}
+                          courseName={s.courseName}
+                          evaluatees={group.map(g => g.evaluatee)}
+                          status={s.status}
+                          openDate={s.openDate}
+                          untilLabel={s.untilLabel}
+                          cadence={s.cadence}
+                          rules={groupRules(group)}
+                        />
+                        <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Reminder email — its own template, or reuse the invitation's */}
         <Card className="overflow-hidden shadow-none">
@@ -569,6 +837,31 @@ export function StepCommunication({
                 ))}
               </div>
             </div>
+
+            {/* Delta vs existing streams — a fact in info tone, never amber:
+                diverging is legal; one action aligns if that's the intent. */}
+            {cadenceDiffers && sharedExistingCadence && (
+              <div
+                className="flex items-center justify-between gap-3 rounded-md flex-wrap"
+                style={{ padding: '8px 12px', background: 'var(--insight-severity-info-bg)' }}
+              >
+                <p className="text-xs min-w-0" style={{ color: 'var(--insight-severity-info-fg)' }}>
+                  Existing surveys for these students remind {REMINDER_FREQUENCY_LABELS[sharedExistingCadence.frequency].toLowerCase()}.
+                </p>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="shrink-0 bg-transparent"
+                  onClick={() => {
+                    setReminderFrequency(sharedExistingCadence.frequency)
+                    setReminderAnchor(sharedExistingCadence.anchor)
+                    setReminderStartDays(sharedExistingCadence.startDaysBefore)
+                  }}
+                >
+                  Match existing cadence
+                </Button>
+              </div>
+            )}
 
             <div style={{ borderTop: '1px solid var(--border)' }} />
 

@@ -104,7 +104,7 @@ export function SetupView({
       {offeringsToEvaluate.length > 0 && (
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
-            WHAT {selectedTermName.toUpperCase()} INCLUDES — {offeringsToEvaluate.length} OFFERINGS
+            WHAT {selectedTermName.toUpperCase()} INCLUDES · {offeringsToEvaluate.length} OFFERINGS
           </p>
           <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
             {offeringsToEvaluate.slice(0, 6).map((o, i) => {

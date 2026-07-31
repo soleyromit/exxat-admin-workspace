@@ -11,6 +11,7 @@
 import {
   type CourseOffering,
   type DeliveryMode,
+  type PceTemplate,
   deliveryModeOf,
   MOCK_FACULTY,
   MOCK_MASTER_COURSES,
@@ -90,6 +91,10 @@ interface CriterionResolver {
   label: string
   /** Live value if present in Prism, else null (= gap). */
   resolve: (o: CourseOffering) => string | null
+  /** EVERY person holding this role (survey-instance expansion) — a role can be
+   *  held by several people at once (late-added co-instructor, UC2). Absent =
+   *  single-person role; expansion falls back to [resolve(o)]. */
+  resolveAll?: (o: CourseOffering) => string[]
   /** Prism deep-link segment used by prismAddHref(). */
   prismTarget: string
 }
@@ -97,6 +102,18 @@ interface CriterionResolver {
 function facultyName(id?: string | null): string | null {
   if (!id) return null
   return MOCK_FACULTY.find((f) => f.id === id)?.name ?? null
+}
+
+/** All instructors on an offering: the primary association slot plus any
+ *  co-instructors added later in Prism (UC2 — late-added co-instructor). */
+function instructorNames(primary: string | undefined, o: CourseOffering): string[] {
+  const ids = [primary, ...(o.coInstructorIds ?? [])]
+  const names: string[] = []
+  for (const id of ids) {
+    const n = facultyName(id)
+    if (n && !names.includes(n)) names.push(n)
+  }
+  return names
 }
 
 /**
@@ -140,21 +157,36 @@ const guestLecturer: CriterionResolver = {
 export const CRITERION_BY_TYPE: Record<DeliveryMode, Partial<Record<Criterion, CriterionResolver>>> = {
   classroom: {
     students: roster,
-    instructor: { label: 'Instructor', resolve: (o) => facultyName(o.collaboratorIds[0]), prismTarget: 'instructor' },
+    instructor: {
+      label: 'Instructor',
+      resolve: (o) => facultyName(o.collaboratorIds[0]),
+      resolveAll: (o) => instructorNames(o.collaboratorIds[0], o),
+      prismTarget: 'instructor',
+    },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
     teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
     // no labAssistant / siteCoordinator / preceptor — not applicable to a lecture
   },
   lab: {
     students: roster,
-    instructor: { label: 'Lab Instructor', resolve: (o) => facultyName(o.collaboratorIds[0] ?? o.labTaIds?.[0]), prismTarget: 'lab-instructor' },
+    instructor: {
+      label: 'Lab Instructor',
+      resolve: (o) => facultyName(o.collaboratorIds[0] ?? o.labTaIds?.[0]),
+      resolveAll: (o) => instructorNames(o.collaboratorIds[0] ?? o.labTaIds?.[0], o),
+      prismTarget: 'lab-instructor',
+    },
     coordinator: { label: 'Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'coordinator' },
     labAssistant: { label: 'Lab Assistant', resolve: (o) => facultyName(o.labTaIds?.[1]), prismTarget: 'lab-assistant' },
     teachingAssistant, guestLecturer, courseDirector, academicAdvisor,
   },
   practice: {
     students: roster,
-    instructor: { label: 'Placement Faculty', resolve: (o) => facultyName(o.placementFacultyIds?.[0]), prismTarget: 'placement-faculty' },
+    instructor: {
+      label: 'Placement Faculty',
+      resolve: (o) => facultyName(o.placementFacultyIds?.[0]),
+      resolveAll: (o) => instructorNames(o.placementFacultyIds?.[0], o),
+      prismTarget: 'placement-faculty',
+    },
     coordinator: { label: 'Clinical Coordinator', resolve: (o) => facultyName(o.primaryFacultyId), prismTarget: 'clinical-coordinator' },
     siteCoordinator: { label: 'Site Coordinator', resolve: (o) => facultyName(o.placementFacultyIds?.[1]), prismTarget: 'site-coordinator' },
     preceptor: { label: 'Preceptor', resolve: (o) => facultyName(o.placementFacultyIds?.[2]), prismTarget: 'preceptor' },
@@ -230,6 +262,65 @@ export function deriveReadiness(offerings: CourseOffering[], criteria: Criterion
     }
     return { offering: o, deliveryMode: mode, courseLabel: courseLabelOf(o), cells, hasGap }
   })
+}
+
+// ── Template → evaluatees ────────────────────────────────────────────────────
+// The merged Courses step (select courses → assign template → validate) derives
+// WHAT each course must have from the template assigned to it: a template that
+// evaluates the Instructor makes "no instructor in Prism" a gap on that row,
+// while a course-content-only template asks nothing of the faculty roster.
+
+/** Template role-set role ids (EVAL_FACULTY_ROLES) → readiness criteria. */
+const ROLE_ID_TO_CRITERION: Record<string, Criterion> = {
+  'instructor': 'instructor',
+  'course-coordinator': 'coordinator',
+  'teaching-assistant': 'teachingAssistant',
+  'lab-assistant': 'labAssistant',
+  'guest-lecturer': 'guestLecturer',
+}
+
+/** Dynamic-section subject keys → criteria (sections not riding a role set). */
+const SUBJECT_KEY_TO_CRITERION: Record<string, Criterion> = {
+  course_content: 'students',
+  course_instructor: 'instructor',
+  lab_instructor: 'instructor',
+  course_coordinator: 'coordinator',
+  teaching_assistant: 'teachingAssistant',
+  course_director: 'courseDirector',
+  preceptor: 'preceptor',
+  clinical_supervisor: 'siteCoordinator',
+}
+
+/**
+ * The evaluatee dimensions a template's sections cover — dynamic sections first
+ * (role sets declare faculty roles; subject keys map directly), falling back to
+ * the legacy fixed buckets for templates that predate templateSections.
+ * Ordered by ALL_CRITERIA so summaries read stably.
+ */
+export function templateCriteria(t: PceTemplate): Criterion[] {
+  const found = new Set<Criterion>()
+  const dyn = t.templateSections ?? []
+  if (dyn.length > 0) {
+    for (const s of dyn) {
+      if (s.roleSetId) {
+        const set = t.facultyRoleSets?.find(r => r.id === s.roleSetId)
+        for (const role of set?.roles ?? []) {
+          const c = ROLE_ID_TO_CRITERION[role]
+          if (c) found.add(c)
+        }
+      } else {
+        const c = SUBJECT_KEY_TO_CRITERION[s.subjectKey]
+        if (c) found.add(c)
+      }
+    }
+  } else {
+    for (const s of t.sections) {
+      if (s === 'course_content') found.add('students')
+      else if (s === 'faculty_performance') found.add('instructor')
+      else if (s === 'course_director') found.add('courseDirector')
+    }
+  }
+  return ALL_CRITERIA.filter(c => found.has(c))
 }
 
 /** Named-check summary: ok / gap counts per evaluated criterion (drives the summary band). */

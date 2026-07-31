@@ -255,3 +255,29 @@
   background: color-mix(in srgb, var(--chart-4) 7%, transparent);
   box-shadow: inset 2px 0 0 var(--chip-4);
 }
+
+/* DS Accordion ships no open/close motion — content snaps, and collapsing a
+   tall section clamps the scroll position in one frame (the "page jumps up").
+   Radix exposes the measured height; animate it. Motion only — no DS token or
+   chrome overrides. Flagged upstream as a DS gap (ds-updates). */
+@keyframes pce-accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes pce-accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+[data-slot='accordion-content'][data-state='open'] {
+  animation-name: pce-accordion-down;
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+[data-slot='accordion-content'][data-state='closed'] {
+  animation-name: pce-accordion-up;
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='accordion-content'] { animation: none; }
+}

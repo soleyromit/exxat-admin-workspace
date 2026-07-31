@@ -100,7 +100,7 @@ export function CountdownView({ selectedTermName, termSurveys, facultyForTerm, a
       {/* Projected impact table */}
       <div>
         <p className="text-xs font-medium mb-3" style={{ color: 'var(--muted-foreground)' }}>
-          PROJECTED IMPACT — SEND REMINDER TODAY
+          PROJECTED IMPACT · SEND REMINDER TODAY
         </p>
         <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 24px 80px 120px', borderBottom: '1px solid var(--border)', padding: '6px 16px', backgroundColor: 'var(--muted)' }}>
@@ -120,7 +120,7 @@ export function CountdownView({ selectedTermName, termSurveys, facultyForTerm, a
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 10 }}>{f.initials}</AvatarFallback>
+                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>{f.initials}</AvatarFallback>
                   </Avatar>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{f.name.split(' ').pop()}</span>
                 </div>

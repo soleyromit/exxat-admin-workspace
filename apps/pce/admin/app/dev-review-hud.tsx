@@ -21,11 +21,16 @@ function useLocationPath(): string {
   const [path, setPath] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : ''));
   useEffect(() => {
     const update = () => setPath(window.location.pathname);
+    // Deferred: the patched push/replaceState run synchronously inside the
+    // ROUTER's call stack — Next 15 calls them from a useInsertionEffect,
+    // where React forbids scheduling updates. A microtask escapes that
+    // commit-phase window before reading the (already-updated) pathname.
+    const deferredUpdate = () => queueMicrotask(update);
     window.addEventListener('popstate', update);
     const origPush = history.pushState;
     const origReplace = history.replaceState;
-    history.pushState = function (this: History, ...args: Parameters<History['pushState']>) { const r = origPush.apply(this, args); update(); return r; };
-    history.replaceState = function (this: History, ...args: Parameters<History['replaceState']>) { const r = origReplace.apply(this, args); update(); return r; };
+    history.pushState = function (this: History, ...args: Parameters<History['pushState']>) { const r = origPush.apply(this, args); deferredUpdate(); return r; };
+    history.replaceState = function (this: History, ...args: Parameters<History['replaceState']>) { const r = origReplace.apply(this, args); deferredUpdate(); return r; };
     return () => {
       window.removeEventListener('popstate', update);
       history.pushState = origPush;
@@ -161,8 +166,12 @@ function scanDs(root: HTMLElement): DsIssue[] {
       push('raw-button', 'Unstyled <button> — use DS Button with variant + size', el);
     }
   });
-  // Native <select> — the DS Select renders a button trigger, never a native select
-  root.querySelectorAll('select').forEach(el => push('native-select', 'Native <select> on the page', el));
+  // Native <select> — the DS Select (Radix) renders a visually-hidden native <select>
+  // (SelectBubbleInput) with aria-hidden="true". Radix's Root is a context provider (no DOM
+  // element), so data-slot="select" never appears as an ancestor — check aria-hidden instead.
+  root.querySelectorAll('select').forEach(el => {
+    if (el.getAttribute('aria-hidden') !== 'true') push('native-select', 'Native <select> on the page', el);
+  });
   // Hand-rolled <table> (DS DataTable/Table carry classes/data-slot)
   root.querySelectorAll('table').forEach(el => {
     const c = typeof el.className === 'string' ? el.className : '';

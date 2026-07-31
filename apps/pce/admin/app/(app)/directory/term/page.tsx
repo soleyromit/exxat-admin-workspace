@@ -254,7 +254,7 @@ export default function TermsPage() {
                 </p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
                   {rows.length === 0
-                    ? (MOCK_LMS_ENABLED ? 'Terms sync from your LMS — none have synced yet.' : 'Add a term to anchor course offerings to an academic calendar.')
+                    ? (MOCK_LMS_ENABLED ? 'Terms sync from your LMS. None have synced yet.' : 'Add a term to anchor course offerings to an academic calendar.')
                     : 'Try a different name, or clear the search and filters.'}
                 </p>
               </div>
@@ -269,7 +269,7 @@ export default function TermsPage() {
           <DialogHeader>
             <DialogTitle>Add term</DialogTitle>
             <DialogDescription>
-              Set start and end dates — the end date anchors all reminder schedules for this term.
+              Set start and end dates. The end date anchors all reminder schedules for this term.
               Toggle "Enable for evaluation" after saving to include it in the Activation wizard.
             </DialogDescription>
           </DialogHeader>
