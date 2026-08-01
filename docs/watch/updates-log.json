@@ -1396,9 +1396,9 @@
             "date": "2026-07-28",
             "product": "pce, exam-management",
             "type": "prd-diff-clean",
-            "title": "Transcript-PRD diff — 2026-07-28 — 0 conflicts found",
-            "what": "Reviewed 8 product-relevant meeting transcripts from Jul 14–28, 2026 (Survey evaluation workflow Jul 24; Exam management weekly call Jul 23; PCE template creation Jul 22; Course Eval sync up Jul 21; Survey design Jul 20; Vishal PM sync Jul 20; Course Eval sync up Jul 16; Post-Course Survey BiWeekly Jul 14; 1:1 Arun Jul 20 — skipped, no product directives). Extracted all directives from Aarti/Vishaka. All potential conflicts were already superseded in stakeholder-decisions.json (pce-decision-054 through pce-decision-069; exam-decision-015, exam-decision-017 through exam-decision-020). PRD snapshots (pce-prd-monil.txt, exam-prd-nipun.txt) have known open deltas already flagged in prior runs. No new conflicts this week.",
-            "source": "Granola transcripts Jul 14–28, 2026",
+            "title": "Transcript-PRD diff \u2014 2026-07-28 \u2014 0 conflicts found",
+            "what": "Reviewed 8 product-relevant meeting transcripts from Jul 14\u201328, 2026 (Survey evaluation workflow Jul 24; Exam management weekly call Jul 23; PCE template creation Jul 22; Course Eval sync up Jul 21; Survey design Jul 20; Vishal PM sync Jul 20; Course Eval sync up Jul 16; Post-Course Survey BiWeekly Jul 14; 1:1 Arun Jul 20 \u2014 skipped, no product directives). Extracted all directives from Aarti/Vishaka. All potential conflicts were already superseded in stakeholder-decisions.json (pce-decision-054 through pce-decision-069; exam-decision-015, exam-decision-017 through exam-decision-020). PRD snapshots (pce-prd-monil.txt, exam-prd-nipun.txt) have known open deltas already flagged in prior runs. No new conflicts this week.",
+            "source": "Granola transcripts Jul 14\u201328, 2026",
             "severity": "clean",
             "files": [
                 "docs/watch/flags/system.md"
@@ -1417,6 +1417,20 @@
                 "docs/watch/stakeholder-decisions.json",
                 "docs/watch/flags/exam-management.md",
                 "docs/watch/flags/pce.md"
+            ]
+        },
+        {
+            "id": "2026-08-01-workspace-context-health-001",
+            "date": "2026-08-01",
+            "product": "workspace",
+            "type": "architecture",
+            "title": "Context health check \u2014 4 over-budget, 0 missing self-improvement",
+            "what": "4 CLAUDE.md files over the 100-line budget (all P2 \u2014 inactive products or not auto-loaded in active sessions): packages/CLAUDE.md (304 lines), apps/patient-log/CLAUDE.md (259 lines), apps/skills-checklist/CLAUDE.md (252 lines), apps/learning-contracts/CLAUDE.md (252 lines). 0 missing self-improvement loops. 0 missing read-conditions. Active products (exam-management, pce, portal) are all within budget.",
+            "why": "Context drift erodes token savings. Each over-budget CLAUDE.md adds tokens to every message in every session.",
+            "source": "context-health-check monthly routine",
+            "severity": null,
+            "files": [
+                "scripts/context-budget-audit.py"
             ]
         }
     ]
