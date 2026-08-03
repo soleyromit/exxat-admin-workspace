@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-07-27",
+  "lastUpdated": "2026-08-03",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -543,8 +543,9 @@
       "source": "PCE PRD §2 Key Product Decisions #5 (updated)",
       "sourceType": "prd",
       "date": "2026-06-23",
-      "status": "confirmed",
-      "supersedes": "pce-decision-008"
+      "status": "superseded",
+      "supersedes": "pce-decision-008",
+      "supersededBy": "pce-decision-075"
     },
     {
       "id": "pce-decision-041",
@@ -915,6 +916,207 @@
       "source": "Exam management weekly call transcript — Jul 23, 2026",
       "sourceType": "transcript",
       "date": "2026-07-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-070",
+      "product": "pce",
+      "text": "Student-initiated evaluations are NOT in scope for phase 1 of PCE. All evaluations are triggered by the admin for a specific admin-defined window. Guest lecturer feedback can be configured by the admin for a custom window independent of term dates, but the initiation mechanism remains admin-triggered (not student-triggered). The student-initiated evaluation mechanism (as implemented in Exxat Lamp/Evaluations module) is not being replicated in the PCE module for phase 1. Monil: 'Right now we will not support student initiated evaluations. All of them are triggered by admin for a specific window.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-071",
+      "product": "pce",
+      "text": "DCE (Director of Clinical Education) 360 evaluation is general survey scope — not course evaluation scope. It is a once-a-year institution-wide survey where students evaluate the DCE's management of clinical education program-wide. It is not tied to a specific course or term, so it does not qualify as a course evaluation. Programs that want to collect post-course feedback on individual clinical courses may still do so via the CE module with custom windows.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-072",
+      "product": "pce",
+      "text": "'Mark as default for course type' toggle is removed from the template creation step. If a default-template mechanism is needed, it must live on the template list page (where all templates are listed) — not inside template creation. Both Vishaka and David found the toggle confusing inside template creation. Vishaka: 'So this might confuse or complicate or they might not understand what this bit is going to do for them' and 'remove it completely.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-073",
+      "product": "pce",
+      "text": "Course type selector in template creation is multi-select (not single-select). A single template can apply to multiple course types simultaneously — a nursing program may have a single course with classroom, lab, and experiential components. The single-select UI prevents this valid use case. Multi-select allows the template to cover all applicable course type components in one template.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-074",
+      "product": "pce",
+      "text": "Faculty role sections in the template builder are single-select per tab (one role configured at a time). When the user adds a second faculty role, the system must offer to clone/copy questions from the previously configured role so the user can then edit/tweak. Multi-selecting all roles at once is removed — it implies shared questions but masks the typical need for role-specific questions. Vishaka: 'Just give them the ability to curate questions for one role at a time. And if they pick, choose additional roles, you give them the option to copy the same question from the previous role.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-075",
+      "product": "pce",
+      "text": "'Practice' course type is renamed to 'Experiential' to better represent rotation/clinical experiential courses. The three course types are now: Classroom, Lab, Experiential — replacing the previous Classroom, Lab, Practice taxonomy from pce-decision-040. Monil: 'Let's note it down and change it to experiential.' The term 'Experiential' better aligns with pharmacy and health professions vocabulary for placement-based and rotation-based courses.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed",
+      "supersedes": "pce-decision-040"
+    },
+    {
+      "id": "pce-decision-076",
+      "product": "pce",
+      "text": "Template builder navigation: clicking 'next' in any template section must advance the user through ALL sections in sequence — including faculty sections — without requiring manual panel navigation. If a 'next' button exists, users expect it to guide the full journey. The left-panel section list should reflect progress/completion state, but the primary navigation is sequential via 'next'. Vishaka: 'I didn't realize I had to go on the left hand panel, click faculty and complete that. Because if I see a next button, I'm gonna that you're going to take me through the whole journey.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-077",
+      "product": "pce",
+      "text": "PCE analytics: faculty of the same role type must be compared against each other — course coordinators compared with course coordinators, instructors with instructors, lab assistants with lab assistants. Cross-role comparisons are not the baseline analytics pattern. David: 'Course coordinator should be compared with course coordinators. Instructors should be compared with instructors.' Monil confirmed: 'Correct.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-078",
+      "product": "pce",
+      "text": "Email templates, reminder templates, and reminder frequency are CENTRAL settings — not per-survey-distribution settings. They are configured once in the Setup section and auto-fetched when the admin reaches step 3 (Communication) of the setup survey wizard. There is no per-survey communication customization in phase 1. Monil: 'We will have email templates, reminder templates and reminder frequency as Central settings. Which will not be per survey distribution. It is a setting that is saved and whatever is saved will be fetched. When we jump on step three.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Jul 28, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-28",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-079",
+      "product": "pce",
+      "text": "The course readiness table in the setup survey flow must surface three distinct course states: (1) Not yet configured — action CTA: 'Setup'; (2) In progress — partially configured, saved draft, editable; (3) Fully configured / scheduled for distribution — editable (add/remove faculty, change communication dates) before the distribution date passes; after distribution date, becomes read-only/locked. These three states drive distinct available actions per row and prevent inadvertent duplicate setups. David: 'I almost see three cases, right? So here, nothing has been set up for this course and this time frame. It's in progress... Or the third, they've configured it all the way through. They've sent it and scheduled it for distribution.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-080",
+      "product": "pce",
+      "text": "Bulk multi-select of courses in the setup survey flow is restricted to courses in 'Not yet configured' state. Courses that are already configured (states 2 or 3) cannot be bulk-selected alongside unconfigured courses — they require individual editing. This prevents mixing new-setup and edit-existing workflows in a single batch action. David: 'You wouldn't allow them to multiple select. You can multiple select courses you haven't configured at all yet. But as soon as I've configured a course, I shouldn't be able to select that and select a course I haven't configured.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-081",
+      "product": "pce",
+      "text": "In the setup survey wizard step 2 (template assignment), the template name must be shown — not the course name — as the primary label for each evaluation section. Displaying the course name when the user is assigning a template creates confusion: the user already selected the course in step 1. Showing course names implies they are picking courses again, not templates. David: 'the fact that you're listing course names when my brain is thinking I'm picking a template is really confusing me.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-082",
+      "product": "pce",
+      "text": "After an evaluation's distribution date passes (the evaluation is live and sent to students), it is locked — no further changes are permitted. Before the distribution date: adding/removing faculty and editing communication dates is allowed. This prevents creating inconsistent response sets where some students answer one version of the evaluation and others answer a different version after faculty were added. David: 'Once the evaluation is sent out, it should lock in my opinion at least. You should not be able to go in and then add other people because then what are you going to get? You're going to get some responses for one version of it and other responses for a different version of it.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-083",
+      "product": "pce",
+      "text": "The PCE dashboard must include a direct visible CTA to create or access survey templates — not just accessible through the Settings/Setup sidebar entry. A link or button (e.g., 'Create template' or 'Manage templates') must appear on the dashboard itself, especially in states where no templates exist yet. First-time users land on the dashboard and need to create a template before doing anything else. David: 'I think there needs to be something on the dashboard, especially if there is no templates in their system.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-084",
+      "product": "pce",
+      "text": "The 'open surveys / reminders' informational overview (showing all active surveys in the current term) must be removed from the communication step of the setup survey wizard. It creates a dead stop — users wonder what action is needed but none is required. This overview belongs on the dashboard, not inside a per-survey setup flow. David: 'I might think about if we need this or not because as a user like I'm stopping here and being like, what do I need to do with this? If it's just like an fyi, I don't know if we need to surface in the workflow because right now I'm planning the communication for this particular course.'",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Exact Prism evaluation setup — UX feedback and workflow refinement transcript — Jul 31, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-31",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-021",
+      "product": "exam-management",
+      "text": "Assessment creation supports two primary user journeys, and AI assists in both: (1) Repurpose existing assessment — the most common case; faculty import a full past assessment and tweak it (adjust for schedule changes, increase rigor, swap topics). AI helps identify gaps or improve the imported set. (2) Create from scratch — faculty build a new assessment by picking from the question bank or having AI generate questions based on a described scope. Both paths converge at the same review and publish steps. Starting from scratch is the rare case; most faculty already have prior assessments to build from.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 30, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-30",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-022",
+      "product": "exam-management",
+      "text": "Assessment repurposing (import path) uses full-assessment import — one complete assessment at a time. The interface imports all questions from the selected assessment as the starting point. Pick-and-choose across multiple assessments question-by-question is NOT the repurpose use case; that belongs in the question bank selection flow. Multiple sequential full-assessment imports are supported (e.g., import 50 questions from midterm 1, then import 20 more from midterm 2), but done as separate import actions — not as multi-select from a split view.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 30, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-30",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-023",
+      "product": "exam-management",
+      "text": "Cross-course question access in assessment creation is governed by faculty course association only — no topic-based or same-subject restrictions. Faculty can import assessments from any course they are associated with, regardless of whether subjects overlap. The system must not assume or enforce topic boundaries. Aarti: 'We as a technology platform should not limit them... we can limit them based on their access. So if they're associated with the courses they can pull from assessments of those courses. But we should not build any constraints or restrictions based on the topic.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 30, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-30",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-024",
+      "product": "exam-management",
+      "text": "The PBS (point-by-serial) threshold that triggers a question-quality flag in the assessment builder is admin-configurable. The institution admin sets the threshold (e.g., PBS ≤ 0) in settings. Questions below the threshold are flagged with a visual indicator during assessment creation, prompting faculty to make a deliberate choice to retain them. Aarti confirmed: 'I like the idea to make that threshold customizable wherein if the school says that any question that has a point by serial of zero or less, we want to bring that in our radar. Then I think that's a good feature to have.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 30, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-30",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-025",
+      "product": "exam-management",
+      "text": "AI in assessment creation should surface and bubble up the most relevant questions from the question bank based on the assessment scope (e.g., lecture range, course objectives) — but must NOT restrict or block faculty from picking questions from other courses or folders. AI assistance is suggestive, not prescriptive. Aarti: 'AI will help them bring before them or bubble up the most relevant information based on what they provide us... but not limit or restrict if they still want to pick questions from another course folder we are not going to stop them from doing that right.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management weekly call transcript — Jul 30, 2026",
+      "sourceType": "transcript",
+      "date": "2026-07-30",
       "status": "confirmed"
     }
   ]

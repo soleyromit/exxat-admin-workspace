@@ -1432,6 +1432,33 @@
             "files": [
                 "scripts/context-budget-audit.py"
             ]
+        },
+        {
+            "id": "2026-08-03-granola-intake-pce-001",
+            "date": "2026-08-03",
+            "product": "pce",
+            "type": "decision-extracted",
+            "title": "Granola intake \u2014 15 new PCE decisions, 1 conflict flagged",
+            "what": "Extracted 15 confirmed design decisions from 3 PCE meeting transcripts (Jul 28\u2013Aug 3, 2026). Post-Course Survey Cadence Meeting BiWeekly 45 Mins Jul 28: course type 'Practice' renamed to 'Experiential' (pce-decision-075, supersedes pce-decision-040); course types now Classroom/Lab/Experiential; evaluation setup always requires admin to pick course types before publishing; 'what to evaluate' step locked to template-derived types only; dashboard must show course type badges on active evaluations; filter panel must support multi-select on Classroom/Lab/Experiential. Course Eval Sync Up Jul 28: mandatory vs optional evaluation status visible on faculty cards in analytics; step 2 cohort picker must handle partial cohorts with warning state; analytics page requires term-level aggregate alongside per-course breakdown; email notification includes direct deep-link to specific evaluation (not generic surveys tab); coordinator role can view but not edit published evaluation settings. UX Feedback Session Jul 31: setup wizard progress indicator must show step names not just numbers; back navigation in wizard must preserve all form state; empty state for 'no evaluations this term' must include CTA to create first evaluation; faculty card in analytics must show response rate as primary metric above completion count; bulk action to publish multiple evaluations confirmed for coordinator role. CONFLICT: pce-decision-040 ('Practice, Classroom, Lab' taxonomy) superseded by pce-decision-075 ('Experiential' replaces 'Practice'). Flagged in docs/watch/flags/pce.md.",
+            "source": "Post-Course Survey Cadence Meeting (BiWeekly 45 Mins) transcript \u2014 Jul 28, 2026; Course Eval Sync Up transcript \u2014 Jul 28, 2026; UX Feedback Session transcript \u2014 Jul 31, 2026",
+            "severity": "conflict",
+            "files": [
+                "docs/watch/stakeholder-decisions.json",
+                "docs/watch/flags/pce.md"
+            ]
+        },
+        {
+            "id": "2026-08-03-granola-intake-exam-001",
+            "date": "2026-08-03",
+            "product": "exam-management",
+            "type": "decision-extracted",
+            "title": "Granola intake \u2014 5 new Exam decisions, 0 conflicts",
+            "what": "Extracted 5 confirmed design decisions from 1 Exam Management meeting transcript (Jul 30, 2026). Exam Management Weekly Call Jul 30: question bank import supports CSV and PDF formats only for Jan MVP, not Word (exam-decision-021); proctoring mode requires mandatory webcam check before exam start with explicit student confirmation modal (exam-decision-022); score release workflow requires instructor manual approval step before scores visible to students (exam-decision-023); exam results export must include per-question breakdown alongside total score for faculty review (exam-decision-024); time extension for individual students (ADA accommodations) managed at exam-instance level not question level (exam-decision-025). No conflicts with existing decisions.",
+            "source": "Exam Management Weekly Call transcript \u2014 Jul 30, 2026",
+            "severity": "clean",
+            "files": [
+                "docs/watch/stakeholder-decisions.json"
+            ]
         }
     ]
 }

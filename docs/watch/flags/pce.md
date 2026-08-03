@@ -491,3 +491,10 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Action:** No design work needed for the "what to evaluate" step-1 UI. If a "what to evaluate" selector appears anywhere else in the product (outside of step 1 context), apply the scalable pattern from pce-decision-062.
 
 ---
+
+## DECISION CONFLICT — 2026-08-03
+**Old decision:** pce-decision-040 — Course type taxonomy is "Practice, Classroom, Lab" (established Jun 2026, source: Aarti Vaishnav)
+**New directive from Monil Pokar in Post-Course Survey Cadence Meeting (BiWeekly 45 Mins) — Jul 28, 2026:** "Experiential" replaces "Practice" — three course types are now Classroom, Lab, Experiential
+**Action:** Review and confirm which applies. pce-decision-040 is marked superseded by pce-decision-075. If confirmed, update any code/mock data using the 'practice' token (e.g. pce-mock-data.ts) to 'experiential'.
+
+---
