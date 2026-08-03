@@ -484,6 +484,36 @@ Source: `docs/research/meetings/2026-07-31-prism-eval-setup-ux-feedback.md` (Gra
 
 ---
 
+## Phase 1 design tasks — added 2026-08-03 (Course Eval sync up — 2026-07-28)
+
+Source: `docs/research/meetings/2026-07-28-course-eval-sync.md` (Granola `bfaa2076`)
+
+> Short sync call with PM/PO. Three architecture decisions: communication settings are central (not per-survey), analytics design is frozen, David's verbiage changes held pending requirements freeze. One open decision logged on template lock behavior.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T141 | T129 Step 3 redesign: communication step shows CENTRAL settings — not per-survey config | Admin | Setup evaluations wizard Step 3 | P1 — DESIGN-REVIEW | Email templates, reminder templates, and reminder frequency are central settings fetched at Step 3 — not configured per-survey. Step 3 should display the centrally saved settings for admin to confirm, not a fresh configuration form. Requires a Settings screen for central communication config to exist. D_PCE_0728A_01. |
+| T142 | HOLD: Analytics screens — do not update until PM unfreezes requirements | Admin | Analytics | P0 — HOLD | `analytics/page.tsx` must not receive new design work. PM has frozen analytics requirements pending revised user stories. Resume only when PM shares updated stories. D_PCE_0728A_02. |
+| T143 | OPEN DECISION: Can an active/approved template be edited post-publish, or is it locked? | Admin | Template editor | BLOCKED — awaiting PM | David's question raised in prototype review. Approved template: editable? Locked? Does editing affect in-flight surveys? PM to review and respond. Do not add lock mechanic to `templates/[id]/page.tsx` until resolved. D_PCE_0728A_04. |
+
+## Phase 1 design tasks — added 2026-08-03 (Post-Course Survey Cadence — 2026-07-28)
+
+Source: `docs/research/meetings/2026-07-28-post-course-survey-cadence.md` (Granola `f2964952`)
+
+> Live prototype walkthrough with Vishaka + David. 9 decisions covering scope (student-initiated evaluations and DCE 360 both out of v1), course type multi-select, "Practice" → "Experiential" rename, removal of "Mark as default" toggle, faculty role single-select + clone, and wizard Next-button flow.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T144 | Course type in template creation → multi-select (classroom / lab / experiential) | Admin | Template creation | P1 — DESIGN-REVIEW | Course type picker must be multi-select — a single course can have multiple components (e.g. classroom + lab + experiential). Currently single-select in prototype. Not in code. Vishaka: "first thing is that should be multi select." D_PCE_0728B_03. |
+| T145 | "Practice" → "Experiential" terminology ✅ Code applied 2026-08-03 | Admin | All course type labels | P0 — ✅ APPLIED | `pce-mock-data.ts`: type definition + data values (lines 200, 220). `analytics/page.tsx`: `CourseTypeFilter` type + ToggleGroupItem value + label. Carry forward to all prototype screens. D_PCE_0728B_04. |
+| T146 | Remove "Mark as default for this course type" toggle — prototype only | Admin | Template creation | P1 — prototype realignment | Not in code. Exists in Lovable prototype. Remove when prototype is realigned with code. If auto-assign is revived later, place on Templates list screen (not inside template creation). David: "remove it completely." D_PCE_0728B_05. |
+| T147 | Faculty role selection in template → single-select + clone from prior role | Admin | Template creation | P1 — DESIGN-REVIEW | User selects one faculty role at a time, configures questions for that role, then adds the next role. Adding a subsequent role offers clone/copy from previous role. Multi-select removed — it implied shared questions across roles. Vishaka: "just give them the ability to curate questions for one role at a time." D_PCE_0728B_06. |
+| T148 | Out of scope (v1): student-initiated evaluations | — | Product spec | P0 — SCOPE LOCK | All PCE v1 surveys are admin-triggered with a defined window. Student-initiated evaluations are NOT supported in v1. Guest lecturer feedback uses an admin-set custom date range. Document in product spec; flag for v2. D_PCE_0728B_01, D_PCE_0728B_09. |
+| T149 | Out of scope: DCE 360 evaluation | — | Product spec | P0 — SCOPE LOCK | DCE evaluation is not course-bound and routes to the annual/general surveys tool, not PCE. Document as explicitly out-of-scope in PCE product spec. D_PCE_0728B_02. |
+| T150 | Template creation wizard: Next button must traverse all sections sequentially including faculty | Admin | Template creation wizard | P1 — DESIGN-REVIEW | Current left-panel tab model requires manual discovery of faculty sections. Wizard must use linear Next/Back flow surfacing every section before completion. Vishaka: "I didn't realize I had to go on the left hand panel, click faculty. Because if I see a next button, I'm gonna [expect] that you're going to take me through the whole journey." D_PCE_0728B_07. |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
