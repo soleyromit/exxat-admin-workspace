@@ -18,7 +18,7 @@ import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 // offering+role+person grain). The merged step lives on in the term-setup
 // wizard (step-courses-evaluatees.tsx) until it adopts the same split.
 import { StepScopeCourses } from '@/components/pce/courses-evaluatees/step-scope-courses'
-import { StepSurveyInstances } from '@/components/pce/courses-evaluatees/step-survey-instances'
+import { StepSurveyInstances, type TemplateDriftNotice } from '@/components/pce/courses-evaluatees/step-survey-instances'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
@@ -29,11 +29,16 @@ import {
   EVAL_EMAIL_TEMPLATES,
   type SurveyType,
   type PceTemplate,
+  type PceSurvey,
   type TermSeason,
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
-import { subjectDataIssues, windowIssues, expandInstances, existingFlowSummary, type CourseIssue } from '@/lib/pce-push-validation'
+import {
+  subjectDataIssues, windowIssues, expandInstances, existingFlowSummary,
+  reconcileUnitsOnRefresh, draftOrScheduledMatch, templateStoryStatusOf,
+  type UnitSelectionMap, type CourseIssue,
+} from '@/lib/pce-push-validation'
 import { courseLabelOf } from '@/lib/pce-course-readiness'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
@@ -53,9 +58,28 @@ const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
 // flow; the programmatic flow still skips 2 (1 → 3 → 4).
 type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
+// The type default for one course type (ST-02 auto-assign / Reset to defaults).
+// Tie-break per implementation-plan decision #2 (2026-08-03 — a DOCUMENTED
+// decision, not an assumption): when more than one published template shares a
+// course type, the one flagged isDefaultForType wins; "first found" applies
+// only when none is flagged. Exactly one match for the type keeps today's
+// behavior — auto-assign it regardless of the flag. No match at all keeps the
+// legacy first-published fallback.
+function pickTemplateForType(
+  courseType: string | undefined,
+  publishedTemplates: PceTemplate[],
+): PceTemplate {
+  const matches = courseType
+    ? publishedTemplates.filter(t => t.courseType === courseType)
+    : []
+  if (matches.length === 0) return publishedTemplates[0]
+  if (matches.length === 1) return matches[0]
+  return matches.find(t => t.isDefaultForType) ?? matches[0]
+}
+
 // Pre-assign a default template to every (non-archived) offering in a term, so
 // the merged "Scope and design" step shows assignments immediately. One template
-// → all courses; otherwise match by courseType, falling back to the first.
+// → all courses; otherwise the type default via pickTemplateForType.
 function autoAssignTemplates(
   termId: string,
   publishedTemplates: PceTemplate[],
@@ -67,16 +91,21 @@ function autoAssignTemplates(
   )
   const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
   for (const offering of offerings) {
-    if (single) {
-      result[offering.id] = single.id
-    } else {
-      const matched = offering.courseType
-        ? publishedTemplates.find(t => t.courseType === offering.courseType)
-        : undefined
-      result[offering.id] = (matched ?? publishedTemplates[0]).id
-    }
+    result[offering.id] = (single ?? pickTemplateForType(offering.courseType, publishedTemplates)).id
   }
   return result
+}
+
+/** Drop every unit-selection entry belonging to the given offerings. Keys are
+ *  `offeringId|…` (see SurveyInstance.key), so the prefix up to the first pipe
+ *  IS the offering id. Used by the ST-02 template-change reset ("no prior
+ *  selection carries forward") and by course deselection on Step 2. */
+function withoutOfferings(map: UnitSelectionMap, offeringIds: ReadonlySet<string>): UnitSelectionMap {
+  const next: UnitSelectionMap = {}
+  for (const [k, v] of Object.entries(map)) {
+    if (!offeringIds.has(k.slice(0, k.indexOf('|')))) next[k] = v
+  }
+  return next
 }
 
 function dateToYmd(d: Date | undefined): string {
@@ -109,7 +138,7 @@ function remindersFromSettings(intervals: number[]): Reminder[] {
 }
 
 function PushSurveyInner() {
-  const { templates, surveys, pushSurveyBatch, setupDefaults } = usePce()
+  const { templates, surveys, pushSurveyBatch, saveDraft, setupDefaults } = usePce()
   const params = useSearchParams()
   const pathname = usePathname()
   const surveyMode: 'course_evaluation' | 'general' =
@@ -268,15 +297,41 @@ function PushSurveyInner() {
     if (publishedTemplates.length === 0) return result
     const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
     for (const o of defaultAssignmentBase) {
-      if (single) { result[o.id] = single.id; continue }
-      const matched = o.courseType ? publishedTemplates.find(t => t.courseType === o.courseType) : undefined
-      result[o.id] = (matched ?? publishedTemplates[0]).id
+      // Tie-break per implementation-plan decision #2 — see pickTemplateForType.
+      result[o.id] = (single ?? pickTemplateForType(o.courseType, publishedTemplates)).id
     }
     return result
   }, [defaultAssignmentBase, publishedTemplates])
   function handleResetTemplateDefaults() {
+    // ST-02's template-change reset applies here too: any course whose
+    // EFFECTIVE template changes loses its unit selections (the seeding
+    // effect re-populates the new template's units with first-sight
+    // defaults). Courses already on their default are untouched.
+    const changed = new Set<string>()
+    for (const [oid, tid] of Object.entries(defaultAssignments)) {
+      if ((templateAssignments[oid] ?? tid) !== tid) changed.add(oid)
+    }
     setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
+    if (changed.size > 0) setUnitSelections(prev => withoutOfferings(prev, changed))
   }
+
+  // ── ST-01 existing-survey lookup (Step 1's status preview) ─────────────────
+  // Surveys already on record, keyed by their offeringId FK — the same shape
+  // as the merged step's flowsByOffering (step-courses-evaluatees.tsx), owned
+  // here so the step stays presentation-only. Offerings are term-scoped, so
+  // offeringId IS the course+term key ST-02 previews on. Informational input
+  // to Step 1 ONLY — enforcement stays in Step 2's role-overlap engine.
+  const existingSurveysByOffering = useMemo(() => {
+    const m = new Map<string, PceSurvey[]>()
+    for (const s of surveys) {
+      if (!s.offeringId) continue
+      m.set(s.offeringId, [...(m.get(s.offeringId) ?? []), s])
+    }
+    for (const list of m.values()) {
+      list.sort((a, b) => (a.openDate ?? '').localeCompare(b.openDate ?? ''))
+    }
+    return m
+  }, [surveys])
 
   // ── Survey-instance plan (Survey design step + push) ───────────────────────
   // Each selected offering × its effective template expands into the survey
@@ -288,14 +343,204 @@ function PushSurveyInner() {
     const byId = new Map(publishedTemplates.map(t => [t.id, t]))
     return selectedOfferings.flatMap(o => {
       const raw = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
-      return expandInstances(o, byId.get(raw) ?? null, surveys)
+      // Full `templates` (not just published) so a combined existing survey's
+      // ORIGINAL template can still be looked up for role-coverage even if
+      // it's since been unpublished/archived (roleOverlapConflicts fallback).
+      return expandInstances(o, byId.get(raw) ?? null, surveys, templates)
     })
-  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys])
+  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys, templates])
 
-  // Instance keys the admin checked in the Survey design step (UC4 soft
-  // warning): new instances arrive checked, duplicates unchecked; a checked
-  // duplicate is an explicit re-evaluation and re-surfaces as a Review ack.
-  const [includedInstanceKeys, setIncludedInstanceKeys] = useState<Set<string>>(new Set())
+  // ── ST-02 sticky per-unit selection (Phase 2) ──────────────────────────────
+  // Page-owned (replacing the step's old reset-on-planSig `included` Set) so
+  // the template-change reset happens where assignments live and Phase 3 can
+  // persist it in Save-as-Draft alongside templateAssignments + autoUpdateOn.
+  // Keyed by SurveyInstance.key; absence = untouched. First sight of a
+  // brand-new unit seeds its default below — 'selected' (full template
+  // coverage; ST-02 says this is unaffected by the Auto Update flag, which
+  // governs REFRESH-time arrivals only) except gaps and role-overlap
+  // duplicates, which seed 'deselected'. Gaps match shipped behavior;
+  // duplicates deliberately deviate from the Phase-2 brief's "selected unless
+  // gap" wording — seeding them 'selected' would flip the settled UC4
+  // "skipped by default" default and push re-evaluations silently, the
+  // opposite of ST-02's hard block, while the Evaluate-again toggle still
+  // renders (Phase 4 replaces it with the hard-block UI).
+  // An existing key is NEVER overwritten here — only the template-change
+  // reset, course deselection, or reconcileUnitsOnRefresh may change it.
+  const [unitSelections, setUnitSelections] = useState<UnitSelectionMap>({})
+  // ST-02 Auto Update — one flag for the whole step, defaults OFF on a
+  // brand-new wizard. Flipping it does nothing by itself; it only decides how
+  // units the rows haven't seen before arrive on the next manual Refresh.
+  // NOTE for Phase 3: persist + restore BOTH pieces (unitSelections and
+  // autoUpdateOn) as part of the wizard Draft state.
+  const [autoUpdateOn, setAutoUpdateOn] = useState(false)
+
+  useEffect(() => {
+    setUnitSelections(prev => {
+      let changed = false
+      const next = { ...prev }
+      for (const i of instancePlan) {
+        if (next[i.key] !== undefined) continue
+        next[i.key] = i.status === 'new' ? 'selected' : 'deselected'
+        changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [instancePlan])
+
+  // ── ST-02 Phase 3 — Draft/Scheduled resume ("pull in for editing") ─────────
+  // A selected course+term that already has a Draft or Scheduled survey on
+  // record (draftOrScheduledMatch) is pulled into the wizard for editing:
+  // Step 2 (template assignment, unit selections, Auto Update) and Step 3
+  // (window/release dates) hydrate from that survey's stored config instead
+  // of computing fresh defaults, and final submit updates that record in
+  // place (pushSurveyBatch). Hydration is ONE-SHOT per offering — once
+  // applied, the admin's live edits own the state; deselecting and
+  // re-selecting the course deliberately does NOT re-hydrate ("no restored
+  // prior state" on re-selection, per ST-02).
+  const hydratedResumeIds = useRef<Set<string>>(new Set())
+  // Step-wide pieces (Auto Update flag, window dates) hydrate once, from the
+  // first matched survey that carries them — they were duplicated onto every
+  // row of the saved batch.
+  const resumeStepwideApplied = useRef(false)
+  const warnedStrandedDraftIds = useRef<Set<string>>(new Set())
+  const [templateDriftNotices, setTemplateDriftNotices] = useState<TemplateDriftNotice[]>([])
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (surveyMode === 'general') return
+
+    // OPEN ITEM (gap-analysis doc §1 Open items — Product decision pending):
+    // a saved Draft whose course has since been deleted/descoped from Prism.
+    // Options A (drop + notify) / B (keep visible, block) / C (fail resume)
+    // were offered; none chosen. Until Product decides, fail loudly — warn
+    // once per stranded draft rather than silently dropping or guessing.
+    for (const s of surveys) {
+      if (!s.wizardDraft || s.cancelledAt || !s.offeringId) continue
+      if (warnedStrandedDraftIds.current.has(s.id)) continue
+      if (!MOCK_COURSE_OFFERINGS.some(o => o.id === s.offeringId)) {
+        warnedStrandedDraftIds.current.add(s.id)
+        console.warn(
+          `[push wizard] Draft survey ${s.id} (${s.courseCode}) references offering ${s.offeringId}, which no longer exists in Prism. ` +
+          'Resume behavior for deleted/descoped courses is undecided (gap-analysis doc §1 Open items — Product decision pending); the draft is left untouched and unresumed.',
+        )
+      }
+    }
+
+    const YMD = /^\d{4}-\d{2}-\d{2}$/
+    const labelOf = (c: string) => (CRITERION_TOGGLE_LABEL as Record<string, string>)[c] ?? c
+    const assignPatch: Record<string, string> = {}
+    const selectionPatch: UnitSelectionMap = {}
+    const wipedOfferings = new Set<string>()
+    const notices: TemplateDriftNotice[] = []
+
+    for (const o of selectedOfferings) {
+      if (hydratedResumeIds.current.has(o.id)) continue
+      const match = draftOrScheduledMatch(o, surveys)
+      if (!match) continue
+      hydratedResumeIds.current.add(o.id)
+
+      // OPEN ITEM (gap-analysis doc §1 Open items — Product decision pending):
+      // the resume validity check covers only the TEMPLATE's publish status.
+      // Whether the course's own TYPE changing since the Draft was saved
+      // (reclassified in Prism) should also invalidate the Draft is
+      // unspecified — nothing is snapshotted for it here, deliberately.
+
+      const draft = match.wizardDraft
+      const savedTemplate = templates.find(t => t.id === match.templateId) ?? null
+
+      if (!savedTemplate || templateStoryStatusOf(savedTemplate) !== 'published') {
+        // Saved template since unpublished/archived/deleted → the row is
+        // treated as "no template assigned" (ST-02): '' suppresses the
+        // type-default fallback, the row shows the Assign-template control
+        // (which lists only published templates), and Continue stays blocked
+        // via the step's missingTemplate gate until one is chosen.
+        assignPatch[o.id] = ''
+        notices.push({
+          offeringId: o.id,
+          courseCode: match.courseCode,
+          // '' = the template record itself is gone (deleted) — the banner
+          // falls back to "The template saved with this draft".
+          templateName: savedTemplate?.name ?? '',
+          kind: 'unpublished',
+          addedRoleLabels: [],
+          removedRoleLabels: [],
+        })
+      } else {
+        assignPatch[o.id] = match.templateId
+        // Template edited since the Draft was saved (pre-Live only — this
+        // path only ever sees Draft/Scheduled surveys; template content
+        // freezes at Live per the Freeze & Sync Policy): keep the template,
+        // let coverage recompute against its current definition, and raise
+        // the "template updated since this draft was saved" notice.
+        if (draft && draft.templateCriteriaSnapshot.length > 0) {
+          const current: string[] = templateCriteria(savedTemplate)
+          const snap = new Set(draft.templateCriteriaSnapshot)
+          const cur = new Set(current)
+          const added = current.filter(c => !snap.has(c))
+          const removed = draft.templateCriteriaSnapshot.filter(c => !cur.has(c))
+          if (added.length > 0 || removed.length > 0) {
+            notices.push({
+              offeringId: o.id,
+              courseCode: match.courseCode,
+              templateName: savedTemplate.name,
+              kind: 'updated',
+              addedRoleLabels: added.map(labelOf),
+              removedRoleLabels: removed.map(labelOf),
+            })
+          }
+        }
+        if (draft) {
+          // Replace any first-render seeds for this offering with the saved
+          // selections; units the template gained since the save are absent
+          // from the slice and get first-sight seeds from the seeding effect.
+          wipedOfferings.add(o.id)
+          Object.assign(selectionPatch, draft.unitSelections)
+        }
+      }
+
+      if (!resumeStepwideApplied.current) {
+        resumeStepwideApplied.current = true
+        if (draft) setAutoUpdateOn(draft.autoUpdateOn)
+        // Step 3 window/release: prefer the saved wizard state; a Scheduled
+        // survey without wizardDraft (pre-Phase 3 record) still restores its
+        // own open/close dates when they parse as YYYY-MM-DD.
+        const openYmd = draft?.openDate ?? (match.openDate && YMD.test(match.openDate) ? match.openDate : undefined)
+        const closeYmd = draft?.closeDate ?? (YMD.test(match.deadline) ? match.deadline : undefined)
+        if (openYmd) setOpenDate(isoToDate(openYmd))
+        if (closeYmd) setCloseDate(isoToDate(closeYmd))
+        if (draft?.releaseDate) setReleaseDate(isoToDate(draft.releaseDate))
+      }
+    }
+
+    if (Object.keys(assignPatch).length > 0) {
+      setTemplateAssignments(prev => ({ ...prev, ...assignPatch }))
+    }
+    if (wipedOfferings.size > 0 || Object.keys(selectionPatch).length > 0) {
+      setUnitSelections(prev => ({ ...withoutOfferings(prev, wipedOfferings), ...selectionPatch }))
+    }
+    if (notices.length > 0) {
+      setTemplateDriftNotices(prev => [...prev, ...notices])
+    }
+  }, [surveyMode, selectedOfferings, surveys, templates])
+
+  // OPEN ITEM (gap-analysis doc §1 Open items — Owner: Engineering): entering
+  // a step past Courses & students with an empty course set (deep-link or
+  // refresh) — redirect vs empty state is undecided. Step 2 currently shows
+  // its EmptyHint; warn loudly so the state is never mistaken for handled.
+  useEffect(() => {
+    if (surveyMode !== 'general' && typeof step === 'number' && step >= 2 && selectedOfferings.length === 0) {
+      console.warn(
+        `[push wizard] Step ${step} reached with an empty course set. Redirect/empty-state behavior is undecided (gap-analysis doc §1 Open items — Product decision pending); showing the step's empty state.`,
+      )
+    }
+  }, [surveyMode, step, selectedOfferings.length])
+
+  // Downstream consumers (push, Review ledger) read the derived included set —
+  // same shape the old state had, now a projection of the sticky map.
+  const includedInstanceKeys = useMemo(
+    () => new Set(Object.entries(unitSelections).filter(([, v]) => v === 'selected').map(([k]) => k)),
+    [unitSelections],
+  )
 
   const pushInstances = useMemo(
     () => instancePlan.filter(i => i.status !== 'gap' && includedInstanceKeys.has(i.key)),
@@ -470,6 +715,68 @@ function PushSurveyInner() {
     setTemplateAssignments(next)
   }
 
+  function handleRefreshUnits() {
+    // ST-02 manual refresh — the ONLY Prism fetch trigger. In this mock app
+    // the "fresh" unit resolution IS instancePlan (expandInstances re-runs
+    // reactively off current data); in production this is where the Prism
+    // re-fetch goes before reconciling. Unseen units arrive per the Auto
+    // Update flag; units gone from Prism drop out; every state the admin
+    // already set is left untouched (reconcileUnitsOnRefresh).
+    setUnitSelections(prev => reconcileUnitsOnRefresh(prev, instancePlan, autoUpdateOn))
+  }
+
+  function handleCourseSelectedChange(offeringId: string, selected: boolean) {
+    // Step 2 carries Step 1's course checkbox (ST-02): it writes the SAME
+    // selectedCourseIds Step 1 reports into, so unchecking here is
+    // indistinguishable from unchecking on Step 1 for every downstream
+    // consumer. The course's unit selections are wiped too, so a later
+    // re-selection re-seeds first-sight defaults ("no restored prior state").
+    setSelectedCourseIds(prev => {
+      const next = new Set(prev)
+      if (selected) next.add(offeringId)
+      else next.delete(offeringId)
+      return next
+    })
+    if (!selected) setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
+  }
+
+  function handleSaveDraft() {
+    // ST-02 Phase 3 — persist the whole in-progress wizard as one draft
+    // PceSurvey per offering (see SaveWizardDraftInput, pce-state.tsx).
+    // Upsert: an offering already carrying a Draft/Scheduled survey (the one
+    // this wizard is editing) updates that record in place.
+    saveDraft({
+      surveyType,
+      termId,
+      academicYear,
+      autoUpdateOn,
+      openDate: dateToYmd(openDate) || undefined,
+      closeDate: dateToYmd(closeDate) || undefined,
+      releaseDate: dateToYmd(releaseDate) || undefined,
+      offerings: selectedOfferings.map(o => {
+        const tid = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+        const t = templates.find(x => x.id === tid) ?? null
+        const prefix = `${o.id}|`
+        const slice: Record<string, 'selected' | 'deselected'> = {}
+        for (const [k, v] of Object.entries(unitSelections)) {
+          if (k.startsWith(prefix)) slice[k] = v
+        }
+        return {
+          offeringId: o.id,
+          templateId: tid,
+          existingSurveyId: draftOrScheduledMatch(o, surveys)?.id,
+          unitSelections: slice,
+          templateCriteriaSnapshot: t ? templateCriteria(t) : [],
+        }
+      }),
+    })
+    // The rows just saved must not re-hydrate over live wizard state when the
+    // surveys array updates — mark them consumed for this session.
+    for (const o of selectedOfferings) hydratedResumeIds.current.add(o.id)
+    resumeStepwideApplied.current = true
+    setDraftSavedAt(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
+  }
+
   function handlePush() {
     const openYmd = dateToYmd(openDate)
     const closeYmd = dateToYmd(closeDate)
@@ -514,7 +821,13 @@ function PushSurveyInner() {
     setGeneralTemplateId('')
     setSelectedCourseIds(new Set())
     setAddedStudents({})
-    setIncludedInstanceKeys(new Set())
+    setUnitSelections({})
+    setAutoUpdateOn(false)
+    // Phase 3 resume/draft state — a fresh wizard hydrates from scratch.
+    hydratedResumeIds.current = new Set()
+    resumeStepwideApplied.current = false
+    setTemplateDriftNotices([])
+    setDraftSavedAt(null)
     const w = windowFromSettings(LATEST_TERM_ID)
     setOpenDate(w.open)
     setCloseDate(w.close)
@@ -558,6 +871,28 @@ function PushSurveyInner() {
           onStepClick={handleStepNavClick}
           mode={surveyMode}
         />
+      )}
+
+      {/* ST-02 Phase 3 — Save as Draft. Shell-owned (not a step footer): it
+          persists the WHOLE in-progress wizard, whatever step is showing.
+          CE mode only, from Survey design on (step 1 has nothing draftable
+          beyond scope, and general mode has no draft path). */}
+      {surveyMode !== 'general' && typeof step === 'number' && step >= 2 && (
+        <div className="flex items-center justify-end gap-3" style={{ padding: '12px 40px 0' }}>
+          {draftSavedAt && (
+            <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
+              Draft saved at {draftSavedAt}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={selectedOfferings.length === 0}
+            onClick={handleSaveDraft}
+          >
+            Save as draft
+          </Button>
+        </div>
       )}
 
       {/* Full-width content — flex column so steps can fill the height and
@@ -636,6 +971,7 @@ function PushSurveyInner() {
                 cohortOptions={ceCohortOpts}
                 scoped={ceScoped}
                 addedStudents={addedStudents}
+                existingSurveysByOffering={existingSurveysByOffering}
                 onAddStudents={(offeringId, studentIds) =>
                   setAddedStudents(prev => ({
                     ...prev,
@@ -667,11 +1003,30 @@ function PushSurveyInner() {
                 publishedTemplates={publishedTemplates}
                 templateAssignments={templateAssignments}
                 defaultAssignments={defaultAssignments}
-                onTemplateChange={(offeringId, tmplId) =>
+                onTemplateChange={(offeringId, tmplId) => {
                   setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-                }
+                  // ST-02: changing a course's template resets its evaluatee
+                  // selection entirely — no prior selection carries forward,
+                  // even for roles/people the old and new template share. The
+                  // seeding effect re-populates the new template's units with
+                  // first-sight defaults on the next plan recompute.
+                  setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
+                }}
                 onResetDefaults={handleResetTemplateDefaults}
-                onIncludedChange={setIncludedInstanceKeys}
+                unitSelections={unitSelections}
+                onUnitSelectionChange={(keys, state) =>
+                  setUnitSelections(prev => {
+                    const next = { ...prev }
+                    for (const k of keys) next[k] = state
+                    return next
+                  })
+                }
+                autoUpdateOn={autoUpdateOn}
+                onAutoUpdateChange={setAutoUpdateOn}
+                onRefreshUnits={handleRefreshUnits}
+                onCourseSelectedChange={handleCourseSelectedChange}
+                templateDriftNotices={templateDriftNotices}
+                onDismissTemplateDrift={() => setTemplateDriftNotices([])}
                 onBack={() => setStep(1)}
                 onContinue={() => {
                   // Materialize type-defaults into explicit assignments so the

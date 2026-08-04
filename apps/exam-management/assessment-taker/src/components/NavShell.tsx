@@ -267,10 +267,10 @@ function NotificationsItem() {
           </div>
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
             {notifications.map(notif => (
-              <div
+              <DropdownMenuItem
                 key={notif.id}
                 onClick={() => setNotifications(ns => ns.map(n => n.id === notif.id ? { ...n, unread: false } : n))}
-                className="flex gap-3 cursor-pointer px-4 py-3 border-b border-border last:border-b-0 transition-colors"
+                className="flex gap-3 cursor-pointer px-4 py-3 rounded-none border-b border-border last:border-b-0 transition-colors focus:bg-accent"
                 style={{
                   background: notif.unread ? 'var(--brand-tint)' : 'var(--card)',
                 }}
@@ -286,7 +286,7 @@ function NotificationsItem() {
                   <p className="text-xs leading-relaxed text-muted-foreground">{notif.body}</p>
                   <p className="text-xs mt-1 text-muted-foreground">{notif.time}</p>
                 </div>
-              </div>
+              </DropdownMenuItem>
             ))}
           </div>
         </DropdownMenuContent>

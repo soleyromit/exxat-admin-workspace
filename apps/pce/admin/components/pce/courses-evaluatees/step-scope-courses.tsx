@@ -29,12 +29,13 @@ import { PaginationBar } from '@/components/data-table/pagination'
 import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
 import {
-  type CourseOffering, type TermSeason, type DeliveryMode,
+  type CourseOffering, type TermSeason, type DeliveryMode, type PceSurvey,
   COURSE_TYPE_FULL_LABEL,
 } from '@/lib/pce-mock-data'
 import { TERM_SEASONS, academicYearOptions } from '@/lib/pce-course-scope'
 import { deriveReadiness } from '@/lib/pce-course-readiness'
-import { courseDates } from '@/lib/pce-push-validation'
+import { courseDates, storyStatusOf, type StoryStatus } from '@/lib/pce-push-validation'
+import { StoryStatusBadgeOS } from '@/components/pce/pce-badges'
 import {
   TokenSelect, type TokenOption, TypePill, EmptyHint,
   SCOPE_FIELD_WIDTH, COHORT_SEARCH_THRESHOLD, fmtD,
@@ -55,6 +56,12 @@ interface ScopeRow extends Record<string, unknown> {
   offering: CourseOffering
   /** Group key: roster gaps first, then ready. */
   roster: 'gap' | 'ready'
+  /** ST-01 "Existing survey status preview" — distinct story statuses of the
+   *  surveys already on record for this offering (offerings are term-scoped,
+   *  so offeringId IS the course+term key), in openDate order. INFORMATIONAL
+   *  ONLY: never feeds selection, grouping, or the Continue gate — the
+   *  role-overlap enforcement lives entirely in Step 2. */
+  existingStatuses: StoryStatus[]
 }
 
 interface StepScopeCoursesProps {
@@ -69,6 +76,11 @@ interface StepScopeCoursesProps {
   /** Students added per offering in THIS wizard run (id lists) — owned by the
    *  page so step 2 and Review count the same reach. */
   addedStudents: Record<string, string[]>
+  /** Surveys already on record per offering (page-owned lookup, keyed by the
+   *  survey's offeringId FK) — read-only input to the "Existing survey"
+   *  preview column. Same data-flow pattern as the merged step's
+   *  flowsByOffering (step-courses-evaluatees.tsx). */
+  existingSurveysByOffering: ReadonlyMap<string, PceSurvey[]>
   onAddStudents: (offeringId: string, studentIds: string[]) => void
   onSeasonChange: (v: TermSeason) => void
   onAcademicYearChange: (v: string) => void
@@ -80,7 +92,7 @@ interface StepScopeCoursesProps {
 export function StepScopeCourses({
   season, academicYear, cohorts,
   cohortOptions: cohortOpts, scoped, isLoading = false, error = null, onRetry,
-  addedStudents, onAddStudents,
+  addedStudents, existingSurveysByOffering, onAddStudents,
   onSeasonChange, onAcademicYearChange, onToggleCohort,
   onSelectionChange, onContinue,
 }: StepScopeCoursesProps) {
@@ -106,6 +118,14 @@ export function StepScopeCourses({
           const dates = courseDates(o)
           const addedHere = addedStudents[o.id]?.length ?? 0
           const enrolled = o.enrolledCount + addedHere
+          // Distinct story statuses (via the derived storyStatusOf mapper —
+          // never the raw .status field) in openDate order: two concurrent
+          // Live surveys read as one "Live" badge, not two.
+          const existingStatuses: StoryStatus[] = []
+          for (const s of existingSurveysByOffering.get(o.id) ?? []) {
+            const st = storyStatusOf(s)
+            if (!existingStatuses.includes(st)) existingStatuses.push(st)
+          }
           return {
             id: o.id, code, name: rest.join(' – '),
             courseLabel: r.courseLabel,
@@ -116,14 +136,15 @@ export function StepScopeCourses({
             datesLabel: dates ? `${fmtD(dates.start)} – ${fmtD(dates.end)}` : '—',
             offering: o,
             roster: (enrolled === 0 ? 'gap' : 'ready') as 'gap' | 'ready',
+            existingStatuses,
           }
         })
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
-    [scoped, addedStudents],
+    [scoped, addedStudents, existingSurveysByOffering],
   )
 
   // Width budget (≤ ~1110px at a 1400px viewport, DataTable is fixed-layout):
-  // 40+300+110+140+160 = 750 — no horizontal scroll.
+  // 40+300+110+140+170+160 = 920 — no horizontal scroll.
   const columns = useMemo<ColumnDef<ScopeRow>[]>(() => [
     { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
     {
@@ -170,6 +191,22 @@ export function StepScopeCourses({
               </span>
             )}
           </span>
+        ),
+    },
+    {
+      // ST-01 "Existing survey status preview" — the merged step's flow-ledger
+      // concept (step-courses-evaluatees.tsx, flowsByOffering) brought forward
+      // as a compact badge column. READ-ONLY AND NON-BLOCKING by design:
+      // ST-02 says "this check remains the sole enforcement gate; Step 1's
+      // preview never blocks" — so this cell renders information and nothing
+      // else. No selection, grouping, or Continue logic reads it.
+      key: 'existing', label: 'Existing survey', width: 170,
+      cell: r => r.existingStatuses.length === 0
+        ? <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+        : (
+          <div className="flex flex-wrap items-center gap-1 py-0.5">
+            {r.existingStatuses.map(st => <StoryStatusBadgeOS key={st} status={st} />)}
+          </div>
         ),
     },
     {

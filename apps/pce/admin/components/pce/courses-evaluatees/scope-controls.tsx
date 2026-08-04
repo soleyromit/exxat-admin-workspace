@@ -246,13 +246,27 @@ export function TokenSelect({
  * several roles at once and naming one of them lies. `roles` names them on
  * hover/focus instead, so the CTA still tells you WHAT to add. DS Tip rather
  * than a native title: title never fires on keyboard focus.
+ *
+ * `ghost` lightens the chrome to a text-link weight for inline placements
+ * (Step 2's gap issue line) where a bordered button box is too heavy; the
+ * default stays outline for the existing column/section call sites.
  */
-export function AddInPrismButton({ href, label, roles }: { href: string; label: string; roles?: string[] }) {
+export function AddInPrismButton({ href, label, roles, ghost = false }: {
+  href: string
+  label: string
+  roles?: string[]
+  ghost?: boolean
+}) {
   const missing = roles?.length ? `Missing: ${roles.join(', ')}` : null
   const trigger = (
     /* Neutral DS chrome: the amber FACT line beside the button carries the
        attention; the button is the remedy, not the alarm. */
-    <Button asChild variant="outline" size="xs" className="justify-start">
+    <Button
+      asChild
+      variant={ghost ? 'ghost' : 'outline'}
+      size="xs"
+      className={ghost ? 'justify-start text-muted-foreground hover:text-foreground' : 'justify-start'}
+    >
       <a href={href} target="_blank" rel="noopener noreferrer">
         <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         {label}

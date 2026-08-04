@@ -34,3 +34,5 @@ tools/visual-check/screenshots/
 
 # Claude Code agent worktrees (embedded git repos — never commit)
 .claude/worktrees/
+.worktrees/
+.env*

@@ -98,6 +98,12 @@ export interface PceTemplate {
   deliveryMode?: DeliveryMode
   /** CE templates — preferred default when auto-assigning within its course type. */
   isDefaultForType?: boolean
+  /** ST-02 — Admin archived this template; treated identically to "no template
+   *  assigned" for any course still holding it (blocks progress). Read through
+   *  templateStoryStatusOf() (lib/pce-push-validation.ts); the existing
+   *  `status: 'active'|'draft'` ("Approved"/"Draft" in the templates hub) is
+   *  untouched. */
+  archived?: boolean
   /** Survey type — the purpose this template serves. Shown in the template settings step. */
   surveyPurpose?: 'student_pulse' | 'faculty_self_eval' | 'alumni' | 'preceptor_eval'
   /** Visibility — 'program' = any admin/coordinator in the program can find & use it;
@@ -377,6 +383,15 @@ export interface PceSurvey {
   createdAt: string
   releasedAt?: string
   closedAt?: string
+  /** ST-02/ST-09 — Admin retired this survey via Archive. Read through
+   *  storyStatusOf() (lib/pce-push-validation.ts), never directly: the raw
+   *  `status` above is untouched, so existing badges/filters elsewhere are
+   *  unaffected by this pass. */
+  archivedAt?: string
+  /** ST-02/ST-16 — Admin cancelled this Draft/Scheduled survey before it went
+   *  live. Cancelled surveys are excluded from the role-overlap and
+   *  Draft/Scheduled-resume checks entirely (they're no longer "on record"). */
+  cancelledAt?: string
   /** 'course_evaluation' | 'programmatic'. */
   surveyType?: SurveyType
   /** YYYY-MM-DD — date the survey opens for student responses. */
@@ -404,6 +419,39 @@ export interface PceSurvey {
   /** ST-14 gating: below this response count the result is suppressed ("Draft").
    *  Omitted = MINIMUM_THRESHOLD (lib/pce-results.ts). */
   minimumThreshold?: number
+  /** ST-02 Phase 3 — the push wizard's saved working state for THIS offering.
+   *  Present on `status: 'draft'` surveys created by Save as Draft, and on
+   *  Scheduled surveys re-saved after being pulled in for editing. Cleared
+   *  when the wizard's final submit converts the record into a real push.
+   *  Read/written ONLY by saveDraft()/pushSurveyBatch() (pce-state.tsx) and
+   *  the resume hydration in app/(app)/surveys/push/page.tsx. */
+  wizardDraft?: PceSurveyWizardDraft
+}
+
+/** ST-02 Phase 3 — everything the push wizard needs to reconstruct Step 2 +
+ *  Step 3 for one offering. A wizard run spanning N offerings persists as N
+ *  draft PceSurvey rows, each carrying its own slice of this state; the
+ *  step-wide pieces (autoUpdateOn, window dates) are duplicated onto every
+ *  row in the batch and read back from the first match on resume. */
+export interface PceSurveyWizardDraft {
+  /** The offering's slice of the page-owned UnitSelectionMap (keys all start
+   *  `${offeringId}|` — see SurveyInstance.key in lib/pce-push-validation.ts).
+   *  Values: 'selected' | 'deselected'; absence = the unit was never seen. */
+  unitSelections: Record<string, 'selected' | 'deselected'>
+  /** Step-wide ST-02 Auto Update flag at save time. */
+  autoUpdateOn: boolean
+  /** templateCriteria() of the assigned template AT SAVE TIME — Criterion ids
+   *  kept as strings (same convention as evalRole: importing Criterion here
+   *  would cycle with pce-course-readiness). Resume diffs this against the
+   *  template's CURRENT criteria to raise the "template updated since this
+   *  draft was saved" notice (pre-Live only; content freezes at Live). */
+  templateCriteriaSnapshot: string[]
+  /** Step 3 window/result-release values at save time (YYYY-MM-DD). */
+  openDate?: string
+  closeDate?: string
+  releaseDate?: string
+  /** YYYY-MM-DD of the last Save as Draft. */
+  savedAt: string
 }
 
 export interface PriorOffering {
@@ -1440,12 +1488,23 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   //     start/end to Course/Faculty/General together (Romit, Jul 22), so
   //     every flow born from a push shares its batch window.
   //   co17 (DPT-601) — the course-material flow is out; faculty flow is not.
-  // All 'scheduled': a flow born from a push STARTS at scheduled — drafting
-  // happens at the template / wizard-composition level for all evaluatees at
-  // once, never per-faculty (Romit, Jul 22) — and the term starts Aug 24 so
-  // nothing can be live yet.
+  // pf0–pf3 are all 'scheduled': a flow born from THIS batch push STARTS at
+  // scheduled — drafting happens at the template / wizard-composition level
+  // for all evaluatees at once, never per-faculty (Romit, Jul 22) — and the
+  // term starts Aug 24 so nothing born from a Fall 2026 batch push can be
+  // live yet.
   // Third co13 flow (course-material, early term) — makes DPT-510 the >2-flows
   // row, exercising the Status cell's "+N more" overflow popover.
+  //
+  // pf4 is the ONE exception, and deliberately outside that batch-push
+  // pattern: an admin pushed ONE early survey for co19 (DPT-610) outside the
+  // wizard (e.g. a pilot), so it's already Live. Added 2026-08-03 because
+  // ST-02's role-overlap hard block had NO real, verifiable example anywhere
+  // in the fixture set — roleOverlapConflicts() requires offeringId, which
+  // none of the pre-ST-02 mon*/pg* surveys below carry (they predate the
+  // offeringId model), and every offeringId-bearing Fall 2026 survey above
+  // was 'scheduled' (ST-02-exempt). Push DPT-610 again in the wizard to see
+  // a genuine Blocked row, not a demo-only one.
   { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   // Kevin's flow runs its OWN window + cadence — the wizard surfaces must show
@@ -1456,6 +1515,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
   // The practicum closes later and nudges weekly — a second distinct rule set.
   { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 22, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-08', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'every_7_days', anchor: 'survey_close', startDaysBefore: 14 } },
+  { id: 'pf4', offeringId: 'co19', evalScope: 'instructor', courseCode: 'DPT-610', courseName: 'Geriatric Physical Therapy', term: 'Fall 2026', cohort: 'Year 3 – Section C', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [INSTRUCTORS.williams], responseRate: 12, responseCount: 5, enrollmentCount: 44, deadline: 'Sep 15, 2026', createdAt: 'Jul 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-25', academicYear: '2026–2027', programId: 'prog1' },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [

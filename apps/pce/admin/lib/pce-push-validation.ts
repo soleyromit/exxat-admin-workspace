@@ -24,11 +24,65 @@ import {
 } from './pce-mock-data'
 import {
   type Criterion,
+  ALL_CRITERIA,
   CRITERION_BY_TYPE,
   courseLabelOf,
   prismAddHref,
   templateCriteria,
 } from './pce-course-readiness'
+
+// ── Story status (ST-02 vocabulary) ──────────────────────────────────────────
+// ST-02 (Step 2 — Survey Design & Faculty Coverage, 2026-08-03) assumes six
+// flat survey states — Draft / Scheduled / Live / Closed / Results Available /
+// Archived — that don't map 1:1 onto the raw SurveyStatus enum (draft|
+// scheduled|active|collecting|pending_review|released|closed): there's no
+// 'archived' value at all, and the existing badge vocabulary already
+// conflates pending_review + closed into one "In review" state
+// (pce-badges.tsx:58-59, the 2026-07-08 unification). Rather than expand the
+// raw enum (breaking every existing SurveyStatus-typed call site + badge),
+// this is a DERIVED mapper — ST-02 logic reads storyStatusOf()/
+// templateStoryStatusOf(), never the raw `status` field directly. Everything
+// outside the push wizard (surveys-table, dashboard, results pages) is
+// UNCHANGED and out of scope for this pass; it keeps reading raw `status`.
+export type StoryStatus = 'draft' | 'scheduled' | 'live' | 'closed' | 'results_available' | 'archived'
+
+export function storyStatusOf(s: PceSurvey): StoryStatus {
+  if (s.archivedAt) return 'archived'
+  switch (s.status) {
+    case 'draft': return 'draft'
+    case 'scheduled': return 'scheduled'
+    case 'active':
+    case 'collecting': return 'live'
+    // Raw 'closed' and 'pending_review' both precede release and are shown as
+    // one "In review" badge today — ST-02's "Closed" (window shut, awaiting
+    // review) is the natural read for both.
+    case 'pending_review':
+    case 'closed': return 'closed'
+    case 'released': return 'results_available'
+  }
+}
+
+// ⚠️ SPEC CONTRADICTION (flag for Product, not resolved here): ST-02 lists
+// Archived as one of the FOUR statuses whose role coverage hard-blocks a new
+// push, yet also says the Admin resolves the block by "cancel (ST-16) or
+// ARCHIVE (ST-09) the existing survey" — i.e. archiving is offered as the
+// escape hatch, but per the blocking-statuses list, an archived survey would
+// still block. Implemented here per the LITERAL text (archived still
+// blocks) — archiveSurvey()/cancelSurvey() (pce-state.tsx) are unblocking
+// stubs only for the Draft/Scheduled + cancel path; archiving a Live/Closed/
+// Results Available survey does NOT currently exempt it from
+// roleOverlapConflicts() below. Confirm the intended resolution mechanic
+// with Product before Phase 4 ships the block's UI copy/actions.
+export const STORY_STATUS_BLOCKS_OVERLAP: ReadonlySet<StoryStatus> = new Set([
+  'live', 'closed', 'results_available', 'archived',
+])
+
+export type TemplateStoryStatus = 'published' | 'unpublished' | 'archived'
+
+export function templateStoryStatusOf(t: PceTemplate): TemplateStoryStatus {
+  if (t.archived) return 'archived'
+  return t.status === 'active' ? 'published' : 'unpublished'
+}
 
 export interface CourseIssue {
   id: string
@@ -126,22 +180,29 @@ function flowSummary(f: PceSurvey): string {
   return `${who} — ${OPEN_FLOW_WORD[f.status] ?? f.status}${opens}`
 }
 
-// ── Survey instances (the Survey design step's row grain) ────────────────────
+// ── Role-overlap conflict check (ST-02 "Duplicate check") ────────────────────
 // A push doesn't create "a survey per course" — it creates one survey INSTANCE
 // per (course offering × evaluatee), where the evaluatees are what the assigned
 // template demands: one course-material instance, plus one per faculty role the
-// template evaluates × the person staffed in that role. Duplicates are defined
-// at THIS grain (engineering feedback, Jul 2026): the composite key is
-// offering + role + person — a second Instructor survey for the same person is
-// a duplicate; the same person under a different role is not; a new person
-// under an already-surveyed role is not.
+// template evaluates × the person staffed in that role.
+//
+// ST-02 re-architects what counts as a duplicate (superseding the Jul 24/27
+// person-grain "offering + role + person" rule — see
+// docs/specs/2026-08-03-step2-survey-design-faculty-coverage-gap-analysis.md
+// §2 #1–#2): a course's newly-assigned template is a hard-blocked duplicate
+// only if its ROLE COVERAGE overlaps an existing Live/Closed/Results
+// Available/Archived survey's role coverage for the same offering — a second
+// Instructor survey is now a conflict regardless of WHICH person holds the
+// role. Draft/Scheduled surveys are excluded (pulled in for editing instead,
+// see draftOrScheduledMatch — Phase 3, not yet built).
 
 export type InstanceStatus = 'new' | 'duplicate' | 'gap'
 
 export interface SurveyInstance {
-  /** `offeringId|criterion|person` — the composite identity duplicates key on.
-   *  Person rides the NAME: the mock readiness resolvers return names, not ids
-   *  (see CRITERION_BY_TYPE); swap to personId when real association data lands. */
+  /** `offeringId|criterion|person` — unique per row; NOT the duplicate key
+   *  anymore (that's role-grain now, see RoleOverlapConflict). Person rides
+   *  the NAME: the mock readiness resolvers return names, not ids (see
+   *  CRITERION_BY_TYPE); swap to personId when real association data lands. */
   key: string
   offeringId: string
   scope: 'course' | 'instructor'
@@ -152,58 +213,149 @@ export interface SurveyInstance {
   /** Person evaluated — null for course material and for unstaffed roles. */
   personName: string | null
   status: InstanceStatus
-  /** The open flow this instance would duplicate (status 'duplicate' only). */
+  /** The blocking survey this instance's ROLE overlaps (status 'duplicate' only). */
   existing: PceSurvey | null
   /** New-tab Prism deep-link to staff the missing role (status 'gap' only). */
   prismHref: string | null
 }
 
-/** Does an existing flow cover this prospective instance's composite key? */
-function coversInstance(
-  s: PceSurvey,
-  offeringId: string,
-  scope: 'course' | 'instructor',
-  criterion: Criterion,
-  personName: string | null,
-): boolean {
-  if (s.offeringId !== offeringId || !OPEN_FLOW_STATUSES.has(s.status)) return false
-  if (scope === 'course') {
-    // Course material is covered by a course-scope flow or a combined flow
-    // (evalScope undefined = the pre-split shape that evaluated everything).
-    return s.evalScope !== 'instructor'
+export interface RoleOverlapConflict {
+  criterion: Criterion
+  roleLabel: string
+  /** The existing survey whose role coverage this criterion overlaps. */
+  existing: PceSurvey
+}
+
+/** A survey's own role coverage — course-scope/instructor-scope split flows
+ *  carry a single criterion directly; a combined (pre-split or never-split)
+ *  flow's coverage is its ORIGINAL template's full templateCriteria(). */
+function roleCoverageOfSurvey(s: PceSurvey, templatesById: Map<string, PceTemplate>): Set<Criterion> {
+  if (s.evalScope === 'course') return new Set(['students'])
+  if (s.evalScope === 'instructor' && s.evalRole) return new Set([s.evalRole as Criterion])
+  // Combined/legacy flow — no scope split recorded. Fall back to the
+  // template's own coverage; if that template can no longer be found (e.g.
+  // deleted since), assume it covers EVERYTHING rather than nothing — the
+  // safer failure mode for a hard block is a false conflict, not a missed one.
+  const t = templatesById.get(s.templateId)
+  return new Set(t ? templateCriteria(t) : ALL_CRITERIA)
+}
+
+/**
+ * ST-02 role-overlap check: which of the NEW template's criteria overlap an
+ * existing Live/Closed/Results Available/Archived survey's role coverage for
+ * the same offering. Recomputes on Term/AY or course-selection change only —
+ * unlike the faculty-gap check, template/unit-selection edits don't change
+ * this (the check is about what's already ON RECORD, not what's proposed).
+ */
+export function roleOverlapConflicts(
+  offering: CourseOffering,
+  template: PceTemplate,
+  existingSurveys: PceSurvey[],
+  templates: PceTemplate[],
+): RoleOverlapConflict[] {
+  const templatesById = new Map(templates.map(t => [t.id, t]))
+  const mode = deliveryModeOf(offering)
+  const newCriteria = new Set(templateCriteria(template))
+  const out: RoleOverlapConflict[] = []
+  for (const s of existingSurveys) {
+    if (s.offeringId !== offering.id || s.cancelledAt) continue
+    if (!STORY_STATUS_BLOCKS_OVERLAP.has(storyStatusOf(s))) continue
+    for (const criterion of roleCoverageOfSurvey(s, templatesById)) {
+      if (!newCriteria.has(criterion)) continue
+      const spec = CRITERION_BY_TYPE[mode][criterion]
+      out.push({
+        criterion,
+        roleLabel: criterion === 'students' ? 'Course material' : (spec?.label ?? criterion),
+        existing: s,
+      })
+    }
   }
-  if (s.evalScope === 'course') return false
-  if (s.evalRole) {
-    // Role-stamped flows (created after the split) match the full key.
-    return s.evalRole === criterion && s.instructors.some(p => p.name === personName)
+  return out
+}
+
+/**
+ * ST-02: a Draft or Scheduled survey for this offering is NOT a duplicate —
+ * it's pulled into the wizard for editing instead of blocking or creating a
+ * second survey. Only one should ever exist per offering (one-survey-per-
+ * course-per-term invariant); if more than one turns up, that's a fixture bug.
+ */
+export function draftOrScheduledMatch(
+  offering: CourseOffering,
+  existingSurveys: PceSurvey[],
+): PceSurvey | null {
+  return existingSurveys.find(s =>
+    s.offeringId === offering.id &&
+    !s.cancelledAt &&
+    (storyStatusOf(s) === 'draft' || storyStatusOf(s) === 'scheduled')
+  ) ?? null
+}
+
+// ── Evaluatee-unit selection (ST-02, Phase 2) ────────────────────────────────
+// Sticky per-unit (role + person) admin decision, keyed by SurveyInstance.key.
+// Absence of a key = untouched (this unit has never been seen); the wizard
+// seeds first-sight defaults eagerly, so a rendered unit always has an entry.
+// A key already in the map is never silently overwritten by plan recomputes —
+// only the template-change reset, course deselection, or a manual refresh
+// (reconcileUnitsOnRefresh below) may change an existing key's state.
+export type UnitSelectionState = 'selected' | 'deselected'
+export type UnitSelectionMap = Record<string, UnitSelectionState>
+
+/**
+ * ST-02 manual-refresh reconciliation (pure). Applied when the admin clicks
+ * Refresh, after re-deriving the unit list from Prism-backed data:
+ *   (a) a fresh unit the map has never seen arrives 'selected' when Auto
+ *       Update is on, 'deselected' when off — the flag decides ONLY the
+ *       starting checkbox state; an auto-selected unit still passes the same
+ *       role-overlap duplicate gate as any other (instance status stays
+ *       derived from expandInstances/roleOverlapConflicts — nothing here
+ *       special-cases it);
+ *   (b) a unit no longer present in Prism is removed entirely, regardless of
+ *       the flag;
+ *   (c) a unit present in both keeps whatever state the admin (or a prior
+ *       first-sight seed) set — refresh never overrides an existing decision.
+ */
+export function reconcileUnitsOnRefresh(
+  current: UnitSelectionMap,
+  freshInstances: SurveyInstance[],
+  autoUpdateOn: boolean,
+): UnitSelectionMap {
+  const next: UnitSelectionMap = {}
+  const freshKeys = new Set(freshInstances.map(i => i.key))
+  // (b) + (c): keep only keys still present, with their existing state.
+  for (const [k, v] of Object.entries(current)) if (freshKeys.has(k)) next[k] = v
+  // (a): brand-new keys get the flag-driven starting state.
+  for (const i of freshInstances) {
+    if (next[i.key] === undefined) next[i.key] = autoUpdateOn ? 'selected' : 'deselected'
   }
-  // Legacy flows carry no role. A person-only match can only vouch for the
-  // 'instructor' criterion (the role those flows were pushed for) — the same
-  // person under a DIFFERENT role is a genuinely new combination, not a dup.
-  return criterion === 'instructor' && s.instructors.some(p => p.name === personName)
+  return next
 }
 
 /**
  * Expand one course offering × its assigned template into the survey instances
- * a push would create, each checked against the existing flows. Pure; recompute
- * on any assignment/selection/data change. No template → no instances (the
- * step gates on assignment before this matters).
+ * a push would create, each checked against roleOverlapConflicts (role-grain,
+ * not person-grain — see file header). Pure; recompute on any assignment/
+ * selection/data change. No template → no instances (the step gates on
+ * assignment before this matters). `templates` is the FULL template list (not
+ * just published) — needed to look up a combined existing survey's original
+ * template even if it's since been unpublished/archived.
  */
 export function expandInstances(
   offering: CourseOffering,
   template: PceTemplate | null | undefined,
   surveys: PceSurvey[],
+  templates: PceTemplate[] = [],
 ): SurveyInstance[] {
   if (!template) return []
   const mode = deliveryModeOf(offering)
+  const conflicts = roleOverlapConflicts(offering, template, surveys, templates)
+  const conflictByCriterion = new Map(conflicts.map(c => [c.criterion, c.existing]))
   const out: SurveyInstance[] = []
   for (const criterion of templateCriteria(template)) {
     const spec = CRITERION_BY_TYPE[mode][criterion]
     // Role not applicable to this course type (≠ a gap) — no instance.
     if (!spec) continue
+    const blockedBy = conflictByCriterion.get(criterion) ?? null
     if (criterion === 'students') {
-      const existing = surveys.find(s =>
-        coversInstance(s, offering.id, 'course', criterion, null)) ?? null
       out.push({
         key: `${offering.id}|course`,
         offeringId: offering.id,
@@ -211,15 +363,15 @@ export function expandInstances(
         criterion,
         roleLabel: '',
         personName: null,
-        status: existing ? 'duplicate' : 'new',
-        existing,
+        status: blockedBy ? 'duplicate' : 'new',
+        existing: blockedBy,
         prismHref: null,
       })
       continue
     }
     // EVERY person holding the role — a role can be held by several people at
-    // once (late-added co-instructor, UC2), and each person is their own
-    // instance with their own duplicate verdict.
+    // once (late-added co-instructor, UC2), each their own row; the conflict
+    // verdict is now shared across all of them (role-grain, not person-grain).
     const single = spec.resolve(offering)
     const persons = spec.resolveAll?.(offering) ?? (single ? [single] : [])
     if (persons.length === 0) {
@@ -237,8 +389,6 @@ export function expandInstances(
       continue
     }
     for (const personName of persons) {
-      const existing = surveys.find(s =>
-        coversInstance(s, offering.id, 'instructor', criterion, personName)) ?? null
       out.push({
         key: `${offering.id}|${criterion}|${personName}`,
         offeringId: offering.id,
@@ -246,8 +396,8 @@ export function expandInstances(
         criterion,
         roleLabel: spec.label,
         personName,
-        status: existing ? 'duplicate' : 'new',
-        existing,
+        status: blockedBy ? 'duplicate' : 'new',
+        existing: blockedBy,
         prismHref: null,
       })
     }

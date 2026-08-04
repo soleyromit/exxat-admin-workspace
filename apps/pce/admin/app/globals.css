@@ -88,6 +88,15 @@
   --qb-status-completed-bg:     oklch(0.94 0.035 195);
   --qb-status-completed-fg:     oklch(0.34 0.07 195);
   --qb-status-completed-border: oklch(0.72 0.08 195);
+  /* Hard-block severity (ST-02 role-overlap conflict, etc.) — deliberately
+     the darkest/most saturated fg of the family, so it reads as strictly
+     more urgent than draft/review at a glance. Fixed (no .dark override,
+     same as the rest of this family) — a light pill reads correctly on both
+     a light and a dark page via luminance contrast with the surface, so it
+     needs no per-theme calibration the way a solid-fill badge would. */
+  --qb-status-blocked-bg:       oklch(0.95  0.045 25);
+  --qb-status-blocked-fg:       oklch(0.32  0.19  25);
+  --qb-status-blocked-border:   oklch(0.62  0.20  25);
 }
 
 

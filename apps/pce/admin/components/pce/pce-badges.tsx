@@ -4,6 +4,7 @@ import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@exxatdesi
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import type { SurveyStatus } from '@/lib/pce-mock-data'
+import type { StoryStatus } from '@/lib/pce-push-validation'
 import type { StatusTint } from '@/lib/list-status-badges'
 import {
   LIST_HUB_STATUS_TINT_SUCCESS,
@@ -88,6 +89,34 @@ export function SurveyStatusBadgeOS({
 }) {
   const s = SURVEY_STATUS_BADGE[status]
   return <StatusBadge label={s.label} tone={SURVEY_STATUS_TONE[status]} icon={s.icon} size={size} />
+}
+
+// ── ST-02 story-status badge ──────────────────────────────────────────────────
+// The push wizard's ST-02 surfaces (Step 1's "Existing survey" preview / ST-01)
+// read survey status through the DERIVED storyStatusOf() mapper
+// (pce-push-validation.ts), whose six-state vocabulary — Draft / Scheduled /
+// Live / Closed / Results Available / Archived — includes states the raw
+// SurveyStatus badges above have no words for. Same visual language as
+// SurveyStatusBadgeOS (DS StatusBadge, matching tones/icons where the states
+// coincide), different key; the raw-status badges stay untouched app-wide.
+const STORY_STATUS_BADGE: Record<StoryStatus, { tone: StatusBadgeTone; icon: string; label: string }> = {
+  draft:             { tone: 'neutral', icon: 'fa-pen-ruler',      label: 'Draft' },
+  scheduled:         { tone: 'info',    icon: 'fa-calendar',       label: 'Scheduled' },
+  live:              { tone: 'success', icon: 'fa-circle-dot',     label: 'Live' },
+  closed:            { tone: 'warning', icon: 'fa-hourglass-half', label: 'Closed' },
+  results_available: { tone: 'success', icon: 'fa-circle-check',   label: 'Results Available' },
+  archived:          { tone: 'neutral', icon: 'fa-box-archive',    label: 'Archived' },
+}
+
+export function StoryStatusBadgeOS({
+  status,
+  size = 'sm',
+}: {
+  status: StoryStatus
+  size?: 'sm' | 'md'
+}) {
+  const s = STORY_STATUS_BADGE[status]
+  return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} size={size} />
 }
 
 /** "YYYY-MM-DD" → "Dec 4" / "December 4, 2026" without the UTC-midnight shift. */
