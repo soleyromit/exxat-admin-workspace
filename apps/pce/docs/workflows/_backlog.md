@@ -482,6 +482,30 @@ Source: `docs/research/meetings/2026-07-31-prism-eval-setup-ux-feedback.md` (Gra
 | T139 | Dashboard template shortcut link → Settings > Templates | Admin | PCE dashboard | P1 — DESIGN-REVIEW | Link or button on dashboard (and/or term cards) navigating to Settings > Templates. Essential for new users who must create templates before any setup flow. "There needs to be more visibility here into how do I add a template." Supplements T125. D_PCE_0731_09. |
 | T140 | Step 4 review: per-course template sections + specific people listed | Admin | Setup evaluations wizard Step 4 | P1 — DESIGN-REVIEW | Review step must show per selected course: template name, template sections (Course Content / Instructor / Coordinator), and SPECIFIC people in each section. "Here are your three instructors." Not just role names — actual person names. Supplements T129 Step 4 spec. D_PCE_0731_10. |
 
+## Phase 1 design tasks — added 2026-08-04 (Step 2 design — template selection, aspect deduplication, auto-update)
+
+Source: `docs/research/meetings/2026-08-04-step2-template-aspect-deduplication-autoupdate.md` (Granola `5f6c8679`)
+
+> Monil + Romit design session (Aug 4 8:00 AM EDT). Deep-dive into Step 2 of the setup evaluations wizard (T129). Five user scenarios defined: aspect types, template switching (override vs. new survey), same-aspect hard block per term, auto-update toggle behavior, manual Prism refresh. Aarti + Vishaka have reviewed and approved these use cases. Designs targeted for Monil review Aug 5.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T141 | Step 2 — Human vs. non-human aspect visual separation | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Two visual groups: (A) Non-person aspects (Course Content, General) — no further action once template selected; (B) Person/faculty aspects (Instructor, Coordinator) — require faculty assignment states. Monil: "I would force you to also think from a human and non-human aspect separately." Romit design direction required before any code. D_PCE_0804_01. |
+| T142 | Step 2 — Template switch: Override vs. New Survey decision prompt | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | When admin re-enters a course with a different template, system must surface a two-path choice: (A) Override — replace existing survey with new template (one DB entry); (B) New survey — create additional independent survey (two coexist). Cannot silently switch. Monil: "If you switch template a new survey would be created based on new template." D_PCE_0804_02. |
+| T143 | Step 2 — Hard-blocked duplicate aspect: deselected state + message | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Aspect already evaluated for same course-term combination (even if Scheduled, not yet live) is hard-blocked for any new survey. Show blocked aspect as deselected/greyed. Message: "Course Content is already being evaluated for this course. Deselect to proceed with other aspects." Distinct from T130 (which is person-level triplet soft warning for live surveys). D_PCE_0804_03. |
+| T144 | Step 2 — Blocked aspect deselection affordance | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Admin can click to confirm deselection of a hard-blocked aspect and proceed with remaining non-duplicate aspects. Aspect chip click → deselects and admin continues. Supplements T143. D_PCE_0804_04. |
+| T145 | Step 2 — Auto-update toggle ON/OFF states and excluded-faculty display | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | ON state: label communicating roster will refresh from Prism at survey go-live date (late-added faculty included, dropped faculty excluded). OFF state: roster frozen at Step 2 completion; any faculty added in Prism afterward are excluded and shown as "not part of evaluation" (visible but deselected) in Step 2 UI. Monil: "You will have to show in the UI that Doctor Y is... is deselected." Design both toggle states + excluded-faculty indicator. D_PCE_0804_05, D_PCE_0804_06. |
+| T146 | Step 2 — Manual Prism data refresh button | Admin | Setup evaluations wizard Step 2 (T129) | P1 — carry-forward at T129 implementation | Button in Step 2 that pulls latest faculty associations from Prism on demand. Demo mode: simulates Prism data pull and updates faculty rows in the table. Distinct from auto-update toggle (which governs go-live behavior). Monil: "Right now you can propose a manual refresh button on the top." Supplements T134. D_PCE_0804_07. |
+| T147 | Step 2 — Empty state: person aspect with no Prism faculty assigned | Admin | Setup evaluations wizard Step 2 (T129) | P1 — carry-forward at T129 implementation | When Instructor or Coordinator aspect is selected via template but no faculty are assigned to that course in Prism: show "No person assigned" with "Assign faculty" CTA (navigates to Prism). After admin assigns in Prism and hits refresh, named faculty appear. Both empty and populated states required. D_PCE_0804_08. |
+| T148 | Dashboard / list view — excluded Prism faculty notification | Admin | PCE dashboard / course list view | P1 — DESIGN-REVIEW | Surface an indicator outside of Step 2 when faculty exist in Prism for a course but are not included in the active evaluation (e.g. because auto-update is off or they were deselected). Romit proposed; Monil: "it's a good idea to show somewhere outside also." Cannot show in Prism itself. Needs Romit design exploration before any code. D_PCE_0804_11. |
+
+### Deferred items from 2026-08-04
+
+| # | Decision | Reason | Source |
+|---|---|---|---|
+| D_PCE_0804_09 | Draft retrieval: when admin re-selects the same course, auto-fetch in-progress draft survey (template auto-populated) | Monil: "I think you don't have to design this scenario… this is for later purpose." Explicitly deferred. | 2026-08-04 |
+| D_PCE_0804_10 | Term card re-entry point to resume dropped-off survey setup flows (draft status) | Monil: "for later purpose." Explicitly deferred. | 2026-08-04 |
+
 ---
 
 ## Open product questions
