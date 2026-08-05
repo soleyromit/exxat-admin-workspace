@@ -13,6 +13,7 @@
  */
 
 import * as React from "react"
+import NextLink from "next/link"
 import {
   usePathname,
   useRouter,
@@ -120,12 +121,21 @@ export function useParams(): Record<string, string | undefined> {
 }
 
 // ---------------------------------------------------------------------------
-// Link — thin wrapper (DS rarely uses this directly)
+// Link — must go through next/link, not a raw <a>. A plain anchor bypasses
+// the Next.js client router entirely: every click becomes a full document
+// GET, which throws away all in-memory React state app-wide (any context
+// provider mounted in a shared layout resets to its initial value the
+// moment a user clicks ANY <Link> using this shim — confirmed via network
+// capture showing a full-document request instead of an RSC transition,
+// 2026-08-04). This is the single highest-blast-radius fix available here:
+// dozens of app files import Link from "react-router-dom", aliased to this
+// shim by next.config.ts, so this one component decides whether client-side
+// navigation actually works across the entire app.
 // ---------------------------------------------------------------------------
 export const Link = React.forwardRef<
   HTMLAnchorElement,
   React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }
 >(function Link({ to, href, ...props }, ref) {
-  return <a ref={ref} href={to ?? href} {...props} />
+  return <NextLink ref={ref} href={to ?? href ?? ""} {...props} />
 })
 Link.displayName = "Link"

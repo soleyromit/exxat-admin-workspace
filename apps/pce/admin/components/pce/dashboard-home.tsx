@@ -491,48 +491,97 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
               </Button>
             </div>
           </div>
-        ) : readiness.needsData > 0 ? (
-          /* Same needs-attention anatomy as the current card's reminder block. */
-          <div className="flex items-start gap-3 rounded-md border border-border p-3">
-            <span
-              className="flex size-10 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: LIST_HUB_STATUS_TINT_WARNING.bg }}
-              aria-hidden="true"
-            >
-              <i
-                className="fa-light fa-triangle-exclamation"
-                style={{ color: LIST_HUB_STATUS_TINT_WARNING.fg, fontSize: 16 }}
-              />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              {/* Heading gets the full width — the countdown lives in the rows
-                  above as a date fact, so it can't wrap this to two lines. */}
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Missing faculty or student rosters
-                </p>
+        ) : (
+          /* needsData and draftCount are NOT mutually exclusive — a term can
+             simultaneously have courses missing rosters AND a saved draft
+             covering other courses (this is the normal case: 13 of 14
+             offerings drafted, 7 of those still missing data). An earlier
+             pass here used an if/else-if chain, which meant the draft
+             callout — the actual "so that user knows" detail the Aug 4
+             transcript asked for — silently never rendered whenever a data
+             gap also existed. Both render, stacked, when both are true. */
+          <>
+            {readiness.needsData > 0 && (
+              /* Same needs-attention anatomy as the current card's reminder block. */
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: LIST_HUB_STATUS_TINT_WARNING.bg }}
+                  aria-hidden="true"
+                >
+                  <i
+                    className="fa-light fa-triangle-exclamation"
+                    style={{ color: LIST_HUB_STATUS_TINT_WARNING.fg, fontSize: 16 }}
+                  />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  {/* Heading gets the full width — the countdown lives in the rows
+                      above as a date fact, so it can't wrap this to two lines. */}
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {readiness.needsData} course{readiness.needsData !== 1 ? 's' : ''} need{readiness.needsData === 1 ? 's' : ''} more info
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Missing faculty or student rosters
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="self-start">
+                    <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
+                  </Button>
+                </div>
               </div>
-              <Button variant="outline" size="sm" asChild className="self-start">
-                <Link href="/course-evaluation/term-setup?phase=readiness">Add missing info</Link>
-              </Button>
-            </div>
-          </div>
-        ) : null}
+            )}
+            {snap.draftCount > 0 && (
+              /* Aug 4 transcript scenario #6 — "when I click on setup evaluation
+                 it should take me to the same step with survey status as draft
+                 instead of treating this as a new altogether survey form." Same
+                 neutral (non-warning — a draft isn't a problem) callout anatomy,
+                 info-blue to match this card's own "Upcoming" badge tone rather
+                 than borrowing the data-gap amber above. */
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted"
+                  aria-hidden="true"
+                >
+                  <i className="fa-light fa-file-pen text-muted-foreground" style={{ fontSize: 16 }} />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {snap.draftCount} course{snap.draftCount !== 1 ? 's' : ''} {snap.draftCount === 1 ? 'has' : 'have'} a draft in progress
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Pick up where you left off — nothing is lost.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="self-start">
+                    <Link href={`/surveys/push?term=${term.id}`}>Resume setup</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </CardContent>
       <CardFooter className="mt-auto">
         {/* Upcoming term's job is setup — footer leads there; the clickable
             title already opens the workspace. Falls back to View term once
-            every offering has an evaluation. */}
+            every offering has an evaluation. Resume vs Set up: a draft
+            existing anywhere in the term means clicking through re-enters
+            in-progress work (push/page.tsx's Phase 3 hydration effect),
+            never a blank form — the label needs to say so up front, not
+            leave the admin to discover it after clicking. */}
         {remaining > 0 ? (
           <Link
             href={`/surveys/push?term=${term.id}`}
-            aria-label={`Set up evaluations for ${term.name}`}
+            aria-label={
+              snap.draftCount > 0
+                ? `Resume evaluation setup for ${term.name}`
+                : `Set up evaluations for ${term.name}`
+            }
             className="ms-auto flex items-center gap-1.5 rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            Set up evaluations
+            {snap.draftCount > 0 ? 'Resume setup' : 'Set up evaluations'}
             <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
           </Link>
         ) : (

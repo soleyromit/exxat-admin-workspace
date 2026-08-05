@@ -27,6 +27,7 @@ export function PersonAvatar({
   initials,
   className,
   decorative = true,
+  size = 'sm',
 }: {
   name: string
   /** Explicit photo URL — skips the faculty name lookup. */
@@ -36,10 +37,16 @@ export function PersonAvatar({
   className?: string
   /** True (default) when the name is rendered next to the avatar. */
   decorative?: boolean
+  /** DS Avatar size — 'sm' (default) matches the existing 24px h-6/w-6 visual
+   *  floor. Must be forwarded (not just the Tailwind override) so sibling
+   *  AvatarGroupCount/AvatarGroupMore can key off data-size="sm" and shrink
+   *  to match instead of defaulting to the 32px "default" size. */
+  size?: 'sm' | 'default' | 'lg'
 }) {
   const url = src ?? facultyAvatarUrl(name)
   return (
     <Avatar
+      size={size}
       className={cn('h-6 w-6 shrink-0', className)}
       aria-hidden={decorative || undefined}
     >

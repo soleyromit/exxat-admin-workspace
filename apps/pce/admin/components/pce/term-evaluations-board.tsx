@@ -33,11 +33,43 @@ import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
 import { withFrom } from '@/lib/pce-nav-origin'
+import { expandInstances } from '@/lib/pce-push-validation'
 import {
-  MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
+  MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY, MOCK_TEMPLATES,
   EVALUATION_TYPE_LABEL,
   type PceSurvey, type EvaluationInstance,
 } from '@/lib/pce-mock-data'
+
+/** Aug 4 transcript scenario #6 — a Draft/re-editable Scheduled survey is
+ *  still mid-setup; its card must route back into the push wizard to resume,
+ *  never to a results page for a survey that hasn't collected anything.
+ *  Resumability rides on `wizardDraft` itself (pce-mock-data.ts:422-428:
+ *  present on Draft rows and on Scheduled rows re-saved after being pulled
+ *  in for editing; cleared on a normal full submit) — not on status alone,
+ *  since most Scheduled rows finish the wizard in one pass and have nothing
+ *  to resume into. */
+function isResumable(s: PceSurvey): boolean {
+  return !!s.wizardDraft
+}
+
+/** Aug 4 transcript scenario #9 — "how do we show this user scenario... so
+ *  that user knows only David is evaluating, there is another person called
+ *  John but is not being evaluated." PM: "it's a good idea to show somewhere
+ *  outside also... in the list view." This reuses the exact reconciliation
+ *  the wizard itself runs (fresh, non-conflicting instances checked against
+ *  the saved unitSelections) rather than a new computation.
+ *  Only meaningful where `wizardDraft` survives (see isResumable) — a fully
+ *  submitted survey's Auto Update snapshot is gone by design, so the board
+ *  honestly shows nothing there instead of fabricating a stale count. */
+function excludedCount(s: PceSurvey, surveys: PceSurvey[]): number {
+  if (!s.wizardDraft) return 0
+  const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === s.offeringId)
+  const template = MOCK_TEMPLATES.find(t => t.id === s.templateId)
+  if (!offering || !template) return 0
+  const instances = expandInstances(offering, template, surveys, MOCK_TEMPLATES)
+  const { unitSelections } = s.wizardDraft
+  return instances.filter(i => i.status === 'new' && unitSelections[i.key] === 'deselected').length
+}
 
 type SetupCard = { id: string; code: string; name: string; facultyName: string | null }
 
@@ -89,7 +121,18 @@ function primaryInstructor(s: PceSurvey) {
 
 /* ── cards ──────────────────────────────────────────────────────────────── */
 
-function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; href: string }) {
+function SurveyBoardCard({
+  s, e, href, resumable, excluded,
+}: {
+  s: PceSurvey
+  e: EvaluationInstance
+  href: string
+  /** Scenario #6 — routes this card into the wizard instead of results. */
+  resumable: boolean
+  /** Scenario #9 — fresh Prism people this survey's saved state excludes. 0
+   *  when unresumable (nothing to reconcile against, see excludedCount). */
+  excluded: number
+}) {
   const instructor = primaryInstructor(s)
   const extra = s.instructors.length - 1
   const col = SURVEY_COLUMN[e.status]
@@ -105,7 +148,11 @@ function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; 
     <ListPageBoardCard className="relative w-full">
       <Link
         href={href}
-        aria-label={`Open results for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`}
+        aria-label={
+          resumable
+            ? `Resume setup for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`
+            : `Open results for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`
+        }
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       <ListPageBoardCardHeader>
@@ -130,8 +177,19 @@ function SurveyBoardCard({ s, e, href }: { s: PceSurvey; e: EvaluationInstance; 
         )}
         {col === 'scheduled' && (
           e.status === 'draft'
-            ? <ListPageBoardCardSecondary>Draft · not scheduled yet</ListPageBoardCardSecondary>
-            : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={e.deadline ? `Closes ${e.deadline}` : undefined} />
+            ? <ListPageBoardCardSecondary>Draft — resume setup</ListPageBoardCardSecondary>
+            : resumable
+              ? <ListPageBoardCardSecondary>Scheduled — resume setup to review</ListPageBoardCardSecondary>
+              : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={e.deadline ? `Closes ${e.deadline}` : undefined} />
+        )}
+        {/* #9 — neutral, not amber: this isn't a data gap to fix, it's an FYI
+            about a deliberate Auto-Update-off exclusion (same non-amber
+            reasoning as the excluded-avatar treatment in Step 2 itself). */}
+        {excluded > 0 && (
+          <BoardCardTwoLineBlock
+            iconClass="fa-ban"
+            line1={`${excluded} ${excluded === 1 ? 'person' : 'people'} not included`}
+          />
         )}
         {showGauge && (
           <ResponseProgressCell
@@ -191,6 +249,12 @@ export function TermEvaluationsBoard({
   /* Canonical results link (pce-nav-origin.withFrom) — breadcrumbs back to this
    * term workspace. Offering-level today; per-type results is a future route. */
   const resultsHref = (s: PceSurvey) => withFrom(`/results/${s.id}`, `term:${termId}`)
+  /* Scenario #6 — same resume URL shape SetupBoardCard already uses below;
+   * push/page.tsx's Phase 3 hydration effect rehydrates the saved
+   * templateAssignments/unitSelections/autoUpdateOn from wizardDraft once
+   * this offering is selected, so nothing further is needed here to make
+   * "resume" actually resume. */
+  const resumeHref = (s: PceSurvey) => `/surveys/push?term=${termId}&offerings=${s.offeringId}`
   const rows = useMemo<BoardRow[]>(() => {
     const surveyRows: BoardRow[] = surveys.flatMap(s =>
       evaluationsFor(s).map(e => ({ key: `s-${s.id}-${e.type}`, kind: 'survey' as const, s, e })))
@@ -243,11 +307,19 @@ export function TermEvaluationsBoard({
         getRowKey={r => r.key}
         columnCountBadgeClassName={badgeMap}
         emptyColumnLabel="No evaluations"
-        renderCard={row =>
-          row.kind === 'setup'
-            ? <SetupBoardCard o={row.o} termId={termId} />
-            : <SurveyBoardCard s={row.s} e={row.e} href={resultsHref(row.s)} />
-        }
+        renderCard={row => {
+          if (row.kind === 'setup') return <SetupBoardCard o={row.o} termId={termId} />
+          const resumable = isResumable(row.s)
+          return (
+            <SurveyBoardCard
+              s={row.s}
+              e={row.e}
+              href={resumable ? resumeHref(row.s) : resultsHref(row.s)}
+              resumable={resumable}
+              excluded={excludedCount(row.s, surveys)}
+            />
+          )
+        }}
       />
     </div>
   )

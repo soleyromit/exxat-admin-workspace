@@ -195,6 +195,19 @@ function flowSummary(f: PceSurvey): string {
 // Instructor survey is now a conflict regardless of WHICH person holds the
 // role. Draft/Scheduled surveys are excluded (pulled in for editing instead,
 // see draftOrScheduledMatch — Phase 3, not yet built).
+//
+// 2026-08-05: one deliberate, narrow exception reopens person-grain for a
+// single case ST-02 never anticipated — a co-instructor added to Prism
+// AFTER an existing Live survey already covers that role (UC2, late-added
+// co-instructor). Per Romit, reversing the Jul 22 "template drafting is
+// never per-faculty" call specifically for this scenario: the late-added
+// person may be assigned a different template than the peers already
+// covered, instead of being permanently blocked from evaluation because
+// their role happens to be occupied. roleCoverageOfSurvey/
+// RoleOverlapConflict now carry WHICH named people an existing survey
+// covers (instructor-scope only); course-scope and combined/legacy-template
+// surveys still block everyone in the role, unchanged. See
+// SurveyInstance.lateAddedRelativeTo below for the resulting signal.
 
 export type InstanceStatus = 'new' | 'duplicate' | 'gap'
 
@@ -217,6 +230,13 @@ export interface SurveyInstance {
   existing: PceSurvey | null
   /** New-tab Prism deep-link to staff the missing role (status 'gap' only). */
   prismHref: string | null
+  /** Set only when this criterion had a role-overlap conflict that did NOT
+   *  block THIS person (person-grain exception, 2026-08-05) — i.e. an
+   *  existing survey already covers the role, but for different named
+   *  people. Deliberately narrow: drives the "different template for this
+   *  person" affordance without ever appearing on an ordinary fresh
+   *  instance. See file header. */
+  lateAddedRelativeTo?: PceSurvey | null
 }
 
 export interface RoleOverlapConflict {
@@ -224,20 +244,34 @@ export interface RoleOverlapConflict {
   roleLabel: string
   /** The existing survey whose role coverage this criterion overlaps. */
   existing: PceSurvey
+  /** Named people this conflict actually covers (instructor-scope only).
+   *  Absent/undefined = blocks EVERYONE holding the role (course-scope,
+   *  empty-instructors, or combined/legacy-template surveys) — the existing
+   *  role-grain behavior, unchanged. Present = blocks only these people,
+   *  enabling the person-grain exception in expandInstances(). */
+  coveredPersonNames?: string[]
 }
 
 /** A survey's own role coverage — course-scope/instructor-scope split flows
  *  carry a single criterion directly; a combined (pre-split or never-split)
- *  flow's coverage is its ORIGINAL template's full templateCriteria(). */
-function roleCoverageOfSurvey(s: PceSurvey, templatesById: Map<string, PceTemplate>): Set<Criterion> {
-  if (s.evalScope === 'course') return new Set(['students'])
-  if (s.evalScope === 'instructor' && s.evalRole) return new Set([s.evalRole as Criterion])
+ *  flow's coverage is its ORIGINAL template's full templateCriteria(). Value
+ *  is the named people that criterion's coverage blocks — `null` means
+ *  everyone (course-scope has no person concept; combined/legacy templates
+ *  and instructor-scope surveys with no recorded instructors keep the
+ *  original "block everyone" failure mode rather than silently narrowing). */
+function roleCoverageOfSurvey(s: PceSurvey, templatesById: Map<string, PceTemplate>): Map<Criterion, string[] | null> {
+  if (s.evalScope === 'course') return new Map([['students', null]])
+  if (s.evalScope === 'instructor' && s.evalRole) {
+    const names = s.instructors.map(i => i.name)
+    return new Map([[s.evalRole as Criterion, names.length > 0 ? names : null]])
+  }
   // Combined/legacy flow — no scope split recorded. Fall back to the
   // template's own coverage; if that template can no longer be found (e.g.
   // deleted since), assume it covers EVERYTHING rather than nothing — the
   // safer failure mode for a hard block is a false conflict, not a missed one.
   const t = templatesById.get(s.templateId)
-  return new Set(t ? templateCriteria(t) : ALL_CRITERIA)
+  const criteria = t ? templateCriteria(t) : ALL_CRITERIA
+  return new Map(criteria.map(c => [c, null]))
 }
 
 /**
@@ -260,13 +294,14 @@ export function roleOverlapConflicts(
   for (const s of existingSurveys) {
     if (s.offeringId !== offering.id || s.cancelledAt) continue
     if (!STORY_STATUS_BLOCKS_OVERLAP.has(storyStatusOf(s))) continue
-    for (const criterion of roleCoverageOfSurvey(s, templatesById)) {
+    for (const [criterion, coveredPersonNames] of roleCoverageOfSurvey(s, templatesById)) {
       if (!newCriteria.has(criterion)) continue
       const spec = CRITERION_BY_TYPE[mode][criterion]
       out.push({
         criterion,
         roleLabel: criterion === 'students' ? 'Course material' : (spec?.label ?? criterion),
         existing: s,
+        ...(coveredPersonNames ? { coveredPersonNames } : {}),
       })
     }
   }
@@ -348,14 +383,28 @@ export function expandInstances(
   if (!template) return []
   const mode = deliveryModeOf(offering)
   const conflicts = roleOverlapConflicts(offering, template, surveys, templates)
-  const conflictByCriterion = new Map(conflicts.map(c => [c.criterion, c.existing]))
+  // Group ALL conflicts per criterion, not just the last one seen — a plain
+  // Map-from-array construction here used to silently drop every conflict
+  // but the last per criterion (latent bug, found 2026-08-05 while adding
+  // person-grain resolution below; a course can carry more than one
+  // Live-capable survey covering the same role, e.g. co13's pf1 + pf2).
+  const conflictsByCriterion = new Map<Criterion, RoleOverlapConflict[]>()
+  for (const c of conflicts) {
+    const list = conflictsByCriterion.get(c.criterion)
+    if (list) list.push(c)
+    else conflictsByCriterion.set(c.criterion, [c])
+  }
   const out: SurveyInstance[] = []
   for (const criterion of templateCriteria(template)) {
     const spec = CRITERION_BY_TYPE[mode][criterion]
     // Role not applicable to this course type (≠ a gap) — no instance.
     if (!spec) continue
-    const blockedBy = conflictByCriterion.get(criterion) ?? null
+    const criterionConflicts = conflictsByCriterion.get(criterion) ?? []
     if (criterion === 'students') {
+      // Course-scope has no person concept — any conflict blocks it (always
+      // coveredPersonNames === undefined for course-scope, see
+      // roleCoverageOfSurvey), matching the original role-grain behavior.
+      const blockedBy = criterionConflicts[0]?.existing ?? null
       out.push({
         key: `${offering.id}|course`,
         offeringId: offering.id,
@@ -370,8 +419,12 @@ export function expandInstances(
       continue
     }
     // EVERY person holding the role — a role can be held by several people at
-    // once (late-added co-instructor, UC2), each their own row; the conflict
-    // verdict is now shared across all of them (role-grain, not person-grain).
+    // once (late-added co-instructor, UC2), each their own row. The conflict
+    // verdict is now resolved PER PERSON (2026-08-05): a conflict with no
+    // coveredPersonNames blocks everyone (role-grain, unchanged default); a
+    // conflict that names specific people only blocks those people, letting
+    // a late-added co-instructor resolve to 'new' under the SAME template
+    // while the peers an existing survey already covers stay 'duplicate'.
     const single = spec.resolve(offering)
     const persons = spec.resolveAll?.(offering) ?? (single ? [single] : [])
     if (persons.length === 0) {
@@ -389,6 +442,14 @@ export function expandInstances(
       continue
     }
     for (const personName of persons) {
+      const blockingConflict = criterionConflicts.find(
+        c => !c.coveredPersonNames || c.coveredPersonNames.includes(personName),
+      )
+      // The role has some conflict on record, but not one that blocks THIS
+      // person specifically — the late-added-co-instructor signal.
+      const lateAddedRelativeTo = !blockingConflict && criterionConflicts.length > 0
+        ? criterionConflicts[0].existing
+        : null
       out.push({
         key: `${offering.id}|${criterion}|${personName}`,
         offeringId: offering.id,
@@ -396,9 +457,10 @@ export function expandInstances(
         criterion,
         roleLabel: spec.label,
         personName,
-        status: blockedBy ? 'duplicate' : 'new',
-        existing: blockedBy,
+        status: blockingConflict ? 'duplicate' : 'new',
+        existing: blockingConflict?.existing ?? null,
         prismHref: null,
+        lateAddedRelativeTo,
       })
     }
   }

@@ -36,7 +36,7 @@ import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
 import {
   subjectDataIssues, windowIssues, expandInstances, existingFlowSummary,
-  reconcileUnitsOnRefresh, draftOrScheduledMatch, templateStoryStatusOf,
+  reconcileUnitsOnRefresh, draftOrScheduledMatch, templateStoryStatusOf, storyStatusOf,
   type UnitSelectionMap, type CourseIssue,
 } from '@/lib/pce-push-validation'
 import { courseLabelOf } from '@/lib/pce-course-readiness'
@@ -57,6 +57,14 @@ const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
 // duplicate skip), 3 = Communication, 4 = Review. Sequential again for the CE
 // flow; the programmatic flow still skips 2 (1 → 3 → 4).
 type WizardStep = 1 | 2 | 3 | 4 | 'success'
+
+/** S2's one secondary-template slot (see secondaryTemplateAssignments below).
+ *  `scopePersonNames` absent = the original 2026-08-04 "Keep both" behavior,
+ *  the whole role/aspect gets the second template. Present (2026-08-05,
+ *  person-grain exception) = the second template covers ONLY these named
+ *  people — the late-added-co-instructor case, reusing this same one-extra-
+ *  slot mechanism instead of a general per-offering array. */
+type SecondaryTemplateAssignment = { templateId: string; scopePersonNames?: string[] }
 
 // The type default for one course type (ST-02 auto-assign / Reset to defaults).
 // Tie-break per implementation-plan decision #2 (2026-08-03 — a DOCUMENTED
@@ -192,6 +200,21 @@ function PushSurveyInner() {
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>(
     () => surveyMode !== 'general' ? autoAssignTemplates(initialTermId, publishedTemplates) : {}
   )
+  // S2 (2026-08-04 scenario redesign) — "Create new survey" instead of
+  // "Override" on a template reassignment produces a SECOND, independent
+  // survey for the same offering. Scoped intentionally to one extra slot
+  // (not a general array) — this is the one-more-template case the design
+  // review needs; a fully general N-templates-per-offering model is real
+  // engineering scope, tracked separately (spec doc §3, S2).
+  const [secondaryTemplateAssignments, setSecondaryTemplateAssignments] = useState<Record<string, SecondaryTemplateAssignment>>({})
+  // The Override-vs-Create-new decision, pending the admin's answer. Set by
+  // the primary Select's onChange when it detects a conflicting existing
+  // Draft/Scheduled survey; resolved by the AlertDialog rendered inside
+  // StepSurveyInstances (co-located with the row, same convention as its
+  // other dialogs — see resetOpen/previewTemplate there).
+  const [pendingReassign, setPendingReassign] = useState<
+    { offeringId: string; newTemplateId: string; existingTemplateId: string; existingStatus: 'draft' | 'scheduled' } | null
+  >(null)
   const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
   // Programmatic surveys pick courses directly (across terms) in step 1.
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
@@ -333,6 +356,21 @@ function PushSurveyInner() {
     return m
   }, [surveys])
 
+  // Person-scoped secondary assignments (2026-08-05 person-grain exception)
+  // pull their named people OUT of the primary plan — the primary and
+  // secondary rosters share unitSelections keys (offeringId|criterion|person,
+  // not template-qualified, see the S2 comment on onSecondaryTemplateChange
+  // below), so a person appearing in both plans at once would let toggling
+  // their checkbox in one row silently affect the other.
+  const personScopedNamesByOffering = useMemo(() => {
+    const m = new Map<string, Set<string>>()
+    for (const [offeringId, entry] of Object.entries(secondaryTemplateAssignments)) {
+      if (!entry.scopePersonNames?.length) continue
+      m.set(offeringId, new Set(entry.scopePersonNames))
+    }
+    return m
+  }, [secondaryTemplateAssignments])
+
   // ── Survey-instance plan (Survey design step + push) ───────────────────────
   // Each selected offering × its effective template expands into the survey
   // instances a push would create, checked per offering+role+person against
@@ -346,9 +384,43 @@ function PushSurveyInner() {
       // Full `templates` (not just published) so a combined existing survey's
       // ORIGINAL template can still be looked up for role-coverage even if
       // it's since been unpublished/archived (roleOverlapConflicts fallback).
-      return expandInstances(o, byId.get(raw) ?? null, surveys, templates)
+      const expanded = expandInstances(o, byId.get(raw) ?? null, surveys, templates)
+      const scoped = personScopedNamesByOffering.get(o.id)
+      return scoped ? expanded.filter(i => !i.personName || !scoped.has(i.personName)) : expanded
     })
-  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys, templates])
+  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys, templates, personScopedNamesByOffering])
+
+  // S2 — the secondary survey's instance plan, same expansion as above but
+  // scoped to offerings with a secondaryTemplateAssignments entry. Reuses
+  // expandInstances/roleOverlapConflicts as-is: the overlap check already
+  // scans ALL persisted surveys for the offering, so it correctly flags the
+  // aspect the PRIMARY survey already covers as a duplicate here — no new
+  // conflict logic needed, just a second call with the second template.
+  // Person-scoped entries (scopePersonNames set) additionally restrict the
+  // result to ONLY those named people's instructor-scope instances — the
+  // whole point of the person-grain exception is that this second survey
+  // covers just the late-added person, not the whole role.
+  const secondaryInstancePlan = useMemo(() => {
+    const byId = new Map(publishedTemplates.map(t => [t.id, t]))
+    return Object.entries(secondaryTemplateAssignments).flatMap(([offeringId, entry]) => {
+      const o = selectedOfferings.find(x => x.id === offeringId)
+      if (!o) return []
+      const expanded = expandInstances(o, byId.get(entry.templateId) ?? null, surveys, templates)
+      if (!entry.scopePersonNames?.length) return expanded
+      const scoped = new Set(entry.scopePersonNames)
+      return expanded
+        .filter(i => i.scope === 'instructor' && i.personName && scoped.has(i.personName))
+        // The person-grain decision is already made BY VIRTUE of this
+        // secondary existing — expandInstances still computes
+        // lateAddedRelativeTo from the general role-overlap check (it has
+        // no notion of "this secondary was created FOR this person"), which
+        // would otherwise show the "Review {name}'s template" callout again
+        // on the row that IS the resolved answer. Cleared here, not in
+        // expandInstances, since that function is shared with the primary
+        // plan where the signal is still exactly what's needed.
+        .map(i => ({ ...i, lateAddedRelativeTo: null }))
+    })
+  }, [secondaryTemplateAssignments, selectedOfferings, publishedTemplates, surveys, templates])
 
   // ── ST-02 sticky per-unit selection (Phase 2) ──────────────────────────────
   // Page-owned (replacing the step's old reset-on-planSig `included` Set) so
@@ -876,8 +948,11 @@ function PushSurveyInner() {
       {/* ST-02 Phase 3 — Save as Draft. Shell-owned (not a step footer): it
           persists the WHOLE in-progress wizard, whatever step is showing.
           CE mode only, from Survey design on (step 1 has nothing draftable
-          beyond scope, and general mode has no draft path). */}
-      {surveyMode !== 'general' && typeof step === 'number' && step >= 2 && (
+          beyond scope, and general mode has no draft path). Step 2 renders
+          its OWN copy of this button grouped with its Reset to defaults/New
+          template actions (2026-08-05, Romit's call) — skipped here so it
+          isn't shown twice. */}
+      {surveyMode !== 'general' && typeof step === 'number' && step >= 2 && step !== 2 && (
         <div className="flex items-center justify-end gap-3" style={{ padding: '12px 40px 0' }}>
           {draftSavedAt && (
             <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
@@ -1004,6 +1079,19 @@ function PushSurveyInner() {
                 templateAssignments={templateAssignments}
                 defaultAssignments={defaultAssignments}
                 onTemplateChange={(offeringId, tmplId) => {
+                  // S2 — before committing, check whether this offering
+                  // already has a Draft/Scheduled survey under a DIFFERENT
+                  // template. If so, this isn't a plain reassignment — ask
+                  // Override vs. Create-new instead of silently replacing.
+                  const offering = selectedOfferings.find(o => o.id === offeringId)
+                  const existing = offering ? draftOrScheduledMatch(offering, surveys) : null
+                  if (existing?.templateId && existing.templateId !== tmplId) {
+                    setPendingReassign({
+                      offeringId, newTemplateId: tmplId, existingTemplateId: existing.templateId,
+                      existingStatus: storyStatusOf(existing) as 'draft' | 'scheduled',
+                    })
+                    return
+                  }
                   setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
                   // ST-02: changing a course's template resets its evaluatee
                   // selection entirely — no prior selection carries forward,
@@ -1011,6 +1099,56 @@ function PushSurveyInner() {
                   // seeding effect re-populates the new template's units with
                   // first-sight defaults on the next plan recompute.
                   setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
+                }}
+                pendingReassign={pendingReassign}
+                onResolveReassign={(choice) => {
+                  if (!pendingReassign) return
+                  const { offeringId, newTemplateId } = pendingReassign
+                  if (choice === 'override') {
+                    setTemplateAssignments(p => ({ ...p, [offeringId]: newTemplateId }))
+                    setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
+                  } else if (choice === 'create-new') {
+                    setSecondaryTemplateAssignments(p => ({ ...p, [offeringId]: { templateId: newTemplateId } }))
+                  }
+                  setPendingReassign(null)
+                }}
+                onCancelReassign={() => setPendingReassign(null)}
+                secondaryTemplateAssignments={secondaryTemplateAssignments}
+                secondaryInstances={secondaryInstancePlan}
+                onSecondaryTemplateChange={(offeringId, tmplId) => {
+                  // Deliberately does NOT clear unitSelections for the whole
+                  // offering the way the primary onTemplateChange does —
+                  // unitSelections keys aren't template-qualified, so that
+                  // clear would also wipe the PRIMARY survey's already-made
+                  // selections. A newly-introduced criterion is simply
+                  // unseen and gets first-sight defaults from the existing
+                  // seeding effect; a no-longer-relevant one is just unused.
+                  // Preserves an existing scopePersonNames — this handler is
+                  // also how the person-scoped card's own TemplateControl
+                  // reports a pick (see onAssignPersonTemplate below), so a
+                  // person-scoped slot changing its template stays scoped.
+                  setSecondaryTemplateAssignments(p => ({
+                    ...p,
+                    [offeringId]: { templateId: tmplId, scopePersonNames: p[offeringId]?.scopePersonNames },
+                  }))
+                }}
+                onAssignPersonTemplate={(offeringId, personName, templateId) => {
+                  // The person-grain exception's own entry point (2026-08-05)
+                  // — a late-added co-instructor gets the one extra
+                  // secondary slot scoped to just them, distinct from the
+                  // general "Keep both" flow above which leaves
+                  // scopePersonNames unset and covers the whole role.
+                  setSecondaryTemplateAssignments(p => ({
+                    ...p,
+                    [offeringId]: { templateId, scopePersonNames: [personName] },
+                  }))
+                }}
+                onRemoveSecondary={(offeringId) => {
+                  setSecondaryTemplateAssignments(p => {
+                    const next = { ...p }
+                    delete next[offeringId]
+                    return next
+                  })
                 }}
                 onResetDefaults={handleResetTemplateDefaults}
                 unitSelections={unitSelections}
@@ -1027,6 +1165,8 @@ function PushSurveyInner() {
                 onCourseSelectedChange={handleCourseSelectedChange}
                 templateDriftNotices={templateDriftNotices}
                 onDismissTemplateDrift={() => setTemplateDriftNotices([])}
+                onSaveDraft={selectedOfferings.length > 0 ? handleSaveDraft : undefined}
+                draftSavedAt={draftSavedAt}
                 onBack={() => setStep(1)}
                 onContinue={() => {
                   // Materialize type-defaults into explicit assignments so the

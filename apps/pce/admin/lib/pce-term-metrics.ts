@@ -144,6 +144,13 @@ export interface TermSnapshot {
   released: number
   daysLeft: number | null
   coverage: { surveyed: number; total: number } | null
+  /** Aug 4 transcript scenario #6 — offerings with a saved-but-unfinished
+   *  wizard run (Save as Draft, or a Scheduled survey re-opened for editing).
+   *  `coverageFor` deliberately excludes these from `surveyed` (a draft isn't
+   *  "done"), so without this the dashboard card can't tell "never touched"
+   *  apart from "started, not finished" — the exact gap the term-card resume
+   *  entry point needs to close. */
+  draftCount: number
 }
 
 /** Full derived snapshot for one term from the live evaluation set. */
@@ -174,5 +181,6 @@ export function snapshot(term: ProgramTerm, ce: PceSurvey[]): TermSnapshot {
     released,
     daysLeft: stage === 'live' ? daysUntilClose(term) : null,
     coverage: coverageFor(term.id, list),
+    draftCount: list.filter((s) => s.status === 'draft').length,
   }
 }

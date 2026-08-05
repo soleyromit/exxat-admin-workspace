@@ -530,8 +530,9 @@ export function StepCoursesEvaluateesClassic({
                       {hasCourse && (
                         <Tip side="top" label="Course evaluation">
                           <span
-                            className="size-6 rounded-full flex items-center justify-center shrink-0"
+                            className="size-6 rounded-full flex items-center justify-center shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                             style={{ background: 'var(--muted)' }}
+                            tabIndex={0}
                           >
                             <i
                               className="fa-light fa-book-open"

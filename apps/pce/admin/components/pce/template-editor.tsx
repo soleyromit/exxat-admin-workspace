@@ -48,6 +48,14 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { WizardNav } from '@/components/pce/wizard-nav'
@@ -56,6 +64,7 @@ import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
 import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY, COURSE_TYPE_FULL_LABEL, type DeliveryMode } from '@/lib/pce-mock-data'
 import { TemplateImportDialog } from '@/components/pce/template-import-dialog'
+import { storyStatusOf } from '@/lib/pce-push-validation'
 
 // Faculty roles offered in the builder = the program roles configured in Central
 // Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
@@ -434,7 +443,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const pathname = usePathname()
   const backHref = pathname?.includes('/programmatic/') ? '/templates/programmatic' : '/templates'
   const {
-    templates, updateTemplate,
+    templates, updateTemplate, surveys,
     addTemplateSection, removeTemplateSection, updateTemplateSection,
     addFacultyRoleSet, removeFacultyRoleSet, updateFacultyRoleSetRoles,
     addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
@@ -582,6 +591,17 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const sections = t.templateSections ?? []
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0)
   const canPublish = sections.length > 0 && totalQuestions > 0
+
+  // Unpublish confirmation — a published template can be in active use across
+  // many courses; unpublishing pauses every Live/Scheduled survey built from
+  // it, not just this editor session. Real count, not a generic warning, so
+  // an admin who follows the Step 2 "Edit it instead" escape hatch (S3, Aug 4
+  // scenario redesign) sees the actual blast radius before committing.
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+  const affectedSurveys = surveys.filter(s => {
+    const status = storyStatusOf(s)
+    return s.templateId === t.id && (status === 'live' || status === 'scheduled')
+  })
 
   // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
   const ASPECT_INFO: Record<string, string> = {
@@ -1753,15 +1773,45 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
                 Save draft
               </Button>
             )}
-            {/* Publish moved into the wizard's Review step; Unpublish stays here for live templates */}
+            {/* Publish moved into the wizard's Review step; Unpublish stays here for live
+                templates. Skips the confirmation entirely when nothing is actually
+                affected — a dialog with nothing to warn about is just friction. */}
             {t.status === 'active' && (
-              <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (affectedSurveys.length === 0) { updateTemplate(t.id, { status: 'draft' }); return }
+                  setConfirmUnpublish(true)
+                }}
+              >
                 Unpublish
               </Button>
             )}
           </div>
         </div>
       </div>
+
+      <AlertDialog open={confirmUnpublish} onOpenChange={setConfirmUnpublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish &ldquo;{t.name || 'Untitled template'}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Used by {affectedSurveys.length} scheduled or live survey{affectedSurveys.length === 1 ? '' : 's'} across your courses.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="mx-6 mb-2 text-sm text-muted-foreground list-disc ps-4 flex flex-col gap-1">
+            <li>Those {affectedSurveys.length === 1 ? 'survey pauses' : `${affectedSurveys.length} surveys pause`} immediately</li>
+            <li>{affectedSurveys.length === 1 ? 'It resumes' : 'They resume'} only once you republish</li>
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { updateTemplate(t.id, { status: 'draft' }); setConfirmUnpublish(false) }}>
+              Unpublish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Tabs value={wizardStep} className="flex flex-col flex-1 min-h-0">
         <WizardNav

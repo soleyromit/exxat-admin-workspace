@@ -1508,8 +1508,14 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   // Kevin's flow runs its OWN window + cadence — the wizard surfaces must show
-  // per-survey rules diverging, not one uniform Dec 4 story.
-  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
+  // per-survey rules diverging, not one uniform Dec 4 story. Live + evalRole
+  // 'instructor' (2026-08-05): the demo fixture for the person-grain
+  // exception — co13 also carries coInstructorIds: ['f5'] (Dr. Rachel Gomez,
+  // UC2 late-added co-instructor). With this survey Live and named to Chen
+  // only, Gomez resolves 'new' with lateAddedRelativeTo set, surfacing the
+  // "different template" affordance — without this, that whole feature has
+  // no reachable trigger anywhere in the mock dataset.
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', evalRole: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
   // instructors: [] — a course-scope flow evaluates no PERSON; listing one
   // would seed a ghost row in that instructor's faculty analytics
   // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
