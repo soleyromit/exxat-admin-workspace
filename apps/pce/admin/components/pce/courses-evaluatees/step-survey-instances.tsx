@@ -936,16 +936,35 @@ function EvaluateeRoster({
               </span>
             )}
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              {/* Role is the ONLY identity this toggle carries now — no
-                  person name/count-of-names caption underneath. */}
+              {/* Role stays the heading regardless of headcount — this is
+                  still a role-level toggle (Monil's decision above), not a
+                  person picker. Only the CAPTION line changes with count
+                  (Romit's 2026-08-06 refinement, third pass): "1 person" is
+                  a placeholder nobody reads twice — the real name is more
+                  useful and doesn't change what the toggle controls, since
+                  the heading above it still says the role. 2+ people get a
+                  small horizontal avatar row instead of "N people" text —
+                  still no name is EVER promoted to the heading. */}
               <span className={cn('truncate text-sm font-medium', !allIn && 'text-muted-foreground')}>
                 {group.scope === 'course' ? 'Course material' : group.roleLabel}
               </span>
-              <span className="truncate text-xs text-muted-foreground">
-                {allAutoUpdateExcluded
-                  ? 'In Prism, not included — Auto Update is off'
-                  : (group.scope === 'course' ? 'Course' : `${count} ${count === 1 ? 'person' : 'people'}`)}
-              </span>
+              {allAutoUpdateExcluded ? (
+                <span className="truncate text-xs text-muted-foreground">In Prism, not included — Auto Update is off</span>
+              ) : group.scope === 'course' ? (
+                <span className="truncate text-xs text-muted-foreground">Course</span>
+              ) : count === 1 ? (
+                <span className="truncate text-xs text-muted-foreground">{group.instances[0].personName}</span>
+              ) : (
+                <AvatarGroup>
+                  {group.instances.map(i => (
+                    <Tip key={i.key} label={evaluateeLabel(i)} side="top">
+                      <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                        <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className="size-5" />
+                      </span>
+                    </Tip>
+                  ))}
+                </AvatarGroup>
+              )}
             </span>
             {/* Evaluatee toggle is ToggleSwitch, not Checkbox — Romit's
                 2026-08-06 call. Course-level selection stays Checkbox
@@ -957,7 +976,12 @@ function EvaluateeRoster({
                 evaluatee context). sr-only label + htmlFor/id, same pairing
                 already used for the real Auto Update ToggleSwitch below. */}
             <label htmlFor={`unit-${code}-${group.key}`} className="sr-only">
-              {`Include ${group.scope === 'course' ? 'Course material' : `${group.roleLabel} (${count} ${count === 1 ? 'person' : 'people'})`} in this push`}
+              {`Include ${group.scope === 'course'
+                ? 'Course material'
+                : count === 1
+                  ? `${group.roleLabel} (${group.instances[0].personName})`
+                  : `${group.roleLabel} (${count} people: ${group.instances.map(i => i.personName).join(', ')})`
+              } in this push`}
             </label>
             <ToggleSwitch id={`unit-${code}-${group.key}`} checked={allIn} onChange={() => onToggleUnits(keys, !allIn)} />
           </div>
@@ -2183,7 +2207,14 @@ export function StepSurveyInstances({
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          className="group"
+                          // DS ghost buttons fill aria-expanded:bg-interactive-hover
+                          // (Prism theme resolves that to a rose-tinted --muted) —
+                          // clashes sitting on this row's deliberately neutral
+                          // dt-row-selected background (see that token's own
+                          // comment below). The row's left accent border + grey
+                          // wash + the chevron's own rotation already say "open";
+                          // this button doesn't need a fourth, mismatched signal.
+                          className="group aria-expanded:bg-transparent"
                           aria-label={`${openRows.has(o.id) ? 'Hide' : 'Show'} template and evaluatees for ${code}`}
                         >
                           <i
