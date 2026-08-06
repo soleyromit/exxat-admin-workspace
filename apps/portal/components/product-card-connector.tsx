@@ -8,10 +8,11 @@ import {
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
+  StatusBadge,
 } from '@exxatdesignux/ui'
 import { stockPortraitUrl } from '@/lib/stock-portrait'
 import { initialsFromDisplayName } from '@/lib/initials-from-name'
-import type { Product } from '@/lib/products'
+import { SALES_EMAIL, type Product } from '@/lib/products'
 
 const MAX_FACES = 4
 
@@ -115,6 +116,59 @@ export function ProductConnectorRow({ product }: { product: Product }) {
             </Button>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** "Explore Exxat" row — same connector-list anatomy as ProductConnectorRow, for not-yet-launched products. */
+export function ExploreExxatRow({ product }: { product: Product }) {
+  const launchLabel =
+    product.comingSoon && product.expectedLaunch ? `Coming ${product.expectedLaunch}` : 'Coming soon'
+
+  const expressInterestHref = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(`Interest in ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to learn more about ${product.name} for our program.`)}`
+
+  return (
+    <div className="group relative flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent">
+      {/* Product mark — per-product identity */}
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+        style={{
+          background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
+          opacity: 0.5,
+        }}
+      >
+        <i
+          className={`fa-solid ${product.icon} text-base`}
+          aria-hidden="true"
+          style={{ color: `var(--product-${product.colorKey}-icon)` }}
+        />
+      </div>
+
+      {/* Name + description — stretched link makes the whole row open the detail page */}
+      <div className="min-w-0 flex-1">
+        <Link
+          href={`/product/${product.id}`}
+          className="flex flex-col gap-0.5 rounded-sm before:absolute before:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="flex items-center gap-2">
+            <span className="text-base font-medium leading-tight text-foreground">{product.name}</span>
+            <StatusBadge label={launchLabel} tone="neutral" />
+          </span>
+          <span className="text-sm text-muted-foreground line-clamp-2">{product.description}</span>
+        </Link>
+      </div>
+
+      {/* Right cluster — sits above the stretched link */}
+      <div className="relative z-10 flex items-center gap-2 shrink-0">
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/product/${product.id}`}>Learn more</Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <a href={expressInterestHref} aria-label={`Express interest in ${product.name}`}>
+            Express interest
+          </a>
+        </Button>
       </div>
     </div>
   )
