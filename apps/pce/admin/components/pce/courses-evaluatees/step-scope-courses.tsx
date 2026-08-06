@@ -70,6 +70,19 @@ interface StepScopeCoursesProps {
   cohorts: string[]
   cohortOptions: string[]
   scoped: CourseOffering[]
+  /** Page-owned current selection (audit fix, 2026-08-05) — this component's
+   *  own default-selection effect used to be the sole owner of "selected,"
+   *  which meant it forgot everything every time the step unmounted
+   *  (Step 2 → Step 1 navigation) and re-applied "every ready course" over
+   *  whatever the Admin had actually chosen. Read here only to distinguish
+   *  a row already decided (mirror its current state) from one genuinely
+   *  new to this scope (apply the type default) — never written back to
+   *  directly; onSelectionChange is still the one channel that reports up. */
+  selectedIds: ReadonlySet<string>
+  /** Course ids this component has ever computed a default selection for,
+   *  in a ref owned by the page (survives this component's own unmount).
+   *  Mutated here as new rows are first seen. */
+  seenIdsRef: { current: Set<string> }
   isLoading?: boolean
   error?: string | null
   onRetry?: () => void
@@ -91,7 +104,7 @@ interface StepScopeCoursesProps {
 
 export function StepScopeCourses({
   season, academicYear, cohorts,
-  cohortOptions: cohortOpts, scoped, isLoading = false, error = null, onRetry,
+  cohortOptions: cohortOpts, scoped, selectedIds, seenIdsRef, isLoading = false, error = null, onRetry,
   addedStudents, existingSurveysByOffering, onAddStudents,
   onSeasonChange, onAcademicYearChange, onToggleCohort,
   onSelectionChange, onContinue,
@@ -248,13 +261,32 @@ export function StepScopeCourses({
   // Default selection on scope change: courses that HAVE students. A roster-gap
   // course joins the batch when the user checks it (or fixes the roster —
   // fixing does not auto-check, same rule as the readiness table's gap rows).
+  //
+  // Audit fix (2026-08-05): this used to unconditionally reset to "every
+  // ready course" whenever rowSig looked new to THIS component instance —
+  // which included every remount (Step 2 → Step 1 navigation unmounts this
+  // step), silently discarding any deselection the Admin had made, on this
+  // step OR via Step 2's own shared checkbox. `seenIdsRef` (page-owned,
+  // survives the unmount) now tells a row already decided before — mirror
+  // `selectedIds`, the page's current source of truth — from a row genuinely
+  // new to this scope, which still gets the type default.
   const rowSig = rows.map(r => r.id).join('\0')
   const lastRowSig = useRef<string>('')
   useEffect(() => {
     if (lastRowSig.current === rowSig) return
     lastRowSig.current = rowSig
-    tableState.setSelected(new Set(rows.filter(r => r.roster === 'ready').map(r => r.id)))
-  }, [rowSig, rows, tableState])
+    const seen = seenIdsRef.current
+    const next = new Set<string>()
+    for (const r of rows) {
+      if (seen.has(r.id)) {
+        if (selectedIds.has(r.id)) next.add(r.id)
+      } else {
+        seen.add(r.id)
+        if (r.roster === 'ready') next.add(r.id)
+      }
+    }
+    tableState.setSelected(next)
+  }, [rowSig, rows, tableState, selectedIds, seenIdsRef])
 
   // Report selection up (de-duped).
   const lastReported = useRef('')

@@ -37,7 +37,7 @@ import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria 
 import {
   subjectDataIssues, windowIssues, expandInstances, existingFlowSummary,
   reconcileUnitsOnRefresh, draftOrScheduledMatch, templateStoryStatusOf, storyStatusOf,
-  type UnitSelectionMap, type CourseIssue,
+  type UnitSelectionMap, type CourseIssue, type SurveyInstance,
 } from '@/lib/pce-push-validation'
 import { courseLabelOf } from '@/lib/pce-course-readiness'
 
@@ -58,12 +58,16 @@ const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
 // flow; the programmatic flow still skips 2 (1 → 3 → 4).
 type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
-/** S2's one secondary-template slot (see secondaryTemplateAssignments below).
- *  `scopePersonNames` absent = the original 2026-08-04 "Keep both" behavior,
- *  the whole role/aspect gets the second template. Present (2026-08-05,
- *  person-grain exception) = the second template covers ONLY these named
- *  people — the late-added-co-instructor case, reusing this same one-extra-
- *  slot mechanism instead of a general per-offering array. */
+/** One extra template assigned to an offering, beyond its primary. Origin is
+ *  either S2's Override-vs-Create-new dialog ("Keep both"), the general
+ *  "+ Add another template" affordance (2026-08-06, Romit's call — every
+ *  course can carry more than one, not just the S2-conflict case), or the
+ *  person-grain late-added-co-instructor exception. `scopePersonNames`
+ *  absent = the whole role/aspect gets this template (the 2026-08-04 "Keep
+ *  both" behavior and the general add-another-template case). Present
+ *  (2026-08-05, person-grain exception) = this template covers ONLY these
+ *  named people. `secondaryTemplateAssignments` holds an ARRAY per offering
+ *  now — see the 2026-08-06 comment where it's declared. */
 type SecondaryTemplateAssignment = { templateId: string; scopePersonNames?: string[] }
 
 // The type default for one course type (ST-02 auto-assign / Reset to defaults).
@@ -77,8 +81,12 @@ function pickTemplateForType(
   courseType: string | undefined,
   publishedTemplates: PceTemplate[],
 ): PceTemplate {
+  // A template with no courseType (or the explicit 'any') applies to every
+  // course type — omitting this wildcard means a real type match never
+  // fires against the fixture's own tmpl1/tmpl2 (both courseType: 'any'),
+  // silently falling back to publishedTemplates[0] regardless of type.
   const matches = courseType
-    ? publishedTemplates.filter(t => t.courseType === courseType)
+    ? publishedTemplates.filter(t => !t.courseType || t.courseType === 'any' || t.courseType === courseType)
     : []
   if (matches.length === 0) return publishedTemplates[0]
   if (matches.length === 1) return matches[0]
@@ -202,11 +210,16 @@ function PushSurveyInner() {
   )
   // S2 (2026-08-04 scenario redesign) — "Create new survey" instead of
   // "Override" on a template reassignment produces a SECOND, independent
-  // survey for the same offering. Scoped intentionally to one extra slot
-  // (not a general array) — this is the one-more-template case the design
-  // review needs; a fully general N-templates-per-offering model is real
-  // engineering scope, tracked separately (spec doc §3, S2).
-  const [secondaryTemplateAssignments, setSecondaryTemplateAssignments] = useState<Record<string, SecondaryTemplateAssignment>>({})
+  // survey for the same offering. Originally scoped to one extra slot per
+  // offering; 2026-08-06 Romit generalized this — "per course I should be
+  // allowed to add more templates" — into a real N-per-offering array,
+  // reachable both from the S2 conflict dialog and a standalone "+ Add
+  // another template" affordance in Step 2 (validated at
+  // /compare/push-step2-template-hierarchy). Push-time creation of these
+  // extra surveys (pushSurveyBatch still only accepts one templateId per
+  // offering) remains open engineering scope — same boundary this feature
+  // already had pre-generalization, just not yet closed.
+  const [secondaryTemplateAssignments, setSecondaryTemplateAssignments] = useState<Record<string, SecondaryTemplateAssignment[]>>({})
   // The Override-vs-Create-new decision, pending the admin's answer. Set by
   // the primary Select's onChange when it detects a conflicting existing
   // Draft/Scheduled survey; resolved by the AlertDialog rendered inside
@@ -218,6 +231,17 @@ function PushSurveyInner() {
   const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
   // Programmatic surveys pick courses directly (across terms) in step 1.
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
+  // Audit fix (2026-08-05): course ids StepScopeCourses has ever computed a
+  // default selection for. That component's own default-selection effect is
+  // keyed off a component-LOCAL ref, which forgets everything on unmount —
+  // so every Step 2 → Step 1 round trip re-applied "select every ready
+  // course" over whatever the Admin had actually chosen (including
+  // deselections made via Step 2's own shared checkbox), violating "Untouched
+  // rows never reset as a side effect." Page-owned so it survives step
+  // navigation like hydratedResumeIds below; passed down so StepScopeCourses
+  // can tell "never seen before" (apply the type default) from "seen before,
+  // deliberately left out" (keep it out).
+  const seenCourseIdsRef = useRef<Set<string>>(new Set())
 
   // CE step 1 (Courses & Evaluatees) scope — Term (season) + Academic Year are independent.
   const initialTerm = MOCK_PROGRAM_TERMS.find(t => t.id === initialTermId)
@@ -364,9 +388,9 @@ function PushSurveyInner() {
   // their checkbox in one row silently affect the other.
   const personScopedNamesByOffering = useMemo(() => {
     const m = new Map<string, Set<string>>()
-    for (const [offeringId, entry] of Object.entries(secondaryTemplateAssignments)) {
-      if (!entry.scopePersonNames?.length) continue
-      m.set(offeringId, new Set(entry.scopePersonNames))
+    for (const [offeringId, entries] of Object.entries(secondaryTemplateAssignments)) {
+      const names = entries.flatMap(e => e.scopePersonNames ?? [])
+      if (names.length > 0) m.set(offeringId, new Set(names))
     }
     return m
   }, [secondaryTemplateAssignments])
@@ -390,37 +414,87 @@ function PushSurveyInner() {
     })
   }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys, templates, personScopedNamesByOffering])
 
-  // S2 — the secondary survey's instance plan, same expansion as above but
-  // scoped to offerings with a secondaryTemplateAssignments entry. Reuses
-  // expandInstances/roleOverlapConflicts as-is: the overlap check already
-  // scans ALL persisted surveys for the offering, so it correctly flags the
-  // aspect the PRIMARY survey already covers as a duplicate here — no new
-  // conflict logic needed, just a second call with the second template.
-  // Person-scoped entries (scopePersonNames set) additionally restrict the
-  // result to ONLY those named people's instructor-scope instances — the
-  // whole point of the person-grain exception is that this second survey
-  // covers just the late-added person, not the whole role.
-  const secondaryInstancePlan = useMemo(() => {
+  // S2 / general "+ Add another template" — every extra template's instance
+  // plan, same expansion as the primary but scoped to offerings with
+  // secondaryTemplateAssignments entries. Reuses expandInstances/
+  // roleOverlapConflicts as-is against PERSISTED surveys — that check
+  // correctly flags an aspect an already-scheduled/live survey covers, no
+  // matter which template (primary or extra) newly claims it.
+  //
+  // That check has no visibility into what THIS wizard session's OTHER
+  // template assignments claim, though (nothing's persisted yet) — so two
+  // in-progress templates on the same offering that both list, say,
+  // Instructor would otherwise each resolve to 'new' and create two
+  // overlapping survey instances for the same person. `claimed` tracks
+  // criteria in add-order (primary first, then each extra template in the
+  // order it was added) and drops a later template's rows for a criterion
+  // an earlier one already has — same "first template wins" rule validated
+  // at /compare/push-step2-template-hierarchy. Person-scoped entries
+  // (scopePersonNames set) are exempt: they exist specifically to cover a
+  // named person's role differently from an already-claiming template, so
+  // they're neither filtered by `claimed` nor added to it.
+  // Grouped by offering, then by the entry's position in that offering's
+  // secondaryTemplateAssignments array — NOT flattened, since two entries
+  // can legitimately share a templateId (a person-grain override can pick
+  // the same template a general "+ Add another template" entry already
+  // added) and a flat list would have no way to tell their instances back
+  // apart for per-row rendering/gating.
+  const secondaryInstancesByOffering = useMemo(() => {
     const byId = new Map(publishedTemplates.map(t => [t.id, t]))
-    return Object.entries(secondaryTemplateAssignments).flatMap(([offeringId, entry]) => {
-      const o = selectedOfferings.find(x => x.id === offeringId)
-      if (!o) return []
-      const expanded = expandInstances(o, byId.get(entry.templateId) ?? null, surveys, templates)
-      if (!entry.scopePersonNames?.length) return expanded
-      const scoped = new Set(entry.scopePersonNames)
-      return expanded
-        .filter(i => i.scope === 'instructor' && i.personName && scoped.has(i.personName))
-        // The person-grain decision is already made BY VIRTUE of this
-        // secondary existing — expandInstances still computes
-        // lateAddedRelativeTo from the general role-overlap check (it has
-        // no notion of "this secondary was created FOR this person"), which
-        // would otherwise show the "Review {name}'s template" callout again
-        // on the row that IS the resolved answer. Cleared here, not in
-        // expandInstances, since that function is shared with the primary
-        // plan where the signal is still exactly what's needed.
-        .map(i => ({ ...i, lateAddedRelativeTo: null }))
-    })
-  }, [secondaryTemplateAssignments, selectedOfferings, publishedTemplates, surveys, templates])
+    const out: Record<string, SurveyInstance[][]> = {}
+    const dedupedLabels: Record<string, string[][]> = {}
+    for (const o of selectedOfferings) {
+      const entries = secondaryTemplateAssignments[o.id]
+      if (!entries?.length) continue
+      const primaryId = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+      const primaryTemplate = byId.get(primaryId)
+      const claimed = new Set<Criterion>(primaryTemplate ? templateCriteria(primaryTemplate) : [])
+      const dedupedForOffering: string[][] = []
+      out[o.id] = entries.map(entry => {
+        const t = byId.get(entry.templateId)
+        if (!t) { dedupedForOffering.push([]); return [] }
+        let expanded = expandInstances(o, t, surveys, templates)
+        if (entry.scopePersonNames?.length) {
+          const scoped = new Set(entry.scopePersonNames)
+          expanded = expanded
+            .filter(i => i.scope === 'instructor' && i.personName && scoped.has(i.personName))
+            // The person-grain decision is already made BY VIRTUE of this
+            // entry existing — expandInstances still computes
+            // lateAddedRelativeTo from the general role-overlap check (it
+            // has no notion of "this entry was created FOR this person"),
+            // which would otherwise show the "Review {name}'s template"
+            // callout again on the row that IS the resolved answer.
+            .map(i => ({ ...i, lateAddedRelativeTo: null }))
+          dedupedForOffering.push([])
+        } else {
+          // Every real published template in this fixture shares MOST of
+          // its criteria with the default primary (End-of-Term Evaluation
+          // covers course material + instructor; Faculty Midterm Check-In
+          // is a strict subset of that) — so full-overlap dedup isn't a
+          // rare edge case here, it's the common case. Track WHICH criteria
+          // got dropped so the row can say so instead of rendering a bare
+          // "–" with no explanation (found live-testing against
+          // /compare/push-step2-template-hierarchy, 2026-08-06).
+          const droppedLabels = templateCriteria(t)
+            .filter(c => claimed.has(c))
+            .map(c => CRITERION_TOGGLE_LABEL[c])
+          dedupedForOffering.push(droppedLabels)
+          expanded = expanded.filter(i => !claimed.has(i.criterion))
+          for (const c of templateCriteria(t)) claimed.add(c)
+        }
+        return expanded
+      })
+      dedupedLabels[o.id] = dedupedForOffering
+    }
+    return { instances: out, dedupedLabels }
+  }, [secondaryTemplateAssignments, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, surveys, templates])
+  // Flat projection — the shape push-time wiring (still open engineering
+  // scope, see secondaryTemplateAssignments' declaration) and any future
+  // Review-step total would want.
+  const secondaryInstancePlan = useMemo(
+    () => Object.values(secondaryInstancesByOffering.instances).flat(2),
+    [secondaryInstancesByOffering],
+  )
 
   // ── ST-02 sticky per-unit selection (Phase 2) ──────────────────────────────
   // Page-owned (replacing the step's old reset-on-planSig `included` Set) so
@@ -891,6 +965,7 @@ function PushSurveyInner() {
       surveyMode !== 'general' ? autoAssignTemplates(LATEST_TERM_ID, publishedTemplates) : {}
     )
     setGeneralTemplateId('')
+    setSecondaryTemplateAssignments({})
     setSelectedCourseIds(new Set())
     setAddedStudents({})
     setUnitSelections({})
@@ -1045,6 +1120,8 @@ function PushSurveyInner() {
                 cohorts={ceCohorts}
                 cohortOptions={ceCohortOpts}
                 scoped={ceScoped}
+                selectedIds={selectedCourseIds}
+                seenIdsRef={seenCourseIdsRef}
                 addedStudents={addedStudents}
                 existingSurveysByOffering={existingSurveysByOffering}
                 onAddStudents={(offeringId, studentIds) =>
@@ -1108,46 +1185,74 @@ function PushSurveyInner() {
                     setTemplateAssignments(p => ({ ...p, [offeringId]: newTemplateId }))
                     setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
                   } else if (choice === 'create-new') {
-                    setSecondaryTemplateAssignments(p => ({ ...p, [offeringId]: { templateId: newTemplateId } }))
+                    setSecondaryTemplateAssignments(p => ({
+                      ...p,
+                      [offeringId]: [...(p[offeringId] ?? []), { templateId: newTemplateId }],
+                    }))
                   }
                   setPendingReassign(null)
                 }}
                 onCancelReassign={() => setPendingReassign(null)}
                 secondaryTemplateAssignments={secondaryTemplateAssignments}
-                secondaryInstances={secondaryInstancePlan}
-                onSecondaryTemplateChange={(offeringId, tmplId) => {
+                secondaryInstances={secondaryInstancesByOffering.instances}
+                secondaryDedupedLabels={secondaryInstancesByOffering.dedupedLabels}
+                onAddSecondaryTemplate={(offeringId, templateId) => {
+                  // General "+ Add another template" (2026-08-06) — every
+                  // course, not just the S2-conflict case. Appends; the
+                  // step's own picker already filters out templates already
+                  // assigned to this offering (primary or an earlier
+                  // extra), so this never introduces a same-template dupe.
+                  setSecondaryTemplateAssignments(p => ({
+                    ...p,
+                    [offeringId]: [...(p[offeringId] ?? []), { templateId }],
+                  }))
+                }}
+                onSecondaryTemplateChange={(offeringId, index, tmplId) => {
                   // Deliberately does NOT clear unitSelections for the whole
                   // offering the way the primary onTemplateChange does —
                   // unitSelections keys aren't template-qualified, so that
-                  // clear would also wipe the PRIMARY survey's already-made
-                  // selections. A newly-introduced criterion is simply
-                  // unseen and gets first-sight defaults from the existing
-                  // seeding effect; a no-longer-relevant one is just unused.
-                  // Preserves an existing scopePersonNames — this handler is
-                  // also how the person-scoped card's own TemplateControl
-                  // reports a pick (see onAssignPersonTemplate below), so a
-                  // person-scoped slot changing its template stays scoped.
+                  // clear would also wipe the PRIMARY survey's (or another
+                  // extra template's) already-made selections. A
+                  // newly-introduced criterion is simply unseen and gets
+                  // first-sight defaults from the existing seeding effect; a
+                  // no-longer-relevant one is just unused. Preserves the
+                  // entry's existing scopePersonNames — this handler is also
+                  // how the person-scoped card's own TemplateControl reports
+                  // a pick (see onAssignPersonTemplate below), so a
+                  // person-scoped entry changing its template stays scoped.
                   setSecondaryTemplateAssignments(p => ({
                     ...p,
-                    [offeringId]: { templateId: tmplId, scopePersonNames: p[offeringId]?.scopePersonNames },
+                    [offeringId]: (p[offeringId] ?? []).map((e, i) =>
+                      i === index ? { templateId: tmplId, scopePersonNames: e.scopePersonNames } : e),
                   }))
                 }}
                 onAssignPersonTemplate={(offeringId, personName, templateId) => {
                   // The person-grain exception's own entry point (2026-08-05)
-                  // — a late-added co-instructor gets the one extra
-                  // secondary slot scoped to just them, distinct from the
-                  // general "Keep both" flow above which leaves
-                  // scopePersonNames unset and covers the whole role.
-                  setSecondaryTemplateAssignments(p => ({
-                    ...p,
-                    [offeringId]: { templateId, scopePersonNames: [personName] },
-                  }))
-                }}
-                onRemoveSecondary={(offeringId) => {
+                  // — a late-added co-instructor gets a new extra-template
+                  // entry scoped to just them, distinct from the general
+                  // "Keep both"/"+ Add another template" flows above which
+                  // leave scopePersonNames unset and cover the whole role.
+                  // Reuses an existing entry already scoped to exactly this
+                  // person (picking a different template for them twice)
+                  // instead of piling up a second one.
                   setSecondaryTemplateAssignments(p => {
-                    const next = { ...p }
-                    delete next[offeringId]
-                    return next
+                    const entries = p[offeringId] ?? []
+                    const idx = entries.findIndex(
+                      e => e.scopePersonNames?.length === 1 && e.scopePersonNames[0] === personName,
+                    )
+                    const next = idx >= 0
+                      ? entries.map((e, i) => (i === idx ? { ...e, templateId } : e))
+                      : [...entries, { templateId, scopePersonNames: [personName] }]
+                    return { ...p, [offeringId]: next }
+                  })
+                }}
+                onRemoveSecondary={(offeringId, index) => {
+                  setSecondaryTemplateAssignments(p => {
+                    const next = (p[offeringId] ?? []).filter((_, i) => i !== index)
+                    const out = { ...p }
+                    if (next.length > 0) out[offeringId] = next
+                    else delete out[offeringId]
+                    return out
                   })
                 }}
                 onResetDefaults={handleResetTemplateDefaults}

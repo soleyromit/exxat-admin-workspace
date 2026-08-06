@@ -2,8 +2,9 @@
 
 // Wizard step shell — hand-roll justified (no DS step-frame organism), see
 // docs/governance/ds-adoption.md §PCE. Composes DS Card/AvatarGroup/Command/
-// Collapsible/ToggleGroup/ToggleSwitch/Checkbox/Select/Button/Badge/Tip/
-// AlertDialog/LocalBanner + ListHubStatusBadge/StoryStatusBadgeOS.
+// Collapsible/ToggleSwitch/Checkbox/Select/Button/Badge/Tip/Dialog/
+// AlertDialog/LocalBanner + ListHubStatusBadge/StoryStatusBadgeOS +
+// DataTableToolbar/TablePropertiesDrawer (real DataTable search/filter).
 //
 // Step 2 of the push wizard — "Survey design".
 //
@@ -88,17 +89,22 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import {
-  AvatarGroup, AvatarGroupCount,
+  AvatarGroup, AvatarGroupCount, AvatarInitials,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Button, Checkbox, LocalBanner, ToggleGroup, ToggleGroupItem, ToggleSwitch, Badge, Tip,
+  Button, Checkbox, LocalBanner, ToggleSwitch, Badge, Tip,
   Card, CardContent,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   RadioGroup, RadioGroupItem, Label,
 } from '@exxatdesignux/ui'
 import { cn } from '@/lib/utils'
-import { PersonAvatar } from '@/components/pce/person-avatar'
+import { DataTableToolbar } from '@/components/data-table'
+import { useTableState } from '@/components/data-table/use-table-state'
+import type { ColumnDef } from '@/components/data-table/types'
+import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
+import { initialsOf } from '@/lib/pce-analytics'
 import { StoryStatusBadgeOS } from '@/components/pce/pce-badges'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import {
@@ -157,22 +163,43 @@ interface StepSurveyInstancesProps {
    *  state), safe to fire redundantly alongside onResolveReassign since
    *  Radix's AlertDialogAction also closes the dialog on click. */
   onCancelReassign: () => void
-  /** S2 — the second, independent survey created by "Create new survey."
-   *  Scoped to one extra slot per offering (see page.tsx comment) — enough
-   *  to demo the coexisting-row state without the full N-template rewrite
-   *  a general model would need. `scopePersonNames` absent = the original
-   *  whole-role "Keep both" flow; present (2026-08-05) = the person-grain
-   *  exception, this slot covers only those named people. */
-  secondaryTemplateAssignments: Record<string, { templateId: string; scopePersonNames?: string[] }>
-  secondaryInstances: SurveyInstance[]
-  onSecondaryTemplateChange: (offeringId: string, templateId: string) => void
+  /** Every EXTRA template assigned to an offering beyond its primary — one
+   *  array per offering, in add-order (add-order also decides which
+   *  template "wins" a criterion two entries both list; see page.tsx's
+   *  secondaryInstancePlan). Originates from S2's "Create new survey"
+   *  choice, the general "+ Add another template" affordance below
+   *  (2026-08-06, Romit's call — every course can carry more than one, not
+   *  just the S2-conflict case), or the person-grain late-added-
+   *  co-instructor exception. `scopePersonNames` absent = the entry covers
+   *  the whole role/aspect; present (2026-08-05) = it covers only those
+   *  named people. */
+  secondaryTemplateAssignments: Record<string, { templateId: string; scopePersonNames?: string[] }[]>
+  /** Per offering, per-entry-index (aligned with secondaryTemplateAssignments'
+   *  array) — not flattened, see page.tsx's secondaryInstancesByOffering. */
+  secondaryInstances: Record<string, SurveyInstance[][]>
+  /** Per offering, per-entry-index — CRITERION_TOGGLE_LABEL labels for
+   *  criteria that entry's template lists but a DIFFERENT template already
+   *  on this offering (primary or an earlier extra) claimed first, so
+   *  they're not repeated as their own evaluatee rows. Every real published
+   *  template in this fixture heavily overlaps the default primary, so a
+   *  whole-role entry landing here empty is common, not a rare edge case —
+   *  the row uses this to say WHY instead of rendering a bare "–". */
+  secondaryDedupedLabels: Record<string, string[][]>
+  /** General "+ Add another template" trigger — appends a new whole-role
+   *  entry. The step's own picker only offers templates not already
+   *  assigned to this offering (primary or an existing extra). */
+  onAddSecondaryTemplate: (offeringId: string, templateId: string) => void
+  /** Changes the template of the extra-template entry at `index` (its
+   *  position in that offering's array) — the "Change" action on an
+   *  already-added secondary row. */
+  onSecondaryTemplateChange: (offeringId: string, index: number, templateId: string) => void
   /** Person-grain entry point (2026-08-05) — a late-added co-instructor
    *  (SurveyInstance.lateAddedRelativeTo set) picks a different template
-   *  than their role's existing coverage without disturbing it. Fills the
-   *  same one secondary slot as onSecondaryTemplateChange, scoped to just
-   *  this person. */
+   *  than their role's existing coverage without disturbing it. Adds (or
+   *  updates) an extra-template entry scoped to just this person. */
   onAssignPersonTemplate: (offeringId: string, personName: string, templateId: string) => void
-  onRemoveSecondary: (offeringId: string) => void
+  /** Removes the extra-template entry at `index`. */
+  onRemoveSecondary: (offeringId: string, index: number) => void
   onResetDefaults: () => void
   /** ST-02 sticky per-unit (role + person) selection — PAGE-owned so the
    *  template-change reset lives beside the assignments and Phase 3 can
@@ -222,7 +249,7 @@ interface StepSurveyInstancesProps {
  *  interactive control) — state is visible at rest again, the panel is only
  *  needed to CHANGE something. Grounded in the Aug 4 compare exploration
  *  (/compare/push-step2-row-detail, variant 1 "chip preview"). */
-// checkbox · chevron · course · type · template chip · evaluatees chip · status · action
+// checkbox · chevron · course · type · template dropdown · evaluatees chip · status · action
 // 2026-08-05: Template/Evaluatees/Action were frozen px tracks that stayed
 // pinned at their old width even when the row had slack to spare — Course
 // alone absorbed all growth. Template and Action now share growth via
@@ -230,9 +257,14 @@ interface StepSurveyInstancesProps {
 // (avatars are fixed-size content, not text that benefits from extra room)
 // but is widened to fit 3 avatars + "+N" count + gap indicator without
 // relying on PersonAvatar's un-forwarded DS size (fixed alongside this).
-const TABLE_GRID = `24px 24px minmax(160px,1.4fr) 76px minmax(168px,1fr) 156px 88px minmax(168px,1fr)`
+// 2026-08-06: Template became a real Select (SelectTrigger + chevron), not
+// a read-only chip — the old 168px floor clipped longer names ("Comprehensive
+// Course Evaluation") against the trigger's own affordance icon. Widened its
+// floor/share; Course's growth share and Evaluatees' fixed width both gave up
+// a little room rather than starving Action, which still needs to fit
+// multi-word button labels ("Assign Placement Faculty").
+const TABLE_GRID = `24px 24px minmax(160px,1.1fr) 76px minmax(210px,1.3fr) 140px 88px minmax(160px,1fr)`
 
-type FilterKey = 'all' | 'attention' | 'blocked'
 /** Per-course Continue-gate failure states (ST-02 Blocks). A faculty gap
  *  alone never appears here — it never blocks. */
 type BlockReason = 'no-template' | 'overlap' | 'no-units' | 'unstaffed' | 'none-selected'
@@ -242,6 +274,21 @@ interface CourseGate {
   fresh: SurveyInstance[]
   gaps: SurveyInstance[]
   dups: SurveyInstance[]
+}
+
+/** One row per course, just for the real DataTable search/filter
+ *  infrastructure (useTableState + DataTableToolbar + TablePropertiesDrawer
+ *  — the same machinery step-scope-courses.tsx uses) — NOT for rendering:
+ *  the accordion rows below still render straight off `courses`/
+ *  `gatesByOffering`. DataTable itself can't do this step's expand-per-row
+ *  panel, so only its search/filter layer is reused; `offering` carries the
+ *  real data back out of `state.rows` after filtering. */
+interface StepCourseRow extends Record<string, unknown> {
+  id: string
+  code: string
+  name: string
+  statusFilter: 'ready' | 'attention' | 'blocked'
+  offering: CourseOffering
 }
 
 /** YYYY-MM-DD → "Dec 4" without the UTC-midnight day shift of new Date(iso). */
@@ -381,7 +428,20 @@ function RowStatus({ gate }: { gate: CourseGate }) {
  *  missing." Ghost variant + the same chip-4 tint as the corner badge/card
  *  border keeps it recognizably part of the same vocabulary without
  *  reading as equally urgent. */
-function RowAction({ gate, onAssign }: { gate: CourseGate; onAssign: () => void }) {
+function RowAction({ gate, onAssign, driftNotice }: { gate: CourseGate; onAssign: () => void; driftNotice?: TemplateDriftNotice }) {
+  // ST-02 Draft/Scheduled resume: "row shows a 'template updated since
+  // Draft was saved' notice" — surfaced here (not just the top LocalBanner)
+  // so it can't be missed scrolling past this one row. Same array/dismiss
+  // as the banner (templateDriftNotices/onDismissTemplateDrift) — no
+  // separate acknowledge state to fall out of sync with.
+  if (driftNotice?.kind === 'updated') {
+    return (
+      <Button variant="ghost" size="xs" className="justify-start min-w-0 max-w-full" style={{ color: 'var(--insight-severity-info-fg)' }} onClick={onAssign} aria-label={`Template updated for ${driftNotice.courseCode} — review`}>
+        <i className="fa-solid fa-arrow-rotate-right text-xs shrink-0" aria-hidden="true" />
+        <span className="truncate">Template updated</span>
+      </Button>
+    )
+  }
   if (gate.reasons.length > 0) {
     return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>&mdash;</span>
   }
@@ -403,15 +463,25 @@ function RowAction({ gate, onAssign }: { gate: CourseGate; onAssign: () => void 
   }
   const lateAdded = gate.fresh.filter(i => i.lateAddedRelativeTo)
   if (lateAdded.length > 0) {
-    const label = lateAdded.length === 1
-      ? `Review ${lateAdded[0].personName}'s template`
-      : `Review ${lateAdded.length} new faculty templates`
+    // Role-based, not person-named (Romit's 2026-08-06 call, same as the
+    // roster's own advisory row) — a new person found on a role this course
+    // already covers still surfaces as a role-scoped decision here, not a
+    // name the Action column singles out.
+    const lateRoles = [...new Set(lateAdded.map(i => i.roleLabel))]
+    // Shortened to "Review {role}" (drop "template") — same shape as the
+    // Gap button's "Assign {role}" / "Assign {n} roles" pair above, and
+    // short enough not to truncate mid-word in this column at common role
+    // name lengths (Romit's catch: "Review Instructor template" clipped to
+    // "Review Instructor templ…").
+    const label = lateRoles.length === 1
+      ? `Review ${lateRoles[0]}`
+      : `Review ${lateRoles.length} roles`
     return (
       <Button
-        variant="ghost"
+        variant="outline"
         size="xs"
         className="justify-start min-w-0 max-w-full"
-        style={{ color: 'var(--chip-4)' }}
+        style={{ color: 'var(--chip-4)', borderColor: 'var(--chip-4)' }}
         onClick={onAssign}
         aria-label={label}
       >
@@ -451,7 +521,7 @@ function EvaluateeAvatar({ i, className }: { i: SurveyInstance; className?: stri
       <i className="fa-light fa-book-open text-[10px] text-muted-foreground" aria-hidden="true" />
     </span>
   ) : (
-    <PersonAvatar name={i.personName!} className={className} decorative />
+    <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className={cn('shrink-0', className)} />
   )
 }
 
@@ -515,26 +585,77 @@ function ExcludedEvaluatee({ i }: { i: SurveyInstance }) {
  *  read as one more chip crowding the row next to the Evaluatees cluster.
  *  Still keyboard-reachable via the Tip (WCAG 1.4.13) since the name
  *  truncates. */
-function TemplateChip({ template, code }: { template: PceTemplate | null; code: string }) {
-  if (!template) {
-    return (
-      <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-        <i className="fa-light fa-file-slash text-xs shrink-0" aria-hidden="true" />
-        <span className="truncate">No template</span>
-      </span>
-    )
-  }
+/** Template column, collapsed row — a real dropdown instead of a read-only
+ *  chip (2026-08-06, Romit's call): change the template directly from the
+ *  table without opening the row. Reuses whichever change handler the
+ *  caller already had wired (primary → onTemplateChange, still runs
+ *  through the S2 conflict check in page.tsx; secondary → per-entry
+ *  onSecondaryTemplateChange) — this is just a faster trigger for the same
+ *  commit path, not a new one. */
+function TemplateDropdown({
+  templateId, code, publishedTemplates, onChange,
+}: {
+  templateId: string
+  code: string
+  publishedTemplates: PceTemplate[]
+  onChange: (templateId: string) => void
+}) {
+  // 2026-08-06 Course Eval sync up (Monil, raw transcript): "You will give a
+  // dialogue that are you sure you want to change the template — if the
+  // template is updated, all the evaluatees will also be updated based on
+  // the new template selected." Picking a DIFFERENT template stages the
+  // choice here instead of committing it straight from the Select; only
+  // Confirm calls the real `onChange`, which still runs through whatever
+  // conflict handling the caller already had wired (the primary row's S2
+  // Draft/Scheduled-survey check in page.tsx). No dialog for a row's FIRST
+  // assignment (`templateId` empty) — Monil's "too complex" pushback was
+  // about guiding a first-time pick, not about warning on nothing-to-lose.
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const pendingTemplate = pendingId ? publishedTemplates.find(t => t.id === pendingId) : null
   return (
-    <Tip label={template.name} side="top">
-      <span
-        tabIndex={0}
-        className="inline-flex min-w-0 items-center gap-1.5 rounded-sm text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-        aria-label={`Template for ${code}: ${template.name}`}
+    <>
+      <Select
+        value={templateId}
+        onValueChange={tid => {
+          if (tid === templateId) return
+          if (!templateId) { onChange(tid); return }
+          setPendingId(tid)
+        }}
       >
-        <i className="fa-light fa-file-lines text-xs shrink-0 text-muted-foreground" aria-hidden="true" />
-        <span className="truncate">{template.name}</span>
-      </span>
-    </Tip>
+        {/* bg-background — the DS SelectTrigger is bg-transparent at rest
+            (fieldControlChromeClass), which reads fine on the plain table
+            but blended into var(--dt-row-selected) once a row opens (Romit's
+            catch): a light-gray control on a light-gray row read as one
+            undifferentiated surface. An explicit opaque background keeps the
+            control visible in both the closed AND open row states. */}
+        <SelectTrigger size="sm" aria-label={`Template for ${code}`} className="w-full min-w-0 bg-background">
+          <SelectValue placeholder="No template" />
+        </SelectTrigger>
+        <SelectContent>
+          {publishedTemplates.map(t => (
+            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <AlertDialog open={!!pendingId} onOpenChange={open => { if (!open) setPendingId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change template for {code}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Switching to <strong>{pendingTemplate?.name}</strong> updates every evaluatee on {code} to match its
+              roles — course material and faculty assignments recompute from the new template, and any per-person
+              choices made under the current one don&rsquo;t carry over.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { onChange(pendingId!); setPendingId(null) }}>
+              Change template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -564,7 +685,12 @@ function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: Co
           ? ` ${lateAdded.map(i => i.personName).join(', ')} ${lateAdded.length === 1 ? 'is' : 'are'} newly added and can be assigned a different template.`
           : ''}
       </span>
-      <AvatarGroup aria-hidden="true">
+      {/* Romit's 2026-08-06 call: these avatars had no tooltip (aria-hidden,
+          identity only in the sr-only summary above) — now individually
+          reachable + labeled via Tip, so hovering/tabbing a specific avatar
+          answers "who is this" without opening the row. The sr-only summary
+          stays for a fast screen-reader overview of the whole cluster. */}
+      <AvatarGroup>
         {shown.map(i => (
           // Person-grain exception (2026-08-05) — a late-added co-instructor
           // gets a visible-at-rest corner badge here too, not just inside the
@@ -574,64 +700,139 @@ function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: Co
           // of state. Distinct glyph/position from the gap disc (dashed,
           // sibling in this row) and the S4 excluded ban-badge (bottom-end),
           // so none of the three read as each other.
-          i.lateAddedRelativeTo ? (
-            <span key={i.key} className="relative inline-flex shrink-0 rounded-full">
-              <EvaluateeAvatar i={i} className="size-6" />
-              <span
-                className="absolute -top-1 -end-1 size-3.5 rounded-full flex items-center justify-center border bg-background"
-                style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
-              >
-                <i className="fa-solid fa-arrow-right-arrow-left text-[7px]" aria-hidden="true" />
+          <Tip key={i.key} label={evaluateeLabel(i)} side="top">
+            {i.lateAddedRelativeTo ? (
+              <span tabIndex={0} className="relative inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                <EvaluateeAvatar i={i} className="size-6" />
+                <span
+                  className="absolute -top-1 -end-1 size-3.5 rounded-full flex items-center justify-center border bg-background"
+                  style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
+                >
+                  <i className="fa-solid fa-arrow-right-arrow-left text-[7px]" aria-hidden="true" />
+                </span>
               </span>
-            </span>
-          ) : (
-            <EvaluateeAvatar key={i.key} i={i} className="size-6" />
-          )
+            ) : (
+              <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                <EvaluateeAvatar i={i} className="size-6" />
+              </span>
+            )}
+          </Tip>
         ))}
         {extra > 0 && <AvatarGroupCount>+{extra}</AvatarGroupCount>}
         {gapCount > 0 && (
-          <span
-            className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0"
-            style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
-          >
-            <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
-          </span>
+          <Tip label={gapCount === 1 ? `${gate.gaps[0].roleLabel} needs a person` : `${gapCount} roles need a person`} side="top">
+            <span
+              tabIndex={0}
+              className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
+            >
+              <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
+            </span>
+          </Tip>
         )}
       </AvatarGroup>
     </span>
   )
 }
 
-/** Round 2 (post-Aug-4, same day) — replaces the Command-list picker with a
- *  card roster: each evaluatee is its own checkbox-card in a responsive
- *  grid, so the panel's width does real work instead of stacking a narrow
- *  list into it. Grounded in the Aug 4 compare exploration's "card roster"
- *  variant, carried over near-verbatim since it was the one Romit picked as
- *  the base. Whole-card click target (Label wraps Checkbox), never a 16px
- *  box alone. Unselected cards drain to grayscale — the same "not in this
- *  push" vocabulary ExcludedEvaluatee already established here; S4's
- *  specific "Auto Update is off" reason still gets its own line so that
- *  distinction isn't lost, it just lives in card copy now instead of a Tip. */
-/** Small zone header — the ONE mechanism that makes "which decision is
- *  which" (Monil, Aug 4) scannable at the zone level instead of requiring
- *  every card to be read individually. Neutral (no icon) for the
- *  no-action-needed zone; tinted + icon for the three zones that carry an
- *  actual decision, at increasing severity. */
-function EvaluateeZoneHeader({ label, tint, icon }: { label: string; tint?: string; icon?: string }) {
+/** General "+ Add another template" trigger (2026-08-06, Romit's call —
+ *  validated at /compare/push-step2-template-hierarchy: "available on EVERY
+ *  course, not just DPT-510"). Sits after a course's primary row and any
+ *  already-added extra-template rows; offers only templates not already on
+ *  this course. Module scope for the same reason as the row helpers above —
+ *  a fresh identity per render would remount the Select on every keystroke
+ *  elsewhere in the row. */
+function AddTemplateRow({
+  code, templates, onAdd,
+}: {
+  code: string
+  templates: PceTemplate[]
+  onAdd: (templateId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [pickedId, setPickedId] = useState('')
+  if (templates.length === 0) return null
+  const confirm = () => {
+    if (!pickedId) return
+    onAdd(pickedId)
+    setOpen(false)
+    setPickedId('')
+  }
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs font-medium"
-      style={{ color: tint ?? 'var(--muted-foreground)' }}
-    >
-      {icon && <i className={`${icon} text-[10px]`} aria-hidden="true" />}
-      {label}
-    </span>
+    <>
+      {/* Full-width card, matching the "Also evaluating" entries it now
+          stacks directly beneath (Romit's call: it needs to read as "one
+          more item in this same list," not a smaller, differently-shaped
+          control tacked on after them). Same rounded-md/border shape those
+          entries' own outer card uses — the brand-colored border/icon/text
+          is what still marks it as the ACTION in that stack, not a compact
+          standalone button that broke the rhythm of the list. */}
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        onClick={() => setOpen(true)}
+        className="flex h-auto w-full items-center justify-start gap-2.5 rounded-md p-2.5 min-w-0 text-start font-normal"
+        style={{ borderColor: 'var(--primary)' }}
+      >
+        <span
+          className="size-6 rounded-full flex items-center justify-center border shrink-0"
+          style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+        >
+          <i className="fa-solid fa-circle-plus text-xs" aria-hidden="true" />
+        </span>
+        <span className="text-sm font-medium" style={{ color: 'var(--primary)' }}>Add another template</span>
+      </Button>
+
+      {/* Dialog, not the old inline Select-in-the-row — Romit's call.
+          Picking a second template is a real, standalone decision (it
+          stages a whole new, independently-toggleable evaluation for this
+          course), not a quick inline tweak like the row's own Template
+          dropdown, which stays inline since it only ever changes one
+          already-committed value. */}
+      <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setPickedId('') }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add another template for {code}</DialogTitle>
+            <DialogDescription>
+              Evaluates alongside the template{templates.length !== 1 ? 's' : ''} already on this course — choose one
+              not already assigned.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={pickedId} onValueChange={setPickedId}>
+            <SelectTrigger aria-label={`Choose another template for ${code}`} className="w-full">
+              <SelectValue placeholder="Choose a template" />
+            </SelectTrigger>
+            <SelectContent>
+              {templates.map(t => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button variant="default" size="sm" disabled={!pickedId} onClick={confirm}>
+              Add template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
+// 2026-08-06 — the previous "card roster" (each evaluatee its own bordered
+// checkbox-card, grouped under a zone header per decision type) is replaced
+// below by a flowing hierarchical tree, grouped by TEMPLATE (the tree
+// header, CourseDetailBody) with plain divided rows underneath — see
+// EvaluateeRoster's own comment for why. EvaluateeZoneHeader (the zone-label
+// component this design used) is gone with it; each row already states its
+// own status inline, so nothing it said is lost.
 function EvaluateeRoster({
-  code, gate, included, deselectedFresh, onToggleUnit,
-  offering, publishedTemplates, currentTemplateName, secondaryScopePersonNames, onAssignPersonTemplate,
+  code, gate, included, deselectedFresh, onToggleUnit, onToggleUnits,
+  offering, publishedTemplates, secondaryScopePersonNames, onAssignPersonTemplate,
 }: {
   code: string
   gate: CourseGate
@@ -641,25 +842,38 @@ function EvaluateeRoster({
    *  admin can SEE the exclusion instead of the unit silently vanishing. */
   deselectedFresh: readonly SurveyInstance[]
   onToggleUnit: (key: string) => void
+  /** Role-level bulk toggle (2026-08-06 Course Eval sync up, Monil, raw
+   *  transcript: "that toggle is not on a person, it's on a role... we
+   *  will not show who the instructors are at this level"). Sets every key
+   *  in a role group to the SAME state in one call. */
+  onToggleUnits: (keys: string[], on: boolean) => void
   /** Person-grain exception (2026-08-05) — only wired on the PRIMARY row's
    *  roster; the secondary ("Also evaluating") row's own roster omits
    *  these, since the affordance's target IS that one secondary slot. */
   offering?: CourseOffering
   publishedTemplates?: PceTemplate[]
-  currentTemplateName?: string
   /** Named people already occupying this offering's one secondary slot. */
   secondaryScopePersonNames?: string[]
   onAssignPersonTemplate?: (offeringId: string, personName: string, templateId: string) => void
 }) {
   const { fresh, gaps, dups } = gate
-  // 2026-08-05 — zoned by decision TYPE (Ready / Advisory / Gap / Blocked),
-  // not one flat grid: each zone answers a different question ("nothing to
-  // do" / "resolved by default, optional to change" / "needs a person" /
-  // "can't proceed here"), and Monil's own brief (Aug 4) was explicit that
-  // the design problem is "faster recognition of which decision is which"
-  // — scannable at the ZONE label, not by reading every card. Each card
-  // still carries its own full explanation (no separate panel elsewhere on
-  // the page repeats what a card already says).
+  // 2026-08-06 — hierarchical tree, replacing the ZONE-GROUPED layout (Ready
+  // / Advisory / Needs a person / Blocked, each under its own section
+  // header). Romit's direction across the whole push-step2-template-
+  // hierarchy exploration: group by TEMPLATE first (this roster IS one
+  // template's worth of evaluatees — the tree header lives in
+  // CourseDetailBody just above), rows flowing in ONE sequential list
+  // instead of four separately-labeled sections.
+  //
+  // Round 2 (2026-08-06, same day) — the first pass over-flattened this:
+  // dropping the zone headers also dropped every row's own card background
+  // and border (var(--card)/var(--pce-impact-bg), rounded-md border,
+  // border-dashed for gaps), leaving plain text divided by a hairline.
+  // Romit's live comparison against the original caught it. Restored here
+  // — each row keeps its original per-severity card treatment (still the
+  // one real design signal distinguishing "resolved" / "optional" /
+  // "missing" / "locked" at a glance) — only the SECTION GROUPING is gone,
+  // not the row-level visual weight.
   const [openPicker, setOpenPicker] = useState<string | null>(null)
   const [pickedTemplateId, setPickedTemplateId] = useState('')
   if (fresh.length === 0 && gaps.length === 0 && dups.length === 0) {
@@ -670,230 +884,291 @@ function EvaluateeRoster({
   const advisoryFresh = fresh.filter(i => i.lateAddedRelativeTo)
   const canOfferDifferentTemplate = !!offering && !!publishedTemplates && !!onAssignPersonTemplate
 
+  // 2026-08-06 Course Eval sync up (Monil, raw transcript): "your end of
+  // term evaluation has how many roles to be evaluated... course material
+  // and instructor, only two... you tell the system that I only want to
+  // evaluate course material and instructor... that toggle is not on a
+  // person, it's on a role." Every plain-ready instance for the SAME role
+  // (co-instructors, co-coordinators) collapses into ONE row — one toggle
+  // for the whole role, faculty shown as a stacked avatar cluster instead
+  // of "who the instructors are at this level." Course material has no
+  // person concept, so it's never grouped with anything. Advisory
+  // (late-added, needs its own template decision) and Blocked rows below
+  // keep their existing per-person treatment — each already carries an
+  // action a role-level toggle can't represent (pick a different template,
+  // view the blocking survey).
+  const readyGroups: { key: string; roleLabel: string; scope: SurveyInstance['scope']; instances: SurveyInstance[] }[] = []
+  for (const i of readyFresh) {
+    const groupKey = i.scope === 'course' ? i.key : i.roleLabel
+    const existing = readyGroups.find(g => g.key === groupKey)
+    if (existing) existing.instances.push(i)
+    else readyGroups.push({ key: groupKey, roleLabel: i.roleLabel, scope: i.scope, instances: [i] })
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {readyFresh.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <EvaluateeZoneHeader label="Ready to evaluate" />
-          <div className="flex flex-wrap gap-2">
-            {readyFresh.map(i => {
-              const checkboxId = `unit-${code}-${i.key}`
-              const isIn = included.has(i.key)
-              const isAutoUpdateExcluded = !isIn && deselectedKeys.has(i.key)
-              return (
-                <Label
-                  key={i.key}
-                  htmlFor={checkboxId}
-                  className="flex flex-1 basis-64 max-w-sm cursor-pointer items-start gap-2.5 rounded-md border border-border p-2.5 min-w-0"
-                  style={{ background: 'var(--card)' }}
-                >
-                  <EvaluateeAvatar i={i} className={cn('size-6', !isIn && 'grayscale')} />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className={cn('truncate text-sm font-medium', !isIn && 'text-muted-foreground')}>
-                      {i.scope === 'course' ? 'Course material' : i.personName}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {isAutoUpdateExcluded
-                        ? 'In Prism, not included — Auto Update is off'
-                        : (i.scope === 'course' ? 'Course' : i.roleLabel)}
-                    </span>
-                  </span>
-                  <Checkbox
-                    id={checkboxId}
-                    checked={isIn}
-                    onCheckedChange={() => onToggleUnit(i.key)}
-                    aria-label={`Include ${evaluateeLabel(i)} in this push`}
-                  />
-                </Label>
-              )
-            })}
+    <div className="flex flex-col gap-2">
+      {readyGroups.map(group => {
+        const keys = group.instances.map(i => i.key)
+        const allIn = keys.every(k => included.has(k))
+        const allAutoUpdateExcluded = keys.every(k => !included.has(k) && deselectedKeys.has(k))
+        const count = group.instances.length
+        return (
+          <div
+            key={group.key}
+            className="flex w-full items-start gap-2.5 rounded-md border border-border p-2.5 min-w-0"
+            style={{ background: 'var(--card)' }}
+          >
+            {group.scope === 'course' ? (
+              <EvaluateeAvatar i={group.instances[0]} className={cn('size-6', !allIn && 'grayscale')} />
+            ) : (
+              // Role-level glyph, never AvatarInitials/an AvatarGroup of real
+              // people — Romit's 2026-08-06 call (Monil, raw transcript:
+              // "that toggle is not on a person, it's on a role... we will
+              // not show who the instructors are at this level"). The prior
+              // version still surfaced names as this row's caption, which
+              // contradicted the decision it was built to satisfy — this
+              // glyph can never leak a specific identity, whether the role
+              // resolves to one person or several. Same circle/border
+              // treatment as the course-material icon beside it, so a role
+              // row and a course row read as the same visual family.
+              <span className={cn('size-6 rounded-full flex items-center justify-center border border-border bg-background shrink-0', !allIn && 'grayscale')}>
+                <i className="fa-light fa-user-group text-[10px] text-muted-foreground" aria-hidden="true" />
+              </span>
+            )}
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              {/* Role is the ONLY identity this toggle carries now — no
+                  person name/count-of-names caption underneath. */}
+              <span className={cn('truncate text-sm font-medium', !allIn && 'text-muted-foreground')}>
+                {group.scope === 'course' ? 'Course material' : group.roleLabel}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                {allAutoUpdateExcluded
+                  ? 'In Prism, not included — Auto Update is off'
+                  : (group.scope === 'course' ? 'Course' : `${count} ${count === 1 ? 'person' : 'people'}`)}
+              </span>
+            </span>
+            {/* Evaluatee toggle is ToggleSwitch, not Checkbox — Romit's
+                2026-08-06 call. Course-level selection stays Checkbox
+                (Step 1's same control, ST-02).
+                Gate 2 fix (ds-conformance-reviewer): ToggleSwitch's real
+                props are only {checked, onChange, id} — it does not spread
+                aria-label onto its underlying button, so passing one
+                directly is silently dropped (renders "On"/"Off" with no
+                evaluatee context). sr-only label + htmlFor/id, same pairing
+                already used for the real Auto Update ToggleSwitch below. */}
+            <label htmlFor={`unit-${code}-${group.key}`} className="sr-only">
+              {`Include ${group.scope === 'course' ? 'Course material' : `${group.roleLabel} (${count} ${count === 1 ? 'person' : 'people'})`} in this push`}
+            </label>
+            <ToggleSwitch id={`unit-${code}-${group.key}`} checked={allIn} onChange={() => onToggleUnits(keys, !allIn)} />
           </div>
-        </div>
-      )}
+        )
+      })}
 
-      {advisoryFresh.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <EvaluateeZoneHeader label="Advisory — uses default unless changed" tint="var(--chip-4)" icon="fa-solid fa-arrow-right-arrow-left" />
-          <div className="flex flex-wrap gap-2">
-            {advisoryFresh.map(i => {
-              const checkboxId = `unit-${code}-${i.key}`
-              const isIn = included.has(i.key)
-              const slotTaken = !!secondaryScopePersonNames?.length && !secondaryScopePersonNames.includes(i.personName ?? '')
-              // Named from the SAME already-blocked dup instances the
-              // Blocked zone below shows (per-person, via person-grain
-              // resolution in expandInstances) — not the raw survey
-              // record's own instructor list, which can name someone
-              // resolved under a DIFFERENT role for this course.
-              const coveredBy = dups
-                .filter(d => d.criterion === i.criterion)
-                .map(d => d.personName)
-                .filter((n): n is string => !!n)
-              const picking = openPicker === i.key
-              return (
-                <div
-                  key={i.key}
-                  className="flex flex-1 basis-64 max-w-sm flex-col gap-1.5 rounded-md border p-2.5 min-w-0"
-                  style={{ borderColor: 'var(--chip-4)', background: 'var(--card)' }}
-                >
-                  <Label htmlFor={checkboxId} className="flex cursor-pointer items-start gap-2.5 min-w-0">
-                    <EvaluateeAvatar i={i} className={cn('size-6', !isIn && 'grayscale')} />
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className={cn('truncate text-sm font-medium', !isIn && 'text-muted-foreground')}>{i.personName}</span>
-                      <span className="truncate text-xs text-muted-foreground">{i.roleLabel}</span>
-                    </span>
-                    <Checkbox
-                      id={checkboxId}
-                      checked={isIn}
-                      onCheckedChange={() => onToggleUnit(i.key)}
-                      aria-label={`Include ${evaluateeLabel(i)} in this push`}
-                    />
-                  </Label>
-                  {canOfferDifferentTemplate && (
-                    <div className="flex flex-col gap-1.5 border-t border-border pt-1.5">
-                      <p className="text-xs text-muted-foreground">
-                        Template: <span className="font-medium text-foreground">{currentTemplateName ?? 'Same as course'}</span>
-                        {coveredBy.length > 0 && <> — same as {coveredBy.join(' and ')}</>}
-                      </p>
-                      {slotTaken ? (
-                        <p className="text-xs text-muted-foreground">
-                          A different template is already set for another late addition — see &ldquo;Also evaluating&rdquo; below.
-                        </p>
-                      ) : picking ? (
-                        <div className="flex flex-col gap-1.5">
-                          <Select value={pickedTemplateId} onValueChange={setPickedTemplateId}>
-                            <SelectTrigger size="sm" aria-label={`Different template for ${i.personName}`} className="w-full">
-                              <SelectValue placeholder="Choose a template" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {publishedTemplates!.map(t => (
-                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <div className="flex gap-1.5">
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              disabled={!pickedTemplateId}
-                              onClick={() => {
-                                onAssignPersonTemplate!(offering!.id, i.personName!, pickedTemplateId)
-                                setOpenPicker(null)
-                                setPickedTemplateId('')
-                              }}
-                            >
-                              Use this template
-                            </Button>
-                            <Button variant="ghost" size="xs" onClick={() => { setOpenPicker(null); setPickedTemplateId('') }}>
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="link"
-                          size="xs"
-                          className="self-start px-0 h-auto"
-                          style={{ color: 'var(--chip-4)' }}
-                          onClick={() => setOpenPicker(i.key)}
-                        >
-                          Use a different template
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {gaps.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <EvaluateeZoneHeader label="Needs a person" tint="var(--chip-4)" icon="fa-light fa-user-plus" />
-          <div className="flex flex-wrap gap-2">
-            {gaps.map(i => (
-              <div
-                key={i.key}
-                className="flex flex-1 basis-64 max-w-sm items-start gap-2.5 rounded-md border border-dashed p-2.5 min-w-0"
-                style={{ borderColor: 'var(--chip-4)', background: 'var(--pce-impact-bg)' }}
-              >
-                <span
-                  className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0"
-                  style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
-                  aria-hidden="true"
-                >
-                  <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
+      {advisoryFresh.map(i => {
+        const isIn = included.has(i.key)
+        const slotTaken = !!secondaryScopePersonNames?.length && !secondaryScopePersonNames.includes(i.personName ?? '')
+        const picking = openPicker === i.key
+        return (
+          <div
+            key={i.key}
+            className="flex w-full flex-col gap-1.5 rounded-md border p-2.5 min-w-0"
+            style={{ borderColor: 'var(--chip-4)', background: 'var(--card)' }}
+          >
+            <div className="flex w-full items-start gap-2.5 min-w-0">
+              {/* Role-level glyph, not EvaluateeAvatar — Romit's 2026-08-06
+                  call, same reasoning as the readyGroups rows above: this is
+                  a role-scoped decision (include the role or not), so the
+                  avatar can't imply a specific person is the thing being
+                  decided on, even though the row's own caption still names
+                  who was newly added. */}
+              <span className={cn('size-6 rounded-full flex items-center justify-center border shrink-0', !isIn && 'grayscale')} style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}>
+                <i className="fa-light fa-user-group text-[10px]" aria-hidden="true" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className={cn('truncate text-sm font-medium', !isIn && 'text-muted-foreground')}>{i.roleLabel}</span>
+                <span className="truncate text-xs" style={{ color: 'var(--chip-4)' }}>
+                  <i className="fa-solid fa-arrow-right-arrow-left me-1" aria-hidden="true" style={{ fontSize: 9 }} />
+                  Advisory — {i.personName}, uses default unless changed
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-sm font-medium" style={{ color: 'var(--chip-4)' }}>{i.roleLabel}</span>
-                  <span className="text-xs" style={{ color: 'var(--chip-4)' }}>No one assigned in Prism</span>
-                  {i.prismHref && (
-                    <a
-                      href={i.prismHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs underline underline-offset-2"
-                      style={{ color: 'var(--chip-4)' }}
-                    >
-                      Add in Prism
-                      <span className="sr-only"> (opens Prism in a new tab to assign the {i.roleLabel} role on {code})</span>
-                    </a>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {dups.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <EvaluateeZoneHeader label="Blocked — resolve outside this screen" tint="var(--chip-destructive)" icon="fa-solid fa-lock" />
-          <div className="flex flex-wrap gap-2">
-            {dups.map(i => {
-              const label = i.scope === 'course' ? 'Course material' : i.personName
-              const status = i.existing ? storyStatusOf(i.existing) : null
-              const openedLabel = i.existing?.openDate ? fmtYmd(i.existing.openDate) : null
-              return (
-                <div
-                  key={i.key}
-                  className="flex flex-1 basis-64 max-w-sm flex-col gap-1.5 rounded-md border p-2.5 min-w-0"
-                  style={{ borderColor: 'var(--chip-destructive)', background: 'var(--pce-impact-bg)' }}
-                >
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <EvaluateeAvatar i={i} className="size-6 grayscale" />
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-sm font-medium">{label}</span>
-                      <span className="truncate text-xs text-muted-foreground">{i.roleLabel || 'Course'}</span>
-                    </span>
-                    <i className="fa-solid fa-lock text-xs shrink-0 mt-0.5" style={{ color: 'var(--chip-destructive)' }} aria-hidden="true" />
-                  </div>
-                  {i.existing && status && (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        Already covered by a <StoryStatusBadgeOS status={status} size="sm" />
-                        {' '}survey{openedLabel && <> opened {openedLabel}</>}.
-                      </p>
-                      <Button variant="outline" size="xs" asChild className="self-start">
-                        <Link href={`/surveys/${i.existing.id}`}>
-                          View survey
-                          <span className="sr-only"> covering the {i.roleLabel || 'course material'} role of {code}</span>
-                        </Link>
+              </span>
+              {/* Same Gate 2 fix as the readyFresh toggle above — aria-label
+                  is not a real ToggleSwitch prop. */}
+              <label htmlFor={`unit-${code}-${i.key}`} className="sr-only">{`Include ${evaluateeLabel(i)} in this push`}</label>
+              <ToggleSwitch id={`unit-${code}-${i.key}`} checked={isIn} onChange={() => onToggleUnit(i.key)} />
+            </div>
+            {canOfferDifferentTemplate && (
+              <div className="flex flex-col gap-1.5 border-t border-border pt-1.5">
+                {slotTaken ? (
+                  <p className="text-xs text-muted-foreground">
+                    A different template is already set for another late addition — see &ldquo;Also evaluating&rdquo; below.
+                  </p>
+                ) : picking ? (
+                  <div className="flex flex-col gap-1.5">
+                    <Select value={pickedTemplateId} onValueChange={setPickedTemplateId}>
+                      <SelectTrigger size="sm" aria-label={`Different template for ${i.personName}`} className="w-full">
+                        <SelectValue placeholder="Choose a template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {publishedTemplates!.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        disabled={!pickedTemplateId}
+                        onClick={() => {
+                          onAssignPersonTemplate!(offering!.id, i.personName!, pickedTemplateId)
+                          setOpenPicker(null)
+                          setPickedTemplateId('')
+                        }}
+                      >
+                        Use this template
                       </Button>
-                    </>
-                  )}
-                </div>
-              )
-            })}
+                      <Button variant="ghost" size="xs" onClick={() => { setOpenPicker(null); setPickedTemplateId('') }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Was variant="link" (bare colored text) — Romit's
+                  // 2026-08-06 call: it didn't read as a clickable action.
+                  // variant="outline" gives it the same button affordance as
+                  // every other row action (View survey, Add in Prism).
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="self-start"
+                    style={{ color: 'var(--chip-4)', borderColor: 'var(--chip-4)' }}
+                    onClick={() => setOpenPicker(i.key)}
+                  >
+                    Use a different template
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
+        )
+      })}
+
+      {gaps.map(i => (
+        <div
+          key={i.key}
+          className="flex w-full items-start gap-2.5 rounded-md border border-dashed p-2.5 min-w-0"
+          style={{ borderColor: 'var(--chip-5)', background: 'var(--pce-impact-bg)' }}
+        >
+          <span
+            className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0"
+            style={{ borderColor: 'var(--chip-5)', color: 'var(--chip-5)' }}
+            aria-hidden="true"
+          >
+            <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate text-sm font-medium" style={{ color: 'var(--chip-5)' }}>{i.roleLabel}</span>
+            <span className="text-xs" style={{ color: 'var(--chip-5)' }}>No one assigned in Prism</span>
+          </span>
+          {i.prismHref && (
+            // Was an inline underlined link stacked under the caption text —
+            // Romit's call: every other card's action (View survey, Use a
+            // different template) reads as a real button, and this one now
+            // sits on the right the same way, instead of being the odd one
+            // out as plain text at the bottom.
+            <Button
+              variant="outline"
+              size="xs"
+              asChild
+              className="shrink-0"
+              style={{ color: 'var(--chip-5)', borderColor: 'var(--chip-5)' }}
+            >
+              <a href={i.prismHref} target="_blank" rel="noopener noreferrer">
+                Add in Prism
+                <span className="sr-only"> (opens Prism in a new tab to assign the {i.roleLabel} role on {code})</span>
+              </a>
+            </Button>
+          )}
         </div>
-      )}
+      ))}
+
+      {dups.map(i => {
+        const primaryLabel = i.scope === 'course' ? 'Course material' : i.roleLabel
+        const secondaryLabel = i.scope === 'course' ? null : i.personName
+        const status = i.existing ? storyStatusOf(i.existing) : null
+        const openedLabel = i.existing?.openDate ? fmtYmd(i.existing.openDate) : null
+        return (
+          <div
+            key={i.key}
+            // 2026-08-06 — toned down from the solid chip-destructive
+            // border/pce-impact-bg fill (Romit's call): this role isn't
+            // broken or blocking anything, it's already being evaluated by
+            // a LIVE survey — informational and locked, not an error. The
+            // full-alarm red read as something to fix, competing with the
+            // Blocked status this row can't actually cause on its own (see
+            // the 'overlap' reason — only fires when NOTHING else on the
+            // course is left to evaluate).
+            // Round 2 (same day) — the first muted-surface pass (Romit's
+            // catch) put text-muted-foreground ON var(--muted): that pairing
+            // is only calibrated against var(--card)/var(--background), so
+            // on its own muted background the icon/text contrast fell
+            // short, on top of reading as a flat, slightly off (brand-hue-
+            // tinted) wash rather than a clean neutral. Plain var(--card) +
+            // border-border instead — the same white-card treatment every
+            // OTHER evaluatee row here already uses, so muted-foreground is
+            // back on the surface it's actually designed for.
+            className="flex w-full flex-col gap-1.5 rounded-md border border-border p-2.5 min-w-0"
+            style={{ background: 'var(--card)' }}
+          >
+            <div className="flex items-start gap-2.5 min-w-0">
+              {i.scope === 'course' ? (
+                <EvaluateeAvatar i={i} className="size-6 grayscale" />
+              ) : (
+                // Role-level glyph, not EvaluateeAvatar — same 2026-08-06 call
+                // as the ready/advisory rows above, applied here too (Romit's
+                // catch): the card's own caption still names who's already
+                // covered (needed to know whose survey "View survey" opens),
+                // but the avatar itself can't single out a specific person.
+                <span className="size-6 rounded-full flex items-center justify-center border shrink-0 grayscale text-muted-foreground">
+                  <i className="fa-light fa-user-group text-[10px]" aria-hidden="true" />
+                </span>
+              )}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-sm font-medium">{primaryLabel}</span>
+                {secondaryLabel && <span className="truncate text-xs text-muted-foreground">{secondaryLabel}</span>}
+              </span>
+              <i className="fa-solid fa-lock text-xs shrink-0 mt-0.5 text-muted-foreground" aria-hidden="true" />
+            </div>
+            {i.existing && status && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Already covered by a <StoryStatusBadgeOS status={status} size="sm" />
+                  {' '}survey{openedLabel && <> opened {openedLabel}</>}.
+                </p>
+                <Button variant="outline" size="xs" asChild className="self-start">
+                  <Link href={`/surveys/${i.existing.id}`}>
+                    View survey
+                    <span className="sr-only"> covering the {i.roleLabel || 'course material'} role of {code}</span>
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-function TemplateControl({ offering, templateId, defaultTemplateId, edited, publishedTemplates, onTemplateChange, onCreate }: {
+// 2026-08-05 (2nd pass) — dropdown → radio blocks, per Romit's live feedback:
+// a Select hid every OTHER candidate template behind a closed menu, so
+// comparing options meant opening it, reading one at a time, closing it.
+// Blocks keep every option visible at once and give each its own Preview
+// action (`onPreview`) — the Admin can preview a CANDIDATE before
+// committing, not only the template already assigned. Reuses the exact
+// card/whole-Label-click-target vocabulary EvaluateeRoster already
+// established in this file, rather than inventing new chrome.
+export function TemplateControl({ offering, templateId, defaultTemplateId, publishedTemplates, onTemplateChange, onCreate, onPreview }: {
   offering: CourseOffering
   templateId: string
   /** The course-type default (page-owned pickTemplateForType) — drives the
@@ -901,10 +1176,10 @@ function TemplateControl({ offering, templateId, defaultTemplateId, edited, publ
    *  when the template really matches the course's type, so the legacy
    *  first-published fallback never wears a label it didn't earn. */
   defaultTemplateId?: string
-  edited: boolean
   publishedTemplates: PceTemplate[]
   onTemplateChange: (offeringId: string, templateId: string) => void
   onCreate: () => void
+  onPreview: (t: PceTemplate) => void
 }) {
   const { code } = splitLabel(offering)
   if (publishedTemplates.length === 0) {
@@ -920,47 +1195,387 @@ function TemplateControl({ offering, templateId, defaultTemplateId, edited, publ
       </Button>
     )
   }
+  // A template with no courseType (or the explicit 'any') applies to every
+  // course type — same wildcard rule as page.tsx's pickTemplateForType.
+  // Without it, this always reads empty against the fixture's own
+  // courseType:'any' templates, showing "No templates for this course
+  // type" above a list that includes them anyway.
   const typeMatches = offering.courseType
-    ? publishedTemplates.filter(t => t.courseType === offering.courseType)
+    ? publishedTemplates.filter(t => !t.courseType || t.courseType === 'any' || t.courseType === offering.courseType)
     : []
   return (
-    <Select value={templateId} onValueChange={v => onTemplateChange(offering.id, v)}>
-      <SelectTrigger
-        size="sm"
-        aria-label={`Template for ${code}${!templateId ? ' · required' : ''}${edited ? ' · changed from default' : ''}`}
-        className={cn('w-full [&>span]:truncate [&>span]:min-w-0', edited && 'bg-secondary')}
+    <div className="flex flex-col gap-2">
+      {typeMatches.length === 0 && (
+        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          No templates for this course type
+        </p>
+      )}
+      {!templateId && (
+        <p className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
+          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+          Choose a template
+        </p>
+      )}
+      <RadioGroup
+        value={templateId}
+        onValueChange={v => onTemplateChange(offering.id, v)}
+        className="flex flex-col gap-2"
+        aria-label={`Template for ${code}${!templateId ? ' · required' : ''}`}
       >
-        <SelectValue
-          placeholder={
-            <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--insight-severity-info-fg)' }}>
-              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-              Assign template
-            </span>
-          }
-        />
-      </SelectTrigger>
-      <SelectContent>
-        {/* ST-02: zero published templates for this course's TYPE — exact copy. */}
-        {typeMatches.length === 0 && (
-          <div className="px-2 py-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            No templates for this course type
-          </div>
+        {publishedTemplates.map(t => {
+          const checked = t.id === templateId
+          const isDefault = t.id === defaultTemplateId && (!t.courseType || t.courseType === 'any' || t.courseType === offering.courseType)
+          const inputId = `tmpl-${code}-${t.id}`
+          return (
+            <div
+              key={t.id}
+              className="flex w-full items-start gap-2.5 rounded-md border p-2.5 min-w-0"
+              style={{ borderColor: checked ? 'var(--primary)' : 'var(--border)', background: 'var(--card)' }}
+            >
+              <RadioGroupItem value={t.id} id={inputId} className="mt-0.5 shrink-0" />
+              {/* 2026-08-05 (3rd pass) — the Default badge used to share the
+                  title line with the trailing Preview icon: at the rail's
+                  real 280px width, title + badge + icon regularly exceeded
+                  the available line, crowding the icon straight against the
+                  title text (live-verified — zero gap). Moving the badge
+                  down to the meta line leaves line 1 as title-only, so
+                  `truncate` has the room it needs and the icon always gets
+                  its own clear gap regardless of name length. */}
+              <Label htmlFor={inputId} className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5">
+                <span className="truncate text-sm font-medium">{t.name}</span>
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="truncate text-xs text-muted-foreground">
+                    {t.questionCount} question{t.questionCount !== 1 ? 's' : ''}
+                  </span>
+                  {isDefault && (
+                    // 12px floor (WCAG 1.4.4 / DS type scale) — never below text-xs.
+                    <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
+                      Default
+                    </Badge>
+                  )}
+                </span>
+              </Label>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="ml-1 shrink-0"
+                aria-label={`Preview ${t.name}`}
+                onClick={() => onPreview(t)}
+              >
+                <i className="fa-light fa-eye text-xs" aria-hidden="true" />
+              </Button>
+            </div>
+          )
+        })}
+      </RadioGroup>
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 2026-08-05 — Template + Evaluatees detail body, shared between the two
+// layout variants a course row can open into (Romit wants both testable
+// live, side by side, before picking one — see the "Row detail" toggle in
+// StepSurveyInstances): `layout="grid"` is the current shipped inline
+// accordion (two columns in the row's own expanded panel); `layout="stack"`
+// is the new master-detail Sheet (single column — a ~560px rail has no
+// room for two). Extracting this once means the two variants can never
+// silently drift apart while both are live for comparison. MODULE scope,
+// same reason as this file's other row pieces (stable identity across
+// re-renders — see file header).
+
+/** Name + question/criteria caption + Preview/Remove — the tree header a
+ *  template's detail opens with, shared between CourseDetailBody's rail
+ *  layout (primary + normal extra-template entries) and the "fully deduped"
+ *  extra-template case below (which skips CourseDetailBody's roster entirely
+ *  since it has nothing to toggle, but still needs the same header). Pulled
+ *  out so those two call sites can never drift onto different button styles
+ *  or copy — the exact bug that let Preview stay a plain-text ghost Button
+ *  for as long as it did. */
+function TemplateHeaderRow({
+  template, isDefault, criteria, mode, onPreview, onRemove, secondaryBadges,
+}: {
+  template: PceTemplate
+  isDefault: boolean
+  criteria: Criterion[]
+  mode: DeliveryMode
+  onPreview: (t: PceTemplate) => void
+  onRemove?: () => void
+  /** Extra-template entries only — "Also evaluating" + its live Ready/Gap/
+   *  Blocked status, folded into this SAME header (2026-08-06, Romit's
+   *  call) instead of a separate toolbar sitting above it. The old
+   *  two-header layout (a grey "Also evaluating" bar, then this row again
+   *  underneath) read as a different kind of control than the primary
+   *  template's one clean line — this makes every template entry, primary
+   *  or extra, read the same. Switching an extra template's own choice is
+   *  Remove + "Add another template" (Romit's call, 2026-08-06 round 2 — an
+   *  inline dropdown here duplicated that same decision two ways). */
+  secondaryBadges?: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+          {template.name}
+          {isDefault && (
+            <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
+              Default
+            </Badge>
+          )}
+          {secondaryBadges}
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {template.questionCount} question{template.questionCount !== 1 ? 's' : ''} · Evaluates{' '}
+          {criteria
+            .filter(c => c === 'students' || !!CRITERION_BY_TYPE[mode][c])
+            .map(c => (c === 'students' ? 'Course material' : CRITERION_BY_TYPE[mode][c]?.label ?? c))
+            .join(', ')}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Both real outline buttons, not ghost — a ghost Button has no
+            visible chrome at rest and read as plain text (Romit's 2026-08-06
+            call). Remove gets the same treatment as Preview, not a bare icon
+            — an extra template entry is a real, named commitment on this
+            course, so removing it reads as an equally real action. */}
+        <Button variant="outline" size="xs" onClick={() => onPreview(template)}>Preview</Button>
+        {onRemove && <Button variant="outline" size="xs" onClick={onRemove}>Remove</Button>}
+      </div>
+    </div>
+  )
+}
+
+function CourseDetailBody({
+  offering, code, mode, gate, template, criteria, templateId, stagedTemplateId,
+  defaultTemplateId, publishedTemplates, onStageTemplate, onCommitStage, onClearStage,
+  onCreateTemplate, onPreview, included, deselectedFresh, onToggleUnit, onToggleUnits,
+  secondaryScopePersonNames, onAssignPersonTemplate, onRemove, layout, secondaryBadges,
+}: {
+  offering: CourseOffering
+  code: string
+  mode: DeliveryMode
+  gate: CourseGate
+  template: PceTemplate | null
+  criteria: Criterion[]
+  templateId: string
+  stagedTemplateId: string | undefined
+  defaultTemplateId: string | undefined
+  publishedTemplates: PceTemplate[]
+  onStageTemplate: (offeringId: string, templateId: string) => void
+  onCommitStage: (stagedTemplate: PceTemplate) => void
+  onClearStage: () => void
+  onCreateTemplate: () => void
+  onPreview: (t: PceTemplate) => void
+  included: ReadonlySet<string>
+  deselectedFresh: readonly SurveyInstance[]
+  onToggleUnit: (key: string) => void
+  onToggleUnits: (keys: string[], on: boolean) => void
+  secondaryScopePersonNames?: string[]
+  onAssignPersonTemplate?: (offeringId: string, personName: string, templateId: string) => void
+  /** Extra-template entries only ("+ Add another template") — removes this
+   *  whole entry from the course. Undefined on the primary row, which has no
+   *  remove concept of its own. */
+  onRemove?: () => void
+  /** 'grid' = inline accordion (side by side); 'stack' = Sheet (vertical);
+   *  'rail' = Evaluatees as the wide pane, Template as a compact card that
+   *  expands to the full radio stack only on "Change" (picked direction,
+   *  2026-08-05 — see variant comparison at /compare/push-step2-accordion-layout). */
+  layout: 'grid' | 'stack' | 'rail'
+  /** Extra-template entries only — passed straight through to the 'rail'
+   *  layout's TemplateHeaderRow (see that component's own doc). */
+  secondaryBadges?: ReactNode
+}) {
+  const stagedTemplate = stagedTemplateId ? publishedTemplates.find(t => t.id === stagedTemplateId) : undefined
+  const consequence = stagedTemplate && stagedTemplateId !== templateId
+    ? templateSwitchConsequence(mode, template, stagedTemplate)
+    : null
+  // Fix, 2026-08-05: TemplateControl used to receive `stagedTemplateId ??
+  // templateId`, so its radio visually committed to the staged pick the
+  // instant it was clicked — the exact pending-vs-committed confusion this
+  // whole redesign thread started from (the radio said "done", the
+  // consequence card below still said "takes its place", the caption
+  // further down still showed the OLD template). TemplateControl now only
+  // ever receives the real committed `templateId`; the staged pick lives
+  // only in the consequence card below, same as every other Round 1
+  // "Honest Trigger" variant explored.
+  const isDefault = !!defaultTemplateId && templateId === defaultTemplateId
+  // ST-02 Blocks, 4th bullet — ported from the /compare/push-step2-template-
+  // hierarchy exploration, never previously wired into the shipped step:
+  // a template whose assigned roles resolve to ZERO faculty (all gaps, no
+  // one at all) would produce an empty evaluation, so it can't be included
+  // until a role is filled or the entry is removed. Reuses the gate's own
+  // 'unstaffed' reason rather than re-deriving fresh/gap counts, so this can
+  // never disagree with the row's own Blocked status or Continue-gate logic.
+  const zeroFaculty = gate.reasons.includes('unstaffed')
+
+  const templatePicker = (
+    <TemplateControl
+      offering={offering}
+      templateId={templateId}
+      defaultTemplateId={defaultTemplateId}
+      publishedTemplates={publishedTemplates}
+      onTemplateChange={(offeringId, tid) => {
+        if (tid === templateId) { onClearStage(); return }
+        onStageTemplate(offeringId, tid)
+      }}
+      onCreate={onCreateTemplate}
+      onPreview={onPreview}
+    />
+  )
+
+  const consequenceCard = consequence && stagedTemplate && (
+    // dt-row-selected, not var(--muted) — see the identical fix + rationale
+    // on the "already evaluated by another template" aside below.
+    <div className="flex max-w-sm flex-col gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--dt-row-selected)' }}>
+      <p className="text-xs text-muted-foreground">
+        <i className="fa-light fa-arrow-right-arrow-left me-1.5" aria-hidden="true" />
+        Switch to <span className="font-medium text-foreground">{stagedTemplate.name}</span>?{' '}
+        {consequence.removed.length > 0 && consequence.added.length > 0 && (
+          <>Stops evaluating <span className="font-medium text-foreground">{listFmt(consequence.removed)}</span> and adds <span className="font-medium text-foreground">{listFmt(consequence.added)}</span>.</>
         )}
-        {publishedTemplates.map(t => (
-          <SelectItem key={t.id} value={t.id}>
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span className="truncate">{t.name}</span>
-              {t.id === defaultTemplateId && t.courseType === offering.courseType && (
-                // 12px floor (WCAG 1.4.4 / DS type scale) — never below text-xs.
-                <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
-                  Default
-                </Badge>
-              )}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        {consequence.removed.length > 0 && consequence.added.length === 0 && (
+          <>Stops evaluating <span className="font-medium text-foreground">{listFmt(consequence.removed)}</span> and adds nothing new.</>
+        )}
+        {consequence.removed.length === 0 && consequence.added.length > 0 && (
+          <>Adds <span className="font-medium text-foreground">{listFmt(consequence.added)}</span>. Nothing is removed.</>
+        )}
+        {consequence.removed.length === 0 && consequence.added.length === 0 && <>Same aspects, different questions.</>}
+      </p>
+      <div className="flex items-center gap-1.5">
+        <Button variant="default" size="xs" onClick={() => onCommitStage(stagedTemplate)}>
+          Switch template
+        </Button>
+        <Button variant="ghost" size="xs" onClick={onClearStage}>
+          Keep current
+        </Button>
+      </div>
+    </div>
+  )
+
+  // 2026-08-05 — neutral template metadata, true regardless of any block,
+  // not a fact about a conflict.
+  // Fix, 2026-08-05: this used to map every raw template criterion
+  // straight to a label with `?? c` as the fallback — so a criterion the
+  // template lists but this course's delivery mode has no resolver for
+  // (e.g. `labAssistant` on a classroom course; see CRITERION_BY_TYPE's
+  // per-mode Partial, pce-course-readiness.ts:168) leaked its bare enum
+  // key into the caption instead of a real word. `templateSwitchConsequence`
+  // and the pendingReassign dialog below both already apply this same
+  // "not applicable to this mode = drop it" filter before labeling —
+  // matching that instead of inventing a third fallback strategy.
+  // I3 (2026-08-06 UX audit) — used to restate `{template.name} ·
+  // {questionCount} questions` before "evaluates ..."; in the 'rail' layout
+  // that's the exact same name + count TemplateHeaderRow already shows above
+  // it, so it read as the same fact twice. The "evaluates X, Y, Z" clause is
+  // the only part
+  // that's genuinely new information (neither the card nor the radio picker
+  // states it) — kept, the redundant prefix dropped.
+  const metadataCaption = template && (
+    <p className="text-xs text-muted-foreground tabular-nums">
+      Evaluates{' '}
+      {criteria
+        .filter(c => c === 'students' || !!CRITERION_BY_TYPE[mode][c])
+        .map(c => (c === 'students' ? 'Course material' : CRITERION_BY_TYPE[mode][c]?.label ?? c))
+        .join(', ')}
+    </p>
+  )
+
+  const evaluateeRosterEl = (
+    <EvaluateeRoster
+      code={code}
+      gate={gate}
+      included={included}
+      deselectedFresh={deselectedFresh}
+      onToggleUnit={onToggleUnit}
+      onToggleUnits={onToggleUnits}
+      offering={offering}
+      publishedTemplates={publishedTemplates}
+      secondaryScopePersonNames={secondaryScopePersonNames}
+      onAssignPersonTemplate={onAssignPersonTemplate}
+    />
+  )
+
+  if (layout === 'rail') {
+    // 2026-08-06 — hierarchical tree, replacing the side-by-side
+    // [Evaluatees | Template] rail split. Template is now the tree's own
+    // header (TemplateHeaderRow: name/badge/meta/Preview/Remove) with
+    // Evaluatees nested directly below it — grouped by template, not spread
+    // across two columns.
+    // Round 2 (2026-08-06, same day) — the border-l-2/pl-4 hierarchy rail
+    // this used to draw is gone (Romit's call): once the whole expanded
+    // panel (primary + Additional templates) sits on its own shared grey
+    // card background, that rail read as a stray extra vertical line on top
+    // of a boundary the card itself already draws. Reading order (header,
+    // then Evaluatees, directly beneath) carries the hierarchy now.
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
+          {template && (
+            <TemplateHeaderRow
+              template={template}
+              isDefault={isDefault}
+              criteria={criteria}
+              mode={mode}
+              onPreview={onPreview}
+              onRemove={onRemove}
+              secondaryBadges={secondaryBadges}
+            />
+          )}
+          {zeroFaculty && (
+            <p className="text-xs" style={{ color: 'var(--chip-destructive)' }}>
+              <i className="fa-solid fa-triangle-exclamation me-1.5" aria-hidden="true" />
+              No faculty assigned to this template yet — it would produce an empty evaluation, so it can&rsquo;t be
+              included until a role is filled{onRemove && <> or you remove it</>}.
+            </p>
+          )}
+          {consequenceCard}
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            Evaluatees
+            {/* Gate 2 fix (ds-conformance-reviewer + state-review, both
+                independently flagged this): the trigger was an aria-hidden
+                <i> with no tabIndex — mouse-hover only, unreachable by
+                keyboard (WCAG 1.4.13). Same tabIndex+focus-ring wrapper
+                TemplateChip already uses in this file. */}
+            <Tip label="Click a person or course material to include or exclude them from this push." side="top">
+              <span tabIndex={0} className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 11 }} />
+              </span>
+            </Tip>
+          </span>
+          {evaluateeRosterEl}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className={layout === 'grid' ? 'grid gap-6 md:grid-cols-2 items-start' : 'flex flex-col gap-6'}>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">Template</span>
+          {templatePicker}
+          {consequenceCard}
+          {metadataCaption}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            Evaluatees
+            {/* Gate 2 fix (ds-conformance-reviewer + state-review, both
+                independently flagged this): the trigger was an aria-hidden
+                <i> with no tabIndex — mouse-hover only, unreachable by
+                keyboard (WCAG 1.4.13). Same tabIndex+focus-ring wrapper
+                TemplateChip already uses in this file. */}
+            <Tip label="Click a person or course material to include or exclude them from this push." side="top">
+              <span tabIndex={0} className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 11 }} />
+              </span>
+            </Tip>
+          </span>
+          {evaluateeRosterEl}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -968,7 +1583,7 @@ export function StepSurveyInstances({
   selectedOfferings, instances, publishedTemplates,
   templateAssignments, defaultAssignments, onTemplateChange, onResetDefaults,
   pendingReassign, onResolveReassign, onCancelReassign,
-  secondaryTemplateAssignments, secondaryInstances, onSecondaryTemplateChange, onAssignPersonTemplate, onRemoveSecondary,
+  secondaryTemplateAssignments, secondaryInstances, secondaryDedupedLabels, onAddSecondaryTemplate, onSecondaryTemplateChange, onAssignPersonTemplate, onRemoveSecondary,
   unitSelections, onUnitSelectionChange,
   autoUpdateOn, onAutoUpdateChange, onRefreshUnits, onCourseSelectedChange,
   templateDriftNotices, onDismissTemplateDrift,
@@ -985,9 +1600,6 @@ export function StepSurveyInstances({
   // S2 — defaults to the non-destructive choice (create-new keeps the
   // existing survey untouched; override replaces it and can't be undone).
   const [reassignChoice, setReassignChoice] = useState<'override' | 'create-new'>('create-new')
-  // Defaults to ALL, not "Needs attention" — see file header for why
-  // (a row you just fixed shouldn't vanish out from under you).
-  const [filter, setFilter] = useState<FilterKey>('all')
   const backToAssign = () => {
     if (typeof subView === 'object') {
       const t = allTemplates.find(x => x.id === subView.buildId)
@@ -1030,6 +1642,17 @@ export function StepSurveyInstances({
   // ── Per-course gate — single source of truth for the Status badge, the
   // Faculty column, the segmented filter counts, and the footer/Continue
   // gate. Faculty gaps alone never appear in `reasons` — they never block.
+  // 2026-08-06 — the "template updated since Draft was saved" notice
+  // (ST-02 Draft/Scheduled resume) previously lived only in the top
+  // LocalBanner; Romit asked for it in the Action column too, so it can't
+  // be missed scrolling past this one row. Same source array, just indexed
+  // per offering for O(1) row lookup.
+  const templateDriftByOffering = useMemo(() => {
+    const m = new Map<string, TemplateDriftNotice>()
+    for (const n of templateDriftNotices ?? []) if (n.kind === 'updated') m.set(n.offeringId, n)
+    return m
+  }, [templateDriftNotices])
+
   const gatesByOffering = useMemo(() => {
     const m = new Map<string, CourseGate>()
     for (const o of courses) {
@@ -1064,6 +1687,39 @@ export function StepSurveyInstances({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courses, instancesByOffering, templateAssignments, defaultAssignments, publishedTemplates, included])
 
+  // Search + filter — the REAL DataTable infrastructure (useTableState +
+  // DataTableToolbar + TablePropertiesDrawer), the same machinery
+  // step-scope-courses.tsx uses, not a hand-rolled ToggleGroup/Input pair
+  // (Romit's call — the DataTable component itself can't render this step's
+  // per-row accordion panel, but its search/filter LAYER doesn't depend on
+  // that, so it's reused as-is rather than reinvented). Narrows only which
+  // rows render below; every count, gate, and the Continue button still
+  // read the full `courses` list — filtering is a triage aid, never a way
+  // to accidentally hide a course from the push itself.
+  const courseTableRows = useMemo<StepCourseRow[]>(() => courses.map(o => {
+    const { code, name } = splitLabel(o)
+    const g = gatesByOffering.get(o.id)!
+    const statusFilter: StepCourseRow['statusFilter'] =
+      g.reasons.length > 0 ? 'blocked' : g.gaps.length > 0 ? 'attention' : 'ready'
+    return { id: o.id, code, name, statusFilter, offering: o }
+  }), [courses, gatesByOffering])
+  const courseTableColumns = useMemo<ColumnDef<StepCourseRow>[]>(() => [
+    {
+      key: 'statusFilter', label: 'Status',
+      filter: {
+        type: 'select', icon: 'fa-circle-dot',
+        options: [
+          { value: 'ready', label: 'Ready' },
+          { value: 'attention', label: 'Needs attention' },
+          { value: 'blocked', label: 'Blocked' },
+        ],
+      },
+    },
+  ], [])
+  const courseTableState = useTableState<StepCourseRow>(courseTableRows, courseTableColumns)
+  const visibleCourses = useMemo(() => courseTableState.rows.map(r => r.offering), [courseTableState.rows])
+  const blockedCount = courses.filter(o => gatesByOffering.get(o.id)!.reasons.length > 0).length
+
   // Accordion revision (post-Aug-4): which rows' detail panels are expanded.
   // A Set, not a single id — independent per-row open/close, so an admin
   // triaging several flagged rows can compare them side by side instead of
@@ -1077,10 +1733,48 @@ export function StepSurveyInstances({
   // 2026-08-05: also seeds open for a late addition alone, with no dup —
   // the edge case where the only conflicting survey named someone no
   // longer on the roster, so nothing else here would auto-expand the row.
+  // Each extra template's own gate, computed exactly like the primary (same
+  // reasons logic) from its own instance plan — one array per offering,
+  // aligned by index with secondaryTemplateAssignments[offeringId]. Moved
+  // above `openRows` (was declared after it) so its seed effect below can
+  // read it on first render.
+  const secondaryGatesByOffering = useMemo(() => {
+    const m = new Map<string, CourseGate[]>()
+    for (const [offeringId, entries] of Object.entries(secondaryTemplateAssignments)) {
+      const itemsByEntry = secondaryInstances[offeringId] ?? []
+      m.set(offeringId, entries.map((entry, i) => {
+        const items = itemsByEntry[i] ?? []
+        const fresh = items.filter(x => x.status === 'new')
+        const gaps = items.filter(x => x.status === 'gap')
+        const dups = items.filter(x => x.status === 'duplicate')
+        const reasons: BlockReason[] = []
+        if (!entry.templateId) reasons.push('no-template')
+        else if (fresh.length === 0 && gaps.length === 0 && dups.length > 0) reasons.push('overlap')
+        // ST-02 Blocks, 4th bullet — was missing here entirely (only ever
+        // computed for the primary row's gatesByOffering above), so an extra
+        // template whose only role(s) resolve to zero faculty rendered as an
+        // ordinary informational gap instead of the hard "No faculty
+        // assigned" block the spec requires.
+        else if (fresh.length === 0 && gaps.length > 0 && dups.length === 0) reasons.push('unstaffed')
+        return { reasons, fresh, gaps, dups }
+      }))
+    }
+    return m
+  }, [secondaryTemplateAssignments, secondaryInstances])
+
   const [openRows, setOpenRows] = useState<ReadonlySet<string>>(
     () => new Set(
       [...gatesByOffering.entries()]
-        .filter(([, g]) => g.dups.length > 0 || g.fresh.some(i => i.lateAddedRelativeTo))
+        .filter(([id, g]) =>
+          g.dups.length > 0
+          || g.fresh.some(i => i.lateAddedRelativeTo)
+          // "Also evaluating" entries now render INSIDE the primary row's
+          // own collapse (Romit's call — stacked with "Add another
+          // template" instead of always-visible flat siblings), so a
+          // blocked/unstaffed extra template needs the PRIMARY row seeded
+          // open too, or it'd be invisible until someone thought to expand
+          // a course that otherwise looks fully Ready.
+          || (secondaryGatesByOffering.get(id) ?? []).some(sg => sg.reasons.length > 0))
         .map(([id]) => id),
     )
   )
@@ -1103,16 +1797,6 @@ export function StepSurveyInstances({
   // parent still runs exactly as before — this only adds an informative
   // preview in front of it, it doesn't bypass it.
   const [pendingTemplate, setPendingTemplate] = useState<Record<string, string>>({})
-  // 2026-08-05 — top-of-step entry point for the person-grain decision,
-  // outside the DataTable: the in-row Advisory card (EvaluateeRoster) only
-  // helps once a row is already open. At 10+ courses/admin, discovering a
-  // late addition at all still requires opening (or auto-expanding) each
-  // row. This surfaces every open one in one place, no navigation required
-  // — same self-contained fact-plus-one-action card as the in-row version,
-  // driven by the same underlying state, so resolving it here clears the
-  // in-row card too (never two places to reconcile).
-  const [topPicker, setTopPicker] = useState<string | null>(null)
-  const [topPickerTemplateId, setTopPickerTemplateId] = useState('')
   const stageTemplate = (key: string, templateId: string) =>
     setPendingTemplate(prev => ({ ...prev, [key]: templateId }))
   const clearStagedTemplate = (key: string) =>
@@ -1123,32 +1807,19 @@ export function StepSurveyInstances({
       return next
     })
 
-  // S2 — the secondary survey's own gate, computed exactly like the primary
-  // (same reasons logic) from its own instance plan. Only offerings with a
-  // secondaryTemplateAssignments entry get one.
-  const secondaryInstancesByOffering = useMemo(() => {
-    const m = new Map<string, SurveyInstance[]>()
-    for (const i of secondaryInstances) m.set(i.offeringId, [...(m.get(i.offeringId) ?? []), i])
-    return m
-  }, [secondaryInstances])
-  const secondaryGatesByOffering = useMemo(() => {
-    const m = new Map<string, CourseGate>()
-    for (const [offeringId, entry] of Object.entries(secondaryTemplateAssignments)) {
-      const items = secondaryInstancesByOffering.get(offeringId) ?? []
-      const fresh = items.filter(i => i.status === 'new')
-      const gaps = items.filter(i => i.status === 'gap')
-      const dups = items.filter(i => i.status === 'duplicate')
-      const reasons: BlockReason[] = []
-      if (!entry.templateId) reasons.push('no-template')
-      else if (fresh.length === 0 && gaps.length === 0 && dups.length > 0) reasons.push('overlap')
-      m.set(offeringId, { reasons, fresh, gaps, dups })
-    }
-    return m
-  }, [secondaryTemplateAssignments, secondaryInstancesByOffering])
-
   const toCreate = instances.filter(i => i.status !== 'gap' && included.has(i.key)).length
   const missingTemplate = courses.filter(o => gatesByOffering.get(o.id)!.reasons.includes('no-template')).length
   const conflictedCourseCount = courses.filter(o => gatesByOffering.get(o.id)!.reasons.includes('overlap')).length
+  // ST-02 Blocks: a course where every unit is deselected, or the assigned
+  // template has only unstaffed roles, or nothing on it applies to this
+  // delivery mode — none of these has ever gated Continue (see canContinue
+  // below); the course was just silently dropped from the push with zero
+  // acknowledgement anywhere downstream (confirmed live: Review's "Survey
+  // design" card shows a clean "Ready" badge with no trace of the course).
+  const otherBlockedCount = courses.filter(o => {
+    const r = gatesByOffering.get(o.id)!.reasons
+    return r.includes('unstaffed') || r.includes('no-units') || r.includes('none-selected')
+  }).length
   const templatesInUse = new Set(courses.map(o => templateIdFor(o)).filter(Boolean))
   // Reset-to-defaults impact (Resend "itemize what changes" model) — courses
   // whose EFFECTIVE template differs from their type default.
@@ -1157,61 +1828,31 @@ export function StepSurveyInstances({
     return !!def && templateIdFor(o) !== def
   }).length
 
-  // ── Segmented filter — a PREDICATE, never a regrouping. Rows only hide or
-  // show; course-code order never changes. ─────────────────────────────────
-  // 2026-08-05: "needs attention" now also catches a Ready row carrying a
-  // late-added co-instructor's still-open template decision — before this,
-  // that state had NO filter path at all (not blocked, not a gap), so at
-  // 10+ courses/admin there was no way to round them all up in one view,
-  // only the per-row Action-column callout as you scrolled past each one.
-  const hasOpenLateAddition = (g: CourseGate) => g.fresh.some(i => i.lateAddedRelativeTo)
-  const attentionCount = courses.filter(o => {
-    const g = gatesByOffering.get(o.id)!
-    return g.reasons.length > 0 || g.gaps.length > 0 || hasOpenLateAddition(g)
-  }).length
-  const blockedCount = courses.filter(o => gatesByOffering.get(o.id)!.reasons.length > 0).length
-  const visibleCourses = courses.filter(o => {
-    if (filter === 'all') return true
-    const g = gatesByOffering.get(o.id)!
-    return filter === 'blocked' ? g.reasons.length > 0 : g.reasons.length > 0 || g.gaps.length > 0 || hasOpenLateAddition(g)
-  })
-
-
   // 2026-08-05: a locked role on one course used to disable Continue for
   // the ENTIRE multi-course push — even courses with zero relationship to
   // the conflict, and even the SAME course's own unrelated, perfectly
   // pushable roles (Coordinator, Course material). A dup instance can never
   // become `included` (no checkbox exists for it — see the Blocked zone),
   // so `toCreate` already excludes it naturally; nothing further needs to
-  // gate on `conflictedCourseCount` here.
-  const canContinue = missingTemplate === 0 && toCreate > 0
+  // gate on a PARTIALLY-blocked course here — that reasoning still holds.
+  //
+  // 2026-08-05 (audit fix): it over-corrected into never gating on ANY
+  // course-level reason. `reasons.length > 0` (conflictedCourseCount +
+  // otherBlockedCount, i.e. `blockedCount`) only ever fires when the course
+  // contributes NOTHING pushable at all (overlap-with-no-other-content,
+  // unstaffed, no-units, or every unit deselected) — ST-02's Blocks list
+  // requires the Admin to resolve or remove that course, not have it
+  // silently vanish from the batch while Continue stays enabled.
+  const canContinue = missingTemplate === 0 && blockedCount === 0 && toCreate > 0
   const continueDisabledReason = missingTemplate > 0
     ? `${missingTemplate} course${missingTemplate !== 1 ? 's need' : ' needs'} a template before continuing.`
-    : toCreate === 0
-      ? 'Nothing is selected to evaluate yet.'
-      : ''
-
-  // Every currently-open late addition across every course — the flat list
-  // the top-of-step card below renders. Carries the offering's CURRENT
-  // template name so "will use X" reads as a fact, not a vague default.
-  const lateAdditions = courses.flatMap(o => {
-    const g = gatesByOffering.get(o.id)
-    if (!g) return []
-    const currentTemplateName = publishedTemplates.find(t => t.id === templateIdFor(o))?.name
-    return g.fresh
-      .filter(i => i.lateAddedRelativeTo)
-      .map(i => ({
-        offeringId: o.id,
-        code: splitLabel(o).code,
-        personName: i.personName!,
-        roleLabel: i.roleLabel,
-        currentTemplateName,
-        coveredBy: g.dups
-          .filter(d => d.criterion === i.criterion)
-          .map(d => d.personName)
-          .filter((n): n is string => !!n),
-      }))
-  })
+    : conflictedCourseCount > 0
+      ? `${conflictedCourseCount} course${conflictedCourseCount !== 1 ? 's are' : ' is'} blocked by an existing survey. Resolve, archive, or remove ${conflictedCourseCount !== 1 ? 'them' : 'it'} before continuing.`
+      : otherBlockedCount > 0
+        ? `${otherBlockedCount} course${otherBlockedCount !== 1 ? 's need' : ' needs'} attention before continuing.`
+        : toCreate === 0
+          ? 'Nothing is selected to evaluate yet.'
+          : ''
 
   // ── Create sub-view: same chooser + builder as Settings > Templates ────────
   if (subView !== 'assign') {
@@ -1329,130 +1970,15 @@ export function StepSurveyInstances({
             </div>
           </div>
 
-          {/* 2026-08-05 — the fast, no-navigation entry point for the
-              person-grain decision, outside the DataTable: at 10+
-              courses/admin, the in-row Advisory card only helps once a row
-              is already open. Same self-contained card shape as the in-row
-              version (fact + one optional action, no forced Same/Different
-              pick), driven by the SAME underlying state via
-              onAssignPersonTemplate — resolving it here clears the
-              matching in-row card too, so there's never a stale duplicate
-              to reconcile. Sits below the step heading (Romit's call) so
-              the heading is always the first thing read, then this, then
-              the table. */}
-          {lateAdditions.length > 0 && (
-            <Card className="py-0 gap-0">
-              <CardContent className="p-4 flex flex-col gap-3">
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <i className="fa-solid fa-arrow-right-arrow-left text-xs" style={{ color: 'var(--chip-4)' }} aria-hidden="true" />
-                  {lateAdditions.length === 1
-                    ? '1 new faculty member needs a template decision'
-                    : `${lateAdditions.length} new faculty members need a template decision`}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {lateAdditions.map(a => {
-                    const key = `${a.offeringId}|${a.personName}`
-                    const picking = topPicker === key
-                    return (
-                      <div
-                        key={key}
-                        className="flex flex-1 basis-72 max-w-sm flex-col gap-1.5 rounded-md border p-2.5 min-w-0"
-                        style={{ borderColor: 'var(--chip-4)', background: 'var(--card)' }}
-                      >
-                        <span className="flex items-start gap-2.5 min-w-0">
-                          <PersonAvatar name={a.personName} className="size-6" />
-                          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                            <span className="truncate text-sm font-medium">{a.personName}</span>
-                            <span className="truncate text-xs text-muted-foreground">{a.roleLabel} · {a.code}</span>
-                          </span>
-                        </span>
-                        <p className="text-xs text-muted-foreground">
-                          Template: <span className="font-medium text-foreground">{a.currentTemplateName ?? 'Same as course'}</span>
-                          {a.coveredBy.length > 0 && <> — same as {a.coveredBy.join(' and ')}</>}
-                        </p>
-                        {picking ? (
-                          <div className="flex flex-col gap-1.5">
-                            <Select value={topPickerTemplateId} onValueChange={setTopPickerTemplateId}>
-                              <SelectTrigger size="sm" aria-label={`Different template for ${a.personName}`} className="w-full">
-                                <SelectValue placeholder="Choose a template" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {publishedTemplates.map(t => (
-                                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex gap-1.5">
-                              <Button
-                                variant="outline"
-                                size="xs"
-                                disabled={!topPickerTemplateId}
-                                onClick={() => {
-                                  onAssignPersonTemplate(a.offeringId, a.personName, topPickerTemplateId)
-                                  setTopPicker(null)
-                                  setTopPickerTemplateId('')
-                                }}
-                              >
-                                Use this template
-                              </Button>
-                              <Button variant="ghost" size="xs" onClick={() => { setTopPicker(null); setTopPickerTemplateId('') }}>
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="link"
-                            size="xs"
-                            className="self-start px-0 h-auto"
-                            style={{ color: 'var(--chip-4)' }}
-                            onClick={() => setTopPicker(key)}
-                          >
-                            Use a different template
-                          </Button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Segmented filter — hides or shows rows, never reorders them. */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              <ToggleGroup
-                type="single"
-                value={filter}
-                onValueChange={v => v && setFilter(v as FilterKey)}
-                variant="outline"
-                size="sm"
-                aria-label="Filter courses by status"
-              >
-                <ToggleGroupItem value="all" aria-label={`Show all ${courses.length} courses`}>
-                  All <span className="tabular-nums text-muted-foreground">({courses.length})</span>
-                </ToggleGroupItem>
-                <ToggleGroupItem value="attention" aria-label={`Show ${attentionCount} courses needing attention`}>
-                  Needs attention <span className="tabular-nums text-muted-foreground">({attentionCount})</span>
-                </ToggleGroupItem>
-                <ToggleGroupItem value="blocked" aria-label={`Show ${blockedCount} blocked courses`}>
-                  Blocked <span className="tabular-nums text-muted-foreground">({blockedCount})</span>
-                </ToggleGroupItem>
-              </ToggleGroup>
-              {filter !== 'all' && (
-                <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
-                  Showing {visibleCourses.length} of {courses.length} courses
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* ST-02 Auto Update — ONE flag for every course row, at the top of
               the step (never per-row). Flipping it does nothing by itself: it
               only decides how units the rows haven't seen before arrive on
               the next manual Refresh. State lives in push/page.tsx; Phase 3
-              persists it with Save-as-Draft. */}
+              persists it with Save-as-Draft.
+              2026-08-06 (Romit's catch) — moved above the filter toolbar: the
+              toolbar filters/searches the table directly below it, and with
+              Auto Update sitting between them the toolbar read as
+              disconnected from the table it acts on. */}
           <div className="flex items-center justify-between gap-4">
             <label htmlFor="auto-update-units" className="flex items-center gap-2.5 cursor-pointer">
               <ToggleSwitch
@@ -1475,10 +2001,84 @@ export function StepSurveyInstances({
             </div>
           </div>
 
-          {/* ONE flat table — course-code order, never reordered by status.
-              A row is one line by default; every row's chevron expands to
-              its Template and Evaluatees detail. */}
-          <Card size="sm" className="py-0 gap-0 overflow-hidden">
+          {/* Toolbar + table wrapped tight together (Romit's catch,
+              2026-08-06 round 5) — gap-5 on the outer flex-col (heading /
+              Auto Update / this pair) is right for separating unrelated
+              sections, but the SAME 20px between the toolbar and the table
+              it filters read as if they were two more unrelated sections
+              instead of one control belonging to the grid right below it.
+              This inner gap-2 keeps that pair visually coupled without
+              touching the outer rhythm. */}
+          <div className="flex flex-col gap-2">
+            {/* Real DataTable search + filter (DataTableToolbar +
+                TablePropertiesDrawer, same as step-scope-courses.tsx) — see
+                the courseTableState/courseTableRows/courseTableColumns setup
+                above. Narrows only which rows render below; every count,
+                gate, and the Continue button still read the full `courses`
+                list — filtering is a triage aid, never a way to accidentally
+                hide a course from the push itself. Directly above the table
+                it filters (see the Auto Update comment above). */}
+            <DataTableToolbar
+              state={courseTableState}
+              columns={courseTableColumns}
+              searchAriaLabel="Search courses by code or name"
+              edgeInset={false}
+              toolbarSlot={state => (
+                <>
+                  <Tip label="Table properties" side="bottom">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Table properties"
+                      aria-expanded={state.sheetOpen}
+                      onClick={() => state.setSheetOpen(o => !o)}
+                    >
+                      <i className="fa-light fa-sliders text-[13px]" aria-hidden="true" />
+                    </Button>
+                  </Tip>
+                  <TablePropertiesDrawer
+                    open={state.sheetOpen}
+                    onOpenChange={state.setSheetOpen}
+                    activeFilters={state.activeFilters}
+                    onAddFilter={state.addFilter}
+                    onUpdateFilter={state.updateFilter}
+                    onRemoveFilter={state.removeFilter}
+                    getFilterConnector={state.getConnector}
+                    onToggleFilterConnector={state.toggleConnector}
+                    filterFields={courseTableColumns
+                      .filter(c => c.filter)
+                      .map(c => ({
+                        key: c.key,
+                        label: c.label,
+                        icon: c.filter!.icon ?? 'fa-filter',
+                        type: c.filter!.type,
+                        operators: c.filter!.operators ?? ['is', 'is_not'],
+                        options: c.filter!.options,
+                      }))}
+                    totalRows={courseTableRows.length}
+                    filteredRows={state.rows.length}
+                    sortRules={state.sortRules}
+                    onSortRulesChange={state.setSortRules}
+                    onAddSortRule={state.addSortRule}
+                    onRemoveSortRule={state.removeSortRule}
+                    onToggleSortDir={state.toggleSortDir}
+                    colOrder={state.colOrder}
+                    onColOrderChange={state.setColOrder}
+                    hiddenCols={state.hiddenCols}
+                    onToggleColVisibility={state.toggleColVisibility}
+                    onMoveCol={state.moveCol}
+                    resolveColumnLabel={key => courseTableColumns.find(c => c.key === key)?.label ?? key}
+                    orderableKeys={[]}
+                  />
+                </>
+              )}
+            />
+
+            {/* ONE flat table — course-code order, never reordered by
+                status. A row is one line by default; every row's chevron
+                expands to its Template and Evaluatees detail. */}
+            <Card size="sm" className="py-0 gap-0 overflow-hidden">
            <CardContent className="p-0">
             <div
               className="grid items-center gap-3 ps-3 pe-3 py-2 border-b border-border text-xs font-medium text-muted-foreground"
@@ -1494,18 +2094,20 @@ export function StepSurveyInstances({
               <span>Action</span>
             </div>
 
-            {visibleCourses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                <i className="fa-light fa-circle-check text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />
-                <p className="text-sm font-medium">No courses match this filter</p>
-                <p className="text-xs text-muted-foreground">Switch to All to see every course in this push.</p>
+            {visibleCourses.length === 0 && (
+              <div className="py-6">
+                <EmptyHint
+                  heading="No courses match your search or filter"
+                  sub="Clear the search or switch the filter back to All to see every course in this push."
+                />
               </div>
-            ) : (
-              visibleCourses.map(o => {
+            )}
+
+            {visibleCourses.map(o => {
                 const { code, name } = splitLabel(o)
                 const mode = deliveryModeOf(o)
                 const gate = gatesByOffering.get(o.id)!
-                const { fresh, gaps, dups } = gate
+                const { fresh } = gate
                 const freshKeys = fresh.map(i => i.key)
                 // S4 — in Prism, explicitly excluded from this push (Auto
                 // Update off): rendered muted in the Evaluatees cell instead
@@ -1515,29 +2117,41 @@ export function StepSurveyInstances({
                 const templateId = templateIdFor(o)
                 const template = publishedTemplates.find(t => t.id === templateId) ?? null
                 const criteria = template ? templateCriteria(template) : []
-                const previewIconButton = (
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={!template}
-                    onClick={() => template && setPreviewTemplate(template)}
-                    aria-label={template ? `Preview the survey for ${code}` : 'Preview unavailable. Assign a template to preview.'}
-                  >
-                    <i className="fa-light fa-eye text-xs" aria-hidden="true" />
-                  </Button>
+                const secondaryEntries = secondaryTemplateAssignments[o.id] ?? []
+                const secondaryEntryTemplateIds = new Set(secondaryEntries.map(e => e.templateId))
+                // Flattened across every extra-template entry — the primary
+                // roster's "Use a different template" card only needs to
+                // know a person is ALREADY claimed by some entry, not which.
+                const secondaryScopePersonNames = secondaryEntries.flatMap(e => e.scopePersonNames ?? [])
+                const addableTemplates = publishedTemplates.filter(
+                  t => t.id !== templateId && !secondaryEntryTemplateIds.has(t.id),
                 )
-                const secondaryTemplateId = secondaryTemplateAssignments[o.id]?.templateId
-                const secondaryScopePersonNames = secondaryTemplateAssignments[o.id]?.scopePersonNames
+                const isOpen = openRows.has(o.id)
+                const driftNotice = templateDriftByOffering.get(o.id)
                 return (
                   <Fragment key={o.id}>
                   <Collapsible
-                    open={openRows.has(o.id)}
+                    open={isOpen}
                     onOpenChange={() => toggleRow(o.id)}
                     className="border-b border-border last:border-b-0"
                   >
+                    {/* Open-row accent — 2026-08-06, Romit's call: nothing
+                        distinguished an open row from a closed one besides
+                        the chevron rotating, which made it hard to tell
+                        which row a scrolled-past panel belonged to in a long
+                        list. Left rule reuses the tree's own hierarchy
+                        vocabulary (CourseDetailBody's border-l-2). */}
                     <div
-                      className="grid items-center gap-3 ps-3 pe-3 py-2"
-                      style={{ gridTemplateColumns: TABLE_GRID, minHeight: 44 }}
+                      className="grid items-center gap-3 ps-3 pe-3 py-2 border-l-2"
+                      // dt-row-selected (the canonical DataTable's own open/selected-row
+                      // token, component-consistency.md) — not --accent: in the active
+                      // theme-prism theme --accent is a brand-hue-343 rose tint, the same
+                      // family as the KC/AP persona avatar colors and the status badges
+                      // sitting on top of it, so the row wash flattened their contrast
+                      // against each other (Romit's 2026-08-06 live catch). dt-row-selected
+                      // is a fixed neutral gray in every theme, same reasoning RowStatus's
+                      // header comment already gives for avoiding brand-hue tokens on status.
+                      style={{ gridTemplateColumns: TABLE_GRID, minHeight: 44, borderLeftColor: isOpen ? 'var(--primary)' : 'transparent', background: isOpen ? 'var(--dt-row-selected)' : undefined }}
                     >
                       <span className="flex items-center">
                         <Checkbox
@@ -1592,322 +2206,251 @@ export function StepSurveyInstances({
                           need chip weight. */}
                       <span className="text-sm text-muted-foreground truncate">{COURSE_TYPE_FULL_LABEL[mode]}</span>
 
-                      <span className="min-w-0"><TemplateChip template={template} code={code} /></span>
+                      <span className="min-w-0">
+                        <TemplateDropdown
+                          templateId={templateId}
+                          code={code}
+                          publishedTemplates={publishedTemplates}
+                          onChange={tid => onTemplateChange(o.id, tid)}
+                        />
+                      </span>
 
                       <span className="min-w-0"><EvaluateeChipCluster code={code} gate={gate} included={included} /></span>
 
                       <span className="min-w-0"><RowStatus gate={gate} /></span>
 
                       <span className="min-w-0">
-                        <RowAction gate={gate} onAssign={() => openRow(o.id)} />
+                        <RowAction gate={gate} driftNotice={driftNotice} onAssign={() => openRow(o.id)} />
                       </span>
                     </div>
 
                     <CollapsibleContent>
-                      <Card className="mx-4 mb-3">
-                       <CardContent className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-muted-foreground">Template</span>
-                          <div className="group flex items-center gap-1 max-w-sm">
-                            <span className="min-w-0 flex-1">
-                              <TemplateControl
-                                offering={o}
-                                templateId={pendingTemplate[o.id] ?? templateId}
-                                defaultTemplateId={defaultAssignments[o.id]}
-                                edited={!!templateId && templateId !== defaultAssignments[o.id]}
-                                publishedTemplates={publishedTemplates}
-                                onTemplateChange={(offeringId, tid) => {
-                                  if (tid === templateId) { clearStagedTemplate(offeringId); return }
-                                  stageTemplate(offeringId, tid)
-                                }}
-                                onCreate={() => { setNotice(null); setSubView('create') }}
-                              />
-                            </span>
-                            {/* Reveals on hover/focus of the Template control —
-                                a secondary action, doesn't need to compete for
-                                attention at rest. Always visible while there's
-                                no template yet, since picking one is the
-                                primary thing to do here. */}
-                            <span className={cn('transition-opacity', template && 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100')}>
-                              {template ? (
-                                previewIconButton
-                              ) : (
-                                <Tip label="Assign a template to preview" side="top">
-                                  {/* Disabled buttons swallow pointer/focus events —
-                                      the focusable wrapper carries the tooltip AND
-                                      a visible focus ring (WCAG 2.4.7). */}
-                                  <span
-                                    className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                                    tabIndex={0}
-                                  >
-                                    {previewIconButton}
-                                  </span>
-                                </Tip>
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Round 2 — inline consequence preview the moment a
-                              DIFFERENT template is staged, before anything
-                              commits. Same voice as the S2 Override/Create-new
-                              dialog. "Switch" routes back through the real
-                              onTemplateChange, so existing conflict detection
-                              (pendingReassign) still runs exactly as before —
-                              this only adds a preview in front of it. */}
-                          {pendingTemplate[o.id] && pendingTemplate[o.id] !== templateId && (() => {
-                            const stagedTemplate = publishedTemplates.find(t => t.id === pendingTemplate[o.id])
-                            if (!stagedTemplate) return null
-                            const { added, removed } = templateSwitchConsequence(mode, template, stagedTemplate)
-                            return (
-                              <div className="flex max-w-sm flex-col gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--muted)' }}>
-                                <p className="text-xs text-muted-foreground">
-                                  <i className="fa-light fa-arrow-right-arrow-left me-1.5" aria-hidden="true" />
-                                  <span className="font-medium text-foreground">{stagedTemplate.name}</span> takes its place.{' '}
-                                  {removed.length > 0 && added.length > 0 && (
-                                    <>Stops evaluating <span className="font-medium text-foreground">{listFmt(removed)}</span> and adds <span className="font-medium text-foreground">{listFmt(added)}</span>.</>
-                                  )}
-                                  {removed.length > 0 && added.length === 0 && (
-                                    <>Stops evaluating <span className="font-medium text-foreground">{listFmt(removed)}</span> and adds nothing new.</>
-                                  )}
-                                  {removed.length === 0 && added.length > 0 && (
-                                    <>Adds <span className="font-medium text-foreground">{listFmt(added)}</span>. Nothing is removed.</>
-                                  )}
-                                  {removed.length === 0 && added.length === 0 && <>Same aspects, different questions.</>}
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    variant="default"
-                                    size="xs"
-                                    onClick={() => { onTemplateChange(o.id, stagedTemplate.id); clearStagedTemplate(o.id) }}
-                                  >
-                                    Switch template
-                                  </Button>
-                                  <Button variant="ghost" size="xs" onClick={() => clearStagedTemplate(o.id)}>
-                                    Keep current
-                                  </Button>
-                                </div>
-                              </div>
-                            )
-                          })()}
-
-                          {/* 2026-08-05 — moved out of the (now removed)
-                              Conflicts panel: this is neutral template
-                              metadata, true regardless of any block, not a
-                              fact about a conflict. */}
-                          {template && (
-                            <p className="text-xs text-muted-foreground tabular-nums">
-                              {template.name} · {template.questionCount} question{template.questionCount !== 1 ? 's' : ''} · evaluates{' '}
-                              {criteria
-                                .map(c => (c === 'students' ? 'Course material' : CRITERION_BY_TYPE[mode][c]?.label ?? c))
-                                .join(', ')}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                            Evaluatees
-                            <Tip label="Click a person or course material to include or exclude them from this push." side="top">
-                              <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 11 }} />
-                            </Tip>
-                          </span>
-                          <EvaluateeRoster
+                      {/* 2026-08-06 round 3 (Romit's catch on round 2) — this
+                          is the ACCORDION's own background continuing down
+                          from the header, not an inset card floating inside
+                          it: same dt-row-selected grey, same ps-3/pe-3 the
+                          header row uses, no margin between them and no
+                          rounded corners of its own — so the open header and
+                          its content read as one unbroken grey surface, the
+                          same way the header alone reads today when a row is
+                          open. (Round 2's mx-4/rounded-md/p-4 version was
+                          wrong — that's card styling, and this was never
+                          meant to be a separate card floating below the
+                          header.) */}
+                      <div className="ps-3 pe-3 pt-3 pb-4 flex flex-col gap-4" style={{ background: 'var(--dt-row-selected)' }}>
+                        {/* 2026-08-06 round 4 (Romit's call) — the primary
+                            template is its own white card floating on the
+                            grey accordion canvas, not flowing flush with it.
+                            Every "Additional templates" entry below gets the
+                            same treatment (see that loop) — one visual
+                            language, card vs. canvas, for every template on
+                            this course. */}
+                        <div className="rounded-md p-4" style={{ background: 'var(--card)' }}>
+                          <CourseDetailBody
+                            layout="rail"
+                            offering={o}
                             code={code}
+                            mode={mode}
                             gate={gate}
+                            template={template}
+                            criteria={criteria}
+                            templateId={templateId}
+                            stagedTemplateId={pendingTemplate[o.id]}
+                            defaultTemplateId={defaultAssignments[o.id]}
+                            publishedTemplates={publishedTemplates}
+                            onStageTemplate={stageTemplate}
+                            onCommitStage={staged => { onTemplateChange(o.id, staged.id); clearStagedTemplate(o.id) }}
+                            onClearStage={() => clearStagedTemplate(o.id)}
+                            onCreateTemplate={() => { setNotice(null); setSubView('create') }}
+                            onPreview={setPreviewTemplate}
                             included={included}
                             deselectedFresh={deselectedFresh}
                             onToggleUnit={flip}
-                            offering={o}
-                            publishedTemplates={publishedTemplates}
-                            currentTemplateName={template?.name}
+                            onToggleUnits={setMany}
                             secondaryScopePersonNames={secondaryScopePersonNames}
                             onAssignPersonTemplate={onAssignPersonTemplate}
                           />
                         </div>
-
-                        {/* 2026-08-05 — course-level utility ONLY, shown
-                            once, never per-person: the actual facts (who's
-                            blocked, why, the survey link; who's a late
-                            addition and their default) now live entirely on
-                            their own self-contained cards in the zoned
-                            roster above (Blocked / Advisory zones) — this
-                            line exists only because "remove this course"
-                            is a course-level action with nowhere else to
-                            live, not because anything needs restating. */}
-                        {dups.length > 0 && (
-                          <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-                            <span className="text-xs text-muted-foreground">
-                              Cancel or archive the existing survey to push this course again, or remove it from this push.
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              className="shrink-0"
-                              onClick={() => onCourseSelectedChange(o.id, false)}
-                            >
-                              Remove course from push
-                            </Button>
+                        {/* Romit's 2026-08-06 call: this used to render as a
+                            bare sibling row below every "Also evaluating"
+                            entry, at the table's own outer indentation —
+                            outside the accordion it visually belonged to.
+                            Nested here, on the same grey canvas as the
+                            primary template's card above, it reads as one
+                            continuous thread running from the evaluation
+                            down through "add one more" instead of two
+                            misaligned pieces. No divider needed — the gap
+                            between this section and the card above is
+                            spacing on the shared canvas, not a boundary
+                            between two surfaces. */}
+                        <div>
+                          {/* "Additional templates" — same label style as
+                              "Evaluatees" above (Romit's call): a bare "Add
+                              another template" card sitting directly below
+                              the roster read as one more roster item, not a
+                              different kind of control for a different
+                              concept (a whole second, independently-
+                              toggleable survey). The label names that
+                              boundary explicitly instead of relying on shape
+                              alone to carry it. */}
+                          <span className="text-xs font-medium text-muted-foreground">Additional templates</span>
+                          {/* Already-added entries stack FIRST, "Add another
+                              template" comes LAST as one more item in the
+                              same stack (Romit's call) — was the other way
+                              around, with entries rendered as always-visible
+                              siblings entirely outside this course's own
+                              collapse (no boundary between them, and no
+                              spacing telling them apart from the NEXT
+                              course's row). Both now live in this one
+                              flex-col with a consistent gap-2, and both are
+                              gated on the SAME collapse as the roster above
+                              — see the openRows seed update, which now also
+                              opens a course whose extra template is blocked/
+                              unstaffed so that state is never hidden by
+                              default. */}
+                          <div className="mt-2 flex flex-col gap-2">
+                            {secondaryEntries.map((entry, entryIndex) => {
+                              const sGate = secondaryGatesByOffering.get(o.id)?.[entryIndex]
+                                ?? { reasons: [], fresh: [], gaps: [], dups: [] }
+                              const sTemplate = publishedTemplates.find(t => t.id === entry.templateId) ?? null
+                              // Keyed by templateId, not entryIndex — with 2+
+                              // extra entries, removing one used to shift
+                              // every LATER entry's index down a slot, which
+                              // silently reassigned its openRows/
+                              // pendingTemplate state (and its React key) to
+                              // whatever the entry ahead of it had been
+                              // using. A surviving entry could pop open/
+                              // closed or lose a staged pick on an unrelated
+                              // removal. templateId is stable across
+                              // removals since addableTemplates already
+                              // guarantees no two entries on one course
+                              // share one.
+                              const secondaryKey = `${o.id}::secondary::${entry.templateId}`
+                              const dedupedLabels = secondaryDedupedLabels[o.id]?.[entryIndex] ?? []
+                              // This entry's every criterion was already
+                              // claimed by an earlier template on this
+                              // course (primary or an earlier extra) —
+                              // common with the real template catalog, not a
+                              // rare edge case (see secondaryDedupedLabels'
+                              // declaration). Nothing new to evaluate, so
+                              // the row says so instead of showing a bare
+                              // "–" with no explanation.
+                              const fullyDeduped = sGate.fresh.length === 0 && sGate.gaps.length === 0
+                                && sGate.dups.length === 0 && dedupedLabels.length > 0
+                              // 2026-08-06 — one header, not a separate grey
+                              // toolbar sitting above TemplateHeaderRow's own
+                              // name/Preview/Remove line (Romit's call: the
+                              // two-header layout read as a different kind of
+                              // control than the primary template's one clean
+                              // row, which has no collapse of its own either
+                              // — every extra template's full detail is
+                              // always visible now, same as the primary's).
+                              // "Also evaluating" + live status fold into
+                              // TemplateHeaderRow's own badge slot.
+                              // Round 2 (same day) — the inline template-
+                              // switch dropdown that used to sit in this
+                              // header is gone (Romit's call): to change an
+                              // extra template's own pick, Remove it and
+                              // "Add another template" — one decision path,
+                              // not two ways to do the same thing.
+                              const secondaryBadges = (
+                                <>
+                                  <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
+                                    Also evaluating
+                                  </Badge>
+                                  {!fullyDeduped && <RowStatus gate={sGate} />}
+                                </>
+                              )
+                              return (
+                                // 2026-08-06 round 4 (Romit's call) — same
+                                // white-card-on-grey-canvas treatment as the
+                                // primary template above: one card per extra
+                                // template, no vertical rail, no dropdown.
+                                <div key={entry.templateId} className="rounded-md p-4" style={{ background: 'var(--card)' }}>
+                                  {fullyDeduped ? (
+                                    // No roster to render (everything this
+                                    // entry would cover is already claimed)
+                                    // — same header as the normal case below
+                                    // (TemplateHeaderRow), so Preview/Remove
+                                    // are never missing just because this
+                                    // particular entry has nothing new to
+                                    // evaluate.
+                                    <div className="flex flex-col gap-3">
+                                      {sTemplate && (
+                                        <TemplateHeaderRow
+                                          template={sTemplate}
+                                          isDefault={false}
+                                          criteria={templateCriteria(sTemplate)}
+                                          mode={mode}
+                                          onPreview={setPreviewTemplate}
+                                          onRemove={() => onRemoveSecondary(o.id, entryIndex)}
+                                          secondaryBadges={secondaryBadges}
+                                        />
+                                      )}
+                                      {/* 2026-08-06 round 4 (Romit's catch) —
+                                          var(--muted) carries a faint pink
+                                          cast in the Prism theme (oklch hue
+                                          343, unlike dt-row-selected's
+                                          near-zero-chroma neutral gray), so a
+                                          plain informational aside rendered
+                                          with a warm/rosy tint instead of
+                                          reading as neutral. dt-row-selected
+                                          instead — same family this file
+                                          already uses for "this is neutral,
+                                          not a status color" surfaces. */}
+                                      <div className="flex items-start gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--dt-row-selected)' }}>
+                                        <i className="fa-light fa-circle-info text-xs text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+                                        <span className="text-xs text-muted-foreground">
+                                          {listFmt(dedupedLabels)} {dedupedLabels.length === 1 ? 'is' : 'are'} already evaluated by
+                                          {' '}another template on {code} — not repeated here.
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <CourseDetailBody
+                                      layout="rail"
+                                      offering={o}
+                                      code={code}
+                                      mode={mode}
+                                      gate={sGate}
+                                      template={sTemplate}
+                                      criteria={sTemplate ? templateCriteria(sTemplate) : []}
+                                      templateId={entry.templateId}
+                                      stagedTemplateId={pendingTemplate[secondaryKey]}
+                                      defaultTemplateId={undefined}
+                                      publishedTemplates={publishedTemplates}
+                                      onStageTemplate={(_offeringId, tid) => stageTemplate(secondaryKey, tid)}
+                                      onCommitStage={staged => { onSecondaryTemplateChange(o.id, entryIndex, staged.id); clearStagedTemplate(secondaryKey) }}
+                                      onClearStage={() => clearStagedTemplate(secondaryKey)}
+                                      onCreateTemplate={() => { setNotice(null); setSubView('create') }}
+                                      onPreview={setPreviewTemplate}
+                                      included={included}
+                                      deselectedFresh={sGate.fresh.filter(i => unitSelections[i.key] === 'deselected')}
+                                      onToggleUnit={flip}
+                                      onToggleUnits={setMany}
+                                      onRemove={() => onRemoveSecondary(o.id, entryIndex)}
+                                      secondaryBadges={secondaryBadges}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            })}
+                            <AddTemplateRow
+                              code={code}
+                              templates={addableTemplates}
+                              onAdd={addedTemplateId => onAddSecondaryTemplate(o.id, addedTemplateId)}
+                            />
                           </div>
-                        )}
-                       </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     </CollapsibleContent>
                   </Collapsible>
-
-                  {/* S2 — "Create new survey" second row for this offering.
-                      Sits directly under the primary row it belongs to, with
-                      a connecting rule + muted "Also evaluating" label
-                      instead of repeating the course name — reads as ONE
-                      course with two surveys, not two unrelated rows. Kept
-                      as a flat adjacent row rather than a second nested
-                      collapsible level: fewer visual layers for the same
-                      information, in keeping with this screen's "less text,
-                      less structure" direction from today's earlier pass. */}
-                  {secondaryTemplateId && (() => {
-                    const sGate = secondaryGatesByOffering.get(o.id) ?? { reasons: [], fresh: [], gaps: [], dups: [] }
-                    const sTemplate = publishedTemplates.find(t => t.id === secondaryTemplateId) ?? null
-                    const secondaryKey = `${o.id}::secondary`
-                    const sPreviewButton = (
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        disabled={!sTemplate}
-                        onClick={() => sTemplate && setPreviewTemplate(sTemplate)}
-                        aria-label={sTemplate ? `Preview the second survey for ${code}` : 'Preview unavailable. Assign a template first.'}
-                      >
-                        <i className="fa-light fa-eye text-xs" aria-hidden="true" />
-                      </Button>
-                    )
-                    return (
-                      <Collapsible
-                        open={openRows.has(secondaryKey)}
-                        onOpenChange={() => toggleRow(secondaryKey)}
-                        className="border-b border-border last:border-b-0"
-                        style={{ borderInlineStart: '2px solid var(--border)' }}
-                      >
-                        <div
-                          className="grid items-center gap-3 ps-3 pe-3 py-2"
-                          style={{ gridTemplateColumns: TABLE_GRID, minHeight: 44 }}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={`Remove this second survey for ${code}`}
-                            onClick={() => onRemoveSecondary(o.id)}
-                          >
-                            <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                          </Button>
-                          <CollapsibleTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="group"
-                              aria-label={`${openRows.has(secondaryKey) ? 'Hide' : 'Show'} template and evaluatees for the second survey on ${code}`}
-                            >
-                              <i
-                                className="fa-light fa-chevron-down text-xs transition-transform group-data-[state=open]:rotate-180"
-                                aria-hidden="true"
-                              />
-                            </Button>
-                          </CollapsibleTrigger>
-                          <span className="text-sm text-muted-foreground truncate">Also evaluating</span>
-                          <span />
-                          <span className="min-w-0"><TemplateChip template={sTemplate} code={code} /></span>
-                          <span className="min-w-0"><EvaluateeChipCluster code={code} gate={sGate} included={included} /></span>
-                          <span className="min-w-0"><RowStatus gate={sGate} /></span>
-                          <span className="min-w-0">
-                            <RowAction gate={sGate} onAssign={() => openRow(secondaryKey)} />
-                          </span>
-                        </div>
-
-                        <CollapsibleContent>
-                          <Card className="mx-4 mb-3">
-                       <CardContent className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                              <span className="text-xs font-medium text-muted-foreground">Template</span>
-                              <div className="group flex items-center gap-1 max-w-sm">
-                                <span className="min-w-0 flex-1">
-                                  <TemplateControl
-                                    offering={o}
-                                    templateId={pendingTemplate[secondaryKey] ?? secondaryTemplateId}
-                                    edited={false}
-                                    publishedTemplates={publishedTemplates}
-                                    onTemplateChange={(offeringId, tid) => {
-                                      if (tid === secondaryTemplateId) { clearStagedTemplate(secondaryKey); return }
-                                      stageTemplate(secondaryKey, tid)
-                                    }}
-                                    onCreate={() => { setNotice(null); setSubView('create') }}
-                                  />
-                                </span>
-                                <span className={cn('transition-opacity', sTemplate && 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100')}>
-                                  {sTemplate ? sPreviewButton : (
-                                    <Tip label="Assign a template to preview" side="top">
-                                      <span className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1" tabIndex={0}>
-                                        {sPreviewButton}
-                                      </span>
-                                    </Tip>
-                                  )}
-                                </span>
-                              </div>
-
-                              {pendingTemplate[secondaryKey] && pendingTemplate[secondaryKey] !== secondaryTemplateId && (() => {
-                                const stagedTemplate = publishedTemplates.find(t => t.id === pendingTemplate[secondaryKey])
-                                if (!stagedTemplate) return null
-                                const { added, removed } = templateSwitchConsequence(mode, sTemplate, stagedTemplate)
-                                return (
-                                  <div className="flex max-w-sm flex-col gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--muted)' }}>
-                                    <p className="text-xs text-muted-foreground">
-                                      <i className="fa-light fa-arrow-right-arrow-left me-1.5" aria-hidden="true" />
-                                      <span className="font-medium text-foreground">{stagedTemplate.name}</span> takes its place.{' '}
-                                      {removed.length > 0 && added.length > 0 && (
-                                        <>Stops evaluating <span className="font-medium text-foreground">{listFmt(removed)}</span> and adds <span className="font-medium text-foreground">{listFmt(added)}</span>.</>
-                                      )}
-                                      {removed.length > 0 && added.length === 0 && (
-                                        <>Stops evaluating <span className="font-medium text-foreground">{listFmt(removed)}</span> and adds nothing new.</>
-                                      )}
-                                      {removed.length === 0 && added.length > 0 && (
-                                        <>Adds <span className="font-medium text-foreground">{listFmt(added)}</span>. Nothing is removed.</>
-                                      )}
-                                      {removed.length === 0 && added.length === 0 && <>Same aspects, different questions.</>}
-                                    </p>
-                                    <div className="flex items-center gap-1.5">
-                                      <Button
-                                        variant="default"
-                                        size="xs"
-                                        onClick={() => { onSecondaryTemplateChange(o.id, stagedTemplate.id); clearStagedTemplate(secondaryKey) }}
-                                      >
-                                        Switch template
-                                      </Button>
-                                      <Button variant="ghost" size="xs" onClick={() => clearStagedTemplate(secondaryKey)}>
-                                        Keep current
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              <span className="text-xs font-medium text-muted-foreground">Evaluatees</span>
-                              <EvaluateeRoster
-                                code={code}
-                                gate={sGate}
-                                included={included}
-                                deselectedFresh={sGate.fresh.filter(i => unitSelections[i.key] === 'deselected')}
-                                onToggleUnit={flip}
-                              />
-                            </div>
-                           </CardContent>
-                          </Card>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )
-                  })()}
                   </Fragment>
                 )
-              })
-            )}
+              })}
            </CardContent>
           </Card>
+          </div>
         </div>
       )}
 
@@ -2169,6 +2712,11 @@ export function StepSurveyInstances({
           {conflictedCourseCount > 0 && (
             <span className="text-xs tabular-nums font-medium" style={{ color: 'var(--chip-4)' }}>
               {conflictedCourseCount} course{conflictedCourseCount !== 1 ? 's' : ''} blocked by existing surveys
+            </span>
+          )}
+          {otherBlockedCount > 0 && (
+            <span className="text-xs tabular-nums font-medium" style={{ color: 'var(--chip-4)' }}>
+              {otherBlockedCount} course{otherBlockedCount !== 1 ? 's need' : ' needs'} attention
             </span>
           )}
           {canContinue ? (
