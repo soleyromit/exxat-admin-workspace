@@ -165,6 +165,29 @@ DOCUMENTED_HAND_ROLLS = {
     "app/(app)/compare/push-flow-rows/page.tsx",
     "app/(app)/compare/push-course-ledger/page.tsx",
     "app/(app)/compare/fix-affordance/page.tsx",
+    # pce: Step 2 template picker/flow/hierarchy compare surfaces (Aug 7) —
+    # same throwaway-exhibit rationale as the block above: each renders
+    # competing treatments of the SAME row/decision under comparison, not
+    # a real entity hub. Delete these entries with the pages once signed off.
+    "app/(app)/compare/push-step2-template-switch/page.tsx",
+    "app/(app)/compare/push-step2-template-assignment/page.tsx",
+    "app/(app)/compare/push-step2-accordion-layout/page.tsx",
+    "app/(app)/compare/push-step2-template-picker/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-popover/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-compact-list/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-sheet/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-segmented/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-unified/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-inline/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-forward/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-wizard/page.tsx",
+    "app/(app)/compare/push-step2-template-hierarchy/page.tsx",
+    "app/(app)/compare/push-step2-row-detail/variant-2-card-roster.tsx",
+    "app/(app)/compare/push-step2-row-detail/variant-4-two-line-row.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-a-detail-rail.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-b-grouped-status.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-c-two-phase.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-g-quiet-table.tsx",
     # pce: faculty + course analytics profiles — detail pages for a single entity; the DataTable
     # renders a sub-list (offerings) not the primary entity list. ListPageTemplate is for
     # top-level entity list pages, not sub-tables within a profile view.
