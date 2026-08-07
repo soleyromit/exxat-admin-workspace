@@ -508,6 +508,22 @@ Source: `docs/research/meetings/2026-08-04-step2-template-aspect-deduplication-a
 
 ---
 
+## Phase 1 design tasks — added 2026-08-06 (Course eval sync up — Mona)
+
+Source: `docs/research/meetings/2026-08-06-course-eval-sync-up-mona.md` (Granola `182b0d8a`)
+
+> Mona + Romit design review (Aug 6 9:30 AM EDT). Vishal could not join; call recorded for him. Romit demoed updated UI for the evaluation setup flow (Step 2 / T129 area). Six directives: role-level toggle, template change location killed at row level, template change confirmation dialog, newly added faculty inline in table, 80% design rule, faculty names not images. Engineering handoff is time-sensitive — designs deploying same day.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T149 | Step 2 — Role-level evaluatee toggle (not person level) | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Toggle = "do you want to evaluate this role?" at role level only. Individual person names NOT shown at the toggle level. Summary count of personas ("2 instructors") acceptable. Mona: "That toggle romit would be only on the roll level." D_PCE_0806_01. |
+| T150 | Step 2 — Kill inline template change; restrict to first selection step | Admin | Setup evaluations wizard Step 2 (T129) | P1 — applies at T129 implementation | Do NOT build a template-switching control inside Step 2 row. Template selection only on first step. Supersedes any inline template picker in Step 2. Mona: "This is too complex for user. Let's keep let the template change be on that above thing only." D_PCE_0806_02. Supplements T142. |
+| T151 | Step 2 — Template change confirmation dialog | Admin | Setup evaluations wizard (first template selection step) | P1 — DESIGN-REVIEW | On template change at first selection step: dialog "Are you sure you want to change the template? All evaluatees will be updated based on the new template." Cannot be a silent switch. D_PCE_0806_03. |
+| T152 | Step 2 — Newly added faculty: inline in evaluatee column, not separate horizontal cards | Admin | Setup evaluations wizard Step 2 (T129) | P1 — applies at T134/T129 implementation | When Prism sync adds new faculty, show them inline within the course row's evaluatee column — not as separate horizontal cards above the table. Left accordion/checkbox area can absorb the space. Mona: "cards showing separately will confuse the user." D_PCE_0806_04. Supplements T134. |
+| T153 | Step 2 — 80% rule: course material + instructor primary; rare roles = overflow | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Default view shows only Course Material + Instructor (80% of users). Additional faculty roles accessible via "+" or "see more" — hidden by default. Design the overflow pattern. Mona: "80% of our users will run course evaluation to evaluate the following: Course material and instructor." D_PCE_0806_05. |
+| T154 | Step 2 — Faculty display: names only, no profile images | Admin | Setup evaluations wizard Step 2 (T129) | P1 — applies at T129 implementation | All faculty displays in the setup wizard: text names only. No `AvatarImage` with real photos. Initials `AvatarFallback` acceptable only if no photo API call triggered; safest = plain text name. Production code already compliant (initials-only). Mona: "let's avoid using images because some of the faculties might not have images uploaded." D_PCE_0806_06. |
+| T155 | Setup wizard — no cancel CTA inside wizard steps | Admin | Setup evaluations wizard (T129) | P1 — applies at T129 implementation | Do not place "cancel evaluation" inside any wizard step. Cancel is only at "view survey list." Mona: "they can cancel but not here in this step. They have to go to view survey list and there they can cancel." D_PCE_0806_07. |
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
