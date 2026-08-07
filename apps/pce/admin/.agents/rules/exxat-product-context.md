@@ -1,0 +1,51 @@
+---
+description: Exxat DS — every design declares Product, Scope, and Persona before code. Consumer apps inherit the four-product shell (Prism, One — Schools, One — Sites, Custom). Anchored to ProductSwitcher + scope selector at runtime.
+activation: always_on
+---
+
+<!-- Synced from .agents/rules/exxat-product-context.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — product, scope, and persona context
+
+Exxat is **not a generic SaaS**. Every screen sits inside a product, a
+scope hierarchy, and a role. Designs that ignore this leak across roles,
+break in the wrong scope, or quietly violate HIPAA/FERPA.
+
+## Domain references (load when designing)
+
+- **`.agents/skills/exxat-domain-context/SKILL.md`** — persona quick-reference,
+  product → scope map, RBAC summary, compliance terminology.
+- **`docs/exxat-ds/multi-product-routing-pattern.md`** — URL roots, switcher
+  behaviour, custom product suffix slugs.
+- **`docs/exxat-ds/registering-a-product.md`** — `defineProduct()` for tenant
+  products (do **not** fork framework shims).
+
+Full agent-context corpus (personas, expert-agent RBAC table, domain.md):
+GitHub **`ExxatDesign/Exxat-DS-Workspace`** → `docs/exxat-ds/agent-context/`.
+
+## Source of truth: the runtime selectors
+
+- **Product** — ids exposed by `components/product-switcher.tsx`:
+  `exxat-prism`, `exxat-one-schools`, `exxat-one-sites`, `exxat-custom`.
+- **Scope** — school > program (Prism, One — Schools, Custom) or
+  brand > site > location (One — Sites).
+
+## MUST
+
+1. **Declare three lines in every design brief** (between `User & frequency:` and `Job-to-be-done:`):
+
+   ```
+   Product: <exxat-prism | exxat-one-schools | exxat-one-sites | exxat-custom>
+   Scope: <school > program | brand > site > location>
+   Persona: <heading from exxat-domain-context skill / personas.md>
+   ```
+
+2. **Persona** must match an existing archetype — do not invent personas in consumer apps.
+
+3. **Custom products** use **suffix URL slugs** (`/assessment/dashboard`), not `/custom/*`.
+   Persistence lives in `customProducts[]` via `@exxatdesignux/ui/product-framework`.
+
+## See also
+
+- **`exxat-product-routing.md`**
+- **`exxat-ux-discovery-protocol.md`**

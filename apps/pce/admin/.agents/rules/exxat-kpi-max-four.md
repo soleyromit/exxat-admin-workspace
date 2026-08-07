@@ -1,0 +1,23 @@
+---
+description: Exxat DS — at most four KPI tiles on primary hub strips and key-metrics dashboard cards.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-kpi-max-four.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — KPI strip (max four)
+
+## MUST
+
+1. **Cap visible KPIs at four** on **`ListPageTemplate`** metric strips and on **Data tab** **`key-metrics`** dashboard cards — align with **`KEY_METRICS_KPI_COUNT_MAX`** in **`lib/dashboard-layout-merge.ts`** and **`clampKeyMetricsKpiCount`** when persisting layout.
+2. **KPI helpers** (`*-kpi.ts`) return **≤ 4** `MetricItem` entries for those surfaces, or **`.slice(0, 4)`** after prioritization.
+3. **Overflow narrative** — Push secondary stats into **`MetricInsight`**, charts, or another section — not a fifth headline tile.
+
+## MUST NOT
+
+- Render **five or more** KPI tiles in a single **`KeyMetrics`** row/band meant as the **primary** summary for a hub or the **key-metrics** card.
+- Raise **`KEY_METRICS_KPI_COUNT_MAX`** without design-system review.
+
+## See also
+
+- **`docs/kpi-strip-max-four-pattern.md`** · **`docs/kpi-trend-pattern.md`** · **`docs/kpi-flat-band-pattern.md`** · **`.agents/skills/exxat-kpi-max-four/SKILL.md`**

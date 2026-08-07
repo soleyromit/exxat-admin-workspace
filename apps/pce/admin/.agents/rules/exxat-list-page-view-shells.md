@@ -1,0 +1,34 @@
+---
+description: Exxat DS — centered reusable shells for list-page views (not page-specific markup)
+activation: glob
+globs: components/**/*.tsx
+---
+
+<!-- Synced from .agents/rules/exxat-list-page-view-shells.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — list-page view shells (centered, reusable)
+
+## Intent
+
+**View bodies** under `ListPageTemplate` (table, list, board, dashboard, **folder**, **panel**, and future view types) **MUST** share one **layout primitive** for horizontal gutter and optional **centered max-width** on wide viewports. **MUST NOT** copy `mx-4 lg:mx-6` + `mx-auto max-w-*` per feature file or bake view-only layout into a single route.
+
+Domain logic (columns, tiles, folder trees) stays in **`*-table.tsx` / `*-client.tsx`**; **chrome and rhythm** use **`ListPageViewFrame`** from **`@/components/data-views/list-page-view-frame`** (re-exported from **`@/components/data-views`**). **Data** for those branches still comes from the **same** **`tableState.rows`** / hub state as the grid — see **`.agents/rules/exxat-centralized-list-dataset.md`**.
+
+## MUST
+
+1. Wrap **non-`DataTable`** view branches (icon folder grid, OS-style explorer, empty folder states, comparable dashboard **sections** that are not the main grid) in **`ListPageViewFrame`**, passing **`maxWidthClassName`** when the design calls for a centered cap (defaults: **`LIST_PAGE_VIEW_FRAME_MAX_ICON_GRID`** (`max-w-6xl`), **`LIST_PAGE_VIEW_FRAME_MAX_WIDE`** (`max-w-7xl`)).
+2. Add **new reusable view surfaces** under **`components/data-views/`** with **generic props** (`rows`, `renderTile`, `getRowId`, etc.) — same pattern as **`FolderGridView`**, **`FinderPanelView`**, **`ListPageBoardTemplate`**. Page files **compose** them; they **MUST NOT** own grid/folder markup.
+3. When extracting an entity-specific view (e.g. question OS folders), plan a **generic** `*View` in **`data-views/`** plus a thin adapter if the product still needs typed mock wiring.
+
+## MUST NOT
+
+- Wrap **`DataTable`** (or its outer toolbar shell) in **`ListPageViewFrame`** if that **duplicates** horizontal inset already applied by **`DataTable`** / **`DataTableToolbar`** — see **`AGENTS.md` §5** (double indent).
+- Wrap **`HubTable`** in a parent **`px-*` / `mx-*`** section that also contains the table body — pad **section intro only**; table stays full-bleed (**`exxat-data-tables.md`** → Table edge inset).
+- Ship **view-only** layout classes only inside **`src/views/<route>.tsx`** (or any route entry) for a hub that other entities will mirror — belong in **`data-views/`** or **`templates/`**.
+
+## See also
+
+- **`./AGENTS.md` §4.5** — handbook table + constants.
+- **`docs/exxat-ds/data-views-pattern.md`** — “View layout frame”.
+- **`.agents/rules/exxat-centralized-list-dataset.md`** — **`tableState.rows`** into every view branch.
+- **`.agents/skills/exxat-list-page-view-shells/SKILL.md`** — step-by-step for agents.

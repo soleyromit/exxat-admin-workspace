@@ -1,0 +1,51 @@
+---
+description: Application sidebar — DS shell only; legacy screenshots are IA reference, not visual spec
+activation: glob
+globs: "**/app-sidebar.tsx,**/navigation*.tsx,**/lib/mock/navigation.tsx,**/lib/*-navigation.tsx"
+---
+
+<!-- Synced from .agents/rules/exxat-sidebar-shell.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — application sidebar shell (MUST)
+
+Customer / legacy app **screenshots** may show **what links exist** — not **how the sidebar is styled**. Full policy: **`exxat-no-image-pixel-copy.md`**.
+
+## Screenshots are allowed to inform (content only)
+
+- Nav **labels**, **grouping**, **route paths**, **Font Awesome icon suffixes**
+- Whether a row needs **children**, a **secondary panel**, or a **badge**
+
+## Screenshots MUST NOT drive styling (MUST NOT)
+
+- **Per-section label colors** (magenta / teal / gold text on every row in a group)
+- **Custom active pills** (hand-built white `rounded-*` + shadow instead of `SidebarMenuButton` `data-active`)
+- **Non-token sidebar fills** (pink wash, `#hex` tints, inline `style={{ color: … }}`)
+- **Forking `app-sidebar.tsx` layout** for one product while rest of DS uses shared chrome
+- **Re-implementing `isNavActive`** in the app — use **`@exxatdesignux/ui/lib/nav-active`** (see **`exxat-nav-single-active.md`**)
+
+## MUST — DS sidebar chrome
+
+1. **Shell:** **`AppSidebar`** + **`SidebarMenuButton`** / **`SidebarGroup`** / **`SidebarGroupLabel`** from **`@exxatdesignux/ui`** (or app shims). Reference: **`components/sidebar/app-sidebar.tsx`**, **`AGENTS.md` §9.1**, **`exxat-ds-skill` §3.1–§3.2**.
+2. **Typography:** Row labels **`text-sidebar-foreground`** (default from `SidebarMenuButton`). Section headings **`SidebarGroupLabel`** + **`text-sidebar-section-label`** — not rainbow section body text. Nav labels **wrap** — use **`SidebarNavLabel`**; **MUST NOT** **`truncate`** primary or secondary sidebar copy (**`exxat-sidebar-nav-labels.md`**).
+3. **Active state:** Pass **`isActive`** into **`SidebarMenuButton`** only. Expanded rail: **one** active row (`data-active` → background pill + ring from DS). Collapsible parent stays **neutral** when a child is active. Icon rail: parent icon may light up when any child is active.
+4. **Icons:** **`fa-light`** idle / **`fa-solid`** active on the **icon** only — do **not** recolor the label per module.
+5. **Nav data:** Add or extend **`lib/mock/navigation.tsx`** (or a file it imports). **MUST NOT** paste a full legacy sidebar component from a customer repo into **`apps/web`**.
+6. **Consumer products:** Prism / customer hubs belong in a **separate consumer repo** with **`@exxatdesignux/ui`** — not product-specific rewrites of the DS monorepo sidebar.
+
+## Nav flyout mode (≤320px / zoom ≥ 200%)
+
+At **WCAG 1.4.10 reflow** (viewport width **≤ 320 CSS px**, browser zoom **≥ 200%**, or short viewport — via `computeReflowViewport()`), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` in **`packages/ui/src/components/ui/sidebar.tsx`**).
+
+1. **MUST NOT** leave the flyout **open by default** on load — entering flyout mode closes the sidebar so page content is not blocked.
+2. **MUST** call **`dismissNavFlyout()`** from **`useSidebar()`** when the user navigates to a **leaf** route (link that changes the URL to the destination). Reference: **`NavLinkItems`**, **`SidebarDrillInItems`**, **`library-secondary-nav.tsx`**, footer links in **`app-sidebar.tsx`**.
+3. **MUST NOT** dismiss on rows that only **open** nested nav (`drillIn`, `secondaryPanel`) — the user still needs the flyout to pick a child item.
+4. **Esc** closes the flyout when open (bound in **`SidebarProvider`**).
+
+## Reference (canonical visual)
+
+- **`components/sidebar/app-sidebar.tsx`** + **`lib/mock/navigation.tsx`**
+- **`packages/ui/src/components/ui/sidebar.tsx`** — `data-active:bg-background` pill
+
+## Anti-pattern
+
+Legacy Exxat Prism sidebar: color-coded **text** per module block, pink sidebar wash, bespoke selection chrome — **do not reproduce** when building on Exxat DS.

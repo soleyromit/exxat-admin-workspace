@@ -1,0 +1,89 @@
+---
+description: No Salesforce SLDS leakage — never copy slds-* classes, lightning-* elements, SLDS token names, or synthetic-shadow assumptions into Exxat DS code.
+alwaysApply: false
+globs: 
+  - apps/web/**/*.{tsx,ts,css}
+  - packages/ui/**/*.{tsx,ts,css}
+tags: [tokens, anti-pattern]
+seeAlso:
+  - .cursor/rules/exxat-token-discipline.mdc
+---
+
+# Exxat DS — no SLDS leakage
+
+**Context:** Some agents have access to other repos, including the **Salesforce
+`design-system-2-starter-kit`** (LWC + SLDS 2 / Cosmos). Patterns there look
+similar at a glance (`page-header`, `data-table`, `card`) but the
+**implementations are not portable** — they assume LWC, synthetic shadow,
+SLDS class systems, and the Salesforce platform.
+
+This rule prevents accidental cross-pollination from any **Salesforce / SLDS**
+codebase into **`apps/web`** or **`packages/ui`**.
+
+## MUST NOT
+
+1. **CSS class strings** — Do **not** introduce **`slds-*`** classes
+   (`slds-page-header`, `slds-m-around_*`, `slds-grid`, `slds-button`,
+   `slds-text-*`, etc.) anywhere in `apps/web/**` or `packages/ui/**`. The
+   Exxat stack is **Tailwind v4** + the token system documented in
+   [`docs/exxat-ds/token-taxonomy.md`](mdc:docs/exxat-ds/token-taxonomy.md).
+2. **LWC markup** — Do **not** render `<lightning-*>` tags
+   (`<lightning-button>`, `<lightning-datatable>`, `<lightning-card>`,
+   `<lightning-icon>`, etc.) or import from `lightning/*` modules. Use the
+   shadcn-style primitives in `packages/ui/src/components/ui/` and the
+   Exxat compositions in `components/`.
+3. **Synthetic-shadow assumptions** — Do **not** call `template.querySelector`,
+   `slds-color-scheme_dark`, `shadowRoot === null` checks, or anything that
+   only makes sense under Salesforce synthetic shadow. The Vite + React app uses
+   the real DOM + Radix portals.
+4. **SLDS styling-hook vars** — Do **not** use SLDS custom properties
+   (`--slds-g-color-surface-*`, `--slds-g-color-on-surface-*`,
+   `--slds-g-color-border-*`, `--slds-g-color-accent-*`, etc.). The Exxat
+   equivalents are documented in
+   [`docs/exxat-ds/token-taxonomy.md`](mdc:docs/exxat-ds/token-taxonomy.md):
+   surface → `--background` / `--card` / `--secondary-panel-bg`; ink →
+   `--foreground` / `--muted-foreground`; border → `--border` /
+   `--border-control` family; brand → `--brand-color` family.
+5. **SLDS theme switching** — Do **not** add UI for selecting "SLDS 1" vs
+   "SLDS 2". Exxat ships **Exxat One** (lavender) and **Exxat Prism** (rose)
+   themes via `.theme-one` / `.theme-prism` classes — see
+   `docs/shell-surface-elevation-pattern.md`.
+6. **Slot-vs-prop confusion** — Do **not** import LWC slot conventions
+   (`slot="actions"`, `<slot name="…">`) into React components. React uses
+   `children` + named props (`actions={…}`, `header={…}`).
+7. **`lightning-base-components` patterns inside React** — Do **not** add
+   per-page form-input wrappers like `lightning-input` clones. Use shadcn
+   `Input` / `Select` / `Combobox` from `packages/ui`.
+
+## SHOULD
+
+- If you're comparing SLDS patterns to gain inspiration (e.g. the
+  `object-home` / `record-home` / `related-list` variant model from
+  `ui-page-header`), **document the idea** as a blueprint under
+  [`docs/exxat-ds/blueprints/`](mdc:docs/exxat-ds/blueprints) — do **not**
+  copy SLDS markup verbatim.
+- For any "but SLDS does it this way" thought, check
+  [`docs/exxat-ds/component-selection-guide.md`](mdc:docs/exxat-ds/component-selection-guide.md)
+  first to see what Exxat ships for that pattern.
+
+## Why this rule exists
+
+Salesforce's design system is excellent — but it is **built for a different
+runtime** (LWC + synthetic shadow + classic SLDS layered with SLDS 2 /
+Cosmos). Mixing its CSS class system into a Tailwind v4 + OKLCH token app
+silently breaks:
+
+- **Theming** — `slds-*` classes don't react to `.theme-prism` / `.dark` /
+  `[data-contrast="high"]`.
+- **Accessibility** — SLDS 1 contrast ratios differ from Exxat's WCAG 2.1 AA
+  targets; mixing them produces unverifiable composites.
+- **Bundling** — Importing `@salesforce-ux/design-system` would balloon the
+  Vite bundle and pull in classic SLDS that we explicitly chose not to use.
+
+## See also
+
+- [`docs/exxat-ds/token-taxonomy.md`](mdc:docs/exxat-ds/token-taxonomy.md) — Exxat tokens
+- [`docs/exxat-ds/blueprints/`](mdc:docs/exxat-ds/blueprints) — framework-agnostic specs
+- [`docs/exxat-ds/component-selection-guide.md`](mdc:docs/exxat-ds/component-selection-guide.md) — what to reach for
+- [`.cursor/rules/exxat-token-discipline.mdc`](mdc:.cursor/rules/exxat-token-discipline.mdc) — token-level enforcement
+- [`.cursor/rules/exxat-reuse-before-custom.mdc`](mdc:.cursor/rules/exxat-reuse-before-custom.mdc) — ask before adding new primitives

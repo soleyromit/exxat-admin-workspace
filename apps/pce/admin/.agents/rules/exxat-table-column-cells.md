@@ -1,0 +1,36 @@
+---
+description: Exxat DS — map each table data point to the correct cell primitive (person avatar column, status badge, ProgressCell, etc.); no inline re-implementation. Auto-attaches when editing hub column defs and table cell renderers.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-table-column-cells.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — table column cell selection
+
+**Authoritative narrative:** [`docs/exxat-ds/table-column-cells-pattern.md`](mdc:docs/exxat-ds/table-column-cells-pattern.md)  
+**Live catalog:** `/columns` · `components/columns-showcase.tsx`  
+**Checklist:** `.agents/skills/exxat-table-column-cells/SKILL.md`
+
+## MUST
+
+1. **Import named cells** from `@/components/data-views` (`table-cells.tsx`) — `ProgressCell`, `CurrencyCell`, `PeopleAvatarRailCell`, `ListHubStatusBadge` (via list-status helpers), etc.
+2. **One person** in a dedicated column → **`AvatarInitials` + name + muted email** ([`exxat-person-identity-display.md`](mdc:.agents/rules/exxat-person-identity-display.md)) — copy **`library-table.tsx` Author** or **`columns-showcase` Author**.
+3. **Multiple people** → **`PeopleAvatarRailCell`** — not a person identity column; not overlapping face piles.
+4. **Workflow status** → **`StatusBadge`** (`tone` + `icon` + `size`) or **`lib/list-status-badges.ts`** tints — not raw colored `Badge` + `uppercase`.
+5. **System IDs** → **`font-mono tabular-nums`** on the ID token only ([`exxat-mono-ids.md`](mdc:.agents/rules/exxat-mono-ids.md)).
+6. **`cellKind`** — set on every column; drives filter **icon**, **type**, and default **options** ([`column-cell-kind.ts`](mdc:packages/ui/src/lib/column-cell-kind.ts)). Add **`filter.options[].node`** for rich previews (rating stars, status chips). Person/range filters use **`filterFieldContext`** from hub rows — see **`table-column-cells-pattern.md` § Filters**.
+7. **New shared cell** — extend **`table-cells.tsx`** + **`columns-showcase.tsx`** + ask user if no existing primitive fits ([`exxat-reuse-before-custom.md`](mdc:.agents/rules/exxat-reuse-before-custom.md)).
+
+## MUST NOT
+
+- Inline progress bars, currency formatters, star ratings, external links, attachment chips, face rails, type pills, tag lists, or row-action menus inside `ColumnDef['cell']`.
+- Plain text for **author / owner / student** when the column is the **person identity** column.
+- `PeopleAvatarRailCell` for a **single** person.
+- `font-mono` on names, emails, dates, or non-ID numbers.
+
+## See also
+
+- [`exxat-data-tables.md`](mdc:.agents/rules/exxat-data-tables.md) — `HubTable` stack
+- [`exxat-person-identity-display.md`](mdc:.agents/rules/exxat-person-identity-display.md)
+- [`exxat-mono-ids.md`](mdc:.agents/rules/exxat-mono-ids.md)
+- `.agents/skills/exxat-token-economy/SKILL.md` §3

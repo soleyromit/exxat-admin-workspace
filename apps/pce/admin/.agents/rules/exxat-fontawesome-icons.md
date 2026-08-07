@@ -1,0 +1,33 @@
+---
+description: Font Awesome Pro only — no Lucide; kit, weights, markup, subset audit, accessibility pairing
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-fontawesome-icons.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — Font Awesome icons (no Lucide)
+
+Product UI uses **Font Awesome 6 Pro** via the **Kit script** in **`src/layout.tsx`** (or consumer app layout). **Authoritative accessibility pairing:** **`.agents/rules/exxat-accessibility.md`** (Case A/B/C).
+
+## MUST
+
+1. **Markup** — **`<i className="fa-light fa-…" aria-hidden="true" />`** (or **`fa-solid`** when active/selected). Accessible name on parent **`Button` `aria-label`**, adjacent text, or **`Tip`** on icon-only controls.
+2. **Weights** — Default **`fa-light`**; **`fa-solid`** for selected / active / strong emphasis (sidebar rows, view tabs, verified checkmarks).
+3. **Class strings** — Prefer **static** `className` strings so **`pnpm --filter web fa:subset-audit`** discovers glyphs for Kit subsetting.
+4. **Icon sizing** — Use **`text-xs`**, **`text-[13px]`**, or **`size-*`** on the **`<i>`** or a wrapping flex box — not Lucide `strokeWidth` / SVG props.
+
+## MUST NOT
+
+1. **Import `lucide-react`** or any Lucide icon in **`apps/web/**`**, **`packages/ui/**`**, or consumer template apps.
+2. Add **Lucide**, **Heroicons**, **Phosphor**, or other SVG icon libraries for product chrome when Font Awesome covers the glyph.
+3. Put meaningful accessible names **only** on **`<i>`** without parent labelling — follow **Case B/C** in **`exxat-accessibility.md`**.
+
+## shadcn / UI primitives
+
+Base components under **`packages/ui/src/components/ui/`** use Font Awesome **`<i>`** tags — not Lucide SVG components. When upgrading shadcn blocks, **replace Lucide imports** before merging. Set **`"iconLibrary": "fontawesome"`** in **`components.json`**.
+
+## See also
+
+- **`.agents/skills/exxat-fontawesome-icons/SKILL.md`**
+- **`./AGENTS.md`** §8 accessibility
+- **`.agents/rules/exxat-accessibility.md`**

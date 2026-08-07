@@ -1,0 +1,110 @@
+---
+description: Token discipline — no hex literals, prefer Exxat L0 tokens, no deprecated tokens. ESLint enforces.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-token-discipline.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — token discipline
+
+**Authoritative reference:** [`docs/exxat-ds/token-taxonomy.md`](mdc:docs/exxat-ds/token-taxonomy.md).
+**Machine-readable index:** [`packages/ui/tokens/hooks-index.json`](mdc:packages/ui/tokens/hooks-index.json) (163 tokens · 36 namespaces; regenerate via `pnpm --filter @exxatdesignux/ui tokens:index`).
+**Enforcement:** [`@exxatdesignux/eslint-plugin`](mdc:packages/eslint-plugin-exxat-ds/README.md) (rules `exxat-ds/no-hex-color`, `exxat-ds/no-deprecated-tokens`).
+
+Use this rule when adding **any** color, spacing, radius, shadow, or
+transition value to JSX, CSS, or Tailwind class strings.
+
+## MUST
+
+1. **Prefer the Exxat L0 namespace** for new code — `var(--exxat-color-surface-1)`,
+   `bg-surface-1`, `bg-brand-1`, `rounded-2`, `--exxat-spacing-4`, … (taxonomy §2.0).
+   L1 shadcn names (`--background`, `bg-brand`, `rounded-md`, …) remain as
+   back-compat aliases and continue to work — but new product surfaces should
+   read in the canonical brand-prefixed namespace.
+2. **Reach for a semantic token first.** If the value carries semantic intent
+   ("danger", "warning", "muted text", "card surface"), use the matching
+   token family from §2 of the taxonomy. Never reinvent semantic colors.
+3. **Use Tailwind utilities backed by tokens** (e.g. `bg-card`,
+   `text-muted-foreground`, `border-border-control`, `ring-ring`,
+   `bg-chip-2`, `text-chart-4`, **`bg-surface-1`**, **`bg-brand-1`**,
+   **`rounded-2`**). The L2 bridges in `globals.css` already wire
+   `--color-*` → `var(--*)` so utilities flip with theme + dark mode.
+3. **Brand accent comes from `--brand-color` / `bg-brand`** (and its family),
+   **not** `--primary` / `bg-primary`. Primary is **neutral charcoal** in
+   Exxat — see taxonomy §3.
+4. **Form-field borders** use `--control-border` (or `border-control-3` /
+   `border-control-35`) — never `--border` (which is decorative and < 3:1
+   contrast). Taxonomy §6.
+5. **Status chips and badges** route through
+   [`lib/list-status-badges.ts`](mdc:lib/list-status-badges.ts)
+   (`LIST_HUB_STATUS_TINT_*` + `ListHubStatusBadge`) — not direct
+   `bg-green-500` / `bg-red-500` / hex literals.
+6. **KPI tints** route through `--insight-severity-*` (info / warning) — not
+   direct chart-color reuse. Trend polarity is set via
+   `MetricItem.trendPolarity` ([`exxat-kpi-trends.md`](mdc:.agents/rules/exxat-kpi-trends.md)).
+7. **Scoped surface tokens stay scoped.** `--dt-*` is `DataTable` only,
+   `--key-metrics-*` is `KeyMetrics` only, `--leo-*` is Ask Leo only,
+   `--secondary-panel-bg` is the nested panel only. Do **not** reuse these
+   tokens outside their owning surface.
+8. **Adding a new token** — Follow the checklist in
+   [`token-taxonomy.md` §4](mdc:docs/exxat-ds/token-taxonomy.md). Declare
+   the primitive in `packages/ui/src/globals.css` (canonical CSS), bridge it in the same file's `@theme inline`
+   files when Tailwind utilities are needed, document it in the taxonomy,
+   and regenerate `tokens/hooks-index.json`.
+
+## MUST NOT
+
+1. **No raw hex / rgb / hsl color literals** in JSX `className` strings,
+   inline `style={{...}}`, or `.css` files outside of `globals.css` /
+   `globals.css` / theme overrides. The only places hex is legal are:
+   - `--theme-color-chrome` (consumed by `<meta name="theme-color">`)
+   - Status icon SVG paths that are part of a vendored asset
+   - **Documentation** examples (this rule, blueprints, migrations)
+2. **No raw `oklch(...)` literals** in component code — those belong in
+   `globals.css` theme blocks only. If you need a derived value, use
+   `color-mix(in oklch, var(--token) <pct>%, var(--other))` inside a token
+   declaration, not at the call site.
+3. **No deprecated tokens.** Inspect
+   [`tokens/hooks-index.json`](mdc:packages/ui/tokens/hooks-index.json) —
+   any entry with `"deprecated": true` is removed at the version named in
+   `deprecatedMessage`. Migrate before the removal window per
+   `docs/exxat-ds/migrations/`.
+4. **No ad-hoc Tailwind shades** for product chrome (e.g. `bg-slate-50`,
+   `text-zinc-600`, `border-gray-200`) when an Exxat semantic equivalent
+   exists. Tailwind shade utilities are reserved for transient prototyping
+   only; product code uses the semantic tokens.
+5. **No `text-primary` for the brand accent.** That maps to neutral charcoal
+   (see MUST #3).
+6. **No utility-class typos that look like tokens.** Examples that look
+   right but aren't:
+   - `bg-brand-color` — that's the *raw L1 name*; the L2 utility is `bg-brand`.
+   - `border-control` — there's no such utility; the field-border alias is `border-control-3` (3:1) or `border-control-35` (3.5:1+), or `border-[var(--control-border)]`.
+   - `text-foreground-muted` — the token is `--muted-foreground` (note the order).
+7. **No SLDS tokens** (`--slds-g-color-*`) — see
+   [`exxat-no-slds-leakage.md`](mdc:.agents/rules/exxat-no-slds-leakage.md).
+
+## Aliases that ARE official
+
+Some L2 bridges intentionally use a **shorter alias** than the L1 primitive
+because the long name would be awkward in Tailwind utilities. Use the alias
+form, but be aware of the underlying primitive:
+
+| Alias (use in code) | L0 canonical | L1 primitive | Notes |
+|---|---|---|---|
+| `bg-brand` / `text-brand` | `--exxat-color-brand-1` | `--brand-color` | Brand accent |
+| `bg-brand-deep` / `text-brand-deep` | `--exxat-color-brand-deep` | `--brand-color-deep` | Coach marks, hero callouts |
+| `bg-brand-tint` | `--exxat-color-brand-tint-1` | `--brand-tint` | Sidebar wash |
+| `bg-surface-1` / `text-ink-1` | `--exxat-color-surface-1` / `--exxat-color-ink-1` | `--background` / `--foreground` | Page canvas + primary text — new code SHOULD prefer L0 form |
+| `rounded-1` … `rounded-6` | `--exxat-radius-1` … `--exxat-radius-6` | (no L1 equivalent — L0 is canonical for radius) | Numeric radius scale (4 / 8 / 12 / 16 / 20 / 24 px) |
+
+The full alias table is in [`token-taxonomy.md` §2.0](mdc:docs/exxat-ds/token-taxonomy.md) and [§2.2](mdc:docs/exxat-ds/token-taxonomy.md).
+
+## See also
+
+- [`docs/exxat-ds/token-taxonomy.md`](mdc:docs/exxat-ds/token-taxonomy.md) — full namespace + naming rules
+- [`docs/exxat-ds/migrations/`](mdc:docs/exxat-ds/migrations) — deprecation index
+- [`packages/ui/tokens/hooks-index.json`](mdc:packages/ui/tokens/hooks-index.json) — machine-readable
+- [`.agents/rules/exxat-no-slds-leakage.md`](mdc:.agents/rules/exxat-no-slds-leakage.md)
+- [`.agents/rules/exxat-kpi-trends.md`](mdc:.agents/rules/exxat-kpi-trends.md)
+- [`.agents/rules/exxat-kpi-flat-band.md`](mdc:.agents/rules/exxat-kpi-flat-band.md)
+- [`.agents/rules/exxat-no-toast.md`](mdc:.agents/rules/exxat-no-toast.md)
