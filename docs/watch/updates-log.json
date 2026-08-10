@@ -1459,6 +1459,19 @@
             "files": [
                 "docs/watch/stakeholder-decisions.json"
             ]
+        },
+        {
+            "id": "2026-08-10-granola-intake-pce-001",
+            "date": "2026-08-10",
+            "product": "pce",
+            "type": "decision-extracted",
+            "title": "Granola intake — 11 new PCE decisions from Aug 4–6 transcripts",
+            "what": "Extracted 11 confirmed PCE design decisions from 2 meeting transcripts. Step two design — template selection, aspect deduplication, and auto-update logic with Romit (Aug 4, Vishal PM): step 2 must visually distinguish non-person aspects from person-based aspects (pce-decision-085); hard block on duplicate aspect per course offering in same term using (course offering ID + aspect) dedup key (pce-decision-086); template override vs. new survey two-path dialog when switching templates on a course with existing scheduled survey (pce-decision-087); auto update toggle behavior — ON auto-includes new Prism faculty up to go-live, OFF locks to setup-time state with deselected Prism faculty shown (pce-decision-088); manual Prism refresh button required in step 2 (pce-decision-089). Course Eval sync up (Aug 6, Monil): evaluity toggle is at role level not person level (pce-decision-090); step 2 designed for 80% case (course material + instructor) with progressive disclosure for additional roles (pce-decision-091); template change requires confirmation dialog before applying (pce-decision-092); faculty display uses names not profile images (pce-decision-093); cancel evaluation not available in step 2 (pce-decision-094); newly synced Prism faculty shown inline in evaluity column not as separate cards (pce-decision-095). No conflicts with existing decisions detected. 3 meetings skipped: Astrology consultation (not Exxat relevant), The UX Chats meetings Aug 4 and Aug 6 (no Exxat product decisions).",
+            "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026; Course Eval sync up transcript — Aug 6, 2026",
+            "severity": "clean",
+            "files": [
+                "docs/watch/stakeholder-decisions.json"
+            ]
         }
     ]
 }

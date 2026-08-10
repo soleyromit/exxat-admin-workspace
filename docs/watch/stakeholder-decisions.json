@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-03",
+  "lastUpdated": "2026-08-10",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -1117,6 +1117,116 @@
       "source": "Exam management weekly call transcript — Jul 30, 2026",
       "sourceType": "transcript",
       "date": "2026-07-30",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-085",
+      "product": "pce",
+      "text": "Step 2 of the setup survey wizard must visually distinguish non-person aspects (course content, general) from person-based aspects (all faculty roles). Non-person aspects require no further person-assignment action. Person-based aspects require identifying which specific individuals fill that role and must prompt the admin to assign or confirm faculty in Prism. Vishal: 'I would force you to also think from a human and non-human aspect separately so that the next information where user needs to take action can also be intuitively filled.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-04",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-086",
+      "product": "pce",
+      "text": "The same aspect (e.g., course content, instructor role) cannot be evaluated twice for the same course offering in the same term — this is a hard block, not a soft warning. If a scheduled or live survey already evaluates 'course content' for a given course offering, any new survey for that same course cannot include 'course content'. The duplicate is detected using (course offering ID + aspect being evaluated). The blocked aspect is deselected and shown with a hard-block indicator; the admin can proceed only with non-duplicated aspects. Vishal: 'We will not allow admins to create same survey for course and aspect combination.' and 'Hard block. Why? Because you have already evaluated course [content]... you will not allow this.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-04",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-087",
+      "product": "pce",
+      "text": "When an admin selects a course in step 2 that already has a scheduled survey and switches to a different template, the system must present two explicit paths: (a) Override — completely replaces the existing scheduled survey with the new template; the old survey is deleted and the new one takes its place. (b) Create new survey — a separate survey coexists alongside the existing one; any aspect already evaluated in the existing survey is hard-blocked (pce-decision-086) in the new survey. The system must surface this choice to the admin at the moment of template switch, as the two paths have very different consequences. Vishal: 'There can be two scenarios: you want to override or create a new survey... Override: you only have one entry. The survey that was in scheduled is now this survey scheduled... Creating new survey is this: two surveys both exist in the system.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-04",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-088",
+      "product": "pce",
+      "text": "Auto update toggle behavior in step 2: Auto update ON means whatever faculty are associated with the course in Prism at the moment the survey goes live (not at setup time) are automatically included. If a new instructor is added to Prism between setup and go-live, they are automatically pulled into the evaluation. Auto update OFF means only faculty explicitly assigned at setup time are included; any Prism additions made after setup are ignored. When auto update is OFF, the UI must show any Prism faculty who exist for the course but are excluded (shown in a deselected/disabled state) so the admin knows they are missing from the evaluation. Vishal: 'If the auto update toggle was on... whatever are the person in Prism... John will also be part of this course evaluation... if auto update was off... whatever was defined on day one... John will not be added even if John is present in Prism... you will have to show [this] so that user knows... there is another person called John but is not being evaluated.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-04",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-089",
+      "product": "pce",
+      "text": "A manual refresh button must be present in step 2 of the setup survey wizard to pull the latest faculty associations from Prism on demand. When clicked, refresh pulls updated faculty data from Prism and updates the evaluity column for all courses shown — adding newly assigned faculty and removing any removed ones. This is distinct from the auto update toggle (pce-decision-088): refresh is a one-time manual pull; auto update is an ongoing automatic sync up to go-live. Vishal: 'Right now you can propose a manual refresh button on the top... Refresh is getting all the data from Prism... pulling all the latest faculty associations to Prism to this module.'",
+      "stakeholder": "Vishal (PM)",
+      "source": "Step two design — template selection, aspect deduplication, and auto-update logic with Romit transcript — Aug 4, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-04",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-090",
+      "product": "pce",
+      "text": "The on/off toggle for evaluity selection in step 2 of the setup survey wizard operates at the faculty ROLE level, not at the individual person level. The admin toggles 'Course Material' on or off and 'Instructor' on or off — not per-person (not per Dr. David or Dr. John). If the role is toggled on, all persons assigned to that role are included. The count or names of persons within the role can be shown as a summary alongside the role toggle, but the toggle itself controls the role, not individual persons. Monil: 'This toggle would be only on the role level... you tell the system that I only want to evaluate course material and instructor... We will not show who the instructors are at this level. We can just give a summary where you have on the top or else we can say show number of instructor personas... But that toggle is not on a person. That toggle is on a role.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-091",
+      "product": "pce",
+      "text": "Step 2 of the setup survey wizard must be designed for the 80% common case: evaluating only Course Material and Instructor. These two are the default evaluity display. Additional faculty roles (3rd, 4th, 5th, etc.) must be accessible via progressive disclosure — a '+' button, 'See more', or 'View more' pattern. This prevents cognitive overload for the majority of users while still supporting programs with 10+ faculty roles. The design philosophy is: optimize the primary experience for 80% of users; don't penalize them with a complex layout designed for the 20% edge case. Monil: '80% of our users will run course evaluation to evaluate the following: Course material and instructor... Design for those 80%. But our system supports other N faculty roles also. Tomorrow you can evaluate 10 faculty roles... It is like a plus button or see more or view more kind of a thing.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-092",
+      "product": "pce",
+      "text": "When an admin changes the template selection for a course in step 2, a confirmation dialog must be shown before the change is applied. The dialog must communicate that changing the template will update all evaluities (aspects to be evaluated) based on the new template. The admin must actively confirm the change — template switches are never silent or automatic. Monil: 'You will give a dialogue that are you sure you want to change the template if the template is updated, all the evaluities will also be updated based on the new template selected.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-093",
+      "product": "pce",
+      "text": "Faculty members must be displayed by name (text only) in the step 2 setup survey wizard and related CE setup screens — not by profile photo or avatar. Rationale: (1) many faculty do not have profile images uploaded in the system; (2) rendering profile images via API adds latency to an already complex page. A/B testing a names-only variant alongside an image variant is acceptable, but names-only is the preferred direction. Monil: 'Let's avoid using images because some of the faculties might not have images uploaded. And rendering image from engineering standpoint is... time consuming. The API calls will take some time to show that image. Instead of that, can we just simply show that instructor in front of instructor you have names of those faculties. You can do A/B testing... we would prefer that over this.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-094",
+      "product": "pce",
+      "text": "Admins cannot cancel an evaluation from within step 2 of the setup survey wizard. If an admin wants to cancel an evaluation, they must navigate to the View Survey List and cancel from there. No cancel action is exposed in the step 2 UI. Monil: 'They can cancel but not here in this step. They have to go to view survey list and there they can cancel.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-095",
+      "product": "pce",
+      "text": "When faculty are added to Prism and synced into the CE setup, updated faculty data must appear inline within the evaluity column of the relevant course row in step 2 — not as separate floating cards or a dedicated section above the table. Separate cards create confusion because each instructor is specifically associated with one course; detaching them from the course row breaks that association. For large-scale syncs (e.g., 10 courses each gaining new faculty), the inline approach is essential to keep faculty-course relationships clear. Monil: 'Cards showing separately will confuse the user because each instructor is associated to a course. So it has to be in front of a course line... We can shift things on the left and show newly added evaluities on that evaluity column itself.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 6, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-06",
       "status": "confirmed"
     }
   ]
