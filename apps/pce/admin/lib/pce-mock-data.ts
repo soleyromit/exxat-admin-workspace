@@ -1737,9 +1737,11 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
-  // endDate Jul 15 keeps the evaluation window (endDate + 7d) ahead of "today"
-  // so the collecting-term demo is date-coherent with its live survey deadlines.
-  { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-07-15', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
+  // endDate + 7d grace runs right up to pt5's Aug 24 start, so "current" hands
+  // off from Spring to Fall with no gap regardless of what day this is viewed
+  // (was Jul 15 — drifted stale once "today" passed Jul 22, breaking every
+  // demo scenario and the real default dashboard's Current-term card).
+  { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-08-16', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
   { id: 'pt2', name: 'Fall 2025',   season: 'Fall',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
   { id: 'pt3', name: 'Spring 2025', season: 'Spring', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
   { id: 'pt4', name: 'Fall 2024',   season: 'Fall',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },

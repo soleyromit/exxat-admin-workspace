@@ -13,6 +13,7 @@
  *  ✓ Active theme shown via aria-checked (RadioItem) (4.1.3)
  */
 
+import type { ReactNode } from "react"
 import { useTheme } from "@exxatdesignux/ui/hooks/use-color-scheme"
 import { Link } from "react-router-dom"
 import {
@@ -45,12 +46,15 @@ import { cn } from "@/lib/utils"
 
 export function NavUser({
   user,
+  extraMenuItems,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  /** Product-specific menu rows injected before "Log out" (role toggle, etc.). */
+  extraMenuItems?: ReactNode
 }) {
   const { isMobile, state } = useSidebar()
   const iconRailCollapsed = state === "collapsed" && !isMobile
@@ -169,6 +173,9 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            {/* ── Product-specific rows (role toggle, demo account…) ── */}
+            {extraMenuItems}
 
             <DropdownMenuSeparator />
 
