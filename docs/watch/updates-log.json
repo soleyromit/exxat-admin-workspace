@@ -1472,6 +1472,19 @@
             "files": [
                 "docs/watch/stakeholder-decisions.json"
             ]
+        },
+        {
+            "id": "2026-08-11-transcript-prd-diff-clean",
+            "date": "2026-08-11",
+            "product": "all",
+            "type": "transcript-diff-clean",
+            "title": "Transcript-PRD Diff Clean — 2026-08-11",
+            "what": "Checked 6 product-relevant meeting transcripts from Jul 28–Aug 6, 2026 against PCE PRD (pce-prd-monil.txt) and Exam Management PRD (exam-prd-nipun.txt). Meetings reviewed: PCE weekly Aug 4 (step 2 design w/ Romit), PCE weekly Aug 6 (Course Eval sync up w/ Monil), PCE Aug 5 (step 2 design), PCE design round Aug 1 (template creation w/ Aarti), PCE weekly Jul 31, and Exam Management Weekly Jul 30. All potential PRD conflicts (course type rename Experiential/Practice, accommodations out of scope, assessment import flow, cross-course access, AI assistance posture, toggle level) were already superseded by confirmed decisions in the cache (pce-decision-070 through pce-decision-095, exam-decision-015, exam-decision-021 through exam-decision-025). 7 non-product meetings excluded (astrology consultation, UX Chats events, ATS/job search). No new conflicts found.",
+            "source": "Granola transcripts — Jul 28 to Aug 11, 2026",
+            "severity": "clean",
+            "files": [
+                "docs/watch/flags/system.md"
+            ]
         }
     ]
 }
