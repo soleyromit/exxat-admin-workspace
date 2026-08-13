@@ -2,9 +2,20 @@
 
 // Wizard step shell — hand-roll justified (no DS step-frame organism), see
 // docs/governance/ds-adoption.md §PCE. Composes DS Card/AvatarGroup/Command/
-// Collapsible/ToggleSwitch/Checkbox/Select/Button/Badge/Tip/Dialog/
+// FloatingSheetPanel/ToggleSwitch/Checkbox/Select/Button/Badge/Tip/Dialog/
 // AlertDialog/LocalBanner + ListHubStatusBadge/StoryStatusBadgeOS +
 // DataTableToolbar/TablePropertiesDrawer (real DataTable search/filter).
+//
+// SHEET REVISION (2026-08-12) — the per-row accordion (below) is replaced by
+// a single FloatingSheetPanel: clicking a row's chevron opens its Template +
+// Evaluatees detail in a panel that slides in from the right, instead of
+// expanding inline. A sheet can only show one row at a time, so the
+// accordion's "seed every flagged row open on load" behavior is gone —
+// flagged rows stay visually marked (RowStatus badge, gap/late-added chips
+// in Evaluatees) and are opened one at a time. Everything below this note,
+// through ROUND 2, documents the accordion this replaced; kept for the
+// record since the row-detail CONTENT (card roster, staged template
+// switches, etc.) is unchanged — only its container moved.
 //
 // Step 2 of the push wizard — "Survey design".
 //
@@ -87,13 +98,12 @@
 // gaps, guarded there).
 
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
-import Link from 'next/link'
 import {
-  AvatarGroup, AvatarGroupCount, AvatarInitials,
+  AvatarGroup, AvatarInitials,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Button, Checkbox, LocalBanner, ToggleSwitch, Badge, Tip,
   Card, CardContent,
-  Collapsible, CollapsibleTrigger, CollapsibleContent,
+  FloatingSheetPanel, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelBody,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -157,7 +167,12 @@ interface StepSurveyInstancesProps {
    *  other dialogs) but the conflict DETECTION lives in the page, since
    *  that's where the real survey records are. */
   pendingReassign: { offeringId: string; newTemplateId: string; existingTemplateId: string; existingStatus: 'draft' | 'scheduled' } | null
-  onResolveReassign: (choice: 'override' | 'create-new') => void
+  /** Confirms the replace — the dialog's only outcome now (2026-08-12: the
+   *  reviewer reconfirmed "one template, one course... there is no concept
+   *  of two templates with the same survey", killing this dialog's former
+   *  "Keep both" choice, the same reasoning that already removed the
+   *  general "+ Add another template" affordance on 2026-08-11). */
+  onResolveReassign: () => void
   /** Dismiss without applying either choice — Escape, outside click, or the
    *  Cancel button all route here. Idempotent (just clears the pending
    *  state), safe to fire redundantly alongside onResolveReassign since
@@ -167,12 +182,11 @@ interface StepSurveyInstancesProps {
    *  array per offering, in add-order (add-order also decides which
    *  template "wins" a criterion two entries both list; see page.tsx's
    *  secondaryInstancePlan). Originates from S2's "Create new survey"
-   *  choice, the general "+ Add another template" affordance below
-   *  (2026-08-06, Romit's call — every course can carry more than one, not
-   *  just the S2-conflict case), or the person-grain late-added-
-   *  co-instructor exception. `scopePersonNames` absent = the entry covers
-   *  the whole role/aspect; present (2026-08-05) = it covers only those
-   *  named people. */
+   *  choice (still the only entry point — 2026-08-11: the general "+ Add
+   *  another template" affordance is gone, spec now says one template per
+   *  course, §5.2) or the person-grain late-added-co-instructor exception.
+   *  `scopePersonNames` absent = the entry covers the whole role/aspect;
+   *  present (2026-08-05) = it covers only those named people. */
   secondaryTemplateAssignments: Record<string, { templateId: string; scopePersonNames?: string[] }[]>
   /** Per offering, per-entry-index (aligned with secondaryTemplateAssignments'
    *  array) — not flattened, see page.tsx's secondaryInstancesByOffering. */
@@ -185,18 +199,13 @@ interface StepSurveyInstancesProps {
    *  whole-role entry landing here empty is common, not a rare edge case —
    *  the row uses this to say WHY instead of rendering a bare "–". */
   secondaryDedupedLabels: Record<string, string[][]>
-  /** General "+ Add another template" trigger — appends a new whole-role
-   *  entry. The step's own picker only offers templates not already
-   *  assigned to this offering (primary or an existing extra). */
-  onAddSecondaryTemplate: (offeringId: string, templateId: string) => void
   /** Changes the template of the extra-template entry at `index` (its
    *  position in that offering's array) — the "Change" action on an
    *  already-added secondary row. */
   onSecondaryTemplateChange: (offeringId: string, index: number, templateId: string) => void
-  /** Person-grain entry point (2026-08-05) — a late-added co-instructor
-   *  (SurveyInstance.lateAddedRelativeTo set) picks a different template
-   *  than their role's existing coverage without disturbing it. Adds (or
-   *  updates) an extra-template entry scoped to just this person. */
+  /** Person-grain entry point (2026-08-05), retired 2026-08-12 along with
+   *  its own UI trigger (see EvaluateeRoster's offering/publishedTemplates
+   *  doc comment) — accepted but no longer called from this file. */
   onAssignPersonTemplate: (offeringId: string, personName: string, templateId: string) => void
   /** Removes the extra-template entry at `index`. */
   onRemoveSecondary: (offeringId: string, index: number) => void
@@ -225,12 +234,6 @@ interface StepSurveyInstancesProps {
    *  LocalBanner at the top of the step. Empty/absent = no banner. */
   templateDriftNotices?: TemplateDriftNotice[]
   onDismissTemplateDrift?: () => void
-  /** 2026-08-05 — Save as draft, grouped with Reset to defaults/New
-   *  template instead of its own shell-level row (Romit's call): it's an
-   *  action on this step's content the same way those two are, so it reads
-   *  as part of the same action group, not a separately-floating button. */
-  onSaveDraft?: () => void
-  draftSavedAt?: string | null
   onBack: () => void
   onContinue: () => void
 }
@@ -263,7 +266,11 @@ interface StepSurveyInstancesProps {
 // floor/share; Course's growth share and Evaluatees' fixed width both gave up
 // a little room rather than starving Action, which still needs to fit
 // multi-word button labels ("Assign Placement Faculty").
-const TABLE_GRID = `24px 24px minmax(160px,1.1fr) 76px minmax(210px,1.3fr) 140px 88px minmax(160px,1fr)`
+// 2026-08-12: Evaluatees switched from an avatar cluster to role-label text
+// ("Course · Instructor · Coordinator") — unlike fixed-size avatars, text
+// DOES benefit from extra room, so the track widened from 140px to fit the
+// common 3-role case without truncating on every row.
+const TABLE_GRID = `24px minmax(160px,1.1fr) 76px minmax(210px,1.3fr) 200px 88px minmax(160px,1fr) 24px`
 
 /** Per-course Continue-gate failure states (ST-02 Blocks). A faculty gap
  *  alone never appears here — it never blocks. */
@@ -415,19 +422,14 @@ function RowStatus({ gate }: { gate: CourseGate }) {
  *  it (open the row, land in EvaluateeRoster below with the gap card already
  *  there).
  *
- *  2026-08-05: a row with no gaps or blocks can STILL have something worth a
- *  look — a late-added co-instructor (SurveyInstance.lateAddedRelativeTo)
- *  whose template choice defaults to "same as everyone else" but is a real,
- *  reversible decision, not a fact. This was previously invisible at scale
- *  (10+ courses/admin — Aug 4 transcript, Monil/Romit): the corner badge on
- *  the collapsed avatar and the card inside the panel only read if you're
- *  already looking at THIS row. A Ready row otherwise shows a dash exactly
- *  like one with nothing to decide, so nothing hinted a decision existed.
- *  Deliberately NOT styled like the Gap button (circle-plus, solid) — this
- *  is optional and already resolved to a safe default, not "something is
- *  missing." Ghost variant + the same chip-4 tint as the corner badge/card
- *  border keeps it recognizably part of the same vocabulary without
- *  reading as equally urgent. */
+ *  A late-added co-instructor (SurveyInstance.lateAddedRelativeTo) used to
+ *  get its own "Review {role}" callout here (2026-08-05) — retired
+ *  2026-08-12 per the reviewer's own words in that morning's "Survey design
+ *  and review" call (Granola `d6d6e961`): "when I refresh there's a new
+ *  instructor getting added then automatically... I don't need to show
+ *  them differently" — confirmed. A late-added instructor is now just
+ *  another member of its role group, same as anyone else; nothing left to
+ *  call out here. */
 function RowAction({ gate, onAssign, driftNotice }: { gate: CourseGate; onAssign: () => void; driftNotice?: TemplateDriftNotice }) {
   // ST-02 Draft/Scheduled resume: "row shows a 'template updated since
   // Draft was saved' notice" — surfaced here (not just the top LocalBanner)
@@ -461,35 +463,6 @@ function RowAction({ gate, onAssign, driftNotice }: { gate: CourseGate; onAssign
       </Button>
     )
   }
-  const lateAdded = gate.fresh.filter(i => i.lateAddedRelativeTo)
-  if (lateAdded.length > 0) {
-    // Role-based, not person-named (Romit's 2026-08-06 call, same as the
-    // roster's own advisory row) — a new person found on a role this course
-    // already covers still surfaces as a role-scoped decision here, not a
-    // name the Action column singles out.
-    const lateRoles = [...new Set(lateAdded.map(i => i.roleLabel))]
-    // Shortened to "Review {role}" (drop "template") — same shape as the
-    // Gap button's "Assign {role}" / "Assign {n} roles" pair above, and
-    // short enough not to truncate mid-word in this column at common role
-    // name lengths (Romit's catch: "Review Instructor template" clipped to
-    // "Review Instructor templ…").
-    const label = lateRoles.length === 1
-      ? `Review ${lateRoles[0]}`
-      : `Review ${lateRoles.length} roles`
-    return (
-      <Button
-        variant="outline"
-        size="xs"
-        className="justify-start min-w-0 max-w-full"
-        style={{ color: 'var(--chip-4)', borderColor: 'var(--chip-4)' }}
-        onClick={onAssign}
-        aria-label={label}
-      >
-        <i className="fa-solid fa-arrow-right-arrow-left text-xs shrink-0" aria-hidden="true" />
-        <span className="truncate">{label}</span>
-      </Button>
-    )
-  }
   return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>&mdash;</span>
 }
 
@@ -512,16 +485,41 @@ function RowAction({ gate, onAssign, driftNotice }: { gate: CourseGate; onAssign
 
 function evaluateeLabel(i: SurveyInstance): string {
   const name = i.scope === 'course' ? 'Course material' : (i.personName ?? '')
-  return i.roleLabel && i.scope !== 'course' ? `${name} · ${i.roleLabel}` : name
+  return i.roleLabel && i.scope !== 'course' ? `${i.roleLabel} · ${name}` : name
+}
+
+/** Per-role glyph — same FA kit as everywhere else in this app (fa-light),
+ *  one icon per label from CRITERION_BY_TYPE's full role set (pce-course-
+ *  readiness.ts) so a role reads as itself at a glance instead of every
+ *  role sharing one generic person icon. Falls back to fa-user-group for
+ *  any label not in the map (defensive — every current template role IS
+ *  mapped, but a future template could introduce a new one). */
+const ROLE_ICON: Record<string, string> = {
+  Instructor: 'fa-chalkboard-user',
+  'Lab Instructor': 'fa-flask',
+  'Lab Assistant': 'fa-flask',
+  Coordinator: 'fa-user-tie',
+  'Clinical Coordinator': 'fa-hospital-user',
+  'Site Coordinator': 'fa-location-dot',
+  Preceptor: 'fa-user-doctor',
+  'Placement Faculty': 'fa-briefcase-medical',
+  'Course Director': 'fa-user-graduate',
+  'Academic Advisor': 'fa-user-graduate',
+  'Teaching Assistant': 'fa-user-group',
+  'Guest Lecturer': 'fa-microphone',
+}
+function roleIcon(roleLabel: string): string {
+  return ROLE_ICON[roleLabel] ?? 'fa-user-group'
 }
 
 function EvaluateeAvatar({ i, className }: { i: SurveyInstance; className?: string }) {
-  return i.scope === 'course' ? (
+  return (
     <span className={cn('rounded-full flex items-center justify-center border border-border bg-background shrink-0', className)}>
-      <i className="fa-light fa-book-open text-[10px] text-muted-foreground" aria-hidden="true" />
+      <i
+        className={cn('fa-light text-[10px] text-muted-foreground', i.scope === 'course' ? 'fa-book-open' : roleIcon(i.roleLabel))}
+        aria-hidden="true"
+      />
     </span>
-  ) : (
-    <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className={cn('shrink-0', className)} />
   )
 }
 
@@ -659,167 +657,92 @@ function TemplateDropdown({
   )
 }
 
-/** Up to 3 gapped avatars (DS AvatarGroup — never overlapping) + "+N"
- *  overflow, plus one dashed disc when a role still needs a person. Reuses
- *  the same EvaluateeAvatar/GapAvatar vocabulary as the expanded panel, so
- *  the collapsed preview and the full list never disagree on what an icon
- *  means. */
+/** Role-label chips (DS `Badge`, up to 2 + "+N" overflow) instead of running
+ *  text — Romit's 2026-08-12 follow-up call: the plain-text version (itself
+ *  a follow-up to dropping avatars, itself a follow-up to the 2026-08-06
+ *  decision to stop showing faculty identity here) had no visual boundary
+ *  between roles and no color signal for "needs attention", so it didn't
+ *  scan any faster than the icons it replaced. Chips are the DS's own
+ *  cataloged pattern for "several short categorical values in one cell"
+ *  (`PillCell`/`TagListCell`, `columns-showcase.tsx` #9) and the pattern
+ *  Juicebox/Dovetail/Notion all converge on for the same job. Course
+ *  material is dropped from the collapsed chips — the Type column already
+ *  implies it and it's rarely toggled off — but stays in the sr-only
+ *  summary, the full tooltip, and the expanded panel below. Gap gets its
+ *  own dashed amber chip (a first-class status signal, not blended into a
+ *  text run); late-added rides as a small icon inside its role's chip. */
 function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: CourseGate; included: ReadonlySet<string> }) {
   const inUnits = gate.fresh.filter(i => included.has(i.key))
-  const shown = inUnits.slice(0, 3)
-  const extra = inUnits.length - shown.length
   const gapCount = gate.gaps.length
-  const lateAdded = inUnits.filter(i => i.lateAddedRelativeTo)
   const summary = inUnits.length > 0
     ? `Evaluatees for ${code}: ${inUnits.map(evaluateeLabel).join(', ')}.`
     : `Evaluatees for ${code}: none included.`
   if (inUnits.length === 0 && gapCount === 0) {
     return <span className="text-xs text-muted-foreground">&ndash;</span>
   }
+  // Late-added instances (SurveyInstance.lateAddedRelativeTo) used to carry
+  // their own swap-icon/tooltip variant here — retired 2026-08-12, same
+  // Granola-confirmed decision as EvaluateeRoster's own advisory card and
+  // RowAction's "Review {role}" button: a newly-added instructor is just
+  // another member of its role group now, indistinguishable from anyone
+  // else in this cluster.
+  const groups: { key: string; label: string; count: number }[] = []
+  for (const i of inUnits) {
+    if (i.scope === 'course') continue
+    const existing = groups.find(g => g.key === i.roleLabel)
+    if (existing) existing.count++
+    else groups.push({ key: i.roleLabel, label: i.roleLabel, count: 1 })
+  }
+  // A template that only evaluates course material has no role chip —
+  // fall back to naming it so the cell isn't blank despite an active
+  // evaluatee.
+  if (groups.length === 0 && gapCount === 0) {
+    groups.push({ key: 'course', label: 'Course material', count: 1 })
+  }
+  const shown = groups.slice(0, 2)
+  const extra = groups.length - shown.length
+  // All-gap row (every role unstaffed, no ready roles to show) — now that
+  // the gap pill itself is gone, there's nothing left to render here.
+  // Status's own "Gap" badge + Action's "Assign N roles" already carry
+  // this; an empty-looking cell would read as broken, so fall back to the
+  // same plain dash the fully-empty case above already uses.
+  if (shown.length === 0) {
+    return <span className="text-xs text-muted-foreground">&ndash;</span>
+  }
   return (
-    <span className="flex min-w-0 items-center">
+    <span className="flex min-w-0 flex-wrap items-center gap-1">
+      {/* Same sr-only-summary + per-segment Tip split as the prior
+          versions: a screen reader gets the full picture in one pass here,
+          the Tips below add focus/hover detail without being required. */}
       <span className="sr-only">
         {summary}
         {gapCount > 0 ? ` ${gapCount} role${gapCount !== 1 ? 's' : ''} without a person.` : ''}
-        {lateAdded.length > 0
-          ? ` ${lateAdded.map(i => i.personName).join(', ')} ${lateAdded.length === 1 ? 'is' : 'are'} newly added and can be assigned a different template.`
-          : ''}
       </span>
-      {/* Romit's 2026-08-06 call: these avatars had no tooltip (aria-hidden,
-          identity only in the sr-only summary above) — now individually
-          reachable + labeled via Tip, so hovering/tabbing a specific avatar
-          answers "who is this" without opening the row. The sr-only summary
-          stays for a fast screen-reader overview of the whole cluster. */}
-      <AvatarGroup>
-        {shown.map(i => (
-          // Person-grain exception (2026-08-05) — a late-added co-instructor
-          // gets a visible-at-rest corner badge here too, not just inside the
-          // expanded panel: this file's own Round 2 rationale (see header) is
-          // that collapsed-row state should be readable without opening
-          // anything, and "needs a template decision" is exactly that kind
-          // of state. Distinct glyph/position from the gap disc (dashed,
-          // sibling in this row) and the S4 excluded ban-badge (bottom-end),
-          // so none of the three read as each other.
-          <Tip key={i.key} label={evaluateeLabel(i)} side="top">
-            {i.lateAddedRelativeTo ? (
-              <span tabIndex={0} className="relative inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
-                <EvaluateeAvatar i={i} className="size-6" />
-                <span
-                  className="absolute -top-1 -end-1 size-3.5 rounded-full flex items-center justify-center border bg-background"
-                  style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
-                >
-                  <i className="fa-solid fa-arrow-right-arrow-left text-[7px]" aria-hidden="true" />
-                </span>
-              </span>
-            ) : (
-              <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
-                <EvaluateeAvatar i={i} className="size-6" />
-              </span>
-            )}
-          </Tip>
-        ))}
-        {extra > 0 && <AvatarGroupCount>+{extra}</AvatarGroupCount>}
-        {gapCount > 0 && (
-          <Tip label={gapCount === 1 ? `${gate.gaps[0].roleLabel} needs a person` : `${gapCount} roles need a person`} side="top">
-            <span
-              tabIndex={0}
-              className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
-            >
-              <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
-            </span>
-          </Tip>
-        )}
-      </AvatarGroup>
+      {shown.map(g => (
+        <Tip key={g.key} label={g.label} side="top">
+          <Badge
+            tabIndex={0}
+            variant="outline"
+            className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            <i className={cn('fa-light text-[10px]', g.key === 'course' ? 'fa-book-open' : roleIcon(g.label))} aria-hidden="true" />
+            {g.label}{g.count > 1 ? ` ×${g.count}` : ''}
+          </Badge>
+        </Tip>
+      ))}
+      {extra > 0 && (
+        <Tip label={groups.slice(2).map(g => (g.count > 1 ? `${g.label} ×${g.count}` : g.label)).join(', ')} side="top">
+          <Badge tabIndex={0} variant="secondary" className="h-6 px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+            +{extra}
+          </Badge>
+        </Tip>
+      )}
+      {/* Gap pill removed (Romit's 2026-08-12 call) — Status already carries
+          this via its own "Gap" badge + Tip (same gate.gaps role names),
+          and Action already carries the fix ("Assign N roles"). A third
+          repeat of the same fact in Evaluatees added a column-cluttering
+          pill without saying anything new. */}
     </span>
-  )
-}
-
-/** General "+ Add another template" trigger (2026-08-06, Romit's call —
- *  validated at /compare/push-step2-template-hierarchy: "available on EVERY
- *  course, not just DPT-510"). Sits after a course's primary row and any
- *  already-added extra-template rows; offers only templates not already on
- *  this course. Module scope for the same reason as the row helpers above —
- *  a fresh identity per render would remount the Select on every keystroke
- *  elsewhere in the row. */
-function AddTemplateRow({
-  code, templates, onAdd,
-}: {
-  code: string
-  templates: PceTemplate[]
-  onAdd: (templateId: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [pickedId, setPickedId] = useState('')
-  if (templates.length === 0) return null
-  const confirm = () => {
-    if (!pickedId) return
-    onAdd(pickedId)
-    setOpen(false)
-    setPickedId('')
-  }
-  return (
-    <>
-      {/* Full-width card, matching the "Also evaluating" entries it now
-          stacks directly beneath (Romit's call: it needs to read as "one
-          more item in this same list," not a smaller, differently-shaped
-          control tacked on after them). Same rounded-md/border shape those
-          entries' own outer card uses — the brand-colored border/icon/text
-          is what still marks it as the ACTION in that stack, not a compact
-          standalone button that broke the rhythm of the list. */}
-      <Button
-        type="button"
-        variant="outline"
-        size="lg"
-        onClick={() => setOpen(true)}
-        className="flex h-auto w-full items-center justify-start gap-2.5 rounded-md p-2.5 min-w-0 text-start font-normal"
-        style={{ borderColor: 'var(--primary)' }}
-      >
-        <span
-          className="size-6 rounded-full flex items-center justify-center border shrink-0"
-          style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
-        >
-          <i className="fa-solid fa-circle-plus text-xs" aria-hidden="true" />
-        </span>
-        <span className="text-sm font-medium" style={{ color: 'var(--primary)' }}>Add another template</span>
-      </Button>
-
-      {/* Dialog, not the old inline Select-in-the-row — Romit's call.
-          Picking a second template is a real, standalone decision (it
-          stages a whole new, independently-toggleable evaluation for this
-          course), not a quick inline tweak like the row's own Template
-          dropdown, which stays inline since it only ever changes one
-          already-committed value. */}
-      <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setPickedId('') }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add another template for {code}</DialogTitle>
-            <DialogDescription>
-              Evaluates alongside the template{templates.length !== 1 ? 's' : ''} already on this course — choose one
-              not already assigned.
-            </DialogDescription>
-          </DialogHeader>
-          <Select value={pickedId} onValueChange={setPickedId}>
-            <SelectTrigger aria-label={`Choose another template for ${code}`} className="w-full">
-              <SelectValue placeholder="Choose a template" />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map(t => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm">Cancel</Button>
-            </DialogClose>
-            <Button variant="default" size="sm" disabled={!pickedId} onClick={confirm}>
-              Add template
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   )
 }
 
@@ -847,9 +770,14 @@ function EvaluateeRoster({
    *  will not show who the instructors are at this level"). Sets every key
    *  in a role group to the SAME state in one call. */
   onToggleUnits: (keys: string[], on: boolean) => void
-  /** Person-grain exception (2026-08-05) — only wired on the PRIMARY row's
-   *  roster; the secondary ("Also evaluating") row's own roster omits
-   *  these, since the affordance's target IS that one secondary slot. */
+  /** Person-grain exception (2026-08-05) — no longer rendered here
+   *  (2026-08-12: reviewer reconfirmed no aspect/faculty-level template,
+   *  "not supporting that anytime in future" — the advisory row's "Use a
+   *  different template" entry point let an admin do exactly that). Left
+   *  as accepted-but-unused props rather than threading a removal through
+   *  CourseDetailBody/page.tsx — the underlying secondaryTemplateAssignments
+   *  machinery still serves the separate "+ Add another template"/"Keep
+   *  both" course-level flow. */
   offering?: CourseOffering
   publishedTemplates?: PceTemplate[]
   /** Named people already occupying this offering's one secondary slot. */
@@ -874,15 +802,10 @@ function EvaluateeRoster({
   // one real design signal distinguishing "resolved" / "optional" /
   // "missing" / "locked" at a glance) — only the SECTION GROUPING is gone,
   // not the row-level visual weight.
-  const [openPicker, setOpenPicker] = useState<string | null>(null)
-  const [pickedTemplateId, setPickedTemplateId] = useState('')
   if (fresh.length === 0 && gaps.length === 0 && dups.length === 0) {
     return <span className="text-xs text-muted-foreground">&ndash;</span>
   }
   const deselectedKeys = new Set(deselectedFresh.map(i => i.key))
-  const readyFresh = fresh.filter(i => !i.lateAddedRelativeTo)
-  const advisoryFresh = fresh.filter(i => i.lateAddedRelativeTo)
-  const canOfferDifferentTemplate = !!offering && !!publishedTemplates && !!onAssignPersonTemplate
 
   // 2026-08-06 Course Eval sync up (Monil, raw transcript): "your end of
   // term evaluation has how many roles to be evaluated... course material
@@ -892,13 +815,15 @@ function EvaluateeRoster({
   // (co-instructors, co-coordinators) collapses into ONE row — one toggle
   // for the whole role, faculty shown as a stacked avatar cluster instead
   // of "who the instructors are at this level." Course material has no
-  // person concept, so it's never grouped with anything. Advisory
-  // (late-added, needs its own template decision) and Blocked rows below
-  // keep their existing per-person treatment — each already carries an
-  // action a role-level toggle can't represent (pick a different template,
-  // view the blocking survey).
+  // person concept, so it's never grouped with anything. Blocked rows below
+  // keep their own per-person treatment (a real action a role-level toggle
+  // can't represent — view the blocking survey). Late-added instances used
+  // to split into their own "Advisory" group here (2026-08-05) — merged
+  // back into `fresh` as of 2026-08-12: the reviewer confirmed a newly-added
+  // instructor should show up "under that aspect" with nothing to
+  // distinguish it, not its own card.
   const readyGroups: { key: string; roleLabel: string; scope: SurveyInstance['scope']; instances: SurveyInstance[] }[] = []
-  for (const i of readyFresh) {
+  for (const i of fresh) {
     const groupKey = i.scope === 'course' ? i.key : i.roleLabel
     const existing = readyGroups.find(g => g.key === groupKey)
     if (existing) existing.instances.push(i)
@@ -932,7 +857,7 @@ function EvaluateeRoster({
               // treatment as the course-material icon beside it, so a role
               // row and a course row read as the same visual family.
               <span className={cn('size-6 rounded-full flex items-center justify-center border border-border bg-background shrink-0', !allIn && 'grayscale')}>
-                <i className="fa-light fa-user-group text-[10px] text-muted-foreground" aria-hidden="true" />
+                <i className={cn('fa-light text-[10px] text-muted-foreground', roleIcon(group.roleLabel))} aria-hidden="true" />
               </span>
             )}
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -988,127 +913,41 @@ function EvaluateeRoster({
         )
       })}
 
-      {advisoryFresh.map(i => {
-        const isIn = included.has(i.key)
-        const slotTaken = !!secondaryScopePersonNames?.length && !secondaryScopePersonNames.includes(i.personName ?? '')
-        const picking = openPicker === i.key
-        return (
-          <div
-            key={i.key}
-            className="flex w-full flex-col gap-1.5 rounded-md border p-2.5 min-w-0"
-            style={{ borderColor: 'var(--chip-4)', background: 'var(--card)' }}
-          >
-            <div className="flex w-full items-start gap-2.5 min-w-0">
-              {/* Role-level glyph, not EvaluateeAvatar — Romit's 2026-08-06
-                  call, same reasoning as the readyGroups rows above: this is
-                  a role-scoped decision (include the role or not), so the
-                  avatar can't imply a specific person is the thing being
-                  decided on, even though the row's own caption still names
-                  who was newly added. */}
-              <span className={cn('size-6 rounded-full flex items-center justify-center border shrink-0', !isIn && 'grayscale')} style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}>
-                <i className="fa-light fa-user-group text-[10px]" aria-hidden="true" />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className={cn('truncate text-sm font-medium', !isIn && 'text-muted-foreground')}>{i.roleLabel}</span>
-                <span className="truncate text-xs" style={{ color: 'var(--chip-4)' }}>
-                  <i className="fa-solid fa-arrow-right-arrow-left me-1" aria-hidden="true" style={{ fontSize: 9 }} />
-                  Advisory — {i.personName}, uses default unless changed
-                </span>
-              </span>
-              {/* Same Gate 2 fix as the readyFresh toggle above — aria-label
-                  is not a real ToggleSwitch prop. */}
-              <label htmlFor={`unit-${code}-${i.key}`} className="sr-only">{`Include ${evaluateeLabel(i)} in this push`}</label>
-              <ToggleSwitch id={`unit-${code}-${i.key}`} checked={isIn} onChange={() => onToggleUnit(i.key)} />
-            </div>
-            {canOfferDifferentTemplate && (
-              <div className="flex flex-col gap-1.5 border-t border-border pt-1.5">
-                {slotTaken ? (
-                  <p className="text-xs text-muted-foreground">
-                    A different template is already set for another late addition — see &ldquo;Also evaluating&rdquo; below.
-                  </p>
-                ) : picking ? (
-                  <div className="flex flex-col gap-1.5">
-                    <Select value={pickedTemplateId} onValueChange={setPickedTemplateId}>
-                      <SelectTrigger size="sm" aria-label={`Different template for ${i.personName}`} className="w-full">
-                        <SelectValue placeholder="Choose a template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {publishedTemplates!.map(t => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        disabled={!pickedTemplateId}
-                        onClick={() => {
-                          onAssignPersonTemplate!(offering!.id, i.personName!, pickedTemplateId)
-                          setOpenPicker(null)
-                          setPickedTemplateId('')
-                        }}
-                      >
-                        Use this template
-                      </Button>
-                      <Button variant="ghost" size="xs" onClick={() => { setOpenPicker(null); setPickedTemplateId('') }}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // Was variant="link" (bare colored text) — Romit's
-                  // 2026-08-06 call: it didn't read as a clickable action.
-                  // variant="outline" gives it the same button affordance as
-                  // every other row action (View survey, Add in Prism).
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    className="self-start"
-                    style={{ color: 'var(--chip-4)', borderColor: 'var(--chip-4)' }}
-                    onClick={() => setOpenPicker(i.key)}
-                  >
-                    Use a different template
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      })}
-
       {gaps.map(i => (
         <div
           key={i.key}
           className="flex w-full items-start gap-2.5 rounded-md border border-dashed p-2.5 min-w-0"
-          style={{ borderColor: 'var(--chip-5)', background: 'var(--pce-impact-bg)' }}
+          // chip-4 (amber), not chip-5 (orange) — matches the gap vocabulary
+          // used everywhere else in this step (GapAvatar, RowStatus's Gap
+          // badge/icon disc). chip-5 here was a stray second "gap" hue with
+          // no other user in this file.
+          style={{ borderColor: 'var(--chip-4)', background: 'var(--pce-impact-bg)' }}
         >
           <span
             className="size-6 rounded-full flex items-center justify-center border border-dashed shrink-0"
-            style={{ borderColor: 'var(--chip-5)', color: 'var(--chip-5)' }}
+            style={{ borderColor: 'var(--chip-4)', color: 'var(--chip-4)' }}
             aria-hidden="true"
           >
             <i className="fa-light fa-user-plus text-[10px]" aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate text-sm font-medium" style={{ color: 'var(--chip-5)' }}>{i.roleLabel}</span>
-            <span className="text-xs" style={{ color: 'var(--chip-5)' }}>No one assigned in Prism</span>
+            <span className="truncate text-sm font-medium" style={{ color: 'var(--chip-4)' }}>{i.roleLabel}</span>
+            <span className="text-xs" style={{ color: 'var(--chip-4)' }}>No one assigned in Prism</span>
           </span>
           {i.prismHref && (
-            // Was an inline underlined link stacked under the caption text —
-            // Romit's call: every other card's action (View survey, Use a
-            // different template) reads as a real button, and this one now
-            // sits on the right the same way, instead of being the odd one
-            // out as plain text at the bottom.
-            <Button
-              variant="outline"
-              size="xs"
-              asChild
-              className="shrink-0"
-              style={{ color: 'var(--chip-5)', borderColor: 'var(--chip-5)' }}
-            >
+            // Plain outline, no color override — same "warning lives in the
+            // icon/text, the action button stays neutral" split step-review.tsx's
+            // AckGroup already applies (its own doc comment: "warning hue on
+            // the title only... makes the card scan as a warning without a
+            // filled background"). The colored-outline button this replaces
+            // read as low-contrast ghost text, not a real action. Trailing
+            // external-link icon matches this app's own "Fix in Prism"
+            // convention (step-review.tsx's subjectIssues AckGroup) for any
+            // button that hands off to Prism in a new tab.
+            <Button variant="outline" size="xs" asChild className="shrink-0">
               <a href={i.prismHref} target="_blank" rel="noopener noreferrer">
                 Add in Prism
+                <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
                 <span className="sr-only"> (opens Prism in a new tab to assign the {i.roleLabel} role on {code})</span>
               </a>
             </Button>
@@ -1122,61 +961,26 @@ function EvaluateeRoster({
         const status = i.existing ? storyStatusOf(i.existing) : null
         const openedLabel = i.existing?.openDate ? fmtYmd(i.existing.openDate) : null
         return (
-          <div
-            key={i.key}
-            // 2026-08-06 — toned down from the solid chip-destructive
-            // border/pce-impact-bg fill (Romit's call): this role isn't
-            // broken or blocking anything, it's already being evaluated by
-            // a LIVE survey — informational and locked, not an error. The
-            // full-alarm red read as something to fix, competing with the
-            // Blocked status this row can't actually cause on its own (see
-            // the 'overlap' reason — only fires when NOTHING else on the
-            // course is left to evaluate).
-            // Round 2 (same day) — the first muted-surface pass (Romit's
-            // catch) put text-muted-foreground ON var(--muted): that pairing
-            // is only calibrated against var(--card)/var(--background), so
-            // on its own muted background the icon/text contrast fell
-            // short, on top of reading as a flat, slightly off (brand-hue-
-            // tinted) wash rather than a clean neutral. Plain var(--card) +
-            // border-border instead — the same white-card treatment every
-            // OTHER evaluatee row here already uses, so muted-foreground is
-            // back on the surface it's actually designed for.
-            className="flex w-full flex-col gap-1.5 rounded-md border border-border p-2.5 min-w-0"
-            style={{ background: 'var(--card)' }}
-          >
-            <div className="flex items-start gap-2.5 min-w-0">
-              {i.scope === 'course' ? (
-                <EvaluateeAvatar i={i} className="size-6 grayscale" />
-              ) : (
-                // Role-level glyph, not EvaluateeAvatar — same 2026-08-06 call
-                // as the ready/advisory rows above, applied here too (Romit's
-                // catch): the card's own caption still names who's already
-                // covered (needed to know whose survey "View survey" opens),
-                // but the avatar itself can't single out a specific person.
-                <span className="size-6 rounded-full flex items-center justify-center border shrink-0 grayscale text-muted-foreground">
-                  <i className="fa-light fa-user-group text-[10px]" aria-hidden="true" />
-                </span>
-              )}
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-sm font-medium">{primaryLabel}</span>
-                {secondaryLabel && <span className="truncate text-xs text-muted-foreground">{secondaryLabel}</span>}
+          // 2026-08-12 (Romit's call) — no longer a bordered card. There's
+          // nothing to toggle or click here (no button, view-survey removed
+          // below), so giving it the same card weight as the real toggle
+          // cards above misrepresented it as another decision to make. A
+          // plain read-only row, lock icon leading, matches what it actually
+          // is: a fact, not an action.
+          <div key={i.key} className="flex items-start gap-2.5 px-1 py-1.5 min-w-0 text-muted-foreground">
+            <i className="fa-solid fa-lock text-xs shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="truncate text-sm">
+                {primaryLabel}
+                {secondaryLabel && <span> · {secondaryLabel}</span>}
               </span>
-              <i className="fa-solid fa-lock text-xs shrink-0 mt-0.5 text-muted-foreground" aria-hidden="true" />
-            </div>
-            {i.existing && status && (
-              <>
-                <p className="text-xs text-muted-foreground">
+              {i.existing && status && (
+                <span className="text-xs">
                   Already covered by a <StoryStatusBadgeOS status={status} size="sm" />
                   {' '}survey{openedLabel && <> opened {openedLabel}</>}.
-                </p>
-                <Button variant="outline" size="xs" asChild className="self-start">
-                  <Link href={`/surveys/${i.existing.id}`}>
-                    View survey
-                    <span className="sr-only"> covering the {i.roleLabel || 'course material'} role of {code}</span>
-                  </Link>
-                </Button>
-              </>
-            )}
+                </span>
+              )}
+            </span>
           </div>
         )
       })}
@@ -1607,11 +1411,10 @@ export function StepSurveyInstances({
   selectedOfferings, instances, publishedTemplates,
   templateAssignments, defaultAssignments, onTemplateChange, onResetDefaults,
   pendingReassign, onResolveReassign, onCancelReassign,
-  secondaryTemplateAssignments, secondaryInstances, secondaryDedupedLabels, onAddSecondaryTemplate, onSecondaryTemplateChange, onAssignPersonTemplate, onRemoveSecondary,
+  secondaryTemplateAssignments, secondaryInstances, secondaryDedupedLabels, onSecondaryTemplateChange, onAssignPersonTemplate, onRemoveSecondary,
   unitSelections, onUnitSelectionChange,
   autoUpdateOn, onAutoUpdateChange, onRefreshUnits, onCourseSelectedChange,
   templateDriftNotices, onDismissTemplateDrift,
-  onSaveDraft, draftSavedAt,
   onBack, onContinue,
 }: StepSurveyInstancesProps) {
   // In-step template creation — the SAME create flow + builder as Settings >
@@ -1621,9 +1424,6 @@ export function StepSurveyInstances({
   const [notice, setNotice] = useState<{ kind: 'published' | 'draft'; name: string } | null>(null)
   const [previewTemplate, setPreviewTemplate] = useState<PceTemplate | null>(null)
   const [resetOpen, setResetOpen] = useState(false)
-  // S2 — defaults to the non-destructive choice (create-new keeps the
-  // existing survey untouched; override replaces it and can't be undone).
-  const [reassignChoice, setReassignChoice] = useState<'override' | 'create-new'>('create-new')
   const backToAssign = () => {
     if (typeof subView === 'object') {
       const t = allTemplates.find(x => x.id === subView.buildId)
@@ -1744,24 +1544,10 @@ export function StepSurveyInstances({
   const visibleCourses = useMemo(() => courseTableState.rows.map(r => r.offering), [courseTableState.rows])
   const blockedCount = courses.filter(o => gatesByOffering.get(o.id)!.reasons.length > 0).length
 
-  // Accordion revision (post-Aug-4): which rows' detail panels are expanded.
-  // A Set, not a single id — independent per-row open/close, so an admin
-  // triaging several flagged rows can compare them side by side instead of
-  // one closing every time another opens. Seeded once with every
-  // role-overlap-conflict row already open — the same "conflicts start
-  // expanded" behavior the old conflict-only Collapsible had via
-  // defaultOpen, just computed once instead of per-row. The Action column's
-  // "Assign" button opens its own row from outside the row's own
-  // CollapsibleTrigger (same cross-component-open need the old single-flag
-  // popover version had).
-  // 2026-08-05: also seeds open for a late addition alone, with no dup —
-  // the edge case where the only conflicting survey named someone no
-  // longer on the roster, so nothing else here would auto-expand the row.
   // Each extra template's own gate, computed exactly like the primary (same
   // reasons logic) from its own instance plan — one array per offering,
-  // aligned by index with secondaryTemplateAssignments[offeringId]. Moved
-  // above `openRows` (was declared after it) so its seed effect below can
-  // read it on first render.
+  // aligned by index with secondaryTemplateAssignments[offeringId]. Read by
+  // renderCourseDetail's "Additional templates" section below.
   const secondaryGatesByOffering = useMemo(() => {
     const m = new Map<string, CourseGate[]>()
     for (const [offeringId, entries] of Object.entries(secondaryTemplateAssignments)) {
@@ -1786,32 +1572,199 @@ export function StepSurveyInstances({
     return m
   }, [secondaryTemplateAssignments, secondaryInstances])
 
-  const [openRows, setOpenRows] = useState<ReadonlySet<string>>(
-    () => new Set(
-      [...gatesByOffering.entries()]
-        .filter(([id, g]) =>
-          g.dups.length > 0
-          || g.fresh.some(i => i.lateAddedRelativeTo)
-          // "Also evaluating" entries now render INSIDE the primary row's
-          // own collapse (Romit's call — stacked with "Add another
-          // template" instead of always-visible flat siblings), so a
-          // blocked/unstaffed extra template needs the PRIMARY row seeded
-          // open too, or it'd be invisible until someone thought to expand
-          // a course that otherwise looks fully Ready.
-          || (secondaryGatesByOffering.get(id) ?? []).some(sg => sg.reasons.length > 0))
-        .map(([id]) => id),
+  // 2026-08-12 — Romit's call: accordion (any number of rows expanded at
+  // once, seeded open for every conflict/dup/late-add/blocked-secondary row
+  // on load) replaced by a single FloatingSheetPanel. A sheet can only show
+  // one row at a time, so the auto-open seed is gone — flagged rows stay
+  // visually marked (RowStatus badge, gap/late-added chips in Evaluatees)
+  // and are opened one at a time by clicking a row's chevron. The Action
+  // column's "Assign" button still opens its row (openRow), same as before.
+  const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const openRow = (id: string) => setOpenRowId(id)
+  const openOffering = openRowId ? (visibleCourses.find(o => o.id === openRowId) ?? null) : null
+
+  // 2026-08-12 — the accordion's per-row detail (Template card + Evaluatees
+  // roster + any "Additional templates") now renders once, for whichever
+  // row is open, inside the shared FloatingSheetPanel below. A plain
+  // function of `o` — recomputes the same derived values the row loop
+  // itself computes (gate, template, criteria, secondaryEntries) rather
+  // than capturing them out of that loop, so this is an ordinary render
+  // call with no side effects, called after the loop finishes.
+  function renderCourseDetail(o: CourseOffering): ReactNode {
+    const { code } = splitLabel(o)
+    const mode = deliveryModeOf(o)
+    const gate = gatesByOffering.get(o.id)!
+    const { fresh } = gate
+    const deselectedFresh = fresh.filter(i => unitSelections[i.key] === 'deselected')
+    const templateId = templateIdFor(o)
+    const template = publishedTemplates.find(t => t.id === templateId) ?? null
+    const criteria = template ? templateCriteria(template) : []
+    const secondaryEntries = secondaryTemplateAssignments[o.id] ?? []
+    const secondaryScopePersonNames = secondaryEntries.flatMap(e => e.scopePersonNames ?? [])
+    return (
+      <div className="flex flex-col gap-4">
+        <Card size="sm" className="shadow-none">
+          <CardContent>
+            <CourseDetailBody
+              layout="rail"
+              offering={o}
+              code={code}
+              mode={mode}
+              gate={gate}
+              template={template}
+              criteria={criteria}
+              templateId={templateId}
+              stagedTemplateId={pendingTemplate[o.id]}
+              defaultTemplateId={defaultAssignments[o.id]}
+              publishedTemplates={publishedTemplates}
+              onStageTemplate={stageTemplate}
+              onCommitStage={staged => { onTemplateChange(o.id, staged.id); clearStagedTemplate(o.id) }}
+              onClearStage={() => clearStagedTemplate(o.id)}
+              onCreateTemplate={() => { setNotice(null); setSubView('create') }}
+              onPreview={setPreviewTemplate}
+              included={included}
+              deselectedFresh={deselectedFresh}
+              onToggleUnit={flip}
+              onToggleUnits={setMany}
+              secondaryScopePersonNames={secondaryScopePersonNames}
+              onAssignPersonTemplate={onAssignPersonTemplate}
+            />
+          </CardContent>
+        </Card>
+        {/* Romit's 2026-08-06 call, carried over from the accordion version:
+            no divider between this section and the template card above —
+            the gap alone reads as one continuous thread, not two unrelated
+            pieces. 2026-08-11 — "Add another template" is gone (spec: only
+            one template per course); this section now only has something to
+            show once an extra template already exists via the S2 conflict
+            "Create new" path (§5.2, still wired), so it's gated on that
+            instead of always rendering a bare label. */}
+        {secondaryEntries.length > 0 && (
+        <div>
+          {/* "Additional templates" — same label style as "Evaluatees"
+              above (Romit's call): a bare "Add another template" card
+              sitting directly below the roster read as one more roster
+              item, not a different kind of control for a different concept
+              (a whole second, independently-toggleable survey). The label
+              names that boundary explicitly instead of relying on shape
+              alone to carry it. */}
+          <span className="text-xs font-medium text-muted-foreground">Additional templates</span>
+          <div className="mt-2 flex flex-col gap-2">
+            {secondaryEntries.map((entry, entryIndex) => {
+              const sGate = secondaryGatesByOffering.get(o.id)?.[entryIndex]
+                ?? { reasons: [], fresh: [], gaps: [], dups: [] }
+              const sTemplate = publishedTemplates.find(t => t.id === entry.templateId) ?? null
+              // Keyed by templateId, not entryIndex — with 2+ extra
+              // entries, removing one used to shift every LATER entry's
+              // index down a slot, which silently reassigned its
+              // pendingTemplate state (and its React key) to whatever the
+              // entry ahead of it had been using. templateId is stable
+              // across removals since no two entries on one course ever
+              // share one.
+              const secondaryKey = `${o.id}::secondary::${entry.templateId}`
+              const dedupedLabels = secondaryDedupedLabels[o.id]?.[entryIndex] ?? []
+              // This entry's every criterion was already claimed by an
+              // earlier template on this course (primary or an earlier
+              // extra) — common with the real template catalog, not a rare
+              // edge case (see secondaryDedupedLabels' declaration).
+              // Nothing new to evaluate, so the row says so instead of
+              // showing a bare "–" with no explanation.
+              const fullyDeduped = sGate.fresh.length === 0 && sGate.gaps.length === 0
+                && sGate.dups.length === 0 && dedupedLabels.length > 0
+              // 2026-08-06 — one header, not a separate grey toolbar
+              // sitting above TemplateHeaderRow's own name/Preview/Remove
+              // line (Romit's call: the two-header layout read as a
+              // different kind of control than the primary template's one
+              // clean row, which has no collapse of its own either — every
+              // extra template's full detail is always visible now, same
+              // as the primary's). "Also evaluating" + live status fold
+              // into TemplateHeaderRow's own badge slot.
+              // Round 2 (same day) — the inline template-switch dropdown
+              // that used to sit in this header is gone (Romit's call): to
+              // change an extra template's own pick, Remove it and "Add
+              // another template" — one decision path, not two ways to do
+              // the same thing.
+              const secondaryBadges = (
+                <>
+                  <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
+                    Also evaluating
+                  </Badge>
+                  {!fullyDeduped && <RowStatus gate={sGate} />}
+                </>
+              )
+              return (
+                // Same card treatment as the primary template above: one
+                // card per extra template, no vertical rail, no dropdown.
+                <div key={entry.templateId} className="rounded-md border border-border p-4">
+                  {fullyDeduped ? (
+                    // No roster to render (everything this entry would
+                    // cover is already claimed) — same header as the normal
+                    // case below (TemplateHeaderRow), so Preview/Remove are
+                    // never missing just because this particular entry has
+                    // nothing new to evaluate.
+                    <div className="flex flex-col gap-3">
+                      {sTemplate && (
+                        <TemplateHeaderRow
+                          template={sTemplate}
+                          isDefault={false}
+                          criteria={templateCriteria(sTemplate)}
+                          mode={mode}
+                          onPreview={setPreviewTemplate}
+                          onRemove={() => onRemoveSecondary(o.id, entryIndex)}
+                          secondaryBadges={secondaryBadges}
+                        />
+                      )}
+                      {/* dt-row-selected — a fixed neutral gray in every
+                          theme (not var(--muted), which carries a faint
+                          pink cast in the Prism theme) for this plain
+                          informational aside, so it reads as neutral rather
+                          than a status color. */}
+                      <div className="flex items-start gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--dt-row-selected)' }}>
+                        <i className="fa-light fa-circle-info text-xs text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+                        <span className="text-xs text-muted-foreground">
+                          {listFmt(dedupedLabels)} {dedupedLabels.length === 1 ? 'is' : 'are'} already evaluated by
+                          {' '}another template on {code} — not repeated here.
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <CourseDetailBody
+                      layout="rail"
+                      offering={o}
+                      code={code}
+                      mode={mode}
+                      gate={sGate}
+                      template={sTemplate}
+                      criteria={sTemplate ? templateCriteria(sTemplate) : []}
+                      templateId={entry.templateId}
+                      stagedTemplateId={pendingTemplate[secondaryKey]}
+                      defaultTemplateId={undefined}
+                      publishedTemplates={publishedTemplates}
+                      onStageTemplate={(_offeringId, tid) => stageTemplate(secondaryKey, tid)}
+                      onCommitStage={staged => { onSecondaryTemplateChange(o.id, entryIndex, staged.id); clearStagedTemplate(secondaryKey) }}
+                      onClearStage={() => clearStagedTemplate(secondaryKey)}
+                      onCreateTemplate={() => { setNotice(null); setSubView('create') }}
+                      onPreview={setPreviewTemplate}
+                      included={included}
+                      deselectedFresh={sGate.fresh.filter(i => unitSelections[i.key] === 'deselected')}
+                      onToggleUnit={flip}
+                      onToggleUnits={setMany}
+                      onRemove={() => onRemoveSecondary(o.id, entryIndex)}
+                      secondaryBadges={secondaryBadges}
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        )}
+      </div>
     )
-  )
-  const toggleRow = (id: string) =>
-    setOpenRows(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  const openRow = (id: string) =>
-    setOpenRows(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
+  }
 
   // Round 2 (post-Aug-4, same day) — staged template pick, per offering
+
   // (main row) and per `${offeringId}::secondary` (the S2 second-survey
   // row). Picking a DIFFERENT template in the Select no longer commits
   // immediately — it stages the choice and an inline strip states exactly
@@ -1975,14 +1928,9 @@ export function StepSurveyInstances({
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              {draftSavedAt && (
-                <span className="text-xs tabular-nums text-muted-foreground">Draft saved at {draftSavedAt}</span>
-              )}
-              {onSaveDraft && (
-                <Button variant="outline" size="sm" onClick={onSaveDraft}>
-                  Save as draft
-                </Button>
-              )}
+              {/* Save as draft moved to the shared WizardNav endSlot
+                  (2026-08-12) — one position across all steps instead of
+                  living here alongside this step's own actions. */}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setResetOpen(true)}>
                 <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
                 Reset to defaults
@@ -2105,10 +2053,9 @@ export function StepSurveyInstances({
             <Card size="sm" className="py-0 gap-0 overflow-hidden">
            <CardContent className="p-0">
             <div
-              className="grid items-center gap-3 ps-3 pe-3 py-2 border-b border-border text-xs font-medium text-muted-foreground"
+              className="grid items-center gap-4 ps-3 pe-3 py-2 border-b border-border text-xs font-medium text-muted-foreground"
               style={{ gridTemplateColumns: TABLE_GRID }}
             >
-              <span />
               <span />
               <span>Course</span>
               <span>Type</span>
@@ -2116,6 +2063,7 @@ export function StepSurveyInstances({
               <span>Evaluatees</span>
               <span>Status</span>
               <span>Action</span>
+              <span />
             </div>
 
             {visibleCourses.length === 0 && (
@@ -2147,26 +2095,30 @@ export function StepSurveyInstances({
                 // roster's "Use a different template" card only needs to
                 // know a person is ALREADY claimed by some entry, not which.
                 const secondaryScopePersonNames = secondaryEntries.flatMap(e => e.scopePersonNames ?? [])
-                const addableTemplates = publishedTemplates.filter(
-                  t => t.id !== templateId && !secondaryEntryTemplateIds.has(t.id),
-                )
-                const isOpen = openRows.has(o.id)
+                const isOpen = openRowId === o.id
                 const driftNotice = templateDriftByOffering.get(o.id)
+
                 return (
                   <Fragment key={o.id}>
-                  <Collapsible
-                    open={isOpen}
-                    onOpenChange={() => toggleRow(o.id)}
-                    className="border-b border-border last:border-b-0"
-                  >
+                  <div className="border-b border-border last:border-b-0">
                     {/* Open-row accent — 2026-08-06, Romit's call: nothing
                         distinguished an open row from a closed one besides
                         the chevron rotating, which made it hard to tell
                         which row a scrolled-past panel belonged to in a long
                         list. Left rule reuses the tree's own hierarchy
-                        vocabulary (CourseDetailBody's border-l-2). */}
+                        vocabulary (CourseDetailBody's border-l-2). Carried
+                        over as-is after the 2026-08-12 sheet conversion —
+                        still the only cue tying an open sheet back to its row. */}
                     <div
-                      className="grid items-center gap-3 ps-3 pe-3 py-2 border-l-2"
+                      // 2026-08-12 — Romit's call: uniform gap-3 gave every
+                      // column boundary the same weight, whether it separated
+                      // two controls in the same logical group (checkbox,
+                      // chevron) or two unrelated ones (Template, Evaluatees,
+                      // Status). gap-4 + a touch more row height reads less
+                      // crowded without re-tuning TABLE_GRID's own column
+                      // widths (still deliberately sized per the comment
+                      // above the constant).
+                      className="grid items-center gap-4 ps-3 pe-3 py-2.5 border-l-2 cursor-pointer"
                       // dt-row-selected (the canonical DataTable's own open/selected-row
                       // token, component-consistency.md) — not --accent: in the active
                       // theme-prism theme --accent is a brand-hue-343 rose tint, the same
@@ -2175,9 +2127,16 @@ export function StepSurveyInstances({
                       // against each other (Romit's 2026-08-06 live catch). dt-row-selected
                       // is a fixed neutral gray in every theme, same reasoning RowStatus's
                       // header comment already gives for avoiding brand-hue tokens on status.
-                      style={{ gridTemplateColumns: TABLE_GRID, minHeight: 44, borderLeftColor: isOpen ? 'var(--primary)' : 'transparent', background: isOpen ? 'var(--dt-row-selected)' : undefined }}
+                      style={{ gridTemplateColumns: TABLE_GRID, minHeight: 48, borderLeftColor: isOpen ? 'var(--primary)' : 'transparent', background: isOpen ? 'var(--dt-row-selected)' : undefined }}
+                      // The chevron used to be the row's only way in — Romit's
+                      // 2026-08-12 feedback: a 24px icon is too small a target
+                      // for "open this row's detail", the row's single most
+                      // common action. The row itself now opens the sheet;
+                      // Checkbox/TemplateDropdown/RowAction stop propagation
+                      // below so their own clicks don't also open it.
+                      onClick={() => setOpenRowId(o.id)}
                     >
-                      <span className="flex items-center">
+                      <span className="flex items-center" onClick={e => e.stopPropagation()}>
                         <Checkbox
                           checked={
                             fresh.length > 0
@@ -2199,32 +2158,7 @@ export function StepSurveyInstances({
                         />
                       </span>
 
-                      {/* Accordion revision — every row expands now (used to
-                          be conflict-only). Template and Evaluatees moved out
-                          of this collapsed line entirely; they live in the
-                          panel this trigger opens. */}
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          // DS ghost buttons fill aria-expanded:bg-interactive-hover
-                          // (Prism theme resolves that to a rose-tinted --muted) —
-                          // clashes sitting on this row's deliberately neutral
-                          // dt-row-selected background (see that token's own
-                          // comment below). The row's left accent border + grey
-                          // wash + the chevron's own rotation already say "open";
-                          // this button doesn't need a fourth, mismatched signal.
-                          className="group aria-expanded:bg-transparent"
-                          aria-label={`${openRows.has(o.id) ? 'Hide' : 'Show'} template and evaluatees for ${code}`}
-                        >
-                          <i
-                            className="fa-light fa-chevron-down text-xs transition-transform group-data-[state=open]:rotate-180"
-                            aria-hidden="true"
-                          />
-                        </Button>
-                      </CollapsibleTrigger>
-
-                      <span className="flex items-baseline gap-2 min-w-0">
+                      <span className="flex items-baseline gap-2.5 min-w-0">
                         <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
                         {name && <span className="truncate text-sm">{name}</span>}
                       </span>
@@ -2237,7 +2171,7 @@ export function StepSurveyInstances({
                           need chip weight. */}
                       <span className="text-sm text-muted-foreground truncate">{COURSE_TYPE_FULL_LABEL[mode]}</span>
 
-                      <span className="min-w-0">
+                      <span className="min-w-0" onClick={e => e.stopPropagation()}>
                         <TemplateDropdown
                           templateId={templateId}
                           code={code}
@@ -2250,232 +2184,37 @@ export function StepSurveyInstances({
 
                       <span className="min-w-0"><RowStatus gate={gate} /></span>
 
-                      <span className="min-w-0">
+                      <span className="min-w-0" onClick={e => e.stopPropagation()}>
                         <RowAction gate={gate} driftNotice={driftNotice} onAssign={() => openRow(o.id)} />
                       </span>
-                    </div>
 
-                    <CollapsibleContent>
-                      {/* 2026-08-06 round 3 (Romit's catch on round 2) — this
-                          is the ACCORDION's own background continuing down
-                          from the header, not an inset card floating inside
-                          it: same dt-row-selected grey, same ps-3/pe-3 the
-                          header row uses, no margin between them and no
-                          rounded corners of its own — so the open header and
-                          its content read as one unbroken grey surface, the
-                          same way the header alone reads today when a row is
-                          open. (Round 2's mx-4/rounded-md/p-4 version was
-                          wrong — that's card styling, and this was never
-                          meant to be a separate card floating below the
-                          header.) */}
-                      <div className="ps-3 pe-3 pt-3 pb-4 flex flex-col gap-4" style={{ background: 'var(--dt-row-selected)' }}>
-                        {/* 2026-08-06 round 4 (Romit's call) — the primary
-                            template is its own white card floating on the
-                            grey accordion canvas, not flowing flush with it.
-                            Every "Additional templates" entry below gets the
-                            same treatment (see that loop) — one visual
-                            language, card vs. canvas, for every template on
-                            this course. */}
-                        <div className="rounded-md p-4" style={{ background: 'var(--card)' }}>
-                          <CourseDetailBody
-                            layout="rail"
-                            offering={o}
-                            code={code}
-                            mode={mode}
-                            gate={gate}
-                            template={template}
-                            criteria={criteria}
-                            templateId={templateId}
-                            stagedTemplateId={pendingTemplate[o.id]}
-                            defaultTemplateId={defaultAssignments[o.id]}
-                            publishedTemplates={publishedTemplates}
-                            onStageTemplate={stageTemplate}
-                            onCommitStage={staged => { onTemplateChange(o.id, staged.id); clearStagedTemplate(o.id) }}
-                            onClearStage={() => clearStagedTemplate(o.id)}
-                            onCreateTemplate={() => { setNotice(null); setSubView('create') }}
-                            onPreview={setPreviewTemplate}
-                            included={included}
-                            deselectedFresh={deselectedFresh}
-                            onToggleUnit={flip}
-                            onToggleUnits={setMany}
-                            secondaryScopePersonNames={secondaryScopePersonNames}
-                            onAssignPersonTemplate={onAssignPersonTemplate}
-                          />
-                        </div>
-                        {/* Romit's 2026-08-06 call: this used to render as a
-                            bare sibling row below every "Also evaluating"
-                            entry, at the table's own outer indentation —
-                            outside the accordion it visually belonged to.
-                            Nested here, on the same grey canvas as the
-                            primary template's card above, it reads as one
-                            continuous thread running from the evaluation
-                            down through "add one more" instead of two
-                            misaligned pieces. No divider needed — the gap
-                            between this section and the card above is
-                            spacing on the shared canvas, not a boundary
-                            between two surfaces. */}
-                        <div>
-                          {/* "Additional templates" — same label style as
-                              "Evaluatees" above (Romit's call): a bare "Add
-                              another template" card sitting directly below
-                              the roster read as one more roster item, not a
-                              different kind of control for a different
-                              concept (a whole second, independently-
-                              toggleable survey). The label names that
-                              boundary explicitly instead of relying on shape
-                              alone to carry it. */}
-                          <span className="text-xs font-medium text-muted-foreground">Additional templates</span>
-                          {/* Already-added entries stack FIRST, "Add another
-                              template" comes LAST as one more item in the
-                              same stack (Romit's call) — was the other way
-                              around, with entries rendered as always-visible
-                              siblings entirely outside this course's own
-                              collapse (no boundary between them, and no
-                              spacing telling them apart from the NEXT
-                              course's row). Both now live in this one
-                              flex-col with a consistent gap-2, and both are
-                              gated on the SAME collapse as the roster above
-                              — see the openRows seed update, which now also
-                              opens a course whose extra template is blocked/
-                              unstaffed so that state is never hidden by
-                              default. */}
-                          <div className="mt-2 flex flex-col gap-2">
-                            {secondaryEntries.map((entry, entryIndex) => {
-                              const sGate = secondaryGatesByOffering.get(o.id)?.[entryIndex]
-                                ?? { reasons: [], fresh: [], gaps: [], dups: [] }
-                              const sTemplate = publishedTemplates.find(t => t.id === entry.templateId) ?? null
-                              // Keyed by templateId, not entryIndex — with 2+
-                              // extra entries, removing one used to shift
-                              // every LATER entry's index down a slot, which
-                              // silently reassigned its openRows/
-                              // pendingTemplate state (and its React key) to
-                              // whatever the entry ahead of it had been
-                              // using. A surviving entry could pop open/
-                              // closed or lose a staged pick on an unrelated
-                              // removal. templateId is stable across
-                              // removals since addableTemplates already
-                              // guarantees no two entries on one course
-                              // share one.
-                              const secondaryKey = `${o.id}::secondary::${entry.templateId}`
-                              const dedupedLabels = secondaryDedupedLabels[o.id]?.[entryIndex] ?? []
-                              // This entry's every criterion was already
-                              // claimed by an earlier template on this
-                              // course (primary or an earlier extra) —
-                              // common with the real template catalog, not a
-                              // rare edge case (see secondaryDedupedLabels'
-                              // declaration). Nothing new to evaluate, so
-                              // the row says so instead of showing a bare
-                              // "–" with no explanation.
-                              const fullyDeduped = sGate.fresh.length === 0 && sGate.gaps.length === 0
-                                && sGate.dups.length === 0 && dedupedLabels.length > 0
-                              // 2026-08-06 — one header, not a separate grey
-                              // toolbar sitting above TemplateHeaderRow's own
-                              // name/Preview/Remove line (Romit's call: the
-                              // two-header layout read as a different kind of
-                              // control than the primary template's one clean
-                              // row, which has no collapse of its own either
-                              // — every extra template's full detail is
-                              // always visible now, same as the primary's).
-                              // "Also evaluating" + live status fold into
-                              // TemplateHeaderRow's own badge slot.
-                              // Round 2 (same day) — the inline template-
-                              // switch dropdown that used to sit in this
-                              // header is gone (Romit's call): to change an
-                              // extra template's own pick, Remove it and
-                              // "Add another template" — one decision path,
-                              // not two ways to do the same thing.
-                              const secondaryBadges = (
-                                <>
-                                  <Badge variant="secondary" className="shrink-0" style={{ fontSize: 12, paddingInline: 6, paddingBlock: 1 }}>
-                                    Also evaluating
-                                  </Badge>
-                                  {!fullyDeduped && <RowStatus gate={sGate} />}
-                                </>
-                              )
-                              return (
-                                // 2026-08-06 round 4 (Romit's call) — same
-                                // white-card-on-grey-canvas treatment as the
-                                // primary template above: one card per extra
-                                // template, no vertical rail, no dropdown.
-                                <div key={entry.templateId} className="rounded-md p-4" style={{ background: 'var(--card)' }}>
-                                  {fullyDeduped ? (
-                                    // No roster to render (everything this
-                                    // entry would cover is already claimed)
-                                    // — same header as the normal case below
-                                    // (TemplateHeaderRow), so Preview/Remove
-                                    // are never missing just because this
-                                    // particular entry has nothing new to
-                                    // evaluate.
-                                    <div className="flex flex-col gap-3">
-                                      {sTemplate && (
-                                        <TemplateHeaderRow
-                                          template={sTemplate}
-                                          isDefault={false}
-                                          criteria={templateCriteria(sTemplate)}
-                                          mode={mode}
-                                          onPreview={setPreviewTemplate}
-                                          onRemove={() => onRemoveSecondary(o.id, entryIndex)}
-                                          secondaryBadges={secondaryBadges}
-                                        />
-                                      )}
-                                      {/* 2026-08-06 round 4 (Romit's catch) —
-                                          var(--muted) carries a faint pink
-                                          cast in the Prism theme (oklch hue
-                                          343, unlike dt-row-selected's
-                                          near-zero-chroma neutral gray), so a
-                                          plain informational aside rendered
-                                          with a warm/rosy tint instead of
-                                          reading as neutral. dt-row-selected
-                                          instead — same family this file
-                                          already uses for "this is neutral,
-                                          not a status color" surfaces. */}
-                                      <div className="flex items-start gap-2 rounded-md border border-border p-2.5" style={{ background: 'var(--dt-row-selected)' }}>
-                                        <i className="fa-light fa-circle-info text-xs text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
-                                        <span className="text-xs text-muted-foreground">
-                                          {listFmt(dedupedLabels)} {dedupedLabels.length === 1 ? 'is' : 'are'} already evaluated by
-                                          {' '}another template on {code} — not repeated here.
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <CourseDetailBody
-                                      layout="rail"
-                                      offering={o}
-                                      code={code}
-                                      mode={mode}
-                                      gate={sGate}
-                                      template={sTemplate}
-                                      criteria={sTemplate ? templateCriteria(sTemplate) : []}
-                                      templateId={entry.templateId}
-                                      stagedTemplateId={pendingTemplate[secondaryKey]}
-                                      defaultTemplateId={undefined}
-                                      publishedTemplates={publishedTemplates}
-                                      onStageTemplate={(_offeringId, tid) => stageTemplate(secondaryKey, tid)}
-                                      onCommitStage={staged => { onSecondaryTemplateChange(o.id, entryIndex, staged.id); clearStagedTemplate(secondaryKey) }}
-                                      onClearStage={() => clearStagedTemplate(secondaryKey)}
-                                      onCreateTemplate={() => { setNotice(null); setSubView('create') }}
-                                      onPreview={setPreviewTemplate}
-                                      included={included}
-                                      deselectedFresh={sGate.fresh.filter(i => unitSelections[i.key] === 'deselected')}
-                                      onToggleUnit={flip}
-                                      onToggleUnits={setMany}
-                                      onRemove={() => onRemoveSecondary(o.id, entryIndex)}
-                                      secondaryBadges={secondaryBadges}
-                                    />
-                                  )}
-                                </div>
-                              )
-                            })}
-                            <AddTemplateRow
-                              code={code}
-                              templates={addableTemplates}
-                              onAdd={addedTemplateId => onAddSecondaryTemplate(o.id, addedTemplateId)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                      {/* 2026-08-12 — opens the shared FloatingSheetPanel for
+                          this row instead of expanding inline (was a
+                          CollapsibleTrigger). Static chevron-right, not a
+                          rotating chevron-down — there's no in-place
+                          open/closed state to animate anymore, just "opens a
+                          panel." Template and Evaluatees still live outside
+                          this collapsed line, in the panel this opens.
+                          Moved to the row's trailing edge (Romit's
+                          2026-08-12 feedback) — a leading chevron read as an
+                          expand/collapse disclosure at the START of the row's
+                          content; a trailing one reads as "go to detail",
+                          the more common end-of-row convention, and now sits
+                          beside Action instead of squeezed next to the
+                          checkbox. The row's own onClick (above) already
+                          opens the sheet from anywhere in the row — this
+                          button is a redundant, keyboard-focusable entry
+                          point, not the only way in anymore. */}
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={e => { e.stopPropagation(); setOpenRowId(o.id) }}
+                        aria-label={`View details for ${code}`}
+                      >
+                        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </div>
                   </Fragment>
                 )
               })}
@@ -2484,6 +2223,30 @@ export function StepSurveyInstances({
           </div>
         </div>
       )}
+
+      {/* 2026-08-12 — single shared FloatingSheetPanel for whichever row's
+          chevron was clicked (openRowId), replacing the accordion's
+          per-row CollapsibleContent. Never the raw Sheet/SheetContent
+          primitive (exxat-overlays: FloatingSheetPanel only). */}
+      <FloatingSheetPanel open={openOffering !== null} onOpenChange={open => { if (!open) setOpenRowId(null) }}>
+        <FloatingSheetPanelContent contentSlot="course-evaluatee-detail">
+          {openOffering && (() => {
+            const { code, name } = splitLabel(openOffering)
+            return (
+              <>
+                <FloatingSheetPanelHeader
+                  title={code}
+                  subtitle={name || undefined}
+                  onClose={() => setOpenRowId(null)}
+                />
+                <FloatingSheetPanelBody className="gap-4 px-4 pb-4">
+                  {renderCourseDetail(openOffering)}
+                </FloatingSheetPanelBody>
+              </>
+            )
+          })()}
+        </FloatingSheetPanelContent>
+      </FloatingSheetPanel>
 
       {/* Per-row Preview Survey target — the lightweight template-backed
           dialog (survey-preview-dialog.tsx), NOT /surveys/[id]/preview
@@ -2609,116 +2372,60 @@ export function StepSurveyInstances({
         const removedAvatars = existingPeople.filter(i => removedCriteria.has(i.criterion) && i.status === 'new')
 
         return (
-          <AlertDialog open onOpenChange={(open) => { if (!open) { onCancelReassign(); setReassignChoice('create-new') } }}>
+          // 2026-08-12 — was a RadioGroup offering "Keep both" (a second,
+          // concurrent template on this course) vs. "Replace". The reviewer
+          // reconfirmed "one template, one course... there is no concept of
+          // two templates with the same survey" (the same rule that killed
+          // the general "+ Add another template" affordance the day
+          // before) — Replace is now the only outcome, so this is a plain
+          // confirm, not a choice.
+          <AlertDialog open onOpenChange={(open) => { if (!open) onCancelReassign() }}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Change template for {code}?</AlertDialogTitle>
               </AlertDialogHeader>
-              {/* Anchor — the one fact true regardless of choice, stated
-                  once, inline — no box, no card. StoryStatusBadgeOS is the
-                  only "component" here; everything else is plain text. */}
+              {/* Anchor — the one fact true regardless, stated once, inline —
+                  no box, no card. StoryStatusBadgeOS is the only
+                  "component" here; everything else is plain text. */}
               <div className="mx-6 flex items-center gap-2 text-sm text-muted-foreground">
                 <i className="fa-light fa-file-lines text-xs shrink-0" aria-hidden="true" />
                 <span className="truncate">{existingTemplate?.name ?? 'Its assigned template'}</span>
                 <StoryStatusBadgeOS status={pendingReassign.existingStatus} />
               </div>
-              <RadioGroup
-                value={reassignChoice}
-                onValueChange={v => setReassignChoice(v as 'override' | 'create-new')}
-                className="flex flex-col divide-y divide-border px-6"
-                aria-label="How to apply this template change"
-              >
-                <div className="flex flex-col gap-1 py-3">
-                  <Label className="flex items-start gap-2 cursor-pointer">
-                    <RadioGroupItem value="create-new" id="reassign-new" className="mt-0.5" />
-                    <span className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm font-medium">Keep both</span>
-                      {/* Same avatar vocabulary as this step's own Evaluatees
-                          column (EvaluateeAvatar/GapAvatar) — decorative
-                          reinforcement of what the sentence already states in
-                          words, not a second source of information, so it
-                          stays aria-hidden rather than exposing names only
-                          visually. */}
-                      {addedAvatars.length > 0 && (
-                        <AvatarGroup className="flex items-center" aria-hidden="true">
-                          {addedAvatars.map(i => i.personName
-                            ? <EvaluateeAvatar key={i.key} i={i} className="size-6" />
-                            : <GapAvatar key={i.key} />)}
-                        </AvatarGroup>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        Also schedules {newTemplate?.name ?? 'the new template'}.{' '}
-                        {added.length > 0
-                          ? <>Adds <Bold>{list(added)}</Bold>. Nothing sends twice.</>
-                          : <>It covers nothing the current survey does not already. Nothing sends twice.</>}
-                      </span>
-                    </span>
-                  </Label>
-                  {/* S3 escape hatch — surfaced here, not as a separate
-                      dialog, since this is the exact moment an admin is
-                      about to run two templates for what might really be
-                      one missing aspect on the first. Opens in a new tab,
-                      same convention this app already uses for "go edit
-                      templates without losing your wizard place"
-                      (step-survey-design.tsx's "Go to templates" links). A
-                      SIBLING of the Label, not nested inside it — nesting it
-                      in the radio's own Label would fold the link's text
-                      into the radio's accessible name (a compliance-review
-                      nit caught this). */}
-                  {existingTemplate && (
-                    <p className="text-xs text-muted-foreground ps-6">
-                      Only need one more aspect?{' '}
-                      <Link
-                        href={`/templates/${existingTemplate.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-2"
-                      >
-                        Edit it instead
-                        <span className="sr-only"> (opens &ldquo;{existingTemplate.name}&rdquo; in a new tab; the template must be unpublished to edit)</span>
-                      </Link>
-                    </p>
+              <div className="flex flex-col gap-1 px-6 py-3">
+                {(removedAvatars.length > 0 || addedAvatars.length > 0) && (
+                  <AvatarGroup className="flex items-center" aria-hidden="true">
+                    {/* Grayscale + ban badge — the exact ExcludedEvaluatee
+                        treatment this step already uses for "in Prism but
+                        not part of this survey", reused here for "was
+                        evaluated, won't be anymore". Same meaning, same
+                        component, no new visual language. */}
+                    {removedAvatars.map(i => <ExcludedEvaluatee key={`r-${i.key}`} i={i} />)}
+                    {addedAvatars.map(i => i.personName
+                      ? <EvaluateeAvatar key={`a-${i.key}`} i={i} className="size-6" />
+                      : <GapAvatar key={`a-${i.key}`} />)}
+                  </AvatarGroup>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {newTemplate?.name ?? 'The new template'} takes its place.{' '}
+                  {removed.length > 0 && added.length > 0 && (
+                    <>Stops evaluating <Bold>{list(removed)}</Bold> and adds <Bold>{list(added)}</Bold>.</>
                   )}
-                </div>
-                <Label className="flex items-start gap-2 cursor-pointer py-3">
-                  <RadioGroupItem value="override" id="reassign-override" className="mt-0.5" />
-                  <span className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-sm font-medium">Replace</span>
-                    {(removedAvatars.length > 0 || addedAvatars.length > 0) && (
-                      <AvatarGroup className="flex items-center" aria-hidden="true">
-                        {/* Grayscale + ban badge — the exact ExcludedEvaluatee
-                            treatment this step already uses for "in Prism but
-                            not part of this survey", reused here for "was
-                            evaluated, won't be anymore". Same meaning, same
-                            component, no new visual language. */}
-                        {removedAvatars.map(i => <ExcludedEvaluatee key={`r-${i.key}`} i={i} />)}
-                        {addedAvatars.map(i => i.personName
-                          ? <EvaluateeAvatar key={`a-${i.key}`} i={i} className="size-6" />
-                          : <GapAvatar key={`a-${i.key}`} />)}
-                      </AvatarGroup>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {newTemplate?.name ?? 'The new template'} takes its place.{' '}
-                      {removed.length > 0 && added.length > 0 && (
-                        <>Stops evaluating <Bold>{list(removed)}</Bold> and adds <Bold>{list(added)}</Bold>.</>
-                      )}
-                      {removed.length > 0 && added.length === 0 && (
-                        <>Stops evaluating <Bold>{list(removed)}</Bold> and adds nothing new.</>
-                      )}
-                      {removed.length === 0 && added.length > 0 && (
-                        <>Adds <Bold>{list(added)}</Bold>. Nothing is removed.</>
-                      )}
-                      {removed.length === 0 && added.length === 0 && (
-                        <>Same aspects, different questions.</>
-                      )}
-                    </span>
-                  </span>
-                </Label>
-              </RadioGroup>
+                  {removed.length > 0 && added.length === 0 && (
+                    <>Stops evaluating <Bold>{list(removed)}</Bold> and adds nothing new.</>
+                  )}
+                  {removed.length === 0 && added.length > 0 && (
+                    <>Adds <Bold>{list(added)}</Bold>. Nothing is removed.</>
+                  )}
+                  {removed.length === 0 && added.length === 0 && (
+                    <>Same aspects, different questions.</>
+                  )}
+                </span>
+              </div>
               <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => { onCancelReassign(); setReassignChoice('create-new') }}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { onResolveReassign(reassignChoice); setReassignChoice('create-new') }}>
-                  Continue
+                <AlertDialogCancel onClick={onCancelReassign}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onResolveReassign}>
+                  Change template
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

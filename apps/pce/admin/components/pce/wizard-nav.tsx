@@ -12,6 +12,13 @@ interface WizardNavProps {
    *  template builder embeds inside a wizard step) — duplicate nav labels
    *  fail axe landmark-unique. */
   ariaLabel?: string
+  /** Right-aligned slot (2026-08-12) — one shared home for step-spanning
+   *  actions like Save as draft, which previously rendered in three
+   *  different positions across steps 2/3/4 (grouped with step 2's own
+   *  header actions, in step 3's footer, in a step-4-only shell row). Since
+   *  the last step is always rightmost, this reads as "beside Review" on
+   *  every step, not just step 4. */
+  endSlot?: React.ReactNode
 }
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
@@ -34,7 +41,7 @@ const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   ],
 }
 
-export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps, ariaLabel = 'Wizard steps' }: WizardNavProps) {
+export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps, ariaLabel = 'Wizard steps', endSlot }: WizardNavProps) {
   const STEPS = steps ?? DEFAULT_STEPS[mode]
 
   return (
@@ -114,6 +121,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
           </div>
         )
       })}
+      {endSlot && <div className="ms-auto flex items-center gap-3 shrink-0">{endSlot}</div>}
     </nav>
   )
 }

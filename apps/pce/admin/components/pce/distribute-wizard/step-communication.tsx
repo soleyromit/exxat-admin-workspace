@@ -9,19 +9,20 @@ import {
   Card,
   CardContent,
   DatePickerField,
+  DateRangePickerField,
+  FieldLabel,
   FieldLegend,
   Input,
   InputGroup,
   LocalBanner,
   Popover, PopoverTrigger, PopoverContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Textarea,
   ToggleSwitch,
   formatDateFromDate,
 } from '@exxatdesignux/ui'
 import type { CourseOffering, ReminderFrequency, ReminderAnchor, SurveyStatus } from '@/lib/pce-mock-data'
-import { SurveyStatusDateBadgeOS } from '@/components/pce/pce-badges'
 import {
-  CommRulesPopover, EvaluateeMark, evaluateeLabel,
   type CommCadence, type CommRules, type CommEvaluatee,
 } from '@/components/pce/existing-comm-rules'
 import {
@@ -102,6 +103,18 @@ export type ExistingCommStream = {
   cadence: CommCadence
   rules: CommRules
 }
+
+/** Per-offering survey window override (2026-06-30 decision, restated
+ *  2026-08-11) — absence of an offering's id in the map means "uses the
+ *  global survey window" above. */
+export type CourseWindowOverride = { openDate?: Date; closeDate?: Date }
+
+/** CE-only survey title formula — merge fields resolve per course at
+ *  creation (2026-08-11, Monil). Reuses the `resolveMerge()` token
+ *  vocabulary below, not a separate set of placeholders. */
+export const DEFAULT_SURVEY_TITLE_TEMPLATE = '{{course_name}} – {{academic_year}} – EOT Eval'
+export const DEFAULT_SURVEY_INSTRUCTIONS =
+  'Please rate each statement honestly. Your responses are anonymous and will not be shared with instructors individually.'
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
 function PrismIconMark({ size = 32 }: { size?: number }) {
@@ -207,9 +220,20 @@ function DatePickerFieldWithFooter({
 
 interface StepCommunicationProps {
   selectedOfferings: CourseOffering[]
+  /** CE-only survey title/instructions fields (below) only render for
+   *  `course_evaluation` — general surveys keep the plain email flow. */
+  surveyMode: 'course_evaluation' | 'general'
+  academicYear: string
+  surveyTitleTemplate: string
+  onSurveyTitleTemplateChange: (v: string) => void
+  surveyInstructions: string
+  onSurveyInstructionsChange: (v: string) => void
+  /** Per-offering window override — absent offering id = uses the global window. */
+  courseWindowOverrides: Record<string, CourseWindowOverride>
+  onSetCourseWindowOverride: (offeringId: string, next: CourseWindowOverride) => void
+  onClearCourseWindowOverride: (offeringId: string) => void
   openDate: Date | undefined
   closeDate: Date | undefined
-  releaseDate: Date | undefined
   senderName: string
   emailTemplateId: string
   emailSubject: string
@@ -220,13 +244,18 @@ interface StepCommunicationProps {
   reminderTemplateId: string
   reminderSubject: string
   reminderBody: string
+  /** Cadence facts (reference point + repeat rate) — lifted so Review can
+   *  state the real choice instead of assuming "before close" (2026-08-12). */
+  reminderAnchor: ReminderAnchor
+  onReminderAnchorChange: (v: ReminderAnchor) => void
+  reminderFrequency: ReminderFrequency
+  onReminderFrequencyChange: (v: ReminderFrequency) => void
   onReminderSameAsInviteChange: (v: boolean) => void
   onReminderTemplateChange: (id: string) => void
   onReminderSubjectChange: (v: string) => void
   onReminderBodyChange: (v: string) => void
   onOpenDateChange: (d: Date | undefined) => void
   onCloseDateChange: (d: Date | undefined) => void
-  onReleaseDateChange: (d: Date | undefined) => void
   onSenderNameChange: (v: string) => void
   onEmailTemplateChange: (id: string) => void
   onEmailSubjectChange: (v: string) => void
@@ -237,18 +266,24 @@ interface StepCommunicationProps {
   onNext: () => void
   /** Step title — "Distribution" for programmatic surveys, else "Communication". */
   title?: string
-  /** Open surveys already messaging students in the selected courses —
-   *  rendered as a read-only context rail in the Reminders section. */
+  /** Open surveys already messaging students in the selected courses — feeds
+   *  the reminder-cadence delta banner ("Existing surveys remind…" + Match
+   *  existing cadence); no longer rendered as its own visible rail. */
   existingStreams?: ExistingCommStream[]
 }
 
 export function StepCommunication({
   selectedOfferings,
-  openDate, closeDate, releaseDate,
+  surveyMode, academicYear,
+  surveyTitleTemplate, onSurveyTitleTemplateChange,
+  surveyInstructions, onSurveyInstructionsChange,
+  courseWindowOverrides, onSetCourseWindowOverride, onClearCourseWindowOverride,
+  openDate, closeDate,
   senderName, emailTemplateId, emailSubject, emailBody, reminders, emailContacts,
   reminderSameAsInvite, reminderTemplateId, reminderSubject, reminderBody,
+  reminderAnchor, onReminderAnchorChange, reminderFrequency, onReminderFrequencyChange,
   onReminderSameAsInviteChange, onReminderTemplateChange, onReminderSubjectChange, onReminderBodyChange,
-  onOpenDateChange, onCloseDateChange, onReleaseDateChange,
+  onOpenDateChange, onCloseDateChange,
   onSenderNameChange, onEmailTemplateChange, onEmailSubjectChange, onEmailBodyChange,
   onRemindersChange, onEmailContactsChange, onBack, onNext,
   title = 'Communication',
@@ -354,6 +389,7 @@ export function StepCommunication({
   function resolveMerge(text: string) {
     return text
       .replace(/\{\{course_name\}\}/g, previewCourseName)
+      .replace(/\{\{academic_year\}\}/g, academicYear || 'this year')
       .replace(/\{\{close_date\}\}/g, previewCloseDate)
       .replace(/\{\{term_name\}\}/g, 'this term')
       .replace(/\{\{student_first_name\}\}/g, 'Alex')
@@ -361,9 +397,53 @@ export function StepCommunication({
       .replace(/\{\{program_name\}\}/g, 'your program')
   }
 
-  // ── Reminder cadence (frequency + anchor + start days) ─────────────────────
-  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
-  const [reminderAnchor, setReminderAnchor] = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
+  // ── Survey title field-palette builder (Step 3, CE-only) ────────────────────
+  // 2026-08-12 — fourth pass, Romit's call: a plain text field (raw
+  // `{{token}}` visible as typed text, not a rich pill) + a row of
+  // bold-label chips below it. Clicking a chip inserts its token at the
+  // current caret position — repeatable, not disabled-after-use, matching
+  // standard merge-tag toolbars (the admin may want `{{course_name}}`
+  // twice). `surveyTitleTemplate` stays the single string source of truth
+  // end-to-end (resolveMerge, defaults, push payload unchanged).
+  const TITLE_MERGE_FIELDS: { token: string; label: string }[] = [
+    { token: '{{course_name}}', label: 'Course name' },
+    { token: '{{academic_year}}', label: 'Academic year' },
+    { token: '{{term_name}}', label: 'Term name' },
+  ]
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  function insertTitleField(token: string) {
+    const el = titleInputRef.current
+    const start = el?.selectionStart ?? surveyTitleTemplate.length
+    const end = el?.selectionEnd ?? surveyTitleTemplate.length
+    const next = surveyTitleTemplate.slice(0, start) + token + surveyTitleTemplate.slice(end)
+    onSurveyTitleTemplateChange(next)
+    const caret = start + token.length
+    requestAnimationFrame(() => { el?.focus(); el?.setSelectionRange(caret, caret) })
+  }
+
+  // ── Per-course survey window override (Step 3) — collapsed by default,
+  //    closed disclosure per mockup 4.2. Row treatment is variant H from
+  //    /compare/push-step3-course-window-override (2026-08-11, "Quiet
+  //    default, marked exception"): default rows go silent (code + name,
+  //    no repeated "Uses survey window" text on every row); an overridden
+  //    row gets a brand dot + subtle row tint + full-weight resolved dates.
+  //    Editing moves from always-inline fields to a row Popover (Save/
+  //    Cancel), and a "Find a course" input narrows a long list. ──────────
+  const [overridesOpen, setOverridesOpen] = useState(false)
+  const overrideCount = selectedOfferings.filter(o => courseWindowOverrides[o.id]).length
+  const [overrideQuery, setOverrideQuery] = useState('')
+  const [overrideSearchOpen, setOverrideSearchOpen] = useState(false)
+  const overrideSearchRef = useRef<HTMLInputElement>(null)
+  const [overrideOpenRowId, setOverrideOpenRowId] = useState<string | null>(null)
+  const [overrideDraft, setOverrideDraft] = useState<CourseWindowOverride>({})
+  const visibleOfferings = selectedOfferings.filter(o => {
+    if (!overrideQuery.trim()) return true
+    const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+    return `${course?.code ?? ''} ${course?.name ?? ''}`.toLowerCase().includes(overrideQuery.trim().toLowerCase())
+  })
+
+  // ── Reminder cadence (frequency + anchor lifted to the page; start days
+  //    stays local — it's fully re-derivable from `reminders` downstream). ──
   const [reminderStartDays, setReminderStartDays] = useState(EVAL_REMINDER_CADENCE.startDaysBefore)
   const reminderAnchorLabel = REMINDER_ANCHOR_LABELS[reminderAnchor]
   // Derive the day-based schedule from the cadence so downstream (Review, push) stays in sync.
@@ -384,27 +464,6 @@ export function StepCommunication({
     return existingStreams.every(s => s.cadence.frequency === first.frequency) ? first : null
   }, [existingStreams])
   const cadenceDiffers = sharedExistingCadence != null && sharedExistingCadence.frequency !== reminderFrequency
-
-  // Same-course streams under identical rules collapse into ONE row — three
-  // DPT-510 flows on one cadence are one story, not three (the popover
-  // carries the roster). Different rules keep separate rows.
-  const streamGroups = useMemo(() => {
-    const sig = (s: ExistingCommStream) => [
-      s.courseCode, s.status, s.openDate ?? '', s.untilLabel ?? '',
-      s.cadence.frequency, s.cadence.anchor, s.cadence.startDaysBefore,
-      s.rules.inviteTemplate, s.rules.reminderTemplate, s.rules.sender,
-    ].join('|')
-    const m = new Map<string, ExistingCommStream[]>()
-    for (const s of existingStreams) { const k = sig(s); m.set(k, [...(m.get(k) ?? []), s]) }
-    return [...m.values()]
-  }, [existingStreams])
-  // Per-survey reminder facts survive grouping only when every flow agrees.
-  const groupRules = (g: ExistingCommStream[]): CommRules => {
-    if (g.length === 1) return g[0].rules
-    const shared = (pick: (r: CommRules) => string | undefined) =>
-      g.every(x => pick(x.rules) === pick(g[0].rules)) ? pick(g[0].rules) : undefined
-    return { ...g[0].rules, nextReminder: shared(r => r.nextReminder), lastManualNudge: shared(r => r.lastManualNudge) }
-  }
 
   // ── Course end dates → suggested open dates ────────────────────────────────
   // Most selected courses share a term-end date; surfacing the distribution
@@ -445,27 +504,21 @@ export function StepCommunication({
   const fmtSuggest = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const [openPickerOpen, setOpenPickerOpen] = useState(false)
   // A suggestion must not leave the form in an error state — it re-derives the
-  // full trio: window length and release offset carry over when the current
-  // dates are valid, else fall back to the Settings prefill (14 days, +7).
+  // window length when the current dates are valid, else falls back to the
+  // Settings prefill (14 days).
   function applySuggestedOpen(next: Date) {
     const DAY = 86_400_000
     const windowLen = openDate && closeDate && closeDate > openDate
       ? closeDate.getTime() - openDate.getTime()
       : 14 * DAY
-    const releaseOffset = closeDate && releaseDate && releaseDate >= closeDate
-      ? releaseDate.getTime() - closeDate.getTime()
-      : 7 * DAY
-    const nextClose = new Date(next.getTime() + windowLen)
     onOpenDateChange(next)
-    onCloseDateChange(nextClose)
-    onReleaseDateChange(new Date(nextClose.getTime() + releaseOffset))
+    onCloseDateChange(new Date(next.getTime() + windowLen))
   }
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
-  const dateOrderError   = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
-  const releaseDateError = releaseDate && closeDate && releaseDate < closeDate ? 'Result release date must be on or after the close date.' : null
-  const openInPast       = openDate && openDate < today
-  const canContinue      = !!releaseDate && !dateOrderError && !releaseDateError
+  const dateOrderError = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
+  const openInPast      = openDate && openDate < today
+  const canContinue     = !dateOrderError
 
   const totalRecipientCount = prismRecipients.length + emailContacts.length
   const sectionPad: React.CSSProperties = { padding: '14px 16px' }
@@ -518,20 +571,85 @@ export function StepCommunication({
         </p>
       </div>
 
-      {dateOrderError   && <LocalBanner variant="error">{dateOrderError}</LocalBanner>}
-      {releaseDateError && <LocalBanner variant="error">{releaseDateError}</LocalBanner>}
+      {dateOrderError && <LocalBanner variant="error">{dateOrderError}</LocalBanner>}
       {openInPast && !dateOrderError && (
         <LocalBanner variant="warning">
           The open date is in the past. Students will receive an invitation immediately upon push.
         </LocalBanner>
       )}
 
+      {/* ── Survey details — CE-only title + instructions (2026-08-11, Monil) ── */}
+      {surveyMode === 'course_evaluation' && (
+        <div className="flex flex-col gap-3">
+          <FieldLegend variant="label" className="font-semibold text-foreground">Survey details</FieldLegend>
+          <Card className="shadow-none">
+            <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
+              <div className="flex flex-col gap-1.5">
+                <FieldLabel id="label-survey-title">
+                  Survey title <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+                  <span className="sr-only">(required)</span>
+                </FieldLabel>
+                {/* Plain field — the raw {{token}} shows as typed text, no
+                    special pill chrome. Chips below insert at the caret
+                    (Romit's call, 2026-08-12: "chip based selection...
+                    when clicking on the chip, then text would be shown
+                    inside text box as {{text}}"). */}
+                <Input
+                  ref={titleInputRef}
+                  aria-labelledby="label-survey-title"
+                  value={surveyTitleTemplate}
+                  onChange={e => onSurveyTitleTemplateChange(e.target.value)}
+                  placeholder="e.g. {{course_name}} – {{academic_year}} – EOT Eval"
+                />
+                {/* font-normal — semibold read as heavier/larger than a
+                    Badge should (2026-08-12 visual review); a leading "+"
+                    signals "insert" instead of relying on weight alone. */}
+                <div className="flex flex-wrap items-center gap-1.5" aria-label="Insert a merge field">
+                  {TITLE_MERGE_FIELDS.map(f => (
+                    <Badge key={f.token} asChild variant="outline" className="cursor-pointer font-normal">
+                      <button type="button" className="inline-flex items-center gap-1" onClick={() => insertTitleField(f.token)}>
+                        <i className="fa-light fa-plus text-[10px]" aria-hidden="true" />
+                        {f.label}
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                {/* One row, not a chip row + a caption sentence + a separate
+                    preview line (2026-08-12: still read as crowded with all
+                    three stacked tight) — "per course" folds into the label
+                    itself, and mt-1 gives it visible daylight from the chips
+                    above instead of matching their gap-1.5 rhythm, so the
+                    group reads as input+chips (editing) then preview
+                    (result), not five undifferentiated rows. */}
+                <div className="inline-flex items-center gap-2 rounded-md text-xs w-fit max-w-full mt-1" style={{ padding: '6px 10px', background: 'var(--muted)' }}>
+                  <span className="text-muted-foreground shrink-0">Per-course preview</span>
+                  <span className="font-medium text-foreground truncate">{resolveMerge(surveyTitleTemplate) || 'Untitled survey'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <p id="label-survey-instructions" className="text-sm font-medium">Survey instructions</p>
+                <Textarea
+                  aria-labelledby="label-survey-instructions"
+                  value={surveyInstructions}
+                  onChange={e => onSurveyInstructionsChange(e.target.value)}
+                  rows={3}
+                />
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Shown to students at the top of the survey. Default shown — edit as needed.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* ── Survey window ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <FieldLegend variant="label">Survey window</FieldLegend>
+        <FieldLegend variant="label" className="font-semibold text-foreground">Survey window</FieldLegend>
         <Card className="shadow-none">
           <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
-          <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <div className="flex flex-col gap-1.5">
               <p id="label-opens-on" className="text-sm font-medium">
                 Opens on <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
@@ -584,24 +702,160 @@ export function StepCommunication({
               </p>
               <DatePickerField value={closeDate} onChange={onCloseDateChange} aria-labelledby="label-closes-on" aria-required="true" />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <p id="label-release-on" className="text-sm font-medium">
-                Results released <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
-                <span className="sr-only">(required)</span>
-              </p>
-              <DatePickerField value={releaseDate} onChange={onReleaseDateChange} aria-labelledby="label-release-on" aria-required="true" />
-            </div>
           </div>
-          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            Set the date when results become visible to instructors. We recommend a date after final grades are released.
-          </p>
+
+          {/* Per-course window override — closed by default (2026-06-30 decision,
+              restated 2026-08-11). Reuses the row shape already proven for
+              existing-stream rows: course code · label · right-aligned control. */}
+          {selectedOfferings.length > 0 && (
+            <div className="flex flex-col gap-2" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              {/* Plain trigger, not the DS Button — ghost's variant classes
+                  were leaving a faint rounded-pill resting background behind
+                  (2026-08-12 visual review), reading as a chip rather than a
+                  disclosure link. No box at all: chevron + the action label
+                  in foreground weight, the count trailing in muted text. */}
+              <button
+                type="button"
+                aria-expanded={overridesOpen}
+                onClick={() => setOverridesOpen(v => !v)}
+                className="flex items-center gap-1.5 text-sm w-fit bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+              >
+                <i
+                  className={`fa-light fa-chevron-${overridesOpen ? 'down' : 'right'} text-muted-foreground`}
+                  aria-hidden="true" style={{ fontSize: 10 }}
+                />
+                <span className="font-medium text-foreground">Customize per course</span>
+                <span className="text-muted-foreground tabular-nums">· {overrideCount} of {selectedOfferings.length} overridden</span>
+              </button>
+
+              {overridesOpen && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-end">
+                    {/* DS toggle-search pattern (component-consistency.md —
+                        table search must never be a standalone always-open
+                        InputGroup): collapsed icon by default, expands to a
+                        w-48 h-8 input on click, same as DataTable's toolbar. */}
+                    {overrideSearchOpen ? (
+                      <div className="relative flex items-center">
+                        <i className="fa-light fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
+                        <Input
+                          ref={overrideSearchRef}
+                          type="text" role="searchbox" inputMode="search" autoComplete="off"
+                          placeholder="Search…"
+                          value={overrideQuery}
+                          onChange={e => setOverrideQuery(e.target.value)}
+                          onBlur={() => { if (!overrideQuery) setOverrideSearchOpen(false) }}
+                          onKeyDown={e => { if (e.key === 'Escape') { setOverrideQuery(''); setOverrideSearchOpen(false) } }}
+                          className={`h-8 w-48 pl-7 text-xs ${overrideQuery ? 'pr-8' : 'pr-2'}`}
+                          aria-label="Find a course to customize"
+                        />
+                        {overrideQuery && (
+                          <button
+                            type="button"
+                            aria-label="Clear search"
+                            onClick={() => setOverrideQuery('')}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label="Find a course to customize"
+                        title="Search"
+                        onClick={() => { setOverrideSearchOpen(true); setTimeout(() => overrideSearchRef.current?.focus(), 10) }}
+                        className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <i className="fa-light fa-magnifying-glass text-[13px]" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-col overflow-y-auto rounded-md border border-border" style={{ maxHeight: 260 }}>
+                    {visibleOfferings.map(o => {
+                      const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+                      const override = courseWindowOverrides[o.id]
+                      const editing = overrideOpenRowId === o.id
+                      return (
+                        <div
+                          key={o.id}
+                          className="flex items-center gap-2.5 px-3 py-2 border-t border-border/60 first:border-t-0 flex-wrap"
+                          style={{ minHeight: 40, background: override ? 'var(--muted)' : undefined }}
+                        >
+                          {override ? (
+                            <span className="size-1.5 rounded-full shrink-0" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
+                          ) : (
+                            <span className="shrink-0" style={{ width: 6 }} aria-hidden="true" />
+                          )}
+                          <span className="text-sm min-w-0 truncate flex-1">
+                            <span className="font-medium">{course?.code}</span>
+                            <span className="text-muted-foreground"> · {course?.name}</span>
+                          </span>
+                          {editing ? (
+                            /* Inline, in the row — no floating Popover housing
+                               the edit form (2026-08-12 feedback). The date
+                               range field still opens its own DS calendar
+                               popover on click, same as every other
+                               DatePickerField in this step; that's the
+                               control's own normal behavior, not what moved. */
+                            <span className="flex items-center gap-2 shrink-0">
+                              <DateRangePickerField
+                                value={{ from: overrideDraft.openDate, to: overrideDraft.closeDate }}
+                                onChange={range => setOverrideDraft({ openDate: range?.from, closeDate: range?.to })}
+                                triggerClassName="h-8 text-sm"
+                                numberOfMonths={1}
+                              />
+                              <Button variant="ghost" size="xs" onClick={() => setOverrideOpenRowId(null)}>Cancel</Button>
+                              {override && (
+                                <Button
+                                  variant="ghost" size="xs"
+                                  onClick={() => { onClearCourseWindowOverride(o.id); setOverrideOpenRowId(null) }}
+                                >
+                                  Clear
+                                </Button>
+                              )}
+                              <Button
+                                variant="default" size="xs"
+                                onClick={() => { onSetCourseWindowOverride(o.id, overrideDraft); setOverrideOpenRowId(null) }}
+                              >
+                                Save
+                              </Button>
+                            </span>
+                          ) : (
+                            <>
+                              {override && (
+                                <span className="text-xs font-medium shrink-0 tabular-nums">
+                                  {fmtSuggest(override.openDate ?? openDate ?? new Date())} – {fmtSuggest(override.closeDate ?? closeDate ?? new Date())}
+                                </span>
+                              )}
+                              <Button
+                                variant="ghost" size="icon-xs" className="shrink-0"
+                                aria-label={`${override ? 'Edit' : 'Customize'} window for ${course?.code}`}
+                                onClick={() => { setOverrideDraft(override ?? { openDate, closeDate }); setOverrideOpenRowId(o.id) }}
+                              >
+                                <i className={`fa-light ${override ? 'fa-pen-to-square' : 'fa-plus'} text-xs`} aria-hidden="true" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {visibleOfferings.length === 0 && (
+                      <p className="text-sm text-muted-foreground px-3 py-4">No courses match &ldquo;{overrideQuery}&rdquo;.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           </CardContent>
         </Card>
       </div>
 
       {/* ── Email notifications ───────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <FieldLegend variant="label">Email notifications</FieldLegend>
+        <FieldLegend variant="label" className="font-semibold text-foreground">Email notifications</FieldLegend>
 
         <Card className="overflow-hidden shadow-none">
           <CardContent className="flex items-center gap-4" style={{ padding: 16 }}>
@@ -677,63 +931,7 @@ export function StepCommunication({
 
       {/* ── Reminders ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <FieldLegend variant="label">Reminders</FieldLegend>
-
-        {/* Existing streams — surveys already messaging these students. Rules
-            are per-survey (visibility, never unification): each row states an
-            open survey's cadence as read-only facts. */}
-        {existingStreams.length > 0 && (
-          <Card className="shadow-none">
-            <CardContent className="flex flex-col gap-3" style={{ padding: 16 }}>
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-semibold">Already messaging these students</p>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {existingStreams.length === 1
-                    ? '1 open survey for the selected courses sends reminders on its own schedule.'
-                    : `${existingStreams.length} open surveys for the selected courses send reminders on their own schedules.`}
-                </p>
-              </div>
-              <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 168 }}>
-                {streamGroups.map(group => {
-                  const s = group[0]
-                  const single = group.length === 1
-                  return (
-                    <div key={s.id} className="flex items-center gap-3 py-2 border-t border-border/60 first:border-t-0" style={{ minHeight: 40 }}>
-                      <span className="flex -space-x-1.5 shrink-0">
-                        {group.slice(0, 3).map(g => (
-                          <span key={g.id} className="rounded-full ring-2 ring-background">
-                            <EvaluateeMark evaluatee={g.evaluatee} size={5} />
-                          </span>
-                        ))}
-                      </span>
-                      <span className="text-sm min-w-0 truncate">
-                        {s.courseCode} · {single ? evaluateeLabel(s.evaluatee) : (s.courseName ?? `${group.length} evaluations`)}
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {!single && <>{group.length} evaluations · </>}
-                        Reminds {REMINDER_FREQUENCY_LABELS[s.cadence.frequency].toLowerCase()}
-                        {s.untilLabel && <> · {s.untilLabel}</>}
-                      </span>
-                      <span className="ms-auto shrink-0 flex items-center gap-2">
-                        <CommRulesPopover
-                          courseCode={s.courseCode}
-                          courseName={s.courseName}
-                          evaluatees={group.map(g => g.evaluatee)}
-                          status={s.status}
-                          openDate={s.openDate}
-                          untilLabel={s.untilLabel}
-                          cadence={s.cadence}
-                          rules={groupRules(group)}
-                        />
-                        <SurveyStatusDateBadgeOS status={s.status} openDate={s.openDate} />
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <FieldLegend variant="label" className="font-semibold text-foreground">Reminders</FieldLegend>
 
         {/* Reminder email — its own template, or reuse the invitation's */}
         <Card className="overflow-hidden shadow-none">
@@ -822,22 +1020,6 @@ export function StepCommunication({
         {/* Reminder cadence — when the reminder repeats */}
         <Card className="shadow-none">
           <CardContent className="flex flex-col gap-5" style={{ padding: 16 }}>
-            {/* Reminder frequency */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex flex-col gap-0.5" style={{ maxWidth: 300 }}>
-                <p className="text-sm font-medium">Reminder frequency</p>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>How often reminder emails repeat.</p>
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                {(Object.keys(REMINDER_FREQUENCY_LABELS) as ReminderFrequency[]).map(f => (
-                  <Button key={f} variant={reminderFrequency === f ? 'default' : 'outline'} size="sm" className="h-8"
-                    aria-pressed={reminderFrequency === f} onClick={() => setReminderFrequency(f)}>
-                    {REMINDER_FREQUENCY_LABELS[f]}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
             {/* Delta vs existing streams — a fact in info tone, never amber:
                 diverging is legal; one action aligns if that's the intent. */}
             {cadenceDiffers && sharedExistingCadence && (
@@ -853,8 +1035,8 @@ export function StepCommunication({
                   size="xs"
                   className="shrink-0 bg-transparent"
                   onClick={() => {
-                    setReminderFrequency(sharedExistingCadence.frequency)
-                    setReminderAnchor(sharedExistingCadence.anchor)
+                    onReminderFrequencyChange(sharedExistingCadence.frequency)
+                    onReminderAnchorChange(sharedExistingCadence.anchor)
                     setReminderStartDays(sharedExistingCadence.startDaysBefore)
                   }}
                 >
@@ -863,15 +1045,13 @@ export function StepCommunication({
               </div>
             )}
 
-            <div style={{ borderTop: '1px solid var(--border)' }} />
-
             {/* Anchor date */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-0.5" style={{ maxWidth: 300 }}>
                 <p className="text-sm font-medium">Anchor date</p>
                 <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>The reference point the cadence is calculated from.</p>
               </div>
-              <Select value={reminderAnchor} onValueChange={v => setReminderAnchor(v as ReminderAnchor)}>
+              <Select value={reminderAnchor} onValueChange={v => onReminderAnchorChange(v as ReminderAnchor)}>
                 <SelectTrigger className="h-9 text-sm" style={{ width: 224 }} aria-label="Reminder anchor date"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(REMINDER_ANCHOR_LABELS) as ReminderAnchor[]).map(a => (
@@ -910,10 +1090,15 @@ export function StepCommunication({
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Back
         </Button>
-        <Button variant="default" size="sm" disabled={!canContinue} onClick={onNext}>
-          Continue
-          <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Save as draft moved to the shared WizardNav endSlot
+              (2026-08-12) — one position across all steps instead of this
+              footer. */}
+          <Button variant="default" size="sm" disabled={!canContinue} onClick={onNext}>
+            Continue
+            <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
+          </Button>
+        </div>
       </div>
 
       <EmailTemplateSheet

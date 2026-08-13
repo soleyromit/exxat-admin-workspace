@@ -9,7 +9,10 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
-import { StepCommunication, type Reminder, type EmailContact, type ExistingCommStream } from '@/components/pce/distribute-wizard/step-communication'
+import {
+  StepCommunication, type Reminder, type EmailContact, type ExistingCommStream, type CourseWindowOverride,
+  DEFAULT_SURVEY_TITLE_TEMPLATE, DEFAULT_SURVEY_INSTRUCTIONS,
+} from '@/components/pce/distribute-wizard/step-communication'
 import { commRulesOfSurvey, commCadenceOfSurvey, commUntilOfSurvey } from '@/components/pce/existing-comm-rules'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
@@ -27,10 +30,15 @@ import {
   MOCK_MASTER_COURSES,
   EVAL_DATE_RULES,
   EVAL_EMAIL_TEMPLATES,
+  EVAL_REMINDER_CADENCE,
+  COURSE_TYPE_FULL_LABEL,
+  deliveryModeOf,
   type SurveyType,
   type PceTemplate,
   type PceSurvey,
   type TermSeason,
+  type ReminderAnchor,
+  type ReminderFrequency,
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
@@ -58,11 +66,13 @@ const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
 // flow; the programmatic flow still skips 2 (1 → 3 → 4).
 type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
-/** One extra template assigned to an offering, beyond its primary. Origin is
- *  either S2's Override-vs-Create-new dialog ("Keep both"), the general
- *  "+ Add another template" affordance (2026-08-06, Romit's call — every
- *  course can carry more than one, not just the S2-conflict case), or the
- *  person-grain late-added-co-instructor exception. `scopePersonNames`
+/** One extra template assigned to an offering, beyond its primary. All three
+ *  entry points that could ever CREATE one are retired now (2026-08-12, the
+ *  reviewer's "one template, one course" rule) — S2's Override-vs-Create-new
+ *  dialog ("Keep both"), the general "+ Add another template" affordance
+ *  (removed 2026-08-11), and the person-grain late-added-co-instructor
+ *  exception (removed 2026-08-12, same pass as this dialog). The type/state
+ *  stays for any entry a resumed Draft already carries. `scopePersonNames`
  *  absent = the whole role/aspect gets this template (the 2026-08-04 "Keep
  *  both" behavior and the general add-another-template case). Present
  *  (2026-08-05, person-grain exception) = this template covers ONLY these
@@ -262,6 +272,20 @@ function PushSurveyInner() {
   const [closeDate, setCloseDate] = useState<Date | undefined>(settingsWindow.close)
   const [releaseDate, setReleaseDate] = useState<Date | undefined>(settingsWindow.release)
   const [senderName, setSenderName] = useState('Exxat Surveys')
+  // CE-only survey title formula (merge fields resolve per course at creation)
+  // + plain-text instructions — 2026-08-11, Monil (Course Eval sync up).
+  const [surveyTitleTemplate, setSurveyTitleTemplate] = useState(DEFAULT_SURVEY_TITLE_TEMPLATE)
+  const [surveyInstructions, setSurveyInstructions] = useState(DEFAULT_SURVEY_INSTRUCTIONS)
+  // Per-course survey window override — absence of an offering's id means
+  // "uses the global survey window" (2026-06-30 decision, restated 2026-08-11).
+  const [courseWindowOverrides, setCourseWindowOverrides] = useState<Record<string, CourseWindowOverride>>({})
+  const setCourseWindowOverride = (offeringId: string, next: CourseWindowOverride) =>
+    setCourseWindowOverrides(p => ({ ...p, [offeringId]: next }))
+  const clearCourseWindowOverride = (offeringId: string) =>
+    setCourseWindowOverrides(p => {
+      const { [offeringId]: _removed, ...rest } = p
+      return rest
+    })
   const [emailTemplateId, setEmailTemplateId] = useState(FIRST_INVITATION_TEMPLATE_ID)
   // Seed subject/body from the default template so the invitation card doesn't
   // read as "edited" before the user has touched anything.
@@ -270,6 +294,11 @@ function PushSurveyInner() {
   const [reminders, setReminders] = useState<Reminder[]>(
     () => remindersFromSettings(setupDefaults.activeReminderIntervals)
   )
+  // Cadence facts (anchor + frequency) — lifted so Review can state the real
+  // choice instead of assuming "before close" (2026-08-12 gap: Review always
+  // said "before close" even after the admin picked Term/Course End Date).
+  const [reminderAnchor, setReminderAnchor] = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
+  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
   const [emailContacts, setEmailContacts] = useState<EmailContact[]>(INITIAL_EMAIL_CONTACTS)
   // Reminder email — lifted here so the Review step reflects the actual choice.
   const [reminderSameAsInvite, setReminderSameAsInvite] = useState(false)
@@ -334,6 +363,22 @@ function PushSurveyInner() {
       for (const sid of addedStudents[o.id] ?? []) seen.add(sid)
     }
     return seen.size
+  }, [selectedOfferings, addedStudents])
+  // The REAL per-course headcount (same o.enrolledCount + addedHere sum Step
+  // 1's own footer shows — step-scope-courses.tsx selectedStudents) vs.
+  // prismStudentCount's DEDUPED ROSTER-ID count above. These two diverge
+  // hugely on this fixture: MOCK_COURSE_ENROLLMENTS only names ~20 student
+  // IDs total (reused across courses) while enrolledCount runs into the
+  // hundreds — exactly the documented gap in pce-mock-data.ts's own comment
+  // above MOCK_COURSE_ENROLLMENTS ("shown as 'X of N enrolled in demo'"),
+  // which was never actually wired to a label until now. Review's own
+  // headline was silently using the roster-ID count with no caveat — "13
+  // courses selected · 476 students" on Step 1, "reaching 15 people" on
+  // Review, no indication the second number is a demo-data artifact.
+  const realEnrolledTotal = useMemo(() => {
+    let n = 0
+    for (const o of selectedOfferings) n += o.enrolledCount + (addedStudents[o.id]?.length ?? 0)
+    return n
   }, [selectedOfferings, addedStudents])
   // Default template per course (by type) — for the Template column's "Default"
   // chips + Reset to defaults. CE covers every SCOPED course (not just selected):
@@ -759,19 +804,44 @@ function PushSurveyInner() {
   const isEmailEdited = !!selectedInvitationTemplate &&
     (emailSubject !== selectedInvitationTemplate.subject || emailBody !== selectedInvitationTemplate.body)
 
-  // Group the selected offerings by their assigned survey template, with course
-  // codes — gives the Review real "what did I pick" context (biggest → smallest).
-  const reviewCourseGroups = useMemo(() => {
-    const byTid = new Map<string, { templateTitle: string; codes: string[] }>()
-    for (const o of selectedOfferings) {
-      const tid = templateAssignments[o.id] || 'none'
-      const title = publishedTemplates.find(t => t.id === tid)?.name ?? 'No template assigned'
-      const code = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)?.code ?? o.id
-      if (!byTid.has(tid)) byTid.set(tid, { templateTitle: title, codes: [] })
-      byTid.get(tid)!.codes.push(code)
-    }
-    return [...byTid.values()].sort((a, b) => b.codes.length - a.codes.length)
-  }, [selectedOfferings, templateAssignments, publishedTemplates])
+  // One row per selected course offering — 2026-08-11, Monil: the previous
+  // template-grouped summary "does not give a right summary to the admin...
+  // it has to be a list view instead of a summary." Template is deliberately
+  // OMITTED per the same call ("template visualization is not important for
+  // admin — admin just wants to make sure I have all the courses... and
+  // right roles are getting evaluated"). Roles are the UNION of primary +
+  // every secondary-template entry's criteria (mirrors the claimed-criteria
+  // union secondaryInstancesByOffering already computes for instance
+  // dedup), spelled out per Monil's exact wording, not a bare count.
+  const reviewCourseRows = useMemo(() => {
+    if (surveyMode === 'general') return []
+    const byId = new Map(publishedTemplates.map(t => [t.id, t]))
+    return selectedOfferings.map(o => {
+      const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+      const override = courseWindowOverrides[o.id]
+      const primaryId = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+      const primaryTemplate = byId.get(primaryId)
+      const evaluatedCriteria = new Set<Criterion>(primaryTemplate ? templateCriteria(primaryTemplate) : [])
+      for (const entry of secondaryTemplateAssignments[o.id] ?? []) {
+        const t = byId.get(entry.templateId)
+        if (t) for (const c of templateCriteria(t)) evaluatedCriteria.add(c)
+      }
+      return {
+        offeringId: o.id,
+        code: course?.code ?? o.id,
+        name: course?.name ?? '',
+        // Plain text, not a tinted pill — mirrors step-survey-instances.tsx's
+        // 2026-08-05 call (Romit): a pill here competes for attention with the
+        // roles-evaluated content beside it; type is reference info, not status.
+        courseTypeLabel: COURSE_TYPE_FULL_LABEL[deliveryModeOf(o)],
+        openDate: override?.openDate ?? openDate,
+        closeDate: override?.closeDate ?? closeDate,
+        hasCustomWindow: !!override,
+        studentCount: o.enrolledCount,
+        evaluatedRoleLabels: ALL_CRITERIA.filter(c => evaluatedCriteria.has(c)).map(c => CRITERION_TOGGLE_LABEL[c]),
+      }
+    })
+  }, [surveyMode, selectedOfferings, courseWindowOverrides, templateAssignments, defaultAssignments, publishedTemplates, secondaryTemplateAssignments, openDate, closeDate])
 
   // CE Review — two pre-flight validation categories surfaced as acknowledgement
   // gates: (A) courses missing subject data (no faculty / no students), and
@@ -799,6 +869,10 @@ function PushSurveyInner() {
   // What's evaluated is no longer picked directly — it's the union of what the
   // selected courses' assigned templates evaluate.
   const cohortSummary = surveyMode !== 'general' ? ceCohorts.join(' · ') : undefined
+  // Unions primary + every secondary-template entry's criteria — must match
+  // reviewCourseRows' per-course union below, or a role a secondary template
+  // adds to one course's row would be missing from this headline aggregate
+  // (caught in verification review, 2026-08-11).
   const evaluateSummary = useMemo(() => {
     if (surveyMode === 'general') return undefined
     const found = new Set<Criterion>()
@@ -806,9 +880,13 @@ function PushSurveyInner() {
       const tid = templateAssignments[o.id] ?? defaultAssignments[o.id]
       const t = publishedTemplates.find(x => x.id === tid)
       if (t) for (const c of templateCriteria(t)) found.add(c)
+      for (const entry of secondaryTemplateAssignments[o.id] ?? []) {
+        const st = publishedTemplates.find(x => x.id === entry.templateId)
+        if (st) for (const c of templateCriteria(st)) found.add(c)
+      }
     }
     return ALL_CRITERIA.filter(c => found.has(c)).map(c => CRITERION_TOGGLE_LABEL[c]).join(', ')
-  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates])
+  }, [surveyMode, selectedOfferings, templateAssignments, defaultAssignments, publishedTemplates, secondaryTemplateAssignments])
 
   // Step 1 ("Scope and design") gating — scope fields + a template for every course.
   const scopeValid = surveyMode === 'general'
@@ -1010,39 +1088,39 @@ function PushSurveyInner() {
       />
       <h1 className="sr-only">{surveyMode === 'general' ? 'Push survey' : 'Set up Evaluations'}</h1>
 
-      {/* Horizontal step bar — hidden on success step */}
+      {/* Horizontal step bar — hidden on success step. Save as Draft lives
+          in its endSlot (2026-08-12): persists the WHOLE in-progress
+          wizard, whatever step is showing, so ONE position serves all of
+          them — the last tab (Review) is always rightmost, so this reads
+          as "beside Review" throughout, instead of the three different
+          spots it rendered in before (step 2's own header actions, step
+          3's footer, a step-4-only shell row). CE mode only, from Survey
+          design on (step 1 has nothing draftable beyond scope, and general
+          mode has no draft path). */}
       {step !== 'success' && (
         <WizardNav
           currentStep={currentStepNum}
           completedUpTo={completedUpTo}
           onStepClick={handleStepNavClick}
           mode={surveyMode}
+          endSlot={surveyMode !== 'general' && typeof step === 'number' && step >= 2 ? (
+            <>
+              {draftSavedAt && (
+                <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
+                  Draft saved at {draftSavedAt}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={selectedOfferings.length === 0}
+                onClick={handleSaveDraft}
+              >
+                Save as draft
+              </Button>
+            </>
+          ) : undefined}
         />
-      )}
-
-      {/* ST-02 Phase 3 — Save as Draft. Shell-owned (not a step footer): it
-          persists the WHOLE in-progress wizard, whatever step is showing.
-          CE mode only, from Survey design on (step 1 has nothing draftable
-          beyond scope, and general mode has no draft path). Step 2 renders
-          its OWN copy of this button grouped with its Reset to defaults/New
-          template actions (2026-08-05, Romit's call) — skipped here so it
-          isn't shown twice. */}
-      {surveyMode !== 'general' && typeof step === 'number' && step >= 2 && step !== 2 && (
-        <div className="flex items-center justify-end gap-3" style={{ padding: '12px 40px 0' }}>
-          {draftSavedAt && (
-            <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-              Draft saved at {draftSavedAt}
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={selectedOfferings.length === 0}
-            onClick={handleSaveDraft}
-          >
-            Save as draft
-          </Button>
-        </div>
       )}
 
       {/* Full-width content — flex column so steps can fill the height and
@@ -1178,35 +1256,22 @@ function PushSurveyInner() {
                   setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
                 }}
                 pendingReassign={pendingReassign}
-                onResolveReassign={(choice) => {
+                // Replace is the only outcome now (2026-08-12 — see
+                // step-survey-instances.tsx's dialog comment); the former
+                // "create-new" branch wrote into secondaryTemplateAssignments,
+                // the exact "two templates, one course" shape the reviewer
+                // killed.
+                onResolveReassign={() => {
                   if (!pendingReassign) return
                   const { offeringId, newTemplateId } = pendingReassign
-                  if (choice === 'override') {
-                    setTemplateAssignments(p => ({ ...p, [offeringId]: newTemplateId }))
-                    setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
-                  } else if (choice === 'create-new') {
-                    setSecondaryTemplateAssignments(p => ({
-                      ...p,
-                      [offeringId]: [...(p[offeringId] ?? []), { templateId: newTemplateId }],
-                    }))
-                  }
+                  setTemplateAssignments(p => ({ ...p, [offeringId]: newTemplateId }))
+                  setUnitSelections(prev => withoutOfferings(prev, new Set([offeringId])))
                   setPendingReassign(null)
                 }}
                 onCancelReassign={() => setPendingReassign(null)}
                 secondaryTemplateAssignments={secondaryTemplateAssignments}
                 secondaryInstances={secondaryInstancesByOffering.instances}
                 secondaryDedupedLabels={secondaryInstancesByOffering.dedupedLabels}
-                onAddSecondaryTemplate={(offeringId, templateId) => {
-                  // General "+ Add another template" (2026-08-06) — every
-                  // course, not just the S2-conflict case. Appends; the
-                  // step's own picker already filters out templates already
-                  // assigned to this offering (primary or an earlier
-                  // extra), so this never introduces a same-template dupe.
-                  setSecondaryTemplateAssignments(p => ({
-                    ...p,
-                    [offeringId]: [...(p[offeringId] ?? []), { templateId }],
-                  }))
-                }}
                 onSecondaryTemplateChange={(offeringId, index, tmplId) => {
                   // Deliberately does NOT clear unitSelections for the whole
                   // offering the way the primary onTemplateChange does —
@@ -1270,8 +1335,6 @@ function PushSurveyInner() {
                 onCourseSelectedChange={handleCourseSelectedChange}
                 templateDriftNotices={templateDriftNotices}
                 onDismissTemplateDrift={() => setTemplateDriftNotices([])}
-                onSaveDraft={selectedOfferings.length > 0 ? handleSaveDraft : undefined}
-                draftSavedAt={draftSavedAt}
                 onBack={() => setStep(1)}
                 onContinue={() => {
                   // Materialize type-defaults into explicit assignments so the
@@ -1291,10 +1354,18 @@ function PushSurveyInner() {
           {step === 3 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
+              surveyMode={surveyMode}
+              academicYear={academicYear}
+              surveyTitleTemplate={surveyTitleTemplate}
+              onSurveyTitleTemplateChange={setSurveyTitleTemplate}
+              surveyInstructions={surveyInstructions}
+              onSurveyInstructionsChange={setSurveyInstructions}
+              courseWindowOverrides={courseWindowOverrides}
+              onSetCourseWindowOverride={setCourseWindowOverride}
+              onClearCourseWindowOverride={clearCourseWindowOverride}
               existingStreams={existingStreams}
               openDate={openDate}
               closeDate={closeDate}
-              releaseDate={releaseDate}
               senderName={senderName}
               emailTemplateId={emailTemplateId}
               emailSubject={emailSubject}
@@ -1305,13 +1376,16 @@ function PushSurveyInner() {
               reminderTemplateId={reminderTemplateId}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
+              reminderAnchor={reminderAnchor}
+              onReminderAnchorChange={setReminderAnchor}
+              reminderFrequency={reminderFrequency}
+              onReminderFrequencyChange={setReminderFrequency}
               onReminderSameAsInviteChange={setReminderSameAsInvite}
               onReminderTemplateChange={setReminderTemplateId}
               onReminderSubjectChange={setReminderSubject}
               onReminderBodyChange={setReminderBody}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
-              onReleaseDateChange={setReleaseDate}
               onSenderNameChange={setSenderName}
               onEmailTemplateChange={setEmailTemplateId}
               onEmailSubjectChange={setEmailSubject}
@@ -1332,11 +1406,11 @@ function PushSurveyInner() {
               termName={selectedTerm?.name ?? ''}
               academicYear={academicYear}
               offeringCount={selectedOfferings.length}
-              courseGroups={reviewCourseGroups}
+              courseRows={reviewCourseRows}
               openDate={openDate}
               closeDate={closeDate}
-              releaseDate={releaseDate}
               studentCount={prismStudentCount}
+              realStudentCount={surveyMode === 'course_evaluation' ? realEnrolledTotal : undefined}
               emailContacts={emailContacts}
               senderName={senderName}
               templateName={selectedInvitationTemplate?.name ?? 'Custom email'}
@@ -1348,6 +1422,10 @@ function PushSurveyInner() {
               reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
+              reminderAnchor={reminderAnchor}
+              reminderFrequency={reminderFrequency}
+              surveyTitleTemplate={surveyMode === 'course_evaluation' ? surveyTitleTemplate : undefined}
+              surveyInstructions={surveyMode === 'course_evaluation' ? surveyInstructions : undefined}
               onEdit={(n) => setStep((surveyMode === 'general' && n === 2 ? 1 : n) as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}

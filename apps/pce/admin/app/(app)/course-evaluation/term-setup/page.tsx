@@ -40,7 +40,10 @@ import { SiteHeader } from '@/components/site-header'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { usePce } from '@/components/pce/pce-state'
 import { StepCoursesEvaluatees } from '@/components/pce/courses-evaluatees/step-courses-evaluatees'
-import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
+import {
+  StepCommunication, type Reminder, type EmailContact, type CourseWindowOverride,
+  DEFAULT_SURVEY_TITLE_TEMPLATE, DEFAULT_SURVEY_INSTRUCTIONS,
+} from '@/components/pce/distribute-wizard/step-communication'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import {
@@ -50,7 +53,12 @@ import {
   MOCK_MASTER_COURSES,
   EVAL_DATE_RULES,
   EVAL_EMAIL_TEMPLATES,
+  EVAL_REMINDER_CADENCE,
+  COURSE_TYPE_FULL_LABEL,
+  deliveryModeOf,
   type TermSeason,
+  type ReminderAnchor,
+  type ReminderFrequency,
 } from '@/lib/pce-mock-data'
 import { resolveTerm, cohortOptions, offeringsForScope, TERM_SEASONS } from '@/lib/pce-course-scope'
 import { type Criterion, ALL_CRITERIA, CRITERION_TOGGLE_LABEL, templateCriteria } from '@/lib/pce-course-readiness'
@@ -195,6 +203,19 @@ function TermSetupInner() {
   const [openDate, setOpenDate] = useState<Date | undefined>(initialWindow.open)
   const [closeDate, setCloseDate] = useState<Date | undefined>(initialWindow.close)
   const [releaseDate, setReleaseDate] = useState<Date | undefined>(initialWindow.release)
+  // CE-only survey title formula + instructions, and per-course window
+  // override — same fields the push wizard collects in Step 3 (2026-08-11,
+  // Monil). Mirrors app/(app)/surveys/push/page.tsx's declarations.
+  const [surveyTitleTemplate, setSurveyTitleTemplate] = useState(DEFAULT_SURVEY_TITLE_TEMPLATE)
+  const [surveyInstructions, setSurveyInstructions] = useState(DEFAULT_SURVEY_INSTRUCTIONS)
+  const [courseWindowOverrides, setCourseWindowOverrides] = useState<Record<string, CourseWindowOverride>>({})
+  const setCourseWindowOverride = (offeringId: string, next: CourseWindowOverride) =>
+    setCourseWindowOverrides(p => ({ ...p, [offeringId]: next }))
+  const clearCourseWindowOverride = (offeringId: string) =>
+    setCourseWindowOverrides(p => {
+      const { [offeringId]: _removed, ...rest } = p
+      return rest
+    })
   const [senderName, setSenderName] = useState('Exxat Surveys')
   const [emailTemplateId, setEmailTemplateId] = useState(FIRST_INVITATION_TEMPLATE?.id ?? '')
   const [emailSubject, setEmailSubject] = useState(FIRST_INVITATION_TEMPLATE?.subject ?? setupDefaults.initialEmailSubject)
@@ -207,6 +228,8 @@ function TermSetupInner() {
   const [reminderTemplateId, setReminderTemplateId] = useState(FIRST_REMINDER_TEMPLATE?.id ?? '')
   const [reminderSubject, setReminderSubject] = useState(FIRST_REMINDER_TEMPLATE?.subject ?? '')
   const [reminderBody, setReminderBody] = useState(FIRST_REMINDER_TEMPLATE?.body ?? '')
+  const [reminderAnchor, setReminderAnchor] = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
+  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
 
   // Recompute the window when the admin edits the step-1 end date.
   const windowMounted = useRef(false)
@@ -227,17 +250,32 @@ function TermSetupInner() {
     return seen.size
   }, [selectedOfferings])
 
-  const reviewCourseGroups = useMemo(() => {
-    const byTid = new Map<string, { templateTitle: string; codes: string[] }>()
-    for (const o of selectedOfferings) {
-      const tid = templateAssignments[o.id] || 'none'
-      const title = publishedTemplates.find(t => t.id === tid)?.name ?? 'No template assigned'
-      const code = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)?.code ?? o.id
-      if (!byTid.has(tid)) byTid.set(tid, { templateTitle: title, codes: [] })
-      byTid.get(tid)!.codes.push(code)
-    }
-    return [...byTid.values()].sort((a, b) => b.codes.length - a.codes.length)
-  }, [selectedOfferings, templateAssignments, publishedTemplates])
+  // One row per selected course offering — mirrors the push wizard's
+  // reviewCourseRows (surveys/push/page.tsx). No secondary-template union
+  // here: term-setup is still "the merged step" (2026-07-24 decision),
+  // single template per course, so evaluated roles = the primary template's
+  // criteria only.
+  const reviewCourseRows = useMemo(() => {
+    return selectedOfferings.map(o => {
+      const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+      const override = courseWindowOverrides[o.id]
+      const tid = templateAssignments[o.id] ?? defaultAssignments[o.id] ?? ''
+      const template = publishedTemplates.find(t => t.id === tid)
+      return {
+        offeringId: o.id,
+        code: course?.code ?? o.id,
+        name: course?.name ?? '',
+        courseTypeLabel: COURSE_TYPE_FULL_LABEL[deliveryModeOf(o)],
+        openDate: override?.openDate ?? openDate,
+        closeDate: override?.closeDate ?? closeDate,
+        hasCustomWindow: !!override,
+        studentCount: o.enrolledCount,
+        evaluatedRoleLabels: template
+          ? ALL_CRITERIA.filter(c => templateCriteria(template).includes(c)).map(c => CRITERION_TOGGLE_LABEL[c])
+          : [],
+      }
+    })
+  }, [selectedOfferings, courseWindowOverrides, templateAssignments, defaultAssignments, publishedTemplates, openDate, closeDate])
 
   const reviewSubjectIssues = useMemo(() => subjectDataIssues(selectedOfferings), [selectedOfferings])
   const reviewWindowIssues = useMemo(() => windowIssues(selectedOfferings, openDate), [selectedOfferings, openDate])
@@ -492,9 +530,17 @@ function TermSetupInner() {
           {step === 3 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
+              surveyMode="course_evaluation"
+              academicYear={academicYear}
+              surveyTitleTemplate={surveyTitleTemplate}
+              onSurveyTitleTemplateChange={setSurveyTitleTemplate}
+              surveyInstructions={surveyInstructions}
+              onSurveyInstructionsChange={setSurveyInstructions}
+              courseWindowOverrides={courseWindowOverrides}
+              onSetCourseWindowOverride={setCourseWindowOverride}
+              onClearCourseWindowOverride={clearCourseWindowOverride}
               openDate={openDate}
               closeDate={closeDate}
-              releaseDate={releaseDate}
               senderName={senderName}
               emailTemplateId={emailTemplateId}
               emailSubject={emailSubject}
@@ -505,13 +551,16 @@ function TermSetupInner() {
               reminderTemplateId={reminderTemplateId}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
+              reminderAnchor={reminderAnchor}
+              onReminderAnchorChange={setReminderAnchor}
+              reminderFrequency={reminderFrequency}
+              onReminderFrequencyChange={setReminderFrequency}
               onReminderSameAsInviteChange={setReminderSameAsInvite}
               onReminderTemplateChange={setReminderTemplateId}
               onReminderSubjectChange={setReminderSubject}
               onReminderBodyChange={setReminderBody}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
-              onReleaseDateChange={setReleaseDate}
               onSenderNameChange={setSenderName}
               onEmailTemplateChange={setEmailTemplateId}
               onEmailSubjectChange={setEmailSubject}
@@ -532,10 +581,9 @@ function TermSetupInner() {
               termName={name}
               academicYear={academicYear}
               offeringCount={selectedOfferings.length}
-              courseGroups={reviewCourseGroups}
+              courseRows={reviewCourseRows}
               openDate={openDate}
               closeDate={closeDate}
-              releaseDate={releaseDate}
               studentCount={prismStudentCount}
               emailContacts={emailContacts}
               senderName={senderName}
@@ -548,6 +596,10 @@ function TermSetupInner() {
               reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
               reminderSubject={reminderSubject}
               reminderBody={reminderBody}
+              reminderAnchor={reminderAnchor}
+              reminderFrequency={reminderFrequency}
+              surveyTitleTemplate={surveyTitleTemplate}
+              surveyInstructions={surveyInstructions}
               onEdit={(n) => setStep((n >= 3 ? 3 : 2) as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}
