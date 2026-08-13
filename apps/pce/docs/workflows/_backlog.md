@@ -552,6 +552,51 @@ Source: `docs/research/meetings/2026-08-11-course-eval-sync-up.md` (Granola `2a2
 | T163 | Step 4 — Remove "Reminders already messaging these students" section | Admin | Setup evaluations wizard Step 4 (T129) | P1 — applies at T129 implementation | Redundant information in Step 4 review screen. David and Romit both flagged it. Do not build this section. Romit: "I would need to remove, so I'll remove that because, it's a repetitive information." D_PCE_0811_08. |
 | T164 | Step 4 — Redesign from generic summary to per-course offering list view | Admin | Setup evaluations wizard Step 4 (T129) | P1 — DESIGN-REVIEW | Step 4 must be a scrollable list where each row = one course offering. Per-row data: course name, student count, roles being evaluated (listed by name, e.g. "Instructor is evaluated, Course Coordinator is evaluated"). Template column is NOT shown — admin doesn't need to verify template at this step. Current proposed generic summary ("Evaluating: course instructor, course coordinator") is wrong — it has no per-course context. Monil: "it has to be a list view. Instead of a summary… admin just wants to make sure that I have all the courses that I had in my mind. And write roles are getting evaluated and there are students in the course." D_PCE_0811_09. |
 
+## Phase 1 design tasks — added 2026-08-12 (Survey design review — Vishal, 9:30 AM)
+
+Source: `docs/research/meetings/2026-08-12-survey-design-review-vishal.md` (Granola `d6d6e961`)
+
+> Vishal + Romit design review (Aug 12 9:30 AM EDT). Romit demoed survey aspect setup and push survey review screens. Two directives: accordion → drawer UX consistency, recipients card removal. Aspect-level template confirmed dead; survey-level response rate confirmed (80/20 split).
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T165 | Survey aspect setup: replace accordion/inline-expand with right-side drawer | Admin | Survey setup aspects view (T129 / Lovable prototype) | P1 — DESIGN-REVIEW | Accordion expanding to bottom is inconsistent with exam management's right-side drawer. Vishal: "Here I am seeing a conflicting user experience." "Try that out and see how it plays." D_PCE_0812A_01. |
+| T166 | Push survey review screen: remove recipients card; redesign as per-course structured list | Admin | Push survey review step (Step 4 / T129 / prototype) | P1 — DESIGN-REVIEW | Recipients card is "confusing" and "unusable" — audience differs per aspect. Use a per-course list (like flight booking confirmation) instead. Supplements T164. Vishal: "This is actually confusing. So either remove it or see if we can. What else can be shown." D_PCE_0812A_02, D_PCE_0812A_05. |
+
+---
+
+## Phase 1 design tasks — added 2026-08-12 (Course eval roles, status tracking, response rate thresholds, 1:39 PM)
+
+Source: `docs/research/meetings/2026-08-12-course-eval-roles-status-thresholds.md` (Granola `0ef80c33`)
+
+> PM/colleague design review (Aug 12 1:39 PM EDT). Topics: five-role model confirmed, board vs table status consistency, three-tier response rate coloring, extension highlighting, countdown labels, faculty icon color coding.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T167 | Response rate: implement three-tier color coding with two configurable school-level thresholds | Admin | Survey list (`surveys/page.tsx`) + `response-gauge.tsx` | P1 — DESIGN-REVIEW | Below validity threshold = red (survey not statistically valid). Between validity and desired = orange. Above desired = green. Both thresholds configurable per school (default suggested: validity=50%, desired=80%). Reviewer: "We need to give them, like two numbers according to me at least." D_PCE_0812B_01. |
+| T168 | Survey list: highlight when a course's close date has been extended beyond the term date | Admin | Survey list / course table | P1 — DESIGN-REVIEW | Extensions are rare. Show star, flag, or colored indicator when a course close date differs from the term-level default. Reviewer: "Extensions are rare and extension should be highlighted." D_PCE_0812B_02. |
+| T169 | Status labels: enforce identical names between table view and board/kanban view | Admin | Survey list + board prototype | P1 — DESIGN-REVIEW | Five lifecycle stages must use the same label text in both views. Reviewer: "I just wanted the statuses here to reflect the boards there." Applies to prototype and future board view implementation. D_PCE_0812B_03, D_PCE_0812B_06, D_PCE_0812B_09. |
+| T170 | Survey list: add countdown label for live surveys ("closes today" / "closes in N days") | Admin | Survey list `surveys/page.tsx` deadline column | P1 — DESIGN-REVIEW | Relative countdown for collecting-status surveys. Agreed by both parties. D_PCE_0812B_04. |
+| T171 | Survey list: faculty avatar icons — color-coded by role | Admin | Survey list instructor column | P1 — DESIGN-REVIEW | Stacked initials avatars, each using a role-specific color (instructor vs coordinator vs other). Supplements T101. Reviewer: "All you do is color code the icons based on the thing." D_PCE_0812B_05. |
+| T173 | Survey management: archive/inactivate mechanism for error recovery | Admin | Survey list / survey detail | P1 — DESIGN-REVIEW | Admin needs a way to cancel/inactivate an erroneously activated survey. Label = "archive" or "inactivate" (never "delete"). Reviewer: "Not a common practice, but mistakes happen." D_PCE_0812B_08. |
+
+---
+
+## Phase 1 design tasks — added 2026-08-12 (Completion dashboard and role-based admin design — Vishal, 2:32 PM)
+
+Source: `docs/research/meetings/2026-08-12-completion-dashboard-role-based-admin-vishal.md` (Granola `611feaa6`)
+
+> Vishal + Romit design review (Aug 12 2:32 PM EDT). Eight directives: separate completion dashboard from content, define admin live-phase actions, remove performance/rating from admin view, contextual data for reminder + extend actions, analytics display rules (program average label, trend vs previous, Likert grouping).
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T172 | NEW PAGE NEEDED — Admin completion dashboard: dedicated live-phase page for collection activities only | Admin | Survey live-phase management (new route) | P1 — DESIGN-REVIEW | Separate from results/content page. Admin sees: completion %, reminders, extend dates, preview form — nothing else. Vishal: "I would really keep collection data out of content data." "Make it your completion dashboard." D_PCE_0812C_01, D_PCE_0812C_03, D_PCE_0812C_06, D_PCE_0812C_07. |
+| T174 | Admin completion view: exclude performance and overall rating metrics | Admin | Survey live-phase page (T172) | P1 — design guard | Do not add performance metrics or overall rating scores to admin's live-phase completion view. These belong in results/content view only. Vishal: "Performance will take away. Everything overall rating... admin role can only administer the survey and nothing else." D_PCE_0812C_02. |
+| T175 | Reminder action: show % completion + student count contextually beside button | Admin | Survey live-phase page (T172) | P1 — DESIGN-REVIEW | Context data for admin's decision: percentage completed + count of students not yet responded, shown inline adjacent to "Send Reminder" control. Vishal: "Send reminder should have percentage completion and count of students next to it because it helps me to make my decision." D_PCE_0812C_04. |
+| T176 | Extend date action: show current close date + "closes in N days" countdown contextually | Admin | Survey live-phase page (T172) | P1 — DESIGN-REVIEW | Context data for admin's decision: current close date + relative countdown (e.g. "3 days to go"), shown inline adjacent to extend date control. Vishal: "The extend date should have the current start date end date next to it with some calculation that says three days to go five days to go." D_PCE_0812C_05. |
+| T177 | Analytics: program average comparison = text label only, not delta notation; trend = vs. previous offering | Admin | PCE analytics (T116, T117) | P1 — DESIGN-REVIEW | Course vs. program average → text label ("above program average" / "below program average"). Delta arrow notation (±0.15) is reserved for trend vs. the same course's prior offering only. Vishal: "I've never seen it display like that. These are two different numbers." D_PCE_0812C_08, D_PCE_0812C_09. |
+| T178 | Analytics: group questions by Likert scale; separate visualizations per scale type | Admin | PCE analytics (T116, T117) | P1 — DESIGN-REVIEW | Surveys may use different scales per question group (3/4/5/7/10-point). Cannot aggregate across different scales. Group questions by scale type, then visualize separately. Vishal: "You have to account for the fact that the scale could be different." D_PCE_0812C_10. |
+
 ---
 
 ## Open product questions
