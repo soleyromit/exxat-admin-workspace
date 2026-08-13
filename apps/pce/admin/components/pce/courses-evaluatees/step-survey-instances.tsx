@@ -101,7 +101,7 @@ import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import {
   AvatarGroup, AvatarInitials,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Button, Checkbox, LocalBanner, ToggleSwitch, Badge, Tip,
+  Button, Checkbox, CheckboxLabel, LocalBanner, ToggleSwitch, Badge, Tip,
   Card, CardContent,
   FloatingSheetPanel, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelBody,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -670,7 +670,23 @@ function TemplateDropdown({
  *  implies it and it's rarely toggled off — but stays in the sr-only
  *  summary, the full tooltip, and the expanded panel below. Gap gets its
  *  own dashed amber chip (a first-class status signal, not blended into a
- *  text run); late-added rides as a small icon inside its role's chip. */
+ *  text run); late-added rides as a small icon inside its role's chip.
+ *
+ *  REOPENED 2026-08-13 (Granola `7aeae56b`, Vishal, raw transcript: "if we
+ *  are showing faculty icons, it's easier to skim through... I need to go
+ *  and look at the details of every single value" — followed by "how about
+ *  we show instructor and next to that we show the faculty instructors").
+ *  Explored as three variants at /compare/push-step2-evaluatee-identity
+ *  (A role-only = what shipped here before this change, B names-on-hover,
+ *  C names-inline); Romit picked B. Each role chip now carries a
+ *  non-overlapping `AvatarGroup` (never a `-space-x` stack — that's a
+ *  banned pattern, see `AvatarGroup`'s own doc comment) of hoverable
+ *  initials beside it, reusing the exact same avatar treatment
+ *  EvaluateeRoster's own expanded-panel caption already used for 2+ people
+ *  — this only brings that same B-shaped answer up to the COLLAPSED row so
+ *  "who" is visible without opening it. Doesn't reverse Monil's role-GRAIN
+ *  point (the chip still reads as one role, not a person list) — narrows it
+ *  to "don't show WHO" specifically, which is what Vishal reopened. */
 function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: CourseGate; included: ReadonlySet<string> }) {
   const inUnits = gate.fresh.filter(i => included.has(i.key))
   const gapCount = gate.gaps.length
@@ -686,18 +702,18 @@ function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: Co
   // RowAction's "Review {role}" button: a newly-added instructor is just
   // another member of its role group now, indistinguishable from anyone
   // else in this cluster.
-  const groups: { key: string; label: string; count: number }[] = []
+  const groups: { key: string; label: string; count: number; instances: SurveyInstance[] }[] = []
   for (const i of inUnits) {
     if (i.scope === 'course') continue
     const existing = groups.find(g => g.key === i.roleLabel)
-    if (existing) existing.count++
-    else groups.push({ key: i.roleLabel, label: i.roleLabel, count: 1 })
+    if (existing) { existing.count++; existing.instances.push(i) }
+    else groups.push({ key: i.roleLabel, label: i.roleLabel, count: 1, instances: [i] })
   }
   // A template that only evaluates course material has no role chip —
   // fall back to naming it so the cell isn't blank despite an active
   // evaluatee.
   if (groups.length === 0 && gapCount === 0) {
-    groups.push({ key: 'course', label: 'Course material', count: 1 })
+    groups.push({ key: 'course', label: 'Course material', count: 1, instances: [] })
   }
   const shown = groups.slice(0, 2)
   const extra = groups.length - shown.length
@@ -719,16 +735,29 @@ function EvaluateeChipCluster({ code, gate, included }: { code: string; gate: Co
         {gapCount > 0 ? ` ${gapCount} role${gapCount !== 1 ? 's' : ''} without a person.` : ''}
       </span>
       {shown.map(g => (
-        <Tip key={g.key} label={g.label} side="top">
-          <Badge
-            tabIndex={0}
-            variant="outline"
-            className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          >
-            <i className={cn('fa-light text-[10px]', g.key === 'course' ? 'fa-book-open' : roleIcon(g.label))} aria-hidden="true" />
-            {g.label}{g.count > 1 ? ` ×${g.count}` : ''}
-          </Badge>
-        </Tip>
+        <Fragment key={g.key}>
+          <Tip label={g.label} side="top">
+            <Badge
+              tabIndex={0}
+              variant="outline"
+              className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            >
+              <i className={cn('fa-light text-[10px]', g.key === 'course' ? 'fa-book-open' : roleIcon(g.label))} aria-hidden="true" />
+              {g.label}{g.count > 1 ? ` ×${g.count}` : ''}
+            </Badge>
+          </Tip>
+          {g.key !== 'course' && (
+            <AvatarGroup className="gap-0.5" role="group" aria-label={`${g.label}: ${g.instances.map(i => i.personName).join(', ')}`}>
+              {g.instances.map(i => (
+                <Tip key={i.key} label={i.personName ?? ''} side="top">
+                  <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                    <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className="size-6" />
+                  </span>
+                </Tip>
+              ))}
+            </AvatarGroup>
+          )}
+        </Fragment>
       ))}
       {extra > 0 && (
         <Tip label={groups.slice(2).map(g => (g.count > 1 ? `${g.label} ×${g.count}` : g.label)).join(', ')} side="top">
@@ -764,11 +793,24 @@ function EvaluateeRoster({
    *  in Prism, explicitly excluded from this push. Rendered muted so the
    *  admin can SEE the exclusion instead of the unit silently vanishing. */
   deselectedFresh: readonly SurveyInstance[]
+  /** Person-grain toggle — one key at a time. Was accepted-but-unused here
+   *  (2026-08-05 through 2026-08-12: Monil's role-grain-only call below
+   *  meant nothing called it) until 2026-08-13, when every non-course role
+   *  got its own per-person Checkbox row, one per faculty member regardless
+   *  of headcount (Granola `7aeae56b`, Vishal: "how I can add or remove" —
+   *  Romit picked the variant that answers this at /compare/push-step2-
+   *  evaluatee-identity, which used a checkbox row for every person, not
+   *  just roles with 2+). Already fully wired to the real sticky selection
+   *  state (StepSurveyInstances' `flip` → onUnitSelectionChange) — this
+   *  file just never called it. */
   onToggleUnit: (key: string) => void
   /** Role-level bulk toggle (2026-08-06 Course Eval sync up, Monil, raw
    *  transcript: "that toggle is not on a person, it's on a role... we
    *  will not show who the instructors are at this level"). Sets every key
-   *  in a role group to the SAME state in one call. */
+   *  in a role group to the SAME state in one call. As of 2026-08-13, the
+   *  ONLY caller left is course material — no person concept, so there's
+   *  no "which of them" question a role-level toggle can't answer.
+   *  Every other role uses `onToggleUnit` per person instead. */
   onToggleUnits: (keys: string[], on: boolean) => void
   /** Person-grain exception (2026-08-05) — no longer rendered here
    *  (2026-08-12: reviewer reconfirmed no aspect/faculty-level template,
@@ -807,6 +849,25 @@ function EvaluateeRoster({
   }
   const deselectedKeys = new Set(deselectedFresh.map(i => i.key))
 
+  // 2026-08-13 fix (Romit, live click-test against DPT-510 caught this):
+  // the ONE real multi-instructor row in the fixture (co13 — Chen already
+  // covered by a Live survey, Gomez still free) has a FRESH count of 1, not
+  // 2 — Chen lives in `dups`, a completely separate list, so the new
+  // per-person checklist below never fired for the exact row it exists to
+  // demo. Folding each role's dups into its own group's TOTAL headcount
+  // (not just `fresh`) fixes that: Chen now renders as a locked row
+  // alongside Gomez's checkbox, inside the SAME Instructor card, instead of
+  // in a detached list at the bottom with no visible connection to the role
+  // it's blocking. `standaloneDups` (used by the bottom dups.map below)
+  // excludes anything folded in here, so Chen isn't rendered twice.
+  const dupsByRole = new Map<string, SurveyInstance[]>()
+  for (const d of dups) {
+    if (d.scope === 'course') continue
+    const list = dupsByRole.get(d.roleLabel)
+    if (list) list.push(d)
+    else dupsByRole.set(d.roleLabel, [d])
+  }
+
   // 2026-08-06 Course Eval sync up (Monil, raw transcript): "your end of
   // term evaluation has how many roles to be evaluated... course material
   // and instructor, only two... you tell the system that I only want to
@@ -829,84 +890,151 @@ function EvaluateeRoster({
     if (existing) existing.instances.push(i)
     else readyGroups.push({ key: groupKey, roleLabel: i.roleLabel, scope: i.scope, instances: [i] })
   }
+  // Every non-course role now folds its dups into its own card (roleDups,
+  // below) — dropped from the standalone list here so Chen-on-DPT-510
+  // renders once, not twice. A role with ONLY dups (no fresh person at
+  // all) has no readyGroups entry to fold into, so it correctly falls
+  // through to the standalone list unchanged.
+  const mergedDupKeys = new Set<string>()
+  for (const g of readyGroups) {
+    if (g.scope === 'course') continue
+    const rd = dupsByRole.get(g.roleLabel)
+    if (rd) rd.forEach(d => mergedDupKeys.add(d.key))
+  }
+  const standaloneDups = dups.filter(d => !mergedDupKeys.has(d.key))
 
   return (
     <div className="flex flex-col gap-2">
       {readyGroups.map(group => {
         const keys = group.instances.map(i => i.key)
         const allIn = keys.every(k => included.has(k))
+        // Folds in this role's dups (see dupsByRole above) — DPT-510's
+        // Instructor role is 1 fresh (Gomez) + 1 locked (Chen); rendering
+        // Chen alongside Gomez needs the role's TOTAL headcount, not just
+        // the fresh one.
+        const roleDups = group.scope !== 'course' ? (dupsByRole.get(group.roleLabel) ?? []) : []
+
+        // 2026-08-13 (Granola 7aeae56b, Vishal, raw transcript: "is there
+        // an example where there are two faculties of type instructor...
+        // I want to see how I can add or remove" — no such example existed
+        // in the fixture at the time, and this role-level ToggleSwitch had
+        // no per-person answer). Explored alongside the identity question
+        // at /compare/push-step2-evaluatee-identity; Romit picked variant
+        // B — which used a per-person Checkbox row for EVERY role
+        // regardless of headcount, not just 2+-person ones. First pass here
+        // (same day) gated this on `count > 1` to minimize the diff against
+        // the shipped single-person ToggleSwitch path; wrong call — most
+        // courses in the fixture have exactly 1 person per role, so that
+        // gate meant the change was invisible on everything except DPT-510.
+        // Reversed: every non-course role uses the checklist now, one
+        // control for identity + add/remove regardless of count, matching
+        // what was actually demoed and picked. Course material keeps its
+        // ToggleSwitch unchanged below — no person concept, not part of
+        // this ask. `onToggleUnit` (singular) was already fully wired
+        // (StepSurveyInstances' `flip` → onUnitSelectionChange, the same
+        // sticky unitSelections map onToggleUnits writes into) but never
+        // called from this file until now.
+        if (group.scope !== 'course') {
+          return (
+            <div
+              key={group.key}
+              className="flex w-full flex-col gap-2 rounded-md border border-border p-2.5 min-w-0"
+              style={{ background: 'var(--card)' }}
+            >
+              <span className="flex items-center gap-2.5">
+                <span className={cn('size-6 rounded-full flex items-center justify-center border border-border bg-background shrink-0', !allIn && 'grayscale')}>
+                  <i className={cn('fa-light text-[10px] text-muted-foreground', roleIcon(group.roleLabel))} aria-hidden="true" />
+                </span>
+                <span className={cn('truncate text-sm font-medium', !allIn && 'text-muted-foreground')}>
+                  {group.roleLabel}
+                </span>
+                {/* Select-all, only when the card actually has 2+ people to
+                    select (Romit, 2026-08-13 follow-up) — a role with one
+                    free person plus a locked dup (DPT-510) gets no master
+                    toggle, since toggling "all" would be identical to that
+                    person's own checkbox. Reuses onToggleUnits exactly as
+                    the pre-2026-08-13 role-level toggle did — same call,
+                    now a convenience ALONGSIDE the per-person checkboxes
+                    instead of the only control. */}
+                {group.instances.length > 1 && (
+                  <span className="ms-auto flex items-center gap-2">
+                    <label htmlFor={`unit-all-${code}-${group.key}`} className="sr-only">
+                      {`Include all ${group.roleLabel} (${group.instances.length} people: ${group.instances.map(i => i.personName).join(', ')}) in this push`}
+                    </label>
+                    <ToggleSwitch id={`unit-all-${code}-${group.key}`} checked={allIn} onChange={() => onToggleUnits(keys, !allIn)} />
+                  </span>
+                )}
+              </span>
+              <div className="flex flex-col gap-1 ps-1">
+                {group.instances.map(i => {
+                  const isIn = included.has(i.key)
+                  const isAutoExcluded = !isIn && deselectedKeys.has(i.key)
+                  return (
+                    <CheckboxLabel
+                      key={i.key}
+                      htmlFor={`unit-${code}-${i.key}`}
+                      className={cn('flex items-center gap-2 rounded-md px-1.5 py-1 font-normal', !isIn && 'text-muted-foreground')}
+                    >
+                      <Checkbox id={`unit-${code}-${i.key}`} checked={isIn} onCheckedChange={() => onToggleUnit(i.key)} />
+                      <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className={cn('size-5 shrink-0', !isIn && 'grayscale')} />
+                      <span className="truncate text-xs flex-1 min-w-0">{i.personName}</span>
+                      {isAutoExcluded && <span className="text-[11px] shrink-0">Auto Update off</span>}
+                    </CheckboxLabel>
+                  )
+                })}
+                {roleDups.map(d => {
+                  const status = d.existing ? storyStatusOf(d.existing) : null
+                  const openedLabel = d.existing?.openDate ? fmtYmd(d.existing.openDate) : null
+                  return (
+                    <Tip
+                      key={d.key}
+                      side="top"
+                      label={status ? `Already covered by a ${status} survey${openedLabel ? ` opened ${openedLabel}` : ''}.` : 'Already covered by another survey.'}
+                    >
+                      <div tabIndex={0} className="flex items-center gap-2 rounded-md px-1.5 py-1 min-w-0 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <i className="fa-solid fa-lock text-xs shrink-0" aria-hidden="true" />
+                        <AvatarInitials initials={initialsOf(d.personName ?? '')} size="sm" className="size-5 shrink-0 grayscale" />
+                        <span className="truncate text-xs flex-1 min-w-0">{d.personName}</span>
+                        <span className="text-[11px] shrink-0">Already covered</span>
+                      </div>
+                    </Tip>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }
+
+        // Course material only past this point — no person concept, so it
+        // keeps its original ToggleSwitch (Romit's 2026-08-06 call, still
+        // correct here) and its own avatar/caption treatment, both
+        // untouched by the 2026-08-13 change above.
         const allAutoUpdateExcluded = keys.every(k => !included.has(k) && deselectedKeys.has(k))
-        const count = group.instances.length
         return (
           <div
             key={group.key}
             className="flex w-full items-start gap-2.5 rounded-md border border-border p-2.5 min-w-0"
             style={{ background: 'var(--card)' }}
           >
-            {group.scope === 'course' ? (
-              <EvaluateeAvatar i={group.instances[0]} className={cn('size-6', !allIn && 'grayscale')} />
-            ) : (
-              // Role-level glyph, never AvatarInitials/an AvatarGroup of real
-              // people — Romit's 2026-08-06 call (Monil, raw transcript:
-              // "that toggle is not on a person, it's on a role... we will
-              // not show who the instructors are at this level"). The prior
-              // version still surfaced names as this row's caption, which
-              // contradicted the decision it was built to satisfy — this
-              // glyph can never leak a specific identity, whether the role
-              // resolves to one person or several. Same circle/border
-              // treatment as the course-material icon beside it, so a role
-              // row and a course row read as the same visual family.
-              <span className={cn('size-6 rounded-full flex items-center justify-center border border-border bg-background shrink-0', !allIn && 'grayscale')}>
-                <i className={cn('fa-light text-[10px] text-muted-foreground', roleIcon(group.roleLabel))} aria-hidden="true" />
-              </span>
-            )}
+            <EvaluateeAvatar i={group.instances[0]} className={cn('size-6', !allIn && 'grayscale')} />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              {/* Role stays the heading regardless of headcount — this is
-                  still a role-level toggle (Monil's decision above), not a
-                  person picker. Only the CAPTION line changes with count
-                  (Romit's 2026-08-06 refinement, third pass): "1 person" is
-                  a placeholder nobody reads twice — the real name is more
-                  useful and doesn't change what the toggle controls, since
-                  the heading above it still says the role. 2+ people get a
-                  small horizontal avatar row instead of "N people" text —
-                  still no name is EVER promoted to the heading. */}
               <span className={cn('truncate text-sm font-medium', !allIn && 'text-muted-foreground')}>
-                {group.scope === 'course' ? 'Course material' : group.roleLabel}
+                Course material
               </span>
               {allAutoUpdateExcluded ? (
                 <span className="truncate text-xs text-muted-foreground">In Prism, not included — Auto Update is off</span>
-              ) : group.scope === 'course' ? (
-                <span className="truncate text-xs text-muted-foreground">Course</span>
-              ) : count === 1 ? (
-                <span className="truncate text-xs text-muted-foreground">{group.instances[0].personName}</span>
               ) : (
-                <AvatarGroup>
-                  {group.instances.map(i => (
-                    <Tip key={i.key} label={evaluateeLabel(i)} side="top">
-                      <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
-                        <AvatarInitials initials={initialsOf(i.personName!)} size="sm" className="size-5" />
-                      </span>
-                    </Tip>
-                  ))}
-                </AvatarGroup>
+                <span className="truncate text-xs text-muted-foreground">Course</span>
               )}
             </span>
-            {/* Evaluatee toggle is ToggleSwitch, not Checkbox — Romit's
-                2026-08-06 call. Course-level selection stays Checkbox
-                (Step 1's same control, ST-02).
-                Gate 2 fix (ds-conformance-reviewer): ToggleSwitch's real
+            {/* Gate 2 fix (ds-conformance-reviewer): ToggleSwitch's real
                 props are only {checked, onChange, id} — it does not spread
                 aria-label onto its underlying button, so passing one
                 directly is silently dropped (renders "On"/"Off" with no
                 evaluatee context). sr-only label + htmlFor/id, same pairing
                 already used for the real Auto Update ToggleSwitch below. */}
             <label htmlFor={`unit-${code}-${group.key}`} className="sr-only">
-              {`Include ${group.scope === 'course'
-                ? 'Course material'
-                : count === 1
-                  ? `${group.roleLabel} (${group.instances[0].personName})`
-                  : `${group.roleLabel} (${count} people: ${group.instances.map(i => i.personName).join(', ')})`
-              } in this push`}
+              {'Include Course material in this push'}
             </label>
             <ToggleSwitch id={`unit-${code}-${group.key}`} checked={allIn} onChange={() => onToggleUnits(keys, !allIn)} />
           </div>
@@ -955,7 +1083,7 @@ function EvaluateeRoster({
         </div>
       ))}
 
-      {dups.map(i => {
+      {standaloneDups.map(i => {
         const primaryLabel = i.scope === 'course' ? 'Course material' : i.roleLabel
         const secondaryLabel = i.scope === 'course' ? null : i.personName
         const status = i.existing ? storyStatusOf(i.existing) : null

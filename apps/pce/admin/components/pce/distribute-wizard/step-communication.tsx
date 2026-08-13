@@ -629,15 +629,16 @@ export function StepCommunication({
 
               <div className="flex flex-col gap-1.5">
                 <p id="label-survey-instructions" className="text-sm font-medium">Survey instructions</p>
+                {/* Caption removed (Romit, 2026-08-13, live) — the field
+                    already shows the live default text; a caption
+                    restating "shown to students... edit as needed" was
+                    redundant with what's visibly sitting in the textarea. */}
                 <Textarea
                   aria-labelledby="label-survey-instructions"
                   value={surveyInstructions}
                   onChange={e => onSurveyInstructionsChange(e.target.value)}
                   rows={3}
                 />
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  Shown to students at the top of the survey. Default shown — edit as needed.
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -933,7 +934,17 @@ export function StepCommunication({
       <div className="flex flex-col gap-3">
         <FieldLegend variant="label" className="font-semibold text-foreground">Reminders</FieldLegend>
 
-        {/* Reminder email — its own template, or reuse the invitation's */}
+        {/* 2026-08-13 (Granola 7aeae56b, Vishal, raw transcript: "a specific
+            reason why you are having to have two cards for reminders...
+            throughout it's only one card per heading — survey window has
+            one card, survey details as one card"). Was two separate Cards
+            (kept apart 2026-08-12 because "the image placeholder and action
+            in front of it versus the text and the action" layouts didn't
+            match stacked in one CardContent) — merged into ONE Card now,
+            same fix already used between Anchor date and Start sending
+            below: a plain divider between the two differently-shaped
+            sections instead of a second bordered surface. Nothing about
+            either section's own layout changed. */}
         <Card className="overflow-hidden shadow-none">
           <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
             <div className="flex items-start justify-between gap-4">
@@ -1015,10 +1026,10 @@ export function StepCommunication({
               </div>
             )}
           </CardContent>
-        </Card>
 
-        {/* Reminder cadence — when the reminder repeats */}
-        <Card className="shadow-none">
+          <div style={{ borderTop: '1px solid var(--border)' }} />
+
+          {/* Reminder cadence — when the reminder repeats */}
           <CardContent className="flex flex-col gap-5" style={{ padding: 16 }}>
             {/* Delta vs existing streams — a fact in info tone, never amber:
                 diverging is legal; one action aligns if that's the intent. */}

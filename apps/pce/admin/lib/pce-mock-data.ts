@@ -2040,7 +2040,15 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   // Instructor surveys for Chen; Gomez was added in Prism AFTER those went out,
   // so a re-run shows Chen = duplicate (soft warning) and Gomez = new.
   { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2 – Section A', primaryFacultyId: 'f1', collaboratorIds: ['f2'], coInstructorIds: ['f5'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
-  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  // 2026-08-13 — clean multi-instructor demo (Romit, Course Eval Step 2
+  // add/remove roster): co13 above is the only OTHER multi-instructor
+  // offering, but Chen there is locked (already covered by a Live survey),
+  // so there was no example of 2+ people who are BOTH freely toggleable.
+  // Was a Gap (collaboratorIds: []) — Patel + Kim added as instructor/
+  // co-instructor; Williams (primaryFacultyId, unchanged) stays Coordinator
+  // so no one double-books across roles. No survey exists for co14 in this
+  // term, so both resolve 'new', not 'duplicate'.
+  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2 – Section B', primaryFacultyId: 'f3', collaboratorIds: ['f1'], coInstructorIds: ['f4'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
   { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2 – Section C', primaryFacultyId: 'f4', collaboratorIds: ['f4'],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
   { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2 – Section D', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
   // Year 3 — Clinical Practicums
