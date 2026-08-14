@@ -16,7 +16,7 @@
  */
 
 import { facultyStudents, facultyAccommodations, type Student } from './faculty-mock-data'
-import { mockCourseOfferings, mockAssessments } from './qb-mock-data'
+import { courseOfferingRows } from './course-mock-data'
 
 // ── Extended student type ─────────────────────────────────────────────────────
 
@@ -54,6 +54,7 @@ export interface StudentAnnotation {
 }
 
 export interface CourseEnrollment {
+  offeringId: string   // maps to courseOfferingRows[*].id for navigation
   courseId: string
   courseCode: string
   courseName: string
@@ -62,6 +63,7 @@ export interface CourseEnrollment {
   grade?: string       // letter grade if completed
   assessmentCount: number
   completedAssessments: number
+  avgExamScore?: number // 0-100, for the course list performance metric
 }
 
 export interface CompetencyPerformance {
@@ -113,27 +115,80 @@ const COMPETENCY_AREAS = [
   'Evidence-Based Practice', 'Drug Interactions', 'Dosage Calculations',
 ]
 
+// ── Enrollment templates ──────────────────────────────────────────────────────
+// Declared outside the map so it's not re-created on every iteration.
+
+type EnrollmentTemplate = { offeringId: string; status: 'in-progress' | 'completed' | 'upcoming' }
+
+// 2–3 year program: 3–4 courses per term, 2 terms shown (current + one prior).
+// skel101 = final semester: 2 courses only.
+const ENROLLMENT_TEMPLATES: Record<string, EnrollmentTemplate[]> = {
+  phar101: [
+    // Spring 2026 — 4 active courses
+    { offeringId: 'co-001', status: 'in-progress' },  // Advanced Pharmacology
+    { offeringId: 'co-002', status: 'in-progress' },  // Cellular & Molecular Biology
+    { offeringId: 'co-003', status: 'in-progress' },  // Clinical Anatomy
+    { offeringId: 'co-005', status: 'in-progress' },  // Evidence-Based Practice I
+    // Fall 2025 — 3 completed courses
+    { offeringId: 'co-006', status: 'completed' },    // Pharmacokinetics
+    { offeringId: 'co-007', status: 'completed' },    // Foundations of Biology
+    { offeringId: 'co-010', status: 'completed' },    // Pathophysiology
+  ],
+  biol201: [
+    // Spring 2026 — 3 active courses
+    { offeringId: 'co-001', status: 'in-progress' },
+    { offeringId: 'co-002', status: 'in-progress' },
+    { offeringId: 'co-005', status: 'in-progress' },
+    // Fall 2025 — 3 completed courses
+    { offeringId: 'co-007', status: 'completed' },
+    { offeringId: 'co-006', status: 'completed' },
+    { offeringId: 'co-010', status: 'completed' },
+  ],
+  skel101: [
+    // Final semester — 2 courses only
+    { offeringId: 'co-003', status: 'in-progress' },
+    { offeringId: 'co-001', status: 'in-progress' },
+  ],
+}
+
+const GRADE_OPTIONS = ['A', 'A-', 'B+', 'B', 'B-']
+
 // ── Extended student data ─────────────────────────────────────────────────────
 //
 // Build extended records from the existing facultyStudents data so IDs align.
 
-export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((s, i) => {
+export const allStudents: ExtendedStudent[] = facultyStudents.map((s, i) => {
   const seed = (i + 1) * 13
   const gpa = parseFloat((2.3 + ((seed * 17) % 19) / 10).toFixed(2))
   const programIdx = i % PROGRAMS.length
   const advisorIdx = i % ADVISORS.length
 
-  const courseEnrollments: CourseEnrollment[] = s.enrolledCourseIds.map(cid => {
-    const offering = mockCourseOfferings.find(o => o.courseId === cid)
+  const prefix = s.id.includes('phar101') ? 'phar101' :
+                 s.id.includes('biol201') ? 'biol201' : 'skel101'
+
+  const templates = ENROLLMENT_TEMPLATES[prefix]
+
+  const courseEnrollments: CourseEnrollment[] = templates.map((tmpl, ti) => {
+    const offeringRow = courseOfferingRows.find(r => r.id === tmpl.offeringId)!
+    const assessCount = 3 + ((seed + ti) % 4)
+    const completedCount =
+      tmpl.status === 'completed'    ? assessCount :
+      tmpl.status === 'in-progress'  ? 1 + ((seed + ti) % Math.max(1, assessCount - 1)) : 0
+    const avgExamScore =
+      tmpl.status === 'completed'   ? Math.min(97, Math.max(58, 68 + ((seed * (ti + 1)) % 28))) :
+      tmpl.status === 'in-progress' ? Math.min(96, Math.max(60, 70 + ((seed * (ti + 2)) % 25))) :
+      undefined
     return {
-      courseId: cid,
-      courseCode: cid.replace('course-', '').toUpperCase(),
-      courseName: offering ? `${offering.courseId.replace('course-', '').toUpperCase()} — ${offering.semester}` : cid,
-      term: offering?.semester ?? 'Spring 2026',
-      status: i % 3 === 0 ? 'completed' : 'in-progress',
-      grade: i % 3 === 0 ? ['A', 'A-', 'B+', 'B'][i % 4] : undefined,
-      assessmentCount: 3 + (seed % 4),
-      completedAssessments: i % 3 === 0 ? 3 + (seed % 4) : 1 + (seed % 3),
+      offeringId: tmpl.offeringId,
+      courseId: offeringRow.courseId,
+      courseCode: offeringRow.courseNumber,
+      courseName: offeringRow.courseName,
+      term: offeringRow.term,
+      status: tmpl.status,
+      grade: tmpl.status === 'completed' ? GRADE_OPTIONS[(seed + ti) % GRADE_OPTIONS.length] : undefined,
+      assessmentCount: assessCount,
+      completedAssessments: completedCount,
+      avgExamScore,
     }
   })
 
@@ -153,6 +208,7 @@ export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((
   ] : []
 
   const annotations: StudentAnnotation[] = [
+    // Low GPA intervention tag
     ...(gpa < 2.7 ? [{
       id: `ann-${s.id}-1`,
       text: 'Referred to Academic Support Services',
@@ -160,12 +216,21 @@ export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((
       addedDate: daysAgoIso(30),
       type: 'tag' as const,
     }] : []),
-    ...((i % 4 === 1) ? [{
+    // Periodic advising note — every 3rd student
+    ...((i % 3 === 0) ? [{
       id: `ann-${s.id}-2`,
       text: 'Student athlete — may need exam scheduling flexibility',
       addedBy: 'Student Affairs',
       addedDate: daysAgoIso(60),
       type: 'note' as const,
+    }] : []),
+    // High-achiever recognition tag — every 5th student with good GPA
+    ...((i % 5 === 0 && gpa >= 2.7) ? [{
+      id: `ann-${s.id}-3`,
+      text: "Dean's list recognition — Spring 2026",
+      addedBy: ADVISORS[advisorIdx],
+      addedDate: daysAgoIso(15),
+      type: 'tag' as const,
     }] : []),
   ]
 
@@ -240,7 +305,7 @@ export const studentListRows: StudentListRow[] = allStudents.map(s => ({
   program: s.program,
   advisor: s.advisor,
   gpa: s.gpa,
-  courseCount: s.enrolledCourseIds.length,
+  courseCount: s.courseEnrollments.length,
   academicStanding: s.academicStanding,
   annotations: s.annotations,
   status: s.status,

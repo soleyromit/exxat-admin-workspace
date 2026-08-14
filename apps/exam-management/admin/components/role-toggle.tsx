@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@exxat/ds/packages/ui/src'
+import { Button } from '@exxatdesignux/ui'
 
 type Role = 'admin' | 'faculty'
 

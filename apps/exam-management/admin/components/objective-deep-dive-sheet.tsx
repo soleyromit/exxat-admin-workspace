@@ -20,7 +20,7 @@ import {
   Button,
   Sheet, SheetContent, SheetTitle,
   Badge,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { CourseObjective, Student } from '@/lib/faculty-mock-data'
 import type { Assessment } from '@/lib/qb-types'
 

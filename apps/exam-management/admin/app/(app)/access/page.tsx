@@ -25,7 +25,7 @@ import {
   Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 type Role = 'Admin' | 'Faculty (Editor)' | 'Faculty (Viewer)'
 
@@ -46,8 +46,8 @@ const SEED: AccessEntry[] = [
 ]
 
 const ROLE_TONE: Record<Role, { bg: string; fg: string; icon: string }> = {
-  'Admin':              { bg: 'color-mix(in oklch, var(--brand-color) 14%, var(--background))', fg: 'var(--brand-color-dark)', icon: 'fa-shield-keyhole' },
-  'Faculty (Editor)':   { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))',     fg: 'color-mix(in oklch, var(--chart-1) 60%, var(--foreground))', icon: 'fa-pen' },
+  'Admin':              { bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)', icon: 'fa-shield-keyhole' },
+  'Faculty (Editor)':   { bg: 'var(--brand-tint)',     fg: 'color-mix(in oklch, var(--chart-1) 60%, var(--foreground))', icon: 'fa-pen' },
   'Faculty (Viewer)':   { bg: 'var(--muted)',                                                    fg: 'var(--muted-foreground)', icon: 'fa-eye' },
 }
 

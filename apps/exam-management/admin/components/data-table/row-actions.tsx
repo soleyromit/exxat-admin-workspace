@@ -7,7 +7,7 @@
  * (top recommendation: 6+ PCE admin entity pages were reinventing the same
  * `DropdownMenu + Trigger + Button(fa-ellipsis) + Content` block — ~15 lines
  * each, ~90 lines duplicated). Canonical pattern in
- * exxat-ds/apps/web/components/data-list-table-cells.tsx — adapted here as a
+ * @exxatdesignux/ui — vendored from DS web app: data-list-table-cells.tsx — adapted here as a
  * generic `RowActions<TData>` so any PCE admin entity table can pass its own
  * row type without re-typing the DropdownMenu shell.
  *
@@ -23,7 +23,7 @@ import { useState } from 'react'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 /**
  * A single action in a row's kebab menu.

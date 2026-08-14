@@ -23,10 +23,9 @@ import Link from 'next/link'
 import {
   Button, Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, type Tone } from '@/components/faculty-ui-kit'
 import { WorkflowStepIndicator } from '@/components/workflow-step-indicator'
-import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 import type { Assessment, QDiff } from '@/lib/qb-types'
 import type { AssessmentReview, AssessmentReviewState } from '@/lib/faculty-mock-data'
 
@@ -35,6 +34,7 @@ interface AssessmentsTabProps {
   reviewByAssessment: Map<string, AssessmentReview>
   isViewer: boolean
   courseId: string
+  onNewAssessment?: () => void
 }
 
 // Group by COMPLETION status, not workflow. Per Aarti's May 7 directive:
@@ -82,8 +82,10 @@ const COMPLETION_BUCKETS: {
   },
 ]
 
-export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId }: AssessmentsTabProps) {
-  const [modalOpen, setModalOpen] = useState(false)
+export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId, onNewAssessment }: AssessmentsTabProps) {
+  function openCanvas() {
+    onNewAssessment?.()
+  }
   const [completedOpen, setCompletedOpen] = useState(false)
   const [filterBucket, setFilterBucket] = useState<CompletionBucket | null>(null)
 
@@ -126,21 +128,14 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             : 'Build your first assessment from existing questions in the Question Bank.'}
         </p>
         {!isViewer && (
-          <>
-            <Button
-              size="default"
-              className="mt-4 gap-2"
-              onClick={() => setModalOpen(true)}
-            >
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Create assessment
-            </Button>
-            <CreateAssessmentModal
-              open={modalOpen}
-              onOpenChange={setModalOpen}
-              courseId={courseId}
-            />
-          </>
+          <Button
+            size="default"
+            className="mt-4 gap-2"
+            onClick={openCanvas}
+          >
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            Create assessment
+          </Button>
         )}
       </div>
     )
@@ -197,7 +192,7 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             </div>
           </div>
           {!isViewer && (
-            <Button size="sm" className="gap-2 shrink-0" onClick={() => setModalOpen(true)}>
+            <Button size="sm" className="gap-2 shrink-0" onClick={openCanvas}>
               <i className="fa-light fa-plus" aria-hidden="true" />
               Create assessment
             </Button>
@@ -209,7 +204,7 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             will say five pending review, two reviewed, whatever." */}
         {totalWorkflowSignals > 0 && (
           <div className="px-4 py-2 border-t border-border bg-muted/30 flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+            <span className="text-xs font-semibold text-muted-foreground">
               Approval workflow
             </span>
             <span className="text-xs text-muted-foreground">
@@ -222,12 +217,6 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
           </div>
         )}
       </div>
-
-      <CreateAssessmentModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        courseId={courseId}
-      />
 
       {visibleGroups.map(g => {
         const items = grouped.get(g.key)!
@@ -565,7 +554,7 @@ function ActionsForState({
     case 'draft':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
             Open
           </Link>
@@ -574,7 +563,7 @@ function ActionsForState({
     case 'pending-chair':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/review`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=review`}>
             <i className="fa-light fa-eye" aria-hidden="true" />
             View submission
           </Link>
@@ -583,7 +572,7 @@ function ActionsForState({
     case 'changes-requested':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/review`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=review`}>
             <i className="fa-light fa-comment" aria-hidden="true" />
             View notes
           </Link>
@@ -592,7 +581,7 @@ function ActionsForState({
     case 'approved':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-bullhorn" aria-hidden="true" />
             Schedule & publish
           </Link>
@@ -601,7 +590,7 @@ function ActionsForState({
     case 'published':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-gear" aria-hidden="true" />
             Manage window
           </Link>
@@ -610,7 +599,7 @@ function ActionsForState({
     case 'in-progress':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/monitor`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=monitor`}>
             <i className="fa-light fa-eye" aria-hidden="true" />
             Live monitor
           </Link>
@@ -619,7 +608,7 @@ function ActionsForState({
     case 'submitted':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/analytics`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=analytics`}>
             <i className="fa-light fa-chart-mixed" aria-hidden="true" />
             Review & curve
           </Link>
@@ -628,7 +617,7 @@ function ActionsForState({
     case 'results-published':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/analytics`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=analytics`}>
             <i className="fa-light fa-chart-mixed" aria-hidden="true" />
             Analytics
           </Link>

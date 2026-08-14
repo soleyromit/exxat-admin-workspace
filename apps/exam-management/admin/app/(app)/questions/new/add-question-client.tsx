@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent uses Radix Portal)
 'use client'
 
 /**
@@ -27,7 +28,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ─── LocationsSelector ────────────────────────────────────────────────────────
 
@@ -134,35 +135,18 @@ function LocationsSelector({ folderIds, onChange }: LocationsSelectorProps) {
           className="rounded"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, paddingRight: 4 }}
         >
-          <span style={{ fontSize: 12 }}>{selectedNames[idx]}</span>
-          <button
-            type="button"
-            onClick={() => remove(id)}
-            aria-label={`Remove location ${selectedNames[idx]}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 14,
-              height: 14,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              color: 'var(--muted-foreground)',
-              borderRadius: 2,
-            }}
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
-          </button>
+          <span className="text-xs">{selectedNames[idx]}</span>
+          <Button variant="ghost" size="icon-xs" aria-label={`Remove location ${selectedNames[idx]}`} className="h-3.5 w-3.5 p-0 text-muted-foreground">
+            <i className="fa-light fa-xmark text-[10px]" aria-hidden="true" />
+          </Button>
         </Badge>
       ))}
 
       {/* + Add location popover */}
       <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) { setTimeout(() => searchRef.current?.focus(), 0) } }}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="xs" className="gap-1 h-6" style={{ fontSize: 12 }}>
-            <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+          <Button variant="ghost" size="xs" className="gap-1 h-6 text-xs">
+            <i className="fa-light fa-plus text-[11px]" aria-hidden="true" />
             Add location
           </Button>
         </PopoverTrigger>
@@ -208,35 +192,12 @@ function LocationsSelector({ folderIds, onChange }: LocationsSelectorProps) {
                 {group.folders.map(f => {
                   const selected = folderIds.includes(f.id)
                   return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => toggle(f.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                        padding: '6px 12px',
-                        fontSize: 13,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        color: 'var(--foreground)',
-                        gap: 8,
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--muted)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent' }}
-                      aria-pressed={selected}
-                    >
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {f.name}
-                      </span>
+                    <Button key={f.id} variant="ghost" size="sm" onClick={() => toggle(f.id)} aria-pressed={selected} className="flex items-center justify-between w-full px-3 py-1.5 h-auto text-sm text-foreground text-left">
+                      <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{f.name}</span>
                       {selected && (
-                        <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)', flexShrink: 0 }} />
+                        <i className="fa-solid fa-check text-[11px] shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
                       )}
-                    </button>
+                    </Button>
                   )
                 })}
               </div>
@@ -255,8 +216,8 @@ function AddQuestionForm() {
   const searchParams = useSearchParams()
   const { currentPersona } = useFacultySession()
 
-  const folderId = searchParams.get('folder')
-  const objectiveId = searchParams.get('objective')
+  const folderId = searchParams?.get('folder') ?? null
+  const objectiveId = searchParams?.get('objective') ?? null
 
   // Multi-location state — initialised from the ?folder= param if present.
   const [folderIds, setFolderIds] = useState<string[]>(() =>

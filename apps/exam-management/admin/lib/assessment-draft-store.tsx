@@ -100,6 +100,7 @@ export function AssessmentDraftProvider({ children }: { children: ReactNode }) {
         questionCount:   input.questionCount,
         durationMinutes: input.durationMinutes,
         diffDistribution: input.diffDistribution as Record<QDiff, number>,
+        collaboratorIds: input.collaboratorIds,
       }
       setDrafts(prev => [...prev, next])
       return next

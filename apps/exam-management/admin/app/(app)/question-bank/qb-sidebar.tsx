@@ -1,18 +1,23 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
-import type { FolderNode } from '@/lib/qb-types'
+import type { FolderNode, AccessRole } from '@/lib/qb-types'
 import {
   Button, Tip, Checkbox,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  InputGroup, InputGroupAddon, InputGroupInput, Input,
+  InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
-  useSidebar,
-} from '@exxat/ds/packages/ui/src'
-import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Avatar, AvatarFallback,
+  LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS,
+} from '@exxatdesignux/ui'
+// One SidebarContext — see app/(app)/providers.tsx.
+import { useSidebar } from '@/components/ui/sidebar'
+import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
 
 const QB_TOAST_DURATION = 5000
@@ -63,10 +68,6 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   const colorCls = selected ? 'text-foreground' : 'text-muted-foreground'
-  // Private folders: lock icon replaces the folder/graduation icon
-  if (node.isPrivateSpace) {
-    return { cls: 'fa-solid fa-lock', colorCls }
-  }
   if (node.icon) {
     return { cls: `${selected ? 'fa-solid' : 'fa-light'} ${node.icon}`, colorCls }
   }
@@ -138,7 +139,7 @@ export function DeleteFolderDialog({
               style={{
                 backgroundColor: hasImpact
                   ? 'var(--standing-warning-bg)'
-                  : 'color-mix(in oklch, var(--destructive) 10%, var(--background))',
+                  : 'var(--muted)',
                 color: hasImpact ? 'var(--standing-warning-fg)' : 'var(--destructive)',
               }}
               aria-hidden="true"
@@ -491,6 +492,221 @@ export function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; op
   )
 }
 
+// ── Manage Shell Access Dialog ─────────────────────────────────────────────────
+export function ManageShellAccessDialog({ node, open, onClose }: {
+  node: FolderNode
+  open: boolean
+  onClose: () => void
+}) {
+  const { currentPersona, personas, addShellCollaborator, removeShellCollaborator, updateShellCollaboratorRole, folders } = useQB()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [addPersonaId, setAddPersonaId] = useState('')
+  const [addRole, setAddRole] = useState<AccessRole>('edit')
+
+  const liveNode = folders.find(f => f.id === node.id) ?? node
+  const collaboratorIds = liveNode.collaborators ?? []
+  const roles = liveNode.collaboratorRoles ?? {}
+
+  const adminPersonas = personas.filter(p => p.role === 'exam_admin')
+  const collaboratorPersonas = personas.filter(p =>
+    collaboratorIds.includes(p.id) && p.role !== 'exam_admin'
+  )
+  const addablePersonas = personas.filter(p =>
+    !collaboratorIds.includes(p.id) && p.role !== 'exam_admin'
+  )
+
+  const canManage = currentPersona.role === 'exam_admin' || collaboratorIds.includes(currentPersona.id)
+  const selectedPerson = addablePersonas.find(p => p.id === addPersonaId)
+
+  function courseName(n: FolderNode) {
+    const code = n.name.match(/^([A-Z0-9]+)/)?.[1]
+    return code ? `${code} · Question Bank` : n.name
+  }
+
+  function handleAdd() {
+    if (!addPersonaId) return
+    addShellCollaborator(liveNode.id, addPersonaId, addRole)
+    setAddPersonaId('')
+    setAddRole('edit')
+    setSearchQuery('')
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage Access</DialogTitle>
+          <DialogDescription className="text-xs" style={{ marginTop: 2 }}>
+            {courseName(liveNode)}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Add person — searchable Command picker at the TOP */}
+        {canManage && addablePersonas.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  role="combobox"
+                  aria-expanded={searchOpen}
+                  className="flex items-center gap-2 w-full justify-start h-9 px-2.5 text-left"
+                  style={{ borderColor: 'var(--border-control-35)' }}
+                >
+                  <i className="fa-light fa-magnifying-glass text-xs text-muted-foreground shrink-0" aria-hidden="true" />
+                  <span className="text-sm flex-1" style={{ color: selectedPerson ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+                    {selectedPerson ? selectedPerson.name : 'Search people to add…'}
+                  </span>
+                  {selectedPerson && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label="Clear selection"
+                      onClick={e => { e.stopPropagation(); setAddPersonaId(''); setSearchQuery('') }}
+                      className="h-auto w-auto p-0 text-muted-foreground"
+                    >
+                      <i className="fa-light fa-xmark text-[11px]" aria-hidden="true" />
+                    </Button>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" style={{ padding: 0, width: 'var(--radix-popover-trigger-width)' }}>
+                <Command>
+                  <CommandInput
+                    placeholder="Search people…"
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No people found.</CommandEmpty>
+                    <CommandGroup>
+                      {addablePersonas.map(p => (
+                        <CommandItem
+                          key={p.id}
+                          value={p.name}
+                          onSelect={() => {
+                            setAddPersonaId(p.id)
+                            setSearchQuery('')
+                            setSearchOpen(false)
+                          }}
+                        >
+                          <span style={{ flex: 1 }}>{p.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.role === 'course_director' ? 'Director' : 'Instructor'}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Pending add row — shown once a person is selected */}
+            {selectedPerson && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{selectedPerson.initials}</AvatarFallback>
+                </Avatar>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPerson.name}</div>
+                  <div className="text-xs text-muted-foreground">{selectedPerson.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
+                </div>
+                <Select value={addRole} onValueChange={v => setAddRole(v as AccessRole)}>
+                  <SelectTrigger size="sm" style={{ width: 86, flexShrink: 0 }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="view">View</SelectItem>
+                    <SelectItem value="edit">Edit</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="default" size="sm" onClick={handleAdd} style={{ flexShrink: 0 }}>
+                  Add
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* People with access */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <p className="text-xs font-semibold text-muted-foreground" style={{ marginBottom: 4 }}>
+            People with access
+          </p>
+
+          {/* Exam admins — always owner, not removable */}
+          {adminPersonas.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+              <Avatar style={{ width: 30, height: 30, flexShrink: 0 }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{p.initials}</AvatarFallback>
+              </Avatar>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                <div className="text-xs text-muted-foreground">Exam Admin</div>
+              </div>
+              <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>Owner</span>
+            </div>
+          ))}
+
+          {/* Shell collaborators */}
+          {collaboratorPersonas.map(p => {
+            const role: AccessRole = roles[p.id] ?? 'edit'
+            return (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                <Avatar style={{ width: 30, height: 30, flexShrink: 0 }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>{p.initials}</AvatarFallback>
+                </Avatar>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{p.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
+                </div>
+                {canManage ? (
+                  <Select value={role} onValueChange={v => updateShellCollaboratorRole(liveNode.id, p.id, v as AccessRole)}>
+                    <SelectTrigger size="sm" style={{ width: 86, flexShrink: 0 }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="view">View</SelectItem>
+                      <SelectItem value="edit">Edit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>
+                    {role === 'view' ? 'View' : 'Edit'}
+                  </span>
+                )}
+                {canManage && (
+                  <Button
+                    variant="ghost" size="icon-xs"
+                    aria-label={`Remove ${p.name}`}
+                    onClick={() => removeShellCollaborator(liveNode.id, p.id)}
+                    style={{ flexShrink: 0, color: 'var(--muted-foreground)' }}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+
+          {collaboratorPersonas.length === 0 && (
+            <p className="text-xs text-muted-foreground" style={{ padding: '4px 0' }}>
+              No collaborators added yet.
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function FolderContextMenu({
   node,
   isAdmin,
@@ -498,6 +714,7 @@ export function FolderContextMenu({
   onAddSubfolder,
   onMove,
   onDelete,
+  onManageAccess,
   onOpenChange,
   alwaysVisible = false,
 }: {
@@ -507,12 +724,14 @@ export function FolderContextMenu({
   onAddSubfolder: () => void
   onMove: () => void
   onDelete: () => void
+  onManageAccess?: () => void
   onOpenChange?: (open: boolean) => void
   alwaysVisible?: boolean
 }) {
-  const { setCollaboratorsModalFolderId, setFolderPrivacy, pinnedFolderIds, toggleFolderPin } = useQB()
-  const isPrivate = !!node.isPrivateSpace
+  const { pinnedFolderIds, toggleFolderPin, currentPersona } = useQB()
   const isPinned = pinnedFolderIds.has(node.id)
+  const isShellCollaborator = (node.collaborators ?? []).includes(currentPersona.id)
+  const canManageAccess = node.isCourse && (isAdmin || isShellCollaborator)
 
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
@@ -538,22 +757,11 @@ export function FolderContextMenu({
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
-        {isAdmin && (
-          <>
-            <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
-              <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-              Manage Access
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); showSidebarToast(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`, () => setFolderPrivacy(node.id, isPrivate)) }}>
-              <i
-                className={`fa-light ${isPrivate ? 'fa-lock-open' : 'fa-lock'}`}
-                aria-hidden="true"
-                style={{ fontSize: 12, width: 14 }}
-              />
-              {isPrivate ? 'Make public' : 'Make private'}
-            </DropdownMenuItem>
-          </>
+        {canManageAccess && onManageAccess && (
+          <DropdownMenuItem onClick={() => onManageAccess()}>
+            <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+            Manage access
+          </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onRename()}>
@@ -746,12 +954,16 @@ function FolderRow({
   isAdmin,
   subtitle,
   fullSubtitle,
+  overrideIsExpanded,
+  overrideOnToggle,
 }: {
   node: FolderNode
   depth: number
   isAdmin: boolean
   subtitle?: string
   fullSubtitle?: string
+  overrideIsExpanded?: boolean
+  overrideOnToggle?: () => void
 }) {
   const {
     selectedFolderId, setSelectedFolderId,
@@ -782,6 +994,7 @@ function FolderRow({
   const [showingInlineCreate, setShowingInlineCreate] = useState(false)
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const [manageAccessOpen, setManageAccessOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
 
@@ -843,7 +1056,8 @@ function FolderRow({
   }, [dialogActive])
 
   const isSelected = selectedFolderId === node.id
-  const isExpanded = expandedFolderIds.has(node.id)
+  const isExpanded = overrideIsExpanded !== undefined ? overrideIsExpanded : expandedFolderIds.has(node.id)
+  const effectiveToggle = overrideOnToggle ?? (() => toggleFolder(node.id))
   const isDragOver = dragOverFolderId === node.id
   const hasChildren = folders.some(f => f.parentId === node.id)
   const icon = getFolderIcon(node, isExpanded, isSelected)
@@ -894,7 +1108,7 @@ function FolderRow({
         onClick={() => {
           if (!isRenaming) {
             setSelectedFolderId(node.id)
-            if (hasChildren) toggleFolder(node.id)
+            if (hasChildren) effectiveToggle()
           }
         }}
         draggable={isAdmin && !isRenaming}
@@ -930,7 +1144,7 @@ function FolderRow({
           backgroundColor: isSelected
             ? 'var(--qb-folder-selected-bg)'
             : isDragOver
-            ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))`
+            ? 'var(--brand-tint)'
             : isRowHovered
             ? 'var(--interactive-hover)'
             : 'transparent',
@@ -940,8 +1154,8 @@ function FolderRow({
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFolderId(node.id) }
-          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) { e.preventDefault(); toggleFolder(node.id) }
-          if (e.key === 'ArrowLeft' && isExpanded) { e.preventDefault(); toggleFolder(node.id) }
+          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) { e.preventDefault(); effectiveToggle() }
+          if (e.key === 'ArrowLeft' && isExpanded) { e.preventDefault(); effectiveToggle() }
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault()
             const items = Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"]'))
@@ -966,7 +1180,7 @@ function FolderRow({
           size="icon-xs"
           onClick={(e) => {
             e.stopPropagation()
-            if (hasChildren) toggleFolder(node.id)
+            if (hasChildren) effectiveToggle()
           }}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
@@ -1047,7 +1261,7 @@ function FolderRow({
         {/* Right slot: count fades out, ⋯ button fades in — contained within this flex item so text is never overlapped */}
         <div style={{ flexShrink: 0, position: 'relative', width: 24, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <span
-            className="text-[10px] text-muted-foreground"
+            className="text-xs text-muted-foreground"
             style={{ transition: 'opacity 100ms', opacity: (isRowHovered || isFocused || menuOpen) ? 0 : 1 }}
           >
             {folderQuestionCount}
@@ -1082,6 +1296,7 @@ function FolderRow({
                 onAddSubfolder={() => setShowingInlineCreate(true)}
                 onMove={() => setMoveFolderDialogOpen(true)}
                 onDelete={() => setDeleteFolderDialogOpen(true)}
+                onManageAccess={() => setManageAccessOpen(true)}
               />
             </div>
           )}
@@ -1112,6 +1327,13 @@ function FolderRow({
           onClose={() => setDeleteFolderDialogOpen(false)}
         />
       )}
+      {manageAccessOpen && node.isCourse && (
+        <ManageShellAccessDialog
+          node={node}
+          open={manageAccessOpen}
+          onClose={() => setManageAccessOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1121,22 +1343,40 @@ function FolderTree({
   parentId,
   depth,
   isAdmin,
+  overrideExpandedIds,
+  overrideOnToggle,
 }: {
   nodes: FolderNode[]
   parentId: string | null
   depth: number
   isAdmin: boolean
+  overrideExpandedIds?: Set<string>
+  overrideOnToggle?: (id: string) => void
 }) {
   const { expandedFolderIds } = useQB()
+  const effectiveExpandedIds = overrideExpandedIds ?? expandedFolderIds
   const children = nodes.filter(n => n.parentId === parentId)
 
   return (
     <>
       {children.map(node => (
         <div key={node.id}>
-          <FolderRow node={node} depth={depth} isAdmin={isAdmin} />
-          {expandedFolderIds.has(node.id) && (
-            <FolderTree nodes={nodes} parentId={node.id} depth={depth + 1} isAdmin={isAdmin} />
+          <FolderRow
+            node={node}
+            depth={depth}
+            isAdmin={isAdmin}
+            overrideIsExpanded={overrideExpandedIds ? overrideExpandedIds.has(node.id) : undefined}
+            overrideOnToggle={overrideOnToggle ? () => overrideOnToggle(node.id) : undefined}
+          />
+          {effectiveExpandedIds.has(node.id) && (
+            <FolderTree
+              nodes={nodes}
+              parentId={node.id}
+              depth={depth + 1}
+              isAdmin={isAdmin}
+              overrideExpandedIds={overrideExpandedIds}
+              overrideOnToggle={overrideOnToggle}
+            />
           )}
         </div>
       ))}
@@ -1169,11 +1409,23 @@ export function QBSidebar() {
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [isNarrow, setIsNarrow] = useState(false)
+  const [userWidth, setUserWidth] = useState<number | null>(null)
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
   // Zoom ≥ ~350% regardless of monitor size — sidebar tree switches to page scroll.
   const [isHighZoom, setIsHighZoom] = useState(false)
   // Inactive section collapsed by default — toggle to expand.
   // To revert to flat list: remove this state + the grouping render below.
   const [inactiveExpanded, setInactiveExpanded] = useState(false)
+  const [pinnedExpanded, setPinnedExpanded] = useState(true)
+  const [qbExpanded, setQbExpanded] = useState(true)
+  const [pinnedExpandedIds, setPinnedExpandedIds] = useState<Set<string>>(new Set())
+  function togglePinnedFolder(id: string) {
+    setPinnedExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1198,6 +1450,7 @@ export function QBSidebar() {
   useEffect(() => {
     if (!sidebarOpen) {
       setSidebarSearch('')
+      setUserWidth(null)
     }
   }, [sidebarOpen, setSidebarSearch])
 
@@ -1219,9 +1472,13 @@ export function QBSidebar() {
   )
   const allQCount = countableQuestions.length
   const myQCount = countableQuestions.filter(q => q.creator === currentPersona.id).length
+  const unassignedQCount = countableQuestions.filter(q => !q.folder || !folders.some(f => f.id === q.folder)).length
 
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
+  const isUnassignedSelected = navView === 'unassigned'
+
+  const pinnedFolders = visibleFolders.filter(f => pinnedFolderIds.has(f.id))
 
   // Filter root course folders by search (used for normal grouped tree when not deep-searching)
   const filteredRoots = sidebarSearch.trim()
@@ -1316,7 +1573,7 @@ export function QBSidebar() {
       <span className={`flex-1 text-sm text-left text-foreground ${active ? 'font-medium' : 'font-normal'}`}>
         {label}
       </span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         {count}
       </span>
     </Button>
@@ -1329,7 +1586,29 @@ export function QBSidebar() {
   const isSearching     = sidebarSearch.trim().length > 0
   const { state: navSidebarState } = useSidebar()
   // When the main nav sidebar collapses it frees ~220px — give that space to the QB tree
-  const treeWidth = sidebarOpen ? (navSidebarState === 'collapsed' ? 320 : 248) : 0
+  const treeWidth = navSidebarState === 'collapsed' ? 320 : 248
+  const effectiveWidth = sidebarOpen ? (userWidth ?? treeWidth) : 0
+
+  // Reset user-dragged width when nav sidebar collapses/expands so the
+  // computed treeWidth takes over again (prevents stale drag position).
+  useEffect(() => { setUserWidth(null) }, [navSidebarState])
+
+  function onDragHandleMouseDown(e: React.MouseEvent) {
+    e.preventDefault()
+    dragRef.current = { startX: e.clientX, startWidth: effectiveWidth }
+    function onMove(ev: MouseEvent) {
+      if (!dragRef.current) return
+      const delta = ev.clientX - dragRef.current.startX
+      setUserWidth(Math.max(220, Math.min(360, dragRef.current.startWidth + delta)))
+    }
+    function onUp() {
+      dragRef.current = null
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   return (
     <>
@@ -1348,8 +1627,8 @@ export function QBSidebar() {
     <aside
       aria-label="Question Bank Library"
       style={{
-        width: treeWidth,
-        minWidth: treeWidth,
+        width: effectiveWidth,
+        minWidth: effectiveWidth,
         display: 'flex',
         flexDirection: 'column',
         borderRight: sidebarOpen ? '1px solid var(--border)' : 'none',
@@ -1368,71 +1647,100 @@ export function QBSidebar() {
         } : {}),
       }}
     >
-      {/* Library header strip */}
-      <div style={{
-        height: 28, display: 'flex', alignItems: 'center',
-        padding: '0 12px', flexShrink: 0,
-      }}>
-        <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-          Library
-        </span>
+      {/* Library section */}
+      <div style={{ flexShrink: 0 }}>
+        <div className="flex items-center h-8 px-2">
+          <span className="text-xs font-medium text-muted-foreground">Library</span>
+        </div>
+        <div style={{ padding: '0 0 6px' }}>
+          {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
+          {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
+          {navItem(isUnassignedSelected, 'fa-folder-open', 'Unassigned', unassignedQCount, () => setNavView('unassigned'))}
+        </div>
       </div>
 
-      {/* ── Quick Nav: All Questions + My Questions ── */}
-      <div style={{ padding: '1px 0 8px', flexShrink: 0 }}>
-        {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
-        {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
-      </div>
+      {/* ── Pinned section ── */}
+      {pinnedFolders.length > 0 && (
+        <div style={{ flexShrink: 0 }}>
+          {/* Section header */}
+          <Button variant="ghost" size="sm" onClick={() => setPinnedExpanded(v => !v)} aria-expanded={pinnedExpanded} className="flex items-center gap-1.5 w-full px-2 h-8 justify-start rounded-none">
+            <i
+              className={`fa-light ${pinnedExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
+              aria-hidden="true"
+              style={{ fontSize: 9, width: 10, flexShrink: 0 }}
+            />
+            <span className="text-xs font-medium text-muted-foreground">Pinned</span>
+          </Button>
+          {/* Pinned folder rows — independent expand state, does not affect QB tree */}
+          {pinnedExpanded && (
+            <div style={{ paddingBottom: 4 }}>
+              {pinnedFolders.map(f => (
+                <div key={f.id}>
+                  <FolderRow
+                    node={f}
+                    depth={0}
+                    isAdmin={isAdmin}
+                    subtitle={getFolderShortPath(f.id) || undefined}
+                    fullSubtitle={getFolderFullPath(f.id) || undefined}
+                    overrideIsExpanded={pinnedExpandedIds.has(f.id)}
+                    overrideOnToggle={() => togglePinnedFolder(f.id)}
+                  />
+                  {pinnedExpandedIds.has(f.id) && (
+                    <FolderTree
+                      nodes={visibleFolders}
+                      parentId={f.id}
+                      depth={1}
+                      isAdmin={isAdmin}
+                      overrideExpandedIds={pinnedExpandedIds}
+                      overrideOnToggle={togglePinnedFolder}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Question Bank label + search — fixed, never scrolls ── */}
       {SEARCH_VARIANT === 'input' ? (
-        <div style={{ flexShrink: 0, padding: '4px 8px 4px' }}>
-          <div style={{ padding: '0 4px 3px' }}>
-            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-              Question Bank
-            </span>
-          </div>
-          {/* Subtle sidebar search — same scale as nav items */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground"
-              aria-hidden="true"
-              style={{ position: 'absolute', left: 8, fontSize: 11, pointerEvents: 'none', zIndex: 1 }}
-            />
-            <Input
-              placeholder="Search folders…"
-              value={sidebarSearch}
-              onChange={e => setSidebarSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
-              aria-label="Search folders"
-              style={{
-                height: 28,
-                paddingLeft: 26,
-                paddingRight: sidebarSearch ? 28 : 8,
-                fontSize: 12,
-                backgroundColor: 'var(--muted)',
-                border: '1px solid transparent',
-                borderRadius: 5,
-              }}
-            />
-            {sidebarSearch && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Clear search"
-                onClick={() => setSidebarSearch('')}
-                style={{ position: 'absolute', right: 2, width: 22, height: 22 }}
-              >
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
-              </Button>
-            )}
-          </div>
-          {isSearching && (
-            <div style={{ padding: '3px 4px 0' }}>
-              <span className="text-[10px] text-muted-foreground">
-                {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+        <div style={{ flexShrink: 0, backgroundColor: 'var(--background)' }}>
+          {/* Section header */}
+          <Button variant="ghost" size="sm" onClick={() => setQbExpanded(v => !v)} aria-expanded={qbExpanded} className="flex items-center gap-1.5 w-full px-2 h-8 justify-start rounded-none">
+            <i className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground shrink-0`} style={{ fontSize: 9, width: 10 }} aria-hidden="true" />
+            <span className="text-xs font-medium text-muted-foreground">Question Bank</span>
+          </Button>
+          {/* Search + result count — hidden when section is collapsed */}
+          {qbExpanded && (
+            <>
+              <InputGroup className="rounded-sm mx-3 mb-1" style={{ height: 28 }}>
+                <InputGroupAddon align="inline-start">
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11 }} />
+                </InputGroupAddon>
+                <InputGroupInput
+                  placeholder="Search folders…"
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
+                  aria-label="Search folders"
+                  className="text-xs"
+                />
+                {sidebarSearch && (
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton size="icon-xs" onClick={() => setSidebarSearch('')} aria-label="Clear search">
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                )}
+              </InputGroup>
+              {isSearching && (
+                <div className="px-3 pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -1451,8 +1759,8 @@ export function QBSidebar() {
 
       {/* Tree — at normal zoom: own scroll container (flex:1); at 400% zoom: flows into aside scroll */}
       <div style={isHighZoom
-        ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
-        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
+        ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, backgroundColor: 'var(--background)' }
+        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, display: qbExpanded ? undefined : 'none', backgroundColor: 'var(--background)' }
       }>
 
         {/* Command variant search results */}
@@ -1539,7 +1847,7 @@ export function QBSidebar() {
           {!isAdmin && accessibleFolderIds.size === 0 && (
             <div style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
               {/* Illustration */}
-              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 22, color: 'var(--brand-color)' }} />
                 <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
@@ -1565,6 +1873,19 @@ export function QBSidebar() {
         )}
       </div>{/* end tree scroll div */}
     </aside>
+    {/* Drag handle — DS LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS + withHandle visual */}
+    {sidebarOpen && (
+      <div
+        aria-hidden="true"
+        onMouseDown={onDragHandleMouseDown}
+        className={`${LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS} relative flex items-center justify-center`}
+        style={{ cursor: 'col-resize', flexShrink: 0 }}
+      >
+        <div className="z-10 flex h-5 w-3.5 items-center justify-center rounded-sm border border-border bg-background shadow-sm">
+          <i className="fa-light fa-grip-lines-vertical text-muted-foreground" aria-hidden="true" style={{ fontSize: 9 }} />
+        </div>
+      </div>
+    )}
     </>
   )
 }

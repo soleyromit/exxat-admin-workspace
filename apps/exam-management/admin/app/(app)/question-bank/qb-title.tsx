@@ -6,9 +6,9 @@ import {
   Button, Badge, Avatar, AvatarFallback, Input,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
-import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog } from './qb-sidebar'
+import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog, ManageShellAccessDialog } from './qb-sidebar'
 
 import type { FolderNode } from '@/lib/qb-types'
 
@@ -28,7 +28,7 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 // Collaborator avatar stack
 function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] }) {
-  const { currentPersona, setCollaboratorsModalFolderId, selectedFolderId } = useQB()
+  const { currentPersona } = useQB()
   const isAdmin = currentPersona.role === 'exam_admin'
   const MAX_SHOWN = 3
   const personas = MOCK_QB_PERSONAS.filter(p => collaboratorIds.includes(p.id))
@@ -40,16 +40,17 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label={`${personas.length} collaborators`}
-          style={{ display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          className="inline-flex items-center p-0 h-auto"
         >
           {shown.map((p, i) => (
             <Tooltip key={p.id}>
               <TooltipTrigger asChild>
                 <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-                  <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                  <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                     {p.initials}
                   </AvatarFallback>
                 </Avatar>
@@ -62,7 +63,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           {overflow > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px', cursor: 'pointer' }}>
+                <Badge variant="secondary" className="rounded-full text-xs" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px', cursor: 'pointer' }}>
                   +{overflow}
                 </Badge>
               </TooltipTrigger>
@@ -73,17 +74,17 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
               </TooltipContent>
             </Tooltip>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
-        <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 8 }}>
+        <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 8 }}>
           {personas.length} Collaborator{personas.length !== 1 ? 's' : ''}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {personas.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>
@@ -94,16 +95,6 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
             </div>
           ))}
         </div>
-        {isAdmin && (
-          <Button
-            variant="outline" size="sm"
-            className="w-full mt-3 gap-1.5 text-xs"
-            onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-          >
-            <i className="fa-light fa-user-plus" aria-hidden="true" />
-            Manage access
-          </Button>
-        )}
       </PopoverContent>
     </Popover>
   )
@@ -115,7 +106,6 @@ export function QBTitle() {
     selectedFolder, visibleQuestions, navView,
     folders, questions, renameFolder,
     currentPersona, selectedFolderId,
-    setCollaboratorsModalFolderId,
   } = useQB()
   const isAdmin = currentPersona.role === 'exam_admin'
   const count = visibleQuestions.length
@@ -124,6 +114,7 @@ export function QBTitle() {
   const [renameName, setRenameName] = useState('')
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const [manageAccessOpen, setManageAccessOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
 
   function folderCount(folderId: string): number {
@@ -170,7 +161,7 @@ export function QBTitle() {
               style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', flex: 1, minWidth: 0 }}
             />
           ) : (
-            <h1 className="text-xl font-bold text-foreground" style={{
+            <h1 className="text-xl font-semibold text-foreground" style={{
               fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
               overflow: 'hidden',
@@ -183,7 +174,7 @@ export function QBTitle() {
             </h1>
           )}
 
-          {/* Context menu — always reserves its slot so h1 width never shifts */}
+          {/* Context menu — always reserves its slot so heading width never shifts */}
           <span style={{ visibility: (navView === 'folder' && selectedFolder) ? 'visible' : 'hidden', flexShrink: 0 }}>
             {navView === 'folder' && selectedFolder ? (
               <FolderContextMenu
@@ -198,6 +189,7 @@ export function QBTitle() {
                 onAddSubfolder={() => {/* no-op: use sidebar to add subfolders */}}
                 onMove={() => setMoveFolderDialogOpen(true)}
                 onDelete={() => setDeleteFolderDialogOpen(true)}
+                onManageAccess={() => setManageAccessOpen(true)}
               />
             ) : (
               /* Placeholder keeps the slot width identical — icon-xs button is 24px */
@@ -207,36 +199,21 @@ export function QBTitle() {
         </div>
 
         <Button variant="default" size="default" onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')} style={{ flexShrink: 0 }}>
-          <i className="fa-light fa-plus" aria-hidden="true" />
           Add Question
         </Button>
       </div>
 
-      {/* Subtitle: count + collaborators + manage access — fixed 28px height so layout never shifts */}
+      {/* Subtitle: count + collaborators — fixed 28px height so layout never shifts */}
       <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1, minHeight: 28 }}>
         <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          visibility: (collaboratorIds.length > 0 || (isAdmin && selectedFolder)) ? 'visible' : 'hidden',
-        }}>
-          <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
-          {collaboratorIds.length > 0 && (
+        {collaboratorIds.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
             <CollaboratorAvatars collaboratorIds={collaboratorIds} />
-          )}
-          {isAdmin && selectedFolder && (
-            <Button
-              variant="ghost" size="icon-xs"
-              aria-label="Manage access"
-              className="text-muted-foreground"
-              style={{ width: 28, height: 28 }}
-              onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-            >
-              <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 14 }} />
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}
@@ -252,6 +229,13 @@ export function QBTitle() {
             open={deleteFolderDialogOpen}
             onClose={() => setDeleteFolderDialogOpen(false)}
           />
+          {selectedFolder.isCourse && (
+            <ManageShellAccessDialog
+              node={selectedFolder}
+              open={manageAccessOpen}
+              onClose={() => setManageAccessOpen(false)}
+            />
+          )}
         </>
       )}
     </div>

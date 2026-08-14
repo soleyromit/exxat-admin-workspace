@@ -20,10 +20,9 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Badge, Checkbox,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tip,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, BloomChip, DifficultyChip, type Tone } from '@/components/faculty-ui-kit'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
 
@@ -79,20 +78,25 @@ export function AiGenerateModal({ open, onOpenChange, objectives, onAccept, acce
   const [difficultyMix, setDifficultyMix] = useState<'Easy' | 'Medium' | 'Hard' | 'Mixed'>('Mixed')
   const [bloomMix, setBloomMix] = useState<Bloom | 'Mixed'>('Mixed')
   const [drafts, setDrafts] = useState<DraftQuestion[]>([])
+  const [prompt, setPrompt] = useState<string>('')
 
   // Reset on open
   useEffect(() => {
     if (open) {
       setView('setup')
       setDrafts([])
+      setPrompt('')
     }
   }, [open])
 
   const handleGenerate = () => {
+    // Try to extract count from the prompt (e.g., "5 hard questions...")
+    const promptMatch = prompt.match(/\b(\d+)\b/)
+    const effectiveCount = promptMatch ? Math.min(10, Math.max(1, parseInt(promptMatch[1], 10))) : count
     setView('generating')
     // Mock LLM latency
     setTimeout(() => {
-      setDrafts(generateDrafts(objectives, count, difficultyMix, bloomMix))
+      setDrafts(generateDrafts(objectives, effectiveCount, difficultyMix, bloomMix))
       setView('results')
     }, 1400)
   }
@@ -138,11 +142,12 @@ export function AiGenerateModal({ open, onOpenChange, objectives, onAccept, acce
             <SetupView
               objectives={objectives}
               count={count} setCount={setCount}
+              prompt={prompt} setPrompt={setPrompt}
               difficultyMix={difficultyMix} setDifficultyMix={setDifficultyMix}
               bloomMix={bloomMix} setBloomMix={setBloomMix}
             />
           )}
-          {view === 'generating' && <GeneratingView count={count} />}
+          {view === 'generating' && <GeneratingView count={count} promptText={prompt} />}
           {view === 'results' && (
             <ResultsView
               drafts={drafts}
@@ -160,7 +165,7 @@ export function AiGenerateModal({ open, onOpenChange, objectives, onAccept, acce
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleGenerate} disabled={objectives.length === 0} className="gap-2">
+              <Button size="sm" onClick={handleGenerate} disabled={objectives.length === 0 && prompt.trim() === ''} className="gap-2">
                 <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />
                 Generate {count} {count === 1 ? 'question' : 'questions'}
               </Button>
@@ -213,81 +218,100 @@ export function AiGenerateModal({ open, onOpenChange, objectives, onAccept, acce
 
 // ─── Setup view ──────────────────────────────────────────────────────────────
 function SetupView({
-  objectives, count, setCount, difficultyMix, setDifficultyMix, bloomMix, setBloomMix,
+  objectives, count, setCount, prompt, setPrompt, difficultyMix, setDifficultyMix, bloomMix, setBloomMix,
 }: {
   objectives: CourseObjective[]
   count: number; setCount: (n: number) => void
+  prompt: string; setPrompt: (s: string) => void
   difficultyMix: 'Easy' | 'Medium' | 'Hard' | 'Mixed'; setDifficultyMix: (v: 'Easy' | 'Medium' | 'Hard' | 'Mixed') => void
   bloomMix: Bloom | 'Mixed'; setBloomMix: (v: Bloom | 'Mixed') => void
 }) {
   return (
-    <div className="px-6 py-5 flex flex-col gap-5">
-      <section>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-          Source objectives ({objectives.length})
-        </p>
-        <ul className="flex flex-col gap-1.5">
-          {objectives.map(o => (
-            <li
-              key={o.id}
-              className="inline-flex items-center gap-2 rounded-md bg-muted border border-border px-2.5 py-1.5 text-xs font-medium text-foreground"
-            >
-              <i className="fa-light fa-circle-dashed text-chart-4 shrink-0" aria-hidden="true" style={{ fontSize: 10 }} />
-              <span className="line-clamp-1">{o.title}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-          Generation settings
-        </p>
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1 block">Question count</label>
-            <Select value={String(count)} onValueChange={(v) => setCount(parseInt(v, 10))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">2</SelectItem>
-                <SelectItem value="3">3</SelectItem>
-                <SelectItem value="4">4</SelectItem>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="6">6</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1 block">Difficulty</label>
-            <Select value={difficultyMix} onValueChange={(v) => setDifficultyMix(v as typeof difficultyMix)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Mixed">Mixed</SelectItem>
-                <SelectItem value="Easy">Easy</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="Hard">Hard</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1 block">Bloom level</label>
-            <Select value={bloomMix} onValueChange={(v) => setBloomMix(v as typeof bloomMix)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Mixed">Mixed</SelectItem>
-                <SelectItem value="Remember">Remember</SelectItem>
-                <SelectItem value="Understand">Understand</SelectItem>
-                <SelectItem value="Apply">Apply</SelectItem>
-                <SelectItem value="Analyze">Analyze</SelectItem>
-                <SelectItem value="Evaluate">Evaluate</SelectItem>
-                <SelectItem value="Create">Create</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="px-6 py-5 flex flex-col gap-4">
+      {/* Source objectives — shown as context chips */}
+      {objectives.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground font-medium">
+            Scoped to {objectives.length} {objectives.length === 1 ? 'objective' : 'objectives'}
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {objectives.map(o => (
+              <span
+                key={o.id}
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-2.5 py-1 text-xs text-foreground"
+              >
+                <i className="fa-light fa-bullseye-pointer text-muted-foreground shrink-0" aria-hidden="true" />
+                <span className="line-clamp-1 max-w-[200px]">{o.title}</span>
+              </span>
+            ))}
           </div>
         </div>
-      </section>
+      )}
 
-      {/* DS LocalBanner (was hand-rolled info strip per dialog-banner-badge audit) */}
+      {/* Main prompt textarea */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-foreground" htmlFor="ai-prompt">
+          What do you need?
+        </label>
+        <textarea
+          id="ai-prompt"
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder={"e.g. 5 hard questions on beta-lactam antibiotics targeting Apply and Analyze levels, or find untested topics in the CNS section"}
+          rows={3}
+          style={{
+            width: '100%',
+            resize: 'none',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--border-control-35)',
+            background: 'var(--background)',
+            color: 'var(--foreground)',
+            fontSize: 13,
+            padding: '8px 12px',
+            lineHeight: 1.5,
+            outline: 'none',
+            fontFamily: 'inherit',
+            boxSizing: 'border-box',
+          }}
+          onFocus={e => { e.target.style.borderColor = 'var(--ring)'; e.target.style.boxShadow = '0 0 0 2px var(--ring)' }}
+          onBlur={e => { e.target.style.borderColor = 'var(--border-control-35)'; e.target.style.boxShadow = 'none' }}
+        />
+      </div>
+
+      {/* Quick settings — count + optional filters */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-muted-foreground font-medium">Quick settings</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Count stepper */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-foreground">Questions</span>
+            <div className="flex items-center gap-0.5 border border-border rounded-md overflow-hidden">
+              <Button variant="ghost" size="xs" onClick={() => setCount(Math.max(1, count - 1))} aria-label="Decrease question count" className="px-2 text-muted-foreground text-sm h-auto py-0.5">−</Button>
+              <span className="text-xs font-semibold text-foreground px-1 min-w-[20px] text-center">{count}</span>
+              <Button variant="ghost" size="xs" onClick={() => setCount(Math.min(10, count + 1))} aria-label="Increase question count" className="px-2 text-muted-foreground text-sm h-auto py-0.5">+</Button>
+            </div>
+          </div>
+
+          {/* Difficulty quick chips */}
+          <div className="flex items-center gap-1">
+            {(['Mixed', 'Easy', 'Medium', 'Hard'] as const).map(d => (
+              <Button key={d} variant={difficultyMix === d ? 'outline' : 'ghost'} size="xs" onClick={() => setDifficultyMix(d)} aria-pressed={difficultyMix === d} className={`rounded-full text-xs px-2 py-0.5 h-auto transition-colors ${difficultyMix === d ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`} style={difficultyMix === d ? { borderColor: 'var(--foreground)', background: 'var(--muted)' } : {}}>
+                {d}
+              </Button>
+            ))}
+          </div>
+
+          {/* Bloom quick chips — just a few key ones */}
+          <div className="flex items-center gap-1">
+            {(['Mixed', 'Apply', 'Analyze', 'Evaluate'] as const).map(b => (
+              <Button key={b} variant={bloomMix === b ? 'outline' : 'ghost'} size="xs" onClick={() => setBloomMix(b as Bloom | 'Mixed')} aria-pressed={bloomMix === b} className={`rounded-full text-xs px-2 py-0.5 h-auto transition-colors ${bloomMix === b ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`} style={bloomMix === b ? { borderColor: 'var(--foreground)', background: 'var(--muted)' } : {}}>
+                {b}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <LocalBanner variant="info" title="AI drafts are starting points">
         Review every question for clinical accuracy, distractor quality, and alignment with your course before adding to the bank.
       </LocalBanner>
@@ -296,7 +320,7 @@ function SetupView({
 }
 
 // ─── Generating view ─────────────────────────────────────────────────────────
-function GeneratingView({ count }: { count: number }) {
+function GeneratingView({ count, promptText }: { count: number; promptText?: string }) {
   return (
     <div className="px-6 py-12 flex flex-col items-center justify-center gap-4">
       <div className="relative size-16 flex items-center justify-center">
@@ -305,7 +329,11 @@ function GeneratingView({ count }: { count: number }) {
       </div>
       <div className="text-center">
         <p className="font-heading text-base font-semibold text-foreground">Drafting {count} questions…</p>
-        <p className="text-xs text-muted-foreground mt-1">Aligning to objectives, your style guide, and Bloom distribution.</p>
+        {promptText ? (
+          <p className="text-xs text-muted-foreground mt-1 max-w-[280px] line-clamp-2 italic">"{promptText}"</p>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-1">Aligning to objectives, your style guide, and Bloom distribution.</p>
+        )}
       </div>
       <div className="w-64 h-1 bg-muted rounded-full overflow-hidden">
         <div className="h-full bg-brand [animation:ai-progress_1.4s_ease-out_forwards]" />
@@ -383,12 +411,12 @@ function DraftQuestionCard({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            <Badge variant="secondary" className="rounded font-mono text-[10px] bg-muted text-foreground">
+            <Badge variant="secondary" className="rounded font-mono text-xs bg-muted text-foreground">
               {draft.code}
             </Badge>
             <DifficultyChip level={draft.difficulty} />
             <BloomChip level={draft.blooms} />
-            <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[260px]" title={draft.objectiveTitle}>
+            <span className="text-xs text-muted-foreground line-clamp-1 max-w-[260px]" title={draft.objectiveTitle}>
               <i className="fa-light fa-bullseye-pointer me-1" aria-hidden="true" /> {draft.objectiveTitle}
             </span>
             {draft.status === 'refining' && (
@@ -404,20 +432,20 @@ function DraftQuestionCard({
                 key={oi}
                 className={`flex items-start gap-2 rounded-md px-2 py-1.5 text-xs ${oi === draft.correctIdx ? 'bg-chart-2/10 border border-chart-2/26' : 'bg-muted'}`}
               >
-                <span className={`size-4 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${oi === draft.correctIdx ? 'bg-chart-2 text-primary-foreground' : 'bg-background text-muted-foreground border border-border'}`}>
+                <span className={`size-4 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${oi === draft.correctIdx ? 'bg-chart-2 text-primary-foreground' : 'bg-background text-muted-foreground border border-border'}`}>
                   {String.fromCharCode(65 + oi)}
                 </span>
                 <span className={oi === draft.correctIdx ? 'font-medium text-foreground' : 'text-foreground'}>
                   {opt}
                 </span>
                 {oi === draft.correctIdx && (
-                  <i className="fa-solid fa-check text-chart-2 text-[10px] ms-auto" aria-hidden="true" />
+                  <i className="fa-solid fa-check text-chart-2 text-xs ms-auto" aria-hidden="true" />
                 )}
               </li>
             ))}
           </ul>
           <div className="rounded-md bg-muted/60 border border-border px-2.5 py-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Rationale</p>
+            <p className="text-xs font-medium text-muted-foreground mb-0.5">Rationale</p>
             <p className="text-xs text-foreground leading-snug">{draft.rationale}</p>
           </div>
           <div className="flex items-center gap-1.5 mt-2.5">

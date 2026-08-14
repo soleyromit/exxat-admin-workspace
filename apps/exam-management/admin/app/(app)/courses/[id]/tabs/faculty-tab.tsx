@@ -21,7 +21,8 @@ import {
   SheetFooter,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+  InputGroup, InputGroupAddon, InputGroupInput,
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { allFaculty, type ExtendedFaculty } from '@/lib/faculty-mock-data'
@@ -54,7 +55,7 @@ interface AssignedFacultyRow extends Record<string, unknown> {
 
 const ROLE_CONFIG: Record<FacultyRole, { bg: string; fg: string }> = {
   'Course Coordinator': {
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color)',
   },
   Instructor: {
@@ -101,7 +102,7 @@ function buildColumns(
               <AvatarFallback
                 className="text-xs font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >
@@ -272,24 +273,17 @@ function AddFacultySheet({ open, onOpenChange, assignedIds, onAdd }: AddFacultyS
 
         {/* Search */}
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div
-            className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
-          >
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
-              aria-hidden="true"
-              style={{ fontSize: 13 }}
-            />
-            <input
-              type="search"
+          <InputGroup className="w-full max-w-sm">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search faculty…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search faculty to add"
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />
@@ -325,7 +319,7 @@ function AddFacultySheet({ open, onOpenChange, assignedIds, onAdd }: AddFacultyS
                       <AvatarFallback
                         className="text-xs font-bold"
                         style={{
-                          backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                          backgroundColor: 'var(--brand-tint)',
                           color: 'var(--brand-color)',
                         }}
                       >

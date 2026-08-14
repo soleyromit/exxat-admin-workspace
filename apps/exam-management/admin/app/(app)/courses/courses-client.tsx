@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -15,15 +16,21 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEntryPoint } from '@/lib/use-entry-point'
+import { cn } from '@/lib/utils'
 import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Button, Badge,
+  StatusBadge, type StatusBadgeTone,
+  Card, CardContent,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   ViewSegmentedControl,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Separator, Textarea,
-} from '@exxat/ds/packages/ui/src'
+  Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount,
+  Tooltip, TooltipContent, TooltipTrigger,
+  KeyMetrics, type MetricItem, LocalBanner,
+} from '@exxatdesignux/ui'
 import { RowActions } from '@/components/data-table/row-actions'
 import { SearchInput } from '@/components/search-input'
 import { SiteHeader } from '@/components/site-header'
@@ -42,11 +49,11 @@ import { ActionItemsPanel } from '@/components/action-items-panel'
 import { StubButton } from '@/components/stub-button'
 import { terms as initialTerms, type Term } from '@/lib/terms-mock-data'
 import { masterCourses, type MasterCourse } from '@/lib/course-catalog-mock-data'
-import { courseOfferingRows, type CourseOfferingRow } from '@/lib/course-mock-data'
+import { courseOfferingRows, type CourseOfferingRow, type FacultyChip } from '@/lib/course-mock-data'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
 
-// ── Shared helpers ─────────────────────────────────────────────────────────────────────────────────
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
   const [year, month, day] = iso.split('-').map(Number)
@@ -68,40 +75,28 @@ type TermTableRow = Term & Record<string, unknown>
 
 const TERM_STATUS_CONFIG: Record<
   Term['status'],
-  { label: string; icon: string; bg: string; fg: string }
+  { label: string; icon: string; tone: StatusBadgeTone }
 > = {
   active: {
     label: 'Active',
     icon: 'fa-circle-check',
-    bg: 'var(--qb-status-saved-bg)',
-    fg: 'var(--qb-status-saved-fg)',
+    tone: 'success',
   },
   upcoming: {
     label: 'Upcoming',
     icon: 'fa-hourglass',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-    fg: 'var(--brand-color-dark)',
+    tone: 'info',
   },
   completed: {
     label: 'Completed',
     icon: 'fa-circle-check',
-    bg: 'var(--muted)',
-    fg: 'var(--muted-foreground)',
+    tone: 'neutral',
   },
 }
 
 function TermStatusBadge({ status }: { status: Term['status'] }) {
   const s = TERM_STATUS_CONFIG[status]
-  return (
-    <Badge
-      variant="secondary"
-      className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
-      {s.label}
-    </Badge>
-  )
+  return <StatusBadge label={s.label} tone={s.tone} icon={s.icon} />
 }
 
 function buildTermColumns(onEdit: (t: TermTableRow) => void): ColumnDef<TermTableRow>[] {
@@ -148,7 +143,7 @@ function buildTermColumns(onEdit: (t: TermTableRow) => void): ColumnDef<TermTabl
           aria-label={`Edit ${row.label as string}`}
           onClick={(e) => { e.stopPropagation(); onEdit(row) }}
         >
-          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-pen text-[13px]" aria-hidden="true" />
         </Button>
       ),
     },
@@ -177,22 +172,15 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <SheetContent showOverlay={false} showCloseButton={false} side="right" style={{ width: 420 }}>
+      <SheetContent showOverlay={false} showCloseButton={false} side="right" className="w-[420px]">
         <SheetHeader>
           <SheetTitle>{isNew ? 'Add Term' : 'Edit Term'}</SheetTitle>
         </SheetHeader>
 
-        <div
-          className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
-          style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-            color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
-          }}
-          role="note"
-        >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
-          <span>When Canvas integration is active, terms are imported automatically and fields are locked.</span>
+        <div className="mx-4 my-2 shrink-0">
+          <LocalBanner variant="info">
+            When Canvas integration is active, terms are imported automatically and fields are locked.
+          </LocalBanner>
         </div>
 
         <Separator />
@@ -407,7 +395,7 @@ function StubSection({ icon, title, description }: { icon: string; title: string
         className="flex size-8 shrink-0 items-center justify-center rounded-md mt-0.5"
         style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
       >
-        <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 14 }} />
+        <i className={`fa-light ${icon} text-sm`} aria-hidden="true" />
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">{title}</p>
@@ -426,13 +414,6 @@ function StubSection({ icon, title, description }: { icon: string; title: string
 
 type MasterCourseRow = MasterCourse & Record<string, unknown>
 
-const CATALOG_TYPE_STYLES: Record<MasterCourse['type'], { bg: string; fg: string }> = {
-  Core: {
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-    fg: 'var(--brand-color-dark)',
-  },
-  Elective: { bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
-}
 
 function buildCatalogColumns(onEdit: (c: MasterCourse) => void): ColumnDef<MasterCourseRow>[] {
   return [
@@ -470,15 +451,12 @@ function buildCatalogColumns(onEdit: (c: MasterCourse) => void): ColumnDef<Maste
       key: 'type', label: 'Type', width: 100, sortable: true, sortKey: 'type',
       cell: (row) => {
         const t = row.type as MasterCourse['type']
-        const s = CATALOG_TYPE_STYLES[t]
         return (
-          <Badge
-            variant="secondary"
-            className="rounded text-[11px] font-medium"
-            style={{ backgroundColor: s.bg, color: s.fg }}
-          >
-            {t}
-          </Badge>
+          <StatusBadge
+            label={t}
+            icon={t === 'Core' ? 'fa-star' : 'fa-bookmark'}
+            tone={t === 'Core' ? 'success' : 'neutral'}
+          />
         )
       },
     },
@@ -497,7 +475,7 @@ function buildCatalogColumns(onEdit: (c: MasterCourse) => void): ColumnDef<Maste
           aria-label={`Edit ${row.courseName as string}`}
           onClick={(e) => { e.stopPropagation(); onEdit(row as unknown as MasterCourse) }}
         >
-          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-pen text-[13px]" aria-hidden="true" />
         </Button>
       ),
     },
@@ -547,19 +525,11 @@ function CourseCatalogTab() {
     <>
       {/* Info banner */}
       <div className="px-6 pt-4 pb-2 shrink-0">
-        <div
-          className="rounded-lg border border-border flex items-start gap-2.5 px-3 py-2.5 text-[13px]"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
-          role="note"
-        >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true"
-            style={{ color: 'var(--brand-color)', fontSize: 14 }} />
-          <span style={{ color: 'var(--muted-foreground)' }}>
-            When a course offering is created from this catalog, a{' '}
-            <strong style={{ color: 'var(--foreground)', fontWeight: 500 }}>Question Bank shell</strong>{' '}
-            is automatically generated with the same name.
-          </span>
-        </div>
+        <LocalBanner variant="info">
+          When a course offering is created from this catalog, a{' '}
+          <strong>Question Bank shell</strong>{' '}
+          is automatically generated with the same name.
+        </LocalBanner>
       </div>
 
       <div className="flex items-center justify-between gap-3 px-6 pb-2 shrink-0 flex-wrap">
@@ -604,7 +574,7 @@ function CourseCatalogTab() {
 
       {/* Add / Edit drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent showOverlay={false} showCloseButton side="right" style={{ width: 480 }}>
+        <SheetContent showOverlay={false} showCloseButton side="right" className="w-[480px]">
           <SheetHeader>
             <SheetTitle>{editing ? 'Edit Course' : 'Add Course'}</SheetTitle>
           </SheetHeader>
@@ -697,25 +667,16 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent showOverlay={false} showCloseButton={false} side="right" style={{ width: 480 }}>
+      <SheetContent showOverlay={false} showCloseButton={false} side="right" className="w-[480px]">
         <SheetHeader>
           <SheetTitle>Add Course Offering</SheetTitle>
         </SheetHeader>
 
         {/* Canvas/LTI info banner — mirrors TermDrawer pattern */}
-        <div
-          className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
-          style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-            color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
-          }}
-          role="note"
-        >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
-          <span>
+        <div className="mx-4 my-2 shrink-0">
+          <LocalBanner variant="info">
             When Canvas integration is active, course offerings are created automatically from your Canvas courses. Canvas Course ID and SIS Course ID are populated from the LTI context.
-          </span>
+          </LocalBanner>
         </div>
 
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-2">
@@ -796,13 +757,13 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
             />
           </div>
 
-          {/* Course Coordinator */}
+          {/* Primary Faculty */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="offering-faculty">
-              Course Coordinator <span className="text-destructive" aria-hidden="true">*</span>
+              Primary Faculty <span className="text-destructive" aria-hidden="true">*</span>
             </Label>
             <Select value={facultyId} onValueChange={setFacultyId}>
-              <SelectTrigger id="offering-faculty" aria-label="Course Coordinator">
+              <SelectTrigger id="offering-faculty" aria-label="Primary Faculty">
                 <SelectValue placeholder="Select faculty member" />
               </SelectTrigger>
               <SelectContent>
@@ -818,7 +779,7 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
           <Separator />
 
           {/* Canvas Integration section */}
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs font-semibold text-muted-foreground">
             Canvas Integration
           </p>
 
@@ -848,7 +809,7 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
               disabled
               value=""
             />
-            <p className="text-[11px] text-muted-foreground leading-snug">
+            <p className="text-xs text-muted-foreground leading-snug">
               Used for NRPS roster sync and AGS grade passback
             </p>
           </div>
@@ -868,35 +829,132 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
 // ══════════════════════════════════════════════════════════════════════════════
 
 type OfferingTableRow = CourseOfferingRow & Record<string, unknown>
-type OfferingStatus = CourseOfferingRow['status'] | 'all'
+type OfferingStatus = CourseOfferingRow['status'] | 'all' | 'attn'
 
 const OFFERING_STATUS_CONFIG: Record<
   CourseOfferingRow['status'],
   { label: string; bg: string; fg: string }
 > = {
-  ongoing: {
-    label: 'Ongoing',
+  active: {
+    label: 'Active',
     bg: 'var(--qb-status-saved-bg)',
     fg: 'var(--qb-status-saved-fg)',
   },
-  completed: { label: 'Completed', bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
+  past: { label: 'Past', bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
   upcoming: {
     label: 'Upcoming',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
 }
 
-function OfferingStatusBadge({ status }: { status: CourseOfferingRow['status'] }) {
-  const s = OFFERING_STATUS_CONFIG[status]
+// ── KPI analytics strip ───────────────────────────────────────────────────────
+
+function OfferingAnalyticsStrip({
+  onFilter,
+  activeFilter,
+}: {
+  onFilter: (f: OfferingStatus) => void
+  activeFilter: OfferingStatus
+}) {
+  const activeCount = courseOfferingRows.filter(r => r.status === 'active').length
+  const upcomingCount = courseOfferingRows.filter(r => r.status === 'upcoming').length
+  const pastCount = courseOfferingRows.filter(r => r.status === 'past').length
+  const attnCount = courseOfferingRows.filter(r => r.attn).length
+  const dueSoon = courseOfferingRows.reduce((acc, r) => acc + r.assessmentsDueSoon, 0)
+  const noAsm = courseOfferingRows.filter(r => r.status === 'active' && r.activeWithNoAssessments).length
+  const missingDates = courseOfferingRows.filter(r => r.startDate === null || r.endDate === null).length
+
+  const metrics: MetricItem[] = [
+    { id: 'attn', label: 'Need attention', value: attnCount, delta: '', trend: 'neutral', trendPolarity: 'lower_is_better', onClick: () => onFilter('attn') },
+    { id: 'active', label: 'Active', value: activeCount, delta: '', trend: 'neutral', onClick: () => onFilter('active') },
+    { id: 'future', label: 'Future', value: upcomingCount, delta: '', trend: 'neutral', onClick: () => onFilter('upcoming') },
+    { id: 'past', label: 'Past', value: pastCount, delta: '', trend: 'neutral', onClick: () => onFilter('past') },
+    { id: 'due', label: 'Due this week', value: dueSoon, delta: '', trend: 'neutral', description: 'Assessments', trendPolarity: 'lower_is_better' },
+    { id: 'noasmt', label: 'No assessments', value: noAsm, delta: '', trend: 'neutral', trendPolarity: 'lower_is_better', onClick: () => onFilter('active') },
+    { id: 'missing', label: 'Missing dates', value: missingDates, delta: '', trend: 'neutral', trendPolarity: 'lower_is_better' },
+  ]
+
   return (
-    <Badge
-      variant="secondary"
-      className="rounded text-[11px] font-medium whitespace-nowrap"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      {s.label}
-    </Badge>
+    <KeyMetrics
+      variant="compact"
+      metricsSingleRow
+      metrics={metrics}
+      className="mx-6 mt-4 mb-2 shrink-0"
+    />
+  )
+}
+
+// ── Assessment text breakdown ─────────────────────────────────────────────────
+
+function AssessmentBreakdownText({ breakdown }: { breakdown: CourseOfferingRow['assessmentBreakdown'] }) {
+  const parts: string[] = []
+  if (breakdown.published) parts.push(`${breakdown.published} pub`)
+  if (breakdown.scheduled) parts.push(`${breakdown.scheduled} sched`)
+  if (breakdown.grading)   parts.push(`${breakdown.grading} grading`)
+  if (breakdown.review)    parts.push(`${breakdown.review} review`)
+  if (breakdown.approved)  parts.push(`${breakdown.approved} approved`)
+  if (breakdown.draft)     parts.push(`${breakdown.draft} draft`)
+  if (parts.length === 0) return <span className="text-xs text-muted-foreground">—</span>
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums">
+      {parts.join(' · ')}
+    </span>
+  )
+}
+
+// ── QB health text ────────────────────────────────────────────────────────────
+
+function QbHealthText({ pct }: { pct: number }) {
+  const color = pct >= 70
+    ? 'var(--qb-status-saved-fg)'
+    : pct >= 40
+    ? 'var(--chip-4)'
+    : 'var(--muted-foreground)'
+  return (
+    <span className="text-sm font-semibold tabular-nums" style={{ color }}>
+      {pct}%
+    </span>
+  )
+}
+
+// ── Faculty avatar stack ──────────────────────────────────────────────────────
+
+function FacultyAvatarStack({ faculty }: { faculty: FacultyChip[] }) {
+  const MAX = 3
+  const shown = faculty.slice(0, MAX)
+  const overflow = faculty.length - MAX
+  const names = faculty.map(f => f.name).join(', ')
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <AvatarGroup className="flex items-center gap-1" role="group" aria-label={`Faculty: ${names}`}>
+          {shown.map(f => (
+            <Avatar key={f.name} size="sm" aria-hidden="true">
+              <AvatarFallback
+                className="text-xs font-semibold"
+                // The chip token paints the disc, so the initials need a
+                // foreground too — without one they inherit --muted-foreground
+                // and axe measured 1.03:1 (dark grey on dark indigo), i.e.
+                // invisible. --background is the right pairing because it
+                // inverts with the theme in step with --chip-*: light theme is
+                // chip L=0.38 on white (~10:1), dark theme raises chips to
+                // L=0.72 against a near-black background (~8:1). A fixed light
+                // colour would pass light mode and fail dark.
+                style={{ backgroundColor: f.chipToken, color: 'var(--background)' }}
+              >
+                {f.initials}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {overflow > 0 && (
+            <AvatarGroupCount className="text-xs">+{overflow}</AvatarGroupCount>
+          )}
+        </AvatarGroup>
+      </TooltipTrigger>
+      <TooltipContent>{names}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -904,100 +962,135 @@ function buildOfferingColumns(isPrism: boolean): ColumnDef<OfferingTableRow>[] {
   return [
     { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
     {
-      key: 'courseNumber', label: 'Course Number', width: 140, sortable: true, sortKey: 'courseNumber',
+      key: 'course', label: 'Course', width: 260, sortable: true, sortKey: 'courseNumber',
       cell: (row) => (
-        <span className="text-sm font-mono font-medium text-foreground">
-          {row.courseNumber as string}
-        </span>
+        <div className="flex items-start gap-2 min-w-0">
+          {(row.attn as boolean) && (
+            <>
+              <i
+                className="fa-light fa-circle-dot text-[10px] mt-1.5 shrink-0"
+                aria-hidden="true"
+                style={{ color: 'var(--chip-4)' }}
+              />
+              <span className="sr-only">Needs attention</span>
+            </>
+          )}
+          <div className="min-w-0">
+            <p className="text-xs font-mono text-muted-foreground leading-none mb-0.5">
+              {row.courseNumber as string}
+            </p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {row.courseName as string}
+            </p>
+          </div>
+        </div>
       ),
     },
     {
-      key: 'courseName', label: 'Course Name', width: 240, sortable: true, sortKey: 'courseName',
+      key: 'term', label: 'Term', width: 160, sortable: true, sortKey: 'academicYear',
       cell: (row) => (
-        <span className="text-sm font-medium text-foreground">{row.courseName as string}</span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground leading-none mb-0.5 tabular-nums">
+            {row.academicYear as string}
+          </p>
+          <p className="text-sm text-foreground">{row.term as string}</p>
+        </div>
       ),
-    },
-    {
-      key: 'academicYear', label: 'Academic Year', width: 130, sortable: true, sortKey: 'academicYear',
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {(row.academicYear as string).replace('-', '–')}
-        </span>
-      ),
-    },
-    {
-      key: 'term', label: 'Term', width: 130, sortable: true, sortKey: 'term',
-      cell: (row) => <span className="text-sm text-foreground">{row.term as string}</span>,
     },
     {
       key: 'cohort', label: 'Cohort', width: 160, sortable: true, sortKey: 'cohort',
-      cell: (row) => <span className="text-sm text-muted-foreground">{row.cohort as string}</span>,
-    },
-    {
-      key: 'startDate', label: 'Start Date', width: 120, sortable: true, sortKey: 'startDate',
       cell: (row) => (
-        <span className="text-sm text-foreground tabular-nums">
-          {formatDate(row.startDate as string)}
-        </span>
+        <span className="text-sm text-muted-foreground">{row.cohort as string}</span>
       ),
     },
     {
-      key: 'endDate', label: 'End Date', width: 120, sortable: true, sortKey: 'endDate',
+      key: 'dates', label: 'Dates', width: 180, sortable: true, sortKey: 'startDate',
+      cell: (row) => {
+        const start = row.startDate as string | null
+        const end = row.endDate as string | null
+        return (
+          <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+            {start ? formatDate(start) : 'TBD'} → {end ? formatDate(end) : 'TBD'}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'credits', label: 'Cr', width: 50, sortable: true, sortKey: 'credits',
       cell: (row) => (
-        <span className="text-sm text-foreground tabular-nums">
-          {formatDate(row.endDate as string)}
-        </span>
+        <span className="text-sm text-foreground tabular-nums">{row.credits as number}</span>
       ),
     },
     {
-      key: 'facultyAssigned', label: 'Faculty / Staff', width: 180, sortable: true, sortKey: 'facultyAssigned',
+      key: 'faculty', label: 'Faculty', width: 120,
       cell: (row) => (
-        <span className="text-sm text-muted-foreground">{row.facultyAssigned as string}</span>
+        <FacultyAvatarStack faculty={row.facultyList as FacultyChip[]} />
       ),
     },
     {
       key: 'registeredStudents', label: 'Students', width: 80, sortable: true, sortKey: 'registeredStudents',
       cell: (row) => (
-        <span className="text-sm font-medium text-foreground tabular-nums">
-          {row.registeredStudents as number}
-        </span>
+        <div className="flex items-center gap-1">
+          <i className="fa-light fa-user text-[11px] text-muted-foreground" aria-hidden="true" />
+          <span className="text-sm font-medium text-foreground tabular-nums">
+            {row.registeredStudents as number}
+          </span>
+        </div>
       ),
     },
     {
-      key: 'status', label: 'Status', width: 120, sortable: true, sortKey: 'status',
-      cell: (row) => <OfferingStatusBadge status={row.status as CourseOfferingRow['status']} />,
+      key: 'assessments', label: 'Assessments', width: 120,
+      cell: (row) => (
+        <AssessmentBreakdownText breakdown={row.assessmentBreakdown as CourseOfferingRow['assessmentBreakdown']} />
+      ),
     },
     {
-      key: 'actions', label: '', width: 52, defaultPin: 'right', lockPin: true,
+      key: 'qbHealth', label: 'QB Health', width: 120, sortable: true, sortKey: 'qbHealth',
+      cell: (row) => <QbHealthText pct={row.qbHealth as number} />,
+    },
+    {
+      key: 'actions', label: '', width: 100, defaultPin: 'right', lockPin: true,
       cell: (row) => (
-        <RowActions
-          row={row}
-          label={row.courseName as string}
-          actions={[
-            {
-              label: 'View Offering',
-              icon: 'fa-arrow-right',
-              onClick: (r) => { window.location.href = `/courses/offerings/${r.id as string}` },
-            },
-            {
-              label: 'Edit Offering',
-              icon: 'fa-pen',
-              onClick: () => {},
-            },
-            ...(isPrism ? [{
-              label: 'View in Prism',
-              icon: 'fa-arrow-up-right-from-square',
-              onClick: () => {},
-            }] : []),
-            {
-              label: 'Archive',
-              icon: 'fa-box-archive',
-              variant: 'destructive' as const,
-              divider: true,
-              onClick: () => {},
-            },
-          ]}
-        />
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={(e) => { e.stopPropagation() }}
+            aria-label={`Add assessment to ${row.courseName as string}`}
+          >
+            <i className="fa-light fa-plus text-[10px]" aria-hidden="true" />
+            Assessment
+          </Button>
+          <RowActions
+            row={row}
+            label={row.courseName as string}
+            actions={[
+              {
+                label: 'View Offering',
+                icon: 'fa-arrow-right',
+                onClick: (r) => { window.location.href = `/courses/offerings/${r.id as string}` },
+              },
+              {
+                label: 'Edit Offering',
+                icon: 'fa-pen',
+                onClick: () => {},
+              },
+              ...(isPrism ? [{
+                label: 'View in Prism',
+                icon: 'fa-arrow-up-right-from-square',
+                onClick: () => {},
+              }] : []),
+              {
+                label: 'Archive',
+                icon: 'fa-box-archive',
+                variant: 'destructive' as const,
+                divider: true,
+                onClick: () => {},
+              },
+            ]}
+          />
+        </div>
       ),
     },
   ]
@@ -1008,118 +1101,203 @@ function CourseOfferingsTab() {
   const [statusFilter, setStatusFilter] = useState<OfferingStatus>('all')
   const [query, setQuery] = useState('')
   const [addOfferingOpen, setAddOfferingOpen] = useState(false)
+  const [filterAY, setFilterAY] = useState('all')
+  const [filterTerm, setFilterTerm] = useState('all')
+  const [filterCohort, setFilterCohort] = useState('all')
+  const [filterFaculty, setFilterFaculty] = useState('all')
   const entryPoint = useEntryPoint()
   const isPrism = entryPoint === 'prism'
   const offeringColumns = useMemo(() => buildOfferingColumns(isPrism), [isPrism])
 
   const filtered = useMemo((): OfferingTableRow[] => {
-    const q = query.trim().toLowerCase()
-    let rows = statusFilter === 'all'
-      ? courseOfferingRows
-      : courseOfferingRows.filter((r) => r.status === statusFilter)
-    if (q) {
-      rows = rows.filter((r) =>
-        r.courseNumber.toLowerCase().includes(q) ||
+    let rows = courseOfferingRows
+    if (statusFilter === 'attn') rows = rows.filter(r => r.attn)
+    else if (statusFilter !== 'all') rows = rows.filter(r => r.status === statusFilter)
+    if (filterAY !== 'all') rows = rows.filter(r => r.academicYear === filterAY)
+    if (filterTerm !== 'all') rows = rows.filter(r => r.term === filterTerm)
+    if (filterCohort !== 'all') rows = rows.filter(r => r.cohort === filterCohort)
+    if (filterFaculty !== 'all') rows = rows.filter(r => r.facultyAssigned === filterFaculty)
+    if (query) {
+      const q = query.toLowerCase()
+      rows = rows.filter(r =>
         r.courseName.toLowerCase().includes(q) ||
-        r.cohort.toLowerCase().includes(q) ||
-        r.facultyAssigned.toLowerCase().includes(q) ||
-        r.term.toLowerCase().includes(q) ||
-        r.academicYear.toLowerCase().includes(q)
+        r.courseNumber.toLowerCase().includes(q) ||
+        r.facultyAssigned.toLowerCase().includes(q)
       )
     }
     return rows as OfferingTableRow[]
-  }, [statusFilter, query])
+  }, [statusFilter, filterAY, filterTerm, filterCohort, filterFaculty, query])
 
   const STATUS_FILTERS: Array<{ value: OfferingStatus; label: string }> = [
     { value: 'all', label: 'All' },
-    { value: 'ongoing', label: 'Ongoing' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'active', label: 'Active' },
+    { value: 'upcoming', label: 'Future' },
+    { value: 'past', label: 'Past' },
   ]
 
   const totalByStatus = useMemo(() => ({
     all: courseOfferingRows.length,
-    ongoing: courseOfferingRows.filter((r) => r.status === 'ongoing').length,
-    completed: courseOfferingRows.filter((r) => r.status === 'completed').length,
+    active: courseOfferingRows.filter((r) => r.status === 'active').length,
+    past: courseOfferingRows.filter((r) => r.status === 'past').length,
     upcoming: courseOfferingRows.filter((r) => r.status === 'upcoming').length,
   }), [])
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex items-center gap-3 px-6 pt-4 pb-2 shrink-0 flex-wrap">
-        {/* Status filter pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {STATUS_FILTERS.map(({ value, label }) => {
-            const isActive = statusFilter === value
-            const count = totalByStatus[value]
-            return (
-              <Button
-                key={value}
-                variant="outline"
-                size="sm"
-                onClick={() => setStatusFilter(value)}
-                aria-pressed={isActive}
-                style={isActive ? {
-                  backgroundColor: 'var(--muted)',
-                  borderColor: 'var(--foreground)',
-                  color: 'var(--foreground)',
-                } : undefined}
-              >
-                {label}
-                <span
-                  className="ml-1 text-[11px] tabular-nums"
-                  style={{ color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+    <div className="flex flex-col flex-1 min-h-0 min-w-0">
+        {/* KPI analytics strip */}
+        <OfferingAnalyticsStrip
+          onFilter={setStatusFilter}
+          activeFilter={statusFilter}
+        />
+
+        <div className="flex items-center gap-3 px-6 pt-2 pb-2 shrink-0 flex-wrap">
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {STATUS_FILTERS.map(({ value, label }) => {
+              const isActive = statusFilter === value
+              const count = totalByStatus[value as keyof typeof totalByStatus]
+              return (
+                <Button
+                  key={value}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStatusFilter(value)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    isActive && 'bg-muted border-foreground text-foreground'
+                  )}
                 >
-                  {count}
-                </span>
-              </Button>
-            )
-          })}
-        </div>
-
-        <div className="flex items-center gap-2 ms-auto">
-          <SearchInput
-            entityKey="course-offerings"
-            value={query}
-            onChange={setQuery}
-            placeholder="Search offerings…"
-            aria-label="Search course offerings"
-            width="w-52"
-          />
-          <Button size="sm" onClick={() => setAddOfferingOpen(true)}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Add Offering
-          </Button>
-        </div>
-      </div>
-
-      <DataTable<OfferingTableRow>
-        data={filtered}
-        columns={offeringColumns}
-        getRowId={(row) => row.id as string}
-        getRowSelectionLabel={(row) => row.courseName as string}
-        selectable
-        searchable={false}
-        showQueryControls={false}
-        defaultSort={{ key: 'startDate', dir: 'desc' }}
-        onRowClick={(row) => router.push(`/courses/offerings/${row.id as string}`)}
-        emptyState={
-          <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-graduation-cap text-muted-foreground text-lg" aria-hidden="true" />
-            </div>
-            <p className="font-semibold text-foreground">
-              {query ? 'No offerings match your search' : `No ${statusFilter === 'all' ? '' : statusFilter + ' '}offerings`}
-            </p>
+                  {label}
+                  <span className={cn('ml-1 text-xs tabular-nums', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+                    {count}
+                  </span>
+                </Button>
+              )
+            })}
           </div>
-        }
-        toolbarSlot={() => (
-          <span className="text-xs text-muted-foreground">
-            {filtered.length} offering{filtered.length !== 1 ? 's' : ''}
-            {query && ` matching "${query}"`}
-          </span>
-        )}
-      />
+
+          <div className="flex items-center gap-2 ms-auto">
+            <SearchInput
+              entityKey="course-offerings"
+              value={query}
+              onChange={setQuery}
+              placeholder="Search offerings…"
+              aria-label="Search course offerings"
+              width="w-52"
+            />
+            <Button size="sm" onClick={() => setAddOfferingOpen(true)}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Add Offering
+            </Button>
+          </div>
+        </div>
+
+        {/* Filterbar */}
+        <div className="flex items-center gap-2 px-6 pb-2 shrink-0 flex-wrap">
+          <Select value={filterAY} onValueChange={setFilterAY}>
+            <SelectTrigger className="h-8 w-36 text-sm" aria-label="Academic Year">
+              <SelectValue placeholder="Academic Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All years</SelectItem>
+              {Array.from(new Set(courseOfferingRows.map(r => r.academicYear))).sort().map(ay => (
+                <SelectItem key={ay} value={ay}>{ay}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterTerm} onValueChange={setFilterTerm}>
+            <SelectTrigger className="h-8 w-32 text-sm" aria-label="Term">
+              <SelectValue placeholder="Term" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All terms</SelectItem>
+              {Array.from(new Set(courseOfferingRows.map(r => r.term))).sort().map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterCohort} onValueChange={setFilterCohort}>
+            <SelectTrigger className="h-8 w-40 text-sm" aria-label="Cohort">
+              <SelectValue placeholder="Cohort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All cohorts</SelectItem>
+              {Array.from(new Set(courseOfferingRows.map(r => r.cohort))).sort().map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterFaculty} onValueChange={setFilterFaculty}>
+            <SelectTrigger className="h-8 w-44 text-sm" aria-label="Faculty">
+              <SelectValue placeholder="Faculty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All faculty</SelectItem>
+              {Array.from(new Set(courseOfferingRows.map(r => r.facultyAssigned))).sort().map(f => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <DataTable<OfferingTableRow>
+          data={filtered}
+          columns={offeringColumns}
+          getRowId={(row) => row.id as string}
+          getRowSelectionLabel={(row) => row.courseName as string}
+          selectable
+          searchable={false}
+          showQueryControls={false}
+          defaultSort={{ key: 'startDate', dir: 'desc' }}
+          onRowClick={(row) => router.push(`/courses/offerings/${row.id as string}`)}
+          emptyState={
+            <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <i className="fa-light fa-graduation-cap text-muted-foreground text-lg" aria-hidden="true" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="font-semibold text-foreground">
+                  {query
+                    ? 'No offerings match your search'
+                    : statusFilter === 'all'
+                    ? 'No offerings yet'
+                    : statusFilter === 'attn'
+                    ? 'No offerings need attention'
+                    : `No ${OFFERING_STATUS_CONFIG[statusFilter as CourseOfferingRow['status']]?.label ?? statusFilter} offerings`
+                  }
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {query
+                    ? 'Try a different search term or clear the filter.'
+                    : statusFilter === 'all'
+                    ? 'Add a course offering to get started.'
+                    : 'Change the filter to see other offerings.'
+                  }
+                </p>
+              </div>
+              {(query || statusFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setStatusFilter('all'); }}
+                >
+                  Show all offerings
+                </Button>
+              )}
+              {!query && statusFilter === 'all' && (
+                <Button size="sm" onClick={() => setAddOfferingOpen(true)}>
+                  Add Offering
+                </Button>
+              )}
+            </div>
+          }
+          toolbarSlot={() => (
+            <span className="text-xs text-muted-foreground">
+              {filtered.length} offering{filtered.length !== 1 ? 's' : ''}
+              {query && ` matching "${query}"`}
+            </span>
+          )}
+        />
 
       <AddOfferingSheet open={addOfferingOpen} onOpenChange={setAddOfferingOpen} />
     </div>
@@ -1192,10 +1370,10 @@ function CourseCard({ course }: { course: CourseSummary }) {
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="group rounded-xl border border-border bg-card px-5 py-5 flex flex-col gap-3 transition-colors hover:bg-muted/30 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group rounded-lg border border-border bg-card px-5 py-5 flex flex-col gap-3 transition-colors hover:bg-muted no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="min-w-0">
-        <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        <p className="font-mono text-xs font-medium text-muted-foreground">
           {formatCourseCode(course.code)}
         </p>
         <p className="font-heading text-base font-semibold text-foreground leading-snug truncate mt-0.5 group-hover:underline underline-offset-2">
@@ -1217,7 +1395,7 @@ function CourseCard({ course }: { course: CourseSummary }) {
 
 function CourseListView({ courses }: { courses: CourseSummary[] }) {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <ul className="divide-y divide-border">
         {courses.map(c => {
           const isActive = c.activeSemester.includes('2026')
@@ -1231,14 +1409,14 @@ function CourseListView({ courses }: { courses: CourseSummary[] }) {
             <li key={c.id}>
               <Link
                 href={`/courses/${c.id}`}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               >
-                <span className="font-mono text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-muted text-muted-foreground shrink-0 min-w-[80px] text-center">
+                <Badge variant="secondary" className="font-mono shrink-0">
                   {formatCourseCode(c.code)}
-                </span>
+                </Badge>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{c.activeSemester}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{c.activeSemester}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-5 shrink-0 text-xs text-muted-foreground">
                   <span><strong className="text-foreground">{c.studentCount}</strong> students</span>
@@ -1255,7 +1433,7 @@ function CourseListView({ courses }: { courses: CourseSummary[] }) {
                   <span className={`inline-block size-1.5 rounded-full ${isActive ? 'bg-chart-2' : 'bg-muted-foreground'}`} />
                   {isActive ? 'Active' : 'Past'}
                 </span>
-                <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 11 }} />
+                <i className="fa-light fa-chevron-right text-muted-foreground text-[11px]" aria-hidden="true" />
               </Link>
             </li>
           )
@@ -1300,7 +1478,7 @@ function FacultyCourseSections({
     <div className="flex flex-col gap-8">
       {active.length > 0 && (
         <section aria-labelledby="active-courses-heading">
-          <h2 id="active-courses-heading" className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-3">
+          <h2 id="active-courses-heading" className="text-xs font-semibold text-muted-foreground mb-3">
             Active this term
           </h2>
           {viewMode === 'cards' ? (
@@ -1312,7 +1490,7 @@ function FacultyCourseSections({
       )}
       {others.length > 0 && (
         <section aria-labelledby="all-courses-heading">
-          <h2 id="all-courses-heading" className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-3">
+          <h2 id="all-courses-heading" className="text-xs font-semibold text-muted-foreground mb-3">
             All my courses
           </h2>
           {viewMode === 'cards' ? (
@@ -1420,7 +1598,7 @@ export default function CoursesClient() {
     return null
   }, [filtered.length, normalizedQuery, termFilter, visibleCourses])
 
-  // ── Faculty view (no tabs) ────────────────────────────────────────────────────────────────────────────
+  // ── Faculty view (no tabs) ────────────────────────────────────────────────
   if (hydrated && role === 'faculty') {
     const pageTitle = faculty
       ? `Welcome back, ${faculty.title} ${faculty.name.split(' ')[1] ?? faculty.name}`
@@ -1474,18 +1652,18 @@ export default function CoursesClient() {
     )
   }
 
-  // ── Admin view (3 tabs) ────────────────────────────────────────────────────────────────────────────
+  // ── Admin view (3 tabs) ───────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('course-offerings')
   const totalOfferings = courseOfferingRows.length
-  const ongoingCount = courseOfferingRows.filter(r => r.status === 'ongoing').length
+  const ongoingCount = courseOfferingRows.filter(r => r.status === 'active').length
 
   return (
     <>
-      <SiteHeader title="Courses" />
+      <SiteHeader title="Courses" breadcrumbs={[{ label: 'Courses' }]} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Courses"
-          subtitle={`${masterCourses.length} courses in catalog · ${totalOfferings} offerings · ${ongoingCount} ongoing`}
+          subtitle={`${masterCourses.length} courses in catalog · ${totalOfferings} offerings · ${ongoingCount} active`}
         />
 
         <div className="flex flex-1 flex-col min-h-0 overflow-hidden">

@@ -7,28 +7,37 @@
     "build": "next build",
     "start": "next start --port 3001",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true && rm -f src/pages/_not-found.tsx"
   },
   "dependencies": {
+    "@exxatdesignux/product-framework": "^0.1.7",
+    "@exxatdesignux/ui": "0.6.57",
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-hover-card": "^1.1.15",
     "clsx": "^2.1.1",
+    "motion": "^12.42.0",
     "next": "^15.3.1",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.72.0",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "axe-core": "^4.12.1",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.9"
   }
 }

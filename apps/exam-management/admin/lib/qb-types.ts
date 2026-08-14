@@ -4,10 +4,34 @@ export type ColumnId =
   | 'usage' | 'pbis' | 'version' | 'favorited' | 'actions'
 
 export type QStatus = 'Saved' | 'Draft' | 'Archived'
-export type QType   = 'MCQ' | 'Fill blank' | 'Hotspot' | 'Ordering' | 'Matching'
+export type QType   = 'MCQ' | 'MSQ' | 'Fill blank' | 'Hotspot' | 'Ordering' | 'Matching' | 'True/False' | 'Short Answer' | 'Extended Matching' | 'Essay'
 export type QDiff   = 'Easy' | 'Medium' | 'Hard'
 export type QBlooms = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create'
 export type TrustLevel = 'junior' | 'mid' | 'senior'
+
+export type QLayout = 'stacked' | 'split'
+
+export interface QuestionOption {
+  key: string              // 'A' | 'B' | 'C' | 'D'
+  text: string
+  isCorrect: boolean
+  rationaleAuthor?: string // "Dr. Sarah Chen" — shown on correct option
+  rationale: string        // Full rationale for correct; "why wrong" for distractors
+}
+
+export interface QuestionVersionEntry {
+  version: number
+  modifiedBy: string       // display name e.g. "Dr. Sarah Chen"
+  date: string             // ISO date string e.g. "2026-05-14"
+  isOriginal?: boolean     // true on v1
+  changes: string[]        // bullet list of what changed from prior version
+  usedInAssessments: string[] // assessment names that used this version
+}
+
+export interface QuestionCollaborator {
+  personaId: string
+  role: 'owner' | 'edit' | 'view'
+}
 
 export interface Question {
   id: string
@@ -32,6 +56,23 @@ export interface Question {
   usedInSections?: string[]
   pinned?: boolean
   favorited?: boolean
+  // Question detail panel fields (optional — present when detail data is loaded)
+  layout?: QLayout
+  stemText?: string                        // full question stem; falls back to title
+  options?: QuestionOption[]               // MCQ / MSQ only
+  rubric?: { criterion: string; points: number }[]  // Essay only
+  modelAnswer?: string                     // Fill blank / Short Answer — model answer text
+  minWordCount?: number                    // Essay only
+  wordLimitMax?: number                    // Essay only — max word count
+  correctness?: number | null              // 0–100; % students who answered correctly
+  avgTimeSeconds?: number | null           // avg seconds per student
+  pValue?: number | null                   // numeric difficulty 0–1
+  discriminationIndex?: number | null   // D-value: discrimination index from historical data (0–1; higher = better discrimination)
+  optionDistribution?: { key: string; count: number }[]  // per-option selection counts
+  totalAttempts?: number | null            // total student attempts across all versions
+  versionHistory?: QuestionVersionEntry[]  // sorted newest-first
+  collaborators?: QuestionCollaborator[]   // includes owner
+  extendedMatchingPool?: { key: string; text: string }[]  // Extended Matching: shared option pool
 }
 
 export type AccessRole = 'edit' | 'view'
@@ -82,12 +123,185 @@ export interface Assessment {
   questionCount: number
   diffDistribution: Record<QDiff, number>
   durationMinutes: number
+  collaboratorIds?: string[]
+  sections?: AssessmentSection[]   // section blueprint, used by copy-from-past-assessment
+  poorPbisCount?: number           // count of low-PBI questions, surfaced as a warning in the copy modal
+}
+
+export interface ReferenceMaterial {
+  id: string
+  label: string
+  url: string
+}
+
+export interface QuestionGradingConfig {
+  randomizeOptions?: boolean               // per-question override of assessment-level setting
+  negativeMarkingWeight?: number | null   // per-question override: null = inherit assessment default; 0 = off; 0.25/0.33/0.5 = deduction fraction
+  msqMode?: 'standard' | 'all-or-nothing' | 'partial-additive' | 'partial-proportional' | 'right-minus-wrong'
+  fillBlankMatchMode?: 'exact' | 'contains'
+  fillBlankCaseSensitive?: boolean
+  alternateAcceptedAnswers?: string[]      // Fill blank only
+  essayWordLimit?: number | null
+  essayBlindGrading?: boolean
+  invalidated?: boolean                   // post-exam: award full credit to all students
+  discarded?: boolean                     // post-exam: remove from scoring denominator
+  correctedKey?: string                   // post-exam: override correct answer key
+  additionalCorrectKeys?: string[]        // post-exam: additional accepted correct answers
+  matchPartialCredit?: boolean
+  matchExtraDistractors?: boolean
+  hotspotMultipleAllowed?: boolean
+  hotspotPartialCredit?: boolean
+  // Per-question tool overrides
+  calculatorOverride?: 'none' | 'basic' | 'scientific'  // undefined = inherit assessment default
+  textHighlightOverride?: boolean | null                 // null/undefined = inherit; true = force on; false = force off
+  answerEliminationOverride?: boolean | null             // null/undefined = inherit; true = force on; false = force off
+  onScreenKeyboard?: boolean
+  referenceMaterials?: ReferenceMaterial[]
 }
 
 export interface AssessmentQuestion {
   questionId: string
   order: number
+  points: number   // point value for this question; 0 until explicitly set
+  bonus: boolean   // bonus questions award points but don't count against totalMarks
+  provenance?: 'qb' | 'pdf' | 'ai' | 'manual' | 'copied'
+  gradingConfig?: QuestionGradingConfig  // per-question grading overrides
 }
+
+export type AssessmentType = 'Exam' | 'Quiz' | 'Pop Quiz' | 'Assignment'
+
+export type AssessmentStatus =
+  | 'draft'
+  | 'pending-review'
+  | 'changes-requested'
+  | 'approved'
+  | 'scheduled'
+  | 'live'
+  | 'completed'
+
+export interface AssessmentReviewRequest {
+  reviewerIds: string[]          // L1 reviewers (coordinators/faculty)
+  l2ReviewerIds?: string[]       // L2 chairperson reviewers
+  reviewLevel: 1 | 2             // which level is currently under review
+  l1ApprovedAt?: string | null   // ISO timestamp when L1 approved
+  message: string
+  dueDate: string | null
+  sentAt: string
+}
+
+export interface DigitalToolsConfig {
+  calculator: 'none' | 'basic' | 'scientific'
+  textHighlight: boolean
+  answerElimination: boolean              // students can cross out / eliminate answer options
+  scratchpad: boolean
+  scratchpadFeedback: boolean             // allow faculty to review student scratchpad notes
+  allowCopyPaste: boolean
+  warningAlarmMinutes: number | null      // minutes before timer expires to show warning (null = disabled)
+  spellCheck: boolean                     // essay-specific
+  findReplace: boolean                    // essay-specific
+}
+
+export interface AssessmentSettings {
+  type: AssessmentType
+  passwordRequired: boolean
+  password: string
+  randomize: boolean
+  randomizeOptions: boolean      // NEW: randomize option order within each question
+  showRationaleAfter: boolean
+  // Scheduling
+  openDate: string | null        // ISO datetime
+  closeDate: string | null       // ISO datetime
+  downloadWindowHours: number    // hours before openDate students can pre-download
+  timezone: string               // e.g. "America/New_York"
+  // Pre-exam
+  instructionsText: string
+  requireAcknowledgment: boolean
+  policyText: string              // ethics/honor code shown before exam
+  attestationText: string         // text student must check "I agree" to
+  techCheck: { audio: boolean; video: boolean; wifi: boolean; os: boolean }
+  // Workflow
+  status: AssessmentStatus
+  reviewRequest: AssessmentReviewRequest | null
+  // Grading
+  graded: boolean               // false = ungraded; only valid for Quiz / Assignment
+  totalMarks: number            // default 100
+  negativeMarking: boolean      // applies to MCQ only; assessment-level
+  negativeMarkingFraction: number // deducted per wrong answer; default 0.25
+  requireAnswer: boolean           // students must answer before advancing to next question
+  backwardNavigationAllowed: boolean  // students can return to previous questions within a section
+  forwardOnlySections: boolean       // once student advances past a section, cannot return (forward-only)
+  requireAnswerForSectionAdvance: boolean  // all questions in active section must be answered before section transition
+  forcedTimerTransition: boolean     // section timer expiry forces student to next section; unanswered auto-submitted
+  secureMode: boolean              // enforces lockdown browser (Respondus integration)
+  showRawScore: boolean            // show raw score to student after submission
+  showPercentage: boolean          // show percentage score to student after submission
+  postExamReviewEnabled: boolean   // allow student to review their exam after submission
+  postExamReviewDelayHours: number | null  // null = immediately; number = delay in hours
+  // Scheduling
+  visibleDate: string | null             // when card appears on student dashboard (but not launchable)
+  allowEarlySubmission: boolean          // students can submit before timer expires
+  // Grading controls
+  blindScoring: boolean                  // hide student names during manual grading
+  // Digital tools
+  digitalTools: DigitalToolsConfig
+  // Post-exam review details (expanded from postExamReviewEnabled)
+  postExamReviewLockdown: boolean        // enforce lockdown browser during review session
+  postExamReviewPassword: string        // password to unlock the review screen
+  postExamReviewTimeLimitMinutes: number | null  // max review session duration; null = unlimited
+  postExamReviewIncorrectOnly: boolean  // show only incorrectly answered questions during review
+  postExamReviewShowRationale: boolean  // show rationale/correct answer during review
+  // Delivery
+  resumePassword: string
+  maxBreaks: number | null
+  allowUnauthorizedBreaks: boolean
+  openableDate: string | null
+  // Audience
+  publishToAll: boolean
+  studentGroupIds: string[]
+  // New — P1 settings panel
+  isHighStakes: boolean                                                    // results held until faculty review
+  passingScore: number | null                                              // percentage threshold — FACULTY-FACING ONLY; pass/fail label never shown to students
+  allowComments: boolean                                                   // per-question comment/flag box during exam
+  referenceMaterials: { name: string; url: string }[]                      // global PDFs in exam toolbar
+  warnOnBlankQuestion: boolean                                             // warn when leaving a question unanswered
+  submitButtonVisibility: 'always' | 'after-viewing-all' | 'after-answering-all'
+  scoreDisplay: 'raw' | 'raw-and-percent' | 'scaled'                      // what score students see post-exam; never includes pass/fail
+  preReadDocuments: { name: string; url: string }[]                        // assessment-level pre-reads in exam toolbar
+  // New — P2 (data model ready; UI deferred)
+  reviewShowsCorrectAnswers: boolean
+  reviewSessionStart: string | null
+  reviewSessionEnd: string | null
+}
+
+export interface AssessmentSection {
+  id: string
+  title: string
+  facultyId?: string              // kept for compat — prefer facultyIds going forward
+  facultyIds?: string[]           // all faculty/contributors owning this section
+  questionTarget?: number         // expected number of questions this section should have
+  collaboratorId?: string         // second instructor who can view/edit this section
+  prereadText?: string            // NEW: case-study preread block
+  instructions?: string           // procedural instructions shown before section starts
+  questionIds: string[]
+  contentAreaIds?: string[]       // content areas this section targets (folder IDs)
+  randomize?: boolean             // shuffle questions within this section independently
+  backNavBlocked?: boolean        // block backward navigation within this section (June 3 V0 requirement)
+  status?: 'drafting' | 'ready'  // instructor signals section is ready for coordinator review
+  timeLimitMinutes?: number        // section-level time limit; null/undefined = no separate timer
+  prereadTimerMinutes?: number | null
+  excludePrereadFromDuration?: boolean
+  sectionWarningAlarmMinutes?: number | null
+  fillTarget?: { type: 'count' | 'points'; value: number } | null         // coordinator sets section fill target
+  dueDate?: string | null                                                  // ISO date — when faculty must fill this section
+  preReadDocuments?: { name: string; url: string }[]                       // section-level pre-reads during this section
+}
+
+export type QuestionHealthFlag =
+  | { type: 'missing-rationale'; questionId: string }
+  | { type: 'poor-pbis'; questionId: string; pbis: number }
+  | { type: 'poor-discriminator'; questionId: string; pbis: number }
+  | { type: 'extreme-difficulty'; questionId: string; pValue: number }
+  | { type: 'near-zero-discrimination'; questionId: string; discriminationIndex: number }
 
 export interface AssessmentDraft {
   id: string
@@ -96,6 +310,88 @@ export interface AssessmentDraft {
   offeringId: string
   questions: AssessmentQuestion[]
   durationMinutes: number
+  sections: AssessmentSection[]
+  settings: AssessmentSettings
+  healthFlags: QuestionHealthFlag[]   // NEW: computed flags surfaced in Step 2 + Step 3
+  collaboratorIds?: string[]
+  primaryIntent?: string
+  targetDiffDistribution?: Record<QDiff, number>
+  targetTypeDistribution?: Partial<Record<QType, number>>
+  syllabusUrl?: string
+  topicWeightage?: { name: string; percentage: number }[]  // content area % targets (V0 spec §4.1)
+}
+
+/** Convenience factory for default settings */
+export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): AssessmentSettings {
+  return {
+    type,
+    passwordRequired: false,
+    password: '',
+    randomize: false,
+    randomizeOptions: false,
+    showRationaleAfter: true,
+    openDate: null,
+    closeDate: null,
+    downloadWindowHours: 24,
+    timezone: 'America/New_York',
+    instructionsText: '',
+    requireAcknowledgment: false,
+    policyText: '',
+    attestationText: '',
+    techCheck: { audio: false, video: false, wifi: false, os: false },
+    status: 'draft',
+    reviewRequest: null,
+    graded: true,
+    totalMarks: 100,
+    negativeMarking: false,
+    negativeMarkingFraction: 0.25,
+    requireAnswer: false,
+    backwardNavigationAllowed: true,
+    forwardOnlySections: false,
+    requireAnswerForSectionAdvance: false,
+    forcedTimerTransition: false,
+    secureMode: false,
+    showRawScore: true,
+    showPercentage: true,
+    postExamReviewEnabled: false,
+    postExamReviewDelayHours: null,
+    visibleDate: null,
+    allowEarlySubmission: false,
+    blindScoring: false,
+    digitalTools: {
+      calculator: 'none',
+      textHighlight: true,
+      answerElimination: false,
+      scratchpad: false,
+      scratchpadFeedback: false,
+      allowCopyPaste: false,
+      warningAlarmMinutes: 5,
+      spellCheck: false,
+      findReplace: false,
+    },
+    postExamReviewLockdown: false,
+    postExamReviewPassword: '',
+    postExamReviewTimeLimitMinutes: null,
+    postExamReviewIncorrectOnly: false,
+    postExamReviewShowRationale: true,
+    resumePassword: '',
+    maxBreaks: null,
+    allowUnauthorizedBreaks: false,
+    openableDate: null,
+    publishToAll: true,
+    studentGroupIds: [],
+    isHighStakes: false,
+    passingScore: null,
+    allowComments: false,
+    referenceMaterials: [],
+    warnOnBlankQuestion: false,
+    submitButtonVisibility: 'always',
+    scoreDisplay: 'raw-and-percent',
+    preReadDocuments: [],
+    reviewShowsCorrectAnswers: false,
+    reviewSessionStart: null,
+    reviewSessionEnd: null,
+  }
 }
 
 export interface SmartView {

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
-import type { FolderNode, Question, Persona, ColumnId } from '@/lib/qb-types'
+import type { FolderNode, Question, Persona, ColumnId, AccessRole } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { PERSONAS as GLOBAL_PERSONAS, type Persona as GlobalPersona } from '@/lib/personas'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -30,8 +30,8 @@ interface QBState {
   setCurrentPersona: (p: Persona) => void
   personas: Persona[]
 
-  navView: 'all' | 'my' | 'folder'
-  setNavView: (v: 'all' | 'my' | 'folder') => void
+  navView: 'all' | 'my' | 'folder' | 'unassigned'
+  setNavView: (v: 'all' | 'my' | 'folder' | 'unassigned') => void
 
   sidebarOpen: boolean
   setSidebarOpen: (v: boolean) => void
@@ -47,8 +47,9 @@ interface QBState {
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
   setFolderPrivacy: (id: string, isPrivate: boolean) => void
-  addFolderCollaborator: (folderId: string, personaId: string) => void
-  removeFolderCollaborator: (folderId: string, personaId: string) => void
+  addShellCollaborator: (folderId: string, personaId: string, role: AccessRole) => void
+  removeShellCollaborator: (folderId: string, personaId: string) => void
+  updateShellCollaboratorRole: (folderId: string, personaId: string, role: AccessRole) => void
 
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -99,9 +100,6 @@ interface QBState {
   openMenuQuestionId: string | null
   setOpenMenuQuestionId: (id: string | null) => void
 
-  collaboratorsModalFolderId: string | null
-  setCollaboratorsModalFolderId: (id: string | null) => void
-
   dialogActive: boolean
   setDialogActive: (v: boolean) => void
 
@@ -143,7 +141,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   // Global session is the source of truth — QB no longer holds its own persona state.
   const { currentPersona: globalPersona, setCurrentPersona: setGlobalPersona } = useFacultySession()
   const currentPersona = useMemo(() => toQBPersona(globalPersona), [globalPersona])
-  const [navView, setNavViewState] = useState<'all' | 'my' | 'folder'>('my')
+  const [navView, setNavViewState] = useState<'all' | 'my' | 'folder' | 'unassigned'>('my')
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // WCAG 1.4.10 (Reflow): auto-collapse the QB folder tree at narrow
@@ -180,7 +178,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [openMenuQuestionId, setOpenMenuQuestionId] = useState<string | null>(null)
-  const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
   const [dialogActive, setDialogActive] = useState(false)
   const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
@@ -233,7 +230,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setNavViewState('my')
   }
 
-  function setNavView(v: 'all' | 'my' | 'folder') {
+  function setNavView(v: 'all' | 'my' | 'folder' | 'unassigned') {
     setNavViewState(v)
     if (v !== 'folder') setSelectedFolderIdState(null)
   }
@@ -322,6 +319,32 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, icon } : f))
   }, [])
 
+  const addShellCollaborator = useCallback((folderId: string, personaId: string, role: AccessRole) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      const collaborators = [...new Set([...(f.collaborators ?? []), personaId])]
+      const collaboratorRoles = { ...(f.collaboratorRoles ?? {}), [personaId]: role }
+      return { ...f, collaborators, collaboratorRoles }
+    }))
+  }, [])
+
+  const removeShellCollaborator = useCallback((folderId: string, personaId: string) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      const collaborators = (f.collaborators ?? []).filter(id => id !== personaId)
+      const collaboratorRoles = { ...(f.collaboratorRoles ?? {}) }
+      delete collaboratorRoles[personaId]
+      return { ...f, collaborators, collaboratorRoles }
+    }))
+  }, [])
+
+  const updateShellCollaboratorRole = useCallback((folderId: string, personaId: string, role: AccessRole) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      return { ...f, collaboratorRoles: { ...(f.collaboratorRoles ?? {}), [personaId]: role } }
+    }))
+  }, [])
+
   const setFolderPrivacy = useCallback((id: string, isPrivate: boolean) => {
     setFolders(prev => prev.map(f => {
       if (f.id !== id) return f
@@ -332,22 +355,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
       return { ...f, isPrivateSpace: isPrivate, collaborators }
     }))
   }, [currentPersona.id])
-
-  const addFolderCollaborator = useCallback((folderId: string, personaId: string) => {
-    setFolders(prev => prev.map(f => {
-      if (f.id !== folderId) return f
-      const existing = f.collaborators ?? []
-      if (existing.includes(personaId)) return f
-      return { ...f, collaborators: [...existing, personaId] }
-    }))
-  }, [])
-
-  const removeFolderCollaborator = useCallback((folderId: string, personaId: string) => {
-    setFolders(prev => prev.map(f => {
-      if (f.id !== folderId) return f
-      return { ...f, collaborators: (f.collaborators ?? []).filter(id => id !== personaId) }
-    }))
-  }, [])
 
   const updateQuestion = useCallback((id: string, updates: Partial<Question>) => {
     setQuestionsState(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q))
@@ -477,6 +484,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
       ? true
       : navView === 'my'
       ? q.creator === currentPersona.id
+      : navView === 'unassigned'
+      ? !q.folder || !folders.some(f => f.id === q.folder)
       : selectedFolderId
         ? isInSubtree(q.folder, selectedFolderId, folders) ||
           (q.extraFolders ?? []).some(e => isInSubtree(e.folder, selectedFolderId, folders))
@@ -517,7 +526,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy, addFolderCollaborator, removeFolderCollaborator,
+    folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy,
+    addShellCollaborator, removeShellCollaborator, updateShellCollaboratorRole,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,
@@ -535,7 +545,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
     draggedFolderId, setDraggedFolderId,
     dragOverFolderId, setDragOverFolderId,
     openMenuQuestionId, setOpenMenuQuestionId,
-    collaboratorsModalFolderId, setCollaboratorsModalFolderId,
     dialogActive, setDialogActive,
     visibleQuestions, selectedFolder, accessibleFolderIds,
     closeAllOverlays,

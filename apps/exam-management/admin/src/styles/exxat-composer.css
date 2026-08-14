@@ -1,0 +1,182 @@
+/* AskLeoComposer — compact single row; wrapped = full-width text + footer icons. */
+
+.exxat-composer-grid--compact {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "leading primary trailing";
+}
+
+.exxat-composer-grid--wrapped {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "primary primary primary"
+    "leading . trailing";
+  row-gap: 0.125rem;
+}
+
+.exxat-composer-grid--compact .exxat-composer-leading {
+  grid-area: leading;
+}
+
+.exxat-composer-grid--compact .exxat-composer-primary {
+  grid-area: primary;
+}
+
+.exxat-composer-grid--compact .exxat-composer-trailing {
+  grid-area: trailing;
+}
+
+.exxat-composer-grid--wrapped .exxat-composer-primary {
+  grid-area: primary;
+}
+
+.exxat-composer-grid--wrapped .exxat-composer-leading {
+  grid-area: leading;
+  align-self: end;
+}
+
+.exxat-composer-grid--wrapped .exxat-composer-trailing {
+  grid-area: trailing;
+  align-self: end;
+  justify-self: end;
+}
+
+.exxat-composer-input {
+  min-height: 1.5rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Scroll cap + soft bottom fade into footer when content exceeds max height. */
+.exxat-composer-scroll {
+  --exxat-composer-max-height: 13rem;
+  max-height: var(--exxat-composer-max-height);
+}
+
+.exxat-composer-scroll--overflow::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 1.5rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklch, var(--card) 70%, transparent)
+  );
+}
+
+.exxat-composer-idle:focus-within .exxat-composer-scroll--overflow::after,
+.exxat-composer-dictating .exxat-composer-scroll--overflow::after {
+  background: linear-gradient(to bottom, transparent, var(--card));
+}
+
+.exxat-composer-scroll--fade-top {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 1.25rem,
+    #000 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 1.25rem, #000 100%);
+}
+
+.exxat-composer-idle {
+  background-color: color-mix(in oklch, var(--card) 78%, transparent);
+  border-color: var(--control-border);
+  -webkit-backdrop-filter: blur(12px) saturate(1.06);
+  backdrop-filter: blur(12px) saturate(1.06);
+  transition:
+    background-color 180ms ease-out,
+    border-color 180ms ease-out,
+    -webkit-backdrop-filter 180ms ease-out,
+    backdrop-filter 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.exxat-composer-idle:focus-within {
+  background-color: var(--card);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.dark .exxat-composer-idle {
+  background-color: color-mix(in oklch, var(--card) 78%, transparent);
+  border-color: color-mix(in oklch, var(--control-border) 85%, transparent);
+}
+
+.dark .exxat-composer-idle:focus-within {
+  background-color: var(--card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exxat-composer-idle {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in oklch, var(--card) 94%, transparent);
+  }
+
+  .exxat-composer-idle:focus-within {
+    background-color: var(--card);
+  }
+}
+
+.exxat-composer-dictating {
+  background-color: var(--card);
+  border-color: color-mix(in oklch, var(--brand-color) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--brand-color) 18%, transparent),
+    0 4px 20px color-mix(in oklch, var(--brand-color) 12%, transparent);
+}
+
+.exxat-composer-analyzing {
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--brand-color) 16%, var(--card)) 0%,
+    color-mix(in oklch, var(--brand-color-deep) 22%, var(--card)) 33%,
+    color-mix(in oklch, var(--brand-tint) 28%, var(--card)) 66%,
+    color-mix(in oklch, var(--brand-color) 16%, var(--card)) 100%
+  );
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+  animation: exxat-composer-gradient-shift 2s ease-in-out infinite;
+  border-color: color-mix(in oklch, var(--brand-color) 48%, transparent) !important;
+  box-shadow:
+    0 4px 24px color-mix(in oklch, var(--brand-color) 28%, transparent),
+    0 2px 10px color-mix(in oklch, var(--brand-color-deep) 18%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--brand-color) 14%, transparent);
+  transform: translateY(-2px);
+}
+
+.dark .exxat-composer-analyzing {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--brand-color) 22%, var(--card)) 0%,
+    color-mix(in oklch, var(--brand-color-deep) 28%, var(--card)) 33%,
+    color-mix(in oklch, var(--brand-tint) 32%, var(--card)) 66%,
+    color-mix(in oklch, var(--brand-color) 22%, var(--card)) 100%
+  );
+  border-color: color-mix(in oklch, var(--brand-color) 55%, transparent) !important;
+}
+
+@keyframes exxat-composer-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exxat-composer-analyzing {
+    animation: none !important;
+    transform: none;
+    background-position: 40% 50%;
+  }
+}

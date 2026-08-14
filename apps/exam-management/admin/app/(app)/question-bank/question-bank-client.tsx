@@ -16,7 +16,7 @@ function QBContent() {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 24 }}>
         {/* Illustration */}
-        <div style={{ position: 'relative', width: 96, height: 96, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: 96, height: 96, borderRadius: '50%', backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 34, color: 'var(--brand-color)', opacity: 0.85 }} />
           <span style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)' }} />

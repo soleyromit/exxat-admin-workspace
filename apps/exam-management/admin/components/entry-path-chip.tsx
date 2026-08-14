@@ -13,7 +13,7 @@
  */
 
 import { useFacultySession } from '@/lib/faculty-session'
-import { Tip } from '@exxat/ds/packages/ui/src'
+import { Tip } from '@exxatdesignux/ui'
 
 export function EntryPathChip() {
   const { entry, setEntry, hydrated } = useFacultySession()
@@ -28,7 +28,7 @@ export function EntryPathChip() {
         <div
           className="flex items-center gap-2 h-7 rounded-full px-2.5 font-medium text-xs select-none"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
           }}
           aria-label="Entry mode: Prism"

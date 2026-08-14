@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -19,7 +20,7 @@ import {
   Button, Badge, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { questionPsychometrics } from '@/lib/faculty-mock-data'
 import type { Question, QDiff, QBlooms } from '@/lib/qb-types'
@@ -70,8 +71,8 @@ export function QuestionsTab({ courseId, isViewer }: QuestionsTabProps) {
         <section
           className="rounded-xl border p-4 flex items-start gap-3"
           style={{
-            background: 'color-mix(in oklch, var(--chart-4) 6%, var(--background))',
-            borderColor: 'color-mix(in oklch, var(--chart-4) 24%, var(--border))',
+            background: 'var(--muted)',
+            borderColor: 'var(--border)',
           }}
         >
           <i
@@ -180,7 +181,7 @@ function QuestionRow({ q, isViewer }: { q: Question; isViewer: boolean }) {
             style={{
               background: 'var(--brand-tint)',
               color: 'var(--brand-color-dark)',
-              border: '1px solid color-mix(in oklch, var(--brand-color) 22%, transparent)',
+              border: '1px solid var(--brand-tint)',
             }}
           >
             {q.code}
@@ -198,9 +199,9 @@ function QuestionRow({ q, isViewer }: { q: Question; isViewer: boolean }) {
                 variant="secondary"
                 className="rounded text-[10px] uppercase tracking-wider font-bold gap-1 cursor-help"
                 style={{
-                  background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
+                  background: 'var(--muted)',
                   color: 'var(--chart-4)',
-                  border: '1px solid color-mix(in oklch, var(--chart-4) 26%, transparent)',
+                  border: '1px solid var(--border)',
                 }}
               >
                 <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
@@ -285,8 +286,8 @@ function PsychoMetric({
   const isNegative = value < 0
   const tone = isNegative ? 'warning' : inIdeal ? 'success' : 'warning'
   const palette = {
-    success: { fg: 'var(--chart-2)', bg: 'color-mix(in oklch, var(--chart-2) 16%, var(--background))' },
-    warning: { fg: 'var(--chart-4)', bg: 'color-mix(in oklch, var(--chart-4) 16%, var(--background))' },
+    success: { fg: 'var(--chart-2)', bg: 'var(--muted)' },
+    warning: { fg: 'var(--chart-4)', bg: 'var(--muted)' },
   }[tone]
 
   // Render mini-bar (range -1..1 if negative-floor else 0..1)
@@ -313,7 +314,7 @@ function PsychoMetric({
             style={{
               left: `${idealStart}%`,
               width: `${idealEnd - idealStart}%`,
-              background: 'color-mix(in oklch, var(--chart-2) 18%, transparent)',
+              background: 'var(--muted)',
             }}
           />
           {/* Value marker */}
@@ -361,9 +362,9 @@ function DistractorPicker({ rates }: { rates: number[] }) {
 // ─── Difficulty + Bloom chips ────────────────────────────────────────────────
 function DifficultyChip({ d }: { d: QDiff }) {
   const palette: Record<QDiff, { bg: string; fg: string }> = {
-    Easy:   { bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' },
-    Medium: { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' },
-    Hard:   { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' },
+    Easy:   { bg: 'var(--muted)', fg: 'var(--chart-2)' },
+    Medium: { bg: 'var(--brand-tint)', fg: 'var(--chart-1)' },
+    Hard:   { bg: 'var(--muted)', fg: 'var(--chart-4)' },
   }
   const c = palette[d]
   return (
