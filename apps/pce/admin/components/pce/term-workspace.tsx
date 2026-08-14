@@ -23,15 +23,19 @@
 // (status/responseRate/responseCount/enrollmentCount/deadline — see that
 // interface's own comment: "the KPIs, board, and results read these and are
 // unaffected" by the per-type breakdown), so this reads it directly instead
-// of expanding through evaluationsFor()/EvaluationInstance, which is now
-// unused in this file (still the real per-type source for /results).
+// of expanding through evaluationsFor()/EvaluationInstance INTO ROWS. That
+// function is still called once per row (not to build rows, just to check
+// whether course_material is one of this survey's types) — a collapsed row
+// only showed faculty avatars at first, silently dropping the fact that
+// course content is also being evaluated (caught live, 2026-08-13, on a row
+// with zero faculty context otherwise implying it).
 // ============================================================================
 
 import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Tip,
+  Badge, Tip,
   Button,
   KeyMetrics,
   Skeleton,
@@ -54,6 +58,7 @@ import {
   RESPONSE_TARGET, LIVE,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
+import { evaluationsFor } from '@/lib/pce-evaluations'
 import { type PceSurvey, type SurveyStatus } from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
 
@@ -69,6 +74,11 @@ type EvalRow = {
   responseCount: number
   enrollmentCount: number
   deadline: string
+  /** True when this offering's evaluation types include course_material —
+   *  most do (see pce-evaluations.ts derive()), but this reads the real
+   *  per-type source rather than assuming, since explicit `survey.evaluations`
+   *  setup data could omit it. */
+  hasCourseMaterial: boolean
   /** True when this offering's close date is later than the term's own
    *  standard close (evalWindow) — a per-course override, not the norm. */
   extended: boolean
@@ -134,6 +144,7 @@ function TermWorkspaceInner() {
         const closeTime = evalWin ? new Date(evalWin.close).getTime() : NaN
         const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
         const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
+        const hasCourseMaterial = evaluationsFor(s).some((e) => e.type === 'course_material')
         return {
           id: s.id,
           surveyId: s.id,
@@ -144,6 +155,7 @@ function TermWorkspaceInner() {
           responseCount: s.responseCount,
           enrollmentCount: s.enrollmentCount,
           deadline: s.deadline,
+          hasCourseMaterial,
           extended,
           survey: s,
         }
@@ -166,7 +178,26 @@ function TermWorkspaceInner() {
         cell: (row) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{row.courseCode} · {row.courseName}</p>
-            <FacultyAvatarRow instructors={row.survey.instructors} className="mt-1 gap-0.5" />
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {/* Same "Course material" chip vocabulary as Step 2's Evaluates
+                  column (EvaluateeChipCluster) — a collapsed row otherwise
+                  shows only faculty, silently dropping the fact that course
+                  content is evaluated too whenever there's no other visual
+                  cue for it. */}
+              {row.hasCourseMaterial && (
+                <Tip label="Course material is also evaluated" side="top">
+                  <Badge
+                    tabIndex={0}
+                    variant="outline"
+                    className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  >
+                    <i className="fa-light fa-book-open text-[10px]" aria-hidden="true" />
+                    Course
+                  </Badge>
+                </Tip>
+              )}
+              <FacultyAvatarRow instructors={row.survey.instructors} />
+            </div>
           </div>
         ),
       },

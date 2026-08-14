@@ -26,7 +26,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { Button } from '@exxatdesignux/ui'
+import { Badge, Button, Tip } from '@exxatdesignux/ui'
 import {
   ListPageBoardCard,
   ListPageBoardCardBody,
@@ -42,6 +42,7 @@ import {
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
+import { evaluationsFor } from '@/lib/pce-evaluations'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { expandInstances } from '@/lib/pce-push-validation'
 import {
@@ -145,6 +146,7 @@ function SurveyBoardCard({
   const closeTime = evalClose ? new Date(evalClose).getTime() : NaN
   const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
   const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
+  const hasCourseMaterial = evaluationsFor(s).some((e) => e.type === 'course_material')
   return (
     /* Stretched-link card (WCAG 2.1.1 — a div onClick is not keyboard
      * operable): the overlay anchor makes the whole card one tab stop with
@@ -167,7 +169,27 @@ function SurveyBoardCard({
         />
       </ListPageBoardCardHeader>
       <ListPageBoardCardBody>
-        {s.instructors.length > 0 && <FacultyAvatarRow instructors={s.instructors} />}
+        {/* Same "Course material" chip vocabulary as the table (term-
+            workspace.tsx) and Step 2's Evaluates column — a card that only
+            shows faculty avatars silently drops the fact that course
+            content is evaluated too. */}
+        {(hasCourseMaterial || s.instructors.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {hasCourseMaterial && (
+              <Tip label="Course material is also evaluated" side="top">
+                <Badge
+                  tabIndex={0}
+                  variant="outline"
+                  className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                >
+                  <i className="fa-light fa-book-open text-[10px]" aria-hidden="true" />
+                  Course
+                </Badge>
+              </Tip>
+            )}
+            {s.instructors.length > 0 && <FacultyAvatarRow instructors={s.instructors} />}
+          </div>
+        )}
         {col === 'scheduled' && (
           s.status === 'draft'
             ? <ListPageBoardCardSecondary>Draft — resume setup</ListPageBoardCardSecondary>
