@@ -11,12 +11,27 @@
 //
 // No red (aarti_no_red): teal --chart-2 good · amber --chart-4/--chip-4 risk.
 // This page says "evaluations", never "surveys".
+//
+// 2026-08-13 (Granola 0ef80c33, Vishal, raw transcript: "there are like some
+// of the surveys which are yet to be completed... so I would say DPT-611 and
+// then what's the response rate to that... not in every case you'll be
+// seeing all these different rows, the breakups... it should be just
+// available and just directly say point out that this is the response rate
+// right now") — ONE row per offering now, not one per evaluation type
+// (Course / Faculty used to each get their own row with their own rate).
+// The offering-level roll-up already lives on PceSurvey itself
+// (status/responseRate/responseCount/enrollmentCount/deadline — see that
+// interface's own comment: "the KPIs, board, and results read these and are
+// unaffected" by the per-type breakdown), so this reads it directly instead
+// of expanding through evaluationsFor()/EvaluationInstance, which is now
+// unused in this file (still the real per-type source for /results).
 // ============================================================================
 
 import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
+  Tip,
   Button,
   KeyMetrics,
   Skeleton,
@@ -31,6 +46,7 @@ import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { ModerationSheet } from '@/components/pce/moderation-sheet'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
+import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
 import { TermEvaluationsBoard } from '@/components/pce/term-evaluations-board'
 import { EditEndDateDialog } from '@/components/pce/pce-modals'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
@@ -38,32 +54,24 @@ import {
   RESPONSE_TARGET, LIVE,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
-import {
-  EVALUATION_TYPE_LABEL,
-  EVALUATION_TYPE_ICON,
-  type PceSurvey,
-  type EvaluationType,
-  type EvaluationInstance,
-  type SurveyStatus,
-} from '@/lib/pce-mock-data'
-import { evaluationsFor } from '@/lib/pce-evaluations'
+import { type PceSurvey, type SurveyStatus } from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
 
-/* One row = one evaluation (Course or Faculty) of one offering. Rows group by
- * course, so each offering is a header with its Course + Faculty rows beneath —
- * each row its own status, response, close date, and independent actions. */
+/* One row = one offering's evaluation, the roll-up across every aspect it
+ * covers (course material + every faculty role). */
 type EvalRow = {
-  id: string // `${surveyId}:${type}`
+  id: string // surveyId
   surveyId: string
   courseCode: string
   courseName: string
-  evaluationType: EvaluationType
-  typeLabel: string
   status: SurveyStatus
   responseRate: number
   responseCount: number
   enrollmentCount: number
   deadline: string
+  /** True when this offering's close date is later than the term's own
+   *  standard close (evalWindow) — a per-course override, not the norm. */
+  extended: boolean
   survey: PceSurvey
 } & Record<string, unknown>
 
@@ -71,14 +79,6 @@ type EvalRow = {
 const isLive = (st: SurveyStatus) => st === 'active' || st === 'collecting'
 const isFinished = (st: SurveyStatus) =>
   st === 'pending_review' || st === 'closed' || st === 'released'
-
-function primaryInstructor(s: PceSurvey) {
-  return s.instructors.find((i) => i.role === 'primary') ?? s.instructors[0] ?? null
-}
-
-function primaryInstructorName(s: PceSurvey): string {
-  return primaryInstructor(s)?.name ?? ''
-}
 
 /* Needs-attention first, then lowest response rate. */
 const STATUS_ORDER: Record<string, number> = {
@@ -120,91 +120,61 @@ function TermWorkspaceInner() {
   const rate = weightedRate(termSurveys)
   const responsesCollected = termSurveys.reduce((s, x) => s + x.responseCount, 0)
   const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
+  /* Needed inside tableRows (extension detection) — computed before the
+   * `!term` early return below, so guarded for an undefined term here. */
+  const evalWin = term ? evalWindow(term) : null
 
-  /* Flatten to one row per (offering × evaluation type). Offerings are ordered
-   * needs-attention-first by their most-urgent type, then lowest response; the
-   * three type rows stay in canonical order within each offering. */
+  /* One row per offering, using the survey-level roll-up directly (no more
+   * per-type expansion — see file header). Needs-attention first, then
+   * lowest response rate. */
   const tableRows: EvalRow[] = useMemo(() => {
-    const rank = (evals: EvaluationInstance[]) => ({
-      minStatus: Math.min(...evals.map((e) => STATUS_ORDER[e.status] ?? 9)),
-      minRate: Math.min(...evals.map((e) => e.responseRate)),
-    })
-    return termSurveys
-      .map((s) => {
-        const evals = evaluationsFor(s)
-        return { s, evals, r: rank(evals) }
-      })
-      .sort((a, b) => a.r.minStatus - b.r.minStatus || a.r.minRate - b.r.minRate)
-      .flatMap(({ s, evals }) =>
-        evals.map((e): EvalRow => ({
-          id: `${s.id}:${e.type}`,
+    return [...termSurveys]
+      .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) || a.responseRate - b.responseRate)
+      .map((s): EvalRow => {
+        const closeTime = evalWin ? new Date(evalWin.close).getTime() : NaN
+        const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
+        const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
+        return {
+          id: s.id,
           surveyId: s.id,
           courseCode: s.courseCode,
           courseName: s.courseName,
-          evaluationType: e.type,
-          typeLabel: EVALUATION_TYPE_LABEL[e.type],
-          status: e.status,
-          responseRate: e.responseRate,
-          responseCount: e.responseCount,
-          enrollmentCount: e.enrollmentCount,
-          deadline: e.deadline,
+          status: s.status,
+          responseRate: s.responseRate,
+          responseCount: s.responseCount,
+          enrollmentCount: s.enrollmentCount,
+          deadline: s.deadline,
+          extended,
           survey: s,
-        })),
-      )
-  }, [termSurveys])
+        }
+      })
+  }, [termSurveys, evalWin])
 
-  /* Group header = the offering (shown once); the rows under it are its
-   * Course + Faculty evaluations. */
-  const groupLabels = useMemo(() => {
-    const m: Record<string, string> = {}
-    for (const s of termSurveys) m[s.courseCode] = `${s.courseCode} · ${s.courseName}`
-    return m
-  }, [termSurveys])
-  const groupOrder = useMemo(() => {
-    const seen: string[] = []
-    for (const r of tableRows) if (!seen.includes(r.courseCode)) seen.push(r.courseCode)
-    return seen
-  }, [tableRows])
-
-  /* ── columns — one row per evaluation, proper columns + independent actions ── */
+  /* ── columns — one row per offering, proper columns + independent actions ── */
   const columns: ColumnDef<EvalRow>[] = useMemo(() => {
-    /* Existing remind contract (surveys/remind reads ?ids + ?from only). The
-     * button is per-evaluation; scoping the wizard to a single type's
-     * non-responders is the follow-up (no dead param shipped now). */
+    /* Existing remind contract (surveys/remind reads ?ids + ?from only). */
     const remindHref = (surveyId: string) =>
       `/surveys/remind?ids=${surveyId}${fromOrigin ? `&from=${encodeURIComponent(fromOrigin)}` : ''}`
     const resultsHref = (surveyId: string) => withFrom(`/results/${surveyId}`, fromOrigin)
     return [
       {
-        key: 'typeLabel',
-        label: 'Evaluation',
-        sortable: false,
-        width: 210,
-        filter: { type: 'text', icon: 'fa-list-check' },
-        cell: (row) => {
-          /* Faculty row names who's being evaluated; Course row is course-level. */
-          const instr = row.evaluationType === 'faculty_roles' ? primaryInstructor(row.survey) : null
-          const extra = row.survey.instructors.length - 1
-          return (
-            <div className="flex min-w-0 items-center gap-2.5">
-              <i className={`fa-light ${EVALUATION_TYPE_ICON[row.evaluationType]} w-4 shrink-0 text-center text-muted-foreground`} aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{row.typeLabel}</p>
-                {instr && (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {instr.name}{extra > 0 ? ` +${extra}` : ''}
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        },
+        key: 'courseCode',
+        label: 'Course',
+        sortable: true,
+        width: 260,
+        filter: { type: 'text', icon: 'fa-book-open' },
+        cell: (row) => (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{row.courseCode} · {row.courseName}</p>
+            <FacultyAvatarRow instructors={row.survey.instructors} className="mt-1 gap-0.5" />
+          </div>
+        ),
       },
       {
         key: 'status',
         label: 'Status',
         sortable: true,
-        width: 140,
+        width: 190,
         cell: (row) => <SurveyStatusBadgeOS status={row.status} />,
       },
       {
@@ -228,13 +198,23 @@ function TermWorkspaceInner() {
         key: 'deadline',
         label: 'Closes',
         sortable: true,
-        width: 130,
+        width: 150,
         cell: (row) => {
           const d = row.deadline ? daysUntil(row.deadline) : null
           if (isLive(row.status) && d != null) {
             return (
               <div>
-                <p className="text-sm tabular-nums">{row.deadline}</p>
+                <p className="flex items-center gap-1.5 text-sm tabular-nums">
+                  {row.deadline}
+                  {row.extended && (
+                    <Tip label={`Extended past the term's standard close (${evalWin?.close})`} side="top">
+                      <span tabIndex={0} className="inline-flex shrink-0 items-center outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                        <i className="fa-solid fa-star text-[10px]" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                        <span className="sr-only"> — extended</span>
+                      </span>
+                    </Tip>
+                  )}
+                </p>
                 <p className="text-xs tabular-nums" style={{ color: d <= 3 ? 'var(--chip-4)' : 'var(--muted-foreground)' }}>
                   {d <= 0 ? 'closes today' : `${d}d left`}
                 </p>
@@ -245,14 +225,14 @@ function TermWorkspaceInner() {
         },
       },
       {
-        /* Independent per-evaluation actions — remind THIS eval's non-responders,
-         * extend THIS eval's close date, review/release THIS eval. */
+        /* Independent per-offering actions — remind non-responders, extend
+         * the close date, review/release this evaluation. */
         key: 'actions',
         label: '',
         width: 210,
         cell: (row) => {
           const atRisk = isLive(row.status) && row.responseRate < AT_RISK_THRESHOLD
-          const label = `${row.typeLabel} evaluation · ${row.courseCode}`
+          const label = `${row.courseCode} evaluation`
           return (
             <div className="flex items-center justify-end gap-1">
               {isLive(row.status) && (
@@ -318,7 +298,6 @@ function TermWorkspaceInner() {
     )
   }
 
-  const evalWin = evalWindow(term)
   /* Four DISTINCT jobs, each self-explanatory (Romit: "I don't understand
    * this metric" — the old strip said the same fact twice (63% AND 405/641)
    * and used jargon ("courses covered"). Now: how collection is going · who
@@ -376,7 +355,7 @@ function TermWorkspaceInner() {
                 {' · '}
               </>
             ) : null}
-            {evalWin.open} – {evalWin.close} · AY {term.academicYear}
+            {evalWin?.open} – {evalWin?.close} · AY {term.academicYear}
           </p>
         </div>
       </div>
@@ -423,7 +402,7 @@ function TermWorkspaceInner() {
               </div>
 
               {evalView === 'board' ? (
-                <TermEvaluationsBoard surveys={termSurveys} termId={term.id} />
+                <TermEvaluationsBoard surveys={termSurveys} termId={term.id} evalClose={evalWin?.close} />
               ) : (
                 <DataTablePaginated<EvalRow>
                   data={tableRows}
@@ -433,9 +412,6 @@ function TermWorkspaceInner() {
                      "N selected · Export · Delete" bar were noise, and Delete
                      had no real path here (Romit 2026-07-19). */
                   selectable={false}
-                  defaultGroupBy="courseCode"
-                  groupLabels={groupLabels}
-                  groupOrder={groupOrder}
                   pagination={{ pageSize: 16 }}
                   edgeInset={false}
                   stickyHeader={false}

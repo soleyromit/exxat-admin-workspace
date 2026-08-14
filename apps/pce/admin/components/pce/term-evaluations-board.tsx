@@ -11,6 +11,17 @@
 // Columns: No survey configured (term offerings without an evaluation — cards
 // deep-link into the push wizard scoped to that offering) · Scheduled (+drafts)
 // · Live · Closed · Pending review · Results available.
+//
+// 2026-08-13 (Granola 0ef80c33, Vishal, raw transcript: "not in every case
+// you'll be seeing all these different rows, the breakups... it should be
+// just available and just directly say point out that this is the response
+// rate right now") — ONE card per offering now, not one per evaluation type.
+// This file's own prior comment on BoardRow said the per-type split existed
+// specifically "so the board and the table agree" — now that the table
+// collapsed to one row per offering (term-workspace.tsx, same date), keeping
+// this per-type would have recreated that exact mismatch in the other
+// direction. Faculty now renders via the shared FacultyAvatarRow (also used
+// by the table) so both views show identity identically, not just similarly.
 // ============================================================================
 
 import { useMemo } from 'react'
@@ -18,7 +29,6 @@ import Link from 'next/link'
 import { Button } from '@exxatdesignux/ui'
 import {
   ListPageBoardCard,
-  ListPageBoardCardAvatar,
   ListPageBoardCardBody,
   ListPageBoardCardHeader,
   ListPageBoardCardSecondary,
@@ -30,14 +40,13 @@ import {
   type ListPageBoardColumnDef,
 } from '@/components/data-views/list-page-board-template'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
+import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
 import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
-import { evaluationsFor } from '@/lib/pce-evaluations'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { expandInstances } from '@/lib/pce-push-validation'
 import {
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY, MOCK_TEMPLATES,
-  EVALUATION_TYPE_LABEL,
-  type PceSurvey, type EvaluationInstance,
+  type PceSurvey,
 } from '@/lib/pce-mock-data'
 
 /** Aug 4 transcript scenario #6 — a Draft/re-editable Scheduled survey is
@@ -73,11 +82,9 @@ function excludedCount(s: PceSurvey, surveys: PceSurvey[]): number {
 
 type SetupCard = { id: string; code: string; name: string; facultyName: string | null }
 
-/* One card = one evaluation TYPE of one offering, so the board and the table
- * agree on the same per-type statuses (a course with three divergent types
- * appears as three cards across the lifecycle columns). */
+/* One card = one offering's evaluation (see file header, 2026-08-13). */
 type BoardRow =
-  | { key: string; kind: 'survey'; s: PceSurvey; e: EvaluationInstance }
+  | { key: string; kind: 'survey'; s: PceSurvey }
   | { key: string; kind: 'setup'; o: SetupCard }
 
 type ColumnId = 'no_survey' | 'scheduled' | 'live' | 'pending' | 'released'
@@ -105,7 +112,7 @@ const COLUMNS: { id: ColumnId; label: string }[] = [
 ]
 
 function columnOf(row: BoardRow): ColumnId {
-  return row.kind === 'setup' ? 'no_survey' : SURVEY_COLUMN[row.e.status]
+  return row.kind === 'setup' ? 'no_survey' : SURVEY_COLUMN[row.s.status]
 }
 
 function fmtIsoShort(iso?: string): string | null {
@@ -115,31 +122,29 @@ function fmtIsoShort(iso?: string): string | null {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function primaryInstructor(s: PceSurvey) {
-  return s.instructors.find(i => i.role === 'primary') ?? s.instructors[0] ?? null
-}
-
 /* ── cards ──────────────────────────────────────────────────────────────── */
 
 function SurveyBoardCard({
-  s, e, href, resumable, excluded,
+  s, href, resumable, excluded, evalClose,
 }: {
   s: PceSurvey
-  e: EvaluationInstance
   href: string
   /** Scenario #6 — routes this card into the wizard instead of results. */
   resumable: boolean
   /** Scenario #9 — fresh Prism people this survey's saved state excludes. 0
    *  when unresumable (nothing to reconcile against, see excludedCount). */
   excluded: number
+  /** Term's standard close date — same extension check as the table
+   *  (term-workspace.tsx), so a card and its row agree on which offerings
+   *  are non-standard. */
+  evalClose?: string
 }) {
-  const instructor = primaryInstructor(s)
-  const extra = s.instructors.length - 1
-  const col = SURVEY_COLUMN[e.status]
+  const col = SURVEY_COLUMN[s.status]
   const opens = fmtIsoShort(s.openDate)
   const showGauge = col === 'live' || col === 'pending' || col === 'released'
-  /* Faculty is only meaningful on the Faculty-and-other-roles card. */
-  const showInstructor = e.type === 'faculty_roles' && instructor != null
+  const closeTime = evalClose ? new Date(evalClose).getTime() : NaN
+  const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
+  const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
   return (
     /* Stretched-link card (WCAG 2.1.1 — a div onClick is not keyboard
      * operable): the overlay anchor makes the whole card one tab stop with
@@ -148,11 +153,7 @@ function SurveyBoardCard({
     <ListPageBoardCard className="relative w-full">
       <Link
         href={href}
-        aria-label={
-          resumable
-            ? `Resume setup for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`
-            : `Open results for ${s.courseCode} · ${EVALUATION_TYPE_LABEL[e.type]}`
-        }
+        aria-label={resumable ? `Resume setup for ${s.courseCode}` : `Open results for ${s.courseCode}`}
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       <ListPageBoardCardHeader>
@@ -163,24 +164,16 @@ function SurveyBoardCard({
               <span className="line-clamp-2">{s.courseName}</span>
             </span>
           )}
-          trailing={showInstructor && instructor ? <ListPageBoardCardAvatar initials={instructor.initials} /> : undefined}
         />
       </ListPageBoardCardHeader>
       <ListPageBoardCardBody>
-        <ListPageBoardCardSecondary>{EVALUATION_TYPE_LABEL[e.type]}</ListPageBoardCardSecondary>
-        {showInstructor && instructor && (
-          <BoardCardTwoLineBlock
-            iconClass="fa-user"
-            line1={extra > 0 ? `${instructor.name} +${extra}` : instructor.name}
-            line2={s.cohort}
-          />
-        )}
+        {s.instructors.length > 0 && <FacultyAvatarRow instructors={s.instructors} />}
         {col === 'scheduled' && (
-          e.status === 'draft'
+          s.status === 'draft'
             ? <ListPageBoardCardSecondary>Draft — resume setup</ListPageBoardCardSecondary>
             : resumable
               ? <ListPageBoardCardSecondary>Scheduled — resume setup to review</ListPageBoardCardSecondary>
-              : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={e.deadline ? `Closes ${e.deadline}` : undefined} />
+              : opens && <BoardCardTwoLineBlock iconClass="fa-calendar-days" line1={`Opens ${opens}`} line2={s.deadline ? `Closes ${s.deadline}${extended ? ' · Extended' : ''}` : undefined} />
         )}
         {/* #9 — neutral, not amber: this isn't a data gap to fix, it's an FYI
             about a deliberate Auto-Update-off exclusion (same non-amber
@@ -191,11 +184,17 @@ function SurveyBoardCard({
             line1={`${excluded} ${excluded === 1 ? 'person' : 'people'} not included`}
           />
         )}
+        {showGauge && extended && (
+          <ListPageBoardCardSecondary>
+            <i className="fa-solid fa-star text-[10px] me-1" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+            Extended past {evalClose}
+          </ListPageBoardCardSecondary>
+        )}
         {showGauge && (
           <ResponseProgressCell
-            rate={e.responseRate}
-            responseCount={e.responseCount}
-            enrollmentCount={e.enrollmentCount}
+            rate={s.responseRate}
+            responseCount={s.responseCount}
+            enrollmentCount={s.enrollmentCount}
             target={RESPONSE_TARGET}
             className="w-full max-w-none"
           />
@@ -241,10 +240,16 @@ function SetupBoardCard({ o, termId }: { o: SetupCard; termId: string }) {
 export function TermEvaluationsBoard({
   surveys,
   termId,
+  evalClose,
 }: {
   /** Term-scoped course evaluations (same rows as the table view). */
   surveys: PceSurvey[]
   termId: string
+  /** Term's standard close date (term-workspace.tsx's evalWindow(term).close)
+   *  — for the same per-card extension flag the table shows. Optional so a
+   *  caller without the term object (none today) still renders correctly,
+   *  just without the flag. */
+  evalClose?: string
 }) {
   /* Canonical results link (pce-nav-origin.withFrom) — breadcrumbs back to this
    * term workspace. Offering-level today; per-type results is a future route. */
@@ -256,8 +261,7 @@ export function TermEvaluationsBoard({
    * "resume" actually resume. */
   const resumeHref = (s: PceSurvey) => `/surveys/push?term=${termId}&offerings=${s.offeringId}`
   const rows = useMemo<BoardRow[]>(() => {
-    const surveyRows: BoardRow[] = surveys.flatMap(s =>
-      evaluationsFor(s).map(e => ({ key: `s-${s.id}-${e.type}`, kind: 'survey' as const, s, e })))
+    const surveyRows: BoardRow[] = surveys.map(s => ({ key: `s-${s.id}`, kind: 'survey' as const, s }))
     /* Offerings in this term without ANY evaluation. Unlike coverageFor(),
      * drafts count here — a draft card already sits in the Scheduled column,
      * so listing the course under "No survey configured" too would duplicate it. */
@@ -313,10 +317,10 @@ export function TermEvaluationsBoard({
           return (
             <SurveyBoardCard
               s={row.s}
-              e={row.e}
               href={resumable ? resumeHref(row.s) : resultsHref(row.s)}
               resumable={resumable}
               excluded={excludedCount(row.s, surveys)}
+              evalClose={evalClose}
             />
           )
         }}

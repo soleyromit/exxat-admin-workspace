@@ -51,14 +51,24 @@ export function EnrollmentStatusBadge({ status }: { status: string }) {
 // ONE vocabulary across the app (2026-07-08 unification — the dashboard, hub,
 // and results pages previously ran three string sets for the same states):
 // Draft → Scheduled → Live → In review → Released.
+// 2026-08-13 (Granola 0ef80c33, Vishal, raw transcript: "the message that we
+// want to give is that this survey has been closed... I am just saying that
+// the headers here should match the statuses there because it's the same
+// information") — these labels used to read "In review" / "Released" here
+// while term-evaluations-board.tsx's own column headers said "Closed ·
+// Pending review" / "Results available" for the exact same states. Adopted
+// the board's wording (it states both facts — closed AND awaiting review —
+// where "In review" alone didn't say what was closed) everywhere this map is
+// read, not just the term page, so the table/board/dashboard/results/remind
+// screens that all share SURVEY_STATUS_BADGE stay in sync by construction.
 export const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon: string; label: string }> = {
   draft:          { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-pen-ruler',      label: 'Draft'     },
   scheduled:      { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar',       label: 'Scheduled' },
   active:         { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'      },
   collecting:     { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'      },
-  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'In review' },
-  closed:         { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'In review' },
-  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-circle-check',   label: 'Released'  },
+  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed · Pending review' },
+  closed:         { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed · Pending review' },
+  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-circle-check',   label: 'Results available' },
 }
 
 export function SurveyStatusBadge({ status }: { status: SurveyStatus }) {
