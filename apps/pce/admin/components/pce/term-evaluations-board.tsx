@@ -41,7 +41,7 @@ import {
 } from '@/components/data-views/list-page-board-template'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
-import { RESPONSE_TARGET } from '@/lib/pce-term-metrics'
+import { RESPONSE_TARGET, isResumable, resumeHref as resumeHrefFor } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
 import { withFrom } from '@/lib/pce-nav-origin'
 import { expandInstances } from '@/lib/pce-push-validation'
@@ -49,18 +49,6 @@ import {
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY, MOCK_TEMPLATES,
   type PceSurvey,
 } from '@/lib/pce-mock-data'
-
-/** Aug 4 transcript scenario #6 — a Draft/re-editable Scheduled survey is
- *  still mid-setup; its card must route back into the push wizard to resume,
- *  never to a results page for a survey that hasn't collected anything.
- *  Resumability rides on `wizardDraft` itself (pce-mock-data.ts:422-428:
- *  present on Draft rows and on Scheduled rows re-saved after being pulled
- *  in for editing; cleared on a normal full submit) — not on status alone,
- *  since most Scheduled rows finish the wizard in one pass and have nothing
- *  to resume into. */
-function isResumable(s: PceSurvey): boolean {
-  return !!s.wizardDraft
-}
 
 /** Aug 4 transcript scenario #9 — "how do we show this user scenario... so
  *  that user knows only David is evaluating, there is another person called
@@ -276,12 +264,7 @@ export function TermEvaluationsBoard({
   /* Canonical results link (pce-nav-origin.withFrom) — breadcrumbs back to this
    * term workspace. Offering-level today; per-type results is a future route. */
   const resultsHref = (s: PceSurvey) => withFrom(`/results/${s.id}`, `term:${termId}`)
-  /* Scenario #6 — same resume URL shape SetupBoardCard already uses below;
-   * push/page.tsx's Phase 3 hydration effect rehydrates the saved
-   * templateAssignments/unitSelections/autoUpdateOn from wizardDraft once
-   * this offering is selected, so nothing further is needed here to make
-   * "resume" actually resume. */
-  const resumeHref = (s: PceSurvey) => `/surveys/push?term=${termId}&offerings=${s.offeringId}`
+  const resumeHref = (s: PceSurvey) => resumeHrefFor(s, termId)
   const rows = useMemo<BoardRow[]>(() => {
     const surveyRows: BoardRow[] = surveys.map(s => ({ key: `s-${s.id}`, kind: 'survey' as const, s }))
     /* Offerings in this term without ANY evaluation. Unlike coverageFor(),

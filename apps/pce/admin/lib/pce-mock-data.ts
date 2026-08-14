@@ -1367,6 +1367,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     programId: 'prog1',
   },
   {
+    // 2026-08-13 — offeringId added: this record had none, so the push
+    // wizard's resume link (`/surveys/push?...&offerings=${offeringId}`)
+    // had nothing to point at. co7 is DPT-511 in Spring 2026 (pt1) — see
+    // MOCK_COURSE_OFFERINGS.
     id: 's7',
     courseCode: 'DPT-511',
     courseName: 'Musculoskeletal Physical Therapy II',
@@ -1375,6 +1379,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseType: 'didactic',
     templateId: 'tmpl1',
     status: 'draft',
+    offeringId: 'co7',
     instructors: [INSTRUCTORS.patel],
     responseRate: 0,
     responseCount: 0,

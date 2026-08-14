@@ -55,7 +55,7 @@ import { TermEvaluationsBoard } from '@/components/pce/term-evaluations-board'
 import { EditEndDateDialog } from '@/components/pce/pce-modals'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
 import {
-  RESPONSE_TARGET, LIVE,
+  RESPONSE_TARGET, LIVE, isResumable, resumeHref as resumeHrefFor,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
@@ -82,6 +82,13 @@ type EvalRow = {
   /** True when this offering's close date is later than the term's own
    *  standard close (evalWindow) — a per-course override, not the norm. */
   extended: boolean
+  /** Draft, or a Scheduled survey re-opened for editing — routes back into
+   *  the push wizard instead of results (see isResumable in pce-term-
+   *  metrics.ts). A draft otherwise has no edit path from this table at
+   *  all — caught live, 2026-08-13: its row click went to /results (empty,
+   *  nothing collected yet) and its "..." menu only offered View results /
+   *  Preview form. */
+  resumable: boolean
   survey: PceSurvey
 } & Record<string, unknown>
 
@@ -157,6 +164,7 @@ function TermWorkspaceInner() {
           deadline: s.deadline,
           hasCourseMaterial,
           extended,
+          resumable: isResumable(s),
           survey: s,
         }
       })
@@ -168,6 +176,10 @@ function TermWorkspaceInner() {
     const remindHref = (surveyId: string) =>
       `/surveys/remind?ids=${surveyId}${fromOrigin ? `&from=${encodeURIComponent(fromOrigin)}` : ''}`
     const resultsHref = (surveyId: string) => withFrom(`/results/${surveyId}`, fromOrigin)
+    /* term is guaranteed by the time any row actually renders (the `!term`
+     * early return below empties tableRows first) — the `?? ''` here only
+     * covers columns' own definition, which runs before that check. */
+    const editHref = (survey: PceSurvey) => resumeHrefFor(survey, term?.id ?? '')
     return [
       {
         key: 'courseCode',
@@ -264,6 +276,21 @@ function TermWorkspaceInner() {
         cell: (row) => {
           const atRisk = isLive(row.status) && row.responseRate < AT_RISK_THRESHOLD
           const label = `${row.courseCode} evaluation`
+          /* Draft (or a Scheduled survey re-opened for editing) has nothing
+             else meaningful here — no results, no reminders, no window to
+             extend — so this is the row's ONLY action, not one option among
+             several. */
+          if (row.resumable) {
+            return (
+              <div className="flex items-center justify-end">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={editHref(row.survey)} onClick={(e) => e.stopPropagation()} aria-label={`Edit the ${label}`}>
+                    Edit
+                  </Link>
+                </Button>
+              </div>
+            )
+          }
           return (
             <div className="flex items-center justify-end gap-1">
               {isLive(row.status) && (
@@ -312,7 +339,7 @@ function TermWorkspaceInner() {
         },
       },
     ]
-  }, [router, fromOrigin])
+  }, [router, fromOrigin, term?.id])
 
   if (!term) {
     return (
@@ -446,7 +473,11 @@ function TermWorkspaceInner() {
                   pagination={{ pageSize: 16 }}
                   edgeInset={false}
                   stickyHeader={false}
-                  onRowClick={(row) => router.push(withFrom(`/results/${row.surveyId}`, fromOrigin))}
+                  onRowClick={(row) => router.push(
+                    row.resumable
+                      ? resumeHrefFor(row.survey, term.id)
+                      : withFrom(`/results/${row.surveyId}`, fromOrigin),
+                  )}
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />
