@@ -275,6 +275,16 @@ Source: `docs/research/meetings/2026-07-30-exam-management-weekly-call.md` (Gran
 | — | **Exam management question creation = P0.** Vishal Jul 7: "your P0 will be question creation. Period." Supersedes relative priorities set prior to Jul 2026. No code change — priority signal for Romit's design sequencing. D_EM_0707_03. |
 | — | **Day-to-day approver = Yash.** Weekly Aarti call permanently canceled. Yash reviews designs going forward. Aarti reviews the full picture every ~1.5 months. D_EM_0707_01, D_EM_0707_02. |
 
+## Phase 1 design tasks — added 2026-08-13
+
+Source: `docs/research/meetings/2026-08-13-course-eval-ds-pattern-sync.md` (Granola `7aeae56b`)
+
+> Cross-product DS design language review — Himanshu walked through the new DS patterns being built by Vinay. Same component set shared across exam-management and course evaluation. Working session with Romit and Himanshu needed before applying changes.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T112 | DS design language alignment — working session with Himanshu | Design / Eng | Cross-product (exam-management all surfaces) | P1 — DESIGN-REVIEW | Himanshu walked through 6 new DS patterns on Aug 13 that apply to exam-management: (1) compact sidebar — no card-based approach; (2) line-only tabs — no primary/secondary split; (3) tab overflow → icon-based with "more" menu; (4) sticky tabs + sticky section/table headers on scroll; (5) KPI cards — concise top + optional graph (sm/md/lg); (6) resizable sheets + in-sheet record navigation without going back. Vinay is building the component set; engineering picks up new components automatically. Romit to schedule working session with Himanshu AFTER course eval survey distribution handoff. Do NOT apply DS changes until components are released and working session is completed (Romit hit errors on previous upgrade attempt). D_DS_0813_01–07. |
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |
