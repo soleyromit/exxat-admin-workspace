@@ -31,7 +31,11 @@ export interface SystemBannerConfig {
 }
 
 export const DEFAULT_SYSTEM_BANNER_CONFIG: SystemBannerConfig = {
-  enabled: true,
+  // Off by default — every visitor with no stored preference otherwise saw
+  // an unsolicited "Exxat One Premium" promo on first load (Romit, 2026-08-17).
+  // Settings can still turn it on to preview any variant/copy without a
+  // redeploy; this only changes what a fresh session starts with.
+  enabled: false,
   variant: "promo",
   emphasis: "prominent",
   title: "Exxat One Premium",
