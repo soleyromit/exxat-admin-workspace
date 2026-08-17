@@ -150,6 +150,13 @@ DOCUMENTED_HAND_ROLLS = {
     "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29 — dashboard, not a list page
     "app/(app)/analytics/programmatic/page.tsx",  # dashboard, not a list page
     "components/curricular-loop-diagram.tsx",  # PerformanceHeatmap l.267, TrendRow l.797
+    # pce: Badge asChild + native <button> — the Radix Slot composition DS's
+    # own Badge(asChild) type signature calls for when a Badge needs to be
+    # clickable (Badge itself renders a <span>, not a button). The regex has
+    # no asChild awareness and flags the <button> textually. Identical
+    # composition already ships unflagged in step-communication.tsx (2026-08-11,
+    # Monil) — this file (2026-08-17) relocates that exact chip to Step 2.
+    "components/pce/courses-evaluatees/step-survey-instances.tsx",
     # exam-management: assessment-builder question picker — tightly coupled
     # picker grid (full-row click toggles selection, custom selected-row tint,
     # embedded sub-widget of a larger builder shell with smart-view chips +

@@ -97,12 +97,12 @@
 // selection changes up — the page pushes exactly the selected set (minus
 // gaps, guarded there).
 
-import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   AvatarGroup, AvatarInitials,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectSeparator,
   Button, Checkbox, CheckboxLabel, LocalBanner, ToggleSwitch, Badge, Tip,
-  Card, CardContent,
+  Card, CardContent, Input, Textarea, FieldLabel, Separator,
   FloatingSheetPanel, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelBody,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -125,7 +125,7 @@ import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
 import { SurveyPreviewDialog } from '@/components/pce/distribute-wizard/survey-preview-dialog'
 import {
-  COURSE_TYPE_FULL_LABEL, deliveryModeOf,
+  COURSE_TYPE_FULL_LABEL, deliveryModeOf, MOCK_MASTER_COURSES,
   type CourseOffering, type PceTemplate, type DeliveryMode,
 } from '@/lib/pce-mock-data'
 import { courseLabelOf, templateCriteria, CRITERION_BY_TYPE, type Criterion } from '@/lib/pce-course-readiness'
@@ -234,6 +234,19 @@ interface StepSurveyInstancesProps {
    *  LocalBanner at the top of the step. Empty/absent = no banner. */
   templateDriftNotices?: TemplateDriftNotice[]
   onDismissTemplateDrift?: () => void
+  /** Survey details (title template + instructions) — moved here from Step 3
+   *  (2026-08-17, Romit's call): the title/instructions the admin is setting
+   *  up belong beside the courses they apply to, not after them. Step 3
+   *  keeps owning the state (survey window/email/reminders still there);
+   *  this step only reads + writes it. academicYear feeds the same
+   *  {{academic_year}} merge-field preview Step 3 uses — closeDate isn't
+   *  chosen yet at this step, so the preview always falls back to "the close
+   *  date" text, same as Step 3 before the admin sets a date. */
+  academicYear: string
+  surveyTitleTemplate: string
+  onSurveyTitleTemplateChange: (v: string) => void
+  surveyInstructions: string
+  onSurveyInstructionsChange: (v: string) => void
   onBack: () => void
   onContinue: () => void
 }
@@ -590,13 +603,22 @@ function ExcludedEvaluatee({ i }: { i: SurveyInstance }) {
  *  through the S2 conflict check in page.tsx; secondary → per-entry
  *  onSecondaryTemplateChange) — this is just a faster trigger for the same
  *  commit path, not a new one. */
+/** Sentinel Select value for the "New template" row — can't collide with a
+ *  real template id (those come from pce-mock-data's own id sequence). */
+const NEW_TEMPLATE_VALUE = '__new_template__'
+
 function TemplateDropdown({
-  templateId, code, publishedTemplates, onChange,
+  templateId, code, publishedTemplates, onChange, onCreateNew,
 }: {
   templateId: string
   code: string
   publishedTemplates: PceTemplate[]
   onChange: (templateId: string) => void
+  /** Same action the step's old standalone "New template" button ran
+   *  (2026-08-13: folded into this dropdown instead of a header button —
+   *  the button's action didn't need a header of its own now that every
+   *  row's own Select can reach it). */
+  onCreateNew: () => void
 }) {
   // 2026-08-06 Course Eval sync up (Monil, raw transcript): "You will give a
   // dialogue that are you sure you want to change the template — if the
@@ -615,6 +637,7 @@ function TemplateDropdown({
       <Select
         value={templateId}
         onValueChange={tid => {
+          if (tid === NEW_TEMPLATE_VALUE) { onCreateNew(); return }
           if (tid === templateId) return
           if (!templateId) { onChange(tid); return }
           setPendingId(tid)
@@ -633,6 +656,14 @@ function TemplateDropdown({
           {publishedTemplates.map(t => (
             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
           ))}
+          <SelectSeparator />
+          {/* Replaces the step's old standalone "New template" header button
+             (2026-08-13) — same setSubView('create') action, reached from
+             wherever the admin already is instead of a fixed top-right spot. */}
+          <SelectItem value={NEW_TEMPLATE_VALUE}>
+            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+            New template
+          </SelectItem>
         </SelectContent>
       </Select>
       <AlertDialog open={!!pendingId} onOpenChange={open => { if (!open) setPendingId(null) }}>
@@ -1543,6 +1574,7 @@ export function StepSurveyInstances({
   unitSelections, onUnitSelectionChange,
   autoUpdateOn, onAutoUpdateChange, onRefreshUnits, onCourseSelectedChange,
   templateDriftNotices, onDismissTemplateDrift,
+  academicYear, surveyTitleTemplate, onSurveyTitleTemplateChange, surveyInstructions, onSurveyInstructionsChange,
   onBack, onContinue,
 }: StepSurveyInstancesProps) {
   // In-step template creation — the SAME create flow + builder as Settings >
@@ -1558,6 +1590,40 @@ export function StepSurveyInstances({
       if (t && t.status !== 'active') setNotice({ kind: 'draft', name: t.name || 'Untitled template' })
     }
     setSubView('assign')
+  }
+
+  // ── Survey details — title/instructions merge-field preview (moved from
+  //    Step 3, 2026-08-17). Same resolveMerge() logic as step-communication.tsx
+  //    minus close_date, which isn't chosen until Step 3 — it always falls
+  //    back to "the close date" here. ─────────────────────────────────────
+  const previewCourseName = useMemo(() => {
+    const first = selectedOfferings[0]
+    const course = first ? MOCK_MASTER_COURSES.find(c => c.id === first.masterCourseId) : null
+    return course?.name || 'your course'
+  }, [selectedOfferings])
+  function resolveMerge(text: string) {
+    return text
+      .replace(/\{\{course_name\}\}/g, previewCourseName)
+      .replace(/\{\{academic_year\}\}/g, academicYear || 'this year')
+      .replace(/\{\{close_date\}\}/g, 'the close date')
+      .replace(/\{\{term_name\}\}/g, 'this term')
+  }
+  const TITLE_MERGE_FIELDS: { token: string; label: string }[] = [
+    { token: '{{course_name}}', label: 'Course name' },
+    { token: '{{academic_year}}', label: 'Academic year' },
+    { token: '{{term_name}}', label: 'Term name' },
+  ]
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  function insertTitleField(token: string) {
+    const el = titleInputRef.current
+    const start = el?.selectionStart ?? surveyTitleTemplate.length
+    const end = el?.selectionEnd ?? surveyTitleTemplate.length
+    const next = surveyTitleTemplate.slice(0, start) + token + surveyTitleTemplate.slice(end)
+    onSurveyTitleTemplateChange(next)
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(start + token.length, start + token.length)
+    })
   }
 
   // ── Inclusion (ST-02): projection of the page-owned sticky selection map ──
@@ -2039,65 +2105,114 @@ export function StepSurveyInstances({
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
         <div className="flex flex-col gap-5 w-full">
-          {/* The lead IS the step heading — one headline, not two; scale and
-              weight match the other steps' h2 ("Courses & students"). Step
-              actions share the headline row instead of a row of their own. */}
+          {/* Survey details — moved here from Step 3 (2026-08-17, Romit's
+              call): the title/instructions the admin is setting up belong
+              beside the courses they apply to, not two steps later. Step 3
+              keeps owning survey window/email/reminders, which genuinely
+              depend on scheduling and stay there. Title uses the same h2/
+              font-heading treatment as "Course assignments" below (not Step
+              3's small FieldLegend convention) — round 2 fix (2026-08-17,
+              Romit's catch): a small label next to a large serif headline
+              read as two different registers instead of two peer sections of
+              the same step. A Separator + its own subtext now mark this as
+              an equally-weighted section, not a caption over a card. */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-semibold font-heading">Survey details</h2>
+              <p className="text-sm text-muted-foreground">The title and instructions students see when the survey opens.</p>
+            </div>
+            <Card className="shadow-none">
+              <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
+                <div className="flex flex-col gap-1.5">
+                  <FieldLabel id="label-survey-title">
+                    Survey title <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+                    <span className="sr-only">(required)</span>
+                  </FieldLabel>
+                  <Input
+                    ref={titleInputRef}
+                    aria-labelledby="label-survey-title"
+                    value={surveyTitleTemplate}
+                    onChange={e => onSurveyTitleTemplateChange(e.target.value)}
+                    placeholder="e.g. {{course_name}} – {{academic_year}} – EOT Eval"
+                  />
+                  <div className="flex flex-wrap items-center gap-1.5" aria-label="Insert a merge field">
+                    {TITLE_MERGE_FIELDS.map(f => (
+                      <Badge key={f.token} asChild variant="outline" className="cursor-pointer font-normal">
+                        <button type="button" className="inline-flex items-center gap-1" onClick={() => insertTitleField(f.token)}>
+                          <i className="fa-light fa-plus text-[10px]" aria-hidden="true" />
+                          {f.label}
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-md text-xs w-fit max-w-full mt-1" style={{ padding: '6px 10px', background: 'var(--muted)' }}>
+                    <span className="text-muted-foreground shrink-0">Per-course preview</span>
+                    <span className="font-medium text-foreground truncate">{resolveMerge(surveyTitleTemplate) || 'Untitled survey'}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <p id="label-survey-instructions" className="text-sm font-medium">Survey instructions</p>
+                  <Textarea
+                    aria-labelledby="label-survey-instructions"
+                    value={surveyInstructions}
+                    onChange={e => onSurveyInstructionsChange(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Separator />
+
+          {/* Course assignments — renamed from the former "You're setting up
+              N evaluations..." headline (2026-08-17): that sentence now reads
+              as a page headline sitting directly under the Survey details
+              card's own headline-weight title field, so it doubled up. It
+              survives as the subtext under a short section title instead —
+              still the first thing read, just no longer competing for the
+              same visual weight as the field above it. */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1 min-w-0">
-              <h2 className="text-xl font-semibold font-heading">
-                You&apos;re setting up <span className="tabular-nums">{toCreate} evaluation{toCreate !== 1 ? 's' : ''}</span> across{' '}
-                <span className="tabular-nums">{courses.length} course{courses.length !== 1 ? 's' : ''}</span>.
-              </h2>
+              <h2 className="text-xl font-semibold font-heading">Course assignments</h2>
               <p className="text-sm text-muted-foreground tabular-nums">
+                {toCreate} evaluation{toCreate !== 1 ? 's' : ''} across{' '}
+                {courses.length} course{courses.length !== 1 ? 's' : ''}.{' '}
                 {templatesInUse.size === 1 ? 'Every course uses the same template.' : `${templatesInUse.size} templates are in use.`}
                 {conflictedCourseCount > 0 && (
                   <> {conflictedCourseCount} course{conflictedCourseCount !== 1 ? 's are' : ' is'} blocked by existing surveys.</>
                 )}
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Save as draft moved to the shared WizardNav endSlot
-                  (2026-08-12) — one position across all steps instead of
-                  living here alongside this step's own actions. */}
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setResetOpen(true)}>
-                <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
-                Reset to defaults
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => { setNotice(null); setSubView('create') }}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                New template
-              </Button>
-            </div>
-          </div>
-
-          {/* ST-02 Auto Update — ONE flag for every course row, at the top of
-              the step (never per-row). Flipping it does nothing by itself: it
-              only decides how units the rows haven't seen before arrive on
-              the next manual Refresh. State lives in push/page.tsx; Phase 3
-              persists it with Save-as-Draft.
-              2026-08-06 (Romit's catch) — moved above the filter toolbar: the
-              toolbar filters/searches the table directly below it, and with
-              Auto Update sitting between them the toolbar read as
-              disconnected from the table it acts on. */}
-          <div className="flex items-center justify-between gap-4">
-            <label htmlFor="auto-update-units" className="flex items-center gap-2.5 cursor-pointer">
-              <ToggleSwitch
-                id="auto-update-units"
-                checked={autoUpdateOn}
-                onChange={() => onAutoUpdateChange(!autoUpdateOn)}
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">Auto Update</span>
-                <span className="text-xs text-muted-foreground">
-                  Faculty found on the next refresh start selected. Selections you have already made never change.
+            {/* ST-02 Auto Update — ONE flag for every course row (never
+                per-row), top of the step. Flipping it does nothing by
+                itself: it only decides how units the rows haven't seen
+                before arrive on the next manual Refresh. State lives in
+                push/page.tsx; Phase 3 persists it with Save-as-Draft. The
+                former inline copy under the label ("Faculty found on the
+                next refresh...") lives in a Tip on the info icon so the row
+                stays one line. Reset to defaults and Refresh moved into the
+                toolbar below (2026-08-17, Romit's call) — both act on the
+                table directly beneath them, same as Table properties, so
+                they read as one icon-button group instead of splitting
+                across two rows. */}
+            <div className="flex items-center gap-4 shrink-0">
+              <label htmlFor="auto-update-units" className="flex items-center gap-2 cursor-pointer">
+                <ToggleSwitch
+                  id="auto-update-units"
+                  checked={autoUpdateOn}
+                  onChange={() => onAutoUpdateChange(!autoUpdateOn)}
+                />
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                  Auto Update
+                  <Tip label="Faculty found on the next refresh start selected. Selections you have already made never change." side="bottom">
+                    <span tabIndex={0} className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+                      <i className="fa-light fa-circle-info text-xs text-muted-foreground" aria-hidden="true" />
+                    </span>
+                  </Tip>
                 </span>
-              </span>
-            </label>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="text-xs text-muted-foreground">Recheck faculty assignments in Prism.</span>
-              <Button variant="outline" size="sm" onClick={onRefreshUnits}>
-                Refresh
-              </Button>
+              </label>
             </div>
           </div>
 
@@ -2125,6 +2240,34 @@ export function StepSurveyInstances({
               edgeInset={false}
               toolbarSlot={state => (
                 <>
+                  {/* Reset to defaults + Refresh — icon buttons beside Table
+                      properties (2026-08-17, Romit's call): all three act on
+                      the table directly below, so they read as one utility
+                      group instead of Reset/Refresh living in the heading
+                      row above while Table properties lives down here. Same
+                      ghost/icon-sm/Tip convention as Table properties. */}
+                  <Tip label="Reset to defaults" side="bottom">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Reset to defaults"
+                      onClick={() => setResetOpen(true)}
+                    >
+                      <i className="fa-light fa-arrow-rotate-left text-[13px]" aria-hidden="true" />
+                    </Button>
+                  </Tip>
+                  <Tip label="Recheck faculty assignments in Prism." side="bottom">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Recheck faculty assignments in Prism"
+                      onClick={onRefreshUnits}
+                    >
+                      <i className="fa-light fa-arrows-rotate text-[13px]" aria-hidden="true" />
+                    </Button>
+                  </Tip>
                   <Tip label="Table properties" side="bottom">
                     <Button
                       type="button"
@@ -2305,6 +2448,7 @@ export function StepSurveyInstances({
                           code={code}
                           publishedTemplates={publishedTemplates}
                           onChange={tid => onTemplateChange(o.id, tid)}
+                          onCreateNew={() => { setNotice(null); setSubView('create') }}
                         />
                       </span>
 

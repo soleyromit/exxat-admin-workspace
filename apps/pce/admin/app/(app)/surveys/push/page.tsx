@@ -1335,6 +1335,11 @@ function PushSurveyInner() {
                 onCourseSelectedChange={handleCourseSelectedChange}
                 templateDriftNotices={templateDriftNotices}
                 onDismissTemplateDrift={() => setTemplateDriftNotices([])}
+                academicYear={academicYear}
+                surveyTitleTemplate={surveyTitleTemplate}
+                onSurveyTitleTemplateChange={setSurveyTitleTemplate}
+                surveyInstructions={surveyInstructions}
+                onSurveyInstructionsChange={setSurveyInstructions}
                 onBack={() => setStep(1)}
                 onContinue={() => {
                   // Materialize type-defaults into explicit assignments so the
@@ -1354,12 +1359,7 @@ function PushSurveyInner() {
           {step === 3 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
-              surveyMode={surveyMode}
               academicYear={academicYear}
-              surveyTitleTemplate={surveyTitleTemplate}
-              onSurveyTitleTemplateChange={setSurveyTitleTemplate}
-              surveyInstructions={surveyInstructions}
-              onSurveyInstructionsChange={setSurveyInstructions}
               courseWindowOverrides={courseWindowOverrides}
               onSetCourseWindowOverride={setCourseWindowOverride}
               onClearCourseWindowOverride={clearCourseWindowOverride}

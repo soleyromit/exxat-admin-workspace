@@ -220,14 +220,19 @@ function DatePickerFieldWithFooter({
 
 interface StepCommunicationProps {
   selectedOfferings: CourseOffering[]
-  /** CE-only survey title/instructions fields (below) only render for
-   *  `course_evaluation` — general surveys keep the plain email flow. */
-  surveyMode: 'course_evaluation' | 'general'
   academicYear: string
-  surveyTitleTemplate: string
-  onSurveyTitleTemplateChange: (v: string) => void
-  surveyInstructions: string
-  onSurveyInstructionsChange: (v: string) => void
+  /** Survey title/instructions — CE-only, and optional here (2026-08-17):
+   *  the push wizard (app/(app)/surveys/push) moved this card to its Step 2,
+   *  co-located with the courses it applies to, and doesn't pass these. The
+   *  term-setup wizard (app/(app)/course-evaluation/term-setup) still owns
+   *  its Step 2/3 as separate steps and keeps passing all five — this step
+   *  renders the card there, unchanged. All five are supplied together or
+   *  not at all; the render guard below checks every one. */
+  surveyMode?: 'course_evaluation' | 'general'
+  surveyTitleTemplate?: string
+  onSurveyTitleTemplateChange?: (v: string) => void
+  surveyInstructions?: string
+  onSurveyInstructionsChange?: (v: string) => void
   /** Per-offering window override — absent offering id = uses the global window. */
   courseWindowOverrides: Record<string, CourseWindowOverride>
   onSetCourseWindowOverride: (offeringId: string, next: CourseWindowOverride) => void
@@ -274,8 +279,8 @@ interface StepCommunicationProps {
 
 export function StepCommunication({
   selectedOfferings,
-  surveyMode, academicYear,
-  surveyTitleTemplate, onSurveyTitleTemplateChange,
+  academicYear,
+  surveyMode, surveyTitleTemplate, onSurveyTitleTemplateChange,
   surveyInstructions, onSurveyInstructionsChange,
   courseWindowOverrides, onSetCourseWindowOverride, onClearCourseWindowOverride,
   openDate, closeDate,
@@ -397,14 +402,17 @@ export function StepCommunication({
       .replace(/\{\{program_name\}\}/g, 'your program')
   }
 
-  // ── Survey title field-palette builder (Step 3, CE-only) ────────────────────
+  // ── Survey title field-palette builder (CE-only, term-setup path) ───────────
   // 2026-08-12 — fourth pass, Romit's call: a plain text field (raw
   // `{{token}}` visible as typed text, not a rich pill) + a row of
   // bold-label chips below it. Clicking a chip inserts its token at the
   // current caret position — repeatable, not disabled-after-use, matching
   // standard merge-tag toolbars (the admin may want `{{course_name}}`
   // twice). `surveyTitleTemplate` stays the single string source of truth
-  // end-to-end (resolveMerge, defaults, push payload unchanged).
+  // end-to-end (resolveMerge, defaults, push payload unchanged). Only called
+  // from the CE-only card below, which is itself gated on all five
+  // survey-details props being present — the undefined checks here are for
+  // TypeScript, not a reachable runtime path.
   const TITLE_MERGE_FIELDS: { token: string; label: string }[] = [
     { token: '{{course_name}}', label: 'Course name' },
     { token: '{{academic_year}}', label: 'Academic year' },
@@ -412,6 +420,7 @@ export function StepCommunication({
   ]
   const titleInputRef = useRef<HTMLInputElement>(null)
   function insertTitleField(token: string) {
+    if (surveyTitleTemplate === undefined || !onSurveyTitleTemplateChange) return
     const el = titleInputRef.current
     const start = el?.selectionStart ?? surveyTitleTemplate.length
     const end = el?.selectionEnd ?? surveyTitleTemplate.length
@@ -578,8 +587,13 @@ export function StepCommunication({
         </LocalBanner>
       )}
 
-      {/* ── Survey details — CE-only title + instructions (2026-08-11, Monil) ── */}
-      {surveyMode === 'course_evaluation' && (
+      {/* ── Survey details — CE-only title + instructions (2026-08-11, Monil).
+          2026-08-17: only rendered when all five survey-details props are
+          supplied — the push wizard now owns this card on its own Step 2 and
+          stops passing them; term-setup still passes all five and keeps
+          seeing this card here. */}
+      {surveyMode === 'course_evaluation' && surveyTitleTemplate !== undefined && onSurveyTitleTemplateChange
+        && surveyInstructions !== undefined && onSurveyInstructionsChange && (
         <div className="flex flex-col gap-3">
           <FieldLegend variant="label" className="font-semibold text-foreground">Survey details</FieldLegend>
           <Card className="shadow-none">
