@@ -198,7 +198,7 @@ function AnalyticsInner() {
    *  role-filtered leaderboard number the reader drilled in from. */
   const selectedFacultyAvg = useMemo(() => {
     const stat = facultyStats().find(f => f.facultyId === selectedFacultyId)
-    return stat ? stat.score.weighted : null
+    return stat && stat.score.state === 'value' ? stat.score.value.weighted : null
   }, [selectedFacultyId])
 
   const distinctCourses = useMemo(() => {
