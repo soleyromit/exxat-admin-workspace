@@ -16,7 +16,11 @@ user-invocable: true
 |------------|----------------|
 | One person (author, owner, student) | `AvatarInitials` + name + email — **not** plain text, **not** `PeopleAvatarRailCell` |
 | Multiple people | `PeopleAvatarRailCell` |
-| Status | `ListHubStatusBadge` + `lib/list-status-badges.ts` |
+| Status (read only) | `StatusCell` + `lib/list-status-badges.ts` |
+| Status the user can change | `StatusCell` + `options` + `onChange` |
+| Primary title + star | `FavoriteNameCell` (`leading` slot for the new-row dot) |
+| New / unread row | `row.isNew` (DataTable washes the row) + `TableNewRowDot` in `leading`, never trailing |
+| Missing value | `EmptyCell` — never a lone dash |
 | Type / kind (non-status) | `PillCell` |
 | Tags | `TagListCell` |
 | Difficulty / ordinal | `SignalBarsCell` |

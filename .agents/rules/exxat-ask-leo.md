@@ -25,4 +25,6 @@ Ask Leo is the **long-form AI** surface (`AskLeoSidebar`, `⌘⌥K`). Short sear
 ## See also
 
 - `exxat-command-menu.md`, `exxat-utility-bar.md`
+- `exxat-leo-icon-motion.md` — animated Leo mark on buttons / FABs / floating actions
+- `exxat-form-fields.md` — host forms beside Leo Assist Bar use DS Field / Input / Textarea
 - `exxat-chart-leo-spotting` skill (plot insights only)

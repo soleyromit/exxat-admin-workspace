@@ -4,7 +4,7 @@ alwaysApply: false
 globs: 
   - components/**/*drawer*
   - components/**/*Drawer*
-  - apps/web/src/views/**/*
+  - src/views/**/*
 tags: [overlay, routing]
 seeAlso:
   - docs/exxat-ds/drawer-vs-dialog-pattern.md

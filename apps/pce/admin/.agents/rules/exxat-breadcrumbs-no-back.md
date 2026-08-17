@@ -21,7 +21,16 @@ When a page uses **`SiteHeader`** with **`breadcrumbs`** (a visible trail such a
 
 ## SiteHeader breadcrumb overflow
 
-When the header variant shows a multi-segment trail (`PageBreadcrumbTrail` **`variant="header"`**), wrap the list in **`HorizontalScrollRegion`** with **`alignEnd`** and **`ariaLabel="Breadcrumb"`** so long paths scroll horizontally with a grouped `[← | →]` control — **`.agents/rules/exxat-horizontal-scroll.md`**, **`components/page-breadcrumb-trail.tsx`**.
+The trail collapses **on room, not on count**. `PageBreadcrumbTrail` measures the row it was given (`useRowFitLadder`) and shows every segment that fits; a trail with space for four crumbs shows four. When the row runs short, middle segments move into a **More** control (`BreadcrumbEllipsis` + `DropdownMenu`) **shallowest first**, so the root and the immediate parent are the last ancestors standing, and the current page truncates only after that.
+
+**MUST NOT** reintroduce a crumb-count threshold (`items.length > 2`), a breakpoint (`hidden md:flex`), or a per-variant collapse rule. Those hide parents on wide screens that had room for them, which is the defect this replaced.
+
+Two things the measurement depends on, so do not remove them without replacing the signal:
+
+- The leaf keeps a **min-width floor** while an ancestor could still step aside. Ancestors do not shrink, so without the floor a tight row squeezes the leaf and never reports overflow at all.
+- The list stays **`flex-nowrap`**. A wrapping trail always fits, and pays for the extra crumbs with a second line.
+
+Do **not** wrap breadcrumbs in **`HorizontalScrollRegion`** — that pattern stays for tab/chip rows (**`.agents/rules/exxat-horizontal-scroll.md`**).
 
 ## See also
 

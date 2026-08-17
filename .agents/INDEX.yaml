@@ -1,5 +1,5 @@
 # Exxat DS - Google Antigravity agent index (generated)
-# 2026-07-10T08:18:58.273Z
+# 2026-08-17T05:21:19.037Z
 
 # Run npx exxat-ui sync-extras after editing .cursor/
 
@@ -22,14 +22,15 @@
       ".agents/rules/_constitution.exxat-ds.md",
       ".agents/rules/exxat-product-context.md",
       ".agents/rules/exxat-product-routing.md",
-      ".agents/rules/exxat-ux-discovery-protocol.md"
+      ".agents/rules/exxat-ux-discovery-protocol.md",
+      ".agents/rules/exxat-copy-discipline.md"
     ],
     "directory": ".agents/rules/",
-    "count": 57
+    "count": 64
   },
   "skills": {
     "directory": ".agents/skills/",
-    "count": 29,
+    "count": 38,
     "entry": ".agents/skills/exxat-ds-router/SKILL.md",
     "note": "Includes all .cursor/skills + hand-maintained exxat-ds-router"
   },

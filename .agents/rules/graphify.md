@@ -1,20 +1,28 @@
 ---
-description: graphify knowledge graph context (after you run graphify once)
+description: Use Graphify first for broad codebase discovery and architecture questions
 activation: model_decision
 ---
 
 <!-- Synced from .agents/rules/graphify.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
 
-When **`graphify-out/GRAPH_REPORT.md`** exists in this repo:
+# Graphify (scoped rule; enforcement is the hook)
 
-- For architecture or broad codebase questions, read **`graphify-out/GRAPH_REPORT.md`** first (god nodes, communities, suggested questions).
-- If **`graphify-out/wiki/index.md`** exists, prefer navigating that wiki over opening many raw files.
-- After large code edits in a session, you may run **`graphify update .`** from the repo root (AST refresh; use the project venv: **`.venv-graphify/bin/graphify`**).
+This file stays `alwaysApply: false` because the repo caps always-on rules at five. Agents still skip a constitution one-liner when Glob cannot see gitignored `graphify-out/`. The floor is **`.cursor/hooks/exxat-graphify-gate.mjs`** plus the sessionStart Graphify block.
 
-To build the graph the first time (requires API / Claude as per graphify docs), run from repo root:
+## MUST
+
+- Treat `graphify-out/graph.json` as present unless a Shell `test -f graphify-out/graph.json` fails. Do **not** Glob `graphify-out/**`.
+- For architecture, dependency, impact, ownership, or broad "where/how" questions, run via Shell **before** Grep, Glob, or explore agents:
 
 ```bash
-source .venv-graphify/bin/activate   # or: .venv-graphify/bin/graphify …
+graphify query "<question>" --budget 1200
 ```
 
-See **`.agents/skills/graphify/SKILL.md`** for full `/graphify` workflows (Claude Code); in Cursor, use the **graphify** skill when the user asks for graph-style exploration.
+- Use `graphify path "<A>" "<B>"` for cross-module relationships and `graphify explain "<symbol>"` for one concept.
+- Read only the source files and locations Graphify returns.
+- After substantive code edits, run `graphify update .` from the repo root.
+
+## MUST NOT
+
+- Do not read `GRAPH_REPORT.md` in full (hundreds of KB). Query instead.
+- Do not use Graphify instead of reading a known target file, reviewing a diff, or running tests. It narrows context; source and runtime evidence remain authoritative.

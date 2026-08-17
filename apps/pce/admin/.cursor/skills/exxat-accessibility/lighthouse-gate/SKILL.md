@@ -38,6 +38,15 @@ pnpm a11y:axe:all
 pnpm a11y:axe:all --variants ship   # pre-release matrix
 ```
 
+**When the change touches chrome, tokens, state styling, icons, or charts** — add the high-contrast pair:
+
+```bash
+pnpm a11y:axe:contrast   # axe × hc-light, hc-dark, hc-app-light, hc-app-dark
+pnpm a11y:hc             # non-text contrast (SC 1.4.11) × the same four
+```
+
+Neither axe nor Lighthouse checks **non-text** contrast, so both can score perfectly on a screen with an invisible icon, a chart series the colour of the canvas, or a selected chip flattened into an outline. `pnpm a11y:hc` is the only gate that catches those. Fix patterns: parent skill **§ High-Contrast modes**.
+
 **Read reports** (written automatically after each gate run):
 
 - `.axe-reports/<run>/axe-a11y-summary.json` — machine-readable

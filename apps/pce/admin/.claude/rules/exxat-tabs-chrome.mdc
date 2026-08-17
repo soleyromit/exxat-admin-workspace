@@ -42,7 +42,8 @@ Is it primary navigation between named sections of one record?
 - **Record / detail sub-nav** under `PageHeader` — [`jobs/record-detail.md`](docs/exxat-ds/jobs/record-detail.md). **Primary** (default pill).
 - **Token doc namespace groups** — primary `Tabs` + `TabsCountBadge` (not line variant).
 - **In-card / chart panels** — **secondary** `variant="line"` only.
-- **`TabsList`** defaults **`inline-flex w-fit`** — overflow → **`TabsListScrollRegion`**.
+- **`TabsList`** defaults **`inline-flex w-fit`** and handles its own overflow — no wrapper. Horizontal overflow rows pin as a sticky subheader (`[data-slot="tabs-sticky-subheader"]`): `top-0` in the page scrollport, height `--shell-utility-bar-height`, full-width `border-b`. Vertical / `overflow={false}` skip the strip.
+- **Hub sticky stack** — Utility (outside scroll) → `list-views-sticky-subheader` (view toolbar) → DataTable column header (`getStickyTableHeaderOffset`). Same height token and full-width rule as module tabs.
 - **ChartCard `variant="tabs"`** only — chart vs trend (or custom pair) **inside** `ChartCard` line tabs; do not copy that pattern outside chart cards.
 
 ## `ButtonSegmentedControl` (Button + segmented chrome)
@@ -67,20 +68,27 @@ Is it primary navigation between named sections of one record?
 
 **MUST** use **`ListPageTemplate`** view toolbar — `role="toolbar"` + **`w-max`** segmented control (`viewSegmentedToolbarClass`), **not** Radix **`Tabs`** stretched across the page.
 
-- Reference: `packages/ui/src/components/templates/list-page.tsx` (views toolbar block).
+- Reference: `packages/ui/src/components/templates/list-page.tsx` (`[data-slot="list-views-sticky-subheader"]`).
 - View tabs sit inside **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** — **`.cursor/rules/exxat-horizontal-scroll.mdc`**.
+- Sticky: same subheader contract as module `Tabs` (utility → views → table head).
+- **Overflow (same ladder as `Tabs`):** (1) inactive view labels → icon only; (2) trailing views move into a **⋯** menu; (3) scroll arrows only when one view remains on the row. Selected view stays on the row. **Add view** collapses to icon-only with the first rung.
 
 ## Entity / record detail (Overview, Academics, Placements, …)
 
 **MUST** use **`Tabs`**, **`TabsList`**, **`TabsTrigger`** from `@/components/ui/tabs`:
 
 - **`TabsList`** defaults to **`inline-flex w-fit`** — **MUST NOT** pass `className="w-full"` or wrap the list in a full-width flex container that forces triggers to **`flex-1`**.
-- When tabs overflow, use **`TabsListScrollRegion`** — grouped scroll control at the end.
+- **Overflow needs no opt-in.** Every **`TabsList`** measures itself: inactive labels drop to icons, then whole tabs move into an overflow menu, and arrows are the last resort. Do **not** wrap a list to switch this on, and do not treat "these tabs won't overflow" as a design decision — the same row fits on a dashboard and clips in a side panel.
+- Settings go **on `TabsList`**: `ariaLabel`, `collapseLabels`, `overflowMenu`, `overflowLabel`, `overflow={false}`. Reach for **`TabsListScrollRegion`** only to put a class on the scroll region itself (page gutters on a full-bleed row).
+- Split trigger children into **`TabsTriggerIcon`** + **`TabsTriggerLabel`** on any tab row that can get narrow (in-card, side panel, high zoom). Without both slots the row cannot shed labels and jumps straight to hiding whole tabs.
+- Every **`TabsTrigger`** **MUST** carry a `value` — the overflow menu selects by it.
 - Prefer **`variant="line"`** for record sub-nav under a **`PageHeader`**.
 
 ## MUST NOT
 
 - A single grey/white bar spanning the entire content width with tabs distributed edge-to-edge.
+- Render the overflow trigger as a child of the `tablist`. A `tablist` may contain only tabs, so **`TabsList`** renders it as a sibling and moves the track chrome onto a shell around both, which is what makes it *look* like it is in the track.
+- Reimplement tab overflow with your own `DropdownMenu` beside a `TabsList`. The list already owns the measuring, the ordering, and the guarantee that the selected tab stays visible.
 - Mix hub **view tabs** (table/list/board) with entity **section tabs** (Overview/Academics) — different patterns.
 - Hand-rolled bordered `RadioGroup` rows for mode switching when **`ViewSegmentedControl`** exists.
 

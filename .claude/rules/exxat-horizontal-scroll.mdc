@@ -12,10 +12,11 @@ appliesTo: [react]
 ## MUST
 
 1. **Compose from shared primitives** — `@exxatdesignux/ui/components/ui/horizontal-scroll-controls` and/or `horizontal-scroll-region`. App re-exports: `@/components/ui/horizontal-scroll-controls`, `@/components/ui/horizontal-scroll-region`.
-2. **Default layout is grouped** — segmented `[← | →]` **after** the viewport (`controlsLayout="group-end"` on `HorizontalScrollRegion`, or `layout="group"` on `HorizontalScrollControls`). Reference: `list-page.tsx` views toolbar, `tabs.tsx` `TabsListScrollRegion`, `page-breadcrumb-trail.tsx`.
+2. **Default layout is grouped** — segmented `[← | →]` **after** the viewport (`controlsLayout="group-end"` on `HorizontalScrollRegion`, or `layout="group"` on `HorizontalScrollControls`). Reference: `list-page.tsx` views toolbar, `tabs.tsx` `TabsList`, `page-breadcrumb-trail.tsx`.
 3. **Pair hook + controls for custom layouts** — `useHorizontalScrollAffordances(ref)` + `HorizontalScrollControls`; viewport class from `horizontalScrollViewportClassName`.
 4. **Breadcrumb trails** — `HorizontalScrollRegion` with **`alignEnd`** so the current page stays visible when ancestors wrap; **`ariaLabel="Breadcrumb"`**.
 5. **Accessibility** — prev/next are real **`Button`**s with descriptive **`aria-label`**s and **`Tip`** labels; grouped control uses **`role="group"`**.
+6. **Let the primitive fade the edge.** `HorizontalScrollViewport` sets `data-fade` from its own scroll position and one rule in `globals.css` masks whichever side has content behind it to transparent, so a clipped row never ends mid-card. It is automatic; do not add a gradient overlay, a `::after` scrim, or a background-coloured fade of your own. Those pick one surface colour and these rows sit on cards, tinted washes, and the page canvas.
 
 ## MUST NOT
 
@@ -28,7 +29,7 @@ appliesTo: [react]
 - `packages/ui/src/components/ui/horizontal-scroll-controls.tsx` — `HorizontalScrollControls`, hooks
 - `packages/ui/src/components/ui/horizontal-scroll-region.tsx` — `HorizontalScrollRegion` wrapper
 - `packages/ui/src/components/templates/list-page.tsx` — hub view tabs
-- `packages/ui/src/components/ui/tabs.tsx` — `TabsListScrollRegion`
+- `packages/ui/src/components/ui/tabs.tsx` — `TabsList` (builds its own region)
 - `components/page-breadcrumb-trail.tsx` — SiteHeader breadcrumb scroll
 
 ## See also

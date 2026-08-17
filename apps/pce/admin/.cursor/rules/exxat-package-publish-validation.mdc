@@ -57,7 +57,7 @@ Override: `EXXAT_PUBLISH_SMOKE_ROOT=/other/path`
 
 **Publish smoke proves:** synced generated starter in tarball → temp app in `123_Testing` → `exxat-ui upgrade` preserves builder-owned content/data → build → dev boot.
 
-**Tell consumers:** `upgrade` refreshes predefined Prism / One / Design OS shell and navigation from the generated starter while preserving builder-owned tenant catalog, data modules, mock/API wiring, and custom pages.
+**Tell consumers:** bumping the package alone does **not** rewrite app source. `exxat-ui upgrade` refreshes package-owned shell from the generated starter while preserving builder-owned tenant catalog, data modules, mock/API wiring, and custom pages — see **`exxat-consumer-package-upgrade.mdc`**.
 
 ## Agent checklist (state in chat)
 

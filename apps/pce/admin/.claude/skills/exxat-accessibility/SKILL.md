@@ -1,6 +1,6 @@
 ---
 name: exxat-accessibility
-description: WCAG 2.x / ARIA checklist for Exxat DS — tablists, touch targets, contrast, audit follow-ups, axe gate + Lighthouse verification. Use when fixing axe/Deque issues, building nav or tab UIs, reviewing accessibility, or when the user wants Lighthouse a11y score 100.
+description: WCAG 2.x / ARIA checklist for Exxat DS — tablists, touch targets, contrast, high-contrast modes (data-contrast high/windows, forced-colors, non-text contrast SC 1.4.11), audit follow-ups, axe gate + Lighthouse verification. Use when fixing axe/Deque issues, building nav or tab UIs, working on high contrast or forced-colors, reviewing accessibility, or when the user wants Lighthouse a11y score 100.
 user-invocable: true
 ---
 
@@ -10,7 +10,7 @@ Standard target: **WCAG 2.1 Level AA** (and 2.2 where noted).
 
 **Canonical for agents (MUST/MUST NOT, checklist):** `apps/web/AGENTS.md` **§8** in the repo (same content summarized there; this skill stays the detailed checklist + product tokens).
 
-## Accessibility gate (axe + Lighthouse)
+## Accessibility gate (axe + HC probe + Lighthouse)
 
 When the user asks for **a11y verification**, **axe scan**, **Lighthouse accessibility 100**, or post-fix confirmation:
 
@@ -30,9 +30,18 @@ When the user asks for **a11y verification**, **axe scan**, **Lighthouse accessi
    - Regenerate from an older run: `pnpm a11y:axe:report --dir .axe-reports/<run>`
    - List runs: `pnpm a11y:axe:report --list`
 
-4. **Fix loop** — follow `.cursor/skills/exxat-accessibility/lighthouse-gate/SKILL.md` (fix playbook). Rebuild UI if `packages/ui/**` changed. Re-run axe on the same paths until `allPassed: true`.
+4. **Run the high-contrast pair** whenever the change touches chrome, tokens, state styling, icons, or charts:
 
-5. **Lighthouse spot-check** (slow, optional score-100 confirmation): `pnpm a11y:lighthouse`
+   ```bash
+   pnpm a11y:axe:contrast       # axe × 4 HC variants
+   pnpm a11y:hc                 # non-text contrast (SC 1.4.11) × same 4
+   ```
+
+   axe has **no** non-text contrast check, so a clean axe run says nothing about invisible icons, flat chart series, or meter bars that match their track. See **§ High-Contrast modes**.
+
+5. **Fix loop** — follow `.cursor/skills/exxat-accessibility/lighthouse-gate/SKILL.md` (fix playbook). Rebuild UI if `packages/ui/**` changed. Re-run axe on the same paths until `allPassed: true`.
+
+6. **Lighthouse spot-check** (slow, optional score-100 confirmation): `pnpm a11y:lighthouse`
 
 **Commands:**
 
@@ -41,6 +50,8 @@ pnpm a11y:setup              # once per machine
 pnpm a11y:axe                # smoke, desktop-light (~30s)
 pnpm a11y:axe:matrix         # smoke × 6 ship variants (theme + reflow-320, ~3–5 min)
 pnpm a11y:axe:themes         # smoke × 4 theme modes
+pnpm a11y:axe:contrast       # smoke × 4 HC variants (hc-light/dark, hc-app-light/dark)
+pnpm a11y:hc                 # non-text contrast probe, HC only (~3 min)
 pnpm a11y:axe /design-os/design-system/wizard   # single route
 pnpm a11y:axe --variants theme /settings/profile
 pnpm a11y:axe:all            # full 163 routes, desktop-light (~4 min)
@@ -375,10 +386,51 @@ The **system banner** (`SystemBannerSlot`) **MUST** render inside **`[data-app-s
 
 ## High-Contrast modes
 
-There are **two** HC paths in this app. Fix both or the bar will still look broken in one of them:
+There are **three** HC paths. Fix all three or the surface will still look broken in one of them:
 
-1. **App HC theme — `html[data-contrast="high"]`** (user toggle in Settings). Use the **`hc:`** Tailwind variant defined in `globals.css` (line 22: `@custom-variant hc (&:is([data-contrast="high"] *));`). This is what the user sees when they switch to High Contrast in-app.
-2. **OS / browser forced-colors** — Windows High Contrast, some Linux DEs, `prefers-contrast: more`. Use `forced-colors:` variants mapping to system colors (`Canvas`, `CanvasText`, `Highlight`, `HighlightText`, `GrayText`).
+1. **App HC theme — `html[data-contrast="high"]`** (user toggle in Settings → Appearance). Greyscale token ramp over the app's own light/dark canvas.
+2. **Windows HC palette — `html[data-contrast="windows"]`** — the app mirrors the OS palette from `packages/ui/src/theme/windows-contrast-theme.json` so it can be previewed and audited on any machine.
+3. **OS / browser forced-colors** — real Windows High Contrast, some Linux DEs, `prefers-contrast: more`. Use `forced-colors:` variants mapping to system colors (`Canvas`, `CanvasText`, `Highlight`, `HighlightText`, `GrayText`).
+
+The **`hc:`** Tailwind variant covers paths 1 and 2 together — `@custom-variant hc (&:is([data-contrast="high"] *, [data-contrast="windows"] *))` in `globals.css`. `forced-colors:` covers path 3. A fix written only with `forced-colors:` will not show up in the in-app toggle, which is the path most users actually reach.
+
+### Verify with both gates — axe alone is not enough
+
+```bash
+pnpm a11y:axe:contrast   # axe across hc-light, hc-dark, hc-app-light, hc-app-dark
+pnpm a11y:hc             # non-text contrast probe (SC 1.4.11) — same four variants
+```
+
+**axe only measures text contrast.** It has no check for SC 1.4.11 Non-text Contrast, so an invisible icon, a flat chart series, an unfilled progress arc, and a meter bar the same colour as its track all pass axe cleanly. `scripts/hc-nontext-contrast.mjs` walks SVG `fill` / `stroke`, Font Awesome glyphs, and childless elements that are drawn purely by a background colour, measuring each against the surface actually behind it. Treat a green axe run on HC as **half** the evidence.
+
+Two exemptions the probe honours, both of which you must opt into deliberately:
+
+- **Logotypes** are exempt from 1.4.11. The probe skips `[data-product-logo]`, `[data-product-logo-base]`, `[data-product-mark]`, `[data-product-logo-mark]`. A product's **app mark** is not a logotype: `[data-product-app-mark]` (`components/product-app-mark.tsx`) is a meaningful graphic and is measured against the 3:1 floor like any other glyph.
+- **Purely decorative glyphs** (an oversized illustration behind card copy that carries no meaning) need **`data-a11y-decorative`** on the element. Do not reach for this to silence a real failure — if removing the glyph would cost the user information, it is not decorative.
+
+If the probe reports `navigation timed out` on many routes, check for **duplicate dev servers** (`lsof -nP -iTCP -sTCP:LISTEN | grep 400`) before believing the run. Starved routes are skipped, not failed, so a stale second server produces a run that looks clean because most of it never loaded.
+
+### Selected state stays filled — never let it degrade to an outline
+
+The single most common HC regression: a blanket rule strips a brand or palette background back to the canvas, and a **selected** tab, chip, segment, or nav row loses the fill that was its only state signal. The row then reads as five identical outlines and the user cannot tell what is active.
+
+**MUST:** a selected surface keeps a fill in HC. Swap the hue, not the fill — `var(--accent)` background with `var(--accent-foreground)` ink, plus a `var(--foreground)` rim for edge definition. Both halves of that pair must be decided by the **same** rule; setting the background in one place and the ink in another is how selected controls end up with near-black text on a near-black fill.
+
+**Selection is not signalled by `data-state` alone.** Any stripping rule must exempt, and any fill rule must cover, all of these: `[data-state="on"|"checked"|"active"|"selected"]`, `[data-active="true"]`, `[data-selected]`, `[aria-checked="true"]`, `[aria-pressed="true"]`, `[aria-selected="true"]`, `[aria-current]:not([aria-current="false"])`. A filter chip built on `role="radio"` uses `aria-checked` and nothing else.
+
+### Children of a filled surface: badges invert, structure steps aside
+
+Ink on a selected surface cascades to descendants, but a child that paints **its own** background is not sitting on the accent, so accent ink would be measured against the wrong colour. Split the two cases:
+
+- **Badges and count pills** (`[data-slot="badge"]`, `[data-slot="sidebar-menu-badge"]`, rounded-full counts) **invert** — `background-color: var(--accent-foreground)` with `color: var(--accent)`. This is the treatment the active sidebar badge already uses.
+- **Structural wrappers** that merely re-declare a background (the segmented control wraps its button in a shell and both declare a fill) go **`background-color: transparent`** and take the accent ink. Inverting a wrapper paints it the same colour as the icon inside it.
+
+### Writing blanket HC rules without collateral damage
+
+- Put stripping guards in **`:where()`** so they stay at zero specificity and still lose to deliberate component patterns.
+- **`:empty` matches `<input>`.** A rule aimed at childless meter bars will repaint every text field, because inputs are childless too and their class lists mention `bg-muted` for the disabled state. Scope such rules to `:is(div, span, i, b, em)`.
+- Text fields must pin their fill to **`var(--input-background)`**, not `var(--input)` — HC redefines `--input` as a *light* grey so the border can be seen, and reusing it as a fill puts near-white text on light grey.
+- **Charts:** every series must clear 3:1 against the canvas, because a series is a graphical object under 1.4.11. A five-step greyscale ramp cannot spend its bottom half on light-grey-on-white; stop the ramp around `L 0.60` and take smaller steps. Scope `--brand-color` to `[data-chart]` when remapping it so chart series adapt without flattening the brand hue everywhere else.
 
 ### Why tokens collapse in HC
 
@@ -434,7 +486,7 @@ Complete **`apps/web/docs/accessibility-ship-checklist.md`** for every new or ma
 1. One **`<h1>`** in `<main>` only — panels/popovers use **`h2`**.
 2. **Case C** on all icon-only buttons — **`aria-label` + `Tip`**.
 3. **Format hints** — persistent **`FormDescription`**, not placeholder-only.
-4. **Four theme modes** — light, dark, **`data-contrast="high"`** light + dark when touching chrome/tokens/forms.
+4. **Four theme modes** — light, dark, **`data-contrast="high"`** light + dark when touching chrome/tokens/forms. Verify with **both** `pnpm a11y:axe:contrast` **and** `pnpm a11y:hc`; selected controls still read as filled, not outlined.
 5. **Reflow (1.4.10)** — manual pass at **320px** width + **200% zoom** per checklist § Reflow when touching layout, shell, tables, or nav.
 6. **Page title (2.4.2)** — `SiteHeader` / `useDocumentTitle` updates `<title>` per route.
 7. **axe** on `<main>` — zero WCAG 2.x AA violations on the affected route.

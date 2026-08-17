@@ -23,7 +23,7 @@ Only port when release notes or a chrome bug require it. **Never** copy mock dat
 | `components/settings-appearance-card.tsx` | Products list + color picker |
 | `components/brand-color-picker.tsx` | Brand color popover |
 | `components/exxat-product-logo.tsx` | Wordmark (pink) vs preview custom |
-| `components/sidebar/app-sidebar.tsx` | Product logo button + nav slug |
+| `components/app-shell-wiring.tsx` | Product-specific shell slots and callbacks; reference-only, merge deliberately if the app already has this seam |
 | `lib/mock/navigation.tsx` | **Structure only** — keep your URLs/labels; port routing helpers |
 | `src/routes.tsx` | Product root routing shape |
 | `src/App.tsx` | Provider mount order + overlay |

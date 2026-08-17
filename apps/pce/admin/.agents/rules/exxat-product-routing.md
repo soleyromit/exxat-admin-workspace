@@ -18,6 +18,16 @@ Exxat ships **four apps** under one shell:
 | Exxat One — Sites | `exxat-one-sites` | `/one-sites` | Brand > Site > Location | Site Coordinator |
 | Exxat Custom (tenant-branded Prism) | `exxat-custom` | `/custom` | School > Program | Same as Prism — tenant-configured branding only |
 
+**Only one Exxat One is listed, and it is `exxat-one-schools`.** A workspace buys
+one side of the partnership, so the switcher, Settings → Products, and the products
+home show the school's app, labelled plainly "Exxat One". `exxat-one-sites` stays
+whole (id, slug, nav, routes, catalogue) so its links resolve and it can be listed
+again by adding one row to `BUILTIN_SWITCHER_PRODUCTS`, but it is kept off those
+surfaces by `PRODUCTS_OFF_HOME` and by its absence from the switcher list. Store
+migration v14 retired the school id and v15 brought it back; both branches stay in
+the chain. Do not add a second row labelled "Exxat One", and do not re-scope the
+school entry to brands and sites.
+
 Exxat One is **two product entries**, not one with a sub-toggle — School-side
 and Site-side have different navs, different scope chromes, and different
 primary personas, so the routing layer treats them as siblings. **Custom** is
@@ -34,7 +44,7 @@ Appearance → Add product.
    allowed at the workspace root are **product-agnostic shell routes**
    (e.g. `/login`, `/logout`, `/oauth/*`, `/`).
 2. **Switching products in the switcher MUST hard-redirect to `/<root>/dashboard`.**
-   Use `react-router-dom`'s `navigate(target)` (not `replace: true`, so the
+   Use `react-router`'s `navigate(target)` (not `replace: true`, so the
    user can `Back` to where they were). No semantic mapping; no "stay on
    the same path"; no confirm dialog.
 3. **Direct URL visits adopt the product implied by the URL.** When the

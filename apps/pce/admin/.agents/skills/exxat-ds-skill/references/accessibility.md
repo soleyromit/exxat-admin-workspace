@@ -66,6 +66,25 @@ This is the single source of truth for all accessibility requirements in Exxat D
 - Hover states visibly distinct in dark mode (brand-tinted `--accent`, not grey)
 - Test against all themes: Lavender × Prism × light × dark × high-contrast
 
+### Non-text contrast (SC 1.4.11) — not covered by axe
+
+Icons, chart series, progress arcs, meter bars, and focus indicators are **graphical objects** and need **3:1** against the surface behind them. axe has no check for this, so verify separately:
+
+```bash
+pnpm a11y:axe:contrast   # axe × 4 high-contrast variants
+pnpm a11y:hc             # non-text contrast probe × the same four
+```
+
+### High contrast — three paths
+
+| Path | Selector | Tailwind variant |
+|---|---|---|
+| In-app toggle | `html[data-contrast="high"]` | `hc:` |
+| Mirrored Windows palette | `html[data-contrast="windows"]` | `hc:` |
+| Real OS forced colors | `forced-colors: active` | `forced-colors:` |
+
+A fix written only with `forced-colors:` never reaches the in-app toggle. **Selected controls keep a fill** (`--accent` + `--accent-foreground`) — a selected tab or chip that flattens to an outline is indistinguishable from its unselected neighbours. Full guidance: **`.agents/skills/exxat-accessibility/SKILL.md` § High-Contrast modes**.
+
 ## 7. Dynamic Content
 
 - Count changes (filter results, badge updates): `aria-live="polite"` on the element
@@ -129,8 +148,9 @@ Run for EVERY task before marking done:
 4. **Labels:** Every input has a label? Every button has text or `aria-label`?
 5. **Color contrast:** Text ≥ 4.5:1, UI ≥ 3:1? (Check with browser devtools or axe)
 6. **Dark mode:** Repeat contrast check in dark theme
-7. **200% zoom:** Layout usable at 200% browser zoom?
-8. **axe audit:** Run axe (DevTools extension) on any page where you touched views toolbar, tabs, or primary list surfaces
+7. **High contrast:** Settings → High contrast, in both light and dark. Selected tabs/chips still filled? Icons, chart series, and meter bars still visible? Then `pnpm a11y:axe:contrast` + `pnpm a11y:hc`
+8. **200% zoom:** Layout usable at 200% browser zoom?
+9. **axe audit:** Run axe (DevTools extension) on any page where you touched views toolbar, tabs, or primary list surfaces
 
 ## Quick Reference Card
 

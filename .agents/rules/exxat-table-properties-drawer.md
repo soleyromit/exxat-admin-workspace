@@ -63,6 +63,28 @@ When **`ListPageTemplate`** drives **`tab.viewType`** and the page renders **`Ta
 - Don't introduce a second source of truth for "which panel" — `sheetInitialPanel` is the only deep-link channel. The drawer's internal `sheetPanel` state stays internal.
 - Don't call `setSheetInitialPanel` from a non-deep-link callsite (e.g. a generic "open Properties" toolbar button). Leave it `null` for index opens.
 
+## Conditional rule highlight colour
+
+A rule paints one CSS value (**`ConditionalRule.bgColor`**), and **`ConditionalRuleColorPicker`** is the only surface that sets it. Three sources, because "green" and "the colour Overdue already is" are different intents:
+
+| Source | Value written to `bgColor` | Use it for |
+|---|---|---|
+| `palette` | a **`RULE_COLORS`** tint | a neutral highlight with no semantic claim |
+| `status` | **`var(--status-badge-<tone>-fill)`** | a highlight that must read as one colour with the row's status chip |
+| `custom` | **`customRuleBackground(color)`** — a `color-mix` tint of the user's colour | a workspace bringing its own colour |
+
+### MUST
+
+1. **Status rules store the token, not its resolved value.** The status fills are redefined per theme and per high-contrast mode, so a frozen computed colour is how a rule ends up light ink on a light fill after a theme switch.
+2. **Custom colours are stored as a tint** via **`customRuleBackground`** (`CUSTOM_RULE_TINT_PERCENT`), with the raw colour kept in **`customColor`** so the picker reopens on it. Cell text is a single ink across every rule; a saturated fill under it fails contrast in at least one theme, and the alternative — an ink per rule — is a contrast matrix nobody maintains (**P8**).
+3. **Place rules that predate colour sources with `resolveRuleColorSource`.** `colorSource` is absent on anything persisted by an earlier version, so the background is what places them; without it a status rule reopens on the palette and the next click silently repaints it.
+4. **Switch sources through `ruleColorSourcePatch`**, which keeps a sensible colour on the way across (a custom colour survives a trip through Palette).
+
+### MUST NOT
+
+- Write a hex, `rgb()`, or resolved `oklch()` straight into `bgColor` from a hub or a page. Helpers live in **`packages/ui/src/lib/conditional-rule-colors.ts`**.
+- Add a fourth swatch set, or a per-rule text colour. The tint strength is the contrast contract.
+
 ## View-type tile grid is uniformly square
 
 The drawer's "View type" tile grid (and the Export drawer's "File format" grid) renders through `SelectionTileGrid` with `interaction="button"` + `labelPlacement="inside"`. The shared `selectionTileClassNames` utility now applies **`aspect-square`** so every tile is the same shape regardless of how many tiles populate the last row of a `grid-cols-N` track. Two-word labels (e.g. "List & details") wrap inside the square because `leading-tight` keeps line height compact.

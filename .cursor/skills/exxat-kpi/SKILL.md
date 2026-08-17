@@ -1,7 +1,7 @@
 ---
 name: exxat-kpi
 description: >-
-  KPI strips and dashboard key-metrics — max four tiles, flat band styling,
+  KPI strips and dashboard key-metrics — max four tiles, cards + size sm|md|lg,
   trend polarity, honest deltas. Load when wiring KeyMetrics, *-kpi.ts helpers,
   or chart mini-metrics.
 user-invocable: true
@@ -35,20 +35,22 @@ Replaces separate loads of `exxat-kpi-trends`, `exxat-kpi-max-four`, and `exxat-
 
 1. **≤ 4 tiles** on `ListPageTemplate` metrics strip and Data-tab key-metrics cards.
 2. Extra metrics → `MetricInsight`, charts, or another section — not a fifth tile.
-3. **`variant="flat"`** on hub strip; **`variant="card"`** on dashboard key-metrics tile.
-4. Flat band: transparent cells, OKLCH glow only, hairline borders — no grey panel wash.
+3. **Hubs:** `variant="cards"` + **`size="sm"`**. **Grouped strip:** `variant="flat"` (same MetricItem features). **Dashboard tile:** `variant="card"` + `size="md"`.
+4. **Mini charts:** `metric.chart` on cards **and** flat. **`sm`:** plot on the **right**. **`md` / `lg`:** larger type + full-bleed chart at the bottom (no bottom padding).
+5. **Alerts:** set `alert: "warning" | "danger"` when the KPI needs attention (wrong / negative). Pair with `trendPolarity: "lower_is_better"` when rising is bad. Do not rely on colour alone — icon + aria.
+6. **No brand glow** under KeyMetrics — Ask Leo utility glow only on Ask Leo chrome.
 
 ### Trends & copy
 
-5. **`trend`** matches signed change vs comparison period.
-6. **`trendPolarity`** when up is bad → `lower_is_better`; neutral mix → `informational`.
-7. **`delta`** is numeric (`"+5"`, `"-3%"`) — prose goes in **`description`**.
-8. No empty `—` chip — leave `delta: ""` + `trend: "neutral"` to hide chip.
+7. **`trend`** matches signed change vs comparison period.
+8. **`trendPolarity`** when up is bad → `lower_is_better`; neutral mix → `informational`.
+9. **`delta`** is numeric (`"+5"`, `"-3%"`) — prose goes in **`description`**.
+10. No empty `—` chip — leave `delta: ""` + `trend: "neutral"` to hide chip.
 
 ### Data wiring
 
-9. Hub KPI helpers read **`tableState.rows`** (filtered like the grid).
-10. Dashboard persistence: respect `KEY_METRICS_KPI_COUNT_MAX` / `clampKeyMetricsKpiCount`.
+11. Hub KPI helpers read **`tableState.rows`** (filtered like the grid).
+12. Dashboard persistence: respect `KEY_METRICS_KPI_COUNT_MAX` / `clampKeyMetricsKpiCount`.
 
 ---
 

@@ -112,6 +112,14 @@
   "hooks": {
     "SessionStart": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/exxat-session-status.mjs"
+          }
+        ]
+      },
+      {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
@@ -127,6 +135,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node .claude/hooks/exxat-image-ia-gate.mjs"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/user-prompt-submit.py",
             "timeout": 15
           }
@@ -134,6 +150,33 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Grep|Glob|Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/exxat-graphify-gate.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: graph exists (gitignored). Run graphify query \\\"<question>\\\" --budget 1200 before grepping. Do not Glob graphify-out or read GRAPH_REPORT.md in full.\"}}'   || true ;; esac"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/exxat-brief-gate.mjs"
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
@@ -150,15 +193,6 @@
           {
             "type": "command",
             "command": "node .claude/hooks/pre-edit-checks.mjs"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/exxat-brief-gate.mjs"
           }
         ]
       }
@@ -234,6 +268,24 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/vault-capture-reminder.py",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolBatch": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/react-doctor.sh\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/exxat-ds-check.mjs\""
           }
         ]
       }

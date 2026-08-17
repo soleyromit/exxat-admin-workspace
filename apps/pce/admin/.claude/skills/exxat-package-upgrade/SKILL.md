@@ -11,6 +11,13 @@ description: >
 
 # Exxat DS — install & upgrade (`@exxatdesignux/ui`)
 
+**Binding rule (read first):** `.cursor/rules/exxat-consumer-package-upgrade.mdc`
+(Claude: `.claude/rules/…` · Antigravity: `.agents/rules/exxat-consumer-package-upgrade.md`).
+
+**Default when the user says "update / bump the package":** install only
+(`pnpm add` / `npm install`). Do **not** run `exxat-ui upgrade` unless they
+explicitly asked to sync shell chrome. Preview with `exxat-ui upgrade --check`.
+
 Use this skill for **consumer repos** (Assessment_V1, customer scaffolds) — not
 the DS monorepo (`apps/web` uses `workspace:*`).
 
@@ -87,13 +94,15 @@ Run and **summarize for the user** before any file edits:
 ```bash
 npx --package=@exxatdesignux/ui@latest exxat-ui doctor
 npx --package=@exxatdesignux/ui@latest exxat-ui changelog
-# Or read bundled notes (≥ 0.5.22 often points to GitHub RELEASES.md)
+# Or open node_modules/@exxatdesignux/ui/RELEASE_NOTES.md (≥ 0.8.8)
 ```
 
 Also open:
 
-- `node_modules/@exxatdesignux/ui/CHANGELOG.md` (recent entry)
+- Release notes via `exxat-ui changelog` (bundled `RELEASE_NOTES.md`, latest 5 versions)
+- `docs/exxat-ds/latest-release.md` after `sync-extras` (same content in the app tree)
 - `docs/exxat-ds/consumer-upgrade-checklist.md` (after sync-extras)
+- Full history only if needed: GitHub `packages/ui/RELEASES.md`
 
 **Output a short upgrade brief:**
 
@@ -262,7 +271,7 @@ Full file list: [port-map.md](./port-map.md).
 | Command | Purpose |
 |---------|---------|
 | `exxat-ui doctor` | Installed vs npm `latest` |
-| `exxat-ui changelog` | Release notes |
+| `exxat-ui changelog` | Bundled upgrade notes (`RELEASE_NOTES.md`) |
 | `exxat-ui update` | Install commands + reminders |
 | `exxat-ui sync-extras` | Cursor skills + `docs/exxat-ds/` |
 | `exxat-ui audit <file>` | Prompt for UX/a11y audit skill |

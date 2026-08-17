@@ -9,6 +9,248 @@
 >
 > Also available as `docs/exxat-ds/latest-release.md` after `exxat-ui sync-extras`.
 
+## 1.3.0 — 2026-08-17
+
+Customer upgrades can now move an old application into the managed architecture
+without treating package installation as proof that routes, flows, ownership,
+and browser state survived. Leo's complete launcher also moves into the package,
+so DS fixes no longer stop at a consumer-owned utility bar.
+
+### Added
+
+- **Transactional consumer migrations.** `exxat-ui migrate` inventories legacy
+  routes, navigation, authorization, mutations, drafts, and persisted state;
+  verifies a reasoned human review; creates a checksummed plan; and applies it
+  in an isolated Git worktree. Validation, framework idempotence, source commit,
+  package artifacts, installed versions, and receipt provenance must all agree
+  before one binary-safe patch reaches the customer checkout.
+- **Persisted-state protection.** The public copy-only storage migration engine
+  preserves source keys, rejects collisions and dynamic key guesses, backs up
+  before writing, verifies each target, rolls back partial writes, coordinates
+  tabs with a lease, and records idempotency receipts for local and session
+  storage.
+- **A packaged Ask Leo launcher.** `AskLeoLauncher` now owns the chip, halo,
+  wash, star slot, label, one-shot arrival, and staged greeting. The package
+  also exports the launcher wash, animated blob background, Leo ambience
+  provider and preferences, utility bar chrome, and related greeting hooks.
+- **Two shell seams.** `userMenuAccountItems` adds account actions without
+  forking `NavUser`, and `useExclusiveShellOverlay` lets app-owned overlays
+  yield the secondary column when another shell layer opens.
+
+### Changed
+
+- App-side Leo modules remain as re-exports, so existing imports continue to
+  resolve while package updates deliver implementation fixes.
+- Upgrade guidance now pins the destination package CLI for planning and apply,
+  and prepublish plans can bind exact UI and product-framework tarball
+  checksums.
+
+### Upgrading from 1.2.0
+
+Pin the destination CLI, create a migration plan, and follow its detected mode:
+
+```bash
+TARGET_VERSION=1.3.0
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan
+```
+
+Managed apps can write and apply the plan directly. Legacy apps must complete
+`migrate legacy inspect` and `migrate legacy verify`, commit the ownership and
+review artifacts, then create a fresh plan and apply it from a clean Git root.
+`AskLeoToggle` no longer accepts `introActive`; the packaged launcher stages its
+own greeting. See migrations 0005 and 0006.
+
+## 1.2.0 — 2026-08-15
+
+Leo's launcher answers the pointer, arrives instead of appearing, and its field
+can be placed. 1.1.0 gave the chip Leo's drifting lobes; this makes the chip
+behave like something holding them. Everything here is chrome on one control, and
+every new light pass stands down for reduced motion and forced colours.
+
+1.1.0 was tagged in the workspace but never published, so its notes are below and
+its changes ship inside this release.
+
+### Added
+
+- **Hover and keyboard focus lift the chip's field.** The lobes only ever
+  brightened for Leo's own states, so hovering the launcher looked the same as not
+  hovering it apart from a border step every other action in the bar shares.
+  Hover and `:focus-visible` now spend the same field budget the live states do,
+  in CSS rather than through the React flag that also decides intensity and sheen
+  when the field mounts — routing hover through that flag would restart the
+  lobes' drift under the pointer.
+- **The outline is lit by the lobes, and the light reaches past the box.** A
+  second copy of the field is masked to a ring straddling the border and blurred,
+  so an arriving lobe brightens the outline where it reaches it and blooms about
+  6px beyond the chip. Without it the control read as a window cut into a field
+  rather than as a chip holding light. Nothing measures lobe positions: same
+  lobes, same size, same mount, so each bloom sits under its own lobe by
+  construction. Where `mask-composite` is unsupported the layer stays off rather
+  than painting a blurred field across the label.
+- **The launcher's field can be placed.** Leo appearance gains the offset pad the
+  search bar already had, on the chip's own range — 14px against the composer's
+  120, so the pad nudges the field inside the control instead of parking it off
+  it. `launcherWashOffsetX` and `launcherWashOffsetY` join the persisted
+  preferences and are clamped on read, so a value stored from a wider range
+  cannot survive.
+- **The chip arrives.** It lands icon-only and opens into icon and name: the
+  label's box grows from nothing, and since the chip's width is its content that
+  is the whole mechanism, with the halo, wash, and edge light following for free.
+  The outline draws itself in behind that — `border-color` runs from transparent
+  up past its resting strength and settles — and then the name rises 2px, takes
+  one bloom of the sheen's colour, and one band of that colour crosses it on the
+  border sheen's own envelope, so the two read as one light rather than two
+  highlights travelling independently. The cost is honest: the utility icons left
+  of the chip slide about 60px as it opens, once, during the shell's first paint.
+- **Leo greets on load, visibly.** The star's slot turns a quarter as the chip
+  opens and lands upright. The icon's own gesture is sized for hover — a 6%
+  squash, a 5deg tip — which on a 20px glyph is under a pixel of travel and was
+  invisible beside a chip changing width, so the turn carries the movement while
+  the gesture's sparkle brightening rides along. A quarter and only a quarter,
+  because the mark is 4-fold symmetric: 90deg lands the star on itself, so no
+  frame of it shows something that could be read as a different icon. One eased
+  pass, never repeated, since repetition is what makes a turning mark read as
+  indeterminate progress.
+
+### Changed
+
+- **The chip's field keeps a lower connective floor than the composer's.** Across
+  ~110px the composer's level was most of what you saw and the three lobes
+  disappeared into it. The edge light's copy drops that floor entirely, which is
+  what lets the outline be lit unevenly instead of holding one flat colour.
+
+### Upgrading from 1.1.0 or 1.0.1
+
+Install 1.2.0 and run `exxat-ui upgrade`, then `exxat-ui doctor` to confirm the
+install. Coming from 1.0.1, the one thing that may need a change on your side is
+1.1.0's removed `--ask-leo-chip-wash`: point any chrome that read it at
+`--ask-leo-chip-blob-opacity` instead. Nothing in 1.2.0 requires a change.
+
+## 1.1.0 — 2026-08-15
+
+Never published: its changes ship inside 1.2.0 above.
+
+A grouped hub reads as batches now instead of as one long list with grey rules
+in it. Every divider carries a fill, names its value the way the rows beneath it
+do, and offers the whole group in one click. Column headers admit what the
+Properties drawer did to them. Leo's launcher gets the same drifting field the
+composer has, with its own settings, because the chip is in the shell on every
+route while the composer only exists inside Leo.
+
+### Added
+
+- **Group dividers carry colour and identity.** A grouped `DataTable` tints each
+  band with the column's declared status tone where there is one, and with a
+  categorical chart hue hashed off the value otherwise, so grouping by owner,
+  type, or term still heads every batch with a colour that survives sorts,
+  filters, and reloads. `neutral` takes a hue too: one grey band among coloured
+  ones reads as a divider that failed to paint, so the chip in the rows keeps its
+  grey and only the band takes a hue. Dividers also read the grouped column's
+  `cellKind`, so a person group is headed by an avatar and name and other kinds
+  are prefixed by the column's own glyph. Both fills are inline styles, so
+  forced colours drop the whole band to `Canvas`.
+- **Take a whole group in one click.** A grouped, selectable table leads each
+  divider with a tri-state checkbox, in a slot the width of the select column and
+  on the same axis as the row checkboxes below it. It adds or releases only that
+  group's rows, so a batch the user already took elsewhere survives.
+- **Headers mark what is applied to them.** A column narrowed by a filter,
+  grouped, or carrying a conditional rule now says so in its header, so the state
+  the Properties drawer set is legible without reopening the drawer. Each marker
+  has a label and a visible tip.
+- **A conditional rule can borrow the status badge's fill.** Rule colour now
+  comes from the rule palette, from the status badge tone the column already
+  uses, or from a colour the workspace brings. A rule that matches a status stays
+  in step with its chip in both schemes instead of drifting from it, and every
+  source stays inside the contrast budget a single cell's ink depends on.
+- **`ToggleSwitch` and `ButtonSegmentedControl` accept `disabled`.** A row that
+  waits on a parent switch is still announced and still shows which answer is in
+  force, but is out of the tab order.
+- **`exxat-ui doctor` reports install health, and the CLI says when it is old.**
+  Ownership and installation failures surface through postinstall and `doctor`
+  rather than being discovered later as missing files. Consumers on a stale
+  version get a notice with the version to move to.
+
+### Changed
+
+- **The Ask Leo launcher paints Leo's blob field.** The chip's single travelling
+  gradient is replaced by the same lobes the composer uses, sized to a chip so
+  each drift crosses it top to bottom. The field is the chip's resting surface
+  rather than a flash on load: it idles under the label's contrast budget and
+  spends the rest only while Leo is arriving, open, or working. It stands down
+  entirely for reduced motion and forced colours.
+- **Leo appearance carries the launcher's own settings.** A new Ask Leo button
+  tab holds the chip's switch, blob intensity, field strength, and sheen,
+  separate from the Leo search bar's. Field strength scales the per-scheme
+  contrast budget rather than replacing it, so the label's ink stays safe in both
+  schemes. Motion is still one decision on the Motion tab.
+- **Exclusive settings choices use `ButtonSegmentedControl`.** The outline toggle
+  group they used could be clicked into a fourth, empty state; a preference with
+  no answer is not a state the app can honour.
+
+### Removed
+
+- **`--ask-leo-chip-wash`.** It described the travelling gradient that no longer
+  exists. The launcher's budget is now `--ask-leo-chip-blob-opacity`, the
+  opacity the field is allowed to spend behind the label. Nothing outside the
+  launcher read the old token; a consumer who copied it into their own chrome
+  should move to the new one.
+
+### Fixed
+
+- **The sticky column header stopped pinning after a column menu was used.** A
+  mouse click parked focus on the `⋯` trigger, which the header read as keyboard
+  focus and then suppressed the pinned header for the rest of the session. Focus
+  has to be visible (`:focus-visible`) to take the header out of its pinned
+  state, so grouping and scrolling keep their header.
+
+### Upgrading from 1.0.1
+
+Install 1.2.0 and run `exxat-ui upgrade`, then `exxat-ui doctor` to confirm the
+install. If your own chrome referenced `--ask-leo-chip-wash`, point it at
+`--ask-leo-chip-blob-opacity` instead. Nothing else in this release requires a
+change on your side.
+
+## 1.0.1 — 2026-08-14
+
+This is the corrective release for 1.0.0. It publishes the matching
+`@exxatdesignux/product-framework@0.2.3` artifact before the UI package and then
+installs the UI tarball against that registry artifact, so npm consumers receive
+the same navigation APIs the workspace tested.
+
+### Fixed
+
+- A malformed persisted tenant product is skipped and reported without
+  preventing valid custom products from registering. Invalid shipped or edited
+  nav is validated before it can poison the tenant store.
+- Mixed legacy and `NavLinkSpec` trees preserve nested icon classes. The nav
+  codemod reports helper-produced icons, leaves their declaration unchanged,
+  handles type-only imports, and plans every target before writing any file.
+- `upgrade` and `eject` reject paths outside the app root. A malformed
+  `.exxat-ui/ejected.json` aborts before writes, ledger updates are atomic, and
+  every legacy patch uses the same ownership-aware backup path.
+- First-run drift is no longer guessed into ownership. A trustworthy previous
+  baseline distinguishes edited files from untouched old package copies;
+  otherwise the CLI asks for `--declare-existing-owned` or `--force`.
+- `eject --adopt` restores the current generated-starter copy immediately and
+  backs up the app-owned version before removing its ledger entry.
+- Add-only seams are import-closed. Product-specific `app-shell-wiring.tsx` and
+  `panel-bridges.tsx` remain starter references rather than being synthesized
+  into apps that may not have their dependencies.
+- Product console rows, theme-family selection, and special settings active
+  rules moved out of the generic shell and into app wiring or the product
+  framework registry.
+- Release gates now include the layer audit. The release wrapper publishes the
+  framework first and runs a registry-realistic consumer smoke before uploading
+  the UI package.
+
+### Upgrading from 1.0.0
+
+Install 1.0.1, then run `exxat-ui upgrade`. If this is the first declarative
+ownership run and the app has no trustworthy baseline, review the listed files
+and choose either `--declare-existing-owned` to preserve them or `--force` to
+take package copies with backups.
+
 ## 1.0.0 — 2026-08-14
 
 **Why 1.0 now.** Not because your code has to change — the *Upgrading* list below
@@ -58,10 +300,10 @@ nav-as-data, and the shell move.
 ### Fixed
 
 - **`@exxatdesignux/ui/components/ui/<name>` resolves again.** The package exposed `./components/*` mapped onto `dist/components/ui/`, so the `components/ui/…` form every doc and the component map recommends doubled the segment and failed with `ERR_MODULE_NOT_FOUND`. 69 of the 77 specifiers in `component-map.json` were unresolvable, which only started to bite when 0.11.0 moved `chart` out of the root barrel and sent people to a subpath for the first time. Both `components/chart` and `components/ui/chart` now work.
-- **`exxat-ui upgrade` no longer overwrites files an app has made its own — and the app says which those are.** New `exxat-ui eject <path>` forks one package file into the app, rewrites its relative imports back to package specifiers, and records it in `.exxat-ui/ejected.json`. `upgrade` leaves every listed path alone, lists them under *"Your version kept"* with the package copy's path, and brings everything else current with a backup. `eject --list` flags forks whose package version has moved since; `eject --adopt <path>` hands one back. `--force` still takes the package version everywhere. The first upgrade after this release converts an app's existing undeclared edits into ledger rows (marked `declaredBy: "upgrade-migration"`) rather than spending them. The tarball ships `src/` now, because a fork needs a source.
+- **`exxat-ui upgrade` no longer overwrites files an app has made its own — and the app says which those are.** New `exxat-ui eject <path>` forks one package file into the app, rewrites its relative imports back to package specifiers, and records it in `.exxat-ui/ejected.json`. `upgrade` leaves every listed path alone, lists them under *"Your version kept"* with the package copy's path, and brings everything else current with a backup. `eject --list` flags forks whose package version has moved since; `eject --adopt <path>` hands one back. `--force` still takes the package version everywhere. Starting in 1.0.1, first-run drift is resolved from a trustworthy prior baseline or an explicit ownership choice rather than being guessed. The tarball ships `src/` now, because a fork needs a source.
 - **`upgrade --check` reports what it can actually do.** Exit 10 now means portable work exists, 11 means the app edited package-owned files and nothing is portable, 0 means nothing to do. App-owned manual-merge files no longer force a 10, which is what made `sync-extras` auto-run a no-op upgrade on every install.
 - **`LeoIcon`, `MessageScroller`, and `AiThinkingSurface` ship from the package, so fixes to them reach you.** All three lived in the app tree, which meant `upgrade` had to overwrite them in your repo to deliver a change — and `message-scroller.tsx` existed twice, byte-identical in both trees, one edit away from two behaviours. They are now `@exxatdesignux/ui/components/leo-icon`, `/components/message-scroller`, and `/components/ai-thinking-surface`, and the files in your `components/ui/` are one-line re-exports. Existing `@/components/ui/leo-icon` imports keep working; nothing in your app has to change. `upgrade` now overwrites 33 files rather than 36.
-- **`exxat-ui upgrade` writes 120 files instead of 534, and can only overwrite 33 of them.** The port list was the union of the groups that make the *starter* compile, so shipping a shell fix meant writing every demo hub, page, and mock module into the consumer's repo, then reporting the ones it had just replaced. It now writes three sets deliberately: **framework wiring** (product identity, routing, scope, shell layout, switcher chrome) is ported because an app on an older copy gates the wrong products; **seams** (the `components/ui/` re-export shims, `app-shell-wiring.tsx`, `panel-bridges.tsx`, `globals.css`, `vite.config.ts`) are created when missing and never overwritten; everything else is reference and is left alone at every version. New `upgrade --only <path>` fetches one reference file on request, with a backup and a report of any `@/` imports the app does not have yet. Every run says how many reference files differ from the release and names that command, because the count is expected on a customised app and the command is otherwise unguessable.
+- **`exxat-ui upgrade` writes a bounded set instead of 534 files, and only framework wiring can overwrite.** The port list was the union of the groups that make the *starter* compile, so shipping a shell fix meant writing every demo hub, page, and mock module into the consumer's repo, then reporting the ones it had just replaced. It now writes three sets deliberately: **framework wiring** (product identity, routing, scope, shell layout, switcher chrome) is ported because an app on an older copy gates the wrong products; **seams** are import-closed re-export shims and generic slot fills created only when missing; product-specific shell wiring remains reference; everything else is left alone at every version. New `upgrade --only <path>` fetches one reference file on request, with a backup and a report of any `@/` imports the app does not have yet.
 - **If you scaffolded on 0.10.2 or earlier and never customised the library or columns demos, refresh three of them.** 0.11.0 made `HubTableHandle` generic, and stale copies of `components/library-table.tsx`, `components/columns-showcase.tsx`, and `components/columns-client.tsx` annotate the old shape, so they fail `tsc` after upgrading. `exxat-ui upgrade --only <path>` on each takes the current version. 58 other reference files in the same app compiled fine, which is why they stay yours rather than being ported: their import closure reaches `page-header.tsx`, `templates/list-page.tsx`, and `lib/mock/library.ts`, and overwriting a consumer's page header to deliver a table fix is the failure this release exists to end. The upgrade-path gate now applies that remedy itself and fails if it does not restore a clean typecheck.
 
 ### Upgrading
@@ -88,91 +330,6 @@ gain by doing, not something that breaks by waiting.
    bare `<i>` and a grey-circle fallback for anything composed. `navFromJsx()` is
    supported through 1.x and goes away in 2.0.
 4. **Declare the package files you have forked**, with `exxat-ui eject <path>`.
-   The first upgrade after this release also converts existing drift for you,
-   marking those rows `declaredBy: "upgrade-migration"`. An undeclared edit to a
-   package-owned file is the one thing an upgrade can still spend.
-
-## 0.11.0 — 2026-08-14
-
-### Breaking (imports)
-
-- **`chart` leaves the root barrel.** `@exxatdesignux/ui` no longer re-exports Recharts, so importing anything from the root stops pulling the charting library in behind it. Import from the subpath instead: `import { ChartContainer } from "@exxatdesignux/ui/components/chart"`. Hub list pages also lazy-load `ExportDrawer`, so it enters the graph when export opens rather than with the template.
-
-### Added
-
-- **`openRowId`** on `HubTable`, `DataTable`, and `DataRowList` — the grid draws a leading bar on the row a detail rail is reading, the list view rings the card, and both set `aria-current`. Passing it at all (even `null`) marks rows as rail triggers, so clicking a second row retargets an open rail instead of dismissing it. Uses a new `--dt-row-open-marker` token rather than the selection fill, because a row can be both selected and open.
-- **`HubTableHandle.visibleRows`** — the rows the hub is showing after search, filters, sort, and pagination, so previous / next in a rail steps through what the user is looking at.
-- **`rememberScroll`** on `Tabs` — each destination keeps its own scroll position. `ListPageTemplate` hub views get it without a prop; a tab row inside a card leaves it off so flipping a chart never moves the page.
-- **`newQuestionPlacement`** on `LibraryPageHeader` (`"header"` default, `"toolbar"`) so the page keeps exactly one filled primary and `⌘⌥N` binds once.
-
-### Changed
-
-- **Design OS accent is the corporate indigo** (`#4152B4`, as Exxat One) instead of the workspace grey it shared with Administrator and Directory. Store migration v19 clears a stored grey on `exxat-design-os`.
-- **Leo composer heights** — `AskLeoComposer` controls drop 36px to 32px, so the chat box stands 50px rather than 58px; the assist bar pill and collapsed circle go 50px to 46px (radius 23px), and `SEARCH_BAR_ROW_HEIGHT` is `h-8` so Basic and Leo search modes match. The bar's pixel geometry and its Tailwind classes are now checked against each other in development.
-- **Breadcrumbs collapse on room, not on count** — `PageBreadcrumbTrail` measures the row with the same fit ladder the tab rows use and shows every segment that fits; middle segments move into More shallowest first. More is icon-only and now carries a `Tip` beside its `aria-label`. The Tokens hub stops naming itself twice.
-- **Add view is icon-only** at every width, with `aria-label` plus a visible Tip, and its loading skeleton is square so the rail no longer shuffles on hydrate. The library's **New question** moves onto the table toolbar row beside Import.
-- **Navigational tabs fill the selected glyph** so the active destination reads at a glance.
-- **Toolbar actions give up their labels before the filter chips wrap**, collapsing to icons when the rail crowds them rather than truncating a word.
-- **The Ask Leo launcher announces itself once** on arrival and then rests, and hands the rails back the way it found them.
-
-### Fixed
-
-- **Keyboard focus rings** no longer cut flat on the near edges of the box around them.
-- **Filter editors** close when something opens over them, and only one is ever open at a time.
-- **Dragging a secondary rail** no longer thrashes layout every frame; rails also stop getting wider on each page load.
-- **Solid buttons paint their whole box**, so a toolbar row lines up with outline siblings.
-- **A date range filter pill** reads `12/14/2025 to 12/20/2025` instead of joining the dates with an en dash, and syncs its calendar during render so opening it no longer shows the previous selection for a frame.
-- **Floating rails opened from a menu item** no longer close the instant they appear, and a rail's own triggers retarget it instead of dismissing it.
-- **React Doctor reads 100** across all three projects, from 81, with no rule disabled and no code suppressed.
-
-Upgrade: `pnpm add @exxatdesignux/ui@0.11.0` then `npx exxat-ui sync-extras`. Ships with `@exxatdesignux/product-framework@0.2.2`. **Update chart imports** to `@exxatdesignux/ui/components/chart` before upgrading if you import `ChartContainer` and friends from the root. Run `exxat-ui upgrade` (after `--check`) for the tab, breadcrumb, filter, and Ask Leo shell ports. Install alone does not rewrite app source.
-
-## 0.10.2 — 2026-08-12
-
-### Fixed
-
-- **Split hub chrome** — Miller column headers span full panel width; outer card top corners no longer square-cut the border; page scroll restored with sticky headers under the views strip.
-- **Resize handles** — global `ResizableHandle` shows the grip by default and keeps it sticky in the viewport on tall split hubs (no mid-canvas off-screen grip).
-- **Button destructive tones** — full hierarchy mirrors neutral variants: `destructive-solid`, `destructive-outline`, `destructive` (secondary tint), `destructive-ghost`, `destructive-link`. Catalog IA: Variants (neutral) · Destructive (enabled) · Disabled (neutral + destructive rows).
-- **Button disabled** — per-variant disabled tokens replace global `opacity-50` so default and outline read consistently; bulk delete uses `destructive-solid`.
-
-Upgrade: `pnpm add @exxatdesignux/ui@0.10.2` then `npx exxat-ui sync-extras`. Run `exxat-ui upgrade` for Resizable, split-hub, and button catalog shell ports.
-
-## 0.10.1 — 2026-08-11
-
-### Fixed
-
-- **Design OS / Columns catalog** — `StatusCell` (and the rest of `table-cells`) now ships from `@exxatdesignux/ui/components/data-views`. Catalog previews import the package export so consumers are not blocked when a local `components/data-views/index.ts` predates StatusCell.
-- **`FavoriteToggleButton`** — promoted into the package (used by `FavoriteNameCell`).
-- **Semantic status badges** — locked OKLCH lightness recipe (fill L ≈ 95%, text L ≈ 38.5%) via `--status-badge-{tone}-fill` / `-fg` for success / info / warning / danger / neutral. Draft is true grey (chroma 0). Domain map: Compliant → success, In review → info, Due soon → warning, Non-compliant → danger.
-- **Utility bar** — trailing actions + identity always `ms-auto` (no hole after profile at Dense / 200% zoom); product sits in equal `px-1.5` between the rail rule and the crumb rule.
-- **PageHeader** — title and actions share a centered `min-h-8` row; top padding restored (`pt-3` / `lg:pt-4`).
-- **PageHeader tertiary actions** — `PageHeaderActionItem.placement="overflow"` keeps Invite people, Export, Customize folder, and metric toggle under More (never on the title row). Primary stays on the row.
-- **Ask Leo docked panel** — Compact flush now includes `data-slot="ask-leo-panel"` (no `rounded-xl` / gutter); overlay sheets stay rounded.
-- **Flush page canvas** — `SidebarInset` is edge-to-edge at the source (no card gutters, radius, shadow, or global `pb-6`). Docked secondary / Ask Leo match. Exam lock keeps its inset card. Content `Card`s stay raised on the canvas.
-- **Split hub chrome** — Tree & details / List & details (and Library panel splits) fill the page: no nested `rounded-xl` card, no centered `max-w-7xl` gutters.
-- **PageHeader actions** — labeled actions use `size="sm"` (`h-8`) to match icon-sm / filter chips; Button base is `box-border` so outline and filled share one footprint.
-- **Sticky table headers** — Compact no longer leaves an empty `data-site-header` wrapper; views-toolbar gap is a scrolling spacer (not `mt-*` on the sticky node); pin offset stacks against the live subheader bottom so Chrome does not park the floating thead mid-canvas.
-- **Split hub scroll** — Tree / List & details panes bound to `calc(100dvh - 17.5rem)` again so columns own `overflow-y-auto` (flush chrome without the page stealing scroll).
-
-Upgrade: `pnpm add @exxatdesignux/ui@0.10.1` then `npx exxat-ui sync-extras`. Run `exxat-ui upgrade` to refresh Design OS preview imports and shell files. If Catalog still errors on an old local barrel, either upgrade shell files or add `StatusCell` to your `components/data-views` re-exports (starter ships a shim to the package).
-
-## 0.10.0 — 2026-08-11
-
-### Breaking (chrome)
-
-- **Compact is the only shell layout.** `ShellLayoutVariant` is `"compact"` only. Persist key `shell:layout-variant:v3`; legacy ids (`sidebar-classic`, `utility-sidebar`, `utility-bar`, `sidebar`) normalize to compact. Settings → Appearance shell picker and profile Shell layout submenu are removed. Consumer apps on an older package keep multi-layout until they upgrade and port shell files via `exxat-ui upgrade`.
-
-### Changed
-
-- **Utility bar** — height token `--shell-utility-bar-height: 2.625rem` (42px) drives bar height, rail `top`, and compact `--header-height`. Settings gear removed; **Workspace settings** lives in the profile menu. **Onboarding** opens `/builder/onboarding`. Ask Leo stays labeled and pinned on Dense. School and profile avatars both `size-8`. One hover hit shape (`Button` ghost `icon-sm` + `utilityBarActionButtonClass`).
-- **Back mode** — on `siteHeader.back` or record-detail chrome: leading back cluster (icon · separator · parent label); trailing **Ask Leo only** (rightmost). Peer jump stays on `PageHeader` (`PageTitleRecordSwitcher`).
-- **Sticky stack** — utility bar outside the page scrollport; horizontal `TabsList` and hub view toolbars pin as sticky subheaders under the bar; floating table column headers pin below via `getStickyTableHeaderOffset`.
-- **Tabs fit** — overflow region is `w-full`; labels collapse only when the row overflows and re-expand when the viewport can hold them again.
-- **Bulk selection bar** — count badge only (no visible “selected” label); `aria-label` still announces selection count.
-- **Nav flyouts** — primary / secondary / Ask Leo overlay sheets stack above the utility bar (`[data-app-shell-row]` rises while open) and keep sheet shadow under Compact.
-- **Dense utility bar** — uniform `gap-1` / `mx-1`; breadcrumb uses text labels (no house icon for the first crumb).
-- **PageHeader compact** — collaborator faces collapse to a count control; primary CTA stays on the row as icon-only (never in More); secondary actions overflow; count / primary / More share `icon-sm` alignment.
-- **Builder dev sync** (via `@exxatdesignux/product-framework@0.2.1`) — no empty catalog wipe on fresh hydration; Vite 409 on empty overwrite when on-disk catalog has entries.
-
-Upgrade: `pnpm add @exxatdesignux/ui@0.10.0` then `npx exxat-ui sync-extras`. Run `exxat-ui upgrade` (after `--check`) to port Compact-only utility bar, Back chrome (`utility-bar-page-chrome.tsx`), sticky hub/tabs shell, and related shell files. Install alone does not rewrite app source.
+   From 1.0.1 onward, unknown first-run drift requires an explicit choice:
+   `--declare-existing-owned` preserves it, while `--force` takes package copies
+   after writing backups.

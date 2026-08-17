@@ -1,5 +1,5 @@
 ---
-description: Exxat DS — WCAG 2.1 AA, ARIA tablists, 24px targets, contrast; see AGENTS.md §8 and exxat-accessibility skill
+description: Exxat DS — WCAG 2.1 AA, ARIA tablists, 24px targets, contrast, high-contrast modes; see AGENTS.md §8 and exxat-accessibility skill
 activation: model_decision
 ---
 
@@ -18,6 +18,8 @@ activation: model_decision
 3. **Composite view switchers** (tabs + per-tab menu + remove): use **`role="toolbar"`** + **`aria-label`**; **`aria-pressed`** on toggles — **MUST NOT** misuse `tab`/`tablist` for those controls.
 4. **Touch targets (2.5.8):** interactive controls **≥ 24×24 CSS px** measured in the browser (DevTools), not only by Tailwind class intent. Prefer **`size-8`** (32px) for icon-only chevrons, tree expanders, and toolbar icon buttons in dense rails — **`size-6`** (`1.5rem`) can compute below 24px when root font size is scaled (~15px → 22.5px). **`min-h-6 min-w-6` alone does not fix** a fixed `size-6` width/height. Avoid **`size-4`** as the sole target.
 5. **Contrast:** normal text **≥ 4.5:1**; UI components / focus where required **≥ 3:1**; muted text on tinted surfaces use tokens against the correct surface (e.g. sidebar), not only `--background`.
+5a. **High contrast (three paths, all binding).** The app ships **`html[data-contrast="high"]`** (in-app toggle) and **`html[data-contrast="windows"]`** (mirrored OS palette); the OS itself adds **`forced-colors`**. The **`hc:`** Tailwind variant covers the first two, **`forced-colors:`** the third — a fix written only in `forced-colors:` never reaches the in-app toggle most users use. **MUST** verify with **both** **`pnpm a11y:axe:contrast`** and **`pnpm a11y:hc`**: axe has no SC 1.4.11 check, so invisible icons, flat chart series, and meter bars matching their track pass it cleanly. Detail + failure catalogue: skill **§ High-Contrast modes**.
+5b. **Selected state stays filled in HC.** A selected tab, chip, segment, or nav row **MUST NOT** degrade to an outline — the fill is the state, and stripping it makes every option in the row look identical. Swap the hue, not the fill: **`var(--accent)`** background with **`var(--accent-foreground)`** ink, decided in the **same** rule so the pair can't split. Selection signals are **not** just `data-state` — cover `[data-active="true"]`, `[data-selected]`, `[aria-checked="true"]`, `[aria-pressed="true"]`, `[aria-selected="true"]`, `[aria-current]`. Inside a filled surface, **badges invert** (`accent-foreground` fill, `accent` ink); structural wrappers that merely re-declare a background go **transparent**.
 6. **Minimum text size:** visible product copy **≥ 12px** — use **`text-xs`** (`--text-xs` = 12px) or larger. **`text-2xs`** shares the same 12px floor with tighter line-height for count badges and "New" pills — **MUST NOT** use arbitrary `text-[10px]` / `text-[11px]` (see **`globals.css`**, **`./AGENTS.md` §8.3`). **Prose (body, descriptions, helper text) uses `text-sm` or larger** — do not default paragraphs to `text-xs` just because they are muted.
 7. **Dialogs / sheets:** must expose a **Title** (`DialogTitle` / `SheetTitle`); use **`sr-only`** if visually hidden (shadcn pattern).
 8. **Format hints are persistent, not placeholders (SC 3.3.2 Labels or Instructions, 1.3.1).** Any field that expects a specific format — **date, time, phone, currency, ID pattern, GPA scale, URL, hours, unit-bearing numbers** — MUST show the format as **persistent helper text** via **`FormDescription`** (or the field's description slot). Placeholders disappear on focus and are unreliable for AT, so **MUST NOT** be the sole carrier of the format. Example: GPA → "Out of 4.0"; Date → "MM/DD/YYYY"; Phone → "+1 (555) 555-0100"; Student ID → "STU-YYYY-####". Pair with `inputMode`, `pattern`, or a picker primitive (e.g. `DatePickerField`) where applicable; never rely on a free-text date input.
@@ -41,7 +43,7 @@ For **Lighthouse accessibility 100**, dispatch **`.agents/skills/exxat-accessibi
 
 ## Ship gate (every new build)
 
-Before merge, complete **`docs/exxat-ds/accessibility-ship-checklist.md`** for touched surface(s). Agents **MUST** verify: one H1 in `<main>`; icon-only Case C; persistent format hints; theme matrix (light / dark / HC); **reflow at 320px + 200% zoom** when touching layout/nav; axe zero WCAG 2.x AA on `<main>`.
+Before merge, complete **`docs/exxat-ds/accessibility-ship-checklist.md`** for touched surface(s). Agents **MUST** verify: one H1 in `<main>`; icon-only Case C; persistent format hints; theme matrix (light / dark / HC light / HC dark) green on **`pnpm a11y:axe:contrast`** **and** **`pnpm a11y:hc`**; **reflow at 320px + 200% zoom** when touching layout/nav; axe zero WCAG 2.x AA on `<main>`.
 
 **Charts:** Keyboard exploration uses **`ChartFigure`**; selected data points should have **visible** focus feedback — see skill **§ Charts (keyboard exploration)** and **`AGENTS.md` §4.3** (`chart-keyboard-selection`).
 

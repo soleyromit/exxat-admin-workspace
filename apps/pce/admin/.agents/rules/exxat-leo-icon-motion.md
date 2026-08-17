@@ -1,0 +1,53 @@
+---
+description: Exxat DS — Leo mark on buttons, FABs, and floating actions uses ambient motion (invited on hover/focus), not a static star.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-leo-icon-motion.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — Leo icon motion on actions
+
+## Intent
+
+When Leo appears on a **button**, **FAB**, **selection chip**, or **floating
+toolbar** action, the mark must **react to hover and focus** (`invited`) and to
+real work (`working`). A frozen glyph reads as decoration and breaks the Leo
+motion language.
+
+## MUST
+
+1. **Prefer `AskLeoButton`** for Ask Leo / Edit with Leo triggers.
+   Pass **`animatedStar`** (required for `size="sm"`; default on `lg`).
+   Use **`iconOnly`** for toolbar / FAB squares. Drive **`aria-busy`** while a
+   run is in flight so the star enters `working`.
+2. **If composing a custom `Button`**, use **`LeoIcon variant="ambient"`** with
+   motion driven from the control:
+   - hover / focus → `state="invited"` or `motionActive={hoveredOrFocused}`
+   - busy / streaming → `state="working"`
+   - after a one-shot answer → play `answered`, then return to `rest` / `invited`
+3. **Pointer and keyboard** both invite the star (`onPointerEnter` / `onFocus`),
+   matching `AskLeoButton`.
+
+## MUST NOT
+
+- Drop a **static** `<LeoIcon />` (default `rest`, no hover wiring) inside a
+  clickable Leo control.
+- Use Font Awesome `fa-star-christmas` / sparkles as a stand-in for the Leo mark
+  on product Leo actions (catalog comparison demos that intentionally show
+  `animatedStar={false}` are the only exception).
+- Loop `working` when nothing is running.
+
+## Canonical references
+
+| Surface | Pattern |
+|---|---|
+| Chart / page Ask Leo | `AskLeoButton` (`ask-leo-button.tsx`) |
+| Launcher FAB | `leo-launcher-fab.tsx` → `AskLeoButton` |
+| Selection chip / assist field | `LeoAssistField` → `AskLeoButton` + `animatedStar` |
+| Selection toolbar | `AskLeoButton` `iconOnly` + `animatedStar` |
+| Motion catalog | Design System → Leo Icon |
+
+## See also
+
+- **`exxat-ask-leo.md`** — thread / sidebar composition
+- **`leo-icon`** component doc — state machine (`rest` / `invited` / `working` / `answered`)

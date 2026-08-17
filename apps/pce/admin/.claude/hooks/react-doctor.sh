@@ -39,24 +39,40 @@ try {
 NODE
 }
 
+# `--diff` (changed files vs base) and `--fail-on` (severity gate) are the flags
+# the installed react-doctor actually accepts — check `react-doctor --help`
+# before renaming them. `--scope` / `--blocking` do not exist: commander reads
+# them as extra
+# positional arguments and the run dies on "too many arguments" before scanning
+# anything, so the hook reports a CLI error where the agent expects findings.
+#
+# No `--no-score`: it suppresses the score API, and the report then leads with
+# "Score unavailable" instead of a number, which is the one line that tells you
+# whether an edit moved the needle. The cost is one network round trip.
+SCAN_ARGS="--verbose --diff --fail-on warning"
+
 run_react_doctor() {
   if [ -x ./node_modules/.bin/react-doctor ]; then
-    ./node_modules/.bin/react-doctor --verbose --diff --fail-on warning --no-score
+    # shellcheck disable=SC2086
+    ./node_modules/.bin/react-doctor $SCAN_ARGS
     return
   fi
 
   if command -v react-doctor >/dev/null 2>&1; then
-    react-doctor --verbose --diff --fail-on warning --no-score
+    # shellcheck disable=SC2086
+    react-doctor $SCAN_ARGS
     return
   fi
 
   if command -v pnpm >/dev/null 2>&1; then
-    pnpm dlx react-doctor@latest --verbose --diff --fail-on warning --no-score
+    # shellcheck disable=SC2086
+    pnpm dlx react-doctor@latest $SCAN_ARGS
     return
   fi
 
   if command -v npx >/dev/null 2>&1; then
-    npx --yes react-doctor@latest --verbose --diff --fail-on warning --no-score
+    # shellcheck disable=SC2086
+    npx --yes react-doctor@latest $SCAN_ARGS
     return
   fi
 

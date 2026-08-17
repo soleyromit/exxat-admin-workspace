@@ -14,16 +14,18 @@ Use this after **`npm install @exxatdesignux/ui@…`** / **`pnpm add @exxatdesig
 | Fetch one reference file (a demo page, a mock module) | `npx exxat-ui upgrade --only <path>` | **Yes, that one file** — backs up first |
 | Fork one package file you must change | `npx exxat-ui eject <path>` | **Yes** — writes that one file and stops updating it |
 | Move your nav rows onto the current shape | `npx exxat-ui codemod nav-specs` | **Yes** — your nav files, and only if you ask |
+| Plan an architecture migration | `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate plan` | **No**, unless you request an output file |
+| Apply a reviewed architecture migration | `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate apply --plan <file>` | **Yes**, after isolated validation |
 | Take the package copy of files you *did* claim | `npx exxat-ui upgrade --force` | **Yes, destructively** — backs up first |
 
 **Default for "update the package":** install only. Note that `sync-extras` escalates to a content-safe `upgrade` when a release ships shell changes: files you claimed are kept and listed under *"Your version kept"*, never replaced. Only `--force` overwrites them. Commit first; backups land in `.exxat-ui/backups/`.
 
 ### What `upgrade` actually writes
 
-About 120 files, of which ~36 can overwrite anything:
+A bounded set, split by ownership:
 
-- **Framework wiring (~36, overwritten):** product identity, routing, scope, shell layout, switcher chrome. These have to match the installed package — an app on an older copy gates the wrong products rather than merely looking dated.
-- **Seams (~84, created once, never overwritten):** the one-line re-export shims in `components/ui/`, the slot fills in `components/app-shell-wiring.tsx` and `components/panel-bridges.tsx`, `src/styles/globals.css`, `vite.config.ts`.
+- **Framework wiring (overwritten with backups):** product identity, routing, scope, shell layout, switcher chrome. These have to match the installed package. Declared paths are preserved unless you pass `--force`.
+- **Seams (created once, never overwritten):** import-closed re-export shims and generic slot fills. Product-specific `components/app-shell-wiring.tsx` and `components/panel-bridges.tsx` remain starter references because an older app may not have the modules they import.
 - **Manual review (7, reported only):** files where both sides have real content.
 
 **Everything else in the starter is reference, not payload.** Demo hubs, pages, `components/design-system/`, most of `lib/mock/` — those become your product the day you scaffold, so `upgrade` leaves them alone at every version. When a release fixes one you never customised, ask for it by name:
@@ -43,14 +45,83 @@ Every run tells you how many reference files differ from the release, without li
 Claim a file **before** you edit it:
 
 ```bash
-npx exxat-ui eject components/sidebar/app-sidebar   # fork + record
+npx exxat-ui eject components/shell/app-sidebar     # fork + record
 npx exxat-ui eject --list                            # every fork, and which ones upstream has moved past
-npx exxat-ui eject --adopt components/sidebar/app-sidebar.tsx  # hand it back
+npx exxat-ui eject --adopt components/shell/app-sidebar.tsx  # restore current copy, backup yours
 ```
 
 Eject is the **last** rung. Try these first, because each one keeps taking fixes: override a token in `src/styles/globals.css`, fill a slot the component already exposes, then wrap the component in one of your own. Fork only when none of those reach the thing you need to change.
 
-The first `upgrade` after installing 1.0 converts edits you already made into ledger rows rather than overwriting them, marks each `declaredBy: "upgrade-migration"`, and deletes the old `.exxat-ui/shell-baseline.json`. Read that list once: prune any row you did not mean to own with `eject --adopt`.
+On the first declarative upgrade, a trustworthy old baseline distinguishes a
+consumer edit from an untouched old package copy. Without one, `upgrade` stops
+and lists unresolved files instead of guessing. Review them and choose
+`--declare-existing-owned` to preserve and record them, or `--force` to take the
+package copies with backups. A malformed ledger also stops the run before any
+write.
+
+### Migrating an old app into managed upgrades
+
+Use this workflow when the app has no verified
+`.exxat-ui/architecture.json`, or when a release changes architecture, flows,
+routes, or persisted state:
+
+```bash
+TARGET_VERSION=x.y.z
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan
+```
+
+For `legacy-bootstrap`, inventory and review the customer app before any source
+change:
+
+```bash
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate legacy inspect
+# Complete .exxat-ui/migrations/legacy-review.json
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate legacy verify
+git add .exxat-ui/migrations .exxat-ui/ejected.json
+git commit -m "review legacy migration contract"
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan \
+  --output .exxat-ui/plans/legacy-bootstrap.json
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate apply \
+  --plan .exxat-ui/plans/legacy-bootstrap.json
+```
+
+Use the same pinned destination CLI for every command. The installed customer
+package is the source version; it must not author the destination plan.
+
+The review covers routes, navigation, authorization, mutations, drafts, and
+browser storage. Every disposition needs a reason and every route must belong
+to a reviewed flow. Resolve every skipped implementation path or acknowledge
+it with a reason in `coverageAcknowledgements`. Automatic bootstrap only
+accepts preservation. Behavior changes and state copies require app-owned
+adapters and contract tests.
+
+Apply requires a clean Git root. It installs with lifecycle scripts disabled in
+a detached worktree, runs the app's validation scripts, verifies the framework
+upgrade is idempotent, records a checksummed receipt chain, and promotes one
+patch. A stale plan, changed commit, incomplete review, unresolved ownership,
+or storage collision leaves the checkout unchanged.
+
+Before publishing, test the exact tarball in a customer-app clone:
+
+```bash
+UI_TARBALL=file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz
+npx --yes --package="$UI_TARBALL" exxat-ui migrate plan \
+  --package-spec file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz \
+  --framework-package-spec file:/absolute/path/to/exxatdesignux-product-framework-x.y.z.tgz \
+  --output .exxat-ui/plans/local-tarball.json
+npx --yes --package="$UI_TARBALL" exxat-ui migrate apply \
+  --plan .exxat-ui/plans/local-tarball.json
+```
+
+The plan binds both tarball checksums, refuses to apply if either artifact
+changes, and verifies both installed versions before recording a receipt. Both
+commands use the destination tarball's CLI so the recipes match the package
+being tested.
 
 ### Nav rows are data now: `codemod nav-specs`
 
@@ -89,7 +160,10 @@ Re-running is safe, and reports the same outstanding list until you place those 
 npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras
 ```
 
-Overwrites only **`.cursor/skills/exxat-*`**, **`.claude/skills/exxat-*`**, **`.agents/`** (Google Antigravity), **`.cursor/rules/exxat-*`**, and **`docs/exxat-ds/*.md`** (including this file). Does **not** change your app routes or product code.
+Refreshes **`.cursor/`**, **`.claude/`**, **`.agents/`**, and
+**`docs/exxat-ds/`**. It can also auto-run the content-safe framework port when
+`upgrade --check` exits 10. It does not port reference hubs, product pages,
+mocks, or API modules.
 
 **Parity with dogfood:** `sync-extras` is the consumer equivalent of `pnpm sync-agent-context` in the DS monorepo — same rules, skills, patterns, and Antigravity workflows, rewritten for your app root (`./` not `apps/web/`).
 
@@ -131,7 +205,9 @@ If the app was built before current agent rules, verify:
 
 ## 6. Still stuck?
 
-- **`npx --package=@exxatdesignux/ui@latest exxat-ui doctor`** — compares local CLI version vs npm **`latest`**.
+- **Automatic notice:** the starter's `predev` checks npm at most once per day. When a newer release exists, the terminal prints the installed version, latest version, update command, and required `upgrade --check` follow-up. Set `EXXAT_UI_SKIP_UPDATE_CHECK=1` only for offline or fully managed environments.
+- **`npx exxat-ui check-update`** — check for a newer release now.
+- **`npx --package=@exxatdesignux/ui@latest exxat-ui doctor`** — compares local CLI version vs npm **`latest`** and exits nonzero when installation or ownership checks fail.
 - **`npx --package=@exxatdesignux/ui@latest exxat-ui update`** — install commands and reminders.
 
 Maintainers publish from the design-system monorepo with git tags **`ui-v<version>`**; registry **`latest`** follows those tags.

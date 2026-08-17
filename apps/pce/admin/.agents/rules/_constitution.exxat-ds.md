@@ -1,11 +1,11 @@
 ---
-description: Exxat DS constitution — precedence, ten commandments, UX router entry (only always-on rule besides product + brief)
+description: Exxat DS constitution. Precedence, ten commandments, UX router entry (always-on with product, brief, and copy-discipline).
 activation: always_on
 ---
 
 <!-- Synced from .agents/rules/_constitution.exxat-ds.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
 
-# Exxat DS — constitution
+# Exxat DS constitution
 
 **UX router (fast path):** `exxat-surface-router` / `node scripts/agent-context-router.mjs <surface>` → `exxat-token-economy` skill → `docs/exxat-ds/component-selection-guide.md` only when choosing a surface. **Index:** `docs/exxat-ds/INDEX.yaml`. **Human map:** `docs/exxat-ds/HANDBOOK.md`.
 
@@ -15,9 +15,17 @@ activation: always_on
 2. This constitution + scoped `.agents/rules/*.mdc` on files you touch.
 3. `./AGENTS.md` (map + ship checklist only).
 4. Skills on demand (`exxat-senior-ux`, `exxat-ux-audit`, consolidated domain skills).
-5. Pattern / job docs (narrative — not binding unless cited by a rule).
+5. Pattern / job docs (narrative, not binding unless cited by a rule).
 
 Prefer the **more specific** source for the surface type.
+
+## Always-on rules (also apply every turn)
+
+- `_constitution.exxat-ds.md` (this file)
+- `exxat-product-context.md`
+- `exxat-product-routing.md`
+- `exxat-ux-discovery-protocol.md`
+- `exxat-copy-discipline.md` (no decorative descriptions; no dash punctuation in UI copy)
 
 ## Ten commandments
 
@@ -25,12 +33,12 @@ Prefer the **more specific** source for the surface type.
 |---|-------------|---------------------------------------------|
 | 1 | **Brief before design** — IA/layout decisions need brief + user go-ahead. Hook: `exxat-brief-gate.mjs`. | `exxat-ux-discovery-protocol.md` |
 | 2 | **Product context** — Product / Scope / Persona in briefs; routes under product roots. | `exxat-product-context.md`, `exxat-product-routing.md` |
-| 3 | **Reuse before custom** — compose `components/` + `packages/ui`; ask before new shared primitives. | `exxat-reuse-before-custom.md` |
+| 3 | **Reuse before custom** — grep `component-map.json` for your intent **before** writing any component; a hit means import it. Ask before new shared primitives. | `exxat-reuse-before-custom.md` |
 | 4 | **Hub data stack** — lists → `HubTable` in `ListPageTemplate` + one `useTableState` bag. | `exxat-data-tables.md`, `jobs/list-hub.md` |
 | 5 | **No toast** — banners, inline status, dialogs; not Sonner/snackbars. | `exxat-no-toast.md` |
 | 6 | **Tokens only** — no hex/deprecated tokens; prefer L0 `--exxat-*`. ESLint enforces. | `exxat-token-discipline.md` |
 | 7 | **Images = IA only** — never pixel-copy screenshots; map to DS reference hub. | `exxat-no-image-pixel-copy.md` |
-| 8 | **A11y floor** — WCAG 2.1 AA; one H1; icon-only = label + tooltip; ship checklist before merge. | `exxat-accessibility.md` |
+| 8 | **A11y floor** — WCAG 2.1 AA; one H1; icon-only = `aria-label` **+ visible `Tip`** (never label alone); every primary/bulk action gets a **keyboard shortcut + visible `Kbd`**; ship checklist before merge. | `exxat-accessibility.md`, `exxat-kbd-shortcuts.md` |
 | 9 | **Focus ≠ hub** — exam lock / compose shells strip chrome; not `ListPageTemplate`. | `exxat-focus-workflow.md`, `jobs/focus-workflow.md` |
 | 10 | **One boss per pattern** — rule = MUST; skill = procedure; pattern = why; job = user intent. | `INDEX.yaml` |
 

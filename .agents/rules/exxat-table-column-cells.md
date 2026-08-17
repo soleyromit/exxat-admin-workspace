@@ -13,7 +13,7 @@ activation: model_decision
 
 ## MUST
 
-1. **Import named cells** from `@/components/data-views` (`table-cells.tsx`) — `ProgressCell`, `CurrencyCell`, `PeopleAvatarRailCell`, `ListHubStatusBadge` (via list-status helpers), etc.
+1. **Import named cells** from `@/components/data-views` (`table-cells.tsx`) — `ProgressCell`, `CurrencyCell`, `PeopleAvatarRailCell`, `StatusCell` (tints via list-status helpers), etc.
 2. **One person** in a dedicated column → **`AvatarInitials` + name + muted email** ([`exxat-person-identity-display.md`](mdc:.agents/rules/exxat-person-identity-display.md)) — copy **`library-table.tsx` Author** or **`columns-showcase` Author**.
 3. **Multiple people** → **`PeopleAvatarRailCell`** — not a person identity column; not overlapping face piles.
 4. **Workflow status** → **`StatusBadge`** (`tone` + `icon` + `size`) or **`lib/list-status-badges.ts`** tints — not raw colored `Badge` + `uppercase`.

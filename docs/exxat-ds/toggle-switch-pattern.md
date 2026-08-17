@@ -22,9 +22,11 @@
 
 ## MUST requirements
 
-- **MUST** pair every switch with a visible `FieldLabel` via shared `id` / `htmlFor`.
+- **MUST** pair every switch with a visible `FieldLabel` and reference that label with `aria-labelledby`.
+- **MUST** pass `aria-label` only when no visible label can be associated with the switch.
 - **MUST** use `Field` + `FieldGroup` on settings pages for row rhythm.
 - **MUST** expose `role="switch"` and `aria-checked` (primitive default).
+- **MUST** use `disabled` only when visible copy explains why the setting is unavailable.
 - **MUST NOT** use for destructive or irreversible actions without confirmation.
 - **MUST NOT** use `Button` or icon `Toggle` for persistent on/off settings.
 
@@ -34,11 +36,12 @@
 
 ```tsx
 <Field orientation="horizontal" className="w-full items-center justify-between gap-4">
-  <FieldLabel htmlFor="notify-email" className="min-w-0 shrink-0 sm:min-w-[9rem]">
+  <FieldLabel id="notify-email-label" htmlFor="notify-email" className="min-w-0 shrink-0 sm:min-w-[9rem]">
     Email alerts
   </FieldLabel>
   <ToggleSwitch
     id="notify-email"
+    aria-labelledby="notify-email-label"
     checked={email}
     onChange={setEmail}
   />

@@ -3,7 +3,6 @@ description: Font Awesome Pro only — no Lucide; kit, weights, markup, subset a
 alwaysApply: false
 globs: 
   - components/**/*.tsx
-  - packages/ui/src/components/**/*.tsx
 tags: [icons, a11y]
 seeAlso:
   - .cursor/skills/exxat-fontawesome-icons/SKILL.md
