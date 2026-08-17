@@ -38,10 +38,11 @@ import {
 import {
   facultyStats, facultyTermSeries, facultyResponseSeries, facultyEvalRoleOptions,
   medianOf, benchmarks, termSeries,
-  RESPONSE_TARGET, type FacultyEvalRoleId,
+  RESPONSE_TARGET, type FacultyEvalRoleId, type DualMean,
 } from '@/lib/pce-analytics'
 import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
+import { ScoreCellText, scoreText } from '@/components/pce/score-cell'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -92,7 +93,16 @@ export function FacultyLeaderboardSection({
   const roleLabel = roleOptions.find((r) => r.id === role)?.label
 
   const faculty = useMemo(() => facultyStats(term, undefined, role), [term, role])
-  const median = useMemo(() => medianOf(faculty.map((f) => f.score.weighted)), [faculty])
+  const median = useMemo(
+    () =>
+      medianOf(
+        faculty
+          .map((f) => f.score)
+          .filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value')
+          .map((s) => s.value.weighted),
+      ),
+    [faculty],
+  )
 
   /**
    * Scale, and the expand pattern it forces.
@@ -156,7 +166,7 @@ export function FacultyLeaderboardSection({
   /* ── Story 10 — the leaderboard, as a dot plot with each person's spread behind them. ── */
   const leaderLeo: ChartLeoInsight | null = useMemo(() => {
     if (faculty.length < 2) return null
-    const below = faculty.filter((f) => f.score.weighted < median)
+    const below = faculty.filter((f) => f.score.state === 'value' && f.score.value.weighted < median)
     const lowest = faculty[faculty.length - 1]!
     // Widest spread = least consistent, which a ranked bar chart cannot show at all.
     const widest = [...faculty]
@@ -173,18 +183,18 @@ export function FacultyLeaderboardSection({
       explanation:
         widest && spread >= 0.4
           ? `${widest.name} has the widest spread, ${fmt2(spread)} between their best and worst offering. ` +
-            `A mean hides that: someone steady at ${fmt2(widest.score.weighted)} and someone swinging ${fmt2(spread)} ` +
+            `A mean hides that: someone steady at ${scoreText(widest.score, (v) => fmt2(v.weighted))} and someone swinging ${fmt2(spread)} ` +
             `around the same mean are different conversations. Read the faint dots, not just the solid one.`
           : `Every faculty member's offerings cluster tightly around their mean, so the ranking is stable. ` +
             `No one here is being averaged out of a problem.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(lowest.score.weighted), label: `lowest · ${lowest.name}` },
+      delta: { value: scoreText(lowest.score, (v) => fmt2(v.weighted)), label: `lowest · ${lowest.name}` },
       bullets: [
-        `${lowest.name}: ${fmt2(lowest.score.weighted)} weighted across ${lowest.offerings} offering${lowest.offerings === 1 ? '' : 's'}.`,
+        `${lowest.name}: ${scoreText(lowest.score, (v) => fmt2(v.weighted))} weighted across ${lowest.offerings} offering${lowest.offerings === 1 ? '' : 's'}.`,
         `Median ${fmt2(median)} · department mean ${fmt2(bench.department)}.`,
         'Faint dots are individual offerings; the solid dot is the class-size-weighted mean.',
       ],
-      anchor: { yValue: lowest.score.weighted },
+      anchor: lowest.score.state === 'value' ? { yValue: lowest.score.value.weighted } : undefined,
     }
   }, [faculty, median, bench])
 
@@ -242,7 +252,7 @@ export function FacultyLeaderboardSection({
    * `Plot.plot()` on every parent render (DOM thrash + a visible repaint).
    */
   const leaderAnchor = useMemo(
-    () => (lowest ? { x: lowest.score.weighted, y: lowest.name } : undefined),
+    () => (lowest && lowest.score.state === 'value' ? { x: lowest.score.value.weighted, y: lowest.name } : undefined),
     [lowest],
   )
 
@@ -371,8 +381,15 @@ export function FacultyLeaderboardSection({
                   >
                     <span className="truncate text-sm">{f.name}</span>
                     <span className="text-sm tabular-nums text-muted-foreground">
-                      {fmt2(f.score.weighted)}
-                      {f.score.weighted < median && (
+                      <ScoreCellText
+                        cell={
+                          f.score.state === 'value'
+                            ? { state: 'value', value: f.score.value.weighted }
+                            : f.score
+                        }
+                        format={fmt2}
+                      />
+                      {f.score.state === 'value' && f.score.value.weighted < median && (
                         <span className="ml-1.5 text-xs" style={{ color: 'var(--chip-4)' }}>
                           below median
                         </span>
@@ -419,8 +436,8 @@ export function FacultyLeaderboardSection({
                   headers: ['Faculty', 'Weighted score', 'Simple mean', 'Offerings', 'Courses', 'Response rate'],
                   rows: faculty.map((f) => [
                     f.name,
-                    fmt2(f.score.weighted),
-                    fmt2(f.score.simple),
+                    scoreText(f.score, (v) => fmt2(v.weighted)),
+                    scoreText(f.score, (v) => fmt2(v.simple)),
                     f.offerings,
                     f.courses,
                     `${f.responseRate}%`,
@@ -433,8 +450,8 @@ export function FacultyLeaderboardSection({
                 headers={['Faculty', 'Weighted score', 'Simple mean', 'Offerings', 'Courses', 'Response rate']}
                 rows={faculty.map((f) => [
                   f.name,
-                  fmt2(f.score.weighted),
-                  fmt2(f.score.simple),
+                  scoreText(f.score, (v) => fmt2(v.weighted)),
+                  scoreText(f.score, (v) => fmt2(v.simple)),
                   f.offerings,
                   f.courses,
                   `${f.responseRate}%`,
@@ -493,8 +510,13 @@ export function FacultyLeaderboardSection({
                       entities={faculty.map((f) => ({
                         id: f.facultyId,
                         label: f.name,
-                        value: fmt2(f.score.weighted),
-                        sortValue: f.score.weighted,
+                        value:
+                          f.score.state === 'value'
+                            ? fmt2(f.score.value.weighted)
+                            : f.score.state === 'pending'
+                              ? 'Pending'
+                              : '—',
+                        sortValue: f.score.state === 'value' ? f.score.value.weighted : -Infinity,
                         trend:
                           f.drift == null ? null : f.drift < -0.05 ? 'down' : f.drift > 0.05 ? 'up' : 'flat',
                       }))}
