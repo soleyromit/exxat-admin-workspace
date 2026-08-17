@@ -56,7 +56,10 @@ const DEPARTMENTS = [...new Set(MOCK_MASTER_COURSES.map(c => c.department))].sor
 const PRISM_BASE  = 'https://app.exxat.com/prism/dpt/courses'
 
 const tierColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+  // --brand-color itself (L≈0.63 for PCE's violet) is 3.56:1 on white — below
+  // the 4.5:1 text minimum (WCAG axe run, /admin/courses, 2026-08-17).
+  // --brand-color-dark (L 0.48, same hue/chroma) clears at 6.76:1.
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color-dark)' : 'var(--chip-4)'
 
 export default function MasterCoursesPage() {
   // Filtering (type, department) is owned by the DataTable's native filter
