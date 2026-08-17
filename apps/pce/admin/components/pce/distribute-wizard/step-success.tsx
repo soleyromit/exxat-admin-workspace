@@ -46,7 +46,7 @@ export function StepSuccess({
 
       {/* Heading */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="text-xl font-semibold">
           {selectedOfferings.length} survey{selectedOfferings.length !== 1 ? 's' : ''} pushed
           {' '}for {selectedTerm.name}
         </h1>

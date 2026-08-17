@@ -38,7 +38,7 @@ export function StepSurveyDesignGeneral({
     <div className="flex flex-col gap-5" style={asSection ? undefined : { maxWidth: 680 }}>
       {!asSection && (
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
+          <h1 className="text-xl font-semibold">Survey design</h1>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             Set a template for this survey.
           </p>

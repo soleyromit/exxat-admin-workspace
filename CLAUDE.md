@@ -30,7 +30,7 @@ Active: `exam-management` (3001), `pce` (3005), `portal` (3100). Full registry: 
 **Student:** `import { Button } from '@exxat/student/components/ui/button'` · CSS: `@import '../../../../studentUX/src/styles/globals.css'`
 
 ## Dev Server
-`cd /Users/romitsoley/Work/apps/<product>/<admin|student> && pnpm dev` — no root `package.json`; `pnpm --filter` does NOT work from root.
+`cd /Users/romitsoley/Work/apps/<product>/<admin|student> && pnpm dev` — `pnpm --filter` does NOT work from root. Root `package.json` exists but only for workspace-wide `pnpm.overrides` (see DS Git Fallback below) + the `postinstall` DS sync script — not for running app scripts.
 
 ## Non-negotiable rules (hooks block commits on violations)
 - NEVER edit `exxat-ds/` or `studentUX/`
@@ -67,3 +67,4 @@ Active: `exam-management` (3001), `pce` (3005), `portal` (3100). Full registry: 
 | `docs/governance/design-anti-patterns.md` | Before any UI component — banned-pattern blacklist |
 | `docs/governance/component-consistency.md` | DataTable, header, sheet, dialog governance |
 | `apps/<product>/CLAUDE.md` + `apps/<product>/docs/patterns/*.md` | Per-product rules + UI patterns |
+| `docs/governance/ds-git-fallback.md` + `node tools/ds/git-fallback.mjs` | `@exxatdesignux/ui`/`product-framework` npm install fails (registry/org access blocked) |

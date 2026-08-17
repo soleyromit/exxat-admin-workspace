@@ -7,3 +7,6 @@ packages:
   - 'apps/learning-contracts/*'
   - 'apps/portal'
   - 'tools/*'
+onlyBuiltDependencies:
+  - "@exxatdesignux/ui"
+  - "@exxatdesignux/product-framework"

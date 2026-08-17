@@ -2109,16 +2109,15 @@ export function StepSurveyInstances({
               call): the title/instructions the admin is setting up belong
               beside the courses they apply to, not two steps later. Step 3
               keeps owning survey window/email/reminders, which genuinely
-              depend on scheduling and stay there. Title uses the same h2/
-              font-heading treatment as "Course assignments" below (not Step
-              3's small FieldLegend convention) — round 2 fix (2026-08-17,
-              Romit's catch): a small label next to a large serif headline
-              read as two different registers instead of two peer sections of
-              the same step. A Separator + its own subtext now mark this as
-              an equally-weighted section, not a caption over a card. */}
+              depend on scheduling and stay there. Title uses the same h2
+              treatment as "Course assignments" below (not Step 3's small
+              FieldLegend convention) so the two read as peer sections of
+              the same step, not a caption over a card. font-heading (Ivy
+              Presto) was tried and reverted (2026-08-17) — DS reserves it
+              for PageHeader's h1 only. */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-semibold font-heading">Survey details</h2>
+              <h2 className="text-xl font-semibold">Survey details</h2>
               <p className="text-sm text-muted-foreground">The title and instructions students see when the survey opens.</p>
             </div>
             <Card className="shadow-none">
@@ -2175,7 +2174,7 @@ export function StepSurveyInstances({
               same visual weight as the field above it. */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1 min-w-0">
-              <h2 className="text-xl font-semibold font-heading">Course assignments</h2>
+              <h2 className="text-xl font-semibold">Course assignments</h2>
               <p className="text-sm text-muted-foreground tabular-nums">
                 {toCreate} evaluation{toCreate !== 1 ? 's' : ''} across{' '}
                 {courses.length} course{courses.length !== 1 ? 's' : ''}.{' '}

@@ -568,7 +568,7 @@ export function StepCommunication({
     <div className="flex flex-col gap-6 flex-1">
       <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Set the survey window, invitation email, and reminder cadence.
         </p>
