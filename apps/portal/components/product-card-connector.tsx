@@ -36,7 +36,7 @@ export function ProductConnectorRow({ product }: { product: Product }) {
   const isNotSubscribed = product.subscriptionStatus === 'not-subscribed' && !product.comingSoon
   const isTrial = product.subscriptionStatus === 'trial'
 
-  const expressInterestHref = `mailto:sales@exxat.com?subject=${encodeURIComponent(`Interest in ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to learn more about ${product.name} for our program.`)}`
+  const requestDemoHref = `mailto:sales@exxat.com?subject=${encodeURIComponent(`Demo request — ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to schedule a demo for ${product.name} for our program.`)}`
 
   return (
     <div className="flex items-center gap-4 px-4 py-3.5 group">
@@ -77,8 +77,8 @@ export function ProductConnectorRow({ product }: { product: Product }) {
           <>
             <span className="text-xs text-muted-foreground hidden sm:block">v{product.version}</span>
             <Button asChild variant="outline" size="sm">
-              <a href={expressInterestHref} onClick={(e) => e.stopPropagation()}>
-                Express Interest
+              <a href={requestDemoHref} onClick={(e) => e.stopPropagation()}>
+                Request Demo
                 <i className="fa-light fa-envelope" aria-hidden="true" />
               </a>
             </Button>
