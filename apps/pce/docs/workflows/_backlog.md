@@ -554,6 +554,75 @@ Source: `docs/research/meetings/2026-08-11-course-eval-sync-up.md` (Granola `2a2
 
 ---
 
+## Phase 1 design tasks — added 2026-08-17 (Aug 12–17 meetings: completion dashboard, thresholds, aspects, email config, home page)
+
+Sources:
+- `docs/research/meetings/2026-08-12-survey-completion-dashboard-vishal.md` (Granola `611feaa6`)
+- `docs/research/meetings/2026-08-12-roles-status-thresholds.md` (Granola `0ef80c33`)
+- `docs/research/meetings/2026-08-12-survey-design-aspects-templates.md` (Granola `d6d6e961`)
+- `docs/research/meetings/2026-08-13-email-template-config.md` (Granola `7aeae56b`)
+- `docs/research/meetings/2026-08-17-home-page-login-flow-aarti.md` (Granola `c9fa0219`)
+
+> Vishal design reviews (Aug 12): completion dashboard structure, action visibility, inline contextual data for actions, response rate threshold system, and analytics display patterns. Aug 12 aspects session: drawer pattern, per-faculty add/remove, previously-evaluated indicator. Aug 13: faculty name display variants, priority narrowing to distribution + view only. Aug 17 (Aarti): portal home page module grid, Prism framing, OU switching. Weekly assessment filed: `docs/research/2026-08-17-weekly-assessment.md`.
+
+### From Aug 12 — Survey completion dashboard (Vishal) · Granola `611feaa6`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T165 | Admin completion dashboard: separate surface from content/results view | Admin | PCE admin dashboard | P1 — DESIGN-REVIEW | Collection-phase view: completion % + actions only. Post-close view: scores, comments, AI insights. Do not merge these two surfaces. Vishal: "Admin completion dashboard is separate from what the instructors see." D_PCE_0812_01. |
+| T166 | Remove "Overall rating" from collection-phase admin dashboard | Admin | PCE admin dashboard (collection phase) | P1 — applies at dashboard implementation | Overall rating score is meaningless during active collection; suppress until post-close. Vishal: "Remove the overall rating from the collection view." D_PCE_0812_02. |
+| T167 | Send Reminder inline context: % completion + student count | Admin | PCE admin dashboard / survey list | P1 — DESIGN-REVIEW | Adjacent to "Send Reminder" action: show completion % + student count inline (e.g. "62% · 14 / 22 students"). Vishal: "When you see the send reminder, show the completion percentage and the student count." D_PCE_0812_03. |
+| T168 | Extend Date inline context: current end date + days remaining | Admin | PCE admin dashboard / survey list | P1 — DESIGN-REVIEW | Adjacent to "Extend Date" action: show current end date + days remaining (e.g. "Closes Sep 15 · 3 days left"). Vishal: "Show current end date and days remaining when admin extends." D_PCE_0812_04. |
+| T169 | Color-code faculty average numbers by response rate threshold | Admin | PCE admin analytics | P1 — DESIGN-REVIEW (blocked on T174) | red = below minimum validity threshold; green = at/above desired target. Depends on PM specifying threshold values (T174). Vishal: "Color code the faculty numbers — red for below threshold, green for above." D_PCE_0812_05. |
+| T170 | Program average comparison: label text, not delta trend arrow | Admin | PCE admin analytics | P1 — applies at analytics implementation | Display "Below program average" or "Above program average" as text label. Never show +0.15 ↑ delta format. Vishal: "Show it as a label — not as a trend arrow." D_PCE_0812_06. |
+| T171 | Likert groupings: same-scale questions only | Admin | PCE admin analytics / results view | P1 — DESIGN-REVIEW | Group questions only when they share the same Likert scale. Do not mix 1–5 with other scale types in one group. Vishal: "If scales are different, do not group them together." D_PCE_0812_07. |
+| T172 | Action items: all 4 directly visible (not behind dots menu) | Admin | PCE admin dashboard / survey list | P1 — DESIGN-REVIEW | Send Reminder, Extend Date, View Results, Close — all 4 visible as inline actions. No dots/ellipsis menu. Vishal: "All four actions should be directly visible. No hiding behind the dots." D_PCE_0812_08. |
+| T173 | Archive/inactive option for mistakenly activated evaluations | Admin | PCE admin survey list | P1 — DESIGN-REVIEW (blocked on backend API + PM spec) | Archive removes from active list; data retained, not deleted. Requires new survey status state + backend alignment. Vishal: "There should be an archive or inactive option for when you activate the wrong course." D_PCE_0812_09. |
+
+### From Aug 12 — Roles, status tracking, thresholds · Granola `0ef80c33`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T174 | School-configurable response rate thresholds: minimum validity + desired target | Admin | PCE settings | P0 — DESIGN-REVIEW (blocks T175, T169) | Two thresholds per school, stored in Settings: (1) minimum validity %, (2) desired target %. PM must specify recommended defaults. Blocks `response-gauge.tsx` three-color update. D_PCE_0812_10. |
+| T175 | Three-color response rate coding (red / orange / green) | Admin | PCE survey list + dashboard | P1 — DESIGN-REVIEW (blocked on T174) | red < minimum validity, orange ≥ min + < desired, green ≥ desired. Affects `apps/pce/admin/components/pce/response-gauge.tsx` bar color. Cannot code until T174 threshold values confirmed. D_PCE_0812_11. |
+| T176 | Extension indicator: star/badge when course close date ≠ term-level date | Admin | PCE survey list — deadline column | P1 — DESIGN-REVIEW | Visual indicator (star or badge) on deadline cell when course has an extension overriding the term close date. Supplements T177. D_PCE_0812_12. |
+| T177 | Proximity indicator: "Closes today" / "Closes in X days" | Admin | PCE survey list — deadline column | P1 — DESIGN-REVIEW | Human-readable proximity display in deadline column for imminent deadlines. "Closes today" (styled) or "Closes in 3 days." D_PCE_0812_13. |
+| T178 | Status vocabulary: consistent between table view and kanban/board view | Admin | PCE survey list + future kanban view | P1 — carry-forward at kanban implementation | `STATUS_LABELS` terms must exactly match future kanban column headers. No synonyms between views. D_PCE_0812_14. |
+| T179 | Faculty display: stacked profile icons color-coded by role | Admin | PCE survey list — instructor column | P1 — DESIGN-REVIEW | Stacked initials avatars; border or bg color = role type (program director vs. affiliation). Supplements current AvatarFallback pattern. D_PCE_0812_15. |
+
+### From Aug 12 — Survey design: aspects, templates, response rates · Granola `d6d6e961`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T180 | Replace inline accordion expand → Drawer pattern (exam management–consistent) | Admin | Setup evaluations wizard (T129) + survey list | P1 — DESIGN-REVIEW | Any inline accordion expand in setup wizard or survey list replaced by DS Drawer. Consistent with exam management pattern across products. D_PCE_0812_16. |
+| T181 | Per-faculty add/remove within an aspect in setup wizard | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Granular affordance: add or remove a specific faculty person from within a single aspect's evaluatee list. Extends T134 (which was role-group level). D_PCE_0812_17. |
+| T182 | Previously-evaluated instructor indicator in setup wizard | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | When an instructor in Step 2 evaluatee list has already been evaluated for this course, show indicator: chip, label, or disabled state communicating re-evaluation is not permitted. D_PCE_0812_18. |
+
+### From Aug 13 — Email template config + display scoping · Granola `7aeae56b`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T183 | Faculty names in evaluate column: design three display variants for Monil review | Admin | Setup evaluations wizard Step 2 (T129) | P1 — DESIGN-REVIEW | Three options: (A) aspects only (no names), (B) aspects + names on hover, (C) both always visible. Romit designs all three; Monil selects before Step 2 code starts. D_PCE_0813_01. |
+| T184 | Reminder cards: explore merging anchor-date-related config | Admin | Setup evaluations wizard Step 3 (T129) | P2 — deferred exploration | Within Step 3, reminder config cards sharing an anchor date may be mergeble. Low priority — do not block Step 3 implementation on it. D_PCE_0813_02. |
+
+### From Aug 17 — Home page + login flow (Aarti) · Granola `c9fa0219` · Portal product
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T185 | Home page module grid: all modules above fold; purchased highlighted, unpurchased grayed + "Request demo" | Admin | Portal home page | P1 — DESIGN-REVIEW | All modules visible above fold. Active/purchased = full color. Inactive/unpurchased = grayed with "Request demo" CTA. Aarti feedback Aug 17. D_PORTAL_0817_01. Next check-in: Aug 24. |
+| T186 | OU code switching: simplify or remove (Aarti feedback) | Admin | Portal home page / module nav | P1 — needs engineering alignment | Per-module OU switching is not a common use case per Aarti. Evaluate whether to remove or significantly simplify before next design iteration. D_PORTAL_0817_02. |
+| T187 | Prism framing: intelligent dashboards layer, not just a directory | Admin | Portal home page | P1 — DESIGN-REVIEW | Frame Prism as intelligent dashboards product in home design — not a directory. Evolved storefront approach. Needed for Aug 24 check-in + Jan 2027 visualization. D_PORTAL_0817_03. |
+
+### Deferred / killed items from Aug 12–17
+
+| Decision | Reason | Source |
+|---|---|---|
+| Email template redesign in wizard | Deferred to Settings phase. No wizard task added. | D_PCE_0813_03, Aug 13 |
+| DS utility bar + tab variant changes | DS-level (exxat-ds READ ONLY). No PCE task. Romit awareness only. | D_DS_0810_01–04, Aug 10 |
+| Recipients card in Step 4 | Killed (reconfirmed Aug 12). T164 already covers Step 4 spec. | D_PCE_0812_19 |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
