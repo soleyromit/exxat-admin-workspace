@@ -206,7 +206,7 @@ function SubjectRow({ subject, isSelected, isDisabled, onSelect }: SubjectRowPro
         )}
         {!subject.isGeneral && subject.prismCount === 0 && !isDisabled && (
           <p className="text-xs mt-0.5" style={{ color: 'var(--chart-4)' }}>
-            No {subject.label.toLowerCase()}s assigned yet — will auto-suppress.
+            No {subject.label.toLowerCase()}s assigned yet. Will auto-suppress.
           </p>
         )}
       </div>

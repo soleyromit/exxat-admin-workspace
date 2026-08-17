@@ -11,7 +11,7 @@ import {
 import type { MetricItem } from '@exxatdesignux/ui'
 import {
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS,
-  MOCK_FACULTY, MOCK_SURVEYS,
+  MOCK_FACULTY, MOCK_SURVEYS, representativeSurveyByKey,
   type CourseOffering,
 } from '@/lib/pce-mock-data'
 import { DataTablePaginated } from '@/components/data-table/pagination'
@@ -35,8 +35,10 @@ const PRISM_BASE = 'https://app.exxat.com/prism/dpt/offerings'
 const _evalSurveys = MOCK_SURVEYS.filter(
   s => s.surveyType === 'course_evaluation' && s.status !== 'draft',
 )
+// representativeSurveyByKey, not a plain Map: split flows share the composite
+// courseCode-term key, and last-wins construction silently dropped all but one.
 const surveyKeyMap = new Map<string, string>(
-  _evalSurveys.map(s => [`${s.courseCode}-${s.term}`, s.id]),
+  [...representativeSurveyByKey(_evalSurveys)].map(([k, s]) => [k, s.id]),
 )
 const surveyRateMap = new Map<string, number>(
   _evalSurveys.map(s => [s.id, s.responseRate]),

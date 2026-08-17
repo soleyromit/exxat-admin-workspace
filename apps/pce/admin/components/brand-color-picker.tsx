@@ -324,7 +324,7 @@ export function BrandColorPicker({
                   aria-selected={selected}
                   aria-label={
                     claim
-                      ? `${swatch.familyLabel} (${swatch.hex}) — used by ${claim}`
+                      ? `${swatch.familyLabel} (${swatch.hex}) · used by ${claim}`
                       : `${swatch.familyLabel} (${swatch.hex})`
                   }
                   onClick={() => handleSelectSwatch(swatch)}
@@ -397,7 +397,7 @@ export function BrandColorPicker({
             onHueChange={handleHueChange}
           />
           <p className="text-xs leading-snug text-muted-foreground">
-            Saturation and lightness stay fixed — only hue changes, so panel tints and product
+            Saturation and lightness stay fixed. Only hue changes, so panel tints and product
             chrome stay consistent.
           </p>
         </div>

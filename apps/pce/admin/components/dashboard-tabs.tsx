@@ -9,6 +9,7 @@
  */
 
 import * as React from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 import { TintedIconDisc, type TintedIconDiscTone } from "@/components/tinted-icon-disc"
 import { Separator } from "@/components/ui/separator"
@@ -99,7 +100,7 @@ function GreetingWidget({ compact = false }: { compact?: boolean }) {
 /* ── Tasks ────────────────────────────────────────────────────────────────── */
 const TASK_ITEMS: TaskListItem[] = [
   { id: 1, label: "Review pending evaluations",   due: "Today",     priority: "high",   done: false },
-  { id: 2, label: "Approve site contract — City Med", due: "Today",  priority: "high",   done: false },
+  { id: 2, label: "Approve site contract · City Med", due: "Today",  priority: "high",   done: false },
   { id: 3, label: "Send onboarding docs to PT cohort", due: "Tomorrow", priority: "medium", done: false },
   { id: 4, label: "Update compliance checklist",  due: "03/25/2026", priority: "medium", done: false },
   { id: 5, label: "Schedule supervisor training", due: "03/28/2026", priority: "low",    done: true  },
@@ -132,7 +133,7 @@ const INSIGHTS: {
     icon: "fa-certificate",
     tone: "brand",
     title: "Compliance milestone",
-    body:  "Nursing program reached 98% compliance — highest in 12 months.",
+    body:  "Nursing program reached 98% compliance, highest in 12 months.",
   },
 ]
 
@@ -324,16 +325,17 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
   const nextStep = STEPS.find((s) => !s.done)
   const stacked  = layout === "stack"
   const tileClass = cn(
-    "flex flex-col rounded-lg overflow-hidden border border-border bg-card hover:bg-interactive-hover-soft transition-colors focus-visible:outline-2 focus-visible:outline-ring text-left",
+    "flex h-auto flex-col items-stretch justify-start overflow-hidden rounded-lg border border-border bg-card p-0 font-normal hover:bg-interactive-hover-soft focus-visible:outline-2 focus-visible:outline-ring text-left",
     stacked ? "w-full" : "shrink-0 w-[13rem]",
   )
 
   const tiles = (
     <>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         className={tileClass}
-        aria-label={`Continue setup — ${done} of ${total} steps done`}
+        aria-label={`Continue setup · ${done} of ${total} steps done`}
       >
         <div
           className="h-[6.5rem] relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-chart-1 to-chart-3"
@@ -361,12 +363,13 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
             </span>
           </div>
         </div>
-      </button>
+      </Button>
 
       {GUIDE_ARTICLES.map((g) => (
-        <button
+        <Button
           key={g.id}
           type="button"
+          variant="ghost"
           className={tileClass}
           aria-label={g.title}
         >
@@ -382,7 +385,7 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
               <span className="text-xs">{g.meta}</span>
             </div>
           </div>
-        </button>
+        </Button>
       ))}
     </>
   )
@@ -537,7 +540,7 @@ const DASHBOARD_TOUR_STEPS = [
     align: "start" as const,
     title: "Welcome to your Dashboard",
     description:
-      "This is your command centre. See key metrics, charts, tasks and AI insights — all in one place.",
+      "This is your command centre. See key metrics, charts, tasks and AI insights, all in one place.",
     image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=640&h=320&fit=crop&q=80",
     imageAlt: "Dashboard analytics overview",
   },
@@ -557,7 +560,7 @@ const DASHBOARD_TOUR_STEPS = [
     align: "start" as const,
     title: "AI-Powered Insights",
     description:
-      "Leo analyses your data and surfaces actionable insights automatically — no need to dig through reports.",
+      "Leo analyses your data and surfaces actionable insights automatically. No need to dig through reports.",
   },
   {
     id: "tour-askleo",

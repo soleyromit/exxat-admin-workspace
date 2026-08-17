@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useProductOrganizationSettingsHref } from "@/contexts/product-route-sync"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleSwitch } from "@/components/ui/toggle-switch"
@@ -83,7 +84,8 @@ function FlowCard({
   onPreview: () => void
 }) {
   return (
-    <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-interactive-hover-soft">
+    <Card className="transition-colors hover:bg-interactive-hover-soft">
+    <CardContent className="flex items-start gap-4">
       {/* Icon */}
       <span
         className={cn(
@@ -147,7 +149,8 @@ function FlowCard({
           </Button>
         </Tip>
       </div>
-    </div>
+    </CardContent>
+    </Card>
   )
 }
 
@@ -309,7 +312,8 @@ export function SystemBannerSettingsCard() {
           </SettingsFormRow>
 
           <SettingsFormRow label="Preview" description="Approximates the live strip above your sidebar.">
-            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 w-full">
+            <Card size="sm" className="border-dashed bg-muted/20 w-full">
+            <CardContent>
               {draft.enabled ? (
                 <SystemBanner
                   variant={draft.variant}
@@ -326,10 +330,11 @@ export function SystemBannerSettingsCard() {
                 </SystemBanner>
               ) : (
                 <p className="text-sm text-muted-foreground py-2 text-center">
-                  Banner hidden — turn on “Show banner” to preview.
+                  Banner hidden. Turn on “Show banner” to preview.
                 </p>
               )}
-            </div>
+            </CardContent>
+            </Card>
           </SettingsFormRow>
         </FieldGroup>
 
@@ -404,7 +409,7 @@ function BuilderOnboardingSection() {
       <FieldGroup>
         <SettingsFormRow
           label="First-run setup"
-          description="Restarting clears the per-device gate flag and routes to the onboarding screen. Existing custom products stay intact — manage them in organization settings."
+          description="Restarting clears the per-device gate flag and routes to the onboarding screen. Existing custom products stay intact. Manage them in organization settings."
         >
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant={completed ? "secondary" : "default"} className="h-5 text-xs">

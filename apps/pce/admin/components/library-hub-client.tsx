@@ -230,7 +230,7 @@ export function LibraryHubClient() {
       {
         id: "template",
         label: "From template",
-        description: "Pick choice-style, multi-select, short answer or true / false — Leo fills the scaffold.",
+        description: "Pick choice-style, multi-select, short answer or true / false. Leo fills the scaffold.",
         icon: "fa-clone",
         iconTint: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
         onClick: () => sendLeoSuggestion(TEMPLATE_PROMPT),
@@ -238,7 +238,7 @@ export function LibraryHubClient() {
       {
         id: "import",
         label: "Import",
-        description: "Bring in CSV, QTI, or paste from another tool — Leo will map the columns.",
+        description: "Bring in CSV, QTI, or paste from another tool. Leo will map the columns.",
         icon: "fa-file-import",
         iconTint: "bg-muted text-muted-foreground",
         onClick: () => sendLeoSuggestion(IMPORT_PROMPT),

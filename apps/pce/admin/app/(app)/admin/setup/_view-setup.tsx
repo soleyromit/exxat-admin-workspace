@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@exxatdesignux/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, LocalBanner } from '@exxatdesignux/ui'
 import { TruncatedText } from '@/components/truncated-text'
 import { MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 
@@ -45,36 +45,19 @@ export function SetupView({
   return (
     <div className="flex flex-col gap-6">
       {/* Readiness hero */}
-      <div
-        className="rounded-lg border px-5 py-4 flex items-center gap-4"
-        style={{ borderColor: allReady ? 'var(--chart-2)' : 'var(--chart-4)', backgroundColor: allReady ? 'rgba(22,163,74,0.04)' : 'rgba(217,119,6,0.04)' }}
+      <LocalBanner
+        variant={allReady ? 'success' : 'warning'}
+        title={
+          allReady
+            ? `You're ready to activate ${selectedTermName} evaluations`
+            : `Complete setup to activate ${selectedTermName} evaluations`
+        }
+        action={canActivate ? { label: 'Activate evaluations', href: '/surveys/push' } : undefined}
       >
-        <i
-          className={`fa-light ${allReady ? 'fa-circle-check' : 'fa-circle-exclamation'} text-xl`}
-          aria-hidden="true"
-          style={{ color: allReady ? 'var(--chart-2)' : 'var(--chart-4)', flexShrink: 0 }}
-        />
-        <div className="flex-1">
-          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-            {allReady
-              ? `You're ready to activate ${selectedTermName} evaluations`
-              : `Complete setup to activate ${selectedTermName} evaluations`}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-            {allReady
-              ? 'All configuration is in place. Activate when your scheduling is confirmed.'
-              : `${configs.filter(c => !c.done).map(c => c.label).join(', ')} still needed.`}
-          </p>
-        </div>
-        {canActivate && (
-          <Button variant="default" size="sm" className="shrink-0" asChild>
-            <Link href="/surveys/push">
-              Activate evaluations
-              <i className="fa-light fa-circle-play ms-1.5 text-xs" aria-hidden="true" />
-            </Link>
-          </Button>
-        )}
-      </div>
+        {allReady
+          ? 'All configuration is in place. Activate when your scheduling is confirmed.'
+          : `${configs.filter(c => !c.done).map(c => c.label).join(', ')} still needed.`}
+      </LocalBanner>
 
       {/* Config cards 2×2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -104,7 +87,7 @@ export function SetupView({
       {offeringsToEvaluate.length > 0 && (
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
-            WHAT {selectedTermName.toUpperCase()} INCLUDES — {offeringsToEvaluate.length} OFFERINGS
+            WHAT {selectedTermName.toUpperCase()} INCLUDES · {offeringsToEvaluate.length} OFFERINGS
           </p>
           <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
             {offeringsToEvaluate.slice(0, 6).map((o, i) => {
@@ -135,14 +118,13 @@ export function SetupView({
       )}
 
       {/* Analytics placeholder */}
-      <div
-        className="rounded-lg border px-5 py-6 text-center"
-        style={{ borderColor: 'var(--border)', borderStyle: 'dashed', backgroundColor: 'var(--muted)' }}
-      >
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Response rates and faculty completion will appear here once evaluations are active.
-        </p>
-      </div>
+      <Card size="sm" className="border-dashed bg-muted text-center">
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Response rates and faculty completion will appear here once evaluations are active.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -44,3 +44,13 @@ export const LIST_HUB_STATUS_TINT_COMPLETED: StatusTint = {
   fg:     'var(--qb-status-completed-fg)',
   border: 'var(--qb-status-completed-border)',
 }
+
+/** Hard-block severity (e.g. ST-02 role-overlap conflict) — the darkest/most
+ *  saturated tone in the family, so it reads as strictly more urgent than
+ *  warning/info at a glance. Use for states that actively block an action,
+ *  never for an ignorable/informational one (see LIST_HUB_STATUS_TINT_WARNING). */
+export const LIST_HUB_STATUS_TINT_DANGER: StatusTint = {
+  bg:     'var(--qb-status-blocked-bg)',
+  fg:     'var(--qb-status-blocked-fg)',
+  border: 'var(--qb-status-blocked-border)',
+}

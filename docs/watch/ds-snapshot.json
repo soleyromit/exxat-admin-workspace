@@ -1,8 +1,8 @@
 {
-  "generated": "2026-07-15",
+  "generated": "2026-08-17",
   "source": "@exxatdesignux/ui",
-  "version": "0.6.57",
-  "componentCount": 609,
+  "version": "1.0.0",
+  "componentCount": 758,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -77,6 +77,90 @@
       "category": "primitives"
     },
     "AlertDialogTrigger": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellCallbacks": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellData": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellRoutePolicy": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellSlots": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellSlotsProvider": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellSlotsProviderProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppShellSlotsValue": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppSidebar": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppSidebarDynamic": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AppThemeSync": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "Attachment": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentAction": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentActions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentCountCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentDescription": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentGroup": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentMedia": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentState": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentTitle": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AttachmentTrigger": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -183,6 +267,10 @@
     "BoardNewCardPlaceholder": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
+    },
+    "BooleanToggleCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "Brand": {
       "importPath": "@exxatdesignux/ui",
@@ -332,34 +420,6 @@
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
-    "ChartConfig": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartContainer": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartLegend": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartLegendContent": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartStyle": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartTooltip": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ChartTooltipContent": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
     "Checkbox": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -373,6 +433,10 @@
       "category": "primitives"
     },
     "CheckboxProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ClosePanelOptions": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -563,6 +627,10 @@
     "CreatedViewSpec": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
+    },
+    "CurrencyCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "DATA_LIST_SURFACE_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -812,6 +880,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "EmptyCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "ExportDrawer": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
@@ -819,6 +891,14 @@
     "ExportDrawerProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
+    },
+    "ExternalLinkCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FAVORITE_HOVER_GROUP": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "FILTER_TEXT_MASK_FORMAT_HINT": {
       "importPath": "@exxatdesignux/ui",
@@ -836,9 +916,57 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "FLOATING_SHEET_SIZES": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_SHEET_SIZE_LABEL": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_SHEET_SIZE_WIDTH": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_CORNERS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_DEFAULT_HEIGHT": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_DEFAULT_WIDTH": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_INSET": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_MIN_HEIGHT": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_MIN_WIDTH": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_NUDGE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FLOATING_WINDOW_NUDGE_COARSE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "FULL_HUB_SUPPORTED_VIEWS": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
+    },
+    "FavoriteNameCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "Field": {
       "importPath": "@exxatdesignux/ui",
@@ -1000,6 +1128,14 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "FloatingSheetPanelToolbar": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingSheetPanelToolbarProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "FloatingSheetPanelWorkflowFooter": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1009,6 +1145,34 @@
       "category": "primitives"
     },
     "FloatingSheetSide": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingSheetSize": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindowCorner": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindowProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindowRect": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindowResizeHandle": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "FloatingWindowViewport": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1188,6 +1352,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
+    "KeyMetricsSize": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "organisms"
+    },
     "LIST_HUB_STATUS_TINT_DANGER": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1228,7 +1396,23 @@
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
+    "LIST_PAGE_SPLIT_MILLER_SCROLL_BODY_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "data_views"
+    },
+    "LIST_PAGE_SPLIT_RESIZABLE_GROUP_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "data_views"
+    },
+    "LIST_PAGE_SPLIT_RESIZABLE_GROUP_STYLE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "data_views"
+    },
     "LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "data_views"
+    },
+    "LIST_PAGE_SPLIT_RESIZABLE_PANEL_STYLE": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
@@ -1456,6 +1640,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "MessageScrollerDefaultScrollPosition": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "MessageScrollerItem": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1464,7 +1652,39 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "MessageScrollerScrollAlign": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerScrollOptions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerScrollable": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "MessageScrollerViewport": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MessageScrollerVisibilityState": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MetricAlert": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MetricChart": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MetricChartKind": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "MetricChartPoint": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1488,7 +1708,63 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "NavActiveRow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavActiveState": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavActiveStateOptions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavDocuments": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavDrillInConfig": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "NavFlyoutToggleHandler": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavLinkItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavMain": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavPrimaryLayout": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavRowActiveOverride": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavSecondary": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavSecondaryItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavSection": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavUser": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NavUserIdentity": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1499,6 +1775,14 @@
     "NestedSecondaryPanelShellProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "templates"
+    },
+    "NotificationsSlotProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "NumericCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "OPERATOR_LABELS": {
       "importPath": "@exxatdesignux/ui",
@@ -1519,6 +1803,10 @@
     "OUTLINE_TREE_SUB_ROW_SHIFT_CLASS": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
+    },
+    "OpenPanelOptions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "OpenTablePropertiesHandle": {
       "importPath": "@exxatdesignux/ui",
@@ -1572,11 +1860,35 @@
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
+    "PAGE_HEADER_COMPACT_ACTIONS_MAX_WIDTH_PX": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "PAGE_HEADER_MAX_VISIBLE_ACTIONS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "PAGE_HEADER_OVERFLOW_ONLY_MAX_WIDTH_PX": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "PAGE_TITLE_TYPE_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "PRIMARY_HUB_SUPPORTED_VIEWS": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
+    "PRODUCT_SWITCHER_MENU_SURFACE_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "PageHeader": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "organisms"
+    },
+    "PageHeaderActionItem": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
@@ -1608,6 +1920,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "PeopleAvatarRailCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "PeriodOption": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1625,6 +1941,14 @@
       "category": "primitives"
     },
     "PersonIdentityCellProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "PersonStub": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "PillCell": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1660,6 +1984,18 @@
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
     },
+    "ProductLogoSlotProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "framework"
+    },
+    "ProductLogoSlotVariant": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "framework"
+    },
+    "ProductMarkSlotProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "framework"
+    },
     "ProductProvider": {
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
@@ -1679,6 +2015,30 @@
     "ProductRouteSync": {
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
+    },
+    "ProgressCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ProgressTone": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RAIL_TRIGGER_ATTRIBUTE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RESPONSIVE_ACTIONS_COMPACT_MAX_WIDTH_PX": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RESPONSIVE_ACTIONS_MAX_VISIBLE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RESPONSIVE_ACTIONS_OVERFLOW_ONLY_MAX_WIDTH_PX": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "ROW_HEIGHT_TILES": {
       "importPath": "@exxatdesignux/ui",
@@ -1712,7 +2072,35 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "RatingCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RelativeTimeCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "ResolvedColorScheme": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ResponsiveAction": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ResponsiveActionRow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ResponsiveActionRowProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RowActionDef": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RowActionsCell": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1721,6 +2109,10 @@
       "category": "primitives"
     },
     "SECONDARY_PANEL_WIDTH_DEFAULT": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SECONDARY_PANEL_WIDTH_KEY": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1737,6 +2129,18 @@
       "category": "primitives"
     },
     "SELECTION_TILE_COMPACT_ICON_SIZE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SHEET_RESIZE_MAX_WIDTH": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SHEET_RESIZE_MIN_WIDTH": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SHELL_IDENTITY_MENU_SURFACE_CLASS": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1764,6 +2168,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "ScopeSwitcherMenuSlotProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "ScrollArea": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1777,6 +2185,66 @@
       "category": "primitives"
     },
     "ScrollRegionProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryHubIconNavRow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryHubNavCompactShell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "templates"
+    },
+    "SecondaryHubNavRow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryHubNavSectionHeader": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNav": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavLink": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavPanel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavRail": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavSection": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryNavSectionAction": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryPanel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryPanelCloseTarget": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryPanelProvider": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SecondaryPanelSpec": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1860,6 +2328,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SheetContentSize": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "SheetDescription": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1880,11 +2352,39 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "ShellNav": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ShellProductEntry": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ShellScope": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ShellScopeParent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "Shortcut": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
     "Sidebar": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarAutoCollapse": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarAutoOpen": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarCollapsedSearchButton": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1896,7 +2396,23 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SidebarDrillInPanelSpec": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "SidebarDrillInProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarDrillInResizeHandle": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarDrillInSearchField": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarDrillInSearchFieldProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1984,11 +2500,27 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SidebarRailResizeHandle": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "SidebarSeparator": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SidebarShell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "templates"
+    },
     "SidebarTrigger": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SignalBarsCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SignalTone": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2040,6 +2572,14 @@
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
+    "StatusCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "StatusCellOption": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "StorageDriver": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -2084,6 +2624,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "TableNewRowDot": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "TablePropertiesDrawer": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
@@ -2105,6 +2649,10 @@
       "category": "organisms"
     },
     "TableRow": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "TableRowMarkerGutter": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2140,7 +2688,23 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "TabsOverflowProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "TabsTrigger": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "TabsTriggerIcon": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "TabsTriggerLabel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "TagListCell": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2284,7 +2848,15 @@
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
+    "useAppShellSlots": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
     "useAppTheme": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useAutoPanel": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
@@ -2404,6 +2976,22 @@
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
+    "useResponsiveActionWidth": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useSecondaryHubNavChrome": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useSecondaryPanel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useSheetRail": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
     "useShippedCatalogReady": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
@@ -2436,7 +3024,15 @@
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
+    "useTooltipProvided": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
     "useWizard": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useWrapCrowding": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     }

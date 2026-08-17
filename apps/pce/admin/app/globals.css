@@ -1,4 +1,6 @@
 @import '@exxatdesignux/ui/globals.css';
+@import './styles/leo-blob-animations.css';
+@import './styles/ask-leo-utility-chip.css';
 
 /* Explicit @source paths so Tailwind v4 scans both the DS dist and this app's
    own files regardless of where this CSS file sits in the directory tree.
@@ -88,6 +90,15 @@
   --qb-status-completed-bg:     oklch(0.94 0.035 195);
   --qb-status-completed-fg:     oklch(0.34 0.07 195);
   --qb-status-completed-border: oklch(0.72 0.08 195);
+  /* Hard-block severity (ST-02 role-overlap conflict, etc.) — deliberately
+     the darkest/most saturated fg of the family, so it reads as strictly
+     more urgent than draft/review at a glance. Fixed (no .dark override,
+     same as the rest of this family) — a light pill reads correctly on both
+     a light and a dark page via luminance contrast with the surface, so it
+     needs no per-theme calibration the way a solid-fill badge would. */
+  --qb-status-blocked-bg:       oklch(0.95  0.045 25);
+  --qb-status-blocked-fg:       oklch(0.32  0.19  25);
+  --qb-status-blocked-border:   oklch(0.62  0.20  25);
 }
 
 
@@ -198,35 +209,6 @@
   --pce-impact-border:            color-mix(in oklch, var(--destructive) 20%, transparent);
 }
 
-/* ── App sidebar — flat nav style ─────────────────────────────────────────── */
-/* npm 0.6.30 uses min-h-7/h-auto (28px); DS monorepo uses h-8 (32px). Match monorepo. */
-[data-sidebar="menu-button"]:not([data-size="lg"]) {
-  height: 2rem;
-  min-height: 2rem;
-}
-[data-sidebar="menu-button"] {
-  background-color: transparent;
-  box-shadow: none;
-  font-weight: 400;
-}
-[data-sidebar="menu-button"]:hover {
-  background-color: var(--sidebar-accent);
-  color: var(--sidebar-accent-foreground);
-  box-shadow: none;
-}
-[data-sidebar="menu-button"][data-active="true"] {
-  background-color: var(--sidebar-accent);
-  color: var(--sidebar-accent-foreground);
-  font-weight: 400;
-  box-shadow: none;
-}
-[data-sidebar="menu-button"].sidebar-brand-btn,
-[data-sidebar="menu-button"].sidebar-brand-btn:hover {
-  background-color: transparent;
-  box-shadow: none;
-  cursor: default;
-}
-
 /* Recharts injects this span for internal text measurement; clamp to DS 12px floor */
 #recharts_measurement_span {
   font-size: 12px !important;
@@ -236,4 +218,48 @@
    DS --foreground token (#0a0a0a), producing 1.06:1 contrast. Force white. */
 .next-error-h1 {
   color: #fff;
+}
+
+/* Readiness-table group bands (Courses & Survey Design) — 14% chart wash
+   composed OVER --card: opaque so the sticky (pinned) select cell occludes
+   content scrolling beneath it. Paired ink is the matching --chip-N token;
+   runtime axe-verified ≥4.5:1 on both bands (chip inks are darker than the
+   severity-fg mixes, which fail on these washes at 4.23:1). */
+:root {
+  --group-band-attention-bg: color-mix(in srgb, var(--chart-4) 14%, var(--card));
+  --group-band-done-bg: color-mix(in srgb, var(--chart-2) 14%, var(--card));
+}
+
+/* Blocked audit row (readiness surfaces): a wash lighter than the band (7%
+   vs 14%) plus an inset amber edge, so the ROW that needs the user pops
+   without competing with its group header. */
+.dt-row-blocked {
+  background: color-mix(in srgb, var(--chart-4) 7%, transparent);
+  box-shadow: inset 2px 0 0 var(--chip-4);
+}
+
+/* DS Accordion ships no open/close motion — content snaps, and collapsing a
+   tall section clamps the scroll position in one frame (the "page jumps up").
+   Radix exposes the measured height; animate it. Motion only — no DS token or
+   chrome overrides. Flagged upstream as a DS gap (ds-updates). */
+@keyframes pce-accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes pce-accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+[data-slot='accordion-content'][data-state='open'] {
+  animation-name: pce-accordion-down;
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+[data-slot='accordion-content'][data-state='closed'] {
+  animation-name: pce-accordion-up;
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='accordion-content'] { animation: none; }
 }

@@ -5,8 +5,8 @@ import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent,
-  AvatarInitials,
 } from '@exxatdesignux/ui'
+import { PersonAvatar } from '@/components/pce/person-avatar'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePce } from '@/components/pce/pce-state'
@@ -309,7 +309,10 @@ export function SurveysTable({
           onClick={(e) => e.stopPropagation()}
         >
           <span className="text-sm font-semibold">{row.survey.courseCode}</span>
-          <span className="text-xs text-muted-foreground">{row.survey.courseName}</span>
+          <span className="text-xs text-muted-foreground">
+            {row.survey.courseName}
+            {row.survey.evalScope ? ` · ${row.survey.evalScope === 'course' ? 'Course evaluation' : 'Instructor evaluation'}` : ''}
+          </span>
         </Link>
       ),
     },
@@ -323,7 +326,7 @@ export function SurveysTable({
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5 w-fit">
-              <AvatarInitials initials={row.primaryInstructorInitials} className="h-6 w-6" decorative />
+              <PersonAvatar name={row.primaryInstructorName} initials={row.primaryInstructorInitials} />
               <span className="text-sm font-medium truncate max-w-32">{row.primaryInstructorName}</span>
               {row.extraInstructorCount > 0 && (
                 <span className="text-xs text-muted-foreground">+{row.extraInstructorCount}</span>

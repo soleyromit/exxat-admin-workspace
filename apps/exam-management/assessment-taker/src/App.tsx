@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Separator, TooltipProvider } from '@exxatdesignux/ui';
+import { Button, TooltipProvider } from '@exxatdesignux/ui';
 import { questions } from './data/questions';
 import { MOCK_ASSESSMENTS, ExamSection } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
@@ -79,7 +79,7 @@ function SectionStartScreen({
       role="dialog"
       aria-labelledby="section-num-label section-start-title"
       aria-describedby={section.instructions ? 'section-start-desc' : undefined}
-      className="fixed inset-0 z-30 bg-background flex flex-col overflow-hidden"
+      className="fixed inset-0 z-30 bg-background flex flex-col overflow-y-auto"
       onKeyDown={(e) => {
         // Non-dismissible gate: Escape redirects focus to the only action rather
         // than silently swallowing the key, satisfying the ARIA dialog Escape contract.
@@ -109,7 +109,7 @@ function SectionStartScreen({
     >
       {/* Reference + Navigator stay reachable via the ExamToolbar (z-40), which
           renders above this overlay (z-30) during section start. */}
-      <div style={{ maxWidth: 560, width: '100%', textAlign: 'left', margin: '0 auto' }}>
+      <div style={{ maxWidth: 560, width: '100%', textAlign: 'left', margin: '0 auto', paddingTop: '72px', paddingLeft: '24px', paddingRight: '24px' }}>
         {/* Section label — id referenced in aria-labelledby so AT announces
             "Section 1 of 3 Nervous System, dialog" when the overlay opens. */}
         <p id="section-num-label" className="text-xs font-medium text-muted-foreground mb-1.5">
@@ -155,12 +155,7 @@ function SectionStartScreen({
             PreExamFlow (BeforeYouBegin). For short instructions there is no
             overflow, so it renders inline exactly as before. The solid
             background lets instruction text scroll cleanly beneath it. */}
-        <div className="sticky bottom-0 pt-4 pb-4 bg-background">
-          <Separator className="mb-4" />
-          {/* Primary CTA carries the brand identity via the engine-local Button
-              wrapper's `primary` variant — the single source of the brand-color
-              treatment, so the section-start CTA renders identically to every
-              other primary action instead of re-declaring the override inline. */}
+        <div className="sticky bottom-0 pt-4 pb-4 border-t border-border bg-background">
           <Button
             ref={beginRef}
             variant="default"
@@ -499,7 +494,9 @@ export function App() {
           is inerted). axe page-has-heading-one always finds exactly one h1.
           Named <section> (region landmark) satisfies axe:region without
           creating a second banner landmark (which <header> would). */}
-      <h1 className="sr-only">{assessment?.title ?? 'Exam'}</h1>
+      <section role="region" aria-label={assessment?.title ?? 'Exam'}>
+        <h1 className="sr-only">{assessment?.title ?? 'Exam'}</h1>
+      </section>
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
         {showSectionStart && assessment?.sections?.length && (() => {

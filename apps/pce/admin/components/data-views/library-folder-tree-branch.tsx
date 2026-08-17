@@ -222,16 +222,18 @@ function LibraryFolderTreeBranchInner({
       >
         {hasSubfolders ? (
           <CollapsibleTrigger asChild>
-            <button
+            <Button
               type="button"
-              className="icon-button-chrome flex size-8 shrink-0 self-start items-center justify-center transition-colors hover:text-interactive-hover-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`${folder.name} — expand or collapse`}
+              variant="ghost"
+              size="icon-sm"
+              className="icon-button-chrome self-start hover:text-interactive-hover-foreground"
+              aria-label={`${folder.name}, expand or collapse`}
             >
               <i
                 className="fa-light fa-chevron-right text-xs transition-transform duration-150 group-data-[state=open]/collapsible:rotate-90"
                 aria-hidden
               />
-            </button>
+            </Button>
           </CollapsibleTrigger>
         ) : (
           <span className="size-8 shrink-0 self-start" aria-hidden />

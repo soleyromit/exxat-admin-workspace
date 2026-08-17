@@ -1,0 +1,229 @@
+/*
+ * Ask Leo utility-bar chip — arrival halo, resting glow, and blob-wash frame.
+ * Ported from the DS's `packages/ui/src/globals.css` (not yet in the published
+ * `@exxatdesignux/ui@1.0.0` — this workspace's local checkout is ahead of the
+ * installed package). Pairs with `leo-blob-animations.css` (the lobes
+ * themselves) and `components/pce/ask-leo-utility-wash.tsx` (the React side
+ * that sets `data-emphatic`/`data-intro`).
+ */
+
+:root {
+  /* Halo: an outward box-shadow so it never washes the chip's own face —
+     three stops: hairline edge, tight bloom, wide falloff past the 42px bar. */
+  --ask-leo-utility-glow-shadow:
+    0 0 0 1px color-mix(in oklch, var(--brand-color) 26%, transparent),
+    0 0 8px 0 color-mix(in oklch, var(--brand-color) 30%, transparent),
+    0 0 20px 4px color-mix(in oklch, var(--brand-color) 16%, transparent);
+
+  /* Specular highlight for the arrival sheen. */
+  --ask-leo-sheen-color: color-mix(in oklch, var(--brand-color) 88%, transparent);
+
+  /* Resting chip glow once the halo has played — light gathered behind the
+     star, falling off across the label. Held at 14% so label ink still
+     clears 4.5:1. */
+  --ask-leo-chip-glow: radial-gradient(
+    120% 140% at 18% 50%,
+    color-mix(in oklch, var(--brand-color) 14%, transparent) 0%,
+    color-mix(in oklch, var(--brand-color) 7%, transparent) 55%,
+    transparent 100%
+  );
+
+  /* Contrast budget for the blob-wash layer behind the label. */
+  --ask-leo-chip-blob-opacity: 0.55;
+}
+
+.dark {
+  --ask-leo-utility-glow-shadow:
+    0 0 0 1px color-mix(in oklch, var(--brand-color) 30%, transparent),
+    0 0 8px 0 color-mix(in oklch, var(--brand-color) 38%, transparent),
+    0 0 22px 5px color-mix(in oklch, var(--brand-color) 22%, transparent);
+
+  --ask-leo-sheen-color: color-mix(in oklch, oklch(1 0 0) 42%, var(--brand-color));
+
+  --ask-leo-chip-glow: radial-gradient(
+    120% 140% at 18% 50%,
+    color-mix(in oklch, var(--brand-color) 22%, transparent) 0%,
+    color-mix(in oklch, var(--brand-color) 11%, transparent) 55%,
+    transparent 100%
+  );
+
+  --ask-leo-chip-blob-opacity: 0.5;
+}
+
+@layer components {
+  [data-ask-leo-utility-glow-wrap] {
+    --ask-leo-glow-duration: 1600ms;
+    /* Zero at rest — the halo is an arrival, not a state. */
+    --ask-leo-glow-rest-opacity: 0;
+    --ask-leo-sheen-duration: 1000ms;
+    --ask-leo-wash-duration: 1150ms;
+    --ask-leo-wash-delay: 150ms;
+  }
+
+  /* Frame for the drifting lobes (`AskLeoLauncherWash`). `overflow: hidden`
+     clips the ~1.5x vertical overshoot each chip-fitted lobe needs. */
+  [data-ask-leo-utility-wash] {
+    border-radius: var(--exxat-radius-2);
+    opacity: min(1, calc(var(--ask-leo-chip-blob-opacity) * var(--ask-leo-chip-blob-scale, 1) * 0.6));
+    transition: opacity 300ms ease-out;
+  }
+
+  [data-ask-leo-utility-wash][data-emphatic] {
+    opacity: min(1, calc(var(--ask-leo-chip-blob-opacity) * var(--ask-leo-chip-blob-scale, 1)));
+  }
+
+  [data-ask-leo-utility-glow-wrap][data-intro] [data-ask-leo-utility-wash] {
+    animation: ask-leo-utility-wash var(--ask-leo-wash-duration)
+      var(--ask-leo-wash-delay) ease-out both;
+  }
+
+  [data-ask-leo-utility-glow] {
+    background: none;
+    border-radius: var(--exxat-radius-2);
+    box-shadow: var(--ask-leo-utility-glow-shadow);
+    opacity: var(--ask-leo-glow-rest-opacity);
+    transition: opacity 200ms ease-out;
+    will-change: opacity;
+  }
+
+  [data-ask-leo-utility-glow-wrap][data-intro] [data-ask-leo-utility-glow] {
+    animation: ask-leo-utility-glow-intro var(--ask-leo-glow-duration)
+      cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Metallic sheen — one specular pass across the chip's edge on arrival. */
+  @supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+    [data-ask-leo-utility-glow]::after {
+      border-radius: inherit;
+      box-sizing: border-box;
+      content: "";
+      inset: 0;
+      opacity: 0;
+      padding: 1.5px;
+      pointer-events: none;
+      position: absolute;
+      background: linear-gradient(
+        105deg,
+        transparent 38%,
+        var(--ask-leo-sheen-color) 50%,
+        transparent 62%
+      );
+      background-repeat: no-repeat;
+      background-size: 260% 100%;
+      background-position: 140% 0;
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      mask-composite: exclude;
+    }
+
+    [data-ask-leo-utility-glow-wrap][data-intro] [data-ask-leo-utility-glow]::after {
+      animation: ask-leo-utility-sheen var(--ask-leo-sheen-duration) linear both;
+    }
+  }
+
+  /* The glow the chip keeps at rest, rides the toggle button's own `::before`. */
+  [data-ask-leo-utility-glow-wrap] [data-slot="ask-leo-toggle"] {
+    isolation: isolate;
+    position: relative;
+    z-index: 1;
+  }
+
+  [data-ask-leo-utility-glow-wrap] [data-slot="ask-leo-toggle"]::before {
+    background: var(--ask-leo-chip-glow);
+    border-radius: inherit;
+    content: "";
+    inset: 0;
+    opacity: 1;
+    pointer-events: none;
+    position: absolute;
+    transition: opacity 450ms ease-out;
+    z-index: -1;
+  }
+
+  /* Clean face while the halo blooms on arrival. */
+  [data-ask-leo-utility-glow-wrap][data-intro] [data-slot="ask-leo-toggle"]::before {
+    opacity: 0;
+    transition: none;
+  }
+
+  @media (forced-colors: active) {
+    [data-ask-leo-utility-glow-wrap] [data-slot="ask-leo-toggle"]::before {
+      display: none;
+    }
+
+    [data-ask-leo-utility-glow]::after,
+    [data-ask-leo-utility-wash] {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-ask-leo-utility-glow] {
+      animation: none;
+      opacity: var(--ask-leo-glow-rest-opacity);
+      transition: none;
+      will-change: auto;
+    }
+
+    [data-ask-leo-utility-glow-wrap] [data-slot="ask-leo-toggle"]::before {
+      transition: none;
+    }
+
+    [data-ask-leo-utility-glow]::after,
+    [data-ask-leo-utility-glow-wrap][data-intro] [data-ask-leo-utility-glow]::after,
+    [data-ask-leo-utility-wash],
+    [data-ask-leo-utility-glow-wrap][data-intro] [data-ask-leo-utility-wash] {
+      animation: none;
+      display: none;
+    }
+  }
+}
+
+@keyframes ask-leo-utility-glow-intro {
+  0% {
+    opacity: 0;
+  }
+
+  48% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: var(--ask-leo-glow-rest-opacity, 0);
+  }
+}
+
+@keyframes ask-leo-utility-wash {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: min(1, calc(var(--ask-leo-chip-blob-opacity) * var(--ask-leo-chip-blob-scale, 1)));
+  }
+}
+
+@keyframes ask-leo-utility-sheen {
+  0% {
+    background-position: 140% 0;
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  72% {
+    opacity: 1;
+  }
+
+  100% {
+    background-position: -60% 0;
+    opacity: 0;
+  }
+}

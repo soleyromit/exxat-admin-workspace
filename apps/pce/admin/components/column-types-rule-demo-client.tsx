@@ -289,7 +289,7 @@ export function ColumnTypesRuleDemoClient() {
         header={
           <PageHeader
             title="Column types (rule demo)"
-            subtitle="cellKind drives filter icons; rating filter shows star previews. Table-only — no Add view until product asks."
+            subtitle="cellKind drives filter icons; rating filter shows star previews. Table-only. No Add view until product asks."
           />
         }
         renderContent={() => (

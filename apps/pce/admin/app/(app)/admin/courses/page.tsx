@@ -15,9 +15,9 @@ import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 
 const TYPE_LABELS: Record<MasterCourse['type'], string> = {
-  didactic: 'Classroom based',
-  clinical: 'Practice based',
-  seminar:  'Lab based',
+  didactic: 'Classroom',
+  clinical: 'Practice',
+  seminar:  'Lab',
 }
 
 const TYPE_BADGE_VARIANT: Record<MasterCourse['type'], 'secondary' | 'outline'> = {
@@ -56,7 +56,10 @@ const DEPARTMENTS = [...new Set(MOCK_MASTER_COURSES.map(c => c.department))].sor
 const PRISM_BASE  = 'https://app.exxat.com/prism/dpt/courses'
 
 const tierColor = (avg: number) =>
-  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+  // --brand-color itself (L≈0.63 for PCE's violet) is 3.56:1 on white — below
+  // the 4.5:1 text minimum (WCAG axe run, /admin/courses, 2026-08-17).
+  // --brand-color-dark (L 0.48, same hue/chroma) clears at 6.76:1.
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color-dark)' : 'var(--chip-4)'
 
 export default function MasterCoursesPage() {
   // Filtering (type, department) is owned by the DataTable's native filter
@@ -87,8 +90,8 @@ export default function MasterCoursesPage() {
 
   const kpis: MetricItem[] = [
     { id: 'total',    label: 'Total courses',   value: MOCK_MASTER_COURSES.length, delta: '', trend: 'neutral' },
-    { id: 'didactic', label: 'Classroom based',   value: didacticCount,              delta: '', trend: 'neutral' },
-    { id: 'clinical', label: 'Practice based',    value: clinicalCount,              delta: '', trend: 'neutral' },
+    { id: 'didactic', label: 'Classroom',   value: didacticCount,              delta: '', trend: 'neutral' },
+    { id: 'clinical', label: 'Practice',    value: clinicalCount,              delta: '', trend: 'neutral' },
     { id: 'rating',   label: 'Avg program rating', value: programAvgRating !== null ? `${programAvgRating}/5` : '—', delta: '', trend: 'neutral' },
   ]
 
@@ -111,9 +114,9 @@ export default function MasterCoursesPage() {
       filter: {
         type: 'select', icon: 'fa-shapes', operators: ['is', 'is_not'],
         options: [
-          { value: 'didactic', label: 'Classroom based' },
-          { value: 'clinical', label: 'Practice based' },
-          { value: 'seminar',  label: 'Lab based' },
+          { value: 'didactic', label: 'Classroom' },
+          { value: 'clinical', label: 'Practice' },
+          { value: 'seminar',  label: 'Lab' },
         ],
       },
     },

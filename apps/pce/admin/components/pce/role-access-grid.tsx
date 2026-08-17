@@ -133,7 +133,7 @@ export function RoleAccessGrid() {
               Permissions matrix
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Coming soon — the permissions matrix is being defined.</TooltipContent>
+          <TooltipContent>Coming soon. The permissions matrix is being defined.</TooltipContent>
         </Tooltip>
       </div>
 

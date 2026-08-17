@@ -225,7 +225,7 @@ export default function AccommodationsPage() {
 
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground max-w-2xl">
-              Master catalog. {standardCount} standard + {customCount} custom. This list is shared across modules — all products use the same catalog. Faculty have a read-only view per course.
+              Master catalog. {standardCount} standard + {customCount} custom. This list is shared across modules. All products use the same catalog. Faculty have a read-only view per course.
             </p>
             <Link href="/admin/students" className="text-xs text-muted-foreground underline shrink-0">
               View per-student assignments →
@@ -334,7 +334,7 @@ export default function AccommodationsPage() {
                 <FieldLabel htmlFor="ac-name">Name *</FieldLabel>
                 <Input
                   id="ac-name"
-                  placeholder="e.g., Custom — service animal"
+                  placeholder="e.g., Custom · service animal"
                   value={draft.name}
                   onChange={e => setDraft({ ...draft, name: e.target.value })}
                   aria-required="true"

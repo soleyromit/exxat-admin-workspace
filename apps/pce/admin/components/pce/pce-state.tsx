@@ -11,6 +11,7 @@ import {
 import type {
   PceUser,
   PceSurvey,
+  PceSurveyWizardDraft,
   PceTemplate,
   ProgramTerm,
   SurveyStatus,
@@ -28,13 +29,15 @@ import {
   MOCK_MASTER_COURSES,
   MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
+import { CRITERION_GROUP, templateCriteria } from '@/lib/pce-course-readiness'
+import { draftOrScheduledMatch } from '@/lib/pce-push-validation'
 
 export const DEFAULT_SETUP_EMAIL_SUBJECT =
   'Your course evaluation for {{course_name}} is now open'
 
 export const DEFAULT_SETUP_EMAIL_BODY = `Hi {{student_first_name}},
 
-Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous — your name will never be attached to your answers.
+Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous. Your name will never be attached to your answers.
 
 Take the survey: {{survey_link}}`
 
@@ -50,6 +53,49 @@ const INITIAL_SETUP_DEFAULTS: SetupDefaults = {
   activeReminderIntervals: [14, 7, 3],
 }
 
+/** One survey to create — the Survey design step's instance grain. */
+export interface PushInstance {
+  offeringId: string
+  scope: 'course' | 'instructor'
+  /** Readiness criterion id — stamped onto the flow as evalRole so FUTURE
+   *  duplicate checks can match the full offering+role+person key. */
+  role?: string
+  personName?: string
+}
+
+/** ST-02 Phase 3 — one offering's slice of a Save-as-Draft upsert. */
+export interface WizardDraftOffering {
+  offeringId: string
+  /** Effective template for this offering ('' = none assigned yet). */
+  templateId: string
+  /** The Draft/Scheduled survey being edited (from draftOrScheduledMatch);
+   *  absent = first save for this offering, a new draft row is created. */
+  existingSurveyId?: string
+  /** This offering's slice of the page's UnitSelectionMap (keys start
+   *  `${offeringId}|`). */
+  unitSelections: Record<string, 'selected' | 'deselected'>
+  /** templateCriteria() of `templateId` at save time (Criterion ids as
+   *  strings) — resume diffs against the current criteria for the
+   *  "template updated since this draft was saved" notice. */
+  templateCriteriaSnapshot: string[]
+}
+
+/** ST-02 Phase 3 — Save as Draft input: the whole wizard run, persisted as one
+ *  draft PceSurvey row PER offering (see PceSurveyWizardDraft in
+ *  lib/pce-mock-data.ts for the stored shape). */
+export interface SaveWizardDraftInput {
+  surveyType: SurveyType
+  termId: string
+  academicYear: string
+  /** Step-wide Auto Update flag — duplicated onto every row in the batch. */
+  autoUpdateOn: boolean
+  /** Step 3 window/release values (YYYY-MM-DD), duplicated onto every row. */
+  openDate?: string
+  closeDate?: string
+  releaseDate?: string
+  offerings: WizardDraftOffering[]
+}
+
 export interface PushWizardConfig {
   surveyType: SurveyType
   termId: string
@@ -57,6 +103,10 @@ export interface PushWizardConfig {
   programId: string
   courseOfferingIds: string[]
   templateAssignments: Record<string, string>  // offeringId → templateId
+  /** Instance-level plan from the Survey design step (duplicates already
+   *  excluded there). When present, one survey is created PER INSTANCE —
+   *  split flows — instead of one combined flow per offering. */
+  instances?: PushInstance[]
   openDate: string   // YYYY-MM-DD
   closeDate: string  // YYYY-MM-DD
   emailSubject: string
@@ -81,6 +131,19 @@ interface PceState {
   toggleRole: () => void
   releaseSurvey: (id: string) => void
   closeSurvey: (id: string) => void
+  /** ST-16 (minimal stub) — cancels a Draft/Scheduled survey before it goes
+   *  live. Cancelled surveys are excluded from roleOverlapConflicts() and
+   *  draftOrScheduledMatch() (lib/pce-push-validation.ts) — no longer "on
+   *  record." The dedicated ST-16 surface (confirmation copy, a row action in
+   *  surveys-table.tsx) is out of scope here; this only exists so the ST-02
+   *  hard-block message has a real resolution path to point to. */
+  cancelSurvey: (id: string) => void
+  /** ST-09 (minimal stub) — marks a survey archived. Per the gap-analysis doc
+   *  §5, ST-02 lists Archived surveys as STILL blocking role-overlap, so this
+   *  action does NOT exempt the survey from future conflict checks — confirm
+   *  the intended resolution mechanic with Product (see the ⚠️ comment in
+   *  lib/pce-push-validation.ts) before wiring this into Step 2's block UI. */
+  archiveSurvey: (id: string) => void
   createSurvey: (survey: Omit<PceSurvey, 'id' | 'createdAt' | 'responseRate' | 'responseCount'>) => void
   deleteTemplate: (id: string) => void
   createTemplate: (tmpl: Omit<PceTemplate, 'id' | 'lastModified' | 'usedBySurveyCount'>) => string
@@ -111,6 +174,12 @@ interface PceState {
   saveSetupDefaults: (d: SetupDefaults) => void
   // Wizard actions
   pushSurveyBatch: (config: PushWizardConfig) => void
+  /** ST-02 Phase 3 — upserts one `status: 'draft'` PceSurvey per offering
+   *  (creates on first save, updates in place when existingSurveyId is set).
+   *  A SCHEDULED survey pulled in for editing keeps its scheduled status —
+   *  Save as Draft records the working state without demoting a survey that
+   *  is already on the calendar. */
+  saveDraft: (input: SaveWizardDraftInput) => void
   // Moderation action
   enableResults: (surveyId: string) => void
   // Survey intervention actions (single or bulk — pass one id or many)
@@ -143,6 +212,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     setActiveAccountId(acc.id)      // module register — feeds the term helpers
     setAccountId(acc.id)
     setSurveys(acc.surveys)
+    setTemplates(acc.templates ?? MOCK_TEMPLATES)
     setProgramTerms(acc.terms)
     setHiddenComments({})
     if (typeof window !== 'undefined') {
@@ -160,8 +230,26 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
+  // ── Role toggle — persisted like the demo account (SSR + first client
+  //    render stay on the default admin role so hydration matches; the stored
+  //    choice applies post-mount). Without this, any full page load silently
+  //    dropped the user back to Admin view. ──
+  const ROLE_STORAGE_KEY = 'pce.role'
   const toggleRole = useCallback(() => {
-    setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
+    setUser(u => {
+      const role = u.role === 'admin' ? ('faculty' as const) : ('admin' as const)
+      if (typeof window !== 'undefined') {
+        try { window.localStorage.setItem(ROLE_STORAGE_KEY, role) } catch { /* ignore */ }
+      }
+      return { ...u, role }
+    })
+  }, [])
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(ROLE_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored === 'faculty' || stored === 'admin') {
+      setUser(u => (u.role === stored ? u : { ...u, role: stored }))
+    }
   }, [])
 
   const releaseSurvey = useCallback((id: string) => {
@@ -177,6 +265,18 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       s.id === id
         ? { ...s, status: 'closed' as SurveyStatus, closedAt: 'Apr 22, 2026' }
         : s
+    ))
+  }, [])
+
+  const cancelSurvey = useCallback((id: string) => {
+    setSurveys(ss => ss.map(s =>
+      s.id === id ? { ...s, cancelledAt: 'Apr 22, 2026' } : s
+    ))
+  }, [])
+
+  const archiveSurvey = useCallback((id: string) => {
+    setSurveys(ss => ss.map(s =>
+      s.id === id ? { ...s, archivedAt: 'Apr 22, 2026' } : s
     ))
   }, [])
 
@@ -492,7 +592,74 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
-  // ── Wizard action ─────────────────────────────────────────────────────────
+  // ── Wizard actions ────────────────────────────────────────────────────────
+
+  // ST-02 Phase 3 — Save as Draft. Upserts one `status: 'draft'` PceSurvey per
+  // offering: creates on first save, updates in place on subsequent saves (the
+  // page passes existingSurveyId from draftOrScheduledMatch). The wizard's
+  // working state rides the row's `wizardDraft` field; the resume hydration in
+  // app/(app)/surveys/push/page.tsx reads it back.
+  const saveDraft = useCallback((input: SaveWizardDraftInput) => {
+    const today = new Date().toISOString().split('T')[0]
+    const term = MOCK_PROGRAM_TERMS.find(t => t.id === input.termId)
+    const stamp = Date.now()
+    setSurveys(ss => {
+      const next = [...ss]
+      for (const entry of input.offerings) {
+        const wizardDraft: PceSurveyWizardDraft = {
+          unitSelections: entry.unitSelections,
+          autoUpdateOn: input.autoUpdateOn,
+          templateCriteriaSnapshot: entry.templateCriteriaSnapshot,
+          openDate: input.openDate,
+          closeDate: input.closeDate,
+          releaseDate: input.releaseDate,
+          savedAt: today,
+        }
+        const idx = entry.existingSurveyId
+          ? next.findIndex(s => s.id === entry.existingSurveyId)
+          : -1
+        if (idx >= 0) {
+          // Update in place. Status is deliberately NOT touched: a Draft stays
+          // a Draft, and a Scheduled survey pulled in for editing stays
+          // Scheduled (see the PceState doc comment).
+          const s = next[idx]
+          next[idx] = {
+            ...s,
+            templateId: entry.templateId || s.templateId,
+            openDate: input.openDate ?? s.openDate,
+            deadline: input.closeDate ?? s.deadline,
+            wizardDraft,
+          }
+        } else {
+          const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === entry.offeringId)
+          const masterCourse = offering
+            ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
+            : null
+          next.push({
+            id: `d${stamp}-${entry.offeringId}`,
+            offeringId: entry.offeringId,
+            courseCode: masterCourse?.code ?? entry.offeringId,
+            courseName: masterCourse?.name ?? '',
+            term: term?.name ?? input.academicYear,
+            cohort: offering?.cohort,
+            surveyType: input.surveyType,
+            academicYear: input.academicYear,
+            templateId: entry.templateId,
+            status: 'draft',
+            instructors: [],
+            openDate: input.openDate,
+            responseRate: 0,
+            responseCount: 0,
+            enrollmentCount: offering?.enrolledCount ?? 0,
+            deadline: input.closeDate ?? '',
+            createdAt: today,
+            wizardDraft,
+          })
+        }
+      }
+      return next
+    })
+  }, [])
 
   const pushSurveyBatch = useCallback((config: PushWizardConfig) => {
     const { courseOfferingIds, templateAssignments, openDate, closeDate, surveyType, termId, academicYear, programId } = config
@@ -501,6 +668,121 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
 
     const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
 
+    // Instance-level plan (Survey design step): one survey PER INSTANCE —
+    // split flows with evalScope + evalRole stamped so later pushes can match
+    // the full offering+role+person duplicate key. Duplicates were already
+    // excluded upstream; whatever arrives here gets created.
+    //
+    // ST-02 Phase 3 — an offering that already has a Draft or Scheduled survey
+    // on record (draftOrScheduledMatch) was pulled into the wizard for EDITING:
+    // final submit updates that record in place — one combined survey covering
+    // the pushed instances — never appends a second one. Offerings with no
+    // such match keep the create-per-instance path below exactly as before.
+    if (config.instances?.length) {
+      const stamp = Date.now()
+      setSurveys(ss => {
+        const byOffering = new Map<string, typeof config.instances>()
+        for (const inst of config.instances!) {
+          byOffering.set(inst.offeringId, [...(byOffering.get(inst.offeringId) ?? []), inst])
+        }
+        let next = [...ss]
+        let seq = 0
+        for (const [offeringId, group] of byOffering) {
+          const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
+          const masterCourse = offering ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId) : null
+          const existing = offering ? draftOrScheduledMatch(offering, next) : null
+          if (existing && group) {
+            // Update-in-place: the Draft/Scheduled record BECOMES the pushed
+            // survey. Combined flow (evalScope per what the instances cover);
+            // wizardDraft is cleared — the working state is now real.
+            const hasCourse = group.some(g => g.scope === 'course')
+            const hasFaculty = group.some(g => g.scope === 'instructor')
+            const roles = [...new Set(group.filter(g => g.scope === 'instructor' && g.role).map(g => g.role!))]
+            const persons = [...new Set(group.filter(g => g.scope === 'instructor' && g.personName).map(g => g.personName!))]
+              .map(name => MOCK_FACULTY.find(f => f.name === name))
+              .filter((f): f is NonNullable<typeof f> => !!f)
+            const evaluations = [
+              ...(hasCourse ? [{
+                type: 'course_material' as const, status,
+                responseRate: 0, responseCount: 0,
+                enrollmentCount: offering?.enrolledCount ?? 0, deadline: closeDate,
+              }] : []),
+              ...(hasFaculty ? [{
+                type: 'faculty_roles' as const, status,
+                responseRate: 0, responseCount: 0,
+                enrollmentCount: offering?.enrolledCount ?? 0, deadline: closeDate,
+              }] : []),
+            ]
+            next = next.map(s => s.id !== existing.id ? s : {
+              ...s,
+              status,
+              surveyType,
+              openDate,
+              academicYear,
+              programId,
+              term: term?.name ?? academicYear,
+              templateId: templateAssignments[offeringId] ?? s.templateId,
+              evalScope: hasCourse && !hasFaculty ? ('course' as const)
+                : hasFaculty && !hasCourse ? ('instructor' as const)
+                : undefined,
+              evalRole: hasFaculty && !hasCourse && roles.length === 1 ? roles[0] : undefined,
+              instructors: persons.map(p => ({ id: p.id, name: p.name, initials: p.initials, role: 'primary' as const })),
+              evaluations,
+              responseRate: 0,
+              responseCount: 0,
+              enrollmentCount: offering?.enrolledCount ?? s.enrollmentCount,
+              deadline: closeDate,
+              wizardDraft: undefined,
+            })
+            continue
+          }
+          for (const inst of group ?? []) {
+            const person = inst.personName ? MOCK_FACULTY.find(f => f.name === inst.personName) : null
+            next.push({
+              id: `s${stamp}-${inst.offeringId}-${seq++}`,
+              offeringId: inst.offeringId,
+              evalScope: inst.scope,
+              evalRole: inst.role,
+              courseCode: masterCourse?.code ?? inst.offeringId,
+              courseName: masterCourse?.name ?? '',
+              term: term?.name ?? academicYear,
+              cohort: offering?.cohort,
+              surveyType,
+              openDate,
+              academicYear,
+              programId,
+              templateId: templateAssignments[inst.offeringId] ?? '',
+              status,
+              // Course-scope flows carry NO instructors (seed pf3 convention —
+              // a person listed on a course-scope flow ghosts into faculty
+              // analytics); instructor-scope flows carry exactly the evaluatee.
+              instructors: inst.scope === 'instructor' && person
+                ? [{ id: person.id, name: person.name, initials: person.initials, role: 'primary' as const }]
+                : [],
+              // A split flow IS a single evaluation type — without this override
+              // evaluationsFor() derives BOTH types from the roll-up and
+              // resurrects the half this flow deliberately excludes.
+              evaluations: [{
+                type: inst.scope === 'course' ? 'course_material' as const : 'faculty_roles' as const,
+                status,
+                responseRate: 0,
+                responseCount: 0,
+                enrollmentCount: offering?.enrolledCount ?? 0,
+                deadline: closeDate,
+              }],
+              responseRate: 0,
+              responseCount: 0,
+              enrollmentCount: offering?.enrolledCount ?? 0,
+              deadline: closeDate,
+              createdAt: today,
+            })
+          }
+        }
+        return next
+      })
+      return
+    }
+
     setSurveys(ss => {
       const newSurveys: PceSurvey[] = courseOfferingIds.map(offeringId => {
         const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
@@ -508,8 +790,23 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
         const faculty = offering ? MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId) : null
         const templateId = templateAssignments[offeringId] ?? ''
 
+        // Scope from what the assigned template evaluates: course-only /
+        // faculty-only templates make a single-evaluatee flow; a template that
+        // covers both leaves evalScope undefined (a combined flow). offeringId
+        // ties every flow to its course so the push wizard's Status column can
+        // show what's already out when a LATER flow targets the same course.
+        const tmpl = templates.find(t => t.id === templateId)
+        const crits = tmpl ? templateCriteria(tmpl) : []
+        const hasCourse = crits.some(c => CRITERION_GROUP[c] === 'Course')
+        const hasFaculty = crits.some(c => CRITERION_GROUP[c] === 'Faculty')
+        const evalScope = hasCourse && !hasFaculty ? ('course' as const)
+          : hasFaculty && !hasCourse ? ('instructor' as const)
+          : undefined
+
         return {
           id: `s${Date.now()}-${offeringId}`,
+          offeringId,
+          evalScope,
           courseCode: masterCourse?.code ?? offeringId,
           courseName: masterCourse?.name ?? '',
           term: term?.name ?? academicYear,
@@ -532,7 +829,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       })
       return [...ss, ...newSurveys]
     })
-  }, [])
+  }, [templates])
 
   // ── Survey intervention actions ───────────────────────────────────────────
 
@@ -569,7 +866,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   return (
     <PceContext.Provider value={{
       user, surveys, templates, hiddenComments, toggleRole,
-      releaseSurvey, closeSurvey, createSurvey,
+      releaseSurvey, closeSurvey, cancelSurvey, archiveSurvey, createSurvey,
       deleteTemplate, createTemplate, updateTemplate,
       addQuestion, updateQuestion, deleteQuestion, reorderQuestions,
       addGuestInstructor, removeInstructor, toggleHideComment,
@@ -580,6 +877,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       programTerms, addProgramTerm,
       accountId, accounts: DEMO_ACCOUNTS, switchAccount,
       pushSurveyBatch,
+      saveDraft,
       enableResults,
       sendSurveyReminder,
       extendSurveyDeadline,

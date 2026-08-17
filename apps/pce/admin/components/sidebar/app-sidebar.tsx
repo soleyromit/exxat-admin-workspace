@@ -47,7 +47,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarMenuSeparator,
+  SidebarSeparator as SidebarMenuSeparator,
   useRegisterNavFlyoutToggle,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -574,7 +574,7 @@ function CollapsibleNavItem({ item, pathname }: { item: NavLinkItem; pathname: s
                   isActive={iconRailActive}
                   aria-current={iconRailActive ? "page" : undefined}
                   aria-haspopup="dialog"
-                  aria-label={`${item.title} — open subpages`}
+                  aria-label={`${item.title}, open subpages`}
                 >
                   <span
                     key={iconRailActive ? "active" : "idle"}
@@ -1165,32 +1165,26 @@ function TeamSwitcherInner({
         {subView === "main" ? (
           <>
             {/* Selected parent — click to switch parent */}
-            <div className="p-1">
-              <button
-                type="button"
-                onClick={() => setSubView("parents")}
-                className={cn(
-                  "flex w-full items-start gap-2.5 rounded-md p-2 text-left transition-colors",
-                  "hover:bg-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                )}
-              >
-                <Avatar className="size-9 shrink-0">
-                  <AvatarImage
-                    src={parent.logo}
-                    alt=""
-                    referrerPolicy="origin"
-                    className="object-contain p-0.5"
-                  />
-                  <AvatarFallback className="text-xs font-semibold">
-                    {parent.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold leading-snug">{parent.name}</p>
-                </div>
-                <span className="shrink-0 pt-0.5 text-xs font-medium text-brand">Change</span>
-              </button>
-            </div>
+            <DropdownMenuItem
+              onSelect={(e) => { e.preventDefault(); setSubView("parents") }}
+              className="items-start gap-2.5 py-2"
+            >
+              <Avatar className="size-9 shrink-0">
+                <AvatarImage
+                  src={parent.logo}
+                  alt=""
+                  referrerPolicy="origin"
+                  className="object-contain p-0.5"
+                />
+                <AvatarFallback className="text-xs font-semibold">
+                  {parent.initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold leading-snug">{parent.name}</p>
+              </div>
+              <span className="shrink-0 pt-0.5 text-xs font-medium text-brand">Change</span>
+            </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
@@ -1383,7 +1377,7 @@ function ProductLogoButton() {
                 className="shrink-0 text-xs font-medium text-muted-foreground"
                 aria-hidden="true"
               >
-                — {p.scope}
+                · {p.scope}
               </span>
             )}
             {isCurrentProduct(p) && (

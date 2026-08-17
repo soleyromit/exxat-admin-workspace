@@ -206,7 +206,7 @@ function SettingsInner() {
   return (
     <>
       <SiteHeader title="Settings" />
-      <main className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0">
       {/* Single save model: the sticky unsaved-changes bar below is the ONE save
           affordance — no duplicate header button. */}
       <PageHeader
@@ -290,7 +290,7 @@ function SettingsInner() {
                   </div>
                   <p className="text-xs" style={{ color: 'var(--muted-foreground)' }} role="status">
                     {roles.length === 0
-                      ? 'No roles selected — new templates will rate the course only.'
+                      ? 'No roles selected. New templates will rate the course only.'
                       : `${roles.length} of ${EVAL_FACULTY_ROLES.length} roles rated in new templates.`}
                   </p>
                 </div>
@@ -412,7 +412,7 @@ function SettingsInner() {
           )}
         </div>
       </div>
-      </main>
+      </div>
     </>
   )
 }

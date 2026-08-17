@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
-  Button, LocalBanner,
+  Button, LocalBanner, StatusBadge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
@@ -12,6 +12,7 @@ import type { SubjectKey } from '@/lib/pce-mock-data'
 
 const SUBJECT_LABELS: Record<SubjectKey, string> = {
   course_content:     'Course Content',
+  faculty:            'Faculty',
   course_instructor:  'Course Instructor',
   course_coordinator: 'Course Coordinator',
   teaching_assistant: 'Teaching Assistant',
@@ -73,7 +74,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
         >
           <SheetHeader className="shrink-0 px-6 py-4 border-b border-border">
             <SheetTitle className="text-base font-semibold">
-              Review responses — {survey?.courseCode}
+              Review responses · {survey?.courseCode}
             </SheetTitle>
             {survey && (
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -120,19 +121,14 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
                           <p className="text-xs text-muted-foreground">{response.questionText}</p>
                           <p className="text-sm leading-relaxed">{response.text}</p>
                           {isHidden && (
-                            <span
-                              className="text-xs font-medium self-start px-2 py-0.5 rounded-md"
-                              style={{ backgroundColor: 'var(--muted)', color: 'var(--chart-4)' }}
-                            >
-                              Hidden from faculty
-                            </span>
+                            <StatusBadge label="Hidden from faculty" tone="neutral" className="self-start" />
                           )}
                         </div>
 
                         <Button
                           variant={isHidden ? 'outline' : 'ghost'}
                           size="sm"
-                          aria-label={isHidden ? 'Unhide — show to faculty' : 'Hide from faculty'}
+                          aria-label={isHidden ? 'Unhide: show to faculty' : 'Hide from faculty'}
                           onClick={() => toggleHidden(response.id)}
                           className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                           style={isHidden
@@ -159,7 +155,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
           <div className="shrink-0 border-t border-border px-6 py-4 flex flex-col gap-3">
             {responses.length < 5 && responses.length > 0 && (
               <LocalBanner variant="warning">
-                Only {responses.length} {responses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                Only {responses.length} {responses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
               </LocalBanner>
             )}
             <div className="flex items-center justify-between gap-3">
@@ -190,7 +186,7 @@ export function ModerationSheet({ surveyId, onClose }: Props) {
             <DialogDescription>
               {survey && responses.length < 5 ? (
                 <>
-                  Only <strong>{responses.length}</strong> {responses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                  Only <strong>{responses.length}</strong> {responses.length === 1 ? 'response' : 'responses'} received, below the recommended minimum of 5.
                   {' '}Faculty will see aggregate scores based on this small sample.
                 </>
               ) : (

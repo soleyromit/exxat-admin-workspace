@@ -88,7 +88,7 @@ export function TrendSparkline({
   // Build aria description
   const seriesText = points.map(p => `${p.label}: ${p.value}`).join('; ')
   const directionText = isFlat ? 'flat' : isUp ? `up ${delta.toFixed(1)}` : `down ${Math.abs(delta).toFixed(1)}`
-  const ariaLabel = `Trend across ${points.length} offerings — ${directionText}. ${seriesText}`
+  const ariaLabel = `Trend across ${points.length} offerings · ${directionText}. ${seriesText}`
 
   return (
     <div className="flex items-center gap-1.5">

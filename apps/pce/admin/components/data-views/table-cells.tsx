@@ -126,7 +126,7 @@ export function CurrencyCell({
  * Progress + signal
  * ────────────────────────────────────────────────────────────────────────── */
 
-export type ProgressTone = "auto" | "success" | "warning" | "danger" | "info"
+export type ProgressTone = "auto" | "success" | "warning" | "danger" | "info" | "brand"
 
 /**
  * Progress bar — track + filled fill + numeric label. Auto-tones in thirds:
@@ -154,10 +154,19 @@ export function ProgressCell({
     pct < 67 ? "bg-amber-500"   :
                "bg-emerald-500"
   const toneClass =
-    tone === "success" ? "bg-emerald-500" :
-    tone === "warning" ? "bg-amber-500"   :
-    tone === "danger"  ? "bg-destructive" :
-    tone === "info"    ? "bg-primary"     :
+    tone === "success" ? "bg-emerald-500"          :
+    tone === "warning" ? "bg-amber-500"            :
+    tone === "danger"  ? "bg-destructive"          :
+    tone === "info"    ? "bg-primary"              :
+    // "brand" — a real middle tier distinct from "info"/bg-primary, which
+    // renders near-black in this theme (caught live, 2026-08-13, on the PCE
+    // response-rate 3-tier: ResponseProgressCell's "valid but below target"
+    // tier read as a dead/disabled bar, not a positive middle state).
+    // var(--brand-color) is the same token pce-term-metrics.ts's
+    // completionColor() already uses for this exact tier elsewhere in PCE —
+    // this just gives ProgressCell a real way to reach it via `tone`
+    // instead of a fillColor override the component never actually had.
+    tone === "brand"   ? "bg-[var(--brand-color)]" :
                          autoTone
   const labelNode =
     label === false ? null :
@@ -355,14 +364,15 @@ export function FavoriteNameCell({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pe-1">
         <div className="flex min-w-0 items-center gap-1.5">
           {interactive ? (
-            <button
-              type="button"
-              className="min-w-0 truncate text-left text-sm font-medium text-interactive hover:text-interactive-hover-foreground"
+            <Button
+              variant="link"
+              size="xs"
+              className="h-auto min-w-0 justify-start p-0 break-words wrap-break-word truncate text-left text-sm font-medium text-interactive hover:text-interactive-hover-foreground"
             >
               {label}
-            </button>
+            </Button>
           ) : (
-            <span className="line-clamp-2 text-sm font-medium text-foreground">{label}</span>
+            <span className="line-clamp-2 min-w-0 break-words wrap-break-word text-sm font-medium text-foreground">{label}</span>
           )}
           {badge}
         </div>
@@ -522,8 +532,8 @@ export function RatingCell({
 export function BooleanToggleCell({
   checked,
   onChange,
-  labelOn = "On — click to turn off",
-  labelOff = "Off — click to turn on",
+  labelOn = "On, click to turn off",
+  labelOff = "Off, click to turn on",
 }: {
   checked: boolean
   onChange: (next: boolean) => void

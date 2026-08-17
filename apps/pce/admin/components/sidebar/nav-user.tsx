@@ -67,7 +67,7 @@ export function NavUser({
     <SidebarMenuButton
       size="lg"
       {...(iconRailCollapsed
-        ? { "aria-label": `${user.name} — open profile and settings menu` }
+        ? { "aria-label": `${user.name}, open profile and settings menu` }
         : {})}
       className={cn(
         "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",

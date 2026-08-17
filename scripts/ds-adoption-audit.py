@@ -150,6 +150,19 @@ DOCUMENTED_HAND_ROLLS = {
     "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29 — dashboard, not a list page
     "app/(app)/analytics/programmatic/page.tsx",  # dashboard, not a list page
     "components/curricular-loop-diagram.tsx",  # PerformanceHeatmap l.267, TrendRow l.797
+    # pce: Badge asChild + native <button> — the Radix Slot composition DS's
+    # own Badge(asChild) type signature calls for when a Badge needs to be
+    # clickable (Badge itself renders a <span>, not a button). The regex has
+    # no asChild awareness and flags the <button> textually. Identical
+    # composition already ships unflagged in step-communication.tsx (2026-08-11,
+    # Monil) — this file (2026-08-17) relocates that exact chip to Step 2.
+    "components/pce/courses-evaluatees/step-survey-instances.tsx",
+    # pce: same Badge asChild + native <button> composition (2026-08-17,
+    # em-ds-gate-and-vercel-guard cleanup pass) — ask-leo-sidebar.tsx is also
+    # a byte-verbatim DS vendor file (docs/governance/ds-adoption.md → its own
+    # raw <button> at l.325 is separately do-not-modify, upstream-only).
+    "components/ask-leo-sidebar.tsx",
+    "components/learning-activities-course-detail-client.tsx",
     # exam-management: assessment-builder question picker — tightly coupled
     # picker grid (full-row click toggles selection, custom selected-row tint,
     # embedded sub-widget of a larger builder shell with smart-view chips +
@@ -157,6 +170,37 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # pce: throwaway design-compare surfaces (Jul 22, push-step decision for
+    # Monil) — each renders the SAME rows under competing cell/row treatments.
+    # They are comparison exhibits, not entity hubs: ListPageTemplate's
+    # toolbar/view chrome would obscure the one variable under comparison.
+    # Delete these entries with the pages once the design is signed off.
+    "app/(app)/compare/push-flow-rows/page.tsx",
+    "app/(app)/compare/push-course-ledger/page.tsx",
+    "app/(app)/compare/fix-affordance/page.tsx",
+    # pce: Step 2 template picker/flow/hierarchy compare surfaces (Aug 7) —
+    # same throwaway-exhibit rationale as the block above: each renders
+    # competing treatments of the SAME row/decision under comparison, not
+    # a real entity hub. Delete these entries with the pages once signed off.
+    "app/(app)/compare/push-step2-template-switch/page.tsx",
+    "app/(app)/compare/push-step2-template-assignment/page.tsx",
+    "app/(app)/compare/push-step2-accordion-layout/page.tsx",
+    "app/(app)/compare/push-step2-template-picker/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-popover/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-compact-list/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-sheet/page.tsx",
+    "app/(app)/compare/push-step2-template-picker-segmented/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-unified/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-inline/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-forward/page.tsx",
+    "app/(app)/compare/push-step2-template-flow-wizard/page.tsx",
+    "app/(app)/compare/push-step2-template-hierarchy/page.tsx",
+    "app/(app)/compare/push-step2-row-detail/variant-2-card-roster.tsx",
+    "app/(app)/compare/push-step2-row-detail/variant-4-two-line-row.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-a-detail-rail.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-b-grouped-status.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-c-two-phase.tsx",
+    "app/(app)/compare/push-step2-simplify/variant-g-quiet-table.tsx",
     # pce: faculty + course analytics profiles — detail pages for a single entity; the DataTable
     # renders a sub-list (offerings) not the primary entity list. ListPageTemplate is for
     # top-level entity list pages, not sub-tables within a profile view.

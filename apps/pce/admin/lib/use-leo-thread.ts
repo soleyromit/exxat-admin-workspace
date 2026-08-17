@@ -31,7 +31,7 @@ const LEO_REPLY_DELAY_MS = 3500
 
 function mockAssistantReply(userText: string): string {
   const trimmed = userText.length > 120 ? `${userText.slice(0, 120)}…` : userText
-  return `Thanks — I received: "${trimmed}". Wire your assistant API here to return a real answer.`
+  return `Thanks, I received: "${trimmed}". Wire your assistant API here to return a real answer.`
 }
 
 export interface UseLeoThreadOptions {

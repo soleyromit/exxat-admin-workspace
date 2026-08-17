@@ -50,6 +50,84 @@ export interface EvalResult {
   status: ResultDisplayStatus
   /** True when 2+ results share courseCode + term (multi-faculty offering). */
   coTaught: boolean
+  /** Prior offerings plus this one as a single overall series (mean of course
+   *  and faculty averages per term) — powers the list-card sparkline. */
+  trend: { term: string; value: number }[]
+  /** FK → course offering; multiple surveys may share it (split evaluations). */
+  offeringId?: string
+  /** 'course' | 'instructor' when the offering splits its surveys. */
+  evalScope?: 'course' | 'instructor'
+}
+
+/** Display label per split-survey scope. */
+export const EVAL_SCOPE_LABEL: Record<'course' | 'instructor', string> = {
+  course: 'Course evaluation',
+  instructor: 'Instructor evaluation',
+}
+
+/** Grouping key: real offering FK when present, else offering identity. */
+export function offeringKeyOf(r: EvalResult): string {
+  return r.offeringId ?? `${r.courseCode}|${r.term}|${r.facultyId}`
+}
+
+/** What THIS viewer-facing row shows a faculty member: score visible, or a
+ *  gate. Mirrors the detail-page gate order (locked → suppressed → release). */
+export type FacultyFacingState = 'score' | 'review-pending' | 'draft'
+export function facultyFacingState(r: EvalResult): FacultyFacingState {
+  if (r.status === 'locked') return 'review-pending'
+  if (r.status === 'suppressed') return 'draft'
+  if (!r.releasedToFaculty) return 'review-pending'
+  return 'score'
+}
+
+export interface OfferingGroup {
+  key: string
+  courseCode: string
+  courseName: string
+  term: string
+  academicYear?: string
+  program: string
+  rows: EvalResult[]
+  /** 'available' | 'partial' | 'review-pending' | 'draft' for the whole offering. */
+  offeringState: 'available' | 'partial' | 'review-pending' | 'draft'
+}
+
+/** Group one faculty member's results into course offerings. Single-survey
+ *  offerings stay single-row groups; split offerings derive a combined state —
+ *  mixed visibility → 'partial' ("Partially available"). */
+export function groupByOffering(rows: EvalResult[]): OfferingGroup[] {
+  const map = new Map<string, EvalResult[]>()
+  for (const r of rows) {
+    const k = offeringKeyOf(r)
+    map.set(k, [...(map.get(k) ?? []), r])
+  }
+  return [...map.entries()].map(([key, group]) => {
+    const states = new Set(group.map(facultyFacingState))
+    const offeringState: OfferingGroup['offeringState'] =
+      states.size > 1
+        ? 'partial'
+        : states.has('score')
+          ? 'available'
+          : states.has('review-pending')
+            ? 'review-pending'
+            : 'draft'
+    // Course survey first, then instructor, then combined rows.
+    const rank = { course: 0, instructor: 1 } as Record<string, number>
+    const sorted = [...group].sort(
+      (a, b) => (rank[a.evalScope ?? ''] ?? 2) - (rank[b.evalScope ?? ''] ?? 2),
+    )
+    const first = sorted[0]
+    return {
+      key,
+      courseCode: first.courseCode,
+      courseName: first.courseName,
+      term: first.term,
+      academicYear: first.academicYear,
+      program: first.program,
+      rows: sorted,
+      offeringState,
+    }
+  })
 }
 
 /** Surveys that have finished collecting — the only ones that produce results. */
@@ -89,16 +167,16 @@ export function resultGates(survey: PceSurvey): {
   return { gradesSubmitted, isSuppressed, releasedToFaculty, status }
 }
 
-/** DS StatusBadge mapping — unified vocabulary (2026-07-08): the spec's
- *  "Review Pending"/"Results Available" strings collapse into the same set the
- *  hub and dashboard use, so one state never wears three names. */
+/** DS StatusBadge mapping — ST-14 spec vocabulary (Romit, 2026-07-16): list
+ *  badges carry the spec's exact strings so they agree with the detail-page
+ *  gate titles ("Review Pending") — one state never wears two names. */
 export const RESULT_STATUS_BADGE: Record<
   ResultDisplayStatus,
   { label: string; tone: 'success' | 'warning' | 'neutral'; icon: string }
 > = {
-  available:  { label: 'Available', tone: 'success', icon: 'fa-circle-check' },
-  locked:     { label: 'In review', tone: 'warning', icon: 'fa-hourglass-half' },
-  suppressed: { label: 'Draft',     tone: 'neutral', icon: 'fa-pen-ruler' },
+  available:  { label: 'Results Available', tone: 'success', icon: 'fa-circle-check' },
+  locked:     { label: 'Review Pending',    tone: 'warning', icon: 'fa-hourglass-half' },
+  suppressed: { label: 'Draft',             tone: 'neutral', icon: 'fa-pen-ruler' },
 }
 
 /** One result row per instructor of ONE survey — no status filter. Powers the
@@ -107,6 +185,11 @@ export function deriveResultsForSurvey(s: PceSurvey): EvalResult[] {
   const gates = resultGates(s)
   const avgScore = avgScoreFor(s.id)
   const coTaught = s.instructors.length > 1
+  const priorPoints = (s.priorOfferings ?? []).map((p) => ({
+    term: p.term,
+    value: p.facultyAvg != null ? (p.courseAvg + p.facultyAvg) / 2 : p.courseAvg,
+  }))
+  const trend = avgScore != null ? [...priorPoints, { term: s.term, value: avgScore }] : priorPoints
   return s.instructors.map((i) => {
     const directory = MOCK_FACULTY.find((f) => f.id === i.id)
     return {
@@ -127,8 +210,22 @@ export function deriveResultsForSurvey(s: PceSurvey): EvalResult[] {
       avgScore,
       ...gates,
       coTaught,
+      trend,
+      offeringId: s.offeringId,
+      evalScope: s.evalScope,
     }
   })
+}
+
+/** Mean available score per program — the list-card benchmark tick. */
+export function programScoreBenchmarks(results: EvalResult[]): Map<string, number> {
+  const acc = new Map<string, { sum: number; n: number }>()
+  for (const r of results) {
+    if (r.status !== 'available' || r.avgScore == null) continue
+    const cur = acc.get(r.program) ?? { sum: 0, n: 0 }
+    acc.set(r.program, { sum: cur.sum + r.avgScore, n: cur.n + 1 })
+  }
+  return new Map([...acc].map(([program, v]) => [program, v.sum / v.n]))
 }
 
 /** One result per (finished survey × instructor). */
@@ -138,13 +235,17 @@ export function deriveResults(surveys: PceSurvey[] = MOCK_SURVEYS): EvalResult[]
     .filter((s) => !s.surveyType || s.surveyType === 'course_evaluation')
     .flatMap(deriveResultsForSurvey)
 
-  // Co-taught: 2+ results share courseCode + term (spec ST-14).
-  const byOffering = new Map<string, number>()
+  // Co-taught: 2+ DISTINCT faculty share courseCode + term (spec ST-14).
+  // Counting rows would false-positive on split-survey offerings, where one
+  // instructor produces multiple rows for the same course + term.
+  const byOffering = new Map<string, Set<string>>()
   for (const r of rows) {
     const k = `${r.courseCode}|${r.term}`
-    byOffering.set(k, (byOffering.get(k) ?? 0) + 1)
+    const set = byOffering.get(k) ?? new Set<string>()
+    set.add(r.facultyId)
+    byOffering.set(k, set)
   }
-  return rows.map((r) => ({ ...r, coTaught: (byOffering.get(`${r.courseCode}|${r.term}`) ?? 0) > 1 }))
+  return rows.map((r) => ({ ...r, coTaught: (byOffering.get(`${r.courseCode}|${r.term}`)?.size ?? 0) > 1 }))
 }
 
 /** ST-14 scoping: PD sees the program table; faculty see only their own rows. */

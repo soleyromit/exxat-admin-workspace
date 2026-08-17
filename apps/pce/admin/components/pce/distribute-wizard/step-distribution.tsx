@@ -20,9 +20,9 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 
 const TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom based',
-  clinical: 'Practice based',
-  seminar:  'Lab based',
+  didactic: 'Classroom',
+  clinical: 'Practice',
+  seminar:  'Lab',
 }
 
 interface StepDistributionProps {
@@ -179,7 +179,7 @@ export function StepDistribution({
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Courses &amp; access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''} · All courses included — uncheck to exclude.
+          {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''} · All courses included. Uncheck to exclude.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ export function StepDistribution({
       )}
       {unassignedFacultyCount > 0 && (
         <LocalBanner variant="info">
-          {unassignedFacultyCount} course{unassignedFacultyCount !== 1 ? 's have' : ' has'} no instructor — the Instructor section will be suppressed in those surveys.
+          {unassignedFacultyCount} course{unassignedFacultyCount !== 1 ? 's have' : ' has'} no instructor. The Instructor section will be suppressed in those surveys.
         </LocalBanner>
       )}
 

@@ -44,6 +44,37 @@ export const LIVE = (s: PceSurvey) => s.status === 'active' || s.status === 'col
 export const IN_REVIEW = (s: PceSurvey) => s.status === 'pending_review' || s.status === 'closed'
 export const FINISHED = (s: PceSurvey) => IN_REVIEW(s) || s.status === 'released'
 
+/** Aug 4 transcript scenario #6 — a Draft/re-editable Scheduled survey is
+ *  still mid-setup; must route back into the push wizard to resume, never
+ *  to a results page for a survey that hasn't collected anything. A
+ *  Scheduled survey specifically needs `wizardDraft` to count (most finish
+ *  the wizard in one pass and have nothing to resume — status alone can't
+ *  tell those apart), but a Draft-status survey is ALWAYS editable — that's
+ *  what "draft" means — whether or not it happens to carry a saved
+ *  in-progress snapshot.
+ *
+ *  2026-08-13 — was defined only inside term-evaluations-board.tsx, and
+ *  checked `wizardDraft` alone even for Draft rows. `wizardDraft` is a
+ *  runtime-only field (set by a real "Save as Draft" action; grep confirms
+ *  no seed record in pce-mock-data.ts ever sets it) — so every pre-seeded
+ *  Draft row, on both the board and the table, was silently unresumable:
+ *  its card/row routed to an empty /results page instead of back into the
+ *  wizard. Caught live testing the table's new Edit button against DPT-511
+ *  (survey `s7`, status 'draft', no wizardDraft, no offeringId — the data
+ *  gap this narrower check was masking). Promoted here so both views share
+ *  one (now-correct) definition instead of drifting. */
+export function isResumable(s: PceSurvey): boolean {
+  return s.status === 'draft' || !!s.wizardDraft
+}
+
+/** Same resume URL shape push/page.tsx's Phase 3 hydration effect expects —
+ *  it rehydrates the saved templateAssignments/unitSelections/autoUpdateOn
+ *  from wizardDraft once this offering is selected, so nothing further is
+ *  needed to make "resume" actually resume. */
+export function resumeHref(s: PceSurvey, termId: string): string {
+  return `/surveys/push?term=${termId}&offerings=${s.offeringId}`
+}
+
 /* ── date helpers ─────────────────────────────────────────────────────────── */
 export function daysUntil(dateStr: string): number | null {
   const t = new Date(dateStr).getTime()
@@ -144,6 +175,13 @@ export interface TermSnapshot {
   released: number
   daysLeft: number | null
   coverage: { surveyed: number; total: number } | null
+  /** Aug 4 transcript scenario #6 — offerings with a saved-but-unfinished
+   *  wizard run (Save as Draft, or a Scheduled survey re-opened for editing).
+   *  `coverageFor` deliberately excludes these from `surveyed` (a draft isn't
+   *  "done"), so without this the dashboard card can't tell "never touched"
+   *  apart from "started, not finished" — the exact gap the term-card resume
+   *  entry point needs to close. */
+  draftCount: number
 }
 
 /** Full derived snapshot for one term from the live evaluation set. */
@@ -174,5 +212,6 @@ export function snapshot(term: ProgramTerm, ce: PceSurvey[]): TermSnapshot {
     released,
     daysLeft: stage === 'live' ? daysUntilClose(term) : null,
     coverage: coverageFor(term.id, list),
+    draftCount: list.filter((s) => s.status === 'draft').length,
   }
 }
