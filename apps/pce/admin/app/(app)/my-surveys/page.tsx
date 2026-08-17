@@ -20,7 +20,10 @@ import Link from 'next/link'
 /* Group buckets for faculty's own surveys. Aarti's 2026-05-08 directive: active
    bubbles up, results next, past surveys at the bottom. We collapse open/active
    into 'collecting' for grouping purposes. */
-const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
+// 'archived' groups with 'closed' (Task 2, 2026-08-17) — archived is
+// closed-adjacent/inert, not a bucket a faculty member needs called out on
+// its own here; this page doesn't redesign status handling, just compiles.
+const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'archived', 'pending_review', 'draft']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Pending review',
   collecting:     'Collecting',
@@ -29,6 +32,7 @@ const GROUP_LABELS: Record<SurveyStatus, string> = {
   draft:          'Draft',
   released:       'Results',
   closed:         'Past surveys',
+  archived:       'Past surveys',
 }
 
 interface MySurveyRow extends Record<string, unknown> {

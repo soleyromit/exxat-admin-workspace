@@ -69,12 +69,49 @@ export const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon:
   pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed · Pending review' },
   closed:         { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed · Pending review' },
   released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-circle-check',   label: 'Results available' },
+  archived:       { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-box-archive',    label: 'Archived' },
 }
 
 export function SurveyStatusBadge({ status }: { status: SurveyStatus }) {
   const s = SURVEY_STATUS_BADGE[status]
   return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
 }
+
+// ── Survey lifecycle stage — canonical grouping bucket ────────────────────────
+// The five stages Aarti confirmed (2026-08-12, 1:39 PM, Granola 0ef80c33:
+// "I'm aligned with the five stages"). Single source for every surface that
+// BUCKETS survey rows by lifecycle stage rather than rendering the raw
+// per-status badge above — surveys-hub.tsx's grouped table and
+// term-evaluations-board.tsx's board columns each kept their own copy of
+// this bucketing and had drifted out of sync (the table grouped `closed`
+// with `released` under "Results Available"; the board and the badge map
+// above both group it with `pending_review` under "Closed · Pending
+// review") — the exact table/board vocabulary mismatch she flagged live.
+export type SurveyStage = 'draft' | 'scheduled' | 'live' | 'closed_review' | 'released' | 'archived'
+
+export const SURVEY_STAGE: Record<SurveyStatus, SurveyStage> = {
+  draft:          'draft',
+  scheduled:      'scheduled',
+  active:         'live',
+  collecting:     'live',
+  pending_review: 'closed_review',
+  closed:         'closed_review',
+  released:       'released',
+  archived:       'archived',
+}
+
+export const SURVEY_STAGE_LABEL: Record<SurveyStage, string> = {
+  draft:         'Draft',
+  scheduled:     'Scheduled',
+  live:          'Live',
+  closed_review: 'Closed · Pending review',
+  released:      'Results available',
+  archived:      'Archived',
+}
+
+// Urgency order for list groupings — items needing action surface first.
+// Archived trails everything: inert, nothing to act on (2026-08-17, Task 2).
+export const SURVEY_STAGE_ORDER: SurveyStage[] = ['closed_review', 'released', 'live', 'scheduled', 'draft', 'archived']
 
 // ── DS OS survey status badge ─────────────────────────────────────────────────
 // Same canonical labels/icons as SURVEY_STATUS_BADGE, rendered through the DS
@@ -88,6 +125,7 @@ const SURVEY_STATUS_TONE: Record<SurveyStatus, StatusBadgeTone> = {
   pending_review: 'warning',
   closed:         'warning',
   released:       'success',
+  archived:       'neutral',
 }
 
 export function SurveyStatusBadgeOS({

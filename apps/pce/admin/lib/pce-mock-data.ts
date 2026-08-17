@@ -1,4 +1,4 @@
-export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'scheduled' | 'pending_review' | 'released' | 'closed'
+export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'scheduled' | 'pending_review' | 'released' | 'closed' | 'archived'
 export type TemplateSection = 'course_content' | 'faculty_performance' | 'course_director'
 export type UserRole = 'admin' | 'faculty'
 export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
