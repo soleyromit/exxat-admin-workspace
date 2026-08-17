@@ -171,7 +171,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="flex items-baseline gap-3 text-sm">
       <span className="text-xs shrink-0 w-24" style={{ color: 'var(--muted-foreground)' }}>{label}</span>
-      <span className="min-w-0">{children}</span>
+      <span className="min-w-0 flex-1">{children}</span>
     </div>
   )
 }
