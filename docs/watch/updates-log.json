@@ -1485,6 +1485,21 @@
             "files": [
                 "docs/watch/flags/system.md"
             ]
+        },
+        {
+            "id": "2026-08-17-granola-intake-pce-001",
+            "date": "2026-08-17",
+            "product": "pce",
+            "type": "decision-extracted",
+            "title": "Granola intake — 14 new PCE decisions, 1 conflict flagged",
+            "what": "Processed 7 Exxat-relevant meetings from Aug 11–13, 2026. Meetings: Course Eval sync up (Aug 11, Monil Pokar); Survey design and review — aspects, templates, response rates (Aug 12, Vishal); Course evaluation survey — roles, status tracking, response rate thresholds (Aug 12, David/Exxat US team); Survey completion dashboard and role-based admin design with Vishal (Aug 12, David/Exxat US team); Survey design and email template configuration (Aug 13, Vishal). Added 14 new decisions: pce-decision-096 through pce-decision-109 covering step 3 wizard fields (survey title, instructions, per-course date overrides), removal of reminder frequency from wizard, result release flow overhaul, step 4 review table columns, manage survey bulk/per-row actions, response rate threshold configuration, role-based live survey views, extension highlighting, archive capability, email merge field separation, and Likert scale grouping in analytics. 1 conflict detected and flagged: pce-decision-101 supersedes pce-decision-032 (result release date removed; manual faculty release replaces auto-distribution). 1 meeting had no transcript (confirmed null). 2 meetings skipped (scheduling conversation only / management process discussion).",
+            "source": "Granola transcripts — Aug 11 to Aug 13, 2026",
+            "severity": "conflict",
+            "files": [
+                "docs/watch/stakeholder-decisions.json",
+                "docs/watch/updates-log.json",
+                "docs/watch/flags/pce.md"
+            ]
         }
     ]
 }

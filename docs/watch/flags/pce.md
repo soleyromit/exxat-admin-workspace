@@ -498,3 +498,10 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Action:** Review and confirm which applies. pce-decision-040 is marked superseded by pce-decision-075. If confirmed, update any code/mock data using the 'practice' token (e.g. pce-mock-data.ts) to 'experiential'.
 
 ---
+
+## DECISION CONFLICT — 2026-08-17
+**Old decision:** pce-decision-032 — Result release date is mandatory if moderation excluded; system auto-distributes results to faculty when survey closes.
+**New directive from Monil Pokar in Course Eval sync up (Aug 11, 2026):** Result release date removed entirely from wizard. Admin manually releases results to faculty one-by-one from the results dashboard. No automatic distribution ever occurs.
+**Action:** Review and confirm which applies. pce-decision-032 has been marked superseded by pce-decision-101.
+
+---

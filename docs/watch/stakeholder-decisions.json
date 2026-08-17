@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-10",
+  "lastUpdated": "2026-08-17",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -453,7 +453,8 @@
       "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
       "sourceType": "transcript",
       "date": "2026-06-09",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-101"
     },
     {
       "id": "pce-decision-033",
@@ -1227,6 +1228,147 @@
       "source": "Course Eval sync up transcript — Aug 6, 2026",
       "sourceType": "transcript",
       "date": "2026-08-06",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-096",
+      "product": "pce",
+      "text": "No aspect-level or faculty-level template assignment is supported. One template per course per survey push — not multiple templates for different aspects or faculty within the same course. Supporting multi-template assignment per course is explicitly not in scope now or in the foreseeable future. The design must not accommodate or hint at per-aspect template selection.",
+      "stakeholder": "Vishal",
+      "source": "Survey design and review — aspects, templates, and response rates transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-097",
+      "product": "pce",
+      "text": "Response rate is always calculated and displayed at the survey level, not the aspect level. 80% of use cases involve a single survey per course covering all aspects; 20% may use separate surveys per aspect. The design must optimize for the 80% case — one survey, one response rate per course — while not breaking for the 20% edge case. Aspect-level response rate tracking is out of scope.",
+      "stakeholder": "Vishal",
+      "source": "Survey design and review — aspects, templates, and response rates transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-098",
+      "product": "pce",
+      "text": "Step 3 of the setup survey wizard gains two new fields: (1) Survey title — supports merge field placeholders such as {course name}, {academic year}, {term}; the system pre-populates a default title using these placeholders and the admin can edit it. (2) Survey instructions — plain English text displayed to the student at the top of the survey form. Both fields are added to the step 3 distribution configuration screen.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-099",
+      "product": "pce",
+      "text": "Step 3 of the setup survey wizard supports per-course evaluation window overrides. The admin sets a global open date and close date for the survey push; individual courses can have independent date overrides that deviate from the global window. Both the global dates and per-course override capability must be present in the step 3 UI.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-100",
+      "product": "pce",
+      "text": "The reminder frequency configuration section is removed from step 3 of the setup survey wizard. It is deprioritized for this release. Reminder frequency remains a central account-level setting per pce-decision-078 and is not surfaced per-survey in the wizard flow.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-101",
+      "product": "pce",
+      "text": "Result release date is removed from the setup survey wizard entirely. Survey results are NOT automatically distributed to faculty when the survey closes. Instead, the admin manually releases results to faculty on a one-by-one basis from the results dashboard after the survey closes. There is no automated result release — it is always a deliberate admin action per course. Monil: 'We will not have result release date in the survey distribution.'",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed",
+      "supersedes": "pce-decision-032"
+    },
+    {
+      "id": "pce-decision-102",
+      "product": "pce",
+      "text": "Step 4 (review) of the setup survey wizard displays a table of course offerings with the following columns: course name, evaluation window open/close dates, student count, and named evaluity roles (e.g., 'Instructor, Course Coordinator, Course Material' — not a numeric count). The template column is intentionally excluded from the step 4 review table.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-103",
+      "product": "pce",
+      "text": "The Manage Survey screen must support both per-row actions and bulk actions. Per-row actions include: remind (send reminder for one course), extend (extend the window for one course), and edit (edit configuration for one course). Bulk actions include: select multiple courses and send bulk reminders to all selected. Both granularity levels are required — admins must be able to act on individual courses and on groups of courses simultaneously.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course Eval sync up transcript — Aug 11, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-11",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-104",
+      "product": "pce",
+      "text": "Two school-configurable response rate thresholds must be supported: (1) a validity floor — the minimum response rate below which a survey result cannot be used for comparative analysis; (2) a desired participation rate — the school's participation target. These define three color zones displayed in the UI: red (below validity floor), orange (above floor but below target), green (at or above target). The system provides recommended default values for both thresholds; schools can override them in settings.",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Course evaluation survey — roles, status tracking, and response rate thresholds transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-105",
+      "product": "pce",
+      "text": "The live-survey view must be architecturally split into two separate pages or tabs with distinct role-based access: (1) Collection dashboard — for setup admins; shows completion counts, send reminders, extend dates, and preview the survey form but never reveals ratings or comments. (2) Results view — for program directors; shows content, ratings, and comments but exposes no logistics actions. The two views are kept separate to enforce clean role-based access and prevent accidental data exposure.",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Survey completion dashboard and role-based admin design with Vishal transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-106",
+      "product": "pce",
+      "text": "Survey date extensions are rare exceptions and must be visually highlighted wherever they appear. Any course whose evaluation window has been individually extended must display a distinct visual indicator (e.g., 'Extended · closes Aug 30') so admins immediately recognize it as a deviation from the standard term-level close date. All surveys are generally expected to close on the same term-level date; extensions are exceptions, not the norm.",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Course evaluation survey — roles, status tracking, and response rate thresholds transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-107",
+      "product": "pce",
+      "text": "The system must provide an archive or deactivate capability for incorrectly configured surveys. Use the terminology 'archive' or 'deactivate' — never 'delete.' This capability is required to handle cases where an admin configured the wrong faculty, wrong course, or wrong template. Archiving removes the survey from active lists without permanently deleting data.",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Course evaluation survey — roles, status tracking, and response rate thresholds transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-108",
+      "product": "pce",
+      "text": "Email template merge fields for the subject line are separate from merge fields for the email body. Some body-level fields (e.g., specific course name) are inappropriate for the subject line when the email is distributed across multiple courses simultaneously. The email template editor UI must allow admins to insert merge fields independently into the subject line and the body — the two merge field sets are not interchangeable.",
+      "stakeholder": "Vishal",
+      "source": "Survey design and email template configuration for course evaluation transcript — Aug 13, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-109",
+      "product": "pce",
+      "text": "When a survey contains questions using different Likert scales, those questions must be grouped into separate sections in analytics — never aggregated across different scales. Each scale grouping gets its own dedicated section, its own distribution visualization, and its own average calculation. Mixing different Likert scales in a single aggregate metric is explicitly prohibited.",
+      "stakeholder": "David (Exxat US team)",
+      "source": "Survey completion dashboard and role-based admin design with Vishal transcript — Aug 12, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-12",
       "status": "confirmed"
     }
   ]
