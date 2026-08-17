@@ -60,6 +60,26 @@ Four scope entities exist across the four apps: **School**, **Brand**, **Site**,
 (Prism, One — Schools, Custom); Exxat One — Sites is the only app with the
 brand > site > location hierarchy.
 
+### One Exxat One in the switcher, and it is the school's
+
+A workspace buys one side of the partnership, so only one Exxat One is listed:
+**`exxat-one-schools`**, labelled plainly "Exxat One". Two rows with the same
+name would be a coin toss. `exxat-one-sites` keeps its id, slug, nav, routes, and
+catalogue entry, so a `/one-sites/...` link still resolves and the site side can
+be listed again by adding one row to `BUILTIN_SWITCHER_PRODUCTS`, but it is absent
+from the switcher, Settings → Products, and the products home (`PRODUCTS_OFF_HOME`).
+
+This matters to scope. School side means school > program, the same hierarchy as
+Clinical Education, so a coordinator's program carries between the two apps rather
+than the two having hierarchies that cannot meet. When Exxat One was the site-side
+app, switching into it always opened on a brand and a location the coordinator had
+not chosen, because there was no program to carry and so nothing to ask about.
+See [`.cursor/rules/exxat-product-scope.mdc`](../../.cursor/rules/exxat-product-scope.mdc).
+
+The school-side id was retired once (store v14) and brought back (v15). Both
+branches stay in the migration chain, so a browser old enough travels `exxat-one`
+to Schools to Sites and back to Schools. Do not collapse them.
+
 ```mermaid
 flowchart TD
     Auth["Single Exxat user / auth principal"]
@@ -106,7 +126,7 @@ siblings of Prism, not children of "One".
 Clicking a product entry in the switcher:
 
 1. Calls `setProduct(productId)` on the app store.
-2. **Navigates to `/<product-root>/dashboard`** with `react-router-dom`'s
+2. **Navigates to `/<product-root>/dashboard`** with `react-router`'s
    `navigate(target, { replace: false })`.
 3. Updates the `<html>` theme class (existing behaviour in
    [`ProductProvider`](../contexts/product-context.tsx)).

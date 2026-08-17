@@ -21,7 +21,8 @@ When authoring `ColumnDef[]` for a hub, every **data point** must map to the **n
 | **One person** (author, owner, student, coordinator) | **`AvatarInitials` + name + muted email** (`mailto:`) | **`cellKind: "person"`** — picker options from rows (`name` + `{key}Email`) | **Dedicated person column** — [`exxat-person-identity-display.mdc`](../../.cursor/rules/exxat-person-identity-display.mdc). Copy `library-table.tsx` **Author** or `columns-showcase` **Author** |
 | **Multiple people** (reviewers, assignees, collaborators) | **`PeopleAvatarRailCell`** | **`cellKind: "people-rail"`** — person picker from unique rail members | **Non-overlapping** avatars + `+N`. **NOT** a single person column |
 | **Person name only** (dense column, not identity column) | Plain `truncate` name + **`Tip`** with email | `text` | Board cards: avatar + name only — no email line |
-| **Lifecycle / workflow status** | **`ListHubStatusBadge`** + domain map on **`LIST_HUB_STATUS_TINT_*`** | `select` with `options[].node` chip preview | [`exxat-data-tables.mdc`](../../.cursor/rules/exxat-data-tables.mdc). **Never** raw `Badge` + `uppercase` |
+| **Lifecycle / workflow status** | **`StatusCell`** + domain map on **`LIST_HUB_STATUS_TINT_*`** | **`cellKind: "status"`** — `select` with `options[].node` chip preview | [`exxat-data-tables.mdc`](../../.cursor/rules/exxat-data-tables.mdc). **Never** raw `Badge` + `uppercase` |
+| **Status the user can advance** (approve, publish, archive) | **`StatusCell`** + `options` + `onChange` | same as above, one `StatusCellOption[]` feeds both | Badge becomes a menu trigger. Omit `onChange` when the user lacks permission so the affordance never lies |
 | **Categorical type / kind** (non-status) | **`PillCell`** + FA icon | `select` | e.g. question type, document kind |
 | **Keywords / tags** | **`TagListCell`** | `text` (contains) | Free-form labels |
 | **Ordinal level** (easy / medium / hard) | **`SignalBarsCell`** + accessible `label` | `select` optional | Not plain text "Medium" |
@@ -36,7 +37,9 @@ When authoring `ColumnDef[]` for a hub, every **data point** must map to the **n
 | **Calendar date (absolute)** | `formatDateUS` + `text-sm tabular-nums whitespace-nowrap` | `date` | `lib/date-filter.ts` |
 | **Plain enum / short text** | `truncate` span | `select` when values are closed set; else default text filter | Library **Topic** is OK as text |
 | **Long prose** | `line-clamp-2` or `truncate` + row preview | `text` | Consider `HoverCard` row preview for identity |
-| **Null / empty** | **`EMPTY_DASH`** or primitive's built-in dash | — | |
+| **Null / empty** | **`EmptyCell`** or the primitive's built-in empty state | — | Renders a word ("None", "No date"), never a dash |
+| **Primary title + favorite star** | **`FavoriteNameCell`** | `text` on the title, `favoriteFilter: true` | `subtitle` takes the mono ID; `leading` takes the new-row dot |
+| **New / unread row** | Set **`row.isNew`** (DataTable washes the row `bg-dt-new-row-bg`) **and** render **`TableNewRowDot`** in `FavoriteNameCell`'s **`leading`** slot | — | The wash alone is color-only. The dot leads the title, never trails it, and every row reserves the gutter (`leading={null}` when not new) so titles stay aligned. In a hand-rolled `cell`, wrap the dot in **`TableRowMarkerGutter`** rather than nudging it with `mt-*`: the gutter is one `text-sm` line box tall, so the dot centers on the middle of the title's first line and stays centered when the root font is scaled. The dot carries an `sr-only` label; pass `label={null}` only when the surface is already named "What's new" |
 | **Row selection** | `key: "select"`, `defaultPin: "left"`, `lockPin: true` | — | DataTable built-in |
 | **Row overflow actions** | **`RowActionsCell<TRow>`** or `key: "actions"` pinned right | — | Generic ⋯ menu |
 
@@ -93,7 +96,7 @@ Some filter types need **dataset-derived** options — built in `buildFilterFiel
 ## Anti-patterns (MUST NOT)
 
 1. Inline **`Intl.NumberFormat`**, star loops, paperclip counts, or custom **`DropdownMenu`** overflow in `cell:`.
-2. **`Badge variant="outline"` + `uppercase`** for hub status — use **`ListHubStatusBadge`**.
+2. **`Badge variant="outline"` + `uppercase`** for hub status — use **`StatusCell`**.
 3. **`font-mono`** on names, emails, dates, or KPI values — mono is for **IDs only**.
 4. New hub-specific cell component when an existing **`table-cells`** export fits.
 5. **`filter: undefined`** on every column thinking filters are opt-in — columns without `filter` still appear; add **`select`/`date`** when filter UX should match the data type.

@@ -46,7 +46,7 @@
   word-break: break-word;
 }
 
-/* Scroll cap + soft bottom fade into footer when content exceeds max height. */
+/* Scroll cap (~8 text rows). Soft fade when overflowing. */
 .exxat-composer-scroll {
   --exxat-composer-max-height: 13rem;
   max-height: var(--exxat-composer-max-height);

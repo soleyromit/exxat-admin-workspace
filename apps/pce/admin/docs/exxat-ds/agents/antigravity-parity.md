@@ -33,6 +33,7 @@ Antigravity also supports legacy `.agent/rules` and `.agent/workflows` — this 
 | `exxat-product-context.md` | Product / Scope / Persona in briefs |
 | `exxat-product-routing.md` | Four-app URL roots, persistKey namespacing |
 | `exxat-ux-discovery-protocol.md` | Brief-before-design gate |
+| `exxat-copy-discipline.md` | No decorative descriptions; no dash punctuation in UI copy |
 
 ---
 

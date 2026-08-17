@@ -69,11 +69,13 @@ bg-sidebar p-2 (brand canvas, uniform gutter)
 
 - `useExamLockSessionController` — timer countdown + pause/resume policy
 - `ExamLockInterruptionPanel` — full-bleed main-card pause surface; **Retry (ghost) left, Raise hand (primary) right** with `sm:order-1` / `sm:order-2` (matches `DialogFooter`)
+- `ExamLockResumeAuthDialog` — after Retry on a technical or integrity pause, blocking proctor password gate before resume (demo code `proctor`); **View instructions** swaps the dialog for a sequential floating sheet and returns with the entered value preserved
 - `ExamLockTemplate` `interruption` + `sessionPaused` — question card slides down; pause surface sits behind it
 - `ExamLockTimerDisplay` — shows **Paused** pill while the clock is frozen
 - `ExamLockSessionAlert` — **soft notices only** (sync lag, background save); not for integrity pauses
+- Settings → **Exit exam lock** — confirm dialog, then leave the lock shell (showcase navigates to Design OS dashboard)
 
-Reference: `components/exam-lock-showcase-client.tsx` (settings → simulate offline / tab switch).
+Reference: `components/exam-lock-showcase-client.tsx` (settings → simulate offline / tab switch / exit).
 
 ### Focus workflow (`FocusWorkflowTemplate`)
 

@@ -34,10 +34,11 @@ anchor of every primary hub.
 |---|---|---|
 | `icon` | optional | Product mark (`ExxatProductLogo`) or FA glyph |
 | `title` | **required** | One H1 — the route name (e.g. "Placements") |
-| `subtitle` | optional | One line: short context, ID, count, freshness |
+| `subtitle` | optional | **Meta only** (ID, count, freshness). Default is omit. Never a marketing blurb that restates the title. See `exxat-copy-discipline.mdc`. |
 | `face-rail` | optional | `+N collaborators` stack (variant `collaboration`) |
 | `actions/primary` | optional | One filled `Button` (e.g. "New placement") |
-| `actions/overflow` | optional | One outline icon `Button` opening a dropdown menu |
+| `actions/secondary` | optional | Up to two secondary actions when the primary is present; three total visible actions maximum (`placement="row"`) |
+| `actions/overflow` | optional | Tertiary commands under `⋯` More — **always** overflow (`placement="overflow"`): Invite people, Export, Customize folder. Excluded from the three-action row maximum |
 | `breadcrumb` | optional | Above title; never alongside it |
 
 The header **never** carries search, filters, view-tabs, or KPIs — those belong
@@ -49,8 +50,10 @@ identity, nothing more.
 | State | Visual / behavior |
 |---|---|
 | Default | Title + subtitle + actions; primary CTA filled. |
-| Collaboration empty | Outline "Add collaborator" replaces face rail. |
-| Collaboration populated | Face rail with `+N` opens `InviteCollaboratorsDrawer`. |
+| Narrow viewport | Actions become icon-only (primary included) with accessible name + tooltip; collaboration faces collapse to a single count control. |
+| Reflow / 200% zoom | Secondary actions move into `More actions`; **primary stays** as an icon-only button on the row. Title row does not horizontally scroll. |
+| Collaboration empty | Outline "Add collaborator" replaces face rail (icon-only when compact). |
+| Collaboration populated | Face rail with `+N` opens invite; compact width / mobile shows the **count only**. |
 | Loading | Title skeleton (60% width), meta skeleton (30% width). |
 | Error | The header still renders; errors land in the body's `LocalBanner`. |
 | RTL | Slots mirror; FA glyphs auto-mirror via Tailwind's `rtl:`. |
@@ -63,7 +66,8 @@ identity, nothing more.
 | `--muted-foreground` | Subtitle / meta line |
 | `--brand-color` | Product mark fills (when icon is a product logo) |
 | `--ring` | Focus ring on actions + face rail buttons |
-| `--font-heading` | Title font family (Ivy Presto) — **not** body Inter |
+| `--font-heading` | Title font family (Ivy Presto) — **not** body Inter, and **only** here: no other heading in the shell takes the display serif |
+| `PAGE_TITLE_TYPE_CLASS` | The whole title type in one export (`text-lg sm:text-xl`, semibold, Ivy). Import it rather than retyping it — a detail route rendering its own `<h1>` through `PageTitleRecordSwitcher` must not change size when the reader drills in |
 | `--text-xs` | Meta line at min 11px (SC 1.4.3) |
 | `--radius-md` | Action button corners |
 
@@ -88,7 +92,7 @@ ID token gets `font-mono tabular-nums`, the rest of the line stays sans.
 |---|---|---|
 | `base` | Default — most routes | Title + actions only |
 | `object-home` | Lists / hubs with optional metrics + tabs **below** the header | Adds a count/freshness slot under the title |
-| `record-home` | Detail / record views | May expose a small detail row (label/value pairs) — keep ≤ 5 pairs |
+| `record-home` | Detail / record views | May expose a small detail row (label/value pairs) — keep ≤ 5 pairs. With compact **Back mode**, peer jump uses `PageTitleRecordSwitcher` in `title` (one H1 + chevron menu), not the utility bar. |
 | `collaboration` | Shared hubs (Library, future) | Adds face rail + invite entry — see [`exxat-collaboration-access.mdc`](../../../.cursor/rules/exxat-collaboration-access.mdc) |
 
 Pick **one** variant per header. Combining `collaboration` with
@@ -99,7 +103,7 @@ artifact (e.g. a question).
 
 | Framework | Component(s) | File |
 |---|---|---|
-| **React (this app)** | `PageHeader` (shell) + per-hub headers (composition) | [`apps/web/components/page-header.tsx`](../../components/page-header.tsx), [`apps/web/components/library-page-header.tsx`](../../components/library-page-header.tsx) |
+| **React (this app)** | `PageHeader` with `actionItems` for responsive commands + per-hub headers (composition) | [`apps/web/components/page-header.tsx`](../../components/page-header.tsx), [`apps/web/components/library-page-header.tsx`](../../components/library-page-header.tsx) |
 | Mobile | — | — |
 | Figma | — | — |
 
@@ -114,10 +118,11 @@ Reference hub-level compositions:
 | ✅ Do | ❌ Don't |
 |---|---|
 | Render exactly one `<h1>` per route | Render two H1s (e.g. one in header + one in body) |
-| Put the primary CTA inside the header — filled, often `size="lg"` | Use `variant="outline"` for the sole primary action on an exportable page |
+| Use `actionItems` for labelled page commands so the header enforces responsive overflow | Put more than three custom buttons in the legacy `actions` slot |
+| Put the primary CTA inside the header — filled, at the default size | Use `variant="outline"` for the sole primary action on an exportable page |
 | Put **Export** under `⋯` → `ExportDrawer` | Put Export as a second primary button beside New |
 | Use `ExxatProductLogo` for product marks | Substitute a logo.dev raster for the product mark |
-| Keep subtitle to **one line**; truncate long meta | Stack two meta lines below the title |
+| Keep subtitle to **one line** of facts (or omit it) | Invent job-description blurbs under the title; stack two meta lines |
 | Show keyboard shortcuts via `Kbd` in tooltips on primary/overflow | Hard-code shortcut hints in the visible button label |
 
 ## 9. References

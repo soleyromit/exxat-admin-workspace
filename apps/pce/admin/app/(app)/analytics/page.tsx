@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, Suspense } from 'react'
+import { useState, useMemo, useEffect, Suspense, lazy } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
@@ -8,20 +8,80 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
-  Avatar, AvatarFallback,
+  Avatar, AvatarFallback, Skeleton,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
-import { ByTermPanel, ByFacultyPanel, ByCoursePanel, type NudgeTarget } from '@/components/pce/analytics-panels'
+import type { NudgeTarget } from '@/components/pce/analytics-panels'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
-import { FacultyLeaderboardSection } from '@/components/pce/faculty-leaderboard-section'
-import { FacultyPortfolioCharts } from '@/components/pce/faculty-portfolio-charts'
 import { facultyStats, allTerms, type FacultyEvalRoleId } from '@/lib/pce-analytics'
 import {
   offeringsCsv, exportFilename, downloadCsv, scopedOfferings, type ExportScope,
 } from '@/lib/pce-analytics-export'
+
+/**
+ * By Term / By Faculty / By Course code-split from Overview's initial bundle.
+ *
+ * Analytics loaded 27.6MB of decoded JS on first paint vs 5.7MB for a comparable
+ * page (Dashboard) — verified via performance.getEntriesByType('resource') on
+ * 2026-08-17 — because all four tabs' components and chart code loaded eagerly
+ * regardless of which tab was open. Only Overview stays eager (it's the default
+ * view); the other three now load on first click, each cached after that.
+ *
+ * The three ByXPanel lazy() calls share one import() specifier, so they resolve
+ * to a single chunk request — opening any one of the three loads the whole
+ * analytics-panels module once, not three times.
+ */
+const ByTermPanel = lazy(() =>
+  import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByTermPanel })),
+)
+const ByFacultyPanel = lazy(() =>
+  import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByFacultyPanel })),
+)
+const ByCoursePanel = lazy(() =>
+  import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByCoursePanel })),
+)
+const FacultyLeaderboardSection = lazy(() =>
+  import('@/components/pce/faculty-leaderboard-section').then((m) => ({ default: m.FacultyLeaderboardSection })),
+)
+const FacultyPortfolioCharts = lazy(() =>
+  import('@/components/pce/faculty-portfolio-charts').then((m) => ({ default: m.FacultyPortfolioCharts })),
+)
+
+/**
+ * Warms the three lazy tabs' chunks in the background once Overview is idle, so the FIRST
+ * click on By Faculty/Course/Term doesn't pay a cold fetch+compile cost.
+ *
+ * Measured live on a freshly-restarted dev server: an un-prefetched first click cost ~790ms
+ * (skeleton visible ~615ms) — Turbopack compiles each dynamically-imported chunk on demand,
+ * the first time anything requests it in that server process's lifetime. Splitting the tabs
+ * (this file, same session) traded that cost from "paid once on page load" to "paid once per
+ * tab on first click" — better total, but a new per-click delay this prefetch removes by
+ * paying it while the user is just looking at Overview, not waiting on it.
+ *
+ * Fires after paint (rIC / rAF+timeout fallback), not on mount directly — Overview's own
+ * charts must not queue behind these fetches. The three imports resolve into the module
+ * cache the `lazy()` calls above already read from, so this is dedup'd, not a duplicate fetch.
+ */
+function prefetchAnalyticsTabs() {
+  import('@/components/pce/analytics-panels')
+  import('@/components/pce/faculty-leaderboard-section')
+  import('@/components/pce/faculty-portfolio-charts')
+}
+
+function AnalyticsTabSkeleton({ label }: { label: string }) {
+  return (
+    <div aria-busy="true" aria-label={label} className="flex flex-col gap-4">
+      <Skeleton className="h-24 w-full rounded-lg" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Skeleton className="h-64 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    </div>
+  )
+}
 
 type Axis = 'term' | 'cohort'
 /**
@@ -38,6 +98,13 @@ function AnalyticsInner() {
   const router = useRouter()
   const pathname = usePathname()
   const { sendSurveyReminder } = usePce()
+
+  useEffect(() => {
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 200)
+    const cancel = typeof cancelIdleCallback === 'function' ? cancelIdleCallback : clearTimeout
+    const id = idle(prefetchAnalyticsTabs)
+    return () => cancel(id as number)
+  }, [])
 
   /**
    * The URL is the single source of truth for the active tab — not local state seeded from it.
@@ -252,15 +319,17 @@ function AnalyticsInner() {
               )}
             </div>
 
-            <ByTermPanel
-              axis={axis}
-              value={scopeLabel}
-              onOpenSurvey={setSelectedSurveyId}
-              onNudge={setNudgeTarget}
-              /* The attention table names courses; naming without a door was the last dead-end
-                 on the tab. Row → By Course, scoped to that course. */
-              onSelectCourse={(code) => setScope({ tab: 'course', courseCode: code })}
-            />
+            <Suspense fallback={<AnalyticsTabSkeleton label="Loading term analytics" />}>
+              <ByTermPanel
+                axis={axis}
+                value={scopeLabel}
+                onOpenSurvey={setSelectedSurveyId}
+                onNudge={setNudgeTarget}
+                /* The attention table names courses; naming without a door was the last dead-end
+                   on the tab. Row → By Course, scoped to that course. */
+                onSelectCourse={(code) => setScope({ tab: 'course', courseCode: code })}
+              />
+            </Suspense>
           </div>
         </TabsContent>
 
@@ -273,21 +342,23 @@ function AnalyticsInner() {
           <div className="flex flex-col gap-6">
             {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
                 /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
-            <FacultyLeaderboardSection
-              term={facultyTerm}
-              onTermChange={setFacultyTerm}
-              role={facultyRole}
-              onRoleChange={setFacultyRole}
-              onSelectFaculty={(id) => {
-                // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
-                // drill-down is the same tab scrolled to the portfolio, not a new route —
-                // the portfolio is a filtered state of By Faculty, not a surface of its own.
-                setSelectedFacultyId(id)
-                requestAnimationFrame(() =>
-                  document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                )
-              }}
-            />
+            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty leaderboard" />}>
+              <FacultyLeaderboardSection
+                term={facultyTerm}
+                onTermChange={setFacultyTerm}
+                role={facultyRole}
+                onRoleChange={setFacultyRole}
+                onSelectFaculty={(id) => {
+                  // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
+                  // drill-down is the same tab scrolled to the portfolio, not a new route —
+                  // the portfolio is a filtered state of By Faculty, not a surface of its own.
+                  setSelectedFacultyId(id)
+                  requestAnimationFrame(() =>
+                    document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                  )
+                }}
+              />
+            </Suspense>
 
             <div id="individual-faculty" className="border-t border-border pt-6">
               <h2 className="text-sm font-semibold">Individual faculty</h2>
@@ -325,19 +396,23 @@ function AnalyticsInner() {
                 the tab rendered a KPI strip and a table while /admin/faculty/[id] showed the
                 full portfolio — two doors to the same faculty member, different contents.
                 lens="admin": this tab is admin-only, so the peer distribution is allowed. */}
-            <ByFacultyPanel
-              facultyId={selectedFacultyId}
-              onOpenSurvey={setSelectedSurveyId}
-              extraCharts={
-                selectedFacultyId ? (
-                  <FacultyPortfolioCharts
-                    facultyId={selectedFacultyId}
-                    avgRating={selectedFacultyAvg}
-                    lens="admin"
-                  />
-                ) : null
-              }
-            />
+            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty portfolio" />}>
+              <ByFacultyPanel
+                facultyId={selectedFacultyId}
+                onOpenSurvey={setSelectedSurveyId}
+                extraCharts={
+                  selectedFacultyId ? (
+                    <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                      <FacultyPortfolioCharts
+                        facultyId={selectedFacultyId}
+                        avgRating={selectedFacultyAvg}
+                        lens="admin"
+                      />
+                    </Suspense>
+                  ) : null
+                }
+              />
+            </Suspense>
           </div>
         </TabsContent>
 
@@ -357,13 +432,15 @@ function AnalyticsInner() {
                 instructor?" was only pursuable in one direction. Selecting the faculty member
                 AND switching tabs in one click, because landing on the faculty tab still
                 showing someone else would be a worse lie than not linking at all. */}
-            <ByCoursePanel
-              courseCode={effectiveCourseCode}
-              onOpenSurvey={setSelectedSurveyId}
-              // ONE push, both changes — see setScope. Two calls would race on the same
-              // searchParams snapshot and the second would clobber the first.
-              onSelectFaculty={(facultyId) => setScope({ facultyId, tab: 'faculty' })}
-            />
+            <Suspense fallback={<AnalyticsTabSkeleton label="Loading course analytics" />}>
+              <ByCoursePanel
+                courseCode={effectiveCourseCode}
+                onOpenSurvey={setSelectedSurveyId}
+                // ONE push, both changes — see setScope. Two calls would race on the same
+                // searchParams snapshot and the second would clobber the first.
+                onSelectFaculty={(facultyId) => setScope({ facultyId, tab: 'faculty' })}
+              />
+            </Suspense>
           </div>
         </TabsContent>
       </Tabs>

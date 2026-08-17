@@ -219,6 +219,8 @@
     padding-inline-start: 0;
   }
 
+  /* Docked Ask Leo panel only — set when the right rail claims flex width.
+     Floating window mode must leave this attribute unset so main does not shift. */
   [data-app-shell-row][data-ask-leo-open="true"] [data-app-shell-main] {
     padding-inline-end: 0;
   }
@@ -228,9 +230,141 @@
   }
 
   [data-shell-utility-bar-full] [data-app-shell-row] [data-slot="sidebar"]:not([data-nav-flyout="true"]) [data-slot="sidebar-container"] {
-    top: 3rem;
+    /* Clear utility bar (`--shell-utility-bar-height`) + optional full-bleed system banner above it. */
+    top: calc(var(--shell-utility-bar-height) + var(--shell-system-banner-height, 0px));
   }
 
+  /*
+   * Compact shell density.
+   *
+   * Bar / rail / sticky headers share `--shell-utility-bar-height` (2.625rem).
+   * Compact also drops the SiteHeader row (`components/compact-header-slot.tsx`).
+   *
+   * Icon buttons stay size-8 inside the bar (above the 24px target floor).
+   */
+  [data-shell-density="compact"] [data-slot="sidebar-group"] {
+    padding-block: var(--exxat-spacing-1);
+  }
+
+  /*
+   * No cards in this variant.
+   *
+   * `SidebarInset` and `SecondaryPanel` carry `rounded-xl` plus a shadow
+   * unconditionally, so dropping the sidebar's inset variant flattened the rail
+   * but left the canvas and the panel floating as rounded cards. Compact is
+   * edge-to-edge: square corners, no lift, no side gutter.
+   *
+   * This is scoped to the density attribute rather than fixed on the primitives
+   * because those classes are not gated on the peer sidebar variant, and in this
+   * shell `SidebarInset` is nested rather than a peer sibling, so the
+   * `peer-data-[variant=inset]:*` utilities on it never match.
+   */
+  [data-shell-density="compact"] [data-slot="sidebar-inset"],
+  [data-shell-density="compact"] [data-slot="secondary-panel"]:not([data-overlay]) {
+    margin-inline: 0;
+    margin-block: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  [data-shell-density="compact"] [data-slot="secondary-panel"][data-overlay],
+  [data-shell-density="compact"] [data-slot="ask-leo-panel"][data-overlay],
+  [data-shell-density="compact"]
+    [data-slot="sidebar"][data-nav-flyout="true"]
+    [data-slot="sidebar-container"] {
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sheet-flyout);
+  }
+
+  /*
+   * The gutter was the only thing separating the panel from the canvas. With it
+   * gone the two backgrounds meet directly, and they sit ~0.02 apart in OKLCH
+   * lightness — a boundary that disappears in high-contrast and forced-colors
+   * modes. Carry the same edge the flush rail uses.
+   */
+  [data-shell-density="compact"] [data-slot="secondary-panel"]:not([data-overlay]) {
+    border-inline-end: 1px solid var(--sidebar-border);
+  }
+
+  /*
+   * The bar sits on the page, not on the rail.
+   *
+   * `bg-sidebar` (brand tint) is right for the other variants, where the bar is
+   * chrome wrapped around a floating canvas. Compact has no gutter and no card,
+   * so the bar is the top edge of the page itself and takes the page's own
+   * surface. `--background`, not literal white, so dark mode and the contrast
+   * modes follow.
+   *
+   * The bottom border matters more now: the bar and canvas share a colour, so
+   * this rule is the only thing separating them. The other variants get that
+   * separation free from the gutter and from `SiteHeader`'s own border.
+   */
+  [data-shell-density="compact"] [data-slot="utility-bar"] {
+    background-color: var(--background);
+    border-block-end: 1px solid var(--sidebar-border);
+  }
+
+  /*
+   * The last gutters. Zeroing the inset card's own margin is not enough: the
+   * shell keeps a 0.5rem gutter on `[data-app-shell-main]` (trailing always,
+   * leading whenever the secondary rail is closed or the primary rail is a
+   * flyout), and the fixed rail is inset from the bottom by
+   * `--app-shell-inset-y`. Compact is edge-to-edge, so all three go.
+   *
+   * `!important` because the leading-gutter rules qualify on `:has()` state and
+   * reach (0,5,0) specificity — the same reason the `sidebar-inset` margin
+   * override above uses it. Setting the variable on the row rather than on this
+   * ancestor is deliberate: `[data-app-shell-row]` declares it on itself, and a
+   * local declaration beats an inherited one whatever the ancestor says.
+   */
+  [data-shell-density="compact"] [data-app-shell-main] {
+    padding-inline: 0 !important;
+  }
+
+  [data-shell-density="compact"] [data-app-shell-row] {
+    --app-shell-inset-y: 0rem;
+  }
+
+  /* Compact also halves the radius scale. That override lives in the package
+     (`html[data-shell-density="compact"]`, beside the `data-text-size` blocks)
+     and arrives through the import above. It has to be unlayered to outrank the
+     unlayered `:root` that declares `--radius`. */
+
+  /* ── Product glyph tiles ─────────────────────────────────────────────────
+     One product mark, worn the same way by the switcher rows and the home
+     page. `--product-brand` is set inline per product by `productTileStyle`;
+     everything about how it is worn is decided here.
+
+     The tile is the brand colour, undiluted, with a white glyph on it. The
+     colour is what a row is recognised by before any label is read, so it has
+     to be the brand and not a wash of it: the tile used to be the hue at
+     lightness 0.95 with chroma cut to a third, which is a pale tint in either
+     theme and reads as absence of colour rather than as this product's colour.
+
+     Lightness is clamped rather than replaced, so a brand keeps its own weight
+     — Surveys stays a vivid orange instead of flattening to brown — and only
+     the ends of the scale are taken away. Those ends are the ones white cannot
+     sit on: a brand palette promises nothing about lightness, Settings →
+     Appearance will accept a pale yellow, and white on that measures 1.3:1.
+     The window holds every brand, house or tenant, at 3.6:1 or better against
+     the glyph, over the 3:1 that WCAG 1.4.11 asks of a graphic. Measured by
+     `scripts/icon-contrast-probe.mjs`, which exists because axe cannot see a
+     Font Awesome glyph: it is drawn from a pseudo-element, and
+     `color-contrast` skips pseudo-element text.
+
+     Dark mode raises the floor. A dark brand on a dark panel is a hole in the
+     row rather than a mark on it. */
+  .product-tile {
+    background: oklch(from var(--product-brand) clamp(0.42, l, 0.6) c h);
+  }
+
+  .product-tile-glyph {
+    color: oklch(1 0 0);
+  }
+
+  .dark .product-tile {
+    background: oklch(from var(--product-brand) clamp(0.5, l, 0.6) c h);
+  }
 }
 
 /* This app's own files (Tailwind skip binary assets). */

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "ejected": {
+    "components/product-wordmark.tsx": {
+      "from": "generated-starter",
+      "source": "generated-starter/components/product-wordmark.tsx",
+      "at": "1.0.0",
+      "sourceHash": "c572c88ef91c6b4b481881c80515ecc1bd7f0f3fde25ab6288f924e973d3c635",
+      "declaredBy": "upgrade-migration"
+    },
+    "contexts/shell-layout-context.tsx": {
+      "from": "generated-starter",
+      "source": "generated-starter/contexts/shell-layout-context.tsx",
+      "at": "1.0.0",
+      "sourceHash": "9cf16d4f6a224d4fa043f1d6f367ef2388ca3a2e9eb0c462dcf3416e7d2dd020",
+      "declaredBy": "upgrade-migration"
+    },
+    "lib/shell-layout.ts": {
+      "from": "generated-starter",
+      "source": "generated-starter/lib/shell-layout.ts",
+      "at": "1.0.0",
+      "sourceHash": "d1dbf94b8483608af6d3872dcad0c5799e9536499e133021c310c86df409253b",
+      "declaredBy": "upgrade-migration"
+    }
+  }
+}

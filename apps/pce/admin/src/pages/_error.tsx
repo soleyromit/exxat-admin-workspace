@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useRouteError } from "react-router-dom"
+import { useRouteError } from "react-router"
 
 import { Button } from "@/components/ui/button"
 import { useProductDashboardHref } from "@/contexts/product-route-sync"
@@ -88,7 +88,7 @@ export function RouteError() {
           <summary className="cursor-pointer text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground">
             Stack trace
           </summary>
-          <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-muted/30 p-4 font-mono text-xs leading-relaxed text-destructive/80">
+          <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-muted/30 p-4 font-mono text-xs leading-relaxed text-destructive-ink/80">
             {err.stack?.slice(0, 800)}
           </pre>
         </details>

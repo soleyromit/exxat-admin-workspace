@@ -1,20 +1,20 @@
 {
   "_note": "Watcher state. Hashes of last-seen content per source. Updated by scripts/claude-updates-watch.py. Do not edit by hand.",
-  "last_checked": "2026-08-03T12:20:20.734087+00:00",
+  "last_checked": "2026-08-17T12:17:03.988095+00:00",
   "sources": {
     "claude-code-changelog": {
-      "hash": "9e4ad11b0443ad9d",
-      "last_seen": "2026-07-27T12:20:18.371810+00:00",
+      "hash": "3709da260df3fe7b",
+      "last_seen": "2026-08-17T12:17:03.988095+00:00",
       "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
     },
     "agent-sdk-ts-changelog": {
-      "hash": "d1c387b8e19e09d2",
-      "last_seen": "2026-07-27T12:20:18.371810+00:00",
+      "hash": "1b582d238219eae3",
+      "last_seen": "2026-08-17T12:17:03.988095+00:00",
       "url": "https://raw.githubusercontent.com/anthropics/claude-agent-sdk-typescript/main/CHANGELOG.md"
     },
     "agent-sdk-python-changelog": {
-      "hash": "e53ce0c6c5507009",
-      "last_seen": "2026-07-27T12:20:18.371810+00:00",
+      "hash": "937df913f714921e",
+      "last_seen": "2026-08-17T12:17:03.988095+00:00",
       "url": "https://raw.githubusercontent.com/anthropics/claude-agent-sdk-python/main/CHANGELOG.md"
     }
   }

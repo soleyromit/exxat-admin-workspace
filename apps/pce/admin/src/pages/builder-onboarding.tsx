@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
@@ -24,7 +25,7 @@ import {
   ExxatProductMark,
   ExxatProductWordmarkEditor,
 } from "@/components/exxat-product-logo"
-import { useAppStore, productSlug, type Product } from "@/stores/app-store"
+import { useAppStore, type Product } from "@/stores/app-store"
 import {
   customProductSlugFromSuffix,
   validateCustomProductSuffix,
@@ -36,6 +37,8 @@ import {
   brandAccentOklchFromHue,
   normalizeBrandAccentColor,
 } from "@/lib/brand-accent-color"
+import { BUILTIN_SWITCHER_PRODUCTS } from "@/lib/product-switcher-catalog"
+import { getProductBrand } from "@/lib/product-brand"
 import {
   setTenantProductData,
   syncCustomProductsMirror,
@@ -44,7 +47,7 @@ import {
 } from "@exxatdesignux/product-framework"
 import { setStorageItem } from "@exxatdesignux/ui/lib/persisted-state"
 
-const ONBOARDING_COMPLETE_KEY = "builder:onboarding-complete:v1"
+import { ONBOARDING_COMPLETE_KEY, PRODUCTS_HOME_PATH } from "@/lib/post-auth-landing"
 
 type ScopeKind = "school-program" | "brand-site-location"
 
@@ -519,23 +522,16 @@ function inferIconFromTitle(title: string): { iconClass: string; iconActiveClass
     : NAV_ICON_FALLBACK
 }
 
-type ProductPickKind = "prism" | "one" | "custom"
+type ProductPickKind = Product
 
-function isPredefinedPick(id: ProductPickKind): id is "prism" | "one" {
-  return id === "prism" || id === "one"
-}
-
-/** Built-in switcher product for a predefined onboarding pick. */
-function resolveBuiltinProductId(pickId: ProductPickKind, scope: ScopeKind): Product {
-  if (pickId === "prism") return "exxat-prism"
-  if (pickId === "one") {
-    return scope === "brand-site-location" ? "exxat-one-sites" : "exxat-one-schools"
-  }
-  return "exxat-custom"
+function isPredefinedPick(id: ProductPickKind): boolean {
+  return id !== "exxat-custom"
 }
 
 interface ProductPick {
   id: ProductPickKind
+  /** Visible tile label (matches switcher). */
+  label: string
   /** Built-in product the wordmark + brand color come from (when not custom). */
   brandSource?: Product
   caption: string
@@ -543,48 +539,98 @@ interface ProductPick {
   suffix: string
   brandColor: string
   scopeKind: ScopeKind
+  /** Scopes offered on the context step. Clinical Education is school-only. */
+  allowedScopes: ReadonlyArray<ScopeKind>
   persona: string
   navKeys: ReadonlyArray<string>
 }
 
+const SCHOOL_FAMILY_NAV = ["library", "placements", "team", "compliance"] as const
+const EXXAT_ONE_NAV = ["placements", "team", "compliance", "documents"] as const
+const CUSTOM_STARTER_NAV = ["library", "placements", "team"] as const
+
+const ONBOARDING_CAPTIONS: Partial<Record<Product, string>> = {
+  "exxat-prism":
+    "School + program scope — placements, compliance, and clinical education workflows.",
+  "exxat-one-schools":
+    "School or site scope — coordinator workflows with built-in Exxat One nav.",
+  "exxat-curriculum-mapping":
+    "School + program scope — map courses, competencies, and curriculum coverage.",
+  "exxat-compliance":
+    "School + program scope — clearances, immunisations, and background checks.",
+  "exxat-surveys":
+    "School + program scope — course evaluations and placement feedback.",
+  "exxat-exam-management":
+    "School + program scope — author, schedule, and score practical exams.",
+  "exxat-accreditation":
+    "School + program scope — self-study evidence for accreditors.",
+  "exxat-student-success":
+    "School + program scope — competency tracking, risk alerts, and program analytics.",
+  "exxat-custom": "Build your own — pick a name, color, and starter nav.",
+}
+
 /**
- * Step-1 product picks. Prism and Exxat One wire the built-in switcher
- * products (no tenant clone). Custom creates a draft custom product +
- * includes the primary-nav builder step.
+ * Step-1 product picks — same catalog as the switcher (minus Design OS).
+ * Built-ins skip the nav builder; Custom is required and creates a tenant clone.
  */
-const PRODUCT_PICKS: ReadonlyArray<ProductPick> = [
-  {
-    id: "prism",
-    brandSource: "exxat-prism",
-    caption: "School + program scope, placements, compliance, and curriculum nav.",
-    suffix: "Prism",
-    brandColor: "oklch(57.84% 0.1560 279.93)",
+const PRODUCT_PICKS: ReadonlyArray<ProductPick> = BUILTIN_SWITCHER_PRODUCTS.filter(
+  entry => entry.id !== "exxat-design-os",
+).map((entry): ProductPick => {
+  const brand = getProductBrand(entry.id)
+  const label = entry.label
+  const brandColor =
+    brand?.brandColor ??
+    (entry.id === "exxat-custom" ? brandAccentOklchFromHue(195) : "oklch(57.84% 0.1560 279.93)")
+  const caption =
+    ONBOARDING_CAPTIONS[entry.id] ??
+    `Start with ${label} — configure scope and persona next.`
+
+  if (entry.id === "exxat-custom") {
+    return {
+      id: "exxat-custom",
+      label: "Custom product",
+      caption,
+      // Empty so the wordmark field shows its placeholder rather than a prefill.
+      suffix: "",
+      brandColor,
+      scopeKind: "school-program",
+      // Site vs school choice is Exxat One only — Custom stays school-family.
+      allowedScopes: ["school-program"],
+      persona: "program-coordinator",
+      navKeys: CUSTOM_STARTER_NAV,
+    }
+  }
+
+  if (entry.id === "exxat-one-schools") {
+    return {
+      id: entry.id,
+      label,
+      brandSource: entry.id,
+      caption,
+      suffix: brand?.suffix ?? "One",
+      brandColor,
+      // Only Exxat One offers both school and site scope.
+      scopeKind: "brand-site-location",
+      allowedScopes: ["school-program", "brand-site-location"],
+      persona: "site-coordinator",
+      navKeys: EXXAT_ONE_NAV,
+    }
+  }
+
+  // Clinical Education and other school-family built-ins — school scope only.
+  return {
+    id: entry.id,
+    label,
+    brandSource: entry.id,
+    caption,
+    suffix: brand?.suffix ?? label,
+    brandColor,
     scopeKind: "school-program",
+    allowedScopes: ["school-program"],
     persona: "program-coordinator",
-    navKeys: ["library", "placements", "team", "compliance"],
-  },
-  {
-    id: "one",
-    brandSource: "exxat-one-schools",
-    caption: "School or site scope — coordinator workflows with built-in Exxat One nav.",
-    suffix: "One",
-    brandColor: "oklch(57.84% 0.1560 279.93)",
-    scopeKind: "school-program",
-    persona: "program-coordinator",
-    navKeys: ["placements", "team", "compliance", "documents"],
-  },
-  {
-    id: "custom",
-    caption: "Build your own — pick a name, color, scope, and starter nav.",
-    // Empty by default so the wordmark field shows its placeholder ("Assessment")
-    // rather than pre-filling a literal name the user has to clear first.
-    suffix: "",
-    brandColor: brandAccentOklchFromHue(195),
-    scopeKind: "school-program",
-    persona: "program-coordinator",
-    navKeys: ["library", "placements", "team"],
-  },
-] as const
+    navKeys: SCHOOL_FAMILY_NAV,
+  }
+})
 
 interface NavRow {
   key: string
@@ -773,9 +819,9 @@ export default function BuilderOnboardingPage() {
   const productIndexRef = React.useRef<number | null>(null)
   const committedSlugRef = React.useRef<string | null>(null)
 
-  // Default to "custom" so the wordmark editor + color picker are visible on
-  // first paint — Prism / One are alternatives, not the default.
-  const [pickId, setPickId] = React.useState<ProductPickKind>("custom")
+  // Default to custom — wordmark editor + color picker visible on first paint.
+  // Custom is required in the catalog; built-ins are alternatives.
+  const [pickId, setPickId] = React.useState<ProductPickKind>("exxat-custom")
   const [stepIndex, setStepIndex] = React.useState(0)
   const setOnboardingRouteActive = useBuilderOnboardingChrome(s => s.setRouteActive)
   const setOnboardingStepIndex = useBuilderOnboardingChrome(s => s.setStepIndex)
@@ -797,7 +843,10 @@ export default function BuilderOnboardingPage() {
   const step = activeSteps[stepIndex]!
   const isLastStep = stepIndex === activeSteps.length - 1
 
-  const customPick = PRODUCT_PICKS.find(p => p.id === "custom")!
+  const activePick =
+    PRODUCT_PICKS.find(p => p.id === pickId) ??
+    PRODUCT_PICKS.find(p => p.id === "exxat-custom")!
+  const customPick = PRODUCT_PICKS.find(p => p.id === "exxat-custom")!
   const [suffix, setSuffix] = React.useState(customPick.suffix)
   const [brandColor, setBrandColor] = React.useState<string>(() => customPick.brandColor)
   const [scopeKind, setScopeKind] = React.useState<ScopeKind>("school-program")
@@ -853,7 +902,7 @@ export default function BuilderOnboardingPage() {
     setNavRows(rows)
     if (isPredefinedPick(pick.id)) {
       clearDraftProduct()
-      setProduct(resolveBuiltinProductId(pick.id, pick.scopeKind))
+      setProduct(pick.id)
     } else if (productIndexRef.current !== null) {
       commitDraftProduct(pick.suffix, pick.brandColor, rows)
     }
@@ -861,9 +910,10 @@ export default function BuilderOnboardingPage() {
 
   const slug = customProductSlugFromSuffix(suffix)
   const personasForScope = PERSONAS_BY_SCOPE[scopeKind]
-  const customNameError = pickId === "custom" && suffix.trim()
+  const customNameError = pickId === "exxat-custom" && suffix.trim()
     ? validateCustomProductSuffix(suffix, customProducts)
     : null
+  const allowedScopes = activePick.allowedScopes
 
   const previewBrand = React.useMemo(
     () => ({ suffix: suffix.trim() || "Product", brandColor }),
@@ -882,8 +932,15 @@ export default function BuilderOnboardingPage() {
 
   React.useEffect(() => {
     if (!isPredefinedPick(pickId)) return
-    setProduct(resolveBuiltinProductId(pickId, scopeKind))
-  }, [pickId, scopeKind, setProduct])
+    setProduct(pickId)
+  }, [pickId, setProduct])
+
+  // Keep scope inside the pick's allowlist (Clinical Education = school only).
+  React.useEffect(() => {
+    if (!allowedScopes.includes(scopeKind)) {
+      setScopeKind(allowedScopes[0]!)
+    }
+  }, [allowedScopes, scopeKind])
 
   /**
    * Create or update the single draft product so the live sidebar preview and
@@ -956,12 +1013,17 @@ export default function BuilderOnboardingPage() {
     })
   }
 
+  // Onboarding still sets the startup product, because the shell needs a product
+  // context the moment one is entered. It just does not enter one on its own:
+  // landing is the products home, the same place `/` and a fresh sign-in land, so
+  // finishing setup and returning tomorrow put you in the same room. Dropping
+  // straight into one product's dashboard also skipped the launcher for the
+  // multi-product case, dealing a product instead of letting someone pick.
   function finishOnboarding() {
     setStorageItem(ONBOARDING_COMPLETE_KEY, "true")
     if (isPredefinedPick(pickId)) {
-      const builtin = resolveBuiltinProductId(pickId, scopeKind)
-      setStartupProduct({ product: builtin })
-      navigate(`/${productSlug(builtin)}/dashboard`)
+      setStartupProduct({ product: pickId })
+      navigate(PRODUCTS_HOME_PATH)
       return
     }
     commitDraftProduct(suffix, brandColor)
@@ -970,11 +1032,11 @@ export default function BuilderOnboardingPage() {
       product: "exxat-custom",
       customIndex: productIndexRef.current ?? 0,
     })
-    navigate(`/${slug}/dashboard`)
+    navigate(PRODUCTS_HOME_PATH)
   }
 
   function handleNext() {
-    if (step.id === "identity" && pickId === "custom") {
+    if (step.id === "identity" && pickId === "exxat-custom") {
       commitDraftProduct(suffix, brandColor)
     }
     if (isLastStep) {
@@ -988,9 +1050,12 @@ export default function BuilderOnboardingPage() {
     setStepIndex(idx => Math.max(idx - 1, 0))
   }
 
+  // Skipping picks no product at all, so the launcher is the only honest landing:
+  // the previous jump to Prism's dashboard chose on the visitor's behalf the one
+  // time they declined to choose.
   function handleSkip() {
     setStorageItem(ONBOARDING_COMPLETE_KEY, "true")
-    navigate("/prism/dashboard")
+    navigate(PRODUCTS_HOME_PATH)
   }
 
   // Live preview — when user edits identity step, push live updates so the
@@ -1109,7 +1174,7 @@ export default function BuilderOnboardingPage() {
                     <div
                       role="radiogroup"
                       aria-label="Product"
-                      className="grid gap-2 sm:grid-cols-3"
+                      className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
                     >
                       {PRODUCT_PICKS.map(pick => (
                         <ProductPickCard
@@ -1120,26 +1185,28 @@ export default function BuilderOnboardingPage() {
                         />
                       ))}
                     </div>
-                    {pickId === "custom" ? (
+                    {pickId === "exxat-custom" ? (
                       <>
                         <div className="grid gap-2">
                           <Label htmlFor="onboarding-product-name">Product name</Label>
-                          <div className="flex min-h-[3.25rem] items-end rounded-2 border border-border bg-background px-4 py-3">
-                            <ExxatProductWordmarkEditor
-                              suffixId="onboarding-product-name"
-                              previewCustomBrand={previewBrand}
-                              suffixValue={suffix}
-                              onSuffixChange={setSuffix}
-                              suffixPlaceholder="Enter product name"
-                              className="w-auto max-w-full"
-                            />
-                          </div>
+                          <Card size="sm" className="bg-background">
+                            <CardContent className="flex min-h-[1.25rem] items-end">
+                              <ExxatProductWordmarkEditor
+                                suffixId="onboarding-product-name"
+                                previewCustomBrand={previewBrand}
+                                suffixValue={suffix}
+                                onSuffixChange={setSuffix}
+                                suffixPlaceholder="Enter product name"
+                                className="w-auto max-w-full"
+                              />
+                            </CardContent>
+                          </Card>
                           <p className="text-sm text-muted-foreground">
                             Lives at <code className="font-mono">/{slug}</code>. Updates the wordmark
                             in the sidebar on the left as you type.
                           </p>
                           {customNameError ? (
-                            <p className="text-xs text-destructive">{customNameError}</p>
+                            <p className="text-xs text-destructive-ink">{customNameError}</p>
                           ) : null}
                         </div>
                         <div className="grid gap-2">
@@ -1159,9 +1226,8 @@ export default function BuilderOnboardingPage() {
                       </>
                     ) : (
                       <p className="rounded-2 border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-                        Using the {pickId === "prism" ? "Exxat Prism" : "Exxat One"} wordmark and
-                        brand color. The next steps tailor scope and persona for this product — no
-                        custom clone is created.
+                        Using the {activePick.label} wordmark and brand color. The next steps tailor
+                        scope and persona for this product — no custom clone is created.
                       </p>
                     )}
                   </div>
@@ -1169,20 +1235,35 @@ export default function BuilderOnboardingPage() {
 
                 {step.id === "context" ? (
                   <div className="grid gap-3" role="radiogroup" aria-label="Product scope">
-                    <OptionCard
-                      selected={scopeKind === "school-program"}
-                      icon="fa-building-columns"
-                      title="School & program"
-                      caption="Schools, programs, cohorts, and students. Best for Prism-style products."
-                      onClick={() => setScopeKind("school-program")}
-                    />
-                    <OptionCard
-                      selected={scopeKind === "brand-site-location"}
-                      icon="fa-buildings"
-                      title="Brand, site & location"
-                      caption="Multi-site networks, locations, and shifts. Best for Exxat One — Sites style products."
-                      onClick={() => setScopeKind("brand-site-location")}
-                    />
+                    {allowedScopes.includes("school-program") ? (
+                      <OptionCard
+                        selected={scopeKind === "school-program"}
+                        icon="fa-building-columns"
+                        title="School & program"
+                        caption="Schools, programs, cohorts, and students. Best for Clinical Education and school-family products."
+                        onClick={() => setScopeKind("school-program")}
+                      />
+                    ) : null}
+                    {allowedScopes.includes("brand-site-location") ? (
+                      <OptionCard
+                        selected={scopeKind === "brand-site-location"}
+                        icon="fa-buildings"
+                        title="Brand, site & location"
+                        caption="Multi-site networks, locations, and shifts. Best for Exxat One."
+                        onClick={() => setScopeKind("brand-site-location")}
+                      />
+                    ) : null}
+                    {pickId === "exxat-one-schools" ? (
+                      <p className="text-sm text-muted-foreground">
+                        Exxat One is the only product that supports both school and site scope —
+                        pick the hierarchy that matches this tenant.
+                      </p>
+                    ) : allowedScopes.length === 1 && allowedScopes[0] === "school-program" ? (
+                      <p className="text-sm text-muted-foreground">
+                        {activePick.label} uses school &amp; program scope. Site networks are
+                        configured in Exxat One.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -1314,20 +1395,10 @@ interface ProductPickCardProps {
 }
 
 /**
- * Step-1 product pick card. Renders the actual built-in wordmark for
- * Prism / One via `ExxatProductLogo`, and a generic "Custom product" tile.
- *
- * The card is a `role="radio"` button so the surrounding `radiogroup`
- * announces correctly to screen readers; selection swaps to the
- * inverse-foreground styling that the rest of the onboarding cards
- * already use.
+ * Step-1 product pick card. Built-ins show the Exxat mark + switcher label;
+ * Custom uses a sparkles tile. `role="radio"` for the surrounding radiogroup.
  */
 function ProductPickCard({ pick, selected, onClick }: ProductPickCardProps) {
-  // Visible label — kept as plain text rather than the SVG wordmark so the
-  // card stays readable in a 3-up grid (the inline-flex `ExxatProductLogo`
-  // wraps awkwardly at narrow widths). Mark + label form a single row.
-  const label =
-    pick.id === "prism" ? "Prism" : pick.id === "one" ? "Exxat One" : "Custom product"
   return (
     <button
       type="button"
@@ -1355,7 +1426,7 @@ function ProductPickCard({ pick, selected, onClick }: ProductPickCardProps) {
             <i className="fa-light fa-sparkles" />
           </span>
         )}
-        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <span className="text-sm font-semibold text-foreground">{pick.label}</span>
       </span>
       <span className="text-sm leading-snug text-muted-foreground">{pick.caption}</span>
     </button>
@@ -1525,7 +1596,7 @@ function NavBuilder({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-destructive"
+                    className="size-7 text-destructive-ink"
                     aria-label={`Remove ${row.title}`}
                     onClick={() => onRemove(row.key)}
                   >
@@ -1538,7 +1609,8 @@ function NavBuilder({
         )}
       </div>
 
-      <div className="grid gap-2 rounded-2 border border-border bg-background/60 p-3">
+      <Card size="sm" className="gap-2 bg-background/60">
+        <CardContent className="grid gap-2">
         <p className="text-xs font-medium tracking-wide text-muted-foreground">
           Add your own
         </p>
@@ -1587,7 +1659,8 @@ function NavBuilder({
           “Reports” → chart, “Schedule” → calendar). Grab a row from the suggestions below for
           a faster setup.
         </p>
-      </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-2">
         <p className="text-xs font-medium tracking-wide text-muted-foreground">
@@ -1598,9 +1671,10 @@ function NavBuilder({
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
             {suggestionsAvailable.map(s => (
-              <button
+              <Button
                 key={s.key}
                 type="button"
+                variant="ghost"
                 onClick={() =>
                   onAdd({
                     key: s.key,
@@ -1612,7 +1686,7 @@ function NavBuilder({
                     hasSecondary: s.hasSecondary,
                   })
                 }
-                className="flex items-center gap-3 rounded-2 border border-border bg-background p-3 text-left transition hover:border-foreground/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="h-auto items-center justify-start gap-3 rounded-2 border border-border bg-background p-3 text-left font-normal hover:border-foreground/40 hover:bg-muted/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <span className="flex size-8 items-center justify-center rounded-2 bg-muted text-muted-foreground">
                   <i className={s.iconClass} aria-hidden="true" />
@@ -1622,7 +1696,7 @@ function NavBuilder({
                   <span className="block text-sm text-muted-foreground">{s.caption}</span>
                 </span>
                 <i className="fa-light fa-plus text-muted-foreground" aria-hidden="true" />
-              </button>
+              </Button>
             ))}
           </div>
         )}

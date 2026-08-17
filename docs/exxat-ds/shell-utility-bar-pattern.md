@@ -4,48 +4,84 @@
 
 ## Role
 
-One persistent row for **global** actions — Search (⌘K), Ask Leo (⌘⌥K), Notifications, Help, Settings, Profile — so product surfaces do not duplicate triggers in the sidebar or page header.
+One persistent row for **global** actions — Search (⌘K), Notifications, Help, Onboarding, Ask Leo (⌘⌥K, labeled), Profile — so product surfaces do not duplicate triggers in the sidebar or page header.
 
-## Shell layout variants (`ShellLayoutContext`)
+**Workspace settings** live in the profile menu (same destination the old gear used). The bar does not mount a Settings icon.
 
-| Variant | Utility bar | Product switcher |
-|---------|-------------|------------------|
-| `sidebar-classic` | Not mounted | Sidebar header |
-| `utility-sidebar` | Inside `[data-app-shell-workspace]` (secondary + main only) | Sidebar header |
-| `utility-bar` | Full-width row **above** `[data-app-shell-row]` | Left cluster on bar |
+## Compact is the only shell
 
-User preference: **Settings → Appearance → Shell layout**.
+This package ships **`compact` only**. Legacy persisted values (`sidebar-classic`, `utility-sidebar`, `utility-bar`, `sidebar`) normalize to `compact` via `normalizeShellLayoutVariant` and persist key `shell:layout-variant:v3`.
 
-## Spacing (full-width `utility-bar`)
+| Consumer situation | Behavior |
+|--------------------|----------|
+| Stays on an older `@exxatdesignux/ui` | Multi-layout shell still works; nothing changes until upgrade. |
+| Bumps package, no shell port | App-owned shell files may still offer old pickers until ported. |
+| Ports shell / runs `exxat-ui upgrade` for shell paths | Compact only; picker removed; prefs map to compact. |
 
-- Utility bar height: `h-12` (`3rem`) on `[data-slot="utility-bar"]`.
-- `[data-shell-utility-bar-full]` on `SidebarShell` — `packages/ui/src/globals.css` pins fixed sidebar below the bar (`top: 3rem`) and removes workspace top padding so rails + main sit flush under the bar.
-- **MUST NOT** stack `pt-12` on `AppSidebar` when CSS already offsets the fixed rail.
+Chrome shape:
 
-## Components
+```
+toggle · product │ house · More · leaf │ search · bell · what's new · help · onboarding · Ask Leo │ school · profile
+```
 
-| Piece | Location |
-|-------|----------|
-| Mount + variant branching | `src/App.tsx` (`AppShellLayout`) |
-| Bar chrome | `components/utility-bar-slot.tsx` |
-| Product switcher (utility-bar only) | `components/utility-bar-product-switcher.tsx` |
-| Notifications | `components/notification-bell.tsx` |
-| Profile menu | `components/utility-user-menu.tsx` |
-| Action button class | `components/utility-bar-chrome.ts` |
+- **One chrome row** — breadcrumb portals onto the bar; `SiteHeader` draws no second row.
+- **Bar height** — `--shell-utility-bar-height: 2.625rem` (42px); rail `top` and compact `--header-height` read the same token.
+- **Back mode** — `siteHeader.back` or record-detail trails (derived parent crumb): same leading geometry as hubs (`back icon` · full-height rule · label); **Ask Leo** stays on the trailing edge (rightmost). Hide other actions, school, profile, and `trailing`.
+- **Icon hit shape** — every bar icon (toggle, Back, Search, …) is `Button` ghost `icon-sm` + `utilityBarActionButtonClass` (`rounded-md` + sidebar-accent). Bare links without that class produce a sharp-square hover next to the rounded toggle — ban that.
+- **Flush sidebar** — `variant="sidebar"`, square density tokens via `html[data-shell-density="compact"]`.
+- **School avatar on the bar** — avatar only (`showProgram={false}`); program name stays in the tooltip and menu.
 
-## MUST
+## Responsive framework (Comfort / Dense)
 
-1. Reuse canonical triggers — `requestOpenCommandMenu`, `AskLeoToggle`, `getSecondaryNavForProduct`, `NAV_USER` — not duplicates in sidebar when utility bar is active.
-2. Use `utilityBarActionButtonClass` for icon buttons on the bar.
-3. Suppress bar on focus shells (`exam-lock`, `/builder/onboarding`).
+Driven by `useUtilityBarCompact()` = mobile (≤767px) **or** reflow zoom.
 
-## MUST NOT
+| Tier | When | Leading | Center | Actions | Identity |
+|------|------|---------|--------|---------|----------|
+| **Comfort** | ≥768px and not reflow | Toggle · product | Icon · More · leaf | Search, bell, What’s new, Help, Onboarding, **Ask Leo** (labeled) | School avatar + profile (`size-8`), no program name |
+| **Dense** | ≤767px or reflow | Toggle · product **mark only** (equal `px-1.5` around product; crumb rule after product) | Parent · leaf **text labels** (`flex-1` truncates; never a house icon) | Bell, **More** (Search / What’s new / Help / Onboarding), **Ask Leo** icon-only | School avatar + profile (`size-8`), no program name |
 
-- Add page-local Search / Ask Leo / Notifications when the bar is mounted for that layout variant.
-- Hardcode Settings URL — resolve via `getSecondaryNavForProduct(product)`.
+**Spacing:** `gap-1` between clusters; product sits in equal `px-1.5` between the rail rule and the crumb rule (rule is drawn in the leading cluster); identity rule `mx-1`; Dense trailing `pe-2`.
+
+**Trailing edge:** actions + identity always sit in one `ms-auto` cluster. Do **not** cap breadcrumb `max-width` to “save room for actions” — that leaves a hole after profile at reflow / 200% zoom.
+
+**Yield order:** identity never collapses → Ask Leo / Notifications stay before Search/Help → breadcrumb truncates → product wordmark truncates (or mark-only on Dense).
+
+## Onboarding
+
+Comfort: icon-only control → `/builder/onboarding`. Dense: same link under **More**. Suppressed on that route (bar not mounted).
+
+## Ask Leo
+
+**Comfort:** icon + label. **Dense:** icon-only. Last primary action before the identity separator. Glow intro remains decorative.
+
+## How the breadcrumb gets onto the bar
+
+`components/compact-header-slot.tsx` holds a portal target. `UtilityBarBreadcrumbSlot` registers a slot; `SiteHeader` portals into it when present.
+
+Header trails use **text labels** for every segment (never a generic house icon — the first crumb is often Library / Dashboard, not Home). Long trails collapse middle segments into More; Comfort and Dense truncate.
+
+## Tabs on compact pages
+
+`TabsList` overflow region is `w-full` so the fit ladder measures against real surplus width. Inactive labels collapse only when the row actually overflows; labels return when the viewport can hold the last expanded width again (probe-once-per-width — do not compare to pre-collapse `scrollWidth`).
+
+### Sticky stack
+
+```
+Utility bar (outside scroll)
+        ↓
+[data-slot="tabs-sticky-subheader"]     ← module Tabs
+  or [data-slot="list-views-sticky-subheader"]  ← hub views
+        ↓
+DataTable floating column header        ← getStickyTableHeaderOffset()
+```
+
+Height of layer 2 = `--shell-utility-bar-height`. Full-width `border-b` on the sticky strip.
 
 ## See also
 
-- `docs/command-menu-pattern.md` — ⌘K palette
-- `docs/ask-leo-pattern.md` — thread primitives + sidebar
-- `.cursor/rules/exxat-utility-bar.mdc`
+- `lib/shell-layout.ts` — helpers + persist key
+- `components/utility-bar-page-chrome.tsx` — Back mode bridge
+- `components/utility-user-menu.tsx` — Profile settings + Workspace settings
+- `apps/web/docs/tabs-pattern.md` — sticky subheaders + overflow ladder
+- `apps/web/docs/record-detail-chrome-pattern.md` — Back mode + peer jump
+- `apps/web/docs/INDEX.yaml`
