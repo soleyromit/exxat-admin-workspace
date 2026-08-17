@@ -213,29 +213,33 @@ export function ScopeSwitcherMenuBody({ scope }: { scope: ScopeSwitcherBag }) {
 
   return (
     <>
-      <DropdownMenuItem
-        onSelect={(e) => { e.preventDefault(); showParents() }}
-        className="items-start gap-2.5 py-2"
-      >
-        <Avatar className="size-9 shrink-0">
-          <AvatarImage
-            src={parent.logo}
-            alt=""
-            referrerPolicy="origin"
-            className="object-contain p-0.5"
-          />
-          <AvatarFallback className="text-xs font-semibold">
-            {parent.initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 break-words text-sm font-semibold leading-snug whitespace-normal">
-            {parent.name}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{child.name}</p>
-        </div>
-        <span className="shrink-0 text-sm font-medium text-brand">Change</span>
-      </DropdownMenuItem>
+      <div className="p-1">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={showParents}
+          className="h-auto w-full items-center justify-start gap-2.5 whitespace-normal p-2 text-left text-sm font-normal"
+        >
+          <Avatar className="size-9 shrink-0">
+            <AvatarImage
+              src={parent.logo}
+              alt=""
+              referrerPolicy="origin"
+              className="object-contain p-0.5"
+            />
+            <AvatarFallback className="text-xs font-semibold">
+              {parent.initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 break-words text-sm font-semibold leading-snug whitespace-normal">
+              {parent.name}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">{child.name}</p>
+          </div>
+          <span className="shrink-0 text-sm font-medium text-brand">Change</span>
+        </Button>
+      </div>
 
       <DropdownMenuSeparator />
 

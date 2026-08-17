@@ -17,8 +17,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { ExxatProductLogo, ExxatProductMark, ProductSwitcherMenuRowLabel } from "@/components/exxat-product-logo"
-import { useProduct, type Product } from "@/contexts/product-context"
-import { useProductSwitch } from "@/contexts/product-route-sync"
+import { useRequestProductSwitch } from "@/contexts/product-switch-context"
+import { useProduct } from "@/contexts/product-context"
 import {
   expandSwitcherProducts,
   resolveActiveSwitcherEntry,
@@ -34,7 +34,9 @@ import {
 
 export function ProductSwitcher() {
   const { product, customProducts, activeCustomIndex, hiddenProducts } = useProduct()
-  const switchProduct = useProductSwitch()
+  // See `ProductSwitchDialog`: the press asks for the switch, the dialog resolves
+  // which program it lands in.
+  const switchProduct = useRequestProductSwitch()
   const { state, isMobile } = useSidebar()
 
   const products = React.useMemo(

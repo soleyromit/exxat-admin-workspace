@@ -14,6 +14,7 @@
     "start": "next start --port 3005",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
+    "test": "vitest run",
     "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true && node scripts/ensure-use-client.mjs || true"
   },
   "dependencies": {
@@ -33,13 +34,18 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^15.0.7",
     "@testing-library/user-event": "^14.6.3",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.2.1",
     "axe-core": "^4.12.1",
+    "jsdom": "^24.0.0",
     "tailwindcss": "^4.3.1",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.9"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

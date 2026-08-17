@@ -240,17 +240,12 @@ const MARKS: Partial<Record<Product, React.ReactNode>> = {
   "exxat-student-success": fitted(
     { width: 100, height: 78 },
     <>
-      <rect
-        x="62.5005"
-        y="28.5771"
-        width="39"
-        height="9"
-        rx="4"
-        transform="rotate(-45 62.5005 28.5771)"
-      />
-      <rect x="72.5005" y="0" width="24" height="9" rx="4" />
-      <rect x="88.5005" y="24" width="24" height="9" rx="4" transform="rotate(-90 88.5005 24)" />
-      <circle cx="35.5005" cy="30" r="16" />
+      {/* Coordinates carry 2 decimals, the precision this 100-unit box can show
+          once it is scaled to 21. The export's 4 were bytes, not pixels. */}
+      <rect x="62.5" y="28.58" width="39" height="9" rx="4" transform="rotate(-45 62.5 28.58)" />
+      <rect x="72.5" y="0" width="24" height="9" rx="4" />
+      <rect x="88.5" y="24" width="24" height="9" rx="4" transform="rotate(-90 88.5 24)" />
+      <circle cx="35.5" cy="30" r="16" />
       <path d={SUCCESS_TREND} />
     </>,
   ),

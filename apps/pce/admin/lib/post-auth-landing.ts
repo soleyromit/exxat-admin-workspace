@@ -29,8 +29,12 @@ export function isOnboardingComplete(): boolean {
  * slash and passes any `startsWith("//")` guard, yet the URL parser folds the
  * backslash into a second slash and hands back `evil.example` as the host. The
  * parser is the only thing that agrees with what the browser will actually do.
+ *
+ * Exported so the sign-in page can narrow `?next=` where it reads it, rather
+ * than carrying the raw query value around and trusting every later caller to
+ * remember. Re-applying it is safe: a path this returns passes again unchanged.
  */
-function safeInternalPath(next: string | null | undefined): string | null {
+export function safeInternalPath(next: string | null | undefined): string | null {
   if (!next || !next.startsWith("/")) return null
 
   let url: URL
