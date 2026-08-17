@@ -257,15 +257,16 @@ function TermWorkspaceInner() {
       .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) || a.responseRate - b.responseRate)
   }, [termSurveys, evalWin, term])
 
-  /* Status filter options — live counts appended to each label, in
-   * STATUS_LABELS' fixed lifecycle order (not a count sort — reverted
-   * 2026-08-17, Romit: "logically ordered" after ascending-by-count read as
-   * arbitrary to scan). not_configured leads because it's first in
-   * STATUS_LABELS itself, not a special case here. */
-  const statusFilterOptions = useMemo(() => {
+  /* Status filter counts — kept separate from the option label itself
+   * (2026-08-17, Romit: render the count as a Badge component in the
+   * dropdown row, not baked into the label string) so `label` stays plain
+   * text for the collapsed chip + search-within-filter matching
+   * (index.tsx:135, o.label.toLowerCase().includes(...)), while the count
+   * renders through renderFilterOptionValue below. */
+  const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const row of tableRows) counts[row.status] = (counts[row.status] ?? 0) + 1
-    return STATUS_LABELS.map(({ value, label }) => ({ value, label: `${label} (${counts[value] ?? 0})` }))
+    return counts
   }, [tableRows])
 
   /* Existing remind contract (surveys/remind reads ?ids + ?from only) —
@@ -333,7 +334,7 @@ function TermWorkspaceInner() {
         // (not left at 220) specifically to let the whole row fit without
         // horizontal scroll (2026-08-14, next catch).
         width: 208,
-        filter: { type: 'select', icon: 'fa-circle-dot', options: statusFilterOptions },
+        filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_LABELS },
         cell: (row) => row.status === 'not_configured' ? (
           <Badge variant="outline" className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium">
             <i className="fa-light fa-circle-dashed text-[10px]" aria-hidden="true" />
@@ -554,7 +555,7 @@ function TermWorkspaceInner() {
         },
       },
     ]
-  }, [router, fromOrigin, term?.id, statusFilterOptions])
+  }, [router, fromOrigin, term?.id])
 
   if (!term) {
     return (
@@ -699,6 +700,24 @@ function TermWorkspaceInner() {
                      an outside prop the way the old external tab did. */
                   data={tableRows}
                   columns={columns}
+                  /* Status filter dropdown rows — label + a neutral count
+                     Badge (2026-08-17, Romit: badge component, not text in
+                     parens). NEUTRAL_COUNT_BADGE precedent from
+                     term-evaluations-board.tsx's column chips: the option
+                     text already names the status, so a colored badge would
+                     just re-encode it. */
+                  renderFilterOptionValue={(fieldKey, value) => {
+                    if (fieldKey !== 'status') return undefined
+                    const label = STATUS_LABELS.find((o) => o.value === value)?.label ?? value
+                    return (
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="text-foreground">{label}</span>
+                        <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums">
+                          {statusCounts[value] ?? 0}
+                        </Badge>
+                      </span>
+                    )
+                  }}
                   getRowId={(row) => row.id}
                   getRowSelectionLabel={(row) => `${row.courseCode} evaluation`}
                   /* 2026-08-14 (Romit) — reinstated for bulk Remind/Extend
