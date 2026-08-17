@@ -23,6 +23,7 @@ export {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarNavLabel,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,

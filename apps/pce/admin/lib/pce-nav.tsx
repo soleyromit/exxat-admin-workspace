@@ -3,6 +3,7 @@
 
 import type * as React from "react"
 import { LeoIcon } from "@/components/ui/leo-icon"
+import { logoDevUrl } from "@/lib/logo-dev"
 
 export interface NavLinkItem {
   key: string
@@ -42,7 +43,7 @@ export const NAV_SCHOOLS: NavSchool[] = [
   {
     id: "jhu",
     name: "Johns Hopkins University",
-    logo: "https://img.logo.dev/jhu.edu?token=pk_X-1ZO13GSgeOoUrIuJ6BeQ",
+    logo: logoDevUrl("jhu.edu"),
     initials: "JH",
     programs: [
       { id: "som", name: "School of Medicine" },
@@ -53,7 +54,7 @@ export const NAV_SCHOOLS: NavSchool[] = [
   {
     id: "mayo",
     name: "Mayo Clinic Alix School of Medicine",
-    logo: "https://img.logo.dev/mayoclinic.org?token=pk_X-1ZO13GSgeOoUrIuJ6BeQ",
+    logo: logoDevUrl("mayoclinic.org"),
     initials: "MC",
     programs: [
       { id: "md", name: "Doctor of Medicine" },
@@ -105,8 +106,13 @@ export const NAV_ADMIN: NavLinkItem[] = [
     // /surveys (list) + /surveys/push (push evaluation) belong to this module,
     // as do the results viewer and the moderation queue (reached via buttons,
     // no nav row of their own). /surveys/programmatic/* defers to Programmatic
-    // Surveys (more specific).
-    activePrefixes: ["/surveys", "/results", "/moderation"],
+    // Surveys (more specific). /course-evaluation, /analytics, /admin/eval-
+    // settings are this item's own children's destinations, included here so
+    // the rail icon's active state is correct on direct navigation too.
+    activePrefixes: ["/surveys", "/results", "/moderation", "/course-evaluation", "/analytics", "/admin/eval-settings"],
+    // Same flyout/collapsible pattern as every other multi-child rail item
+    // (e.g. "Programmatic Surveys" below) — a nested secondary-panel variant
+    // was tried during the compact-shell migration and reverted (Aug 2026).
     children: [
       {
         key: "ce-dashboard",

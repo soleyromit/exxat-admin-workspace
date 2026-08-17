@@ -3,7 +3,9 @@
 import { useState, useMemo } from 'react'
 import {
   Badge, Button, Card, CardAction, CardContent, CardHeader, CardTitle,
-  Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, LocalBanner,
+  Checkbox, LocalBanner,
+  FloatingSheetPanel, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelBody,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   ToggleGroup, ToggleGroupItem,
 } from '@exxatdesignux/ui'
 import type { Reminder, EmailContact } from './step-communication'
@@ -71,8 +73,10 @@ interface StepReviewProps {
    *  to the program default so older callers don't break. */
   reminderAnchor?: ReminderAnchor
   reminderFrequency?: ReminderFrequency
-  /** CE-only survey title formula + instructions (Communication step) —
-   *  previously configured but never reviewed anywhere before Push. */
+  /** Accepted-but-unused (2026-08-13): Title/Instructions rows removed from
+   *  Survey design per request — this screen no longer previews them. Kept
+   *  as props rather than threading a removal through push/page.tsx and
+   *  term-setup/page.tsx's own callers. */
   surveyTitleTemplate?: string
   surveyInstructions?: string
   onEdit: (step: number) => void
@@ -119,7 +123,7 @@ function fmtShort(d: Date | undefined): string {
 // its old list-row rendering still applies: "the one thing on this screen
 // the admin is here to verify") — everything else is reference info that's
 // fine to clip on a narrow render.
-const COURSE_TABLE_GRID = `minmax(130px,1.1fr) 74px 128px 56px minmax(150px,1.3fr)`
+const COURSE_TABLE_GRID = `minmax(130px,1.1fr) 74px 128px 56px minmax(150px,1.3fr) 32px`
 
 /**
  * Checklist section — one verifiable row per wizard step (Mailchimp/Klaviyo
@@ -163,10 +167,7 @@ function Section({
   )
 }
 
-/** Shared label/value row — Section's `rows` prop renders these; Schedule &
- *  email also builds a few by hand (below) so the email-preview trigger and
- *  its Collapsible content share one Radix context, while keeping the exact
- *  same row anatomy as every other row on the page. */
+/** Shared label/value row — Section's `rows` prop renders these. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3 text-sm">
@@ -294,21 +295,32 @@ export function StepReview({
 
   const heading = surveyTitle.trim() || (surveyMode === 'course_evaluation' ? termName || 'Course evaluation' : 'Untitled survey')
 
-  // Email preview — expand-in-place (2026-08-12: replaces the persistent
-  // rail; RV-B, Zillow/GoFundMe review-screen shape). One trigger, one Tab
-  // stop: the visible Button IS the Radix trigger (CollapsibleTrigger
-  // asChild — the app-sidebar.tsx precedent), so Radix owns open state,
-  // aria-expanded, and aria-controls.
+  // Email preview — a real FloatingSheetPanel (2026-08-13: replaces the
+  // expand-in-place Collapsible; exxat-overlays never hand-composes a sheet
+  // out of Collapsible/inline content). One trigger opens it: the
+  // "Schedule & email" Button, or any course row's own preview icon below.
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewMode, setPreviewMode] = useState<'invitation' | 'reminder'>('invitation')
   const [testSent, setTestSent] = useState(false)
+  // Which course's merge fields resolve the preview — previously always
+  // courseRows[0], so a course table with 8 rows could only ever preview
+  // the first one. Each row's own Preview trigger (Survey design, below)
+  // sets this and opens the panel; the switcher inside the panel itself
+  // covers reaching any other course without returning to the table.
+  const [previewCourseId, setPreviewCourseId] = useState<string | undefined>(courseRows[0]?.offeringId)
+  const previewCourseRow = courseRows.find(r => r.offeringId === previewCourseId) ?? courseRows[0]
+
+  function openPreviewFor(offeringId: string) {
+    setPreviewCourseId(offeringId)
+    setPreviewOpen(true)
+  }
 
   function resolveMerge(text: string): string {
     return text
       .replace(/\{\{student_first_name\}\}/g, 'Alex')
-      .replace(/\{\{course_name\}\}/g, courseRows[0]?.code ?? 'your course')
+      .replace(/\{\{course_name\}\}/g, previewCourseRow?.code ?? 'your course')
       .replace(/\{\{term_name\}\}/g, termName || 'this term')
-      .replace(/\{\{close_date\}\}/g, fmtShort(closeDate))
+      .replace(/\{\{close_date\}\}/g, fmtShort(previewCourseRow?.closeDate ?? closeDate))
       .replace(/\{\{days_until_close\}\}/g, '3')
       .replace(/\{\{s\}\}/g, 's')
       // Sender, not the lowercase 'your program' placeholder — that fallback
@@ -326,22 +338,13 @@ export function StepReview({
     return { subject: emailSubject, body: emailBody }
   }, [previewMode, emailSubject, emailBody, reminderSameAsInvite, reminderSubject, reminderBody])
 
-  // CE-only survey title/instructions preview — resolved against the first
-  // course row, the same merge-field vocabulary Communication's own preview
-  // line uses (course_name / academic_year / term_name).
-  const resolvedSurveyTitle = surveyTitleTemplate
-    ? surveyTitleTemplate
-        .replace(/\{\{course_name\}\}/g, courseRows[0]?.name ?? 'Course name')
-        .replace(/\{\{academic_year\}\}/g, academicYear || 'Academic year')
-        .replace(/\{\{term_name\}\}/g, termName || 'Term name')
-    : null
-
   return (
-    /* Full-bleed step — single-column pre-flight checklist (2026-08-12:
+    <>
+    {/* Full-bleed step — single-column pre-flight checklist (2026-08-12:
        replaces the two-column checklist + persistent rail). Each section is
-       its own full-width card; the email preview expands in place inside
-       Schedule & email instead of riding a side rail. flex-1 + mt-auto
-       footer = footer anchored at the bottom. */
+       its own full-width card; the email preview opens in a FloatingSheetPanel
+       (2026-08-13) instead of riding a side rail. flex-1 + mt-auto
+       footer = footer anchored at the bottom. */}
     <div className="flex flex-col gap-4 flex-1">
       {/* ── Headline — RV-A is "headline + dispatch sentence", two lines, no
            more. The academic year rides the title rather than taking a line of
@@ -462,15 +465,6 @@ export function StepReview({
         title="Survey design"
         onEdit={() => onEdit(2)}
         rows={[
-          // CE-only title/instructions — configured in Communication, never
-          // reviewed anywhere before this (2026-08-12 gap). Resolved against
-          // the first course row, same merge vocabulary as its own preview.
-          ...(surveyMode === 'course_evaluation' && resolvedSurveyTitle
-            ? ([['Title', <span key="title" className="min-w-0 truncate" title={resolvedSurveyTitle}>{resolvedSurveyTitle}</span>]] as [string, React.ReactNode][])
-            : []),
-          ...(surveyMode === 'course_evaluation' && surveyInstructions?.trim()
-            ? ([['Instructions', <span key="instructions" className="min-w-0 line-clamp-2" style={{ color: 'var(--muted-foreground)' }}>{surveyInstructions}</span>]] as [string, React.ReactNode][])
-            : []),
           // Table format (2026-08-12, per the 9:30am "Survey design and
           // review" call — Romit: "Monu showed me... a table format...
           // I'll try to reorganize it that way"; the reviewer: "maybe a
@@ -499,6 +493,7 @@ export function StepReview({
                     <span>Window</span>
                     <span>Students</span>
                     <span>Evaluates</span>
+                    <span className="sr-only">Preview</span>
                   </div>
                   {courseRows.map(row => (
                     <div
@@ -529,6 +524,21 @@ export function StepReview({
                           ? row.evaluatedRoleLabels.join(', ')
                           : muted('No roles evaluated')}
                       </span>
+                      {/* Per-course email preview — resolveMerge previously
+                          always used courseRows[0], so a course beyond the
+                          first had no way to see its own merged subject/body
+                          (course name, per-course close date). */}
+                      {emailComplete ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Preview email for ${row.code}`}
+                          title={`Preview email for ${row.code}`}
+                          onClick={() => openPreviewFor(row.offeringId)}
+                        >
+                          <i className="fa-light fa-envelope-open-text" aria-hidden="true" />
+                        </Button>
+                      ) : <span />}
                     </div>
                   ))}
                 </div>
@@ -593,115 +603,38 @@ export function StepReview({
         state={!scheduleComplete || !emailComplete ? 'incomplete' : windowIssues.length > 0 && !ackWindow ? 'warning' : 'ready'}
         title="Schedule & email"
         onEdit={() => onEdit(3)}
-        // Rows built by hand in children (below), not via the generic `rows`
-        // prop — the Email row's preview trigger and its CollapsibleContent
-        // must share one Radix <Collapsible> ancestor to work at all, and
-        // `rows` always renders before `children` (breaking the trigger's
-        // position between Responses and Reminders) if split that way.
-        rows={[]}
-      >
-        {/* Once dates are set the headline sentence owns them (stated once);
-            the row only surfaces while the schedule is incomplete. */}
-        {!scheduleComplete && <Row label="Window">{muted('Dates not set')}</Row>}
-        {surveyMode === 'course_evaluation' && (
-          <Row label="Responses">
-            <span className="flex items-center gap-1.5">
-              <i className="fa-light fa-shield-check text-xs" aria-hidden="true" />
-              Anonymous
-            </span>
-          </Row>
-        )}
-        <Collapsible open={previewOpen} onOpenChange={setPreviewOpen}>
-          {/* Explicit gap-3 — Collapsible doesn't inherit CardContent's own
-              flex-col gap-3 (it's one child slot, not a passthrough), so
-              without this Email/Reminders/From rendered flush against each
-              other while Responses above kept its proper rhythm (2026-08-12
-              visual audit: "Reminders" and "From" read cramped next to
-              "Email" compared to the gap above it). */}
-          <div className="flex flex-col gap-3">
-            <Row label="Email">
-              {templateName ? (
-                <span className="flex items-center gap-3 flex-wrap">
-                  <span className="min-w-0 truncate">
-                    {templateName}
-                    {isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}
-                  </span>
-                  {/* Expand-in-place trigger — the visible Button IS the
-                      Collapsible trigger (asChild), so Radix owns
-                      aria-expanded/aria-controls without a duplicate
-                      sr-only trigger. */}
-                  <CollapsibleTrigger asChild>
-                    <Button variant="outline" size="xs">
-                      <i className={`fa-light ${previewOpen ? 'fa-chevron-up' : 'fa-envelope-open-text'} text-xs`} aria-hidden="true" />
-                      {previewOpen ? 'Hide preview' : 'Preview email'}
-                    </Button>
-                  </CollapsibleTrigger>
+        rows={[
+          // Once dates are set the headline sentence owns them (stated
+          // once); the row only surfaces while the schedule is incomplete.
+          ...(!scheduleComplete
+            ? ([['Window', muted('Dates not set')]] as [string, React.ReactNode][])
+            : []),
+          ...(surveyMode === 'course_evaluation'
+            ? ([['Responses', (
+                <span key="responses" className="flex items-center gap-1.5">
+                  <i className="fa-light fa-shield-check text-xs" aria-hidden="true" />
+                  Anonymous
                 </span>
-              ) : muted('Not set')}
-            </Row>
-            <Row label="Reminders">
-              {reminders.length === 0
-                ? muted('None scheduled')
-                : <>{reminderSameAsInvite ? 'Same as invitation' : reminderTemplateName}<span className="text-muted-foreground"> · {reminderSummary}</span></>}
-            </Row>
-            <Row label="From">{senderName || 'Exxat Surveys'}</Row>
-          </div>
-          {emailComplete && (
-            <CollapsibleContent>
-              {/* Capped at 600px — the width a real email client renders at. */}
-              <div className="flex flex-col gap-2.5 pt-1" style={{ maxWidth: 600 }}>
-                <div className="flex items-center gap-3">
-                  <ToggleGroup
-                    type="single"
-                    value={previewMode}
-                    onValueChange={v => { if (v) setPreviewMode(v as 'invitation' | 'reminder') }}
-                    variant="outline"
-                    size="sm"
-                    aria-label="Email preview type"
-                  >
-                    <ToggleGroupItem value="invitation">Invitation</ToggleGroupItem>
-                    <ToggleGroupItem value="reminder">Reminder</ToggleGroupItem>
-                  </ToggleGroup>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => setTestSent(true)}
-                    disabled={testSent}
-                  >
-                    {testSent ? (
-                      <>
-                        <i className="fa-solid fa-circle-check text-xs" aria-hidden="true" style={{ color: 'var(--qb-status-saved-fg)' }} />
-                        Test sent to you
-                      </>
-                    ) : 'Send test to me'}
-                  </Button>
-                </div>
-                <div className="rounded-md border border-border overflow-hidden" style={{ background: 'var(--card)' }}>
-                  <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
-                    <p className="text-xs text-muted-foreground truncate">From {senderName || 'Exxat Surveys'}</p>
-                    <p className="text-sm font-medium truncate" title={resolveMerge(preview.subject)}>
-                      {resolveMerge(preview.subject) || muted('No subject')}
-                    </p>
-                  </div>
-                  {/* tabIndex — a fixed-height overflow region with only static
-                      text inside has no focusable descendant, so a keyboard user
-                      has no way to reach or scroll it (WCAG 2.1.1). */}
-                  <div
-                    style={{ padding: 12, maxHeight: 320, overflowY: 'auto' }}
-                    tabIndex={0}
-                    role="region"
-                    aria-label="Email body preview"
-                  >
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--foreground)', lineHeight: 1.55 }}>
-                      {resolveMerge(preview.body)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleContent>
-          )}
-        </Collapsible>
+              )]] as [string, React.ReactNode][])
+            : []),
+          ['Email', templateName ? (
+            <span key="email" className="flex items-center gap-3 flex-wrap">
+              <span className="min-w-0 truncate">
+                {templateName}
+                {isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}
+              </span>
+              <Button variant="outline" size="xs" onClick={() => setPreviewOpen(true)}>
+                <i className="fa-light fa-envelope-open-text text-xs" aria-hidden="true" />
+                Preview email
+              </Button>
+            </span>
+          ) : muted('Not set')],
+          ['Reminders', reminders.length === 0
+            ? muted('None scheduled')
+            : <span key="reminders">{reminderSameAsInvite ? 'Same as invitation' : reminderTemplateName}<span className="text-muted-foreground"> · {reminderSummary}</span></span>],
+          ['From', senderName || 'Exxat Surveys'],
+        ]}
+      >
         {surveyMode === 'course_evaluation' && windowIssues.length > 0 && (
           <div className={emailComplete ? 'mt-1' : undefined}>
             <AckBanner
@@ -773,5 +706,91 @@ export function StepReview({
         </div>
       </div>
     </div>
+
+    {/* Email preview — real FloatingSheetPanel (exxat-overlays: never a
+        hand-composed inline expand). Opened by the "Schedule & email"
+        Button, or by a course row's own preview icon (Survey design). */}
+    <FloatingSheetPanel open={previewOpen} onOpenChange={setPreviewOpen}>
+      <FloatingSheetPanelContent contentSlot="review-email-preview">
+        <FloatingSheetPanelHeader
+          title="Email preview"
+          subtitle={previewCourseRow ? `${previewCourseRow.code} · ${previewCourseRow.name}` : undefined}
+          onClose={() => setPreviewOpen(false)}
+        />
+        <FloatingSheetPanelBody className="gap-3 px-4 pb-4">
+          {surveyMode === 'course_evaluation' && courseRows.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Previewing</span>
+              <Select value={previewCourseRow?.offeringId} onValueChange={setPreviewCourseId}>
+                <SelectTrigger className="h-8 text-xs" style={{ minWidth: 220 }} aria-label="Course to preview">
+                  <SelectValue />
+                </SelectTrigger>
+                {/* z-[90] — FloatingSheetPanelContent renders at z-[80]
+                    (floating-sheet-panel.tsx); SelectContent's own z-50
+                    default sits under that, so the popup opened invisibly
+                    behind the sheet (confirmed live: DOM/aria present, not
+                    painted). Matches the DS's own precedent for a popover
+                    nested in a sheet — FloatingSheetPanelToolbar's size
+                    DropdownMenuContent uses this same z-[90]. */}
+                <SelectContent className="z-[90]">
+                  {courseRows.map(r => (
+                    <SelectItem key={r.offeringId} value={r.offeringId}>{r.code} · {r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <ToggleGroup
+              type="single"
+              value={previewMode}
+              onValueChange={v => { if (v) setPreviewMode(v as 'invitation' | 'reminder') }}
+              variant="outline"
+              size="sm"
+              aria-label="Email preview type"
+            >
+              <ToggleGroupItem value="invitation">Invitation</ToggleGroupItem>
+              <ToggleGroupItem value="reminder">Reminder</ToggleGroupItem>
+            </ToggleGroup>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setTestSent(true)}
+              disabled={testSent}
+            >
+              {testSent ? (
+                <>
+                  <i className="fa-solid fa-circle-check text-xs" aria-hidden="true" style={{ color: 'var(--qb-status-saved-fg)' }} />
+                  Test sent to you
+                </>
+              ) : 'Send test to me'}
+            </Button>
+          </div>
+          <div className="rounded-md border border-border overflow-hidden" style={{ background: 'var(--card)' }}>
+            <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
+              <p className="text-xs text-muted-foreground truncate">From {senderName || 'Exxat Surveys'}</p>
+              <p className="text-sm font-medium truncate" title={resolveMerge(preview.subject)}>
+                {resolveMerge(preview.subject) || muted('No subject')}
+              </p>
+            </div>
+            {/* tabIndex — a fixed-height overflow region with only static
+                text inside has no focusable descendant, so a keyboard user
+                has no way to reach or scroll it (WCAG 2.1.1). */}
+            <div
+              style={{ padding: 12, maxHeight: 400, overflowY: 'auto' }}
+              tabIndex={0}
+              role="region"
+              aria-label="Email body preview"
+            >
+              <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--foreground)', lineHeight: 1.55 }}>
+                {resolveMerge(preview.body)}
+              </p>
+            </div>
+          </div>
+        </FloatingSheetPanelBody>
+      </FloatingSheetPanelContent>
+    </FloatingSheetPanel>
+    </>
   )
 }

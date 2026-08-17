@@ -1,4 +1,15 @@
-/** Stub — PCE admin has no logo.dev integration; returns empty string for mock school avatars. */
-export function logoDevUrl(_domain: string): string {
-  return ''
+/**
+ * logo.dev brand images — publishable key is safe in the browser (like the
+ * example: `https://img.logo.dev/stripe.com?token=pk_…`).
+ *
+ * Same default publishable key the DS's own reference app ships
+ * (`apps/web/lib/logo-dev.ts`) — override locally with
+ * `NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY` in `.env.local`.
+ */
+export const LOGO_DEV_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY ?? "pk_JltPpX0KR4WONn4HFjq3Aw"
+
+export function logoDevUrl(domain: string): string {
+  const q = new URLSearchParams({ token: LOGO_DEV_PUBLISHABLE_KEY })
+  return `https://img.logo.dev/${domain}?${q.toString()}`
 }

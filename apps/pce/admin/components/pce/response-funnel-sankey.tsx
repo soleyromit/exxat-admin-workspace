@@ -26,8 +26,9 @@
 
 import { useMemo } from 'react'
 import { Sankey, Layer, Rectangle, Tooltip } from 'recharts'
-import { ChartContainer, Card, CardContent } from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
+import { Card, CardContent } from '@exxatdesignux/ui'
+import { ChartContainer } from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { FUNNEL_STAGE_MEANING, type ResponseFunnel } from '@/lib/pce-funnel'
 

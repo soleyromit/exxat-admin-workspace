@@ -9,13 +9,14 @@
  */
 
 import { useMemo, type ReactNode } from 'react'
+import { Button, KeyMetrics, Avatar, AvatarFallback } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import {
-  Button, KeyMetrics, Avatar, AvatarFallback,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   ChartLegend, ChartLegendContent,
   chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui'
-import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
+} from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { XAxis, YAxis, LineChart, Line, CartesianGrid } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,

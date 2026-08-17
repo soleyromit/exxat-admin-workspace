@@ -71,12 +71,14 @@ import {
   FloatingSheetPanelContent,
   FloatingSheetPanelHeader,
   ToggleSwitch,
+} from '@exxatdesignux/ui'
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
+} from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
 import { RatingBreakdownRows } from '@/components/pce/rating-viz'

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { cookies } from "next/headers"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ProductProvider } from "@/contexts/product-context"
 import { ProductRouteSyncClient } from "@/components/product-route-sync-client"
@@ -10,6 +9,7 @@ import { DashboardViewProvider } from "@/contexts/dashboard-view-context"
 import { ChartVariantProvider } from "@/contexts/chart-variant-context"
 import { AskLeoSidebar } from "@/components/ask-leo-sidebar"
 import { AskLeoProvider } from "@/components/ask-leo-context"
+import { LeoAmbienceProvider } from "@/components/leo-ambience-context"
 import { KeyMetricsAskLeoBridge } from "@/components/key-metrics-ask-leo-bridge"
 import { SystemBannerProvider } from "@/contexts/system-banner-context"
 import { SystemBannerSlot } from "@/components/system-banner-slot"
@@ -20,22 +20,23 @@ import { SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { buildCommandMenuConfig } from "@/lib/command-menu-config"
 import { PCE_COMMAND_MENU_DATA_GROUPS } from "@/lib/pce-command-menu"
-import { SIDEBAR_STATE_COOKIE_NAME, sidebarDefaultOpenFromCookie } from "@/lib/sidebar-state-cookie"
 import { PceProvider } from "@/components/pce/pce-state"
+import { PceBrandSync } from "@/components/pce/pce-brand-sync"
+import { SchoolSwitcherProvider } from "@/contexts/school-switcher-context"
+import { CompactHeaderSlotProvider } from "@/contexts/compact-header-slot-context"
+import { UtilityBarSlot } from "@/components/utility-bar-slot"
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
-  const sidebarCookie = cookieStore.get(SIDEBAR_STATE_COOKIE_NAME)?.value
-  const sidebarDefaultOpen = sidebarDefaultOpenFromCookie(sidebarCookie)
-
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const commandMenuConfig = buildCommandMenuConfig({
     dataGroups: PCE_COMMAND_MENU_DATA_GROUPS,
   })
 
   return (
     <PceProvider>
+      <SchoolSwitcherProvider>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
         <ProductProvider>
+          <PceBrandSync />
           <ProductRouteSyncClient />
           <ProductSwitchOverlay />
           <ThemeColorSync />
@@ -43,35 +44,50 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <DashboardViewProvider>
               <ChartVariantProvider>
                 <AskLeoProvider>
+                  <LeoAmbienceProvider>
                   <KeyMetricsAskLeoBridge>
                     <SystemBannerProvider>
                       <CommandMenuProvider value={commandMenuConfig}>
-                        <SidebarShell
-                          defaultOpen={sidebarDefaultOpen}
-                          wrapperClassName="flex min-h-svh flex-col"
-                        >
-                          <CommandMenu />
-                          <SystemBannerSlot />
-                          <div className="flex min-h-0 w-full flex-1 items-stretch has-data-[variant=inset]:bg-sidebar">
-                            <SecondaryPanelProvider>
-                              <AppSidebar variant="inset" />
-                              <SecondaryPanel />
-                              <SidebarInset aria-label="Main content">
-                                {children}
-                              </SidebarInset>
-                            </SecondaryPanelProvider>
-                            <AskLeoSidebar />
-                          </div>
-                        </SidebarShell>
+                        <CompactHeaderSlotProvider>
+                          <SidebarShell
+                            // Compact-shell migration (Aug 2026): rail defaults to
+                            // icon-only every load, matching the Design OS target —
+                            // no longer restored from the sidebar_state_v2 cookie.
+                            // SidebarTrigger (⌘B) in UtilityBarSlot still lets a
+                            // user expand it for the session if they want labels.
+                            defaultOpen={false}
+                            wrapperClassName="flex min-h-svh flex-col"
+                          >
+                            <CommandMenu />
+                            <SystemBannerSlot />
+                            {/* Full-width — sits ABOVE the sidebar+content row,
+                                not scoped to the content area. The rail below
+                                carries no brand header of its own; the product
+                                label lives here. */}
+                            <UtilityBarSlot />
+                            <div className="flex min-h-0 w-full flex-1 items-stretch has-data-[variant=inset]:bg-sidebar">
+                              <SecondaryPanelProvider>
+                                <AppSidebar variant="sidebar" />
+                                <SecondaryPanel />
+                                <SidebarInset aria-label="Main content">
+                                  {children}
+                                </SidebarInset>
+                              </SecondaryPanelProvider>
+                              <AskLeoSidebar />
+                            </div>
+                          </SidebarShell>
+                        </CompactHeaderSlotProvider>
                       </CommandMenuProvider>
                     </SystemBannerProvider>
                   </KeyMetricsAskLeoBridge>
+                  </LeoAmbienceProvider>
                 </AskLeoProvider>
               </ChartVariantProvider>
             </DashboardViewProvider>
           </TooltipProvider>
         </ProductProvider>
       </ThemeProvider>
+      </SchoolSwitcherProvider>
     </PceProvider>
   )
 }

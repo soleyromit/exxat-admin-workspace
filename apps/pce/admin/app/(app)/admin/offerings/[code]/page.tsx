@@ -3,12 +3,12 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { Button } from '@exxatdesignux/ui'
 import {
-  Button,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
+} from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,

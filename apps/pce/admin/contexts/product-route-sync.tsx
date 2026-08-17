@@ -1,3 +1,5 @@
+"use client"
+
 /** Shim — re-exports route-sync hooks from `@exxatdesignux/ui/components/shell`. */
 
 export {

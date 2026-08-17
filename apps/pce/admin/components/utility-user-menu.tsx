@@ -2,15 +2,17 @@
 
 /**
  * UtilityUserMenu — compact profile/account trigger for the shell utility
- * bar. Same menu content as the old sidebar `NavUser`, but a small
+ * bar. Same menu content as the sidebar rail's identity menu (role toggle,
+ * Appearance, Demo account — see identity-menu-items.tsx), just a small
  * avatar-only trigger suited to a horizontal bar rather than the sidebar
  * rail (no `useSidebar()` icon-collapse branching needed here).
  */
 
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import { useTheme } from "@exxatdesignux/ui/hooks/use-color-scheme"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAppTheme } from "@/hooks/use-app-theme"
-import { NAV_USER } from "@/lib/mock/navigation"
+import { usePce } from "@/components/pce/pce-state"
+import { useLogOut } from "@/hooks/use-log-out"
+import { MOCK_FACULTY } from "@/lib/pce-mock-data"
+import {
+  AccountPreferencesMenu,
+  DemoAccountMenuItem,
+} from "@/components/pce/identity-menu-items"
 import { utilityBarActionButtonClass } from "@/components/utility-bar-chrome"
 import { cn } from "@/lib/utils"
 
@@ -30,26 +38,27 @@ export function UtilityUserMenu() {
   const { theme } = useTheme()
   const { mounted } = useAppTheme()
   const safeTheme = mounted ? (theme ?? "system") : "system"
-  const user = NAV_USER
+  const { user } = usePce()
+  const logOut = useLogOut()
+  const avatarUrl = MOCK_FACULTY.find(f => f.id === user.facultyId)?.avatarUrl ?? ""
 
   return (
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               aria-label={`${user.name}, open profile and settings menu`}
-              className={cn(
-                "flex size-8 shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                utilityBarActionButtonClass,
-              )}
+              className={cn("rounded-full", utilityBarActionButtonClass)}
             >
               <Avatar className="size-8">
-                <AvatarImage src={user.avatar} alt="" className="object-cover" aria-hidden="true" />
+                <AvatarImage src={avatarUrl} alt="" className="object-cover" aria-hidden="true" />
                 <AvatarFallback aria-hidden="true">{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
-            </button>
+            </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">{user.name}</TooltipContent>
@@ -60,7 +69,7 @@ export function UtilityUserMenu() {
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 p-1.5 text-start text-sm">
             <Avatar className="size-8">
-              <AvatarImage src={user.avatar} alt="" className="object-cover" aria-hidden="true" />
+              <AvatarImage src={avatarUrl} alt="" className="object-cover" aria-hidden="true" />
               <AvatarFallback aria-hidden="true">{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-start text-sm leading-tight">
@@ -74,16 +83,8 @@ export function UtilityUserMenu() {
 
         {/* ── Account actions ────────────────────────────── */}
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <i className="fa-light fa-circle-user" aria-hidden="true" />
-            Account
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <i className="fa-light fa-credit-card" aria-hidden="true" />
-            Billing
-          </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="/settings/profile" className="cursor-pointer">
+            <Link href="/settings/profile" className="cursor-pointer">
               <i className="fa-light fa-sliders" aria-hidden="true" />
               Profile settings
               <span className="ms-auto text-xs text-muted-foreground capitalize">{safeTheme}</span>
@@ -91,10 +92,13 @@ export function UtilityUserMenu() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
+        <AccountPreferencesMenu />
+        <DemoAccountMenuItem />
+
         <DropdownMenuSeparator />
 
         {/* ── Sign out ───────────────────────────────────── */}
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={logOut}>
           <i className="fa-light fa-arrow-right-from-bracket" aria-hidden="true" />
           Log out
         </DropdownMenuItem>

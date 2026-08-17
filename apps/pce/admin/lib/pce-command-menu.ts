@@ -50,6 +50,8 @@ const PAGE_ROUTES = [
   { id: "page-compare-push-step2-template-flow-inline", label: "Compare · Template flow (inline, no modal)", keywords: "variant compare template switch flow conflict override create-new inline no modal", href: "/compare/push-step2-template-flow-inline", icon: "fa-light fa-table-list" },
   { id: "page-compare-push-step2-template-flow-forward", label: "Compare · Template flow (consequence-forward)", keywords: "variant compare template switch flow conflict caption before pick", href: "/compare/push-step2-template-flow-forward", icon: "fa-light fa-table-list" },
   { id: "page-compare-push-step2-template-flow-wizard", label: "Compare · Template flow (2-step mini-wizard)", keywords: "variant compare template switch flow conflict wizard step pick resolve", href: "/compare/push-step2-template-flow-wizard", icon: "fa-light fa-table-list" },
+  { id: "page-compare-push-step3-survey-title-builder", label: "Compare · Survey title builder (A–E)", keywords: "variant compare survey title merge field chips formula slots reorder preview", href: "/compare/push-step3-survey-title-builder", icon: "fa-light fa-table-list" },
+  { id: "page-compare-push-step3-survey-title-builder-v2", label: "Compare · Survey title builder v2 (inline tokens)", keywords: "variant compare survey title merge field inline token pill hubspot slash preset formula", href: "/compare/push-step3-survey-title-builder-v2", icon: "fa-light fa-table-list" },
   { id: "page-settings",          label: "Settings",                             href: "/settings",                  icon: "fa-light fa-gear" },
   { id: "page-help",              label: "Help",                                 href: "/help",                      icon: "fa-light fa-circle-question" },
 ]

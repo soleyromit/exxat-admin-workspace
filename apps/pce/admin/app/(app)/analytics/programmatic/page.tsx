@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
+import { Button, KeyMetrics } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import {
-  Button, KeyMetrics,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   ChartLegend, ChartLegendContent,
   chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui'
-import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
+} from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import {
   XAxis, YAxis, LineChart, Line, CartesianGrid, ReferenceLine, BarChart, Bar,
 } from 'recharts'

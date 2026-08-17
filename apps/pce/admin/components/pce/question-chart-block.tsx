@@ -3,12 +3,12 @@
 import { BarChart, Bar, XAxis, YAxis } from 'recharts'
 import {
   Button,
-  ChartContainer,
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
   StatusBadge,
 } from '@exxatdesignux/ui'
+import { ChartContainer } from '@exxatdesignux/ui/components/ui/chart'
 import { SENTIMENT_CHIP } from '@/components/pce/pce-badges'
-import type { ChartConfig } from '@exxatdesignux/ui'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import type { TemplateQuestion, QuestionScore } from '@/lib/pce-mock-data'
 import {
   MOCK_OPEN_TEXT_RESPONSES,

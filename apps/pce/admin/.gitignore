@@ -1,1 +1,4 @@
 .vercel
+
+# exxat-ui upgrade backups (the ejected.json ledger beside them is committed)
+.exxat-ui/backups/

@@ -1,159 +1,62 @@
 "use client"
 
 /**
- * UtilityBarSlot — persistent shell row for global utility actions
- * (Search, Ask Leo, Notifications, Settings, Help, Profile, and — in the
- * "utility-bar" shell layout variant — the product switcher too).
+ * UtilityBarSlot — persistent, full-width shell row for global utility
+ * actions. Mounted ONCE in `app/(app)/layout.tsx`, ABOVE and OUTSIDE the
+ * sidebar+content row — matching the DS's `UtilityBarSlot` full-width variant
+ * (`apps/web/components/utility-bar-slot.tsx`), not scoped to the content
+ * area. This is what fixes the compact-shell migration's biggest structural
+ * gap: the rail used to carry its own brand header and the bar was
+ * content-scoped (inside `SiteHeader`); now the rail is icon rows only and
+ * the bar spans the full viewport width, sitting above it.
  *
- * Three shell layout variants, driven by `useShellLayout()`:
- *   - "sidebar-classic": not mounted — actions live in the sidebar.
- *   - "utility-sidebar": mounted inside `[data-app-shell-workspace]`,
- *     spanning the secondary rail + main canvas only.
- *   - "utility-bar": mounted as a full-width row ABOVE the sidebar+workspace
- *     row. Product switcher renders in the bar's left cluster.
- *
- * At mobile / high-zoom (`useUtilityBarCompact`), Search, Ask Leo, Help, and
- * Settings collapse into a single More menu; Notifications + profile stay visible.
+ * Leading: sidebar toggle · product label. Middle: portal target for the
+ * active page's `SiteHeader` breadcrumb/back-link (see
+ * `contexts/compact-header-slot-context.tsx`). Trailing: search ·
+ * notifications · what's new · help · Ask Leo · school switcher · profile.
  */
 
 import * as React from "react"
-import { Link, useLocation } from "react-router-dom"
-
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Separator } from "@/components/ui/separator"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
 import { requestOpenCommandMenu } from "@/components/command-menu"
-import { AskLeoShortcutKbds, useAskLeo } from "@/components/ask-leo-context"
-import { AskLeoToggle } from "@/components/ask-leo-sidebar"
+import { useAskLeo } from "@/components/ask-leo-context"
+import { useOneShotIntro } from "@/hooks/use-one-shot-intro"
+import { AskLeoUtilityWash } from "@/components/pce/ask-leo-utility-wash"
 import { NotificationBell } from "@/components/notification-bell"
+import { UtilityBarWhatsNew } from "@/components/utility-bar-whats-new"
 import { UtilityUserMenu } from "@/components/utility-user-menu"
-import { UtilityBarProductSwitcher } from "@/components/utility-bar-product-switcher"
-import { useProduct } from "@/contexts/product-context"
-import { useShellLayout, isFullWidthUtilityBar } from "@/contexts/shell-layout-context"
-import { getSecondaryNavForProduct } from "@/lib/mock/navigation"
-import { cn } from "@/lib/utils"
+import { UtilityBarProductLabel } from "@/components/pce/utility-bar-product-label"
+import { UtilityBarSchoolSwitcher } from "@/components/pce/utility-bar-school-switcher"
 import { utilityBarActionButtonClass } from "@/components/utility-bar-chrome"
+import { useCompactHeaderSlotRef } from "@/contexts/compact-header-slot-context"
+import { cn } from "@/lib/utils"
 
-const SUPPRESS_UTILITY_BAR_PATHS: ReadonlyArray<string> = ["/builder/onboarding"]
-
-function useUtilityBarCompact() {
-  const isMobile = useIsMobile()
-  const reflowZoom = useSidebarReflowZoom()
-  return isMobile || reflowZoom
-}
-
-export function UtilityBarSlot() {
-  const location = useLocation()
-  const { variant } = useShellLayout()
-  const fullWidth = isFullWidthUtilityBar(variant)
-  const compact = useUtilityBarCompact()
-  if (SUPPRESS_UTILITY_BAR_PATHS.some(path => location.pathname.startsWith(path))) return null
-
-  return (
-    <nav
-      aria-label="Global utilities"
-      data-slot="utility-bar"
-      className={cn(
-        "relative flex min-w-0 shrink-0 items-center gap-1",
-        fullWidth
-          ? "z-30 h-12 min-h-12 w-full bg-sidebar pe-2 sm:pe-3"
-          : "z-40 mx-2 mb-1.5 overflow-hidden py-1 md:mb-2",
-      )}
-    >
-      {fullWidth ? <UtilityBarProductSwitcher /> : null}
-
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
-        {compact ? (
-          <>
-            <NotificationBell className={utilityBarActionButtonClass} />
-            <UtilityBarMoreMenu />
-          </>
-        ) : (
-          <>
-            <SearchTrigger />
-            <AskLeoToggle className={utilityBarActionButtonClass} />
-            <NotificationBell className={utilityBarActionButtonClass} />
-            <HelpTrigger />
-            <SettingsTrigger />
-          </>
-        )}
-      </div>
-
-      <div className="mx-0.5 h-5 w-px shrink-0 bg-border sm:mx-1" aria-hidden="true" />
-      <div className="shrink-0">
-        <UtilityUserMenu />
-      </div>
-    </nav>
-  )
-}
-
-function UtilityBarMoreMenu() {
+function UtilityBarSidebarToggle() {
+  const { state, isMobile } = useSidebar()
   const mod = useModKeyLabel()
-  const { product } = useProduct()
-  const [settings] = getSecondaryNavForProduct(product)
-  const { toggle: toggleAskLeo, open: askLeoOpen } = useAskLeo()
-
+  const collapsed = state === "collapsed" && !isMobile
+  const label = collapsed ? "Expand sidebar" : "Collapse sidebar"
   return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="More utilities"
-              className={utilityBarActionButtonClass}
-            >
-              <i className="fa-light fa-ellipsis text-sm" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">More</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="end" side="bottom" sideOffset={8} className="w-52">
-        <DropdownMenuItem
-          onClick={() => requestOpenCommandMenu()}
-          className="gap-2"
-        >
-          <i className="fa-light fa-magnifying-glass w-4 text-center text-sm" aria-hidden="true" />
-          <span className="flex-1">Search</span>
-          <KbdGroup className="ms-auto">
-            <Kbd>{mod}</Kbd>
-            <Kbd>K</Kbd>
-          </KbdGroup>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={toggleAskLeo} className="gap-2">
-          <i
-            className="fa-duotone fa-solid fa-star-christmas w-4 text-center text-sm text-brand"
-            aria-hidden="true"
-          />
-          <span className="flex-1">{askLeoOpen ? "Close Ask Leo" : "Ask Leo"}</span>
-          <AskLeoShortcutKbds className="ms-auto" />
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="gap-2">
-          <Link to="/help">
-            <i className="fa-light fa-circle-question w-4 text-center text-sm" aria-hidden="true" />
-            Get Help
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="gap-2">
-          <Link to={settings.url}>
-            <i className="fa-light fa-gear w-4 text-center text-sm" aria-hidden="true" />
-            {settings.title}
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <SidebarTrigger
+          aria-label={label}
+          className={cn("size-8 shrink-0 text-sidebar-foreground", utilityBarActionButtonClass)}
+        />
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="flex flex-wrap items-center gap-1.5">
+        <span>{label}</span>
+        <KbdGroup>
+          <Kbd>{mod}</Kbd>
+          <Kbd>B</Kbd>
+        </KbdGroup>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -167,8 +70,8 @@ function SearchTrigger() {
           variant="ghost"
           size="icon-sm"
           aria-label="Search"
+          onClick={requestOpenCommandMenu}
           className={utilityBarActionButtonClass}
-          onClick={() => requestOpenCommandMenu()}
         >
           <i className="fa-light fa-magnifying-glass text-sm" aria-hidden="true" />
         </Button>
@@ -180,31 +83,6 @@ function SearchTrigger() {
           <Kbd>K</Kbd>
         </KbdGroup>
       </TooltipContent>
-    </Tooltip>
-  )
-}
-
-function SettingsTrigger() {
-  const { product } = useProduct()
-  const [settings] = getSecondaryNavForProduct(product)
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={settings.title}
-          className={utilityBarActionButtonClass}
-          asChild
-        >
-          <Link to={settings.url}>
-            <i className="fa-light fa-gear text-sm" aria-hidden="true" />
-          </Link>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{settings.title}</TooltipContent>
     </Tooltip>
   )
 }
@@ -221,12 +99,121 @@ function HelpTrigger() {
           className={utilityBarActionButtonClass}
           asChild
         >
-          <Link to="/help">
+          <a href="/help">
             <i className="fa-light fa-circle-question text-sm" aria-hidden="true" />
-          </Link>
+          </a>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">Get Help</TooltipContent>
     </Tooltip>
+  )
+}
+
+const askLeoLauncherChipClass =
+  "border-brand/45 bg-transparent hover:border-brand/70 hover:bg-transparent focus-visible:bg-transparent data-[leo-open]:border-brand data-[leo-open]:bg-transparent"
+
+function AskLeoControl() {
+  const { open, setOpen } = useAskLeo()
+  /* One-shot arrival glow — see AskLeoUtilityWash for the wash layer this
+     pairs with. Started upstairs so a replay doesn't retrigger on every
+     re-render once the intro has already played this session. */
+  const glowIntro = useOneShotIntro("ask-leo-launcher")
+
+  return (
+    <div
+      data-ask-leo-utility-glow-wrap=""
+      data-intro={glowIntro.active ? "" : undefined}
+      className="relative z-[1] flex shrink-0 items-center"
+    >
+      <AskLeoUtilityWash introActive={glowIntro.active} />
+      <span
+        aria-hidden
+        data-ask-leo-utility-glow=""
+        className="pointer-events-none absolute inset-0 forced-colors:hidden"
+        onAnimationEnd={event => {
+          if (event.animationName === "ask-leo-utility-glow-intro") {
+            glowIntro.end()
+          }
+        }}
+      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-slot="ask-leo-toggle"
+            aria-label="Ask Leo"
+            data-leo-open={open ? "" : undefined}
+            onClick={() => setOpen(true)}
+            className={cn(
+              "relative z-[1] gap-1.5 px-2.5",
+              askLeoLauncherChipClass,
+              utilityBarActionButtonClass,
+            )}
+          >
+            <i className="fa-light fa-sparkles text-sm" aria-hidden="true" />
+            Ask Leo
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Ask Leo</TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
+/** Portal target for the active page's `SiteHeader` breadcrumb / back-link. */
+function UtilityBarBreadcrumbSlot() {
+  const registerHeaderSlot = useCompactHeaderSlotRef()
+  return (
+    <div
+      ref={registerHeaderSlot}
+      data-compact-header-slot=""
+      className="flex h-full min-h-0 min-w-0 flex-1 items-center overflow-hidden"
+    />
+  )
+}
+
+export function UtilityBarSlot() {
+  return (
+    <nav
+      aria-label="Global utilities"
+      data-slot="utility-bar"
+      className="sticky top-0 z-50 flex h-(--shell-utility-bar-height) min-h-(--shell-utility-bar-height) w-full min-w-0 shrink-0 items-center gap-1 border-b border-sidebar-border bg-background pe-3"
+    >
+      <div className="flex min-w-0 shrink items-center self-stretch gap-0">
+        <div className="flex h-full shrink-0 items-center justify-center w-(--sidebar-width-icon)">
+          <UtilityBarSidebarToggle />
+        </div>
+        <Separator
+          orientation="vertical"
+          className="data-[orientation=vertical]:h-auto data-[orientation=vertical]:min-h-full data-[orientation=vertical]:self-stretch data-[orientation=vertical]:w-px"
+        />
+        <div className="flex min-w-0 items-center px-1.5">
+          <UtilityBarProductLabel />
+        </div>
+        <Separator
+          orientation="vertical"
+          className="h-4 shrink-0 self-center data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
+        />
+      </div>
+
+      <UtilityBarBreadcrumbSlot />
+
+      <div className="relative z-[1] ms-auto flex min-w-0 shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
+          <SearchTrigger />
+          <NotificationBell />
+          <UtilityBarWhatsNew />
+          <HelpTrigger />
+          <AskLeoControl />
+        </div>
+        <div className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+        <div className="flex min-w-0 shrink-0 items-center gap-1">
+          <UtilityBarSchoolSwitcher />
+          <UtilityUserMenu />
+        </div>
+      </div>
+    </nav>
   )
 }

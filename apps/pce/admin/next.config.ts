@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       // DS dist imports react-router-dom directly; remap to a Next-safe shim
       // so DS shell components render without a <Router> wrapper.
       'react-router-dom': './lib/react-router-compat.tsx',
+      // @exxatdesignux/ui@0.7+ moved its internal router imports from
+      // react-router-dom to bare react-router (DS 0.7.0 breaking change) —
+      // same shim covers both, since the hooks it needs are identical.
+      'react-router': './lib/react-router-compat.tsx',
       // Turbopack otherwise resolves react-hook-form's "react-server" export
       // (react-server.esm.mjs) which strips Controller/FormProvider/
       // useFormContext. Force the full ESM build so DS Form components compile.
@@ -39,6 +43,9 @@ const nextConfig: NextConfig = {
       // @exxatdesignux/ui dist imports react-router-dom directly; remap to
       // a Next.js-compatible shim so DS shell components work without a <Router>.
       'react-router-dom': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
+      // @exxatdesignux/ui@0.7+ moved its internal router imports from
+      // react-router-dom to bare react-router (DS 0.7.0 breaking change).
+      'react-router': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
     }
     return config
   },

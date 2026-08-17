@@ -1,4 +1,6 @@
 @import '@exxatdesignux/ui/globals.css';
+@import './styles/leo-blob-animations.css';
+@import './styles/ask-leo-utility-chip.css';
 
 /* Explicit @source paths so Tailwind v4 scans both the DS dist and this app's
    own files regardless of where this CSS file sits in the directory tree.
@@ -205,35 +207,6 @@
 
   --pce-impact-bg:                color-mix(in oklch, var(--destructive) 8%, var(--background));
   --pce-impact-border:            color-mix(in oklch, var(--destructive) 20%, transparent);
-}
-
-/* ── App sidebar — flat nav style ─────────────────────────────────────────── */
-/* npm 0.6.30 uses min-h-7/h-auto (28px); DS monorepo uses h-8 (32px). Match monorepo. */
-[data-sidebar="menu-button"]:not([data-size="lg"]) {
-  height: 2rem;
-  min-height: 2rem;
-}
-[data-sidebar="menu-button"] {
-  background-color: transparent;
-  box-shadow: none;
-  font-weight: 400;
-}
-[data-sidebar="menu-button"]:hover {
-  background-color: var(--sidebar-accent);
-  color: var(--sidebar-accent-foreground);
-  box-shadow: none;
-}
-[data-sidebar="menu-button"][data-active="true"] {
-  background-color: var(--sidebar-accent);
-  color: var(--sidebar-accent-foreground);
-  font-weight: 400;
-  box-shadow: none;
-}
-[data-sidebar="menu-button"].sidebar-brand-btn,
-[data-sidebar="menu-button"].sidebar-brand-btn:hover {
-  background-color: transparent;
-  box-shadow: none;
-  cursor: default;
 }
 
 /* Recharts injects this span for internal text measurement; clamp to DS 12px floor */

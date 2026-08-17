@@ -20,8 +20,8 @@
  */
 
 import * as React from 'react'
-import { ChartContainer } from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
+import { ChartContainer } from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine } from 'recharts'
 
 export interface BulletGaugeProps {

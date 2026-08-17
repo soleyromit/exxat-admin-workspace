@@ -14,7 +14,8 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@exxatdesignux/ui'
-import type { ChartConfig, MetricItem } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { SiteHeader } from '@/components/site-header'
 import { TruncatedText } from '@/components/truncated-text'
 import { usePce } from '@/components/pce/pce-state'

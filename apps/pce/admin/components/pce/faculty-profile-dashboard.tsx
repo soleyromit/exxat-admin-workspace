@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Avatar, AvatarFallback, Button, Badge } from '@exxatdesignux/ui'
 import {
-  Avatar, AvatarFallback, Button, Badge,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui'
-import type { ChartConfig } from '@exxatdesignux/ui'
+} from '@exxatdesignux/ui/components/ui/chart'
+import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,

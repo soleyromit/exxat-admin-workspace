@@ -265,7 +265,11 @@ function DevReviewHUDInner({ product }: { product?: string }) {
   // reviews layout/components/patterns → auto-fixes). Untick "on load" to pause.
   const [deepAuto, setDeepAuto] = useState(true);
   const deepDoneRef = useRef('');
-  const [pos, setPos] = useState({ right: 12, bottom: 12 });
+  // Default sits above the Leo launcher FAB (end:24/bottom:16, 56px) — that
+  // FAB spans bottom 16-72px in its own default corner, so bottom:12 (this
+  // badge's old default) directly overlapped and ate its clicks. Still
+  // user-draggable via `startDrag` below if either one moves.
+  const [pos, setPos] = useState({ right: 12, bottom: 88 });
   const runSeq = useRef(0);
   // Issue ids already sent to the bridge — dedupes so auto-fix never re-sends a
   // finding or loops on one it already attempted, while still firing for NEW
