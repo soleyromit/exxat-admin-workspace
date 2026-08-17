@@ -10,6 +10,7 @@ import { DefaultProductRedirect } from "@/contexts/default-product-redirect"
 import { TENANT_PRODUCT_SHELL_HUB_SEGMENTS } from "@exxatdesignux/product-framework"
 import { PRISM_HUB_SEGMENTS, ONE_SITES_HUB_SEGMENTS, ONE_SCHOOLS_HUB_SEGMENTS } from "@/lib/mock/navigation"
 import { getStorageItem } from "@exxatdesignux/ui/lib/persisted-state"
+import { designOsLegacyRootRedirects, designOsProductChildRoutes } from "./pages/design-system/routes"
 
 /** Per-device flag set when the builder onboarding flow completes. */
 const ONBOARDING_COMPLETE_KEY = "builder:onboarding-complete:v1"
@@ -155,6 +156,7 @@ function productChildren(): RouteObject[] {
       element: lazyPage(() => import("./pages/settings-organization")),
       errorElement: <RouteError />,
     },
+    ...designOsProductChildRoutes(),
   ]
 }
 
@@ -243,4 +245,5 @@ export const routes: RouteObject[] = [
     path: "*",
     element: lazyPage(() => import("./pages/_not-found")),
   },
+  ...designOsLegacyRootRedirects(),
 ]

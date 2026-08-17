@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom"
+import { Outlet, useLocation } from "react-router"
 
 import { SecondaryPanelHubActivator } from "@/components/templates/secondary-panel-hub-template"
 import { isLearningActivitiesHubPath } from "@/lib/learning-activities-nav"

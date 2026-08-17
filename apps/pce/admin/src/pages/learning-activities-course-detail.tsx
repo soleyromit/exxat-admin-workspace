@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { useParams } from "react-router-dom"
+import { useParams } from "react-router"
 
 import { LearningActivitiesCourseDetailClient } from "@/components/learning-activities-course-detail-client"
 

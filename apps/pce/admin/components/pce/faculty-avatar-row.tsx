@@ -21,6 +21,18 @@
 import { AvatarGroup, AvatarGroupCount, AvatarInitials, Tip } from '@exxatdesignux/ui'
 import type { PceInstructor } from '@/lib/pce-mock-data'
 
+// Program Director gets a distinct ring — Aarti, same meeting (0ef80c33):
+// "the program director who has senior program complete visibility across
+// everything can be shown in a different color... people who just have
+// affiliation to that course can be shown in a different color icon."
+// `--chart-3` not brand-color (feedback_ds_typography_color_discipline:
+// brand-color is reserved for primary CTAs, never identity/semantic state)
+// and not `--chart-2` (already means "correct/selected" elsewhere in the
+// product). Ring, not a background recolor, so initials stay legible.
+// Color is a secondary cue only — the Tip label carries the position too,
+// so the distinction survives for screen readers and non-color viewing.
+const isProgramDirector = (i: PceInstructor) => i.position === 'Program Director'
+
 export function FacultyAvatarRow({ instructors, className }: { instructors: PceInstructor[]; className?: string }) {
   if (instructors.length === 0) return null
   const MAX = 3
@@ -29,13 +41,20 @@ export function FacultyAvatarRow({ instructors, className }: { instructors: PceI
   const names = instructors.map((i) => i.name).join(', ')
   return (
     <AvatarGroup className={className ?? 'gap-0.5'} role="group" aria-label={`Faculty: ${names}`}>
-      {shown.map((i) => (
-        <Tip key={i.id} label={i.name} side="top">
-          <span tabIndex={0} className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
-            <AvatarInitials initials={i.initials} size="sm" className="size-5" />
-          </span>
-        </Tip>
-      ))}
+      {shown.map((i) => {
+        const isPD = isProgramDirector(i)
+        return (
+          <Tip key={i.id} label={isPD ? `${i.name} — Program Director` : i.name} side="top">
+            <span
+              tabIndex={0}
+              className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              style={isPD ? { boxShadow: '0 0 0 1.5px var(--chart-3)', borderRadius: '9999px' } : undefined}
+            >
+              <AvatarInitials initials={i.initials} size="sm" className="size-5" />
+            </span>
+          </Tip>
+        )
+      })}
       {overflow > 0 && <AvatarGroupCount className="text-[11px]">+{overflow}</AvatarGroupCount>}
     </AvatarGroup>
   )

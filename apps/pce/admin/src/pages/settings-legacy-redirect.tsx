@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from "react-router-dom"
+import { Navigate, useLocation } from "react-router"
 import { useProductOrganizationSettingsHref } from "@/contexts/product-route-sync"
 
 /** Back-compat for `/settings` and `/settings#appearance`. */

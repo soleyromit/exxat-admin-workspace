@@ -159,6 +159,9 @@ Cite these in the design brief by name + Mx codes:
 - [ ] One H1.
 - [ ] Status row visible without scrolling.
 - [ ] One filled primary action; overflow has the rest (⋯ → Export when rows are exportable + **`ExportDrawer`**).
+- [ ] Module toolbars below tabs use `size="sm"` — see [`detail-action-hierarchy-pattern.md`](../detail-action-hierarchy-pattern.md).
+- [ ] Primary nav hidden (not icon-rail) — register in `lib/record-detail-chrome.ts` — see [`record-detail-chrome-pattern.md`](../record-detail-chrome-pattern.md).
+- [ ] No `SidebarTrigger` in the breadcrumb bar.
 - [ ] 2-col card grid for fields (or tabs if ≥ 4 sections / 20+ fields).
 - [ ] `Skeleton` matches the IA on load; empty state designed for "not found".
 - [ ] Tab order: breadcrumb → identity → primary → overflow → fields.
@@ -167,6 +170,8 @@ Cite these in the design brief by name + Mx codes:
 
 ## 12. Reference
 
+- [`../detail-action-hierarchy-pattern.md`](../detail-action-hierarchy-pattern.md)
+- [`../record-detail-chrome-pattern.md`](../record-detail-chrome-pattern.md)
 - [`../../../.cursor/skills/exxat-senior-ux/SKILL.md`](../../../.cursor/skills/exxat-senior-ux/SKILL.md)
 - [`../../../.cursor/rules/exxat-ux-discovery-protocol.mdc`](../../../.cursor/rules/exxat-ux-discovery-protocol.mdc)
 - [`../../../.cursor/rules/exxat-ux-principles.mdc`](../../../.cursor/rules/exxat-ux-principles.mdc)

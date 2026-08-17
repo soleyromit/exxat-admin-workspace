@@ -107,16 +107,22 @@ export function weightedRate(surveys: PceSurvey[]): number | null {
   )
 }
 
-/** Course coverage for a term: how many offerings have a non-draft evaluation. */
+/** Course coverage for a term: how many offerings have ANY evaluation, draft
+ *  included. Was non-draft-only, which disagreed with the term workspace's
+ *  "No survey configured" tab and term-evaluations-board.tsx's identically-
+ *  named column — both of those intentionally count a draft as already
+ *  represented (it shows in Scheduled) and reserve "not configured" for
+ *  offerings with zero survey rows. Reconciled 2026-08-17 so this KPI's "N
+ *  not set up yet" always matches the tab's own count — a live discrepancy
+ *  (KPI said 2, tab said 1 for the same term) is exactly the board/grid
+ *  vocabulary-mismatch class of bug the workspace flags on sight. */
 export function coverageFor(
   termId: string,
   termSurveys: PceSurvey[],
 ): { surveyed: number; total: number } | null {
   const offerings = activeOfferings().filter((o) => o.termId === termId)
   if (offerings.length === 0) return null
-  const surveyedCodes = new Set(
-    termSurveys.filter((s) => s.status !== 'draft').map((s) => s.courseCode),
-  )
+  const surveyedCodes = new Set(termSurveys.map((s) => s.courseCode))
   const surveyed = offerings.filter((o) => {
     const code = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)?.code
     return code ? surveyedCodes.has(code) : false

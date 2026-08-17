@@ -10,7 +10,7 @@
 
 | Layer | Cursor | Claude Code | Purpose | Load when |
 |-------|--------|-------------|---------|-----------|
-| **L0 Constitution** | `.cursor/rules/_constitution.exxat-ds.mdc` + product-context + product-routing + ux-discovery-protocol | `.claude/rules/` (same files) | Ten commandments, precedence | Every turn (4 files) |
+| **L0 Constitution** | `_constitution` + product-context + product-routing + ux-discovery-protocol + copy-discipline | `.claude/rules/` (same files) | Ten commandments, precedence | Every turn (**5** files) |
 | **L1 Surface router** | `exxat-surface-router` / `scripts/agent-context-router.mjs` → `exxat-token-economy` skill | Same skill; same helper in package CLI | What archetype am I touching? | First design/code turn |
 | **L1b UX router** | `component-selection-guide.md` | Same path | Resolve ambiguous surface choices | Only when archetype is unclear |
 | **L2 Job doc** | `jobs/*.md` | Same (`docs/exxat-ds/jobs/` in consumers) | User intent + UX checklist | After router picks surface |
@@ -39,7 +39,7 @@
 
 Reviewers use this when a PR touches `.cursor/`, `docs/jobs/`, or pattern docs.
 
-- [ ] **No new `alwaysApply: true`** without design-system review (target: 4 files only — see `INDEX.yaml` → `rules.always_on`).
+- [ ] **No new `alwaysApply: true`** without design-system review (target: 5 files only — see `INDEX.yaml` → `rules.always_on`).
 - [ ] **New pattern** has job doc OR updates existing job — not rule-only.
 - [ ] **Rule** is ≤80 lines of MUST/MUST NOT; detail lives in pattern/skill.
 - [ ] **Glob** covers real consumer paths (`apps/web/...` rewritten on vendor for `{components,lib,src}/**`).
@@ -71,8 +71,63 @@ pnpm sync-ui-template
 2. `exxat-product-context.mdc`
 3. `exxat-product-routing.mdc`
 4. `exxat-ux-discovery-protocol.mdc`
+5. `exxat-copy-discipline.mdc`
 
 Everything else: **scoped** or **on demand**.
+
+---
+
+## Coverage model — not one rule per component
+
+The registry has **~130** primitives/templates. Agents do **not** get a dedicated
+rule + skill + agent role for each slug. That would explode always-on tokens and
+duplicate the catalog.
+
+| Need | Where it lives |
+|------|----------------|
+| “Does this primitive exist / how do I import it?” | `component-map.json` + Design System catalog doc (`lib/design-system/component-docs/`) |
+| “How do I build this *job*?” | `jobs/*.md` + `component-selection-guide.md` |
+| Binding MUST/MUST NOT for a *family* | Scoped `.cursor/rules/exxat-*.mdc` (forms, Leo, hubs, overlays, …) |
+| Step-by-step procedure | Skill (`exxat-kpi`, `exxat-overlays`, …) |
+| Why / narrative | `*-pattern.md` |
+
+**Add a new scoped rule only when** a recurring agent failure needs a hard
+constraint (example: `exxat-form-fields`, `exxat-leo-icon-motion`). Prefer
+catalog docs + the component map for ordinary primitive usage.
+
+---
+
+## Sync targets (source of truth: `.cursor/`)
+
+| Target | Path | Sync |
+|--------|------|------|
+| Cursor | `.cursor/rules`, `.cursor/skills`, `.cursor/hooks` | edit here |
+| Claude Code | `.claude/` | `pnpm sync-claude` |
+| Google Antigravity | `.agents/` (rules as `.md`) | `pnpm sync-antigravity` |
+| npm consumers | `packages/ui/consumer-extras/` | `pnpm --filter @exxatdesignux/ui vendor:consumer-extras` |
+| Generated starter | `packages/ui/generated-starter/.cursor` + `.claude` + `.agents` | same vendor + `pnpm sync-ui-template` |
+
+**One command after agent-context edits:**
+
+```bash
+pnpm sync-agent-context   # template + claude + antigravity + vendor + validate
+pnpm agent:context:validate
+```
+
+---
+
+## Inventory (workspace)
+
+| Kind | Location | Count (approx) |
+|------|----------|----------------|
+| Rules | `.cursor/rules/*.mdc` | 63 (5 always-on) |
+| Skills | `.cursor/skills/*/SKILL.md` | ~37 |
+| Hooks | `.cursor/hooks/` + `hooks.json` | 5 scripts |
+| Jobs | `apps/web/docs/jobs/` | 7 |
+| Patterns | `apps/web/docs/*-pattern.md` | ~29 |
+| Catalog docs | `apps/web/lib/design-system/component-docs/` | ~35 files (families + primitives) |
+| Agent roles | `apps/web/docs/agents/` + `.claude/agents/` | 4 (hub-builder, a11y-guardian, ds-doc-author, senior-ux) |
+| Antigravity workflows | `.agents/workflows/` | 6 slash commands |
 
 ---
 
@@ -83,6 +138,8 @@ Everything else: **scoped** or **on demand**.
 | `exxat-kpi` | trends, max-four, flat-band |
 | `exxat-overlays` | drawer vs dialog, page vs drawer, no-vaul |
 | `exxat-sidebar-nav` | secondary panel vs drill-in, library IA |
+| `exxat-surface-router` | archetype → minimum file set |
+| `exxat-token-economy` | pre-flight + deny-list |
 
 Legacy skills remain as redirects; new work loads consolidated skill.
 
@@ -90,10 +147,12 @@ Legacy skills remain as redirects; new work loads consolidated skill.
 
 ## Enforcement (hooks > prose)
 
-| Hook | Role |
-|------|------|
-| `exxat-brief-gate.mjs` | Blocks design edits without brief checkpoint |
-| `react-doctor.sh` | Post-edit React/a11y regressions on staged files |
+| Hook | Event | Role |
+|------|-------|------|
+| `exxat-session-status.mjs` | sessionStart | Reminds image = IA only + router |
+| `exxat-image-ia-gate.mjs` | beforeSubmitPrompt | Flags screenshot/mockup prompts |
+| `exxat-brief-gate.mjs` | preToolUse (edits) | Blocks design edits without brief |
+| `exxat-ds-check.mjs` | postToolUse | DS fingerprint / anti-rebuild checks |
 
 Do not add always-on rules to replace hooks.
 

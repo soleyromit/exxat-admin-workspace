@@ -17,6 +17,8 @@
 | DS catalog / showcase browse | [`jobs/catalog-browse.md`](./jobs/catalog-browse.md) | §1.4 |
 | Settings / preferences | [`jobs/settings-preferences.md`](./jobs/settings-preferences.md) | §2 (settings) |
 | Dedicated search (landing + results) | [`jobs/dedicated-search.md`](./jobs/dedicated-search.md) | §1.1 dedicated search |
+| Post-login `/home` landing / app switcher | — | `product-home/product-home-page.tsx` — **Products Home** (Storefront, Focus, Spotlight, Launcher variants) |
+| Per-product pitch / marketing page | — | `product-home/product-marketing-page.tsx` — **Product Marketing Page** |
 | Dashboard / analytics page | — | §1.1 dashboard row + `charts-overview.tsx` |
 | Sheet / drawer on same route | — | §3 |
 | Dialog / confirm | — | §3 |
@@ -47,6 +49,25 @@
 
 ## 1. Building a primary hub (route with records)
 
+### 1.0 Which shell wraps the route (pick this first)
+
+Every route is wrapped by one of these. Reach for a template before writing
+page layout: none of these should be rebuilt as bespoke chrome.
+
+| Need | Use |
+|---|---|
+| Hub with view tabs (table / list / board / dashboard / folder / panel / tree) | **`ListPageTemplate`** (§1.1) |
+| Page with a header and a max-width content column (record detail, showcase) | **`PrimaryPageTemplate`** |
+| Hub with a nested scope rail beside the primary nav (Library pattern) | **`SecondaryPanelHubTemplate`** ([`exxat-primary-nav-secondary-panel.mdc`](../../.cursor/rules/exxat-primary-nav-secondary-panel.mdc)) |
+| Landing page with a search composer and recents | **`DiscoveryHubTemplate`** (§4) |
+| Authoring surface: form plus inspector, chrome stripped | **`NewFocusTemplate`** (§1.3) |
+| Shell header with breadcrumbs | **`SiteHeader`** — one per route, inside `SidebarInset` |
+| Shell row for Search / Ask Leo / Notifications / Help / profile | **`UtilityBarSlot`** |
+
+**Full inventory:** [`component-map.json`](./component-map.json) — search `keywords` for
+your intent before writing any new component. A hit means import it
+([`exxat-reuse-before-custom.mdc`](../../.cursor/rules/exxat-reuse-before-custom.mdc)).
+
 ```
    Q: Is the data > ~10 comparable records?
    ─────────────────────────────────────────
@@ -70,6 +91,10 @@
 | Export | Filled primary CTA + `⋯` → `ExportDrawer` |
 | Kanban view body | **`ListPageBoardCard`** + `ListPageBoardTemplate` ([`exxat-board-cards.mdc`](../../.cursor/rules/exxat-board-cards.mdc)) |
 | Folder / panel view body | **`FolderGridView`** / **`FinderPanelView`** wrapped in **`ListPageViewFrame`** ([`exxat-list-page-view-shells.mdc`](../../.cursor/rules/exxat-list-page-view-shells.mdc)) |
+| **Tree & details** view body (`viewType: "tree-panel"`) | **`ListPageTreePanelShell`** + **`OutlineTreeMenu`** — reference wiring `hub-tree-panel-view.tsx`. Never a hand-built `ResizablePanelGroup` + custom tree |
+| List view body (virtualized rows) | **`DataRowList`** |
+| Filter trigger in the toolbar | **`FilterButton`** (funnel + count badge) |
+| Active-filter chip row | **`FilterBar`** (`FilterPill` chips, Add filter, Clear all) |
 | Dashboard view body | **`KeyMetrics variant="card"`** + a hub-specific chart section (reference: `library-dashboard-charts.tsx`) |
 | Nested scope nav (All / Mine / tree) | **`secondaryPanel`** + `PANELS` + `useAutoPanel` ([`exxat-primary-nav-secondary-panel.mdc`](../../.cursor/rules/exxat-primary-nav-secondary-panel.mdc)) |
 | Shared hub w/ invite | **`PageHeader` `variant="collaboration"`** + `InviteCollaboratorsDrawer` |
@@ -85,7 +110,7 @@ Before writing `ColumnDef['cell']`, open **[`table-column-cells-pattern.md`](./t
 |---|---|
 | One person (author, owner, student) | `AvatarInitials` + name + email — copy **`library-table` Author** |
 | Multiple people | `PeopleAvatarRailCell` |
-| Status | `ListHubStatusBadge` + `list-status-badges.ts` |
+| Status | `StatusCell` + `list-status-badges.ts`. Add `options` + `onChange` when the user may change it |
 | Progress, money, rating, tags, links, … | Named cell from `@/components/data-views` — see **`/columns`** |
 
 **MUST NOT** use plain text for a person identity column or inline-format currency/progress/stars. **Rule:** [`exxat-table-column-cells.mdc`](../../.cursor/rules/exxat-table-column-cells.mdc).
@@ -105,15 +130,16 @@ ListPageTemplate
 Even here, **back the board with `useTableState`** so switching to the table
 tab is consistent. Don't fork the data.
 
-### 1.3 Focus workflow / exam lock shell
+### 1.3 Focus workflow / exam lock / pre-auth shell
 
 Single-task surfaces with **no hub chrome** (or hidden sidebars only).
 
 ```
-Q: Is the user doing ONE primary task (compose, timed exam)?
-────────────────────────────────────────────────────────────
-│ yes ──┬─ timed assessment / full lock? ──► ExamLockTemplate (§1.3.1)
-│       └─ create wizard / short compose? ──► FocusWorkflowTemplate (§1.3.2)
+Q: Is the user doing ONE primary task (sign in, compose, timed exam)?
+────────────────────────────────────────────────────────────────────
+│ yes ──┬─ no session yet? ──────────────────► LoginPage (§1.3.3)
+│       ├─ timed assessment / full lock? ────► ExamLockTemplate (§1.3.1)
+│       └─ create wizard / short compose? ───► FocusWorkflowTemplate (§1.3.2)
 │ no  ──► not a focus shell — see §1 (hub) or §3 (overlay)
 ```
 
@@ -121,8 +147,13 @@ Q: Is the user doing ONE primary task (compose, timed exam)?
 |---|---|
 | Timed exam delivery | **`ExamLockTemplate`** + `exam-lock/*` question renderers |
 | Create / compose wizard | **`Wizard`** + **`FocusWorkflowTemplate`** — ≤6 top-level steps ([`wizard-pattern.md`](./wizard-pattern.md)); reference `new-library-item-form.tsx` |
-| Path registration | `lib/exam-lock-shell.ts`, `lib/focus-workflow.ts` |
-| Hide workspace chrome | `App.tsx` exam branch; `isSidebarHiddenPath` for focus |
+| Sign in / pre-auth | **`LoginPage`** + **`AuthShell`** (`components/auth/*`) — do not build a second sign-in form |
+| Another sign-in variant | **author a flow** at `/builder/sign-in-flows` — do not add a branch to `LoginPage` |
+| Path registration | `lib/exam-lock-shell.ts`, `lib/focus-workflow.ts`, `lib/pre-auth-shell.ts` |
+| Hide workspace chrome | `App.tsx` `chromeless` branch (exam lock + pre-auth + student); `isSidebarHiddenPath` for focus |
+| End a session | **`useLogOut()`** (`hooks/use-log-out.ts`) — all three profile menus call it |
+| Where to land after sign-in | **`postAuthLandingPath()`** (`lib/post-auth-landing.ts`) — one ladder, `?next=` checked for off-origin values |
+| Where to land after a branch | **`postChoiceLandingPath()`** — how much of `?next=` survives the answer |
 
 **Job doc:** [`jobs/focus-workflow.md`](./jobs/focus-workflow.md). **Pattern:** [`focus-workflow-pattern.md`](./focus-workflow-pattern.md). **Rule:** `.cursor/rules/exxat-focus-workflow.mdc`.
 
@@ -141,6 +172,16 @@ Q: Is the user doing ONE primary task (compose, timed exam)?
 - Multi-step create: compose **`Wizard`** (`numbered` / `icons` / `compact`) — **not Tabs**; prefer ≤6 chapters ([`wizard-pattern.md`](./wizard-pattern.md), rule `exxat-wizard.mdc`).
 - Reference: `components/focus-workflow-showcase-client.tsx`, `new-library-item-form.tsx`, `components/design-system/wizard-previews.tsx`.
 
+#### 1.3.3 Sign in (pre-auth)
+
+- Stricter than exam lock: chrome is not hidden, it **cannot render**. With no session the nav has nowhere to go, ⌘K has nothing to search, Leo has no records, and the profile menu has no identity.
+- **`AuthShell`** owns the frame (promo rail + form column + support footer). **`LoginPage`** owns the identifier step and then walks whatever steps the active flow defines.
+- Identifier first because the identifier decides how the person authenticates. A password field shown to an SSO user is a field they will never fill.
+- **Sign-in is configurable, not branched.** Steps after the identifier are data in `lib/login-flow.ts`: an auth step (password or SSO) and any number of choice steps. A new variant is a flow authored at `/builder/sign-in-flows`, not another `if` in `LoginPage`. A choice option can grant one product (which moves the rest to More from Exxat) and either land somewhere or continue to the next step, so flows compose.
+- The promo rail is one static slot, not a carousel: rotating copy moves the page under someone mid-password and hands a screen reader three pitches beside one form.
+- The rail is second in the DOM and first on screen (`order-first`), so Tab reaches the username field before "Register Today".
+- Reference: `components/auth/login-page.tsx`, `components/auth/auth-shell.tsx`.
+
 ### 1.4 Catalog / pattern browse (Design OS)
 
 Browse templates and showcase routes — **not** a production data hub.
@@ -149,6 +190,7 @@ Browse templates and showcase routes — **not** a production data hub.
 |---|---|
 | Static pattern index | `catalog-client.tsx` + `lib/mock/catalog-entries.ts` |
 | Link to live demo | `routeSuffix` per entry → registered in `routes.tsx` |
+| Link to a shell-global demo | `routeAbsolute` per entry (e.g. `/login`) — a product base would resolve `routeSuffix` to a page that does not exist |
 
 **Job doc:** [`jobs/catalog-browse.md`](./jobs/catalog-browse.md).
 
@@ -172,6 +214,7 @@ Browse templates and showcase routes — **not** a production data hub.
 | Need | Use |
 |---|---|
 | Settings section nav | `SidebarDrillIn` (flat routes, not SecondaryPanel) |
+| Label + control row | `SettingsFormRow` — two-column row; don't hand-build a label/control grid |
 | Personal vs workspace scope | Label in copy + brief |
 | Save feedback | Inline status — no toast |
 
@@ -245,6 +288,8 @@ See [`drawer-vs-dialog-pattern.md`](./drawer-vs-dialog-pattern.md) and
 | Global navigation + AI starter | `CommandMenu` ([`command-menu-pattern.md`](./command-menu-pattern.md)) | `⌘K` while no input has focus |
 | Long AI / chat | `AskLeoSidebar` | `⌘⌥K` |
 | Dedicated search page (results view) | `DedicatedSearchLandingTemplate` + `DedicatedSearchResultsHeaderChrome` | — |
+| Search landing with recents (hub entry point) | `DiscoveryHubTemplate` | — |
+| Basic vs Leo search pill on one bar | `ModeSwitchSearchBar` | — |
 
 ---
 
@@ -295,7 +340,7 @@ Cap visible KPIs at **4** ([`exxat-kpi-max-four.mdc`](../../.cursor/rules/exxat-
 | Table column / cell choice | [`table-column-cells-pattern.md`](./table-column-cells-pattern.md) + skill `exxat-table-column-cells` |
 | Page title | `<h1>` with `font-heading` (Ivy Presto) inside `PageHeader` |
 | Body | Default Inter, ≥ 12px (`text-xs` / `text-2xs` minimum) |
-| Status label | `ListHubStatusBadge` from `lib/list-status-badges.ts` — never raw text |
+| Status label | `StatusCell` in a column, `StatusBadge` elsewhere, tints from `lib/list-status-badges.ts` — never raw text |
 | Currency / counts | `tabular-nums` (no `font-mono`) |
 
 ---

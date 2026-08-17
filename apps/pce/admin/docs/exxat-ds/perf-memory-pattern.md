@@ -15,9 +15,9 @@ instances against the same monorepo — total system memory drifts to
 | # | Knob | Why it matters | Where it lives |
 |---|------|----------------|----------------|
 | 1 | `dev-guard` predev hook | Blocks a second `pnpm dev` from booting against the same checkout. The #1 source of memory inflation in practice — two parallel Vite servers double total system RSS for zero throughput. | `package.json` `predev*` scripts → `exxat-ui dev-guard` (in `packages/ui/consumer-extras/scripts/dev-guard.mjs`) |
-| 2 | `optimizeDeps.include` for hot deps | Pre-bundles `react`, `react-dom`, `react-router-dom` so the first request doesn't trigger a 600+ ms esbuild dep-scan. Drops first-paint TTFB by ~30%. | `vite.config.ts` |
+| 2 | `optimizeDeps.include` for hot deps | Pre-bundles `react`, `react-dom`, `react-router` so the first request doesn't trigger a 600+ ms esbuild dep-scan. Drops first-paint TTFB by ~30%. | `vite.config.ts` |
 | 3 | `optimizeDeps.exclude: ["@exxatdesignux/ui"]` | The shared UI package is a pnpm workspace package. Eager pre-bundling fights pnpm's strict node_modules layout (esbuild can't resolve `radix-ui`, `cmdk`, etc. when crawling the package's own `dist/`). Excluding it lets Vite resolve through the consumer's module resolver — which sees peer deps correctly. | `vite.config.ts` |
-| 4 | `resolve.dedupe: ["react", "react-dom", "react-router-dom"]` | Prevents two React instances from being bundled when `apps/web` and `packages/ui` resolve different versions in pnpm. The classic "Invalid hook call" runtime error and a hidden 30+ MB heap duplicate. | `vite.config.ts` |
+| 4 | `resolve.dedupe: ["react", "react-dom", "react-router"]` | Prevents two React instances from being bundled when `apps/web` and `packages/ui` resolve different versions in pnpm. The classic "Invalid hook call" runtime error and a hidden 30+ MB heap duplicate. | `vite.config.ts` |
 
 Extra heap flags are **not** required under Vite — the default V8 heap is fine
 for a 250–500 MB dev process.

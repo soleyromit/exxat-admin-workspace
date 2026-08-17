@@ -40,26 +40,44 @@ export const exxatSurveyProduct = defineProduct({
   },
   nav: [
     {
-      id: "survey-dashboard",
+      key: "survey-dashboard",
       title: "Dashboard",
       url: "/survey/dashboard",
-      icon: "fa-light fa-gauge-high",
+      iconClass: "fa-light fa-gauge-high",
+      iconActiveClass: "fa-solid fa-gauge-high",
     },
     {
-      id: "survey-responses",
+      key: "survey-responses",
       title: "Responses",
       url: "/survey/responses",
-      icon: "fa-light fa-table",
+      iconClass: "fa-light fa-table",
     },
     {
-      id: "survey-templates",
+      key: "survey-templates",
       title: "Templates",
       url: "/survey/templates",
-      icon: "fa-light fa-file",
+      iconClass: "fa-light fa-file",
     },
   ],
 })
 ```
+
+### Nav rows are data, not JSX
+
+Icons travel as **Font Awesome class strings**, never as elements. That is what
+lets a product's navigation be persisted in the tenant catalog, shipped in
+`public/tenant-products.json`, versioned, migrated, and authored by the builder
+UI or a server. See [ADR 0003](./architecture/0003-layered-update-safety.md).
+
+`defineProduct` still accepts the older row shape that carried
+`icon: <i className="fa-light fa-gauge-high" />` and converts it, but that path
+is deprecated and warns: reading a class name back off a node only works for a
+bare `<i>`, so any wrapped or composed icon silently became a circle. Author
+`iconClass` instead.
+
+Already have rows in the old shape? `npx exxat-ui codemod nav-specs --dry-run`
+converts the icons, retypes the builders it can prove, and reports every row and
+export it will not decide for you. `exxat-ui upgrade` counts what is left.
 
 ### Field reference
 
@@ -70,12 +88,12 @@ export const exxatSurveyProduct = defineProduct({
 | `label` | yes | Display name shown in the product switcher and in copy that references the product by name. |
 | `scope` | yes | One of `"school > program"`, `"brand > site > location"`, `"school > batch > student"`. Drives the scope chrome the shell paints next to the switcher. |
 | `brand` | optional | `{ accent: <OKLCH>, wordmark?: <string>, gradient?: <CSS gradient> }`. Falls back to the neutral brand registry entry if omitted. |
-| `nav` | yes | Array of `ProductNavLink` rows (same shape as `NavLinkItem` — title, url, icon, badge, subItems, secondaryPanel). Rendered in the sidebar when the product is active. |
+| `nav` | yes | Array of `NavLinkSpec` rows — `key`, `title`, `url`, `iconClass`, plus optional `iconActiveClass`, `badge`, `children`, `secondaryPanel`, `primaryHubChildKey`. Serializable by design (see below). Rendered in the sidebar when the product is active. `defineProduct` throws on a row missing `key`, `title`, `url`, or `iconClass`, and on duplicate keys among siblings. |
 | `personaHeading` | optional | Persona name (verbatim from `personas.md`) for the design brief template. Helps `exxat-senior-ux` enforce persona-correct UI. |
 
-`defineProduct()` is a thin validator + identity function; it returns the
-same object back so you can keep it as an exported constant for type
-inference at the registration site.
+`defineProduct()` applies defaults, normalizes `nav` to `NavLinkSpec` rows, and
+validates them. Keep the result as an exported constant for type inference at
+the registration site.
 
 ## Registering products on startup
 
