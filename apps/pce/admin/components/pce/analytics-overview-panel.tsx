@@ -53,9 +53,11 @@ import {
   courseTermMatrix,
   medianOf,
   RESPONSE_TARGET,
+  type DualMean,
 } from '@/lib/pce-analytics'
 import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
+import { scoreText } from '@/components/pce/score-cell'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -108,11 +110,25 @@ export function AnalyticsOverviewPanel() {
      halves of one figure disagreed about what the figure shows. Derived with the same sort
      the chart uses. */
   const lowestCourses = useMemo(
-    () => [...courses].sort((a, b) => a.score.weighted - b.score.weighted).slice(0, COURSE_RANK_LIMIT),
+    () =>
+      courses
+        .filter(
+          (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
+        )
+        .sort((a, b) => a.score.value.weighted - b.score.value.weighted)
+        .slice(0, COURSE_RANK_LIMIT),
     [courses],
   )
 
-  const courseMedian = useMemo(() => medianOf(courses.map((c) => c.score.weighted)), [courses])
+  const courseMedian = useMemo(
+    () =>
+      medianOf(
+        courses
+          .filter((c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value')
+          .map((c) => c.score.value.weighted),
+      ),
+    [courses],
+  )
 
   const funnel = useMemo(() => responseFunnel(), [])
 
@@ -304,23 +320,29 @@ export function AnalyticsOverviewPanel() {
   }, [facultyDriftRows])
 
   const courseDriftLeo: ChartLeoInsight | null = useMemo(() => {
-    const below = courses.filter((c) => c.score.weighted < courseMedian)
-    if (!courses.length) return null
-    const worst = courses[courses.length - 1]!
+    // Pending/na courses have no score to compare against the median — excluded from both
+    // the numerator and the denominator, same principle as `facultyDriftLeo`'s drift filter
+    // above (a course with no score is "no data", not "not below").
+    const scored = courses.filter(
+      (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
+    )
+    const below = scored.filter((c) => c.score.value.weighted < courseMedian)
+    if (!scored.length) return null
+    const worst = scored[scored.length - 1]!
     return {
       // Frequency count, not a percentage — Aarti D17 ("8 of 20 questions" beats "40%").
-      headline: `${below.length} of ${courses.length} courses sit below the ${fmt2(courseMedian)} median`,
+      headline: `${below.length} of ${scored.length} courses sit below the ${fmt2(courseMedian)} median`,
       explanation:
-        `${worst.courseCode} is lowest at ${fmt2(worst.score.weighted)}. Course scores that fall while faculty ` +
+        `${worst.courseCode} is lowest at ${fmt2(worst.score.value.weighted)}. Course scores that fall while faculty ` +
         `scores hold usually mean content or workload, not teaching. Check the open-text before booking a ` +
         `conversation with the instructor.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(worst.score.weighted), label: worst.courseCode },
+      delta: { value: fmt2(worst.score.value.weighted), label: worst.courseCode },
       bullets: [
-        `Lowest: ${worst.courseCode} · ${worst.courseName} at ${fmt2(worst.score.weighted)}.`,
-        `Median across ${courses.length} courses: ${fmt2(courseMedian)}.`,
+        `Lowest: ${worst.courseCode} · ${worst.courseName} at ${fmt2(worst.score.value.weighted)}.`,
+        `Median across ${scored.length} courses: ${fmt2(courseMedian)}.`,
       ],
-      anchor: { yValue: worst.score.weighted },
+      anchor: { yValue: worst.score.value.weighted },
     }
   }, [courses, courseMedian])
 
@@ -371,7 +393,7 @@ export function AnalyticsOverviewPanel() {
             detail={faculty.length ? <FacultyScoreStrip faculty={faculty} median={summary.facultyMedian} height={200} /> : <p className="py-8 text-center text-sm text-muted-foreground">No faculty data yet.</p>}
             table={{
               headers: ['Faculty', 'Weighted score', 'Offerings'],
-              rows: faculty.map((f) => [f.name, fmt2(f.score.weighted), f.offerings]),
+              rows: faculty.map((f) => [f.name, scoreText(f.score, (v) => fmt2(v.weighted)), f.offerings]),
             }}
           />
         </ChartCard>
@@ -397,7 +419,7 @@ export function AnalyticsOverviewPanel() {
             detail={courses.length ? <CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} /> : <p className="py-8 text-center text-sm text-muted-foreground">No course data yet.</p>}
             table={{
               headers: ['Course', 'Weighted score', 'Terms'],
-              rows: courses.map((c) => [`${c.courseCode} · ${c.courseName}`, fmt2(c.score.weighted), c.terms]),
+              rows: courses.map((c) => [`${c.courseCode} · ${c.courseName}`, scoreText(c.score, (v) => fmt2(v.weighted)), c.terms]),
             }}
           />
         </ChartCard>
@@ -585,8 +607,8 @@ export function AnalyticsOverviewPanel() {
                   headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
                   rows={lowestCourses.map((c) => [
                     `${c.courseCode} · ${c.courseName}`,
-                    fmt2(c.score.weighted),
-                    fmt2(c.score.simple),
+                    fmt2(c.score.value.weighted),
+                    fmt2(c.score.value.simple),
                     c.terms,
                     `${c.responseRate}%`,
                   ])}
@@ -599,8 +621,8 @@ export function AnalyticsOverviewPanel() {
                     headers: ['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
                     rows: courses.map((c) => [
                       `${c.courseCode} · ${c.courseName}`,
-                      fmt2(c.score.weighted),
-                      fmt2(c.score.simple),
+                      scoreText(c.score, (v) => fmt2(v.weighted)),
+                      scoreText(c.score, (v) => fmt2(v.simple)),
                       c.terms,
                       `${c.responseRate}%`,
                     ]),
