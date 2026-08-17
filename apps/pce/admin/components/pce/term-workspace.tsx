@@ -58,19 +58,31 @@ import {
 } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
 import {
-  type PceSurvey, type SurveyStatus,
+  type PceSurvey, type SurveyStatus, type PceInstructor,
   MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
 
+/** Raw row status — every real SurveyStatus, plus a synthetic value for a
+ *  term offering with no survey at all (2026-08-17). Not a SurveyStatus
+ *  itself (no PceSurvey exists for these rows) so it's kept as a sibling
+ *  literal rather than widening the real enum everywhere else in the app
+ *  reads it. */
+type RowStatus = SurveyStatus | 'not_configured'
+
 /* One row = one offering's evaluation, the roll-up across every aspect it
- * covers (course material + every faculty role). */
+ * covers (course material + every faculty role) — OR an offering with no
+ * survey configured at all (status: 'not_configured'), folded into the same
+ * table so the DataTable's own Status filter can include it (2026-08-17,
+ * Romit: a 6th tab read as crowded and duplicated the KPI's own count; a
+ * separate table/banner broke the "click a tab/filter to narrow by status"
+ * mental model the other 5 states already establish). */
 type EvalRow = {
-  id: string // surveyId
+  id: string // surveyId, or `offering-${offeringId}` for a not_configured row
   surveyId: string
   courseCode: string
   courseName: string
-  status: SurveyStatus
+  status: RowStatus
   responseRate: number
   responseCount: number
   enrollmentCount: number
@@ -78,7 +90,7 @@ type EvalRow = {
   /** True when this offering's evaluation types include course_material —
    *  most do (see pce-evaluations.ts derive()), but this reads the real
    *  per-type source rather than assuming, since explicit `survey.evaluations`
-   *  setup data could omit it. */
+   *  setup data could omit it. Always false for a not_configured row. */
   hasCourseMaterial: boolean
   /** True when this offering's close date is later than the term's own
    *  standard close (evalWindow) — a per-course override, not the norm. */
@@ -90,56 +102,57 @@ type EvalRow = {
    *  nothing collected yet) and its "..." menu only offered View results /
    *  Preview form. */
   resumable: boolean
-  survey: PceSurvey
+  /** Faculty shown in the Course cell — was `row.survey.instructors`, but a
+   *  not_configured row has no PceSurvey, only CourseOffering.primaryFacultyId. */
+  instructors: PceInstructor[]
+  /** Only set on a not_configured row — target for "Set up survey". */
+  offeringId?: string
+  survey?: PceSurvey
 } & Record<string, unknown>
 
-/* One row = one term offering with NO evaluation configured yet — same
- * reconciliation term-evaluations-board.tsx's "No survey configured" column
- * already runs (surveyedCodes = courseCode already in this term's surveys).
- * Drafts don't count as unconfigured here, same as the board: a draft
- * already sits in the Scheduled tab, so listing it here too would duplicate
- * the course (board file header, 2026-08-13). */
-type SetupRow = { id: string; code: string; name: string; facultyName: string | null } & Record<string, unknown>
-
-/* Per-evaluation lifecycle predicates (a single instance's status). */
-const isLive = (st: SurveyStatus) => st === 'active' || st === 'collecting'
-const isFinished = (st: SurveyStatus) =>
+/* Per-evaluation lifecycle predicates (a single instance's status). Every
+ * comparison is against a real SurveyStatus value, so 'not_configured' just
+ * falls through false everywhere — no explicit guard needed at call sites. */
+const isLive = (st: RowStatus) => st === 'active' || st === 'collecting'
+const isFinished = (st: RowStatus) =>
   st === 'pending_review' || st === 'closed' || st === 'released'
 /* Closed but not yet released — the window shut, someone still needs to
  * review before faculty can see it (moderation-sheet.tsx's own release
  * gate). Distinct from `released`, which has nothing left to review. */
-const needsReview = (st: SurveyStatus) => st === 'pending_review' || st === 'closed'
+const needsReview = (st: RowStatus) => st === 'pending_review' || st === 'closed'
 /* Extend reaches a survey any time before it's finished — same set
  * EditEndDateDialog's callers already assume elsewhere (surveys-table.tsx). */
-const isExtendable = (st: SurveyStatus) => isLive(st) || st === 'scheduled'
+const isExtendable = (st: RowStatus) => isLive(st) || st === 'scheduled'
 
-/* Needs-attention first, then lowest response rate. */
+/* Needs-attention first, then lowest response rate. not_configured sorts
+ * first — nothing has started at all, the most actionable state on the
+ * page (feedback_no_bare_count_action_surfaces: surface the work, not just
+ * a count). */
 const STATUS_ORDER: Record<string, number> = {
-  active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
+  not_configured: -1, active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
 }
 
-/* Status tabs (2026-08-14, Romit) — same four lifecycle groups the board
- * view already columns by (term-evaluations-board.tsx's SURVEY_COLUMN),
- * surfaced as a filter here too so the table can show full row detail one
- * stage at a time instead of only the board's card-sized summary. */
-type StatusTab = 'all' | 'not_configured' | 'scheduled' | 'live' | 'closed' | 'published'
-function statusTabOf(st: SurveyStatus): Exclude<StatusTab, 'all' | 'not_configured'> {
-  if (st === 'draft' || st === 'scheduled') return 'scheduled'
-  if (isLive(st)) return 'live'
-  if (needsReview(st)) return 'closed'
-  return 'published'
-}
-/* Label matches term-evaluations-board.tsx's column exactly ("No survey
- * configured") — the two views must agree on status vocabulary; a shortened
- * variant here would just recreate the mismatch that column was named to
- * avoid (see term-evaluations-board.tsx file header). */
-const STATUS_TABS: { id: StatusTab; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'not_configured', label: 'No survey configured' },
-  { id: 'scheduled', label: 'Scheduled' },
-  { id: 'live', label: 'Live' },
-  { id: 'closed', label: 'Closed' },
-  { id: 'published', label: 'Published' },
+/* Status column filter (2026-08-17) — the ONLY status-narrowing mechanism
+ * on this page now; the earlier 5-tab strip was fully redundant with this
+ * (every tab it offered is reachable here as a checkbox) so it's gone, not
+ * left standing alongside. Base labels mirror surveys-table.tsx's
+ * STATUS_FILTER_OPTIONS exactly (raw per-value labels, e.g. "Active" and
+ * "Collecting Responses" stay distinct rather than both reading "Live") so
+ * two differently-worded status vocabularies don't exist side by side in
+ * the product. Order is the survey lifecycle itself (not_configured → draft
+ * → scheduled → live → closed/pending review → released) — live counts are
+ * appended in the component (statusFilterOptions below) but the ORDER here
+ * is fixed, not count-driven (2026-08-17, Romit: "logically ordered" after
+ * an ascending-by-count pass read as arbitrary). */
+const STATUS_LABELS: { value: string; label: string }[] = [
+  { value: 'not_configured', label: 'No survey configured' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'active', label: 'Active' },
+  { value: 'collecting', label: 'Collecting Responses' },
+  { value: 'pending_review', label: 'Pending Review' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'released', label: 'Results Released' },
 ]
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
@@ -156,7 +169,6 @@ function TermWorkspaceInner() {
 
   const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
   const [evalView, setEvalView] = useState<'table' | 'board'>('table')
-  const [statusTab, setStatusTab] = useState<StatusTab>('all')
 
   const ce = useMemo(
     () => surveys.filter((s) => !s.surveyType || s.surveyType === 'course_evaluation'),
@@ -185,59 +197,76 @@ function TermWorkspaceInner() {
    * per-type expansion — see file header). Needs-attention first, then
    * lowest response rate. */
   const tableRows: EvalRow[] = useMemo(() => {
-    return [...termSurveys]
+    const surveyRows: EvalRow[] = termSurveys.map((s): EvalRow => {
+      const closeTime = evalWin ? new Date(evalWin.close).getTime() : NaN
+      const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
+      const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
+      const hasCourseMaterial = evaluationsFor(s).some((e) => e.type === 'course_material')
+      return {
+        id: s.id,
+        surveyId: s.id,
+        courseCode: s.courseCode,
+        courseName: s.courseName,
+        status: s.status,
+        responseRate: s.responseRate,
+        responseCount: s.responseCount,
+        enrollmentCount: s.enrollmentCount,
+        deadline: s.deadline,
+        hasCourseMaterial,
+        extended,
+        resumable: isResumable(s),
+        instructors: s.instructors,
+        survey: s,
+      }
+    })
+    /* Offerings in this term with no evaluation configured at all — identical
+     * reconciliation to term-evaluations-board.tsx's "No survey configured"
+     * column (surveyedCodes set, matched on courseCode via masterCourseId),
+     * so the two views list the same courses. Folded into tableRows directly
+     * (2026-08-17) rather than a parallel array/table, so the Status column's
+     * own filter can include it like any other value. */
+    const setupRows: EvalRow[] = term
+      ? (() => {
+          const surveyedCodes = new Set(termSurveys.map((s) => s.courseCode))
+          return MOCK_COURSE_OFFERINGS
+            .filter((o) => o.termId === term.id && o.status !== 'archived')
+            .flatMap((o): EvalRow[] => {
+              const course = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)
+              if (!course || surveyedCodes.has(course.code)) return []
+              const faculty = MOCK_FACULTY.find((f) => f.id === o.primaryFacultyId)
+              return [{
+                id: `offering-${o.id}`,
+                surveyId: '',
+                courseCode: course.code,
+                courseName: course.name,
+                status: 'not_configured',
+                responseRate: 0,
+                responseCount: 0,
+                enrollmentCount: o.enrolledCount,
+                deadline: '',
+                hasCourseMaterial: false,
+                extended: false,
+                resumable: false,
+                instructors: faculty ? [faculty] : [],
+                offeringId: o.id,
+              }]
+            })
+        })()
+      : []
+    return [...setupRows, ...surveyRows]
       .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) || a.responseRate - b.responseRate)
-      .map((s): EvalRow => {
-        const closeTime = evalWin ? new Date(evalWin.close).getTime() : NaN
-        const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
-        const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime
-        const hasCourseMaterial = evaluationsFor(s).some((e) => e.type === 'course_material')
-        return {
-          id: s.id,
-          surveyId: s.id,
-          courseCode: s.courseCode,
-          courseName: s.courseName,
-          status: s.status,
-          responseRate: s.responseRate,
-          responseCount: s.responseCount,
-          enrollmentCount: s.enrollmentCount,
-          deadline: s.deadline,
-          hasCourseMaterial,
-          extended,
-          resumable: isResumable(s),
-          survey: s,
-        }
-      })
-  }, [termSurveys, evalWin])
+  }, [termSurveys, evalWin, term])
 
-  /* Offerings in this term with no evaluation configured at all — identical
-   * reconciliation to term-evaluations-board.tsx's "No survey configured"
-   * column (surveyedCodes set, matched on courseCode via masterCourseId),
-   * so the two views count and list the same courses. */
-  const setupRows: SetupRow[] = useMemo(() => {
-    if (!term) return []
-    const surveyedCodes = new Set(termSurveys.map((s) => s.courseCode))
-    return MOCK_COURSE_OFFERINGS
-      .filter((o) => o.termId === term.id && o.status !== 'archived')
-      .flatMap((o) => {
-        const course = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)
-        if (!course || surveyedCodes.has(course.code)) return []
-        const faculty = MOCK_FACULTY.find((f) => f.id === o.primaryFacultyId)
-        return [{ id: o.id, code: course.code, name: course.name, facultyName: faculty?.name ?? null }]
-      })
-  }, [term, termSurveys])
-
-  /* Status tab counts — computed off the full set so a count never changes
-   * just because a different tab happens to be selected. */
-  const tabCounts = useMemo(() => {
-    const counts: Record<StatusTab, number> = { all: tableRows.length, not_configured: setupRows.length, scheduled: 0, live: 0, closed: 0, published: 0 }
-    for (const row of tableRows) counts[statusTabOf(row.status)]++
-    return counts
-  }, [tableRows, setupRows])
-  const visibleRows = useMemo(
-    () => statusTab === 'all' ? tableRows : tableRows.filter((row) => statusTabOf(row.status) === statusTab),
-    [tableRows, statusTab],
-  )
+  /* Status filter options — live counts appended to each label, in
+   * STATUS_LABELS' fixed lifecycle order (not a count sort — reverted
+   * 2026-08-17, Romit: "logically ordered" after ascending-by-count read as
+   * arbitrary to scan). not_configured leads because it's first in
+   * STATUS_LABELS itself, not a special case here. */
+  const statusFilterOptions = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const row of tableRows) counts[row.status] = (counts[row.status] ?? 0) + 1
+    return STATUS_LABELS.map(({ value, label }) => ({ value, label: `${label} (${counts[value] ?? 0})` }))
+  }, [tableRows])
 
   /* Existing remind contract (surveys/remind reads ?ids + ?from only) —
    * accepts one id or several (bulk) joined the same way surveys-table.tsx's
@@ -288,7 +317,7 @@ function TermWorkspaceInner() {
                   </Badge>
                 </Tip>
               )}
-              <FacultyAvatarRow instructors={row.survey.instructors} />
+              <FacultyAvatarRow instructors={row.instructors} />
             </div>
           </div>
         ),
@@ -304,7 +333,13 @@ function TermWorkspaceInner() {
         // (not left at 220) specifically to let the whole row fit without
         // horizontal scroll (2026-08-14, next catch).
         width: 208,
-        cell: (row) => <SurveyStatusBadgeOS status={row.status} />,
+        filter: { type: 'select', icon: 'fa-circle-dot', options: statusFilterOptions },
+        cell: (row) => row.status === 'not_configured' ? (
+          <Badge variant="outline" className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium">
+            <i className="fa-light fa-circle-dashed text-[10px]" aria-hidden="true" />
+            No survey configured
+          </Badge>
+        ) : <SurveyStatusBadgeOS status={row.status} />,
       },
       {
         key: 'responseRate',
@@ -370,6 +405,27 @@ function TermWorkspaceInner() {
         width: 264,
         cell: (row) => {
           const label = `${row.courseCode} evaluation`
+          /* No survey exists yet — the offering's ONLY possible action is
+             starting one (2026-08-17). Checked before `resumable` since a
+             not_configured row is never resumable but shares nothing else
+             with the Draft branch below (no editHref target — there's no
+             survey to resume into). */
+          if (row.status === 'not_configured') {
+            return (
+              <div className="flex items-center justify-end">
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={`/surveys/push?term=${term?.id}&offerings=${row.offeringId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Set up a survey for the ${label}`}
+                  >
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Set up survey
+                  </Link>
+                </Button>
+              </div>
+            )
+          }
           /* Draft (or a Scheduled survey re-opened for editing) has nothing
              else meaningful here — no results, no reminders, no window to
              extend — so this is the row's ONLY action, not one option among
@@ -388,7 +444,9 @@ function TermWorkspaceInner() {
             return (
               <div className="flex items-center justify-end">
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={editHref(row.survey)} onClick={(e) => e.stopPropagation()} aria-label={`${setupVerb} the ${label}`}>
+                  {/* row.survey is guaranteed here — resumable is only ever
+                      set true on a real survey row (see tableRows above). */}
+                  <Link href={editHref(row.survey!)} onClick={(e) => e.stopPropagation()} aria-label={`${setupVerb} the ${label}`}>
                     {/* Icons on this row's actions (2026-08-14, Romit) —
                         reuses fa-pen-ruler/fa-pen, the exact icons the
                         status vocabulary + surveys-table.tsx's own Edit
@@ -429,7 +487,9 @@ function TermWorkspaceInner() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey]) }}
+                  // row.survey is guaranteed here — isLive(row.status) is
+                  // always false for a not_configured row.
+                  onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey!]) }}
                   aria-label={`Extend the close date for the ${label}`}
                 >
                   <i className="fa-light fa-calendar-pen" aria-hidden="true" />
@@ -494,43 +554,7 @@ function TermWorkspaceInner() {
         },
       },
     ]
-  }, [router, fromOrigin, term?.id])
-
-  /* Columns for the "No survey configured" tab — a bare course offering has
-   * none of EvalRow's survey fields (status/response rate/deadline), so this
-   * is its own small columns array rather than padding EvalRow with
-   * optionals nothing else would use. Same CTA target as the board's
-   * SetupBoardCard ("Set up survey" → push wizard scoped to the offering). */
-  const setupColumns: ColumnDef<SetupRow>[] = useMemo(() => [
-    {
-      key: 'code',
-      label: 'Course',
-      sortable: true,
-      width: 320,
-      filter: { type: 'text', icon: 'fa-book-open' },
-      cell: (row) => (
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium" title={`${row.code} · ${row.name}`}>{row.code} · {row.name}</p>
-          {row.facultyName && <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.facultyName}</p>}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 180,
-      cell: (row) => (
-        <div className="flex items-center justify-end">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/surveys/push?term=${term?.id}&offerings=${row.id}`} onClick={(e) => e.stopPropagation()}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Set up survey
-            </Link>
-          </Button>
-        </div>
-      ),
-    },
-  ], [term?.id])
+  }, [router, fromOrigin, term?.id, statusFilterOptions])
 
   if (!term) {
     return (
@@ -638,28 +662,12 @@ function TermWorkspaceInner() {
 
             {/* ── Evaluations — table ⇄ kanban ── */}
             <section className="flex flex-col gap-2" aria-label="Evaluations">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                {/* Status tabs (2026-08-14) — table-only: the board already
-                    groups by these same four stages as its own columns, so
-                    repeating the filter there would just narrow a kanban to
-                    one column at a time for no reason. */}
-                {evalView === 'table' ? (
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    size="sm"
-                    value={statusTab}
-                    onValueChange={(v) => v && setStatusTab(v as StatusTab)}
-                    aria-label="Filter evaluations by status"
-                  >
-                    {STATUS_TABS.map((tab) => (
-                      <ToggleGroupItem key={tab.id} value={tab.id}>
-                        {tab.label}
-                        <span className="tabular-nums text-muted-foreground">({tabCounts[tab.id]})</span>
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                ) : <span />}
+              <div className="flex items-center justify-end gap-3 flex-wrap">
+                {/* Status tab strip removed (2026-08-17, Romit) — fully
+                    redundant with the Status column's own "Add filter" entry
+                    (statusFilterOptions above), which covers every value the
+                    tabs did, not_configured included, as checkboxes with
+                    live counts instead of a 6th tab. */}
                 <ToggleGroup
                   type="single"
                   variant="outline"
@@ -681,41 +689,15 @@ function TermWorkspaceInner() {
 
               {evalView === 'board' ? (
                 <TermEvaluationsBoard surveys={termSurveys} termId={term.id} evalClose={evalWin?.close} />
-              ) : statusTab === 'not_configured' ? (
-                <DataTablePaginated<SetupRow>
-                  key={statusTab}
-                  data={setupRows}
-                  columns={setupColumns}
-                  getRowId={(row) => row.id}
-                  getRowSelectionLabel={(row) => `${row.code} offering`}
-                  pagination={{ pageSize: 16 }}
-                  edgeInset={false}
-                  stickyHeader={false}
-                  onRowClick={(row) => router.push(`/surveys/push?term=${term.id}&offerings=${row.id}`)}
-                  emptyState={
-                    <div className="flex flex-col items-center gap-2 py-8">
-                      <i className="fa-light fa-circle-check text-2xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-medium">Every course this term has an evaluation set up</p>
-                      <p className="text-xs text-muted-foreground">Nothing left to configure for this term.</p>
-                    </div>
-                  }
-                />
               ) : (
                 <DataTablePaginated<EvalRow>
-                  /* key={statusTab} — forces a full remount on tab switch.
-                     useTableState's `selected` Set (components/data-table/
-                     use-table-state.ts) never resets on its own when `data`
-                     changes size, so without this a selection made on Live
-                     survived into Closed: the header "select all" checkbox
-                     reads `selected.size === rows.length` (a count compare,
-                     not membership — index.tsx ~764) rather than checking
-                     which rows are actually selected, so it could render
-                     fully checked over zero real matches whenever the two
-                     tabs happened to have equal row counts. Remounting also
-                     resets pagination to page 1 for the same reason (state-
-                     review, 2026-08-14). */
-                  key={statusTab}
-                  data={visibleRows}
+                  /* No external key/remount hack here (had one keyed to the
+                     removed status tab, 2026-08-17) — Status narrowing now
+                     goes entirely through the DataTable's own built-in filter
+                     state, which owns its own selection/pagination reset on
+                     filter change; `data` itself no longer changes shape from
+                     an outside prop the way the old external tab did. */
+                  data={tableRows}
                   columns={columns}
                   getRowId={(row) => row.id}
                   getRowSelectionLabel={(row) => `${row.courseCode} evaluation`}
@@ -729,9 +711,11 @@ function TermWorkspaceInner() {
                   edgeInset={false}
                   stickyHeader={false}
                   onRowClick={(row) => router.push(
-                    row.resumable
-                      ? resumeHrefFor(row.survey, term.id)
-                      : withFrom(`/results/${row.surveyId}`, fromOrigin),
+                    row.status === 'not_configured'
+                      ? `/surveys/push?term=${term.id}&offerings=${row.offeringId}`
+                      : row.resumable
+                        ? resumeHrefFor(row.survey!, term.id)
+                        : withFrom(`/results/${row.surveyId}`, fromOrigin),
                   )}
                   bulkActionsSlot={(selected, rows) => {
                     const selectedRows = rows.filter((row) => selected.has(row.id))
@@ -752,7 +736,9 @@ function TermWorkspaceInner() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setExtendTargets(extendable.map((row) => row.survey))}
+                            // isExtendable is always false for a not_configured
+                            // row, so every row here has row.survey set.
+                            onClick={() => setExtendTargets(extendable.map((row) => row.survey!))}
                           >
                             Edit close dates ({extendable.length})
                           </Button>
@@ -763,14 +749,8 @@ function TermWorkspaceInner() {
                   emptyState={
                     <div className="flex flex-col items-center gap-2 py-8">
                       <i className="fa-light fa-filter-circle-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-medium">
-                        {statusTab === 'all' ? 'No evaluations match' : `No ${STATUS_TABS.find((t) => t.id === statusTab)?.label.toLowerCase()} evaluations`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {statusTab === 'all'
-                          ? 'Adjust or clear the search and filters above.'
-                          : 'Try a different status tab, or adjust the search and filters above.'}
-                      </p>
+                      <p className="text-sm font-medium">No evaluations match</p>
+                      <p className="text-xs text-muted-foreground">Adjust or clear the search and filters above.</p>
                     </div>
                   }
                 />
