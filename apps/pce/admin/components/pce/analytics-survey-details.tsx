@@ -39,6 +39,7 @@ import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
 import {
   offeringPoints, compareTerms, medianOf, courseStats, facultyStats, RESPONSE_TARGET,
 } from '@/lib/pce-analytics'
+import type { DualMean } from '@/lib/pce-analytics'
 
 interface Row extends Record<string, unknown> {
   id: string
@@ -150,8 +151,8 @@ export function AnalyticsSurveyDetails() {
      above it never disagree about which numbers are flagged. */
   const columns = useMemo(
     () => columnsFor(
-      medianOf(courseStats().map(c => c.score.weighted)),
-      medianOf(facultyStats().map(f => f.score.weighted)),
+      medianOf(courseStats().map(c => c.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
+      medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
     ),
     [],
   )
