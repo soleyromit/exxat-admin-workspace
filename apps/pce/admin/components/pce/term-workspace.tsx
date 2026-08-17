@@ -57,7 +57,10 @@ import {
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
 } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
-import { type PceSurvey, type SurveyStatus } from '@/lib/pce-mock-data'
+import {
+  type PceSurvey, type SurveyStatus,
+  MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
+} from '@/lib/pce-mock-data'
 import { withFrom } from '@/lib/pce-nav-origin'
 
 /* One row = one offering's evaluation, the roll-up across every aspect it
@@ -90,6 +93,14 @@ type EvalRow = {
   survey: PceSurvey
 } & Record<string, unknown>
 
+/* One row = one term offering with NO evaluation configured yet — same
+ * reconciliation term-evaluations-board.tsx's "No survey configured" column
+ * already runs (surveyedCodes = courseCode already in this term's surveys).
+ * Drafts don't count as unconfigured here, same as the board: a draft
+ * already sits in the Scheduled tab, so listing it here too would duplicate
+ * the course (board file header, 2026-08-13). */
+type SetupRow = { id: string; code: string; name: string; facultyName: string | null } & Record<string, unknown>
+
 /* Per-evaluation lifecycle predicates (a single instance's status). */
 const isLive = (st: SurveyStatus) => st === 'active' || st === 'collecting'
 const isFinished = (st: SurveyStatus) =>
@@ -111,15 +122,20 @@ const STATUS_ORDER: Record<string, number> = {
  * view already columns by (term-evaluations-board.tsx's SURVEY_COLUMN),
  * surfaced as a filter here too so the table can show full row detail one
  * stage at a time instead of only the board's card-sized summary. */
-type StatusTab = 'all' | 'scheduled' | 'live' | 'closed' | 'published'
-function statusTabOf(st: SurveyStatus): Exclude<StatusTab, 'all'> {
+type StatusTab = 'all' | 'not_configured' | 'scheduled' | 'live' | 'closed' | 'published'
+function statusTabOf(st: SurveyStatus): Exclude<StatusTab, 'all' | 'not_configured'> {
   if (st === 'draft' || st === 'scheduled') return 'scheduled'
   if (isLive(st)) return 'live'
   if (needsReview(st)) return 'closed'
   return 'published'
 }
+/* Label matches term-evaluations-board.tsx's column exactly ("No survey
+ * configured") — the two views must agree on status vocabulary; a shortened
+ * variant here would just recreate the mismatch that column was named to
+ * avoid (see term-evaluations-board.tsx file header). */
 const STATUS_TABS: { id: StatusTab; label: string }[] = [
   { id: 'all', label: 'All' },
+  { id: 'not_configured', label: 'No survey configured' },
   { id: 'scheduled', label: 'Scheduled' },
   { id: 'live', label: 'Live' },
   { id: 'closed', label: 'Closed' },
@@ -194,13 +210,30 @@ function TermWorkspaceInner() {
       })
   }, [termSurveys, evalWin])
 
+  /* Offerings in this term with no evaluation configured at all — identical
+   * reconciliation to term-evaluations-board.tsx's "No survey configured"
+   * column (surveyedCodes set, matched on courseCode via masterCourseId),
+   * so the two views count and list the same courses. */
+  const setupRows: SetupRow[] = useMemo(() => {
+    if (!term) return []
+    const surveyedCodes = new Set(termSurveys.map((s) => s.courseCode))
+    return MOCK_COURSE_OFFERINGS
+      .filter((o) => o.termId === term.id && o.status !== 'archived')
+      .flatMap((o) => {
+        const course = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)
+        if (!course || surveyedCodes.has(course.code)) return []
+        const faculty = MOCK_FACULTY.find((f) => f.id === o.primaryFacultyId)
+        return [{ id: o.id, code: course.code, name: course.name, facultyName: faculty?.name ?? null }]
+      })
+  }, [term, termSurveys])
+
   /* Status tab counts — computed off the full set so a count never changes
    * just because a different tab happens to be selected. */
   const tabCounts = useMemo(() => {
-    const counts: Record<StatusTab, number> = { all: tableRows.length, scheduled: 0, live: 0, closed: 0, published: 0 }
+    const counts: Record<StatusTab, number> = { all: tableRows.length, not_configured: setupRows.length, scheduled: 0, live: 0, closed: 0, published: 0 }
     for (const row of tableRows) counts[statusTabOf(row.status)]++
     return counts
-  }, [tableRows])
+  }, [tableRows, setupRows])
   const visibleRows = useMemo(
     () => statusTab === 'all' ? tableRows : tableRows.filter((row) => statusTabOf(row.status) === statusTab),
     [tableRows, statusTab],
@@ -463,6 +496,42 @@ function TermWorkspaceInner() {
     ]
   }, [router, fromOrigin, term?.id])
 
+  /* Columns for the "No survey configured" tab — a bare course offering has
+   * none of EvalRow's survey fields (status/response rate/deadline), so this
+   * is its own small columns array rather than padding EvalRow with
+   * optionals nothing else would use. Same CTA target as the board's
+   * SetupBoardCard ("Set up survey" → push wizard scoped to the offering). */
+  const setupColumns: ColumnDef<SetupRow>[] = useMemo(() => [
+    {
+      key: 'code',
+      label: 'Course',
+      sortable: true,
+      width: 320,
+      filter: { type: 'text', icon: 'fa-book-open' },
+      cell: (row) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium" title={`${row.code} · ${row.name}`}>{row.code} · {row.name}</p>
+          {row.facultyName && <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.facultyName}</p>}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 180,
+      cell: (row) => (
+        <div className="flex items-center justify-end">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/surveys/push?term=${term?.id}&offerings=${row.id}`} onClick={(e) => e.stopPropagation()}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Set up survey
+            </Link>
+          </Button>
+        </div>
+      ),
+    },
+  ], [term?.id])
+
   if (!term) {
     return (
       <div className="flex flex-col flex-1">
@@ -612,6 +681,25 @@ function TermWorkspaceInner() {
 
               {evalView === 'board' ? (
                 <TermEvaluationsBoard surveys={termSurveys} termId={term.id} evalClose={evalWin?.close} />
+              ) : statusTab === 'not_configured' ? (
+                <DataTablePaginated<SetupRow>
+                  key={statusTab}
+                  data={setupRows}
+                  columns={setupColumns}
+                  getRowId={(row) => row.id}
+                  getRowSelectionLabel={(row) => `${row.code} offering`}
+                  pagination={{ pageSize: 16 }}
+                  edgeInset={false}
+                  stickyHeader={false}
+                  onRowClick={(row) => router.push(`/surveys/push?term=${term.id}&offerings=${row.id}`)}
+                  emptyState={
+                    <div className="flex flex-col items-center gap-2 py-8">
+                      <i className="fa-light fa-circle-check text-2xl text-muted-foreground" aria-hidden="true" />
+                      <p className="text-sm font-medium">Every course this term has an evaluation set up</p>
+                      <p className="text-xs text-muted-foreground">Nothing left to configure for this term.</p>
+                    </div>
+                  }
+                />
               ) : (
                 <DataTablePaginated<EvalRow>
                   /* key={statusTab} — forces a full remount on tab switch.
