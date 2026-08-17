@@ -29,6 +29,7 @@ export type { FacultyEvalRoleId } from '@/lib/pce-mock-data'
 // per survey (`survey.minimumThreshold ?? MINIMUM_THRESHOLD`) and so must this file — a
 // threshold that means 40 on the result page and 5 here is not a gate.
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
+import { gatedScore, type ScoreCell } from '@/lib/pce-score-cell'
 
 /* ────────────────────────────────────────────────────────────────────────────
    Term algebra — terms are strings in the model; ranking and 1Y/3Y windows
@@ -556,9 +557,11 @@ export interface FacultyStat {
   facultyId: string
   name: string
   initials: string
-  /** Weighted headline + simple mean, both (D3 option C). */
-  score: DualMean
-  /** Enrollment-weighted response rate, 0–100. */
+  /** Weighted headline + simple mean, both (D3 option C) — gated: Pending until every
+   *  in-scope offering's survey has closed, 'na' if the person has no offerings in scope. */
+  score: ScoreCell<DualMean>
+  /** Enrollment-weighted response rate, 0–100. Pooled from closed/historical offerings
+   *  only — Archived excluded, but NOT gated on full closure (PRD: different rule than score). */
   responseRate: number
   offerings: number
   courses: number
@@ -622,8 +625,11 @@ export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalR
 
   return [...byFaculty.entries()]
     .map(([facultyId, offs]) => {
-      const enrolled = offs.reduce((s, o) => s + o.enrolled, 0)
-      const responded = offs.reduce((s, o) => s + o.responded, 0)
+      // Response rate pools from closed/historical offerings, excludes Archived,
+      // is NOT gated on full closure — a different rule than the score below.
+      const countable = offs.filter((o) => o.surveyStatus !== 'archived')
+      const enrolled = countable.reduce((s, o) => s + o.enrolled, 0)
+      const responded = countable.reduce((s, o) => s + o.responded, 0)
       // Windows are computed against ALL of this person's history, not the term slice —
       // see the note on the term param. The ROLE scope does apply: role is not a time
       // window, and a drift arrow computed over a different role than the dot it sits
@@ -631,11 +637,16 @@ export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalR
       const own = all.filter((p) => p.facultyId === facultyId && (!role || p.evalRole === role))
       const avg1y = windowMean(own, now - 1, now)
       const avg3y = windowMean(own, now - 3, now)
+      const score = gatedScore<DualMean>(
+        offs,
+        (o: OfferingPoint) => o.surveyStatus,
+        (closed) => dualMean(closed.map((o) => o.avgRating), closed.map((o) => o.enrolled)),
+      )
       return {
         facultyId,
         name: offs[0]!.facultyName,
         initials: offs[0]!.initials,
-        score: dualMean(offs.map((o) => o.avgRating), offs.map((o) => o.enrolled)),
+        score,
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
         offerings: offs.length,
         courses: new Set(offs.map((o) => o.courseCode)).size,
@@ -646,7 +657,12 @@ export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalR
         ratings: offs.map((o) => o.avgRating),
       }
     })
-    .sort((a, b) => b.score.weighted - a.score.weighted)
+    .sort((a, b) => {
+      // Pending/na sink to the bottom of a best-first sort — they can't be ranked by score.
+      const av = a.score.state === 'value' ? a.score.value.weighted : -Infinity
+      const bv = b.score.state === 'value' ? b.score.value.weighted : -Infinity
+      return bv - av
+    })
 }
 
 /** One faculty member's offerings, newest last — the portfolio spine (stories 14, 16, 19). */
@@ -867,10 +883,13 @@ export interface CourseStat {
    * courses by their instructor's score, and the Overview KPI took its headline from the
    * content mean while taking its median from this, so the two halves of one sentence
    * measured different things. Students rate two entities (D27) — keep them apart.
+   *
+   * Gated: Pending until every in-scope offering's survey has closed, 'na' if this course
+   * has no content-scored offerings in scope.
    */
-  score: DualMean
-  /** The FACULTY-PERFORMANCE score for the same course — kept separate, never merged. */
-  facultyScore: DualMean
+  score: ScoreCell<DualMean>
+  /** The FACULTY-PERFORMANCE score for the same course — kept separate, same gating rule. */
+  facultyScore: ScoreCell<DualMean>
   responseRate: number
   terms: number
   avg1y: number | null
@@ -908,22 +927,40 @@ export function courseStats(term?: string, cohort?: string): CourseStat[] {
 
   return [...byCourse.entries()]
     .map(([courseCode, rows]) => {
-      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
-      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      const countable = rows.filter((r) => r.surveyStatus !== 'archived')
+      const enrolled = countable.reduce((s, r) => s + r.enrolled, 0)
+      const responded = countable.reduce((s, r) => s + r.responded, 0)
       // Windows run over ALL of this course's history, not the scoped slice — scoping them
       // to one term makes avg1y === avg3y and drift identically zero. Same rule as facultyStats.
       const own = all.filter((p) => p.courseCode === courseCode)
       const avg1y = windowMean(own, now - 1, now, 'courseAvg')
       const avg3y = windowMean(own, now - 3, now, 'courseAvg')
+
+      const score = gatedScore<DualMean>(
+        rows,
+        (r: OfferingPoint) => r.surveyStatus,
+        (closed) => {
+          const content = closed.map((r) => r.courseAvg).filter((v): v is number => v != null)
+          const contentWeights = closed.filter((r) => r.courseAvg != null).map((r) => r.enrolled)
+          return content.length
+            ? dualMean(content, contentWeights)
+            : dualMean(closed.map((r) => r.avgRating), closed.map((r) => r.enrolled))
+        },
+      )
+      const facultyScore = gatedScore<DualMean>(
+        rows,
+        (r: OfferingPoint) => r.surveyStatus,
+        (closed) => dualMean(closed.map((r) => r.avgRating), closed.map((r) => r.enrolled)),
+      )
+      // ratings stays a plain array (used for min/max spread marks in charts) — pulled
+      // from ALL rows' content scores where present, matching the score computation's shape.
       const content = rows.map((r) => r.courseAvg).filter((v): v is number => v != null)
-      const contentWeights = rows.filter((r) => r.courseAvg != null).map((r) => r.enrolled)
+
       return {
         courseCode,
         courseName: rows[0]!.courseName,
-        score: content.length
-          ? dualMean(content, contentWeights)
-          : dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
-        facultyScore: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)),
+        score,
+        facultyScore,
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
         /** Total students behind this course's scores — for enrollment-weighted program means. */
         enrolled,
@@ -934,7 +971,11 @@ export function courseStats(term?: string, cohort?: string): CourseStat[] {
         ratings: content.length ? content : rows.map((r) => r.avgRating),
       }
     })
-    .sort((a, b) => b.score.weighted - a.score.weighted)
+    .sort((a, b) => {
+      const av = a.score.state === 'value' ? a.score.value.weighted : -Infinity
+      const bv = b.score.state === 'value' ? b.score.value.weighted : -Infinity
+      return bv - av
+    })
 }
 
 /* ── By Course — the curriculum-committee surface ─────────────────────────── */
@@ -1192,8 +1233,18 @@ export function programSummary(): ProgramSummary {
   const facultyScore = dualMean(offs.map((o) => o.avgRating), offs.map((o) => o.enrolled))
   const courseScore = dualMean(ctp.map((p) => p.courseAvg), ctp.map(() => 1))
 
-  const facultyMedian = medianOf(fac.map((f) => f.score.weighted))
-  const courseMedian = medianOf(courses.map((c) => c.score.weighted))
+  const facultyMedian = medianOf(
+    fac
+      .map((f) => f.score)
+      .filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value')
+      .map((s) => s.value.weighted),
+  )
+  const courseMedian = medianOf(
+    courses
+      .map((c) => c.score)
+      .filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value')
+      .map((s) => s.value.weighted),
+  )
 
   const scored = series.filter((s) => s.courseAvg != null || s.facultyAvg != null || s.responseRate != null)
 
@@ -1206,8 +1257,8 @@ export function programSummary(): ProgramSummary {
     facultyCount: fac.length,
     courseCount: courses.length,
     termCount: series.filter((s) => s.courses > 0 || s.enrolled > 0).length,
-    facultyBelowThreshold: fac.filter((f) => f.score.weighted < facultyMedian).length,
-    coursesBelowThreshold: courses.filter((c) => c.score.weighted < courseMedian).length,
+    facultyBelowThreshold: fac.filter((f) => f.score.state === 'value' && f.score.value.weighted < facultyMedian).length,
+    coursesBelowThreshold: courses.filter((c) => c.score.state === 'value' && c.score.value.weighted < courseMedian).length,
     facultyMedian,
     courseMedian,
     termsBelowTarget: series.filter((s) => s.responseRate != null && s.responseRate < RESPONSE_TARGET).length,
@@ -1259,9 +1310,20 @@ export function benchmarks(departmentOf?: string): Benchmarks {
     ? fac.filter((f) => facultyById.get(f.facultyId)?.department === ownDept)
     : fac
 
+  // Benchmarks are a distribution of real scores — Pending/na faculty have nothing to
+  // contribute to "where does the pack sit", same "sit out" rule as Below-Benchmark.
+  const deptValues = deptPool
+    .map((f) => f.score)
+    .filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value')
+    .map((s) => s.value.weighted)
+  const allValues = fac
+    .map((f) => f.score)
+    .filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value')
+    .map((s) => s.value.weighted)
+
   return {
-    distribution: deptPool.map((f) => f.score.weighted),
-    department: deptPool.length ? round2(mean(deptPool.map((f) => f.score.weighted))) : 0,
-    university: round2(mean(fac.map((f) => f.score.weighted))),
+    distribution: deptValues,
+    department: deptValues.length ? round2(mean(deptValues)) : 0,
+    university: allValues.length ? round2(mean(allValues)) : 0,
   }
 }
