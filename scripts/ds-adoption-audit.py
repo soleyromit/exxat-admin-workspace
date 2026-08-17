@@ -157,6 +157,12 @@ DOCUMENTED_HAND_ROLLS = {
     # composition already ships unflagged in step-communication.tsx (2026-08-11,
     # Monil) — this file (2026-08-17) relocates that exact chip to Step 2.
     "components/pce/courses-evaluatees/step-survey-instances.tsx",
+    # pce: same Badge asChild + native <button> composition (2026-08-17,
+    # em-ds-gate-and-vercel-guard cleanup pass) — ask-leo-sidebar.tsx is also
+    # a byte-verbatim DS vendor file (docs/governance/ds-adoption.md → its own
+    # raw <button> at l.325 is separately do-not-modify, upstream-only).
+    "components/ask-leo-sidebar.tsx",
+    "components/learning-activities-course-detail-client.tsx",
     # exam-management: assessment-builder question picker — tightly coupled
     # picker grid (full-row click toggles selection, custom selected-row tint,
     # embedded sub-widget of a larger builder shell with smart-view chips +
