@@ -41,8 +41,9 @@ import {
   termKpis, cohortKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
   courseTrend, courseFacultyStats, courseStats, facultyStats, facultySurveys, termSlope,
   shortTerm, RESPONSE_TARGET,
-  type TermCourseRow,
+  type TermCourseRow, type DualMean,
 } from '@/lib/pce-analytics'
+import type { ScoreCell } from '@/lib/pce-score-cell'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
 /* ── shared helpers ── */
@@ -116,6 +117,17 @@ function FacultyCell({ name, initials }: { name: string; initials?: string }) {
 
 /* Enrollment-weighted average rating. */
 const fmt2 = (v: number) => v.toFixed(2)
+
+/**
+ * Plain-string sibling of `ScoreCellText` (`components/pce/score-cell.tsx`) — for contexts
+ * that take a `string`/`(string | number)[][]` rather than JSX: sr-only `ChartDataTable`
+ * rows, `ChartCardActions`' CSV/Excel export rows, and `MetricItem.value` on KPI tiles.
+ * Same three-state text as the JSX version: formatted value / "Pending" / "—".
+ */
+function scoreText(cell: ScoreCell<DualMean>, format: (value: DualMean) => string): string {
+  if (cell.state === 'value') return format(cell.value)
+  return cell.state === 'pending' ? 'Pending' : '—'
+}
 
 type FacultyOfferingRow = FacultyOfferingRecord & Record<string, unknown>
 type CourseTermRow = {
@@ -429,8 +441,8 @@ export function ByTermPanel({
      A within-term median would put half the term below it by construction, every term. Same
      medians the Overview charts split on, so a course flagged here is flagged there. */
   const breakdownMedians = useMemo(() => ({
-    course: medianOf(courseStats().map(c => c.score.weighted)),
-    faculty: medianOf(facultyStats().map(f => f.score.weighted)),
+    course: medianOf(courseStats().map(c => c.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
+    faculty: medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
   }), [])
   const termBreakdownColumns = useMemo(
     () => termBreakdownColumnsFor(breakdownMedians.course, breakdownMedians.faculty),
@@ -549,8 +561,8 @@ export function ByTermPanel({
      of a cohort. */
   const cohortMedians = useMemo(
     () => ({
-      course: medianOf(cohortCourses.map(c => c.score.weighted)),
-      faculty: medianOf(cohortFaculty.map(f => f.score.weighted)),
+      course: medianOf(cohortCourses.map(c => c.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
+      faculty: medianOf(cohortFaculty.map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
     }),
     [cohortCourses, cohortFaculty],
   )
@@ -1004,7 +1016,7 @@ export function ByTermPanel({
                       headers={['Course', 'Content score', 'Response rate']}
                       rows={cohortCourses.map(c => [
                         `${c.courseCode} · ${c.courseName}`,
-                        c.score.weighted.toFixed(2),
+                        scoreText(c.score, v => v.weighted.toFixed(2)),
                         `${c.responseRate}%`,
                       ])}
                     />
@@ -1023,7 +1035,7 @@ export function ByTermPanel({
                         headers: ['Course', 'Content score', 'Response rate'],
                         rows: cohortCourses.map((c) => [
                           `${c.courseCode} · ${c.courseName}`,
-                          c.score.weighted.toFixed(2),
+                          scoreText(c.score, v => v.weighted.toFixed(2)),
                           `${c.responseRate}%`,
                         ]),
                       }}
@@ -1054,7 +1066,7 @@ export function ByTermPanel({
                       headers={['Faculty', 'Teaching score', 'Courses', 'Response rate']}
                       rows={cohortFaculty.map(f => [
                         f.name,
-                        f.score.weighted.toFixed(2),
+                        scoreText(f.score, v => v.weighted.toFixed(2)),
                         f.courses,
                         `${f.responseRate}%`,
                       ])}
@@ -1073,7 +1085,7 @@ export function ByTermPanel({
                         headers: ['Faculty', 'Teaching score', 'Courses', 'Response rate'],
                         rows: cohortFaculty.map((f) => [
                           f.name,
-                          f.score.weighted.toFixed(2),
+                          scoreText(f.score, v => v.weighted.toFixed(2)),
                           f.courses,
                           `${f.responseRate}%`,
                         ]),
@@ -1341,7 +1353,7 @@ export function ByFacultyPanel({
   const facultyThemeSurveys = useMemo(() => facultySurveys(facultyId), [facultyId])
 
   const facultyOfferingCols = useMemo(
-    () => facultyOfferingColumnsFor(medianOf(facultyStats().map(f => f.score.weighted))),
+    () => facultyOfferingColumnsFor(medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted))),
     [],
   )
 
@@ -1352,7 +1364,7 @@ export function ByFacultyPanel({
     return [
       { id: 'f-courses', label: 'Courses taught', value: stat.courses, delta: '', trend: 'neutral',
         description: `${stat.offerings} offering${stat.offerings === 1 ? '' : 's'} across ${stat.terms} term${stat.terms === 1 ? '' : 's'}` },
-      ...(heroCarriesRating ? [] : [{ id: 'f-rating', label: 'Avg faculty rating', value: fmt2(stat.score.weighted), delta: '', trend: 'neutral',
+      ...(heroCarriesRating ? [] : [{ id: 'f-rating', label: 'Avg faculty rating', value: scoreText(stat.score, v => fmt2(v.weighted)), delta: '', trend: 'neutral' as const,
         description: 'Weighted by class size' }]),
       { id: 'f-completion', label: 'Response rate', value: `${stat.responseRate}%`, delta: '', trend: 'neutral',
         description: `Target ${RESPONSE_TARGET}%` },
@@ -1486,7 +1498,10 @@ export function ByCoursePanel({
         facultyId: f.facultyId,
         name: f.name,
         initials: '',
-        score: f.score,
+        // `CourseFacultyStat.score` (unlike `FacultyStat.score`) is a plain, ungated
+        // `DualMean` — every course-scoped instructor here has a real number by
+        // construction, so this is always the 'value' state, never Pending/na.
+        score: { state: 'value' as const, value: f.score },
         responseRate: f.responseRate,
         offerings: f.terms,
         courses: 1,
@@ -1547,7 +1562,7 @@ export function ByCoursePanel({
    * "Who taught" card below.
    */
   const courseOfferingCols = useMemo(
-    () => courseOfferingColumnsFor(medianOf(facultyStats().map(f => f.score.weighted))),
+    () => courseOfferingColumnsFor(medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted))),
     [],
   )
 
@@ -1564,7 +1579,7 @@ export function ByCoursePanel({
     return [
       { id: 'c-count', label: 'Times offered', value: stat.terms, delta: '', trend: 'neutral',
         description: 'All terms' },
-      { id: 'c-rating', label: 'Course content score', value: fmt2(stat.score.weighted),
+      { id: 'c-rating', label: 'Course content score', value: scoreText(stat.score, v => fmt2(v.weighted)),
         delta: delta == null ? '' : `${delta >= 0 ? '+' : ''}${fmt2(delta)}`,
         // Aarti dislikes red in score viz (VIZ-004); the DS maps 'down' to its own warn tone,
         // which is amber in this theme — verified against the token, not assumed.
