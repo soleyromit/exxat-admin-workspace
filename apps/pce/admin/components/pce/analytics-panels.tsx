@@ -555,6 +555,18 @@ export function ByTermPanel({
     }),
     [cohortCourses, cohortFaculty],
   )
+  /* Scored subsets — `CourseRankDots`/`FacultyLeaderboardDots` already filter Pending/na rows
+     out of their own marks internally (they have no score to rank or plot), so a caption that
+     says "All N courses/faculty … ranked" against the raw `cohortCourses`/`cohortFaculty`
+     count overclaims whenever some are still Pending. Captions below read this count instead. */
+  const cohortCoursesScored = useMemo(
+    () => cohortCourses.filter((c) => c.score.state === 'value'),
+    [cohortCourses],
+  )
+  const cohortFacultyScored = useMemo(
+    () => cohortFaculty.filter((f) => f.score.state === 'value'),
+    [cohortFaculty],
+  )
 
   const termGaps = useMemo(() => (axis === 'term' ? gapPoints(value) : []), [axis, value])
   const termGapMeans = useMemo(() => ({
@@ -1011,7 +1023,7 @@ export function ByTermPanel({
                     />
                     <ChartCardActions
                       title={`Course scores · ${value}`}
-                      description={`All ${cohortCourses.length} courses this class was evaluated on, ranked.`}
+                      description={`${cohortCoursesScored.length} scored course${cohortCoursesScored.length === 1 ? '' : 's'} this class was evaluated on, ranked.${cohortCourses.length - cohortCoursesScored.length > 0 ? ` ${cohortCourses.length - cohortCoursesScored.length} pending, not shown.` : ''}`}
                       detail={
                         <CourseRankDots
                           courses={cohortCourses}
@@ -1062,7 +1074,7 @@ export function ByTermPanel({
                     />
                     <ChartCardActions
                       title={`Teaching scores · ${value}`}
-                      description={`All ${cohortFaculty.length} faculty who taught this class, ranked.`}
+                      description={`${cohortFacultyScored.length} scored faculty who taught this class, ranked.${cohortFaculty.length - cohortFacultyScored.length > 0 ? ` ${cohortFaculty.length - cohortFacultyScored.length} pending, not shown.` : ''}`}
                       detail={
                         <FacultyLeaderboardDots
                           faculty={cohortFaculty}
@@ -1563,8 +1575,16 @@ export function ByCoursePanel({
     const last  = trend[trend.length - 1]
     const prev  = trend.length >= 2 ? trend[trend.length - 2] : undefined
     // courseAvg is nullable on the trend rows — a term with no content score is not a zero.
+    // The trend delta is computed independently of `stat.score`'s gate (courseTrend reads raw
+    // per-term offering data, not the closed-survey-gated aggregate), so a course can have a
+    // real numeric term-over-term delta while `stat.score` itself is still Pending/na — showing
+    // a trend arrow next to a "Pending" value is visually contradictory (final review, fix 4).
+    // Suppress the delta whenever the tile's own value has no computed score.
+    const hasScore = stat.score.state === 'value'
     const delta =
-      last?.courseAvg != null && prev?.courseAvg != null ? last.courseAvg - prev.courseAvg : null
+      hasScore && last?.courseAvg != null && prev?.courseAvg != null
+        ? last.courseAvg - prev.courseAvg
+        : null
     return [
       { id: 'c-count', label: 'Times offered', value: stat.terms, delta: '', trend: 'neutral',
         description: 'All terms' },

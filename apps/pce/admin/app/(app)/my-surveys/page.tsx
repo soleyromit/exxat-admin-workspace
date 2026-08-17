@@ -23,7 +23,14 @@ import Link from 'next/link'
 // 'archived' groups with 'closed' (Task 2, 2026-08-17) — archived is
 // closed-adjacent/inert, not a bucket a faculty member needs called out on
 // its own here; this page doesn't redesign status handling, just compiles.
-const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'archived', 'pending_review', 'draft']
+//
+// Sharing a LABEL string is not the same as sharing a GROUP: `useTableState` groups by the
+// raw value of `row[groupBy]`, one divider per distinct value — 'closed' and 'archived' being
+// two different values produced two adjacent groups that both happened to read "Past surveys"
+// (final whole-branch review, fix 8). The row's `groupStatus` field (below) is what actually
+// merges them; `GROUP_ORDER`/`GROUP_LABELS` only ever see 'closed' at runtime, so 'archived' is
+// kept here purely to satisfy `Record<SurveyStatus, string>` — it is never produced as a key.
+const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Pending review',
   collecting:     'Collecting',
@@ -40,6 +47,9 @@ interface MySurveyRow extends Record<string, unknown> {
   survey: PceSurvey
   courseCode: string
   status: SurveyStatus
+  /** Grouping-only bucket: 'archived' collapses into 'closed' so they render as one group
+   *  (fix 8). `status` itself is untouched — badges and filters still say Archived. */
+  groupStatus: SurveyStatus
   responseRate: number
   deadline: string
 }
@@ -73,6 +83,7 @@ function MySurveysContent() {
     survey: s,
     courseCode: s.courseCode,
     status: s.status,
+    groupStatus: s.status === 'archived' ? 'closed' : s.status,
     responseRate: s.responseRate,
     deadline: s.deadline ?? '',
   }))
@@ -173,7 +184,7 @@ function MySurveysContent() {
             columns={columns}
             getRowId={(row) => row.id}
             searchable
-            defaultGroupBy="status"
+            defaultGroupBy="groupStatus"
             groupLabels={GROUP_LABELS}
             groupOrder={GROUP_ORDER}
             onRowClick={(row) => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { offeringPoints, facultyStats, courseStats } from './pce-analytics'
+import { offeringPoints, facultyStats, courseStats, programSummary } from './pce-analytics'
 
 describe('offeringPoints surveyStatus', () => {
   it('every offering has a surveyStatus of a real SurveyStatus value or "historical"', () => {
@@ -47,5 +47,19 @@ describe('courseStats gating', () => {
       expect(['value', 'pending', 'na']).toContain(s.score.state)
       expect(['value', 'pending', 'na']).toContain(s.facultyScore.state)
     }
+  })
+})
+
+describe('programSummary — "N of Y" denominators (final review, fix 1)', () => {
+  it('facultyCount/courseCount describe the SAME scored population as the below-threshold numerator', () => {
+    const summary = programSummary()
+    const scoredFaculty = facultyStats().filter((f) => f.score.state === 'value')
+    const scoredCourses = courseStats().filter((c) => c.score.state === 'value')
+
+    expect(summary.facultyCount).toBe(scoredFaculty.length)
+    expect(summary.courseCount).toBe(scoredCourses.length)
+    // A frequency count can never exceed its own denominator.
+    expect(summary.facultyBelowThreshold).toBeLessThanOrEqual(summary.facultyCount)
+    expect(summary.coursesBelowThreshold).toBeLessThanOrEqual(summary.courseCount)
   })
 })

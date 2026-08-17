@@ -624,7 +624,11 @@ export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalR
   })
 
   return [...byFaculty.entries()]
-    .map(([facultyId, offs]) => {
+    // Explicit return type, same reason as `offeringPoints`'s `.map((o): OfferingPoint =>`:
+    // an unannotated object-literal return widens field types (e.g. a string literal to
+    // `string`) instead of checking them against `FacultyStat`, silently — TS only catches
+    // the mismatch at the call site, if at all (final whole-branch review, fix 7).
+    .map(([facultyId, offs]): FacultyStat => {
       // Response rate pools from closed/historical offerings, excludes Archived,
       // is NOT gated on full closure — a different rule than the score below.
       const countable = offs.filter((o) => o.surveyStatus !== 'archived')
@@ -926,7 +930,9 @@ export function courseStats(term?: string, cohort?: string): CourseStat[] {
   })
 
   return [...byCourse.entries()]
-    .map(([courseCode, rows]) => {
+    // Explicit return type — same latent-widening risk `offeringPoints` was fixed for; see
+    // `facultyStats`'s identical annotation above (fix 7).
+    .map(([courseCode, rows]): CourseStat => {
       const countable = rows.filter((r) => r.surveyStatus !== 'archived')
       const enrolled = countable.reduce((s, r) => s + r.enrolled, 0)
       const responded = countable.reduce((s, r) => s + r.responded, 0)
@@ -1227,8 +1233,15 @@ export function programSummary(): ProgramSummary {
   const ctp = courseTermPoints()
   const offs = offeringPoints()
 
-  const enrolled = offs.reduce((s, o) => s + o.enrolled, 0)
-  const responded = offs.reduce((s, o) => s + o.responded, 0)
+  // Response Rate stays UNGATED (not filtered on closed-survey completion, unlike the score
+  // fields above) — but ungated is not the same as archived-inclusive. Every other aggregate
+  // in this file excludes Archived offerings (see `facultyStats`/`courseStats`'s own
+  // `countable` filter); the pooled program Response Rate must exclude them too, or an
+  // Archived offering's enrollment/response counts inflate a number Archived surveys are
+  // supposed to be invisible to (final whole-branch review, fix 6).
+  const countable = offs.filter((o) => o.surveyStatus !== 'archived')
+  const enrolled = countable.reduce((s, o) => s + o.enrolled, 0)
+  const responded = countable.reduce((s, o) => s + o.responded, 0)
 
   const facultyScore = dualMean(offs.map((o) => o.avgRating), offs.map((o) => o.enrolled))
   const courseScore = dualMean(ctp.map((p) => p.courseAvg), ctp.map(() => 1))
@@ -1248,17 +1261,23 @@ export function programSummary(): ProgramSummary {
 
   const scored = series.filter((s) => s.courseAvg != null || s.facultyAvg != null || s.responseRate != null)
 
+  // Value-scored subsets — the "below threshold" numerator and its count denominator
+  // must describe the same population, or "N of Y" silently counts Pending/na rows
+  // that were never eligible to be "below" anything.
+  const facScored = fac.filter((f): f is typeof f & { score: { state: 'value'; value: DualMean } } => f.score.state === 'value')
+  const coursesScored = courses.filter((c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value')
+
   return {
     facultyScore,
     courseScore,
     responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
     enrolled,
     responded,
-    facultyCount: fac.length,
-    courseCount: courses.length,
+    facultyCount: facScored.length,
+    courseCount: coursesScored.length,
     termCount: series.filter((s) => s.courses > 0 || s.enrolled > 0).length,
-    facultyBelowThreshold: fac.filter((f) => f.score.state === 'value' && f.score.value.weighted < facultyMedian).length,
-    coursesBelowThreshold: courses.filter((c) => c.score.state === 'value' && c.score.value.weighted < courseMedian).length,
+    facultyBelowThreshold: facScored.filter((f) => f.score.value.weighted < facultyMedian).length,
+    coursesBelowThreshold: coursesScored.filter((c) => c.score.value.weighted < courseMedian).length,
     facultyMedian,
     courseMedian,
     termsBelowTarget: series.filter((s) => s.responseRate != null && s.responseRate < RESPONSE_TARGET).length,

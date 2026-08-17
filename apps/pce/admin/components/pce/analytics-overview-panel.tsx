@@ -105,19 +105,25 @@ export function AnalyticsOverviewPanel() {
 
 
 
+  /* Pending/na courses have no score to rank — same population `CourseRankDots` filters to
+     internally. Captions that describe "how many are ranked/shown" read this count, not
+     `courses.length`, so they don't overclaim when some courses are still Pending (final
+     whole-branch review, fix 5). */
+  const coursesScored = useMemo(
+    () => courses.filter((c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value'),
+    [courses],
+  )
+
   /* The chart draws the lowest N; its data table is the ACCESSIBLE EQUIVALENT of the chart,
      so it must list the same rows. A table of all 15 under a chart of 6 would mean the two
      halves of one figure disagreed about what the figure shows. Derived with the same sort
      the chart uses. */
   const lowestCourses = useMemo(
     () =>
-      courses
-        .filter(
-          (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
-        )
+      [...coursesScored]
         .sort((a, b) => a.score.value.weighted - b.score.value.weighted)
         .slice(0, COURSE_RANK_LIMIT),
-    [courses],
+    [coursesScored],
   )
 
   const courseMedian = useMemo(
@@ -587,7 +593,7 @@ export function AnalyticsOverviewPanel() {
         <ChartCard
           variant="normal"
           title="Courses scoring lowest"
-          description={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} weakest of ${courses.length}, worst first, vs the program median`}
+          description={`The ${lowestCourses.length} weakest of ${coursesScored.length} scored, worst first, vs the program median`}
           leoInsight={courseDriftLeo}
         >
           <ChartFigure
@@ -603,7 +609,7 @@ export function AnalyticsOverviewPanel() {
                     faculty (story 2, which does ask for the two windows). */}
                 <CourseRankDots courses={courses} median={courseMedian} />
                 <ChartDataTable
-                  caption={`The ${Math.min(COURSE_RANK_LIMIT, courses.length)} lowest-scoring courses against the program median`}
+                  caption={`The ${lowestCourses.length} lowest-scoring courses against the program median`}
                   headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
                   rows={lowestCourses.map((c) => [
                     `${c.courseCode} · ${c.courseName}`,
@@ -615,7 +621,7 @@ export function AnalyticsOverviewPanel() {
                 />
                 <ChartCardActions
                   title="Courses scoring lowest"
-                  description={`All ${courses.length} courses ranked against the ${fmt2(courseMedian)} program median, every offering behind each mean.`}
+                  description={`${coursesScored.length} scored courses ranked against the ${fmt2(courseMedian)} program median, every offering behind each mean.${courses.length - coursesScored.length > 0 ? ` ${courses.length - coursesScored.length} pending, not shown.` : ''}`}
                   detail={<CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} />}
                   table={{
                     headers: ['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],

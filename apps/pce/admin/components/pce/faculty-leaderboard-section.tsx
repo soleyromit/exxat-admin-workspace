@@ -105,6 +105,19 @@ export function FacultyLeaderboardSection({
   )
 
   /**
+   * The scored subset — Pending/na faculty sort to the bottom of `facultyStats`'s best-first
+   * order (Task 4), so "last item in the array" is no longer reliably a real low scorer; it
+   * can be a named person with no data yet. Every "N of Y", "lowest", and "N lowest" selector
+   * below reads from this array, never the raw `faculty` array, so a Pending row can't be
+   * mistaken for an underperformer (final whole-branch review, fixes 1–3).
+   */
+  const facultyScored = useMemo(
+    () => faculty.filter((f): f is typeof f & { score: { state: 'value'; value: DualMean } } => f.score.state === 'value'),
+    [faculty],
+  )
+  const facultyPendingCount = faculty.length - facultyScored.length
+
+  /**
    * Scale, and the expand pattern it forces.
    *
    * `LARGE_ROSTER_N` is the rubric's own N≤30 boundary for a Cleveland dot, not a number I
@@ -114,11 +127,14 @@ export function FacultyLeaderboardSection({
    */
   const isLarge = faculty.length > LARGE_ROSTER_N
 
-  /* `facultyStats` sorts best-first, so the LAST rows are the ones worth acting on. The card
-     always shows those; the full roster lives behind Expand like every sibling card. */
+  /* `facultyStats` sorts best-first, so the LAST rows of the SCORED subset are the ones worth
+     acting on. The card always shows those; the full roster lives behind Expand like every
+     sibling card. Slicing off `facultyScored` rather than `faculty` (fix 3, final review):
+     Pending/na rows sort to the bottom of `faculty` too, so slicing the raw array could fill
+     this "lowest, actionable" card entirely with people who have no score at all. */
   const collapsedRows = useMemo(
-    () => (isLarge ? faculty.slice(-LOWEST_SHOWN).reverse() : faculty),
-    [faculty, isLarge],
+    () => (isLarge ? facultyScored.slice(-LOWEST_SHOWN).reverse() : faculty),
+    [faculty, facultyScored, isLarge],
   )
   const series = useMemo(() => facultyTermSeries(role), [role])
   const responseSeries = useMemo(() => facultyResponseSeries(role), [role])
@@ -166,8 +182,13 @@ export function FacultyLeaderboardSection({
   /* ── Story 10 — the leaderboard, as a dot plot with each person's spread behind them. ── */
   const leaderLeo: ChartLeoInsight | null = useMemo(() => {
     if (faculty.length < 2) return null
-    const below = faculty.filter((f) => f.score.state === 'value' && f.score.value.weighted < median)
-    const lowest = faculty[faculty.length - 1]!
+    // Pending/na faculty have no score to compare against the median or name as "lowest" —
+    // excluded from the numerator, the denominator, AND the "lowest" pick (fixes 1 & 2, final
+    // review). Without this, `faculty[faculty.length - 1]` could surface a real, named person
+    // who simply has no data yet as if they were the worst scorer.
+    if (!facultyScored.length) return null
+    const below = facultyScored.filter((f) => f.score.value.weighted < median)
+    const lowest = facultyScored[facultyScored.length - 1]!
     // Widest spread = least consistent, which a ranked bar chart cannot show at all.
     const widest = [...faculty]
       .filter((f) => f.ratings.length > 1)
@@ -179,7 +200,7 @@ export function FacultyLeaderboardSection({
     const spread = widest ? Math.max(...widest.ratings) - Math.min(...widest.ratings) : 0
     return {
       // Frequency count, not a percentage — Aarti D17.
-      headline: `${below.length} of ${faculty.length} faculty sit below the ${fmt2(median)} median`,
+      headline: `${below.length} of ${facultyScored.length} faculty sit below the ${fmt2(median)} median`,
       explanation:
         widest && spread >= 0.4
           ? `${widest.name} has the widest spread, ${fmt2(spread)} between their best and worst offering. ` +
@@ -194,9 +215,9 @@ export function FacultyLeaderboardSection({
         `Median ${fmt2(median)} · department mean ${fmt2(bench.department)}.`,
         'Faint dots are individual offerings; the solid dot is the class-size-weighted mean.',
       ],
-      anchor: lowest.score.state === 'value' ? { yValue: lowest.score.value.weighted } : undefined,
+      anchor: { yValue: lowest.score.value.weighted },
     }
-  }, [faculty, median, bench])
+  }, [faculty, facultyScored, median, bench])
 
   /* ── Story 9 — faculty against each other over time. ── */
   const compareLeo: ChartLeoInsight | null = useMemo(() => {
@@ -244,7 +265,9 @@ export function FacultyLeaderboardSection({
     }
   }, [responseSeries])
 
-  const lowest = faculty[faculty.length - 1]
+  // Same fix-2 rule as `leaderLeo` above: pick "lowest" from the scored subset, never the raw
+  // roster, so the leaderboard's Leo-anchor dot never lands on a Pending faculty member.
+  const lowest = facultyScored[facultyScored.length - 1]
 
   /**
    * Memoised: `PlotFigure` lists `leoAnchor` in its effect deps, and object literals compare
@@ -252,7 +275,7 @@ export function FacultyLeaderboardSection({
    * `Plot.plot()` on every parent render (DOM thrash + a visible repaint).
    */
   const leaderAnchor = useMemo(
-    () => (lowest && lowest.score.state === 'value' ? { x: lowest.score.value.weighted, y: lowest.name } : undefined),
+    () => (lowest ? { x: lowest.score.value.weighted, y: lowest.name } : undefined),
     [lowest],
   )
 
@@ -320,7 +343,7 @@ export function FacultyLeaderboardSection({
           label="Faculty leaderboard"
           summary={
             isLarge
-              ? `Strip plot of all ${faculty.length} faculty scores against the program median of ${fmt2(median)}. The ${collapsedRows.length} lowest are listed below; expand for the full ranked view.`
+              ? `Strip plot of ${facultyScored.length} scored faculty against the program median of ${fmt2(median)}${facultyPendingCount > 0 ? ` (${facultyPendingCount} pending, not plotted)` : ''}. The ${collapsedRows.length} lowest are listed below; expand for the full ranked view.`
               : 'Ranked dot plot of faculty scores against the program median, with each faculty member\'s individual offering scores drawn as faint dots behind their weighted mean.'
           }
           dataLength={faculty.length}
@@ -414,15 +437,17 @@ export function FacultyLeaderboardSection({
                   leads with the same ranked dot plot, denser, per the correlation rule. */}
               {isLarge && (
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Showing the {collapsedRows.length} lowest of {faculty.length}. The strip above
-                  is all {faculty.length}. Expand for the full ranked list.
+                  Showing the {collapsedRows.length} lowest of {facultyScored.length} scored
+                  faculty. The strip above is all {facultyScored.length} scored
+                  {facultyPendingCount > 0 ? ` · ${facultyPendingCount} pending` : ''}. Expand for
+                  the full ranked list.
                 </p>
               )}
               <ChartCardActions
                 title="Faculty leaderboard"
                 description={
                   faculty.length
-                    ? `All ${faculty.length} faculty ranked against the ${fmt2(median)} median: every offering behind each mean as a faint dot.`
+                    ? `${facultyScored.length} scored faculty ranked against the ${fmt2(median)} median: every offering behind each mean as a faint dot.${facultyPendingCount > 0 ? ` ${facultyPendingCount} pending faculty have no score yet.` : ''}`
                     : 'No faculty evaluated in this scope yet.'
                 }
                 detail={
