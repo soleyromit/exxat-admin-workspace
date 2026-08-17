@@ -9,6 +9,7 @@
  */
 
 import * as React from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 import { TintedIconDisc, type TintedIconDiscTone } from "@/components/tinted-icon-disc"
 import { Separator } from "@/components/ui/separator"
@@ -324,14 +325,15 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
   const nextStep = STEPS.find((s) => !s.done)
   const stacked  = layout === "stack"
   const tileClass = cn(
-    "flex flex-col rounded-lg overflow-hidden border border-border bg-card hover:bg-interactive-hover-soft transition-colors focus-visible:outline-2 focus-visible:outline-ring text-left",
+    "flex h-auto flex-col items-stretch justify-start overflow-hidden rounded-lg border border-border bg-card p-0 font-normal hover:bg-interactive-hover-soft focus-visible:outline-2 focus-visible:outline-ring text-left",
     stacked ? "w-full" : "shrink-0 w-[13rem]",
   )
 
   const tiles = (
     <>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         className={tileClass}
         aria-label={`Continue setup · ${done} of ${total} steps done`}
       >
@@ -361,12 +363,13 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
             </span>
           </div>
         </div>
-      </button>
+      </Button>
 
       {GUIDE_ARTICLES.map((g) => (
-        <button
+        <Button
           key={g.id}
           type="button"
+          variant="ghost"
           className={tileClass}
           aria-label={g.title}
         >
@@ -382,7 +385,7 @@ function LearnSection({ layout = "scroll", plain = false }: { layout?: "scroll" 
               <span className="text-xs">{g.meta}</span>
             </div>
           </div>
-        </button>
+        </Button>
       ))}
     </>
   )
