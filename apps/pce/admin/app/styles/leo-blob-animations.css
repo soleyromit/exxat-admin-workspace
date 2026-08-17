@@ -1,0 +1,502 @@
+/* Leo AI — ambient blob drift (ported from Leo AI Q2 reference; token-based fills). */
+
+:root {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 38%, white);
+  --leo-blob-fill-2: color-mix(in oklch, var(--chart-4) 42%, white);
+  --leo-blob-fill-3: color-mix(in oklch, var(--chart-5) 40%, white);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 52%, white);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--chart-4) 55%, white);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--chart-5) 50%, white);
+}
+
+.dark {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 72%, black);
+  --leo-blob-fill-2: color-mix(in oklch, var(--chart-4) 68%, black);
+  --leo-blob-fill-3: color-mix(in oklch, var(--chart-5) 62%, black);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 78%, black);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--chart-4) 74%, black);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--chart-5) 70%, black);
+}
+
+@keyframes leo-blob-spread {
+  0% {
+    transform: scale(0.25);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.leo-ai-blob-spread {
+  animation: leo-blob-spread calc(2.8s * var(--leo-blob-anim-rate, 1))
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: 50% 65%;
+}
+
+@keyframes leo-blob-gentle-1 {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10%, 3%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes leo-blob-gentle-2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-10%, 2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes leo-blob-gentle-3 {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(5%, -2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.leo-ai-blob-1--animate {
+  animation: leo-blob-gentle-1 calc(20s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+.leo-ai-blob-2--animate {
+  animation: leo-blob-gentle-2 calc(22s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+.leo-ai-blob-3--animate {
+  animation: leo-blob-gentle-3 calc(24s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+/* One-shot float for surfaces that should settle (What's new Leo cards). */
+.leo-ai-blob-1--animate-once {
+  animation: leo-blob-gentle-1 calc(2.4s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+.leo-ai-blob-2--animate-once {
+  animation: leo-blob-gentle-2 calc(2.6s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+.leo-ai-blob-3--animate-once {
+  animation: leo-blob-gentle-3 calc(2.8s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+@keyframes leo-blob-think-1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20%, 9%) scale(1.1);
+  }
+  50% {
+    transform: translate(-6%, -4%) scale(0.96);
+  }
+  75% {
+    transform: translate(12%, 6%) scale(1.06);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes leo-blob-think-2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(-18%, 8%) scale(1.08);
+  }
+  50% {
+    transform: translate(5%, -5%) scale(0.97);
+  }
+  75% {
+    transform: translate(-11%, 5%) scale(1.05);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes leo-blob-think-3 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(11%, -7%) scale(1.09);
+  }
+  50% {
+    transform: translate(-5%, 4%) scale(0.95);
+  }
+  75% {
+    transform: translate(7%, -4%) scale(1.04);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.leo-ai-blob-thinking .leo-ai-blob-1--animate {
+  animation: leo-blob-think-1 calc(3.6s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+.leo-ai-blob-thinking .leo-ai-blob-2--animate {
+  animation: leo-blob-think-2 calc(4.2s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+.leo-ai-blob-thinking .leo-ai-blob-3--animate {
+  animation: leo-blob-think-3 calc(4.8s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    infinite;
+}
+
+/* One think cycle, then settle (What's new Ask Leo card). */
+.leo-ai-blob-thinking .leo-ai-blob-1--animate-once {
+  animation: leo-blob-think-1 calc(3.6s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+.leo-ai-blob-thinking .leo-ai-blob-2--animate-once {
+  animation: leo-blob-think-2 calc(4.2s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+.leo-ai-blob-thinking .leo-ai-blob-3--animate-once {
+  animation: leo-blob-think-3 calc(4.8s * var(--leo-blob-anim-rate, 1)) ease-in-out
+    1 both;
+}
+
+/*
+ * Search / composer pill (`density="bar"`).
+ * Panel think keyframes travel too far and overwrite the bar’s centering
+ * transform. Bar motion stays on `.leo-ai-blob-bar-core` (position on the
+ * outer shell), mostly horizontal, with soft elliptical squash so three
+ * brand washes cross the pill like a living pulse.
+ */
+/* The three mixes stay close together. A wide spread makes the strongest lobe
+   dominate and the band reads as one directional gradient instead of a field
+   with three hot spots. */
+.leo-ai-blob-layer--bar {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 50%, white);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 45%, white);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 40%, white);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 60%, white);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 54%, white);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 48%, white);
+}
+
+.dark .leo-ai-blob-layer--bar {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 80%, black);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 74%, black);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 68%, black);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 86%, black);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 80%, black);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 74%, black);
+}
+
+@keyframes leo-blob-bar-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Amplitudes stay under ~10% of each lobe's own width. Neighbouring lobes
+   overlap by ~20% of the pill at rest, so this keeps them fused through the
+   whole cycle while the widths breathe. */
+@keyframes leo-blob-bar-drift-1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  38% {
+    transform: translate3d(8%, -14%, 0) scale(1.14, 0.88);
+  }
+  62% {
+    transform: translate3d(4%, 12%, 0) scale(0.96, 1.12);
+  }
+  82% {
+    transform: translate3d(2%, -6%, 0) scale(1.06, 0.95);
+  }
+}
+
+@keyframes leo-blob-bar-drift-2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  40% {
+    transform: translate3d(-7%, 11%, 0) scale(1.12, 0.9);
+  }
+  58% {
+    transform: translate3d(-3%, -13%, 0) scale(0.97, 1.1);
+  }
+  80% {
+    transform: translate3d(-1%, 7%, 0) scale(1.05, 0.96);
+  }
+}
+
+@keyframes leo-blob-bar-drift-3 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  45% {
+    transform: translate3d(-5%, -10%, 0) scale(1.16, 0.86);
+  }
+  70% {
+    transform: translate3d(6%, 8%, 0) scale(0.94, 1.14);
+  }
+}
+
+/* Slow width breathing on the floor, in counterpoint to the lobes. */
+@keyframes leo-blob-bar-bridge-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.05, 0.94);
+  }
+}
+
+@keyframes leo-blob-bar-sheen {
+  0% {
+    transform: translate3d(-55%, 0, 0) skewX(-14deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.42;
+  }
+  28% {
+    opacity: 0.28;
+  }
+  48% {
+    transform: translate3d(55%, 0, 0) skewX(-14deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(55%, 0, 0) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+.leo-ai-blob-root[data-density="bar"] .leo-ai-blob-bar-core {
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+
+.leo-ai-blob-root[data-density="bar"][data-animate="true"] .leo-ai-blob-bar-core {
+  animation: leo-blob-bar-enter calc(0.55s * var(--leo-blob-anim-rate, 1))
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.leo-ai-blob-root[data-density="bar"][data-animate="true"].leo-ai-blob-thinking
+  .leo-ai-blob-1.leo-ai-blob-bar-core {
+  animation:
+    leo-blob-bar-enter calc(0.55s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.22, 1, 0.36, 1) both,
+    leo-blob-bar-drift-1 calc(2.6s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.55s infinite;
+}
+
+.leo-ai-blob-root[data-density="bar"][data-animate="true"].leo-ai-blob-thinking
+  .leo-ai-blob-2.leo-ai-blob-bar-core {
+  animation:
+    leo-blob-bar-enter calc(0.65s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.22, 1, 0.36, 1) both,
+    leo-blob-bar-drift-2 calc(3.15s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.65s infinite;
+}
+
+.leo-ai-blob-root[data-density="bar"][data-animate="true"].leo-ai-blob-thinking
+  .leo-ai-blob-3.leo-ai-blob-bar-core {
+  animation:
+    leo-blob-bar-enter calc(0.75s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.22, 1, 0.36, 1) both,
+    leo-blob-bar-drift-3 calc(2.2s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.75s infinite;
+}
+
+/* Connective floor. Wide and flat so colour is continuous from lobe to lobe;
+   the ellipse is wider than the box, so it only fades near the pill ends. */
+.leo-ai-blob-bar-bridge {
+  background: radial-gradient(
+    ellipse 70% 96% at 50% 50%,
+    var(--leo-blob-2-fill) 0%,
+    var(--leo-blob-3-fill) 46%,
+    transparent 78%
+  );
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+
+.leo-ai-blob-root[data-density="bar"][data-animate="true"]
+  .leo-ai-blob-bar-bridge {
+  animation:
+    leo-blob-bar-enter calc(0.7s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.22, 1, 0.36, 1) both,
+    leo-blob-bar-bridge-breathe calc(5.4s * var(--leo-blob-anim-rate, 1))
+      cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.leo-ai-blob-bar-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in oklch, var(--brand-color) 62%, white) 42%,
+    color-mix(in oklch, var(--brand-color) 28%, white) 58%,
+    transparent 100%
+  );
+  animation: leo-blob-bar-sheen calc(3.4s * var(--leo-blob-anim-rate, 1))
+    ease-in-out infinite;
+}
+
+.dark .leo-ai-blob-bar-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in oklch, var(--brand-color) 78%, black) 42%,
+    color-mix(in oklch, var(--brand-color) 40%, black) 58%,
+    transparent 100%
+  );
+}
+
+.leo-ai-blob-layer--idle-anchor {
+  top: auto;
+  bottom: 0;
+}
+
+/* Narrow surfaces — the Ask Leo rail and floating window. Each blob is ~480px,
+   so at this width all three sit on top of each other, and three different hues
+   blurred together read as a stain rather than a glow. One hue at three depths
+   keeps the overlap on-brand. */
+.leo-ai-blob-layer--panel {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 30%, white);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 20%, white);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 12%, white);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 38%, white);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 26%, white);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 16%, white);
+}
+
+/* Working state — richer brand wash so thinking is obvious in the rail. */
+.leo-ai-blob-layer--panel-thinking {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 52%, white);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 40%, white);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 28%, white);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 62%, white);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 48%, white);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 34%, white);
+}
+
+/* Empty idle hero — stronger than thread-idle, softer than thinking. */
+.leo-ai-blob-layer--panel-empty {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 44%, white);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 32%, white);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 22%, white);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 52%, white);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 38%, white);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 26%, white);
+}
+
+.dark .leo-ai-blob-layer--panel {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 60%, black);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 46%, black);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 36%, black);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 66%, black);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 52%, black);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 42%, black);
+}
+
+.dark .leo-ai-blob-layer--panel-thinking {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 82%, black);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 70%, black);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 56%, black);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 88%, black);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 76%, black);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 64%, black);
+}
+
+.dark .leo-ai-blob-layer--panel-empty {
+  --leo-blob-fill-1: color-mix(in oklch, var(--brand-color) 72%, black);
+  --leo-blob-fill-2: color-mix(in oklch, var(--brand-color) 58%, black);
+  --leo-blob-fill-3: color-mix(in oklch, var(--brand-color) 46%, black);
+  --leo-blob-fill-1-intro: color-mix(in oklch, var(--brand-color) 78%, black);
+  --leo-blob-fill-2-intro: color-mix(in oklch, var(--brand-color) 64%, black);
+  --leo-blob-fill-3-intro: color-mix(in oklch, var(--brand-color) 52%, black);
+}
+
+/* `ellipse` (not `circle`) so the painted extent tracks the box on both axes.
+   Panel blobs are square, where the two are identical; bar lobes are wide, and
+   a circle there paints a narrow disc that leaves gaps between neighbours. */
+.leo-ai-blob-1 {
+  background: radial-gradient(ellipse, var(--leo-blob-1-fill) 0%, transparent 72%);
+}
+
+.leo-ai-blob-2 {
+  background: radial-gradient(ellipse, var(--leo-blob-2-fill) 0%, transparent 72%);
+}
+
+.leo-ai-blob-3 {
+  background: radial-gradient(ellipse, var(--leo-blob-3-fill) 0%, transparent 72%);
+}
+
+.leo-ai-blob-root[data-intensity="high"] {
+  --leo-blob-1-fill: var(--leo-blob-fill-1-intro);
+  --leo-blob-2-fill: var(--leo-blob-fill-2-intro);
+  --leo-blob-3-fill: var(--leo-blob-fill-3-intro);
+}
+
+.leo-ai-blob-root[data-intensity="normal"] {
+  --leo-blob-1-fill: var(--leo-blob-fill-1);
+  --leo-blob-2-fill: var(--leo-blob-fill-2);
+  --leo-blob-3-fill: var(--leo-blob-fill-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leo-ai-blob-spread,
+  .leo-ai-blob-1--animate,
+  .leo-ai-blob-2--animate,
+  .leo-ai-blob-3--animate,
+  .leo-ai-blob-1--animate-once,
+  .leo-ai-blob-2--animate-once,
+  .leo-ai-blob-3--animate-once,
+  .leo-ai-blob-root[data-density="bar"] .leo-ai-blob-bar-core,
+  .leo-ai-blob-bar-bridge,
+  .leo-ai-blob-bar-sheen {
+    animation: none !important;
+  }
+
+  .leo-ai-blob-root[data-density="bar"] .leo-ai-blob-bar-core,
+  .leo-ai-blob-bar-bridge {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+}
