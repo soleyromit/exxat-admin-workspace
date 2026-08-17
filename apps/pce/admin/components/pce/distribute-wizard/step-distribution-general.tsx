@@ -97,7 +97,7 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Recipients &amp; access</h1>
+        <h1 className="text-xl font-semibold">Recipients &amp; access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose who receives this survey.
         </p>

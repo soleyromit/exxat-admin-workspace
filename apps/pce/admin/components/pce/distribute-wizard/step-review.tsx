@@ -350,7 +350,7 @@ export function StepReview({
            more. The academic year rides the title rather than taking a line of
            its own; anonymity moves into Schedule & email as its own row. ── */}
       <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-semibold font-heading">
+        <h2 className="text-xl font-semibold">
           {heading}
           {academicYear && (
             <span className="font-normal text-muted-foreground"> · {academicYear}</span>

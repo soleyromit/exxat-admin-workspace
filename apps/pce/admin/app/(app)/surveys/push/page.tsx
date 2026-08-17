@@ -1131,7 +1131,7 @@ function PushSurveyInner() {
             <div className="flex flex-col gap-6 flex-1" style={{ maxWidth: 680 }}>
               {/* Step header */}
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold font-heading">
+                <h2 className="text-xl font-semibold">
                   Basic Details
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -1153,7 +1153,7 @@ function PushSurveyInner() {
 
               {/* Design */}
               <div className="border-t border-border pt-6 flex flex-col gap-1">
-                <h3 className="text-base font-semibold font-heading">
+                <h3 className="text-base font-semibold">
                   Design
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -1184,7 +1184,7 @@ function PushSurveyInner() {
           ) : (
             <div className="flex flex-col gap-6 flex-1">
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold font-heading">
+                <h2 className="text-xl font-semibold">
                   Courses &amp; students
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
