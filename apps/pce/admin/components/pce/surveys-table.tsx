@@ -11,9 +11,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
-import { SURVEY_STATUS_BADGE } from '@/components/pce/pce-badges'
+import { SURVEY_STATUS_BADGE, SURVEY_STAGE } from '@/components/pce/pce-badges'
+import type { SurveyStage } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
-import { CloseSurveyDialog, SendReminderDialog, EditEndDateDialog } from '@/components/pce/pce-modals'
+import { CloseSurveyDialog, SendReminderDialog, EditEndDateDialog, ArchiveSurveyDialog } from '@/components/pce/pce-modals'
 import { ModerationSheet } from '@/components/pce/moderation-sheet'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
@@ -61,6 +62,10 @@ export interface SurveyRow extends Record<string, unknown> {
   survey: PceSurvey
   courseCode: string
   status: SurveyStatus
+  /** Lifecycle bucket for grouping (SURVEY_STAGE) — kept distinct from
+   *  `status` so the raw status column/filter stays granular while grouping
+   *  reads the same canonical stage every other surface uses. */
+  stage: SurveyStage
   term: string
   primaryInstructorName: string
   primaryInstructorInitials: string
@@ -79,6 +84,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: 'pending_review', label: 'Pending Review' },
   { value: 'released',       label: 'Results Released' },
   { value: 'closed',         label: 'Closed' },
+  { value: 'archived',       label: 'Archived' },
 ]
 
 // Response-rate buckets — powers the "Completion" filter (live pce-three parity).
@@ -95,6 +101,10 @@ function completionBand(rate: number): string {
 // Statuses where a reminder / close-date change still makes sense.
 const REMINDABLE: SurveyStatus[] = ['collecting', 'active']
 const EXTENDABLE: SurveyStatus[] = ['collecting', 'active', 'scheduled']
+// Aug 12 ask (Granola 0ef80c33, Aarti) — "undo a mistake" is only offered
+// before an evaluation has real response data worth keeping; once a survey
+// is Closed/Pending review/Released, Archive isn't the right escape hatch.
+const ARCHIVABLE: SurveyStatus[] = ['draft', 'scheduled', 'collecting', 'active']
 
 const responseRateCell = (row: SurveyRow) => (
   <div className="flex flex-col gap-1" style={{ minWidth: 120 }}>
@@ -149,6 +159,7 @@ export function SurveysTable({
   const [moderationSurveyId, setModerationSurveyId] = useState<string | null>(null)
   const [remindTarget, setRemindTarget] = useState<PceSurvey[]>([])
   const [extendTarget, setExtendTarget] = useState<PceSurvey[]>([])
+  const [archiveTarget, setArchiveTarget] = useState<PceSurvey | null>(null)
 
   const router = useRouter()
   const isGeneral = mode === 'general'
@@ -170,6 +181,7 @@ export function SurveysTable({
       survey,
       courseCode: survey.courseCode,
       status: survey.status,
+      stage: SURVEY_STAGE[survey.status],
       term: survey.term ?? '',
       primaryInstructorName: primary?.name ?? '',
       primaryInstructorInitials: primary?.initials ?? '',
@@ -251,6 +263,7 @@ export function SurveysTable({
         onReview={() => setModerationSurveyId(row.survey.id)}
         onRemind={() => setRemindTarget([row.survey])}
         onExtend={() => setExtendTarget([row.survey])}
+        onArchive={() => setArchiveTarget(row.survey)}
       />
     ),
   }
@@ -426,6 +439,11 @@ export function SurveysTable({
         onOpenChange={v => { if (!v) setExtendTarget([]) }}
         surveys={extendTarget}
       />
+      <ArchiveSurveyDialog
+        open={!!archiveTarget}
+        onOpenChange={v => { if (!v) setArchiveTarget(null) }}
+        survey={archiveTarget}
+      />
       {!isGeneral && (
         <ModerationSheet
           surveyId={moderationSurveyId}
@@ -442,12 +460,14 @@ function RowActions({
   onReview,
   onRemind,
   onExtend,
+  onArchive,
 }: {
   survey: PceSurvey
   onClose: () => void
   onReview?: () => void
   onRemind: () => void
   onExtend: () => void
+  onArchive: () => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
@@ -508,12 +528,22 @@ function RowActions({
             Edit End Date
           </DropdownMenuItem>
         )}
-        {(survey.status === 'collecting' || survey.status === 'active') && (
+        {/* Destructive actions grouped under one separator — Close (live
+            surveys only) then Archive (Aug 12 ask, Granola 0ef80c33: an
+            "undo a mistake" path for a survey that should never have gone
+            out, distinct from the normal end-of-term Close). */}
+        {ARCHIVABLE.includes(survey.status) && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={onClose}>
-              <i className="fa-light fa-xmark" aria-hidden="true" />
-              Close Survey
+            {(survey.status === 'collecting' || survey.status === 'active') && (
+              <DropdownMenuItem variant="destructive" onClick={onClose}>
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+                Close Survey
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem variant="destructive" onSelect={() => { setMenuOpen(false); onArchive() }}>
+              <i className="fa-light fa-box-archive" aria-hidden="true" />
+              Archive Evaluation
             </DropdownMenuItem>
           </>
         )}

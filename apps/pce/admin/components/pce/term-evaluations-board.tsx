@@ -41,6 +41,8 @@ import {
 } from '@/components/data-views/list-page-board-template'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
+import { SURVEY_STAGE, SURVEY_STAGE_LABEL } from '@/components/pce/pce-badges'
+import type { SurveyStage } from '@/components/pce/pce-badges'
 import { RESPONSE_TARGET, isResumable, resumeHref as resumeHrefFor } from '@/lib/pce-term-metrics'
 import { evaluationsFor } from '@/lib/pce-evaluations'
 import { withFrom } from '@/lib/pce-nav-origin'
@@ -76,17 +78,12 @@ type BoardRow =
   | { key: string; kind: 'survey'; s: PceSurvey }
   | { key: string; kind: 'setup'; o: SetupCard }
 
-type ColumnId = 'no_survey' | 'scheduled' | 'live' | 'pending' | 'released'
-
-const SURVEY_COLUMN: Record<PceSurvey['status'], ColumnId> = {
-  draft: 'scheduled',
-  scheduled: 'scheduled',
-  active: 'live',
-  collecting: 'live',
-  pending_review: 'pending',
-  closed: 'pending',
-  released: 'released',
-}
+/* 'no_survey' is board-only (an offering with no survey row at all — see
+ * SetupCard below); the other four ids are exactly SurveyStage, sourced from
+ * pce-badges.tsx so this board's columns can never drift from the labels
+ * surveys-hub.tsx's grouped table and the SurveyStatusBadge use (2026-08-12,
+ * Granola 0ef80c33 — see that file's header comment). */
+type ColumnId = 'no_survey' | SurveyStage
 
 /* Neutral count chips on every column (library-board precedent) — the column
  * label already names the stage; coloring counts would re-encode it. */
@@ -94,14 +91,14 @@ const NEUTRAL_COUNT_BADGE = 'bg-muted/90 text-foreground'
 
 const COLUMNS: { id: ColumnId; label: string }[] = [
   { id: 'no_survey', label: 'No survey configured' },
-  { id: 'scheduled', label: 'Scheduled' },
-  { id: 'live',      label: 'Live' },
-  { id: 'pending',   label: 'Closed · Pending review' },
-  { id: 'released',  label: 'Results available' },
+  { id: 'scheduled', label: SURVEY_STAGE_LABEL.scheduled },
+  { id: 'live', label: SURVEY_STAGE_LABEL.live },
+  { id: 'closed_review', label: SURVEY_STAGE_LABEL.closed_review },
+  { id: 'released', label: SURVEY_STAGE_LABEL.released },
 ]
 
 function columnOf(row: BoardRow): ColumnId {
-  return row.kind === 'setup' ? 'no_survey' : SURVEY_COLUMN[row.s.status]
+  return row.kind === 'setup' ? 'no_survey' : SURVEY_STAGE[row.s.status]
 }
 
 function fmtIsoShort(iso?: string): string | null {
@@ -128,9 +125,9 @@ function SurveyBoardCard({
    *  are non-standard. */
   evalClose?: string
 }) {
-  const col = SURVEY_COLUMN[s.status]
+  const col = SURVEY_STAGE[s.status]
   const opens = fmtIsoShort(s.openDate)
-  const showGauge = col === 'live' || col === 'pending' || col === 'released'
+  const showGauge = col === 'live' || col === 'closed_review' || col === 'released'
   const closeTime = evalClose ? new Date(evalClose).getTime() : NaN
   const deadlineTime = s.deadline ? new Date(s.deadline).getTime() : NaN
   const extended = Number.isFinite(closeTime) && Number.isFinite(deadlineTime) && deadlineTime > closeTime

@@ -476,6 +476,50 @@ export function CloseSurveyDialog({ open, onOpenChange, survey }: CloseSurveyDia
   )
 }
 
+// ── ArchiveSurveyDialog ────────────────────────────────────────────────────────
+// Aug 12 ask (Granola 0ef80c33, Aarti, raw transcript): "I think delete
+// instead of delete, I would say archive... meaning like you don't want any
+// more students to fill it... I made a mistake, I attached the wrong faculty
+// to the wrong course or I activated the course that was not going to be
+// offered this semester... there has to be a way to say I made a mistake."
+// Distinct from CloseSurveyDialog above: Close is the normal end-of-term
+// action (survey moves to Pending Review, results still flow). Archive is
+// for an evaluation that should never have gone out — it drops off the
+// active list and no results review follows. Calls the existing
+// archiveSurvey() stub (pce-state.tsx, previously unreachable from any UI).
+// There is no unarchive path yet, so this is presented as irreversible.
+interface ArchiveSurveyDialogProps {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  survey: PceSurvey | null
+}
+
+export function ArchiveSurveyDialog({ open, onOpenChange, survey }: ArchiveSurveyDialogProps) {
+  const { archiveSurvey } = usePce()
+  if (!survey) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Archive this evaluation?</DialogTitle>
+          <DialogDescription>
+            {survey.courseCode} will be removed from your active evaluations and will stop
+            collecting responses. Use this when an evaluation was set up by mistake — for a
+            normal end of term, close it instead. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={() => { archiveSurvey(survey.id); onOpenChange(false) }}>
+            Archive Evaluation
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── SendReminderPopover ───────────────────────────────────────────────────────
 
 interface SendReminderPopoverProps {

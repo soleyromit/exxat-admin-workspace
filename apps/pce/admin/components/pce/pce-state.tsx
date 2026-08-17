@@ -276,7 +276,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
 
   const archiveSurvey = useCallback((id: string) => {
     setSurveys(ss => ss.map(s =>
-      s.id === id ? { ...s, archivedAt: 'Apr 22, 2026' } : s
+      s.id === id ? { ...s, status: 'archived' as SurveyStatus, archivedAt: 'Apr 22, 2026' } : s
     ))
   }, [])
 

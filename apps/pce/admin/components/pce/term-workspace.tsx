@@ -40,7 +40,7 @@ import {
   KeyMetrics,
   Skeleton,
   ToggleGroup, ToggleGroupItem,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -51,7 +51,7 @@ import { SurveyStatusBadgeOS } from '@/components/pce/pce-badges'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { FacultyAvatarRow } from '@/components/pce/faculty-avatar-row'
 import { TermEvaluationsBoard } from '@/components/pce/term-evaluations-board'
-import { EditEndDateDialog } from '@/components/pce/pce-modals'
+import { EditEndDateDialog, ArchiveSurveyDialog } from '@/components/pce/pce-modals'
 import {
   RESPONSE_TARGET, LIVE, isResumable, resumeHref as resumeHrefFor,
   daysUntil, weightedRate, evalWindow, coverageFor, termsOrdered,
@@ -129,7 +129,7 @@ const isExtendable = (st: RowStatus) => isLive(st) || st === 'scheduled'
  * page (feedback_no_bare_count_action_surfaces: surface the work, not just
  * a count). */
 const STATUS_ORDER: Record<string, number> = {
-  not_configured: -1, active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4,
+  not_configured: -1, active: 0, collecting: 0, pending_review: 1, closed: 1, released: 2, scheduled: 3, draft: 4, archived: 5,
 }
 
 /* Status column filter (2026-08-17) — the ONLY status-narrowing mechanism
@@ -153,6 +153,7 @@ const STATUS_LABELS: { value: string; label: string }[] = [
   { value: 'pending_review', label: 'Pending Review' },
   { value: 'closed', label: 'Closed' },
   { value: 'released', label: 'Results Released' },
+  { value: 'archived', label: 'Archived' },
 ]
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
@@ -168,6 +169,7 @@ function TermWorkspaceInner() {
   const fromOrigin = term ? `term:${term.id}` : null
 
   const [extendTargets, setExtendTargets] = useState<PceSurvey[]>([])
+  const [archiveTarget, setArchiveTarget] = useState<PceSurvey | null>(null)
   const [evalView, setEvalView] = useState<'table' | 'board'>('table')
 
   const ce = useMemo(
@@ -548,6 +550,26 @@ function TermWorkspaceInner() {
                       per-comment hide/show toggle AND calls the same release
                       action (releaseSurvey === enableResults, pce-state.tsx),
                       just with the scores/themes context the sheet lacked. */}
+                  {/* Archive — Aug 12 ask (Granola 0ef80c33, Aarti): an
+                      "undo a mistake" path for a survey that should never
+                      have gone out. Scoped to rows that haven't reached
+                      review/results yet (row.survey is guaranteed here, same
+                      as Extend above). A not_configured row already returned
+                      above this point (see the top of this cell), so TS
+                      narrows it out here — only the archived exclusion needs
+                      an explicit check (nothing left to undo). */}
+                  {row.status !== 'archived' && !isFinished(row.status) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => setArchiveTarget(row.survey!)}
+                      >
+                        <i className="fa-light fa-box-archive" aria-hidden="true" />
+                        Archive evaluation
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -784,6 +806,11 @@ function TermWorkspaceInner() {
         open={extendTargets.length > 0}
         onOpenChange={(v) => !v && setExtendTargets([])}
         surveys={extendTargets}
+      />
+      <ArchiveSurveyDialog
+        open={!!archiveTarget}
+        onOpenChange={(v) => !v && setArchiveTarget(null)}
+        survey={archiveTarget}
       />
     </div>
   )

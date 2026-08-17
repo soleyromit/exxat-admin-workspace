@@ -26,6 +26,7 @@ import {
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 import { SurveysTable } from '@/components/pce/surveys-table'
 import { EmptyState as HubEmptyState } from '@/components/empty-state'
+import { SURVEY_STAGE_LABEL, SURVEY_STAGE_ORDER } from '@/components/pce/pce-badges'
 
 const VALID_STATUSES: SurveyStatus[] = ['draft', 'active', 'collecting', 'scheduled', 'pending_review', 'released', 'closed']
 
@@ -47,21 +48,6 @@ function PushedBanner() {
     </div>
   )
 }
-
-// Group labels + urgency order for the single grouped DataTable (CE mode).
-// Keys are SurveyStatus values; DataTable renders a sticky divider per group.
-const CE_GROUP_LABELS: Record<string, string> = {
-  pending_review: 'Closed · Pending Review',
-  released:       'Results Available',
-  closed:         'Results Available',
-  collecting:     'Live',
-  active:         'Live',
-  scheduled:      'Scheduled',
-  draft:          'Draft',
-}
-
-// Urgency order: items needing action surface first.
-const CE_GROUP_ORDER = ['pending_review', 'released', 'closed', 'collecting', 'active', 'scheduled', 'draft']
 
 export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) {
   const { surveys } = usePce()
@@ -187,9 +173,9 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
             mode="course_evaluation"
             pageSize={50}
             statusFilter={statusFilter}
-            defaultGroupBy="status"
-            groupLabels={CE_GROUP_LABELS}
-            groupOrder={CE_GROUP_ORDER}
+            defaultGroupBy="stage"
+            groupLabels={SURVEY_STAGE_LABEL}
+            groupOrder={SURVEY_STAGE_ORDER}
           />
         )}
       </div>
