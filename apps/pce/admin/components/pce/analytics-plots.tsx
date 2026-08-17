@@ -1973,7 +1973,10 @@ export function CourseRankDots({
     [ranked, spread, order, median],
   )
 
-  if (!courses.length) return <ChartEmpty note="No courses with evaluated offerings yet." />
+  // `ranked.length`, not `courses.length` — a roster that's entirely Pending/na filters down
+  // to zero rankable rows even though `courses` itself isn't empty, and rendering the chart
+  // shell on zero marks is a broken-looking empty state instead of the real one.
+  if (!ranked.length) return <ChartEmpty note="No courses with evaluated offerings yet." />
 
   // `ranked.length`, not `courses.length` — sizing on the unsliced list reserved 520px for 15
   // rows while drawing 6, which is where the card's ~250px of dead white space came from.
