@@ -177,7 +177,7 @@ function surveyFor(o: FacultyOfferingRecord): PceSurvey | undefined {
 
 export function offeringPoints(): OfferingPoint[] {
   const facultyById = new Map(MOCK_FACULTY.map((f) => [f.id, f]))
-  return MOCK_FACULTY_OFFERINGS.map((o) => {
+  return MOCK_FACULTY_OFFERINGS.map((o): OfferingPoint => {
     const f = facultyById.get(o.facultyId)
     const name = f?.name ?? o.facultyId
     const survey = surveyFor(o)
