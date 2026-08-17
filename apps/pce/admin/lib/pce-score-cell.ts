@@ -11,17 +11,21 @@ export type ScoreCell<T> =
   | { state: 'pending' }
   | { state: 'na' }
 
-const COUNTABLE: ReadonlySet<SurveyStatus | 'historical'> = new Set(['closed', 'released', 'historical'])
+const COUNTABLE: ReadonlySet<SurveyStatus | 'historical' | 'archived'> = new Set(['closed', 'released', 'historical'])
 
 /**
  * The PRD's "wait for all offerings closed" rule, in one place.
  *
  * `'pending_review'` is deliberately NOT in COUNTABLE — data collection may be done, but
  * moderation isn't, and the source PRD only names "Closed/Results-Available" as countable.
+ *
+ * The `statusOf` function may return any survey status from the caller's vocabulary,
+ * including 'archived' (which gates this function out entirely), 'historical', and
+ * statuses from SurveyStatus union.
  */
 export function gatedScore<T>(
   offerings: readonly unknown[],
-  statusOf: (o: any) => SurveyStatus | 'historical',
+  statusOf: (o: any) => SurveyStatus | 'historical' | 'archived',
   compute: (closedOfferings: any[]) => T,
 ): ScoreCell<T> {
   const live = offerings.filter((o) => statusOf(o) !== 'archived')
