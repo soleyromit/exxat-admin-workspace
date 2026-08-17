@@ -33,6 +33,7 @@ import { DataTablePaginated } from '@/components/data-table/pagination'
 import { ChartCardActions } from '@/components/pce/chart-card-actions'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { scoreText } from '@/components/pce/score-cell'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { StudentVoice } from '@/components/pce/student-voice'
 import { usePce } from '@/components/pce/pce-state'
@@ -43,7 +44,6 @@ import {
   shortTerm, RESPONSE_TARGET,
   type TermCourseRow, type DualMean,
 } from '@/lib/pce-analytics'
-import type { ScoreCell } from '@/lib/pce-score-cell'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
 /* ── shared helpers ── */
@@ -117,17 +117,6 @@ function FacultyCell({ name, initials }: { name: string; initials?: string }) {
 
 /* Enrollment-weighted average rating. */
 const fmt2 = (v: number) => v.toFixed(2)
-
-/**
- * Plain-string sibling of `ScoreCellText` (`components/pce/score-cell.tsx`) — for contexts
- * that take a `string`/`(string | number)[][]` rather than JSX: sr-only `ChartDataTable`
- * rows, `ChartCardActions`' CSV/Excel export rows, and `MetricItem.value` on KPI tiles.
- * Same three-state text as the JSX version: formatted value / "Pending" / "—".
- */
-function scoreText(cell: ScoreCell<DualMean>, format: (value: DualMean) => string): string {
-  if (cell.state === 'value') return format(cell.value)
-  return cell.state === 'pending' ? 'Pending' : '—'
-}
 
 type FacultyOfferingRow = FacultyOfferingRecord & Record<string, unknown>
 type CourseTermRow = {
