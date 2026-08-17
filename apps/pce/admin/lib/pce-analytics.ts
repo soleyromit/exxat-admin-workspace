@@ -21,7 +21,7 @@
  */
 
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES, facultyEvalRole } from '@/lib/pce-mock-data'
-import type { FacultyOfferingRecord, FacultyEvalRoleId, PceSurvey } from '@/lib/pce-mock-data'
+import type { FacultyOfferingRecord, FacultyEvalRoleId, PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 
 // Re-exported so analytics consumers (page, leaderboard, export) keep one import path.
 export type { FacultyEvalRoleId } from '@/lib/pce-mock-data'
@@ -128,6 +128,13 @@ export interface OfferingPoint extends FacultyOfferingRecord {
    * Lecturer on another, so the role lives on the offering, never on the directory record.
    */
   evalRole: FacultyEvalRoleId
+  /**
+   * This offering's survey status, or 'historical' when no live survey links to it
+   * (surveyFor() found nothing — an earlier term the live survey system has no record of).
+   * 'historical' is always treated as closed for gating purposes — Pending only applies
+   * to the current/in-progress term. See the state-model spec's "live term only" scoping.
+   */
+  surveyStatus: SurveyStatus | 'historical'
 }
 
 /** The roles that actually HAVE evaluated offerings, in canonical order — a role filter
@@ -188,6 +195,7 @@ export function offeringPoints(): OfferingPoint[] {
       // An offering with no linked survey falls back to the program default. It cannot be
       // gated by an override it has no way to read.
       minimumThreshold: survey?.minimumThreshold ?? MINIMUM_THRESHOLD,
+      surveyStatus: survey?.status ?? 'historical',
     }
   }).sort((a, b) => a.year - b.year)
 }
