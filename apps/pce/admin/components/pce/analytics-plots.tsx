@@ -29,6 +29,7 @@ import { RESPONSE_TARGET } from '@/lib/pce-analytics'
 import type {
   FacultyStat,
   CourseStat,
+  DualMean,
   GapPoint,
   HeatCell,
   TermSeriesPoint,
@@ -111,6 +112,18 @@ export function FacultyLeaderboardDots({
     [faculty],
   )
 
+  // Charts can't render a Pending/na score as a data point — filter those rows out before
+  // building mark data rather than plotting them as 0. The range spine and per-offering
+  // dots above don't touch `.score`, so they keep drawing from the full `faculty` list; only
+  // the marks that read a score need the narrowed, always-`value`-state array.
+  const plottable = React.useMemo(
+    () =>
+      faculty.filter(
+        (f): f is typeof f & { score: { state: 'value'; value: DualMean } } => f.score.state === 'value',
+      ),
+    [faculty],
+  )
+
   const spec = React.useCallback(
     (theme: PlotTheme) => ({
       marginLeft: 132,
@@ -136,21 +149,21 @@ export function FacultyLeaderboardDots({
           fillOpacity: 0.4,
         }),
         // The weighted mean.
-        Plot.dot(faculty, {
-          x: (d: FacultyStat) => d.score.weighted,
+        Plot.dot(plottable, {
+          x: (d) => d.score.value.weighted,
           y: 'name',
           r: 5,
           // Every dot here IS a faculty member — so `faculty`, not brand. Brand is
           // reserved for the SUBJECT of a view, and a leaderboard has no subject.
-          fill: (d: FacultyStat) => (d.score.weighted < median ? theme.warn : theme.faculty),
+          fill: (d) => (d.score.value.weighted < median ? theme.warn : theme.faculty),
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {
-            Weighted: (d: FacultyStat) => fmt2(d.score.weighted),
-            'Simple mean': (d: FacultyStat) => fmt2(d.score.simple),
-            Offerings: (d: FacultyStat) => d.offerings,
-            Courses: (d: FacultyStat) => d.courses,
-            'Response rate': (d: FacultyStat) => `${d.responseRate}%`,
+            Weighted: (d) => fmt2(d.score.value.weighted),
+            'Simple mean': (d) => fmt2(d.score.value.simple),
+            Offerings: (d) => d.offerings,
+            Courses: (d) => d.courses,
+            'Response rate': (d) => `${d.responseRate}%`,
           },
           tip: {
             format: { x: false, y: true, fill: false, r: false },
@@ -170,9 +183,9 @@ export function FacultyLeaderboardDots({
         // Value label — readable without hovering (A11Y-008). Pinned to the right frame
         // rather than offset from the dot: a dot-relative label collides with the median
         // rule and with neighbouring labels whenever scores cluster, which they do.
-        Plot.text(faculty, {
+        Plot.text(plottable, {
           y: 'name',
-          text: (d: FacultyStat) => fmt2(d.score.weighted),
+          text: (d) => fmt2(d.score.value.weighted),
           frameAnchor: 'right',
           dx: 34,
           fill: theme.foreground,
@@ -181,7 +194,7 @@ export function FacultyLeaderboardDots({
         }),
       ],
     }),
-    [faculty, spread, order, median],
+    [faculty, spread, order, plottable, median],
   )
 
   if (!faculty.length) return <ChartEmpty note="No faculty with evaluated offerings yet." />
@@ -739,8 +752,13 @@ export function FacultyScoreStrip({
   height?: number
   leoAnchor?: { x: unknown; y: unknown }
 }) {
+  // Pending/na faculty have no score to place on the strip — filter them out rather than
+  // stacking a phantom tick at 0.
   const rows = React.useMemo(
-    () => faculty.map((f) => ({ name: f.name, score: f.score.weighted })),
+    () =>
+      faculty
+        .filter((f): f is typeof f & { score: { state: 'value'; value: DualMean } } => f.score.state === 'value')
+        .map((f) => ({ name: f.name, score: f.score.value.weighted })),
     [faculty],
   )
 
@@ -1883,9 +1901,18 @@ export function CourseRankDots({
    *
    * `limit` is applied here rather than by the caller so the chart and its ChartDataTable
    * cannot drift apart about which rows exist.
+   *
+   * Pending/na courses have no score to rank by — filtered out before the sort, same
+   * principle as `FacultyLeaderboardDots`/`FacultyScoreStrip` above.
    */
   const ranked = React.useMemo(
-    () => [...courses].sort((a, b) => a.score.weighted - b.score.weighted).slice(0, limit),
+    () =>
+      courses
+        .filter(
+          (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
+        )
+        .sort((a, b) => a.score.value.weighted - b.score.value.weighted)
+        .slice(0, limit),
     [courses, limit],
   )
   const order = React.useMemo(() => ranked.map((c) => c.courseCode), [ranked])
@@ -1904,25 +1931,25 @@ export function CourseRankDots({
       marks: [
         Plot.ruleY(ranked, {
           y: 'courseCode',
-          x1: (d: CourseStat) => Math.min(...d.ratings),
-          x2: (d: CourseStat) => Math.max(...d.ratings),
+          x1: (d) => Math.min(...d.ratings),
+          x2: (d) => Math.max(...d.ratings),
           stroke: theme.border,
           strokeWidth: 2,
         }),
         Plot.dot(spread, { x: 'rating', y: 'code', r: 2.5, fill: theme.mutedForeground, fillOpacity: 0.4 }),
         Plot.dot(ranked, {
-          x: (d: CourseStat) => d.score.weighted,
+          x: (d) => d.score.value.weighted,
           y: 'courseCode',
           r: 5,
-          fill: (d: CourseStat) => (d.score.weighted < median ? theme.warn : theme.content),
+          fill: (d) => (d.score.value.weighted < median ? theme.warn : theme.content),
           stroke: theme.card,
           strokeWidth: 1.5,
           channels: {
-            Course: (d: CourseStat) => `${d.courseCode} · ${d.courseName}`,
-            Weighted: (d: CourseStat) => fmt2(d.score.weighted),
-            'Simple mean': (d: CourseStat) => fmt2(d.score.simple),
+            Course: (d) => `${d.courseCode} · ${d.courseName}`,
+            Weighted: (d) => fmt2(d.score.value.weighted),
+            'Simple mean': (d) => fmt2(d.score.value.simple),
             Terms: 'terms',
-            'Response rate': (d: CourseStat) => `${d.responseRate}%`,
+            'Response rate': (d) => `${d.responseRate}%`,
           },
           tip: { format: { x: false, y: true, fill: false, r: false } },
         }),
@@ -1934,7 +1961,7 @@ export function CourseRankDots({
         // Pinned to the right frame — see the note in FacultyLeaderboardDots.
         Plot.text(ranked, {
           y: 'courseCode',
-          text: (d: CourseStat) => fmt2(d.score.weighted),
+          text: (d) => fmt2(d.score.value.weighted),
           frameAnchor: 'right',
           dx: 34,
           fill: theme.foreground,
