@@ -12,7 +12,7 @@ import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { ByFacultyPanel } from '@/components/pce/analytics-panels'

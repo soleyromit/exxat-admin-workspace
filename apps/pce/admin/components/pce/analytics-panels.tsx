@@ -11,24 +11,16 @@
 import { useMemo, type ReactNode } from 'react'
 import { Button, KeyMetrics, Avatar, AvatarFallback } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
-import {
-  ChartContainer, ChartTooltip, ChartTooltipContent,
-  ChartLegend, ChartLegendContent,
-  chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui/components/ui/chart'
 import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
-import { XAxis, YAxis, LineChart, Line, CartesianGrid } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
-  ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import {
   GapQuadrant, CourseTrendStack, FacultyLeaderboardDots, Slopegraph, ProgramResponseTrend,
-  CourseRankDots, CohortStudentWaffle,
+  CourseRankDots, CohortStudentWaffle, ProgramScoreTrend,
 } from '@/components/pce/analytics-plots'
 import { TruncatedText } from '@/components/truncated-text'
-import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import { ChartCardActions } from '@/components/pce/chart-card-actions'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -131,10 +123,6 @@ type TermBreakdownRow = TermCourseRow & Record<string, unknown>
 export type NudgeTarget = { id: string; courseCode: string; courseName: string; nonResponders: number }
 
 /* ── chart configs ── */
-const programTrendConfig: ChartConfig = {
-  courseAvg:  { label: 'Course avg',  color: 'var(--chart-1)' },
-  facultyAvg: { label: 'Faculty avg', color: 'var(--chart-2)' },
-}
 const courseRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-1)' } }
 const facultyRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-2)' } }
 const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
@@ -613,9 +601,12 @@ export function ByTermPanel({
    * tab, two universes — the exact "numbers disagree with each other" failure (§4) that
    * `lib/pce-analytics.ts` exists to end. Every surface now derives from one place.
    */
-  /* The full term series — `programTrendData` reshapes this for recharts, but the response
-     chart wants the canonical points (it needs `term` for the scoped-term band, not just the
-     abbreviated `short`). One derivation, two views. */
+  /* The full term series. `termSeriesData` feeds the chart directly (via `ProgramScoreTrend`)
+     and the response chart below (which needs `term` for the scoped-term band, not just the
+     abbreviated `short`). `programTrendData` below is a second, pre-filtered shape — courseAvg/
+     facultyAvg only, non-null terms only — for the ChartDataTable rows, ChartCardActions export
+     table, and the per-term delta chips; those want a flat `{term, courseAvg, facultyAvg}` row,
+     not the canonical points. One derivation, two views. */
   const termSeriesData = useMemo(() => termSeries(), [])
 
   const programTrendData = useMemo(
@@ -811,27 +802,14 @@ export function ByTermPanel({
           summary="Line chart of course average versus faculty average rating across historical terms."
           dataLength={programTrendData.length}
         >
-          {(activeIndex) => (
+          {() => (
             <>
               {programTrendData.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   No term history yet. The trend appears once a second term closes.
                 </p>
               ) : (
-              <div className="relative w-full">
-                <ChartContainer config={programTrendConfig} className="w-full" style={{ height: 168 }}>
-                  <LineChart accessibilityLayer data={programTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="term" tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} />
-                    <YAxis domain={[3.4, 4.8]} tickFormatter={(v: number) => v.toFixed(1)} tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={28} />
-                    <ChartTooltip key={chartTooltipKeyboardSyncProps(activeIndex).key} {...chartTooltipKeyboardSyncProps(activeIndex).props} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4, stroke: 'var(--ring)', strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
-                  </LineChart>
-                </ChartContainer>
-                <ChartLeoPlotInsightOverlay data={programTrendData} xDataKey="term" />
-              </div>
+                <ProgramScoreTrend series={termSeriesData} height={168} />
               )}
               <ChartDataTable
                 caption="Program trend"

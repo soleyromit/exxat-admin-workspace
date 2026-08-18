@@ -811,13 +811,19 @@ export function FacultyScoreStrip({
   return <PlotFigure spec={spec} height={height} leoAnchor={leoAnchor} leoFamily="scatter" />
 }
 
-export function ProgramTrendStack({
+/**
+ * Course-vs-faculty score trend only, no response-rate half. Factored out of
+ * `ProgramTrendStack` so a card that wants JUST the score line (analytics-panels.tsx's
+ * By Term tab, which already has response rate as its own adjacent card) doesn't have to
+ * pull in a second charting library to get one — this is the same Plot spec `ProgramTrendStack`
+ * renders as its top half, exposed standalone.
+ */
+export function ProgramScoreTrend({
   series,
-  responseTarget = 80,
   detail = false,
+  height,
 }: {
   series: TermSeriesPoint[]
-  responseTarget?: number
   /**
    * Expanded-dialog mode. The card and its Expand dialog must not show the SAME plot at the
    * SAME size — the dialog earns its click with height and with every value labelled in
@@ -825,6 +831,8 @@ export function ProgramTrendStack({
    * no sense"). Density for a fixed-length term series is exact values, not more marks.
    */
   detail?: boolean
+  /** Caller-specific sizing — the Overview stack and a standalone score card size differently. */
+  height?: number
 }) {
   const scoreRows = React.useMemo(
     () =>
@@ -832,11 +840,6 @@ export function ProgramTrendStack({
         ...(s.courseAvg != null ? [{ term: s.short, metric: 'Course content', value: s.courseAvg }] : []),
         ...(s.facultyAvg != null ? [{ term: s.short, metric: 'Faculty', value: s.facultyAvg }] : []),
       ]),
-    [series],
-  )
-
-  const rateRows = React.useMemo(
-    () => series.filter((s) => s.responseRate != null).map((s) => ({ term: s.short, value: s.responseRate as number })),
     [series],
   )
 
@@ -918,6 +921,36 @@ export function ProgramTrendStack({
     [scoreRows, termOrder, scoreDomain, detail],
   )
 
+  // Blank axes read as a rendering failure, not as an empty state — guard like every other
+  // multi-term chart in this file (state-review 2026-07-15; this was the one outlier).
+  if (!series.length || !scoreRows.length) {
+    return <ChartEmpty note="Not enough term history to show a trend yet." />
+  }
+
+  return <PlotFigure spec={scoreSpec} height={height ?? (detail ? 340 : 196)} />
+}
+
+/**
+ * Score trend + response-rate trend, stacked with one shared term axis. Used on Overview's
+ * "Program trajectory" card, where both halves belong on the same card (Monil: the trend
+ * graph is program-wide, not term-scoped, same as the KPI strip's cohort scope is not).
+ */
+export function ProgramTrendStack({
+  series,
+  responseTarget = 80,
+  detail = false,
+}: {
+  series: TermSeriesPoint[]
+  responseTarget?: number
+  detail?: boolean
+}) {
+  const rateRows = React.useMemo(
+    () => series.filter((s) => s.responseRate != null).map((s) => ({ term: s.short, value: s.responseRate as number })),
+    [series],
+  )
+
+  const termOrder = React.useMemo(() => series.map((s) => s.short), [series])
+
   const rateSpec = React.useCallback(
     (theme: PlotTheme) => ({
       marginLeft: 36,
@@ -978,7 +1011,7 @@ export function ProgramTrendStack({
 
   // Blank axes read as a rendering failure, not as an empty state — guard like every other
   // multi-term chart in this file (state-review 2026-07-15; this was the one outlier).
-  if (!series.length || !scoreRows.length) {
+  if (!series.length || !series.some((s) => s.courseAvg != null || s.facultyAvg != null)) {
     return <ChartEmpty note="Not enough term history to show a trajectory yet." />
   }
 
@@ -986,7 +1019,7 @@ export function ProgramTrendStack({
   // beside it. Spend that height on the plots rather than leaving it blank under them.
   return (
     <div className="flex flex-col">
-      <PlotFigure spec={scoreSpec} height={detail ? 340 : 196} />
+      <ProgramScoreTrend series={series} detail={detail} />
       <PlotFigure spec={rateSpec} height={detail ? 180 : 124} />
     </div>
   )

@@ -13,7 +13,7 @@ import { RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
 import {
   ChartCard, ChartFigure, ChartDataTable,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import { TrajectoryBoxplot, buildTrajectoryDatum } from '@/components/pce/trajectory-boxplot'
 import { SiteHeader } from '@/components/site-header'

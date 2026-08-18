@@ -24,6 +24,19 @@ Reading By Course and By Term's actual code (not just screenshots) overturned tw
 
 These corrections matter because they change where the real work is: **not** "build missing analysis" (Course/Term's analysis is already strong) but **"make the three tabs consistent with each other and with `/results`, close two specific action gaps, and give By Faculty the comparative insight the other two already have."**
 
+## Second correction — the chart layer itself was misread
+
+The first two passes of this plan treated `analytics-panels.tsx`'s data derivations as the whole picture and only skimmed the JSX that renders them. `components/pce/analytics-plots.tsx` (1954 lines, `import * as Plot from '@observablehq/plot'`) is a real, mature chart-primitives library — not a thin Recharts wrapper — and reading it in full changes three specific claims made earlier:
+
+- **By Faculty's "Scores over time" / "Response rate over time" are not generic line charts and do not need retitling.** `FacultyCompareLines`/`ResponseCompareLines` already implement a "highlight spaghetti" pattern (Romit, 2026-07-15): every faculty member's line renders as faint ghost context on one shared axis against a dashed program-mean/target reference, with only the 3 largest movers inked and labeled — plus an `EntityTrendExplorer` in `ChartCardActions` letting a coordinator pick any individual to trace. The earlier claim that these "read like one person's trend" was wrong — retracted, no change needed here.
+- **`DriftDumbbell`** (Overview's "Which way each faculty is moving") is a change-axis arrow/dumbbell chart with real rigor: the axis is deliberately the *drift*, not the absolute score (an earlier version scaled to level and made 4 of 6 arrows an unreadable smudge — documented in the component's own comments as a caught, fixed bug), direction is redundantly encoded in both color and a text delta per A11Y-008 (color alone is banned), and decline is the only state that earns color (amber), matching the "no red, decline gets the only accent" rule. It is Overview-only today — not duplicated, not something to rebuild.
+- **`KpiSpark`** is a real, already-built sparkline component (`Plot.line` + a terminal dot, ≥3-point minimum with an honest "not enough data" fallback instead of a silently bare number) — used on Overview's KPI tiles, never wired into By Faculty/Course/Term's. The "add a sparkline" idea in this plan is not new work; it's reusing `KpiSpark` directly.
+- **`ByTermPanel`'s "Program trend" chart is a legacy Recharts `LineChart` duplicate of `ProgramTrendStack`**, which is Plot-based, already built, already used on Overview, and does not use a legend (Plot components here teach via dashed reference lines and direct point interaction, not legend boxes). The original "remove the chart legend" fix was too narrow — the real fix is deleting the Recharts implementation and rendering `ProgramTrendStack` instead, which removes the legend as a side effect of removing the duplicate code.
+
+Net effect: fewer new components than the prior draft assumed, and the ones that are genuinely new (aggregate KPI band, By Faculty's course-variance insight) should be built by **reusing** `KpiSpark` and `FacultyLeaderboardDots` respectively, not by inventing parallel patterns.
+
+Two more existing components worth naming: **`BenchmarkDistribution`** (a jittered peer-swarm — already used on both By Faculty and its selected-person portfolio) switches from percentile to plain rank below ~20 people, since a percentile in a 3-person department is false precision. **`CourseTermGrid`** is a real, polished heatmap (course × term, brand-ramped fill, contrast-computed text color) — it exists and is used, but only on Overview, not on any of the three tabs this plan covers. Proposing it for By Course (see the table below): that tab currently shows one course's history at a time with no "how's everything trending" summary above its own selector, which this closes without inventing a new chart.
+
 ## Cross-cutting requirements (apply to all three tabs)
 
 ### 1. Visual vocabulary — port `/results`' decluttered pattern
@@ -38,22 +51,24 @@ All three tabs currently use `KeyMetrics variant="compact"` tiles and Recharts `
 `results/[id]/page.tsx` changes to *import* these instead of defining them inline — behavior-preserving refactor. Verify with `visual-diff.mjs` against the current `/results` page immediately after extraction, before any analytics-side changes, so the refactor is confirmed non-regressive independent of everything built on top of it.
 
 **Apply across all three tabs:**
-- Every KPI tile → `ScoreTile`.
-- Faculty leaderboard's dot-strip, "Who taught it" leaderboard dots → `scale-track-plot` (photo identity replaces plain colored dots / initials).
-- Program trend chart's `ChartLegend` → removed. The two lines (course avg, faculty avg) already have distinct colors and the `ChartTooltip`/`ChartLeoPlotInsightOverlay` already teach on interaction — a legend is redundant per the `/results` rubric ("marks + popovers teach, not legends").
+- Every KPI tile → `ScoreTile`, with a `KpiSpark` sparkline wherever ≥3 points of history exist (reuse the existing component — see "Second correction" above).
+- **`FacultyLeaderboardDots` / `CourseRankDots` (the leaderboard dot plots) are NOT replaced.** They're already sophisticated, N-aware Observable Plot components (Cleveland dot ≤30, strip plot above, faint per-offering dots behind the weighted mean) — rebuilding them as a `scale-track-plot` pulled from `/results` would be discarding working, considered code to build a less-mature duplicate. Scope for `scale-track-plot` narrows to wherever `/results` uses a pattern analytics has no equivalent for at all — evaluate case by case during implementation, don't force it onto the leaderboards.
+- **`ByTermPanel`'s "Program trend"** — delete the Recharts `LineChart` implementation, render `ProgramTrendStack` (already built, Plot-based, used on Overview) instead. This removes the legend as a side effect of removing the duplicate, rather than patching the legend out of code being deleted anyway.
 
 ### 2. Aggregate KPI band — missing on By Faculty and By Course
 
 By Term already opens with a KPI band (`byTermKpis`, before any chart) — this is the settled model (2026-07-13: KPIs → trend → deep-dive). **By Faculty and By Course both skip straight to the leaderboard/selector with no aggregate view.** Add, for each:
 
-- **By Faculty:** `# below median`, `# below response target`, program avg faculty score — reduced from `facultyStats()`, which the leaderboard already computes. No new data-layer function.
-- **By Course:** `# below median`, `# below response target`, program avg course score — reduced from `courseStats()`, same reasoning.
+- **By Faculty:** `# below median`, `# below response target`, program avg faculty score — reduced from `facultyStats()`, which the leaderboard already computes. No new data-layer function. The program-avg tile gets a `KpiSpark` fed the last N terms of `termSeries()`'s `facultyAvg`.
+- **By Course:** same shape from `courseStats()`, spark from `termSeries()`'s `courseAvg`.
 
-Both sit above the leaderboard/selector, answering "how many need attention, program-wide?" before the reader picks one.
+Both sit above the leaderboard/selector, answering "how many need attention, program-wide?" before the reader picks one. Built from `ScoreTile` + `KpiSpark` — both existing components, no new chart code.
 
 ### 3. By Faculty needs a course-variance insight — the mirror of `courseFacultyLeo`
 
-By Course already asks, per course: "does this course's score depend on WHO teaches it?" (`courseFacultyLeo`). By Faculty has no symmetric insight asking, per person: "does this person's score depend on WHICH COURSE they teach?" That's a real, missing comparative insight — not a new capability, just the same `courseFacultyLeo` pattern computed from the other axis (group a selected faculty member's offerings by `courseCode` instead of by `facultyId`, same spread/staffing-vs-content framing, reworded for the person axis: "consistently good/struggling across courses" vs. "one specific course is dragging the average"). Lives in `ByFacultyPanel`'s selected-faculty section, same position `courseFacultyLeo`'s chart occupies in `ByCoursePanel` (after the KPI strip, alongside the existing portfolio charts).
+By Course already asks, per course: "does this course's score depend on WHO teaches it?" (`courseFacultyLeo`, rendered via `FacultyLeaderboardDots` fed `courseFacultyAsStats` — offerings grouped by `facultyId`, one dot per instructor with their own offerings as faint context behind it). By Faculty has no symmetric insight asking, per person: "does this person's score depend on WHICH COURSE they teach?"
+
+**Build it exactly the way `ByCoursePanel` already builds its mirror** — reuse `FacultyLeaderboardDots` directly, not a new chart. Group the selected faculty member's offerings by `courseCode` instead of by `facultyId` (mirroring `courseFacultyAsStats`'s exact shape, just grouped on the other key), so each "row" is one course they've taught, with their own offerings of that course as faint dots behind it. Same spread-based Leo insight logic as `courseFacultyLeo`, reworded for the person axis: "consistently strong/struggling across courses" (tight spread) vs. "one specific course is dragging the average" (wide spread). Lives in `ByFacultyPanel`'s selected-faculty section, same position `courseFacultyLeo`'s chart occupies in `ByCoursePanel` (after the KPI strip, alongside the existing portfolio charts). Zero new Plot code — new data shaping only.
 
 ### 4. Internal note — a genuinely missing action, on all three tabs
 
@@ -86,28 +101,30 @@ One shared shape across all three tabs (`scope` discriminates), one `usePce` sta
 
 Checked against Mobbin (web platform) before finalizing — a real gap in the first pass of this plan, corrected here. Findings:
 
-- **Quadrant/gap scatter** (By Term's "Content vs teaching"): validated by Zoho CRM's "Revenue vs Deals" quadrant chart (labeled axes, dashed divider, plotted dots) and TheyDo's 2×2 opportunity matrix, which additionally **sizes each bubble by a third variable**. Adopt that: size each course's dot by enrollment, so a 200-student outlier reads differently from a 12-student one — currently all dots are fixed-size.
-- **KPI tile with inline trend**: Later, Whop, and Navattic all pair a stat number with a small sparkline directly beneath it, not just a static delta. This workspace's own `pce-ui-patterns.md §0.2` already names "MicroTrend sparkline" as a pattern (`"Is this course improving, stable, or declining?"`) but it's never been applied at the analytics-tab level. Add a 2–3 point sparkline to the rating `ScoreTile` wherever `avg1y`/`avg3y` exist.
-- **Ranked leaderboard with drill-in**: 15Five's "My team at a glance" (named rows, last-interaction, avg score) and X's plain rank/name/stat table both validate the existing Cleveland-dot leaderboard + ranked-row pattern — no change needed to the shape, just the visual vocabulary port (Section above).
-- **Internal note thread**: Employment Hero's comment-on-goal pattern (author, timestamp, body, chronological) validates the internal-note shape in Section 3 above.
-- **Slope chart** (By Term's "What moved"): no strong external analog surfaced — this is a Tufte-style slopegraph, more common in analyst/BI tooling than consumer SaaS. Keeping it as-is; it's already well-built and answers a real question (`termSlopeLeo`), just noting the external check came up empty rather than skipping it.
+**Correction, 2026-08-17:** this section originally proposed several of these as new patterns modeled on Mobbin references before the actual `analytics-plots.tsx` chart library had been read in full. Most of what's below is reusing an existing, already-sophisticated Observable Plot component — the Mobbin check still stands as confirmation these are industry-standard shapes, not evidence they needed building from scratch. See "Second correction" above for the full account.
+
+- **Quadrant/gap scatter** (By Term's "Content vs teaching", `GapQuadrant`): checked against Zoho CRM's quadrant chart and TheyDo's bubble-sized 2×2 matrix as a sanity check — and `GapQuadrant` already does this (`r: 'enrolled'`), plus something neither reference does: it colors and labels outliers by **statistical residual from a fitted trend**, not raw quadrant position, and documents *why* it deliberately omits a regression line (measured r²=0.013 — course content explains ~1% of faculty-score variance, so drawing a fit line would assert a relationship the data itself denies). Nothing to change here. Correcting an earlier claim in this plan that enrollment-sizing was missing — it wasn't.
+- **KPI tile with inline trend**: Later, Whop, and Navattic all pair a stat number with a small sparkline directly beneath it. This workspace already has that exact component — `KpiSpark` (`Plot.line` + terminal dot, ≥3-point minimum, honest fallback copy below that) — built and used on Overview, never reused on By Faculty/Course/Term. The Mobbin check confirms the pattern is right; the implementation is a reuse, not new code.
+- **Ranked leaderboard with drill-in**: 15Five's "My team at a glance" and X's rank/name/stat table validate the existing `FacultyLeaderboardDots`/`FacultyScoreStrip` shape — already correct, no change.
+- **Internal note thread**: Employment Hero's comment-on-goal pattern validates the internal-note shape in Section 3 above — this one genuinely is new (no existing PCE component does this).
+- **Slope chart** (By Term's "What moved", `Slopegraph`): no strong external analog surfaced — a Tufte-style slopegraph, more common in analyst/BI tooling than consumer SaaS. Keeping it as-is; already well-built (`termSlopeLeo`), noting the external check came up empty rather than skipping it.
 
 Full mark-by-element table:
 
 | Tab | Element | Mark | Note |
 |---|---|---|---|
-| Faculty | Aggregate KPI band | `ScoreTile` + inline micro-sparkline | New — sparkline validated externally, see above |
-| Faculty | Leaderboard | Cleveland dot plot, photo-identity marks (`scale-track-plot`) | Existing shape, visual-vocab port only |
-| Faculty | Scores/response over time | Dual-line chart, legend removed | Content fix only |
-| Faculty | Selected-person KPI strip | `ScoreTile`, rating tile gets sparkline from `avg1y`/`avg3y` | |
-| Faculty | Course-variance insight (new) | Reuse `FacultyLeaderboardDots`, axis flipped to courses | Not a new chart type |
-| Faculty | Internal note | Comment-thread list | |
+| Faculty | Aggregate KPI band | `ScoreTile` + `KpiSpark` | Both existing components, reused |
+| Faculty | Leaderboard | Existing `FacultyLeaderboardDots`/`FacultyScoreStrip` (Observable Plot, N-aware) | Unchanged — already sophisticated |
+| Faculty | Scores/response over time | Existing `FacultyCompareLines`/`ResponseCompareLines` (small-multiples + `EntityTrendExplorer`) | **Unchanged** — corrected from an earlier wrong "retitle" claim |
+| Faculty | Selected-person KPI strip | `ScoreTile` + `KpiSpark` from `avg1y`/`avg3y` history | |
+| Faculty | Course-variance insight (new) | Reuse `FacultyLeaderboardDots`, rows grouped by `courseCode` instead of `facultyId` | Same technique `courseFacultyLeo` already uses in reverse |
+| Faculty | Internal note | Comment-thread list | Genuinely new — no existing analog |
 | Course | Score trend | Existing `CourseTrendStack` | Unchanged |
-| Course | "Who taught it" | Existing Cleveland dot leaderboard | Unchanged |
-| Term | Program trend | Dual-line, legend removed | |
-| Term | Cohort row | Waffle pictogram + Cleveland dot distributions | Already correct |
-| Term | "What moved" | Slope chart (two-point connected lines) | No external analog found; keeping — already well-built |
-| Term | "Content vs teaching" gap | Quadrant scatter, dots sized by enrollment | Enrollment-sizing is new, validated externally |
+| Course | "Who taught it" | Existing `FacultyLeaderboardDots` (via `courseFacultyAsStats`) | Unchanged |
+| Term | Program trend | Delete Recharts duplicate, render existing `ProgramTrendStack` | Removes the legend by removing the duplicate |
+| Term | Cohort row | Existing waffle + Cleveland dot distributions | Already correct |
+| Term | "What moved" | Existing `Slopegraph` | No external analog found; keeping — already well-built |
+| Term | "Content vs teaching" gap | Existing `GapQuadrant` (already sized by enrollment, residual-based outlier coloring) | Unchanged |
 
 ## Section — Question/action map, by tab
 
@@ -116,8 +133,8 @@ Full mark-by-element table:
 | Element | Question answered | Action prompted | Status |
 |---|---|---|---|
 | **NEW** Aggregate KPI band | "How many faculty need attention, program-wide?" | Triage — decide whether to drill in at all | Add |
-| Faculty leaderboard (scale-track + ranked list) | "Who is furthest below median, and trending down?" | Pick who to investigate next | Keep, port visual vocab |
-| "Scores over time" / "Response rate over time" | "Is the faculty POOL improving or declining as a group?" | Escalate a program-wide trend, not an individual | Keep, retitle (currently reads as one-person; it's a cohort chart) |
+| Faculty leaderboard (`FacultyLeaderboardDots`/Strip) | "Who is furthest below median, and trending down?" | Pick who to investigate next | Keep — already sophisticated Plot component |
+| "Scores over time" / "Response rate over time" (`FacultyCompareLines`/`ResponseCompareLines`) | "Is the faculty POOL improving or declining as a group?" | Escalate a program-wide trend, not an individual | **Keep as-is** — already a small-multiples/ghost-context chart with top-3 highlighting + drill-in explorer, correctly titled |
 | KPI strip (once selected) | "Is this person's overall standing healthy?" | Decide if a conversation is warranted | Keep, → `ScoreTile` with real delta from `facultyStats()`'s existing `drift` field |
 | **NEW** course-variance insight | "Is this person consistently good/struggling, or is one specific course dragging them?" | Route to a course-specific vs. general coaching conversation | Add — mirrors `courseFacultyLeo` from the other axis |
 | `TermThemesInsight` | "WHAT should the conversation be about?" | Pull comments as evidence | Keep |
@@ -130,6 +147,7 @@ Full mark-by-element table:
 | Element | Question answered | Action prompted | Status |
 |---|---|---|---|
 | **NEW** Aggregate KPI band | "How many courses need attention, program-wide?" | Triage before picking one | Add |
+| **NEW** Course × term grid | "How is every course trending, at a glance?" | Pick a course to open, before this tab's own selector | Add — reuse `CourseTermGrid` (already built, currently Overview-only) |
 | KPI strip | "Is this course healthy right now?" | Decide if a redesign conversation is warranted | Keep, → `ScoreTile` |
 | Score trend (Leo) | "Is this course sliding across offerings, or one bad term?" | Investigate a multi-term slide | Keep, drop legend |
 | "Who taught it" (`courseFacultyLeo`) | "Is a low score a STAFFING problem or a CONTENT problem?" | Route to a staffing conversation or a content redesign | **Keep as-is — best-designed insight on the page** |
@@ -141,7 +159,7 @@ Full mark-by-element table:
 | Element | Question answered | Action prompted | Status |
 |---|---|---|---|
 | KPI band | "Is the program healthy this term vs. last?" | Decide if intervention is needed now | Keep, → `ScoreTile` |
-| Program trend | "Improving structurally (content) or interpersonally (teaching)?" | Distinguish a curriculum push from a faculty-development push | Keep, **remove legend** |
+| Program trend | "Improving structurally (content) or interpersonally (teaching)?" | Distinguish a curriculum push from a faculty-development push | **Swap Recharts duplicate for existing `ProgramTrendStack`** |
 | Response rate across terms | "Will we hit the target this term, on the current trajectory?" | Decide whether to push harder on collection now | Keep |
 | Cohort row (waffle + distributions) | "How does THIS cohort break down?" | Investigate an under-represented group | Keep — already correct, no change |
 | "What moved" (`termSlopeLeo`) | "Which courses got WORSE, not just which are low?" | Distinguish a course that broke from one that's always been hard | Keep — excellent as-is |

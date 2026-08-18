@@ -28,7 +28,7 @@ import type { MetricItem } from '@exxatdesignux/ui'
 import {
   ChartCard, ChartFigure, ChartDataTable,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'

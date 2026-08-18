@@ -9,93 +9,197 @@
  * whether students never opened the invite, opened and ignored it, or started and quit.
  * Each has a different fix: deliverability, timing, or survey length.
  *
- * Built on recharts `<Sankey>` because the pattern doc names it ("recharts v2.x has
- * <Sankey>") and recharts is already a dependency — no new dep, and the alternative was a
- * hand-rolled SVG, which is banned. This is the one chart in the analytics set that is NOT
- * Observable Plot: Plot ships no sankey mark, and the DS shell is renderer-agnostic, so the
- * engine follows the chart rather than the other way round.
+ * HAND-ROLLED SVG — documented per docs/governance/ds-adoption.md § Visualization ("sankey"
+ * is explicitly HAND-ROLL ALLOWED) and logged in apps/pce/docs/patterns/viz-handrolled.md.
+ * This replaces a recharts `<Sankey>` implementation. Recharts was the only recharts import
+ * on THIS tab (Overview) and its By Term/By Faculty/By Course siblings under
+ * app/(app)/analytics/page.tsx — every other chart across those four tabs is already
+ * Observable Plot, which ships no Sankey mark — and pulled recharts' core runtime
+ * (state/cartesian/component/util chunks, ~2MB decoded in dev) into the bundle for this one
+ * chart. (The separate app/(app)/analytics/programmatic/ route still has its own recharts
+ * charts — out of scope here, not part of the four-tab page this fix targeted.) Per
+ * docs/patterns/viz/progression-sankey.md:106 ("If recharts/Sankey isn't sufficient... use
+ * react-d3-sankey or hand-roll. Discuss with Himanshu before adding a new dep"), hand-rolling
+ * is the endorsed path that avoids a new dependency entirely — and the topology here is fixed
+ * and small (4 main-chain nodes, one drop-off terminal after each of the first three; 7 nodes,
+ * 6 links total), so a generic graph-layout library buys nothing a few lines of arithmetic
+ * can't do.
+ *
+ * This version also closes a gap the recharts one had: `isDropoff`/`isLargestDropoff` were
+ * computed per link but never actually applied to rendering — every link painted the same
+ * flat `--chart-1`. This version applies the pattern's real spec (see "Pattern rules" below).
  *
  * Pattern rules honoured:
- *   · drop-off is amber `--chart-4` + a dashed border, NEVER red (VIZ-004 + A11Y-008's
- *     redundant encoding — colour is never the only signal)
+ *   · every drop-off NODE is amber `--chart-4` fill + a dashed `--conditional-rule-orange`
+ *     border, NEVER red — a categorical, redundant cue that a node is an exit, not a stage
+ *     (VIZ-004 + A11Y-008: colour is never the only signal)
+ *   · the single LARGEST drop-off LINK carries that same dashed-orange outline too, layering
+ *     severity on top of the categorical node treatment — the pattern's annotation discipline
  *   · every node labelled with its count and its delta from the previous stage
- *   · stages in chronological order — never reordered by count; the order IS the meaning
+ *   · stages in chronological order — never reordered by count
  *   · no legend — node labels carry meaning directly
- *   · one-line takeaway below, naming the largest drop-off
+ *   · one-line takeaway below (rendered by the caller), naming the largest drop-off
  */
 
-import { useMemo } from 'react'
-import { Sankey, Layer, Rectangle, Tooltip } from 'recharts'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent } from '@exxatdesignux/ui'
-import { ChartContainer } from '@exxatdesignux/ui/components/ui/chart'
-import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
-import { FUNNEL_STAGE_MEANING, type ResponseFunnel } from '@/lib/pce-funnel'
+import { FUNNEL_STAGE_MEANING, type FunnelStage, type ResponseFunnel } from '@/lib/pce-funnel'
 
-const config: ChartConfig = {
-  flow: { label: 'Students', color: 'var(--chart-1)' },
-}
+/** Fixed topology: main chain (col 0-3) + one drop-off terminal after each of the first three. */
+type NodeId = 'invited' | 'opened' | 'started' | 'completed' | 'dropAfterInvited' | 'dropAfterOpened' | 'dropAfterStarted'
 
-interface SankeyNodeDatum {
+interface LaidOutNode {
+  id: NodeId
   name: string
   count: number
-  delta?: number
-  isDropoff?: boolean
+  delta: number | null
+  isDropoff: boolean
+  col: number
+  x: number
+  yTop: number
+  yBottom: number
 }
 
-/**
- * Node renderer. recharts hands us x/y/width/height already laid out; we own the paint.
- * Terminal drop-off nodes are amber + dashed so the reader can tell a leak from a stage
- * without reading the label — and can still tell them apart with colour vision differences,
- * because the dash carries the same information.
- */
-function FunnelNode(props: {
-  x: number
-  y: number
-  width: number
-  height: number
-  index: number
-  payload: SankeyNodeDatum
-}) {
-  const { x, y, width, height, payload } = props
-  const drop = !!payload.isDropoff
-  const labelRight = x < 200
+interface LaidOutLink {
+  id: string
+  sourceId: NodeId
+  targetId: NodeId
+  isDropoff: boolean
+  isLargestDropoff: boolean
+  path: string
+}
 
-  return (
-    <Layer>
-      <Rectangle
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={drop ? 'var(--chart-4)' : 'var(--chart-1)'}
-        fillOpacity={drop ? 0.85 : 1}
-        stroke={drop ? 'var(--conditional-rule-orange)' : 'none'}
-        strokeDasharray={drop ? '3 2' : undefined}
-        radius={2}
-      />
-      <text
-        x={labelRight ? x + width + 8 : x - 8}
-        y={y + height / 2 - 5}
-        textAnchor={labelRight ? 'start' : 'end'}
-        fill="var(--foreground)"
-        fontSize={CHART_TICK_FONT_SIZE}
-        fontWeight={500}
-      >
-        {payload.name}
-      </text>
-      <text
-        x={labelRight ? x + width + 8 : x - 8}
-        y={y + height / 2 + 9}
-        textAnchor={labelRight ? 'start' : 'end'}
-        fill="var(--muted-foreground)"
-        fontSize={CHART_TICK_FONT_SIZE}
-      >
-        {payload.count.toLocaleString()}
-        {payload.delta != null && payload.delta !== 0 ? ` (−${Math.abs(payload.delta).toLocaleString()})` : ''}
-      </text>
-    </Layer>
-  )
+const NODE_WIDTH = 12
+const GAP = 8
+const MARGIN = { top: 32, right: 176, bottom: 8, left: 4 }
+
+/** Standard sankey-ribbon shape: two mirrored cubic beziers forming a closed band. */
+function ribbonPath(x0: number, y0Top: number, y0Bottom: number, x1: number, y1Top: number, y1Bottom: number): string {
+  const xm = (x0 + x1) / 2
+  return [
+    `M${x0},${y0Top}`,
+    `C${xm},${y0Top} ${xm},${y1Top} ${x1},${y1Top}`,
+    `L${x1},${y1Bottom}`,
+    `C${xm},${y1Bottom} ${xm},${y0Bottom} ${x0},${y0Bottom}`,
+    'Z',
+  ].join('')
+}
+
+function useMeasuredWidth() {
+  const holder = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = holder.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0
+      setWidth((prev) => (Math.abs(prev - w) < 1 ? prev : w))
+    })
+    ro.observe(el)
+    setWidth(el.getBoundingClientRect().width)
+    return () => ro.disconnect()
+  }, [])
+  return { holder, width }
+}
+
+function layout(funnel: ResponseFunnel, width: number, height: number) {
+  const { counts, worst } = funnel
+  const chartW = Math.max(width - MARGIN.left - MARGIN.right - NODE_WIDTH, 1)
+  const chartH = Math.max(height - MARGIN.top - MARGIN.bottom, 1)
+  const colX = (col: number) => MARGIN.left + col * (chartW / 3)
+
+  // Invited is always the largest count (every later stage is a subset of it), so it anchors
+  // the scale — GAP is reserved once because column 1 (opened + its drop-off) is the tightest
+  // fit: opened + (invited − opened) sums to exactly `invited`, with no slack of its own.
+  const scale = (chartH - GAP) / Math.max(counts.invited, 1)
+
+  const mainVals: Record<'invited' | 'opened' | 'started' | 'completed', number> = counts
+  const dropVals = {
+    dropAfterInvited: counts.invited - counts.opened,
+    dropAfterOpened: counts.opened - counts.started,
+    dropAfterStarted: counts.started - counts.completed,
+  }
+
+  const mainCols: Array<{ id: 'invited' | 'opened' | 'started' | 'completed'; name: string; col: number; prev: number | null }> = [
+    { id: 'invited', name: 'Invited', col: 0, prev: null },
+    { id: 'opened', name: 'Opened', col: 1, prev: counts.invited },
+    { id: 'started', name: 'Started', col: 2, prev: counts.opened },
+    { id: 'completed', name: 'Completed', col: 3, prev: counts.started },
+  ]
+
+  const nodes: LaidOutNode[] = mainCols.map(({ id, name, col, prev }) => {
+    const x = colX(col)
+    const h = mainVals[id] * scale
+    return {
+      id,
+      name,
+      count: mainVals[id],
+      delta: prev == null ? null : mainVals[id] - prev,
+      isDropoff: false,
+      col,
+      x,
+      yTop: MARGIN.top,
+      yBottom: MARGIN.top + h,
+    }
+  })
+
+  const dropDefs: Array<{ id: NodeId; name: string; sourceCol: number; value: number }> = [
+    { id: 'dropAfterInvited', name: 'Never opened', sourceCol: 0, value: dropVals.dropAfterInvited },
+    { id: 'dropAfterOpened', name: 'Opened, never started', sourceCol: 1, value: dropVals.dropAfterOpened },
+    { id: 'dropAfterStarted', name: 'Started, abandoned', sourceCol: 2, value: dropVals.dropAfterStarted },
+  ]
+
+  dropDefs.forEach(({ id, name, sourceCol, value }) => {
+    const mainAtTarget = nodes[sourceCol + 1]! // the main node sharing this drop node's column
+    const h = value * scale
+    const yTop = mainAtTarget.yBottom + GAP
+    nodes.push({
+      id,
+      name,
+      count: value,
+      delta: null,
+      isDropoff: true,
+      col: sourceCol + 1,
+      x: mainAtTarget.x,
+      yTop,
+      yBottom: yTop + h,
+    })
+  })
+
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n])) as Record<NodeId, LaidOutNode>
+
+  const linkDefs: Array<{ sourceId: NodeId; targetId: NodeId; stage: FunnelStage | null }> = [
+    { sourceId: 'invited', targetId: 'opened', stage: null },
+    { sourceId: 'opened', targetId: 'started', stage: null },
+    { sourceId: 'started', targetId: 'completed', stage: null },
+    { sourceId: 'invited', targetId: 'dropAfterInvited', stage: 'Invited' },
+    { sourceId: 'opened', targetId: 'dropAfterOpened', stage: 'Opened' },
+    { sourceId: 'started', targetId: 'dropAfterStarted', stage: 'Started' },
+  ]
+
+  const links: LaidOutLink[] = linkDefs.map(({ sourceId, targetId, stage }) => {
+    const source = byId[sourceId]
+    const target = byId[targetId]
+    const x0 = source.x + NODE_WIDTH
+    const x1 = target.x
+    // The continuing flow always occupies the TOP of the source node (its full remaining
+    // value after this stage); the drop flow occupies whatever is left below it — so a
+    // drop-off node's height and its source sliver's height match exactly, by construction.
+    const isContinue = stage == null
+    const srcTop = isContinue ? source.yTop : source.yTop + (target.yBottom - target.yTop)
+    const srcBottom = isContinue ? source.yTop + (target.yBottom - target.yTop) : source.yBottom
+    return {
+      id: `${sourceId}->${targetId}`,
+      sourceId,
+      targetId,
+      isDropoff: stage != null,
+      isLargestDropoff: stage != null && worst?.after === stage,
+      path: ribbonPath(x0, srcTop, srcBottom, x1, target.yTop, target.yBottom),
+    }
+  })
+
+  return { nodes, links }
 }
 
 export function ResponseFunnelSankey({
@@ -105,77 +209,135 @@ export function ResponseFunnelSankey({
   funnel: ResponseFunnel
   height?: number
 }) {
-  const data = useMemo(() => {
-    const { counts, worst } = funnel
-    /**
-     * One terminal node per drop-off, per the pattern's anatomy — a leak has to land
-     * somewhere or the flow silently evaporates and the reader cannot see the WHERE.
-     */
-    const nodes: SankeyNodeDatum[] = [
-      { name: 'Invited', count: counts.invited },
-      { name: 'Opened', count: counts.opened, delta: counts.invited - counts.opened },
-      { name: 'Started', count: counts.started, delta: counts.opened - counts.started },
-      { name: 'Completed', count: counts.completed, delta: counts.started - counts.completed },
-      { name: 'Never opened', count: counts.invited - counts.opened, isDropoff: true },
-      { name: 'Opened, never started', count: counts.opened - counts.started, isDropoff: true },
-      { name: 'Started, abandoned', count: counts.started - counts.completed, isDropoff: true },
-    ]
+  const { holder, width } = useMeasuredWidth()
+  const [hoverId, setHoverId] = useState<NodeId | null>(null)
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null)
 
-    const links = [
-      { source: 0, target: 1, value: Math.max(counts.opened, 1) },
-      { source: 1, target: 2, value: Math.max(counts.started, 1) },
-      { source: 2, target: 3, value: Math.max(counts.completed, 1) },
-      { source: 0, target: 4, value: Math.max(counts.invited - counts.opened, 1), drop: 'Invited' },
-      { source: 1, target: 5, value: Math.max(counts.opened - counts.started, 1), drop: 'Opened' },
-      { source: 2, target: 6, value: Math.max(counts.started - counts.completed, 1), drop: 'Started' },
-    ].map((l) => ({
-      ...l,
-      isDropoff: !!l.drop,
-      isLargestDropoff: !!l.drop && worst?.after === l.drop,
-    }))
+  const { nodes, links } = useMemo(
+    () => layout(funnel, width || 480, height),
+    [funnel, width, height],
+  )
 
-    return { nodes, links }
-  }, [funnel])
+  const hoveredNode = hoverId ? nodes.find((n) => n.id === hoverId) ?? null : null
+
+  const onNodeHover = (n: LaidOutNode, e: React.MouseEvent<SVGElement>) => {
+    const box = holder.current?.getBoundingClientRect()
+    setHoverId(n.id)
+    setHoverPos(box ? { x: e.clientX - box.left, y: e.clientY - box.top } : null)
+  }
 
   return (
-    <ChartContainer config={config} className="w-full" style={{ height }}>
-      <Sankey
-        data={data}
-        nodePadding={26}
-        nodeWidth={12}
-        margin={{ top: 10, right: 130, bottom: 10, left: 66 }}
-        node={FunnelNode as never}
-        link={{
-          stroke: 'var(--chart-1)',
-          strokeOpacity: 0.28,
-        }}
-      >
-        <Tooltip
-          content={({ payload }) => {
-            const p = payload?.[0]?.payload as
-              | { name?: string; count?: number; payload?: { name?: string } }
-              | undefined
-            const name = p?.name ?? p?.payload?.name
-            if (!name) return null
-            const meaning = FUNNEL_STAGE_MEANING[name as keyof typeof FUNNEL_STAGE_MEANING]
-            // DS Card, not a hand-rolled rounded+border div — that reads as Card chrome
-            // without being one, which the DS touch-gate flags as card-shape masquerade.
-            return (
-              <Card size="sm" className="max-w-64">
-                <CardContent className="px-3 py-2">
-                  <p className="text-sm font-medium">{name}</p>
-                  {p?.count != null && (
-                    <p className="text-xs tabular-nums text-muted-foreground">
-                      {p.count.toLocaleString()} students
-                    </p>
-                  )}
-                  {meaning && <p className="mt-1 text-xs text-muted-foreground">{meaning}</p>}
-                </CardContent>
-              </Card>
-            )
-          }}
-        />
-      </Sankey>
-    </ChartContainer>
+    <div ref={holder} className="relative w-full" style={{ height }}>
+      {width > 0 && (
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          aria-hidden="true"
+          onMouseLeave={() => setHoverId(null)}
+        >
+          {links.map((l) => (
+            <path
+              key={l.id}
+              d={l.path}
+              fill={l.isDropoff ? 'var(--chart-4)' : 'var(--chart-1)'}
+              fillOpacity={hoverId && (hoverId === l.sourceId || hoverId === l.targetId) ? 0.55 : 0.28}
+              stroke={l.isLargestDropoff ? 'var(--conditional-rule-orange)' : 'none'}
+              strokeDasharray={l.isLargestDropoff ? '3 2' : undefined}
+              strokeWidth={l.isLargestDropoff ? 1 : 0}
+              style={{ transition: 'fill-opacity 120ms ease' }}
+            />
+          ))}
+          {nodes.map((n) => (
+            <g
+              key={n.id}
+              onMouseEnter={(e) => onNodeHover(n, e)}
+              onMouseMove={(e) => onNodeHover(n, e)}
+            >
+              <rect
+                x={n.x}
+                y={n.yTop}
+                width={NODE_WIDTH}
+                height={Math.max(n.yBottom - n.yTop, 1.5)}
+                rx={2}
+                fill={n.isDropoff ? 'var(--chart-4)' : 'var(--chart-1)'}
+                fillOpacity={n.isDropoff ? 0.85 : 1}
+                stroke={n.isDropoff ? 'var(--conditional-rule-orange)' : 'none'}
+                strokeDasharray={n.isDropoff ? '3 2' : undefined}
+              />
+              {n.isDropoff ? (
+                <>
+                  <text
+                    x={n.x + NODE_WIDTH + 8}
+                    y={(n.yTop + n.yBottom) / 2 - 5}
+                    textAnchor="start"
+                    fill="var(--foreground)"
+                    fontSize={CHART_TICK_FONT_SIZE}
+                    fontWeight={500}
+                  >
+                    {n.name}
+                  </text>
+                  <text
+                    x={n.x + NODE_WIDTH + 8}
+                    y={(n.yTop + n.yBottom) / 2 + 9}
+                    textAnchor="start"
+                    fill="var(--muted-foreground)"
+                    fontSize={CHART_TICK_FONT_SIZE}
+                  >
+                    {n.count.toLocaleString()}
+                  </text>
+                </>
+              ) : (
+                <>
+                  <text
+                    x={n.x + NODE_WIDTH / 2}
+                    y={n.yTop - 20}
+                    textAnchor="middle"
+                    fill="var(--foreground)"
+                    fontSize={CHART_TICK_FONT_SIZE}
+                    fontWeight={500}
+                  >
+                    {n.name}
+                  </text>
+                  <text
+                    x={n.x + NODE_WIDTH / 2}
+                    y={n.yTop - 6}
+                    textAnchor="middle"
+                    fill="var(--muted-foreground)"
+                    fontSize={CHART_TICK_FONT_SIZE}
+                  >
+                    {n.count.toLocaleString()}
+                    {n.delta != null && n.delta !== 0 ? ` (−${Math.abs(n.delta).toLocaleString()})` : ''}
+                  </text>
+                </>
+              )}
+            </g>
+          ))}
+        </svg>
+      )}
+
+      {hoveredNode && hoverPos && (
+        // DS Card, not a hand-rolled rounded+border div — that reads as Card chrome without
+        // being one, which the DS touch-gate flags as card-shape masquerade.
+        <div
+          className="pointer-events-none absolute z-10"
+          style={{ left: hoverPos.x + 12, top: hoverPos.y + 12 }}
+        >
+          <Card size="sm" className="max-w-64">
+            <CardContent className="px-3 py-2">
+              <p className="text-sm font-medium">{hoveredNode.name}</p>
+              <p className="text-xs tabular-nums text-muted-foreground">
+                {hoveredNode.count.toLocaleString()} students
+              </p>
+              {FUNNEL_STAGE_MEANING[hoveredNode.name as keyof typeof FUNNEL_STAGE_MEANING] && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {FUNNEL_STAGE_MEANING[hoveredNode.name as keyof typeof FUNNEL_STAGE_MEANING]}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
   )
 }

@@ -175,9 +175,22 @@ function surveyFor(o: FacultyOfferingRecord): PceSurvey | undefined {
   )
 }
 
+/**
+ * Cached: every stat function in this file (`facultyStats`, `courseStats`, `termSeries`,
+ * `termKpis`, `cohortKpis`, `gapPoints`, `courseTrend`, ...) calls this internally, and each
+ * of THOSE gets called several times over across a single tab render (KPI strip, leaderboard,
+ * drill-down charts, comparison tables all pulling from the canonical layer independently) —
+ * 19 call sites in this file alone. `MOCK_FACULTY`/`MOCK_FACULTY_OFFERINGS`/`MOCK_SURVEYS` are
+ * static module-level consts, never mutated, so re-deriving the same map+sort on every call is
+ * pure waste — one real computation, cached for the session, instead of a double-digit-count
+ * of redundant O(n) passes on every By Faculty/By Course/By Term render.
+ */
+let offeringPointsCache: OfferingPoint[] | null = null
+
 export function offeringPoints(): OfferingPoint[] {
+  if (offeringPointsCache) return offeringPointsCache
   const facultyById = new Map(MOCK_FACULTY.map((f) => [f.id, f]))
-  return MOCK_FACULTY_OFFERINGS.map((o): OfferingPoint => {
+  offeringPointsCache = MOCK_FACULTY_OFFERINGS.map((o): OfferingPoint => {
     const f = facultyById.get(o.facultyId)
     const name = f?.name ?? o.facultyId
     const survey = surveyFor(o)
@@ -199,6 +212,7 @@ export function offeringPoints(): OfferingPoint[] {
       surveyStatus: survey?.status ?? 'historical',
     }
   }).sort((a, b) => a.year - b.year)
+  return offeringPointsCache
 }
 
 /** The most recent term that actually carries data — the anchor for 1Y / 3Y windows. */

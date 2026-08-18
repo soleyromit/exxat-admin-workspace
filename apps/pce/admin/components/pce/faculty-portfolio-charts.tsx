@@ -22,7 +22,7 @@ import {
   ChartFigure,
   ChartDataTable,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import {
   BenchmarkDistribution,
   CourseRankSpark,

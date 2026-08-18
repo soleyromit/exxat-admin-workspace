@@ -378,9 +378,10 @@ function FacultyScopeSelector({
   evalRoleById,
   isPD,
   avatarUrlById,
+  showCourse,
 }: {
   instructors: EvalResult[]
-  scope: 'all' | string
+  scope: 'all' | 'course' | string
   setScope: (v: string) => void
   /** Course-association role scope — the middle ground between "All faculty" and one
    *  person on a co-taught course (same vocabulary as Analytics → By Faculty). */
@@ -392,11 +393,15 @@ function FacultyScopeSelector({
   /** facultyId → portrait, from survey.instructors — pills show the same
    *  photos as every plot marker (one identity treatment page-wide). */
   avatarUrlById?: Record<string, string | undefined>
+  /** This offering has course-content questions in scope — offers a "Course"
+   *  pill alongside the faculty pills so a coordinator can view course-only
+   *  analytics the same way they drill into one instructor. */
+  showCourse?: boolean
 }) {
   // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
   // affordance) — a faculty viewer keeps their own identity row and can never
   // scope the Faculty Performance signal onto a colleague's instructor block.
-  if (!isPD || instructors.length <= 1) {
+  if (!isPD || (instructors.length <= 1 && !showCourse)) {
     const f = instructors[0]
     if (!f) return null
     return (
@@ -433,8 +438,18 @@ function FacultyScopeSelector({
         size="sm"
         value={scope}
         onValueChange={(v) => v && setScope(v)}
-        aria-label="Scope the results by instructor"
+        aria-label={showCourse ? 'Scope the results by course or instructor' : 'Scope the results by instructor'}
       >
+        {/* Course-only view — the mirror of picking one instructor: shows
+            course-content analytics without any faculty-performance framing
+            (Romit, 2026-08-17 — this offering's results page had no way to
+            view course-only analytics, only "All faculty" or one person). */}
+        {showCourse && (
+          <ToggleGroupItem value="course" className="gap-2">
+            <i className={`fa-light ${EVALUATION_TYPE_ICON.course_material} text-xs`} aria-hidden="true" />
+            Course
+          </ToggleGroupItem>
+        )}
         <ToggleGroupItem value="all" className="gap-2">
           <i className="fa-light fa-users text-xs" aria-hidden="true" />
           {/* The selected option IS the current view — with a role scoped, "all"
@@ -1085,10 +1100,14 @@ interface ThemeRowDatum {
 function ThemeBoxplotChart({
   themes,
   partial,
+  courseOnly,
   onQuestionJump,
 }: {
   themes: ThemeRowDatum[]
   partial?: boolean
+  /** Page is scoped to the Course pill — says so in the description, same as
+   *  every other section on the page (Romit 2026-08-17). */
+  courseOnly?: boolean
   onQuestionJump?: (questionId: string) => void
 }) {
   if (themes.length === 0) return null
@@ -1111,7 +1130,7 @@ function ThemeBoxplotChart({
     <ChartCard
       variant="normal"
       title="Theme-wise distribution"
-      description={`Score spread per theme vs program · sorted by gap, weakest first · click any mark for details${partial ? ' · partial data' : ''}`}
+      description={`Score spread per theme vs program · sorted by gap, weakest first · click any mark for details${partial ? ' · partial data' : ''}${courseOnly ? ' · course only' : ''}`}
       leoInsight={themeLeo}
     >
       <ChartFigure
@@ -2356,7 +2375,10 @@ function ResultDetail({
     const mine = collect(
       qData,
       (id) => survey.instructors.some((i) => i.id === id) && inFacultyScope(id),
-      { course: result.evalScope !== 'instructor', faculty: result.evalScope !== 'course' },
+      {
+        course: result.evalScope !== 'instructor',
+        faculty: result.evalScope !== 'course' && facultyScope !== 'course',
+      },
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
     /* Per-instructor themed questions (scope-aware) — the benchmark panel. */
@@ -2412,10 +2434,18 @@ function ResultDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qData, sections, inCollection, facultyScope, roleScope, survey.instructors, result.facultyId])
 
-  /* Collapsed-section previews — the closed shells still say something */
+  /* Collapsed-section previews — the closed shells still say something.
+     Course-only scope excludes faculty_performance-keyed section scores too
+     (a TA/lab section with no instructor block falls back to a section-level
+     score — inFacultyScope alone wouldn't catch that). */
+  const facultySubjectKeys = new Set(
+    sections.filter((s) => sectionGroupOf(s) === 'Faculty').map((s) => s.subjectKey),
+  )
   const allQuestionScores = qData
     ? [
-        ...Object.values(qData.sectionScores).flat(),
+        ...Object.entries(qData.sectionScores)
+          .filter(([key]) => !(facultyScope === 'course' && facultySubjectKeys.has(key)))
+          .flatMap(([, v]) => v),
         ...(qData.instructorBlocks ?? [])
           .filter(
             (b) =>
@@ -2446,7 +2476,13 @@ function ResultDetail({
      classifier (roleSetId OR subjectKey); a split offering's survey only shows
      its own half (General rides with the course half). */
   const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Course')
-  const facultySections = result.evalScope === 'course' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Faculty')
+  /* Course-only scope (the "Course" pill) hides Faculty questions the same
+     way a split "Course evaluation" survey does — it's a view, not a
+     template change, so it reuses the same empty-array gate. */
+  const facultySections =
+    result.evalScope === 'course' || facultyScope === 'course'
+      ? []
+      : sections.filter((s) => sectionGroupOf(s) === 'Faculty')
   const generalSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'General')
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
@@ -2496,15 +2532,19 @@ function ResultDetail({
     .filter((i) => inFacultyScope(i.id))
     .map((i) => ({ instructor: i, comments: facultyComments.filter((c) => commentSubjectId(c) === i.id) }))
     .filter((g) => g.comments.length > 0)
-  const unattributedFacultyComments = facultyComments.filter(
-    (c) => !survey.instructors.some((i) => i.id === commentSubjectId(c)),
-  )
+  const unattributedFacultyComments =
+    facultyScope === 'course'
+      ? []
+      : facultyComments.filter((c) => !survey.instructors.some((i) => i.id === commentSubjectId(c)))
   /* The card's own rule: counts, chips, themes and lists draw from ONE pool so
      no two numbers disagree. With comment groups scope-filtered above, the pool
      must scope the same way — course/general comments and unattributed faculty
-     comments (no role to match) always stay in. */
+     comments (no role to match) always stay in, UNLESS the view itself is
+     scoped to Course, which excludes every faculty_performance comment
+     outright (an unattributed one has no role to match against 'course'). */
   const inCommentScope = (c: IndexedComment) => {
     if (c.section !== 'faculty_performance') return true
+    if (facultyScope === 'course') return false
     const subject = commentSubjectId(c)
     const attributed = subject != null && survey.instructors.some((i) => i.id === subject)
     return !attributed || inFacultyScope(subject as string)
@@ -2907,6 +2947,7 @@ function ResultDetail({
               evalRoleById={evalRoleFor}
               isPD={isPD}
               avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
+              showCourse={templateHasCourse && result.evalScope !== 'instructor'}
             />
           </div>
 
@@ -2990,14 +3031,22 @@ function ResultDetail({
 
               <div id="scores" className="scroll-mt-16 flex flex-col gap-2">
                 {inCollection ? (
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-2 flex-wrap">
                     <h2 className="text-sm font-semibold text-foreground">Early signal</h2>
+                    {/* Course scope drops a card silently otherwise — the badge is
+                        what actually says "you're looking at course-only data now"
+                        (Romit 2026-08-17: Course and All faculty read the same at a
+                        glance without it). */}
+                    {facultyScope === 'course' && <StatusBadge label="Course only" tone="neutral" />}
                     <span className="text-xs text-muted-foreground">
                       Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far. Expect movement until close
                     </span>
                   </div>
                 ) : (
-                  <h2 className="text-sm font-semibold text-foreground">Scores</h2>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <h2 className="text-sm font-semibold text-foreground">Scores</h2>
+                    {facultyScope === 'course' && <StatusBadge label="Course only" tone="neutral" />}
+                  </div>
                 )}
                 {releaseSuccess && (
                   <LocalBanner
@@ -3011,7 +3060,7 @@ function ResultDetail({
                 )}
                 {/* AI insight card removed (Romit 2026-07-17) — themes remain
                     reachable via the Qualitative feedback section. */}
-                <div className={`grid grid-cols-1 gap-4 ${result.evalScope || !templateHasCourse ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                <div className={`grid grid-cols-1 gap-4 ${result.evalScope || !templateHasCourse || facultyScope === 'course' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                   {result.evalScope !== 'instructor' && templateHasCourse && (
                   <ScoreCard
                     title="Course Content"
@@ -3026,7 +3075,7 @@ function ResultDetail({
                     }))}
                   />
                   )}
-                  {result.evalScope !== 'course' && (
+                  {result.evalScope !== 'course' && facultyScope !== 'course' && (
                   <ScoreCard
                     title="Faculty Performance"
                     person={
@@ -3097,6 +3146,7 @@ function ResultDetail({
                 <ThemeBoxplotChart
                   themes={themes}
                   partial={inCollection}
+                  courseOnly={facultyScope === 'course'}
                   onQuestionJump={(id) => goTo(`question-${id}`, 'questions')}
                 />
               </div>
@@ -3114,6 +3164,7 @@ function ResultDetail({
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
                           {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · click any mark for details
+                          {facultyScope === 'course' ? ' · course only' : ''}
                         </CardDescription>
                         <CardAction>
                           <i
@@ -3148,6 +3199,7 @@ function ResultDetail({
                           {commentTypeCounts.course > 0 ? ` · ${commentTypeCounts.course} course` : ''}
                           {commentTypeCounts.faculty > 0 ? ` · ${commentTypeCounts.faculty} faculty` : ''}
                           {commentTypeCounts.general > 0 ? ` · ${commentTypeCounts.general} general` : ''}
+                          {facultyScope === 'course' ? ' · course only' : ''}
                           {previewQuote ? (
                             <span className="block italic truncate">&ldquo;{previewQuote.text}&rdquo;</span>
                           ) : null}

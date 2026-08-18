@@ -16,7 +16,7 @@ import {
   ChartCard, ChartFigure, ChartDataTable,
   ChartLeoPlotInsightOverlay,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import { CHART_AXIS_TICK } from '@/lib/chart-typography'
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'

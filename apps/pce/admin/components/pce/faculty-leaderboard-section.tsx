@@ -30,7 +30,7 @@ import {
   ChartFigure,
   ChartDataTable,
   type ChartLeoInsight,
-} from '@/components/charts-overview'
+} from '@/components/charts-core'
 import {
   FacultyLeaderboardDots, FacultyCompareLines, ResponseCompareLines,
   FacultyScoreStrip, LARGE_ROSTER_N,
