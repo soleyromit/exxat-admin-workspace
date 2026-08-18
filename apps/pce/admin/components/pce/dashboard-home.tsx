@@ -35,6 +35,7 @@ import {
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
+import { AddTermDrawer, AddTermDatesDrawer } from '@/components/pce/add-term-drawer'
 
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { DataTablePaginated } from '@/components/data-table/pagination'
@@ -317,7 +318,7 @@ function CurrentTermCard({
                   card-level fact, so it can't wrap this to two lines. */}
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-foreground">
-                  {pendingAtRisk} student{pendingAtRisk !== 1 ? 's' : ''} still need{pendingAtRisk === 1 ? 's' : ''} to respond
+                  {pendingAtRisk} feedback request{pendingAtRisk !== 1 ? 's' : ''} still awaiting a response
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {atRisk.length} {atRisk.length === 1 ? 'course' : 'courses'} below {AT_RISK_THRESHOLD}%
@@ -399,6 +400,7 @@ function LastTermCard({ snap, className }: { snap: TermSnapshot; className?: str
 
 function UpcomingCard({ snap }: { snap: TermSnapshot }) {
   const { term } = snap
+  const [datesOpen, setDatesOpen] = useState(false)
   /* The card is an ACTION surface when setup is incomplete — the remaining
    * offerings are work, not just a count (reference: live PCE upcoming card:
    * offerings found · starts-in countdown · needs-attention → Fix Data). */
@@ -486,8 +488,8 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
                   Set start and end dates to schedule the evaluation window.
                 </p>
               </div>
-              <Button variant="outline" size="sm" asChild className="self-start">
-                <Link href="/course-evaluation/term-setup">Add term dates</Link>
+              <Button variant="outline" size="sm" className="self-start" onClick={() => setDatesOpen(true)}>
+                Add term dates
               </Button>
             </div>
           </div>
@@ -588,6 +590,7 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
           <ViewTermLink termId={term.id} name={term.name} />
         )}
       </CardFooter>
+      <AddTermDatesDrawer term={term} open={datesOpen} onOpenChange={setDatesOpen} />
     </Card>
   )
 }
@@ -595,7 +598,7 @@ function UpcomingCard({ snap }: { snap: TermSnapshot }) {
 /* No term is collecting AND none scheduled next — a slim strip with the setup
  * action. (When an upcoming card is present it speaks for itself, so this
  * notice is suppressed; an absent LAST term needs no placeholder either.) */
-function NoActiveTermNotice() {
+function NoActiveTermNotice({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -605,8 +608,8 @@ function NoActiveTermNotice() {
       <span className="text-sm text-muted-foreground">
         Set up a term to start collecting responses.
       </span>
-      <Button variant="outline" size="sm" asChild className="ms-auto">
-        <Link href="/course-evaluation/term-setup">Set up term</Link>
+      <Button variant="outline" size="sm" className="ms-auto" onClick={onAdd}>
+        Set up term
       </Button>
     </div>
   )
@@ -728,6 +731,7 @@ function PastTermsSection({ ce, curId, terms }: { ce: PceSurvey[]; curId: string
 
 function DashboardHomeInner() {
   const { surveys, programTerms, templates } = usePce()
+  const [addTermOpen, setAddTermOpen] = useState(false)
 
   /* Terms come from STATE (not the static mock) so a term finished in the
    * setup wizard appears here as a card immediately. */
@@ -798,8 +802,8 @@ function DashboardHomeInner() {
              the empty state. Both header actions return once a term exists. */
           firstRun ? undefined : (
             <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
-              <Button variant="outline" size="default" asChild>
-                <Link href="/course-evaluation/term-setup">Set up term</Link>
+              <Button variant="outline" size="default" onClick={() => setAddTermOpen(true)}>
+                Set up term
               </Button>
               <Button variant="default" size="default" asChild>
                 <Link href="/surveys/push">Set up Evaluations</Link>
@@ -811,7 +815,7 @@ function DashboardHomeInner() {
 
       <div className="flex-1 px-7 py-4">
         {firstRun ? (
-          <FirstRun />
+          <FirstRun onAdd={() => setAddTermOpen(true)} />
         ) : (
           <div className="flex flex-col gap-6">
             {/* ── Terms triptych — current / last / upcoming. The current term
@@ -824,7 +828,7 @@ function DashboardHomeInner() {
                 LEFT; the current term (when present) takes the wide hero column,
                 otherwise every card is equal width so a lone card sits in the
                 leftmost slot. No placeholder for an absent previous term. */}
-            {!curSnap && upcomingSnaps.length === 0 && <NoActiveTermNotice />}
+            {!curSnap && upcomingSnaps.length === 0 && <NoActiveTermNotice onAdd={() => setAddTermOpen(true)} />}
             {/* Order is forward-looking — current → upcoming → last — so the
                 actionable next term sits ahead of finished history. The first
                 column is wider (the primary term = hero) but the reference
@@ -849,6 +853,7 @@ function DashboardHomeInner() {
         )}
       </div>
 
+      <AddTermDrawer open={addTermOpen} onOpenChange={setAddTermOpen} />
     </div>
   )
 }
@@ -861,7 +866,7 @@ export function DashboardHome() {
   )
 }
 
-function FirstRun() {
+function FirstRun({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex min-h-[min(420px,60vh)] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6">
       <i className="fa-light fa-calendar-plus text-3xl text-muted-foreground" aria-hidden="true" />
@@ -872,8 +877,8 @@ function FirstRun() {
           driving evaluation response rates.
         </p>
       </div>
-      <Button variant="default" size="sm" asChild>
-        <Link href="/course-evaluation/term-setup">Set up term</Link>
+      <Button variant="default" size="sm" onClick={onAdd}>
+        Set up term
       </Button>
     </div>
   )

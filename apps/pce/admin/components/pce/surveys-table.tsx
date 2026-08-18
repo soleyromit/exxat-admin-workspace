@@ -104,6 +104,10 @@ const EXTENDABLE: SurveyStatus[] = ['collecting', 'active', 'scheduled']
 // Aug 12 ask (Granola 0ef80c33, Aarti) — "undo a mistake" is only offered
 // before an evaluation has real response data worth keeping; once a survey
 // is Closed/Pending review/Released, Archive isn't the right escape hatch.
+// Aug 18 ask (Granola 421b0a20, Vishal) reuses the same boundary for bulk
+// selection — closed/pending-review/released/archived surveys can't be
+// reopened, so their row checkboxes are disabled rather than just hiding
+// the resulting bulk actions.
 const ARCHIVABLE: SurveyStatus[] = ['draft', 'scheduled', 'collecting', 'active']
 
 const responseRateCell = (row: SurveyRow) => (
@@ -374,6 +378,7 @@ export function SurveysTable({
         columns={columns}
         getRowId={(row) => row.id}
         selectable
+        isRowSelectable={(row) => ARCHIVABLE.includes(row.status)}
         searchable
         pagination={{ pageSize }}
         defaultGroupBy={defaultGroupBy}

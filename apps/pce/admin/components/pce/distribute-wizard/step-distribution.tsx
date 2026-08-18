@@ -140,7 +140,14 @@ export function StepDistribution({
       ),
     },
     {
-      key: 'courseCode', label: 'Course', sortable: true, width: 320,
+      // Aug 18 ask (Granola 421b0a20, Vishal) — course code split into its
+      // own column instead of prefixing the Course cell; matches how the
+      // published-survey distribution table shows it.
+      key: 'courseCode', label: 'Code', sortable: true, width: 100,
+      cell: (row) => <span className="text-sm font-medium tabular-nums">{row.courseCode}</span>,
+    },
+    {
+      key: 'courseName', label: 'Course', sortable: true, width: 280,
       cell: (row) => (
         <div className="flex items-center gap-2 min-w-0">
           <Avatar className="h-7 w-7 shrink-0">
@@ -149,10 +156,7 @@ export function StepDistribution({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="text-sm truncate">
-              <span className="font-semibold">{row.courseCode}</span>{' '}
-              <span className="text-muted-foreground">{row.courseName}</span>
-            </p>
+            <p className="text-sm truncate">{row.courseName}</p>
             <p className="text-xs text-muted-foreground truncate">{row.facultyName} · {row.enrolled} enrolled</p>
           </div>
         </div>

@@ -642,6 +642,12 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   /** Per-row class hook (PCE extension) — e.g. state tints/accent borders. */
   getRowClassName?: (row: TData) => string | undefined
   /**
+   * Per-row selectability gate (PCE extension) — rows failing this check render
+   * a disabled checkbox and are excluded from "select all" / group select-all.
+   * Defaults to every row being selectable.
+   */
+  isRowSelectable?: (row: TData) => boolean
+  /**
    * When false, table toolbar and grid omit `mx-4 lg:mx-6` / `px-4 lg:px-6` insets.
    * Use on embedded surfaces where the page shell or content rail already pads
    * horizontally (e.g. wizard steps). Mirrors the DS DataTable API (v0.6.55).
@@ -682,6 +688,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   groupHeaderStyles,
   groupHeaderSlot,
   getRowClassName,
+  isRowSelectable,
   edgeInset = true,
   stickyHeader = true,
 }: DataTableInnerProps<TData>) {
@@ -760,8 +767,11 @@ function DataTableInner<TData extends Record<string, unknown>>({
   const firstRightPinKey = displayCols.find(c => effectivePins[c.key] === "right")?.key
 
   // Row IDs for the current visible rows
-  const allRowIds = rows.map((r, i) => getRowId(r, i, getRowIdProp))
-  const allSelected  = rows.length > 0 && selected.size === rows.length
+  const allRowIds = rows
+    .map((r, i) => ({ r, id: getRowId(r, i, getRowIdProp) }))
+    .filter(({ r }) => !isRowSelectable || isRowSelectable(r))
+    .map(({ id }) => id)
+  const allSelected  = allRowIds.length > 0 && selected.size === allRowIds.length
   const someSelected = selected.size > 0 && !allSelected
   const anySelected  = selected.size > 0
 
@@ -1054,8 +1064,10 @@ function DataTableInner<TData extends Record<string, unknown>>({
                     groupStyle ? undefined : "text-muted-foreground bg-dt-group-bg",
                   )
                   const hasSelectCell = selectable && displayCols[0]?.key === "select"
-                  /* Group select-all (PCE extension) — toggles every row in the section. */
-                  const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
+                  /* Group select-all (PCE extension) — toggles every selectable row in the section. */
+                  const ids = groupRows
+                    .filter(row => !isRowSelectable || isRowSelectable(row))
+                    .map((row, i) => getRowId(row, i, getRowIdProp))
                   const all = ids.length > 0 && ids.every(id => selected.has(id))
                   const some = ids.some(id => selected.has(id))
                   const groupCheckbox = selectable && (
@@ -1224,23 +1236,30 @@ function DataTableInner<TData extends Record<string, unknown>>({
                         // Special synthetic columns
                         if (col.key === "select") {
                           const selectionLabel = getRowSelectionLabel?.(row, rowIndex)
-                          const ariaLabel = selectionLabel
-                            ? `Select row, ${selectionLabel}`
-                            : `Select row ${rowIndex + 1}`
+                          const rowSelectable = !isRowSelectable || isRowSelectable(row)
+                          const ariaLabel = !rowSelectable
+                            ? "Row can't be selected"
+                            : selectionLabel
+                              ? `Select row, ${selectionLabel}`
+                              : `Select row ${rowIndex + 1}`
                           return (
                             <td key="select" className={tdBase} style={tdStyle}>
                               {selectable && (
                                 <div
                                   className={cn(
                                     "flex items-center justify-center shrink-0 transition-opacity",
-                                    anySelected
-                                      ? "opacity-100"
-                                      : "opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+                                    !rowSelectable
+                                      ? "opacity-40"
+                                      : anySelected
+                                        ? "opacity-100"
+                                        : "opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100",
                                   )}
                                   onClick={e => e.stopPropagation()}
+                                  title={!rowSelectable ? "Row can't be selected" : undefined}
                                 >
                                   <Checkbox
                                     checked={isSelected}
+                                    disabled={!rowSelectable}
                                     onCheckedChange={() => toggleRow(rowId)}
                                     aria-label={ariaLabel}
                                     onClick={e => e.stopPropagation()}

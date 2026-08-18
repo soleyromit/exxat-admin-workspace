@@ -283,7 +283,10 @@ interface StepSurveyInstancesProps {
 // ("Course · Instructor · Coordinator") — unlike fixed-size avatars, text
 // DOES benefit from extra room, so the track widened from 140px to fit the
 // common 3-role case without truncating on every row.
-const TABLE_GRID = `24px minmax(160px,1.1fr) 76px minmax(210px,1.3fr) 200px 88px minmax(160px,1fr) 24px`
+// Aug 18 ask (Granola 421b0a20, Vishal) — course code split into its own
+// track instead of prefixing the Course cell; Course's minmax floor/share
+// gave up the width Code now owns.
+const TABLE_GRID = `24px 76px minmax(140px,1.1fr) 76px minmax(210px,1.3fr) 200px 88px minmax(160px,1fr) 24px`
 
 /** Per-course Continue-gate failure states (ST-02 Blocks). A faculty gap
  *  alone never appears here — it never blocks. */
@@ -2327,6 +2330,7 @@ export function StepSurveyInstances({
               style={{ gridTemplateColumns: TABLE_GRID }}
             >
               <span />
+              <span>Code</span>
               <span>Course</span>
               <span>Type</span>
               <span>Template</span>
@@ -2428,9 +2432,10 @@ export function StepSurveyInstances({
                         />
                       </span>
 
-                      <span className="flex items-baseline gap-2.5 min-w-0">
-                        <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">{code}</span>
-                        {name && <span className="truncate text-sm">{name}</span>}
+                      <span className="font-mono text-xs tabular-nums text-muted-foreground truncate">{code}</span>
+
+                      <span className="min-w-0">
+                        {name && <span className="truncate text-sm block">{name}</span>}
                       </span>
 
                       {/* Plain text, not the tinted TypePill — Romit's call,

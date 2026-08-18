@@ -123,6 +123,8 @@ interface PceState {
   /** Program terms — seeded from the active demo account, grows when term setup finishes. */
   programTerms: ProgramTerm[]
   addProgramTerm: (term: ProgramTerm) => void
+  /** Patches an existing term in place — e.g. setting dates on a synced-but-undated term. */
+  updateProgramTerm: (id: string, patch: Partial<ProgramTerm>) => void
   /** Demo account (each is a distinct dashboard term-card scenario). */
   accountId: string
   accounts: DemoAccount[]
@@ -198,6 +200,9 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     setProgramTerms(ts =>
       ts.some(t => t.id === term.id || t.name === term.name) ? ts : [...ts, term],
     )
+  }, [])
+  const updateProgramTerm = useCallback((id: string, patch: Partial<ProgramTerm>) => {
+    setProgramTerms(ts => ts.map(t => t.id === id ? { ...t, ...patch } : t))
   }, [])
 
   // ── Demo account (dashboard term-card scenarios) ──────────────────────────
@@ -874,7 +879,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       addFacultyRoleSet, removeFacultyRoleSet, updateFacultyRoleSetRoles,
       addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
       setupDefaults, saveSetupDefaults,
-      programTerms, addProgramTerm,
+      programTerms, addProgramTerm, updateProgramTerm,
       accountId, accounts: DEMO_ACCOUNTS, switchAccount,
       pushSurveyBatch,
       saveDraft,

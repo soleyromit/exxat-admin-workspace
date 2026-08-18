@@ -41,6 +41,7 @@ import {
   Skeleton,
   ToggleGroup, ToggleGroupItem,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+  Tabs, TabsList, TabsTrigger, TabsCountBadge,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -271,6 +272,34 @@ function TermWorkspaceInner() {
     return counts
   }, [tableRows])
 
+  /* Aug 18 ask (Granola 421b0a20, Vishal: "under all tab, we don't provide
+   * any multi-selection, but under scheduled or live tab, we give multi
+   * selection... which means you're saying we need to have tabs") —
+   * grouped tabs, not one per raw status: "no survey configured, draft can
+   * be one [tab]" is Romit's own grouping call (2026-08-18). needsSetup and
+   * finished are mutually exclusive and exhaustive with isExtendable
+   * (scheduled/active/collecting), so every RowStatus lands in exactly one
+   * non-"all" tab — nothing can silently fall through unrepresented. */
+  const isNeedsSetup = (st: RowStatus) => st === 'not_configured' || st === 'draft'
+  const TAB_GROUPS: { key: 'all' | 'needs_setup' | 'active' | 'finished'; label: string; match: (st: RowStatus) => boolean }[] = [
+    { key: 'all', label: 'All', match: () => true },
+    { key: 'needs_setup', label: 'Needs setup', match: isNeedsSetup },
+    { key: 'active', label: 'Active', match: isExtendable },
+    { key: 'finished', label: 'Closed & results', match: (st) => !isNeedsSetup(st) && !isExtendable(st) },
+  ]
+  const [activeTab, setActiveTab] = useState<'all' | 'needs_setup' | 'active' | 'finished'>('all')
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const group of TAB_GROUPS) counts[group.key] = tableRows.filter((row) => group.match(row.status)).length
+    return counts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableRows])
+  const visibleRows = useMemo(() => {
+    const group = TAB_GROUPS.find((g) => g.key === activeTab)!
+    return tableRows.filter((row) => group.match(row.status))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableRows, activeTab])
+
   /* Existing remind contract (surveys/remind reads ?ids + ?from only) —
    * accepts one id or several (bulk) joined the same way surveys-table.tsx's
    * own push link already does. Hoisted out of `columns` below so the
@@ -290,18 +319,28 @@ function TermWorkspaceInner() {
       // checkboxes + the bulk-action bar (surveys-table.tsx precedent).
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
       {
+        // Aug 18 ask (Granola 421b0a20, Vishal) — course code split into its
+        // own column instead of prefixing the Course cell, same fix as
+        // step-survey-instances.tsx's Course assignments table.
         key: 'courseCode',
+        label: 'Code',
+        sortable: true,
+        width: 90,
+        filter: { type: 'text', icon: 'fa-book-open' },
+        cell: (row) => <span className="text-sm font-medium tabular-nums">{row.courseCode}</span>,
+      },
+      {
+        key: 'courseName',
         label: 'Course',
         sortable: true,
-        width: 230,
-        filter: { type: 'text', icon: 'fa-book-open' },
+        width: 200,
         cell: (row) => (
           <div className="min-w-0">
             {/* title — narrower column (2026-08-14, to fit the whole table
                 without horizontal scroll) truncates a longer name more
                 often; without this a keyboard/hover user had no way to
                 recover it. */}
-            <p className="truncate text-sm font-medium" title={`${row.courseCode} · ${row.courseName}`}>{row.courseCode} · {row.courseName}</p>
+            <p className="truncate text-sm font-medium" title={row.courseName}>{row.courseName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {/* Same "Course material" chip vocabulary as Step 2's Evaluates
                   column (EvaluateeChipCluster) — a collapsed row otherwise
@@ -420,22 +459,33 @@ function TermWorkspaceInner() {
                   <Link
                     href={`/surveys/push?term=${term?.id}&offerings=${row.offeringId}`}
                     onClick={(e) => e.stopPropagation()}
-                    aria-label={`Set up a survey for the ${label}`}
+                    aria-label={`Set up an evaluation for the ${label}`}
                   >
                     <i className="fa-light fa-plus" aria-hidden="true" />
-                    Set up survey
+                    {/* "Set up evaluation" — matches the Draft row's button
+                        below (Romit's catch, 2026-08-18: same next step —
+                        open the wizard for this course — read as two
+                        different actions under the "never surveys" page
+                        rule (this file's own header comment) just because
+                        one row happens to have no PceSurvey yet. */}
+                    Set up evaluation
                   </Link>
                 </Button>
               </div>
             )
           }
-          /* Draft (or a Scheduled survey re-opened for editing) has nothing
-             else meaningful here — no results, no reminders, no window to
-             extend — so this is the row's ONLY action, not one option among
-             several. "Set up evaluation" for a true Draft (2026-08-14,
-             Romit) — it's never been through the wizard, so "Edit" implied
-             an existing thing to change; a re-opened Scheduled survey IS an
-             existing thing, so it keeps "Edit". */
+          /* Draft (or a Scheduled survey re-opened for editing) has one
+             PRIMARY action — no results, no reminders, no window to extend
+             — but it's still a real, savable PceSurvey (row.survey is
+             guaranteed here), so it keeps the same escape hatch every other
+             non-finished row has: Archive, for a setup started by mistake
+             (Romit's catch, 2026-08-18 — surveys-table.tsx already treats
+             Draft as archivable; this row silently couldn't be undone at
+             all, the one status on this page with no way out). "Set up
+             evaluation" for a true Draft (2026-08-14, Romit) — it's never
+             been through the wizard, so "Edit" implied an existing thing to
+             change; a re-opened Scheduled survey IS an existing thing, so it
+             keeps "Edit". */
           if (row.resumable) {
             const isDraft = row.status === 'draft'
             // Verb-only for the aria-label template ("Set up the DPT-611
@@ -445,10 +495,8 @@ function TermWorkspaceInner() {
             // review, 2026-08-14: "Set up evaluation the DPT-611 evaluation").
             const setupVerb = isDraft ? 'Set up' : 'Edit'
             return (
-              <div className="flex items-center justify-end">
+              <div className="flex items-center justify-end gap-1">
                 <Button variant="outline" size="sm" asChild>
-                  {/* row.survey is guaranteed here — resumable is only ever
-                      set true on a real survey row (see tableRows above). */}
                   <Link href={editHref(row.survey!)} onClick={(e) => e.stopPropagation()} aria-label={`${setupVerb} the ${label}`}>
                     {/* Icons on this row's actions (2026-08-14, Romit) —
                         reuses fa-pen-ruler/fa-pen, the exact icons the
@@ -458,6 +506,22 @@ function TermWorkspaceInner() {
                     {isDraft ? 'Set up evaluation' : 'Edit'}
                   </Link>
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" aria-label={`More actions for the ${label}`} onClick={(e) => e.stopPropagation()}>
+                      <i className="fa-light fa-ellipsis" aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setArchiveTarget(row.survey!)}
+                    >
+                      <i className="fa-light fa-box-archive" aria-hidden="true" />
+                      Archive evaluation
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )
           }
@@ -486,12 +550,12 @@ function TermWorkspaceInner() {
                   Remind
                 </Button>
               )}
-              {isLive(row.status) && (
+              {isExtendable(row.status) && (
                 <Button
                   variant="outline"
                   size="sm"
-                  // row.survey is guaranteed here — isLive(row.status) is
-                  // always false for a not_configured row.
+                  // row.survey is guaranteed here — not_configured returned
+                  // above, and isExtendable only ever matches a real status.
                   onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey!]) }}
                   aria-label={`Extend the close date for the ${label}`}
                 >
@@ -530,10 +594,13 @@ function TermWorkspaceInner() {
                       have a visible button to this exact destination above
                       — "Review & publish results" or "View results" — so
                       repeating it here just duplicated the same action twice
-                      in the same row (caught live, 2026-08-14). Live/
-                      Scheduled rows have no such button, so it stays their
-                      only path to results. */}
-                  {!isFinished(row.status) && (
+                      in the same row (caught live, 2026-08-14). Live rows have
+                      no such button, so it stays their only path to (partial,
+                      in-progress) results. Scoped to isLive, not merely
+                      !isFinished (Romit's catch) — a Draft or Scheduled survey
+                      hasn't opened yet, so there is no response data to view;
+                      offering the item there was a dead end, not a shortcut. */}
+                  {isLive(row.status) && (
                     <DropdownMenuItem onSelect={() => router.push(resultsHref(row.surveyId))}>
                       <i className="fa-light fa-chart-mixed" aria-hidden="true" />
                       View results
@@ -685,12 +752,46 @@ function TermWorkspaceInner() {
 
             {/* ── Evaluations — table ⇄ kanban ── */}
             <section className="flex flex-col gap-2" aria-label="Evaluations">
-              <div className="flex items-center justify-end gap-3 flex-wrap">
-                {/* Status tab strip removed (2026-08-17, Romit) — fully
-                    redundant with the Status column's own "Add filter" entry
-                    (statusFilterOptions above), which covers every value the
-                    tabs did, not_configured included, as checkboxes with
-                    live counts instead of a 6th tab. */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                {/* Status tab strip reinstated (2026-08-18, Granola 421b0a20,
+                    Vishal) — the 2026-08-17 removal called a per-status tab
+                    strip "fully redundant" with the Status filter's own
+                    checkboxes. This isn't that: it's GROUPED tabs (needs
+                    setup / active / closed & results), which the filter
+                    checkboxes can't express as a single click, and it's what
+                    scopes bulk-select to a coherent set of rows (only Active
+                    ever has a meaningful multi-select bar) instead of one
+                    long list where selection eligibility varies row to row.
+                    Table-view only (Romit's catch, 2026-08-18) — Board
+                    reads termSurveys directly into its own status columns
+                    (no_survey/scheduled/live/closed_review/released, all
+                    visible side by side already), so the tab filter never
+                    touched it: it sat there looking clickable and doing
+                    nothing, a dead control on the one view where every
+                    status is already on screen at once.
+                    `invisible`, not a conditional unmount (Romit's second
+                    catch, 2026-08-18) — removing it from the DOM in Board
+                    view shrank this row's total content width, which could
+                    tip `flex-wrap` into wrapping the Table/Board toggle
+                    differently between the two views: a visible jump on
+                    every switch. `invisible` keeps the reserved width
+                    identical in both views (and drops out of the tab order
+                    same as an unmount, unlike opacity-0) — just the pixels
+                    are hidden, not the layout. */}
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) => setActiveTab(v as typeof activeTab)}
+                  className={evalView !== 'table' ? 'invisible' : undefined}
+                >
+                  <TabsList>
+                    {TAB_GROUPS.map((group) => (
+                      <TabsTrigger key={group.key} value={group.key}>
+                        {group.label}
+                        <TabsCountBadge count={tabCounts[group.key] ?? 0} />
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
                 <ToggleGroup
                   type="single"
                   variant="outline"
@@ -720,7 +821,7 @@ function TermWorkspaceInner() {
                      state, which owns its own selection/pagination reset on
                      filter change; `data` itself no longer changes shape from
                      an outside prop the way the old external tab did. */
-                  data={tableRows}
+                  data={visibleRows}
                   columns={columns}
                   /* Status filter dropdown rows — label + a neutral count
                      Badge (2026-08-17, Romit: badge component, not text in
@@ -748,6 +849,13 @@ function TermWorkspaceInner() {
                      Delete still has no real path here, so the bar only ever
                      offers Remind/Extend, never Export/Delete. */
                   selectable
+                  /* Aug 18 ask (Granola 421b0a20, Vishal), same fix as
+                     surveys-table.tsx — a row whose status can't produce
+                     either bulk action (not_configured/draft/finished) has
+                     no reason to be checkbox-selectable; isExtendable is a
+                     superset of isLive, so it exactly covers "eligible for
+                     at least one bulk action" here. */
+                  isRowSelectable={(row) => isExtendable(row.status)}
                   pagination={{ pageSize: 16 }}
                   edgeInset={false}
                   stickyHeader={false}
