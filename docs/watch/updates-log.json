@@ -1500,6 +1500,38 @@
                 "docs/watch/updates-log.json",
                 "docs/watch/flags/pce.md"
             ]
+        },
+        {
+            "id": "2026-08-18-transcript-prd-diff-pce-001",
+            "date": "2026-08-18",
+            "product": "pce",
+            "type": "prd-flagged",
+            "title": "Transcript-PRD Diff — 2026-08-18 — 2 conflicts found",
+            "what": "Cross-referenced 7 Exxat-relevant meeting transcripts from Aug 4–17, 2026 against PCE PRD snapshot (pce-prd-monil.txt) and stakeholder-decisions.json. Meetings reviewed: Step two design Aug 4 (Monil), Course Eval sync up Aug 6 (Monil), Course evaluation survey roles/status/response rate thresholds Aug 12 (Vishal/US team), Survey completion dashboard and role-based admin design with Vishal Aug 12 (Vishal/US team), Survey design and email template configuration Aug 13 (Vishal), Faculty evaluation analytics Aug 17 (Monil), Home page design and login flow Aug 17 (Aarti). 2 new PRD conflicts detected: (1) Response threshold metric conflict — PRD §9 mandates fixed count of 5 responses as suppression threshold; Aug 12 transcript proposes two configurable school-editable percentage thresholds (validity floor + desired target %). Conflicts with pce-decision-004. (2) Likert scale flexibility conflict — PRD §9 and pce-decision-005 mandate fixed 1–5 Likert scale not configurable; Aug 12 transcript states different Likert scales per question are a 'must have capability'. Previously-processed conflicts excluded: pce-decision-101 vs pce-decision-032 already logged 2026-08-17. Non-product meetings excluded: 2 UX Chats events, 1 scheduling discussion.",
+            "source": "Granola transcripts — Aug 4 to Aug 17, 2026",
+            "severity": "P1",
+            "conflicts": [
+                {
+                    "conflict_id": "pce-conflict-2026-08-18-001",
+                    "description": "Response threshold: PRD §9 fixed count of 5 vs transcript configurable percentage thresholds per school",
+                    "prd_section": "§9 Non-Functional Requirements",
+                    "decision_ref": "pce-decision-004",
+                    "meeting": "Course evaluation survey — roles, status tracking, and response rate thresholds — Aug 12, 2026",
+                    "speaker": "Vishal / Exxat US team"
+                },
+                {
+                    "conflict_id": "pce-conflict-2026-08-18-002",
+                    "description": "Likert scale: PRD §9 fixed 1–5 not configurable vs transcript 'must have capability' for different scales per question",
+                    "prd_section": "§9 Non-Functional Requirements",
+                    "decision_ref": "pce-decision-005",
+                    "meeting": "Survey completion dashboard and role-based admin design with Vishal — Aug 12, 2026",
+                    "speaker": "Vishal / Exxat US team"
+                }
+            ],
+            "files": [
+                "docs/watch/flags/pce.md",
+                "docs/watch/updates-log.json"
+            ]
         }
     ]
 }

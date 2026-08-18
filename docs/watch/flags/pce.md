@@ -505,3 +505,23 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Action:** Review and confirm which applies. pce-decision-032 has been marked superseded by pce-decision-101.
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-08-18
+**Meeting:** Course evaluation survey — roles, status tracking, and response rate thresholds — Aug 12, 2026
+**Speaker:** Vishal / Exxat US team (unidentified "Them" voice)
+**What they said:** "So that percentage needs to be editable by each school. Yes. We need to give them, like two numbers according to me at least. One is below that number, the survey is not alleged to make survey... And desired percentage. So we can give them those two things. We can set them up ourselves, like as defaults, but they can override it."
+**What the PRD says:** §9 Non-Functional Requirements — "Minimum N enforcement: Results for any course suppressed from all non-student views until minimum 5 responses received." (also pce-decision-004: fixed count of 5, not configurable)
+**Conflict:** PRD mandates a fixed absolute count of 5 responses as the suppression threshold; transcript proposes two configurable school-editable percentage thresholds (validity floor + desired target %) that differ in metric type (count vs percentage) and editability (fixed vs per-school configurable).
+**Suggested action:** Update PRD §9 OR confirm with Monil/Vishaka whether the "minimum 5 responses" is replaced by configurable percentage thresholds. If percentage thresholds are adopted, pce-decision-004 must be superseded and §9 updated to reflect configurable settings.
+
+---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-08-18
+**Meeting:** Survey completion dashboard and role-based admin design with Vishal — Aug 12, 2026
+**Speaker:** Vishal / Exxat US team (unidentified "Them" voice)
+**What they said:** "I think it's a program, I mean requirement session that says you have to account for the fact that the scale could be different I don't think you can assume that the entire form has... different questions can be of different like at scale... it's a must have capability that we have to have is different questions can be of different like scale"
+**What the PRD says:** §9 Non-Functional Requirements — "Scoring standardisation: 1–5 Likert scale enforced as standard across all evaluations. Anchor labels standardised. Not a configurable option at faculty or program level." (also pce-decision-005: same)
+**Conflict:** PRD and pce-decision-005 mandate a single fixed 1–5 Likert scale across all evaluations; transcript explicitly states different Likert scales per question are a "must have capability" that cannot be assumed away.
+**Suggested action:** Update PRD §9 OR confirm with Monil whether the 1–5 Likert lock is still valid. If different scales per question are adopted, pce-decision-005 must be superseded and the FAAS UI question builder must be verified to support mixed Likert scales. Raise with Monil before building the analytics grouping logic (which currently assumes a single scale).
+
+---
