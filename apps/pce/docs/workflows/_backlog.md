@@ -613,6 +613,32 @@ Sources:
 | T186 | OU code switching: simplify or remove (Aarti feedback) | Admin | Portal home page / module nav | P1 — needs engineering alignment | Per-module OU switching is not a common use case per Aarti. Evaluate whether to remove or significantly simplify before next design iteration. D_PORTAL_0817_02. |
 | T187 | Prism framing: intelligent dashboards layer, not just a directory | Admin | Portal home page | P1 — DESIGN-REVIEW | Frame Prism as intelligent dashboards product in home design — not a directory. Evolved storefront approach. Needed for Aug 24 check-in + Jan 2027 visualization. D_PORTAL_0817_03. |
 
+### From Aug 17 — Faculty evaluation analytics (Aarti) · Granola `8ddd2979`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T188 | Multi-term aggregation = average of averages, never cumulative merge | Admin | Faculty analytics (T73) | P1 — applies at T73 implementation | When displaying scores across terms, compute average of each term's average. Never merge raw responses across terms. D_PCE_0817A_01. |
+| T189 | Language rule product-wide: "Needs attention" not "worst performing" | Admin | All analytics surfaces | P1 — product-wide language rule | Replace any instance of "worst performing" with "needs attention" across all surfaces. D_PCE_0817A_02. |
+| T190 | KILL response submission timeline chart (day-by-day trend during survey window) | Admin | Faculty analytics (T73) | P1 — kill decision | Do not show day-by-day submission trend chart in post-close analytics. Only valid during active collection. Remove entirely from T73 design. D_PCE_0817A_03. |
+| T191 | Best/needs-attention section: dynamic size based on percentile, not fixed count | Admin | Faculty analytics (T73) | P1 — DESIGN-REVIEW (PM to confirm threshold) | Number of entries in best/needs-attention sections derived from total count via percentile (e.g. top/bottom 10%), not fixed at "5 best, 10 worst." D_PCE_0817A_04. |
+| T192 | Cohort analysis view: TAB navigation, not toggle/switch | Admin | Faculty analytics (T73) | P1 — DESIGN-REVIEW | Cohort analysis must be a tab (alongside summary/by-course tabs), not a small inline toggle or switch. D_PCE_0817A_05. |
+| T193 | Card expansion: show term-over-term movers (courses/faculty up/down vs. last term) | Admin | Faculty analytics (T73) | P1 — DESIGN-REVIEW (requires T188) | Expanded card view must surface which courses or faculty moved up/down since last term. Primary signal Aarti wants. D_PCE_0817A_06. |
+| T194 | Response rate: must be explicitly labeled, not implied by visual alone | Admin | Faculty analytics (T73) + any analytics surface | P1 — applies at T73 + any analytics surface | Always show the label "Response rate" (or equivalent). A percentage shown without a label is not acceptable. D_PCE_0817A_07. |
+
+### From Aug 17 — Course evaluation setup (Aarti) · Granola `be0b0a3c`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T195 | Rows per page default = 25 (not 10) — product-wide | Admin | All paginated tables | P1 — **APPLIED**: `pagination.tsx:177` `?? 10` → `?? 25` | Default pageSize changed to 25 in DataTablePaginated. D_PCE_0817B_01. |
+| T196 | Step 1 course list: exclude already-scheduled courses entirely | Admin | Setup evaluations wizard Step 1 (T129) | P1 — DESIGN-REVIEW | Already-scheduled courses must be omitted from the Step 1 selection list entirely — not shown pre-checked or greyed. Only unscheduled courses appear. D_PCE_0817B_02. |
+| T197 | Scheduling ≠ student lock-in: add informational messaging in setup flow | Admin | Setup evaluations wizard (T129) | P1 — DESIGN-REVIEW (copy TBD) | Clearly communicate that scheduling an evaluation does not immediately impact students. Add informational message at appropriate wizard step. D_PCE_0817B_03. |
+| T198 | Term selector: include start and end dates in label | Admin | Setup evaluations wizard term selector (T129) + any term dropdown | P1 — DESIGN-REVIEW | Term selector dropdown must display term name + date range (e.g. "Fall 2026 · Aug 25 – Dec 15"). D_PCE_0817B_04. |
+| T199 | Course dates in table: show only when different from term-level dates | Admin | Setup evaluations wizard Step 1 table (T129) | P1 — DESIGN-REVIEW | Per-course dates visible only if they differ from term dates. If same as term, omit entirely. D_PCE_0817B_05. |
+| T200 | Row height: needs-attention rows slightly taller, ready-state rows compact | Admin | Setup evaluations wizard Step 1 table (T129) | P2 — DESIGN-REVIEW | Variable row density: flagged/needs-attention rows slightly taller for context; ready/complete rows compact. D_PCE_0817B_06. |
+| T201 | Email subject: require "Sample:" prefix or [placeholder] brackets | Admin | Setup evaluations wizard email step (T129) | P1 — DESIGN-REVIEW (copy + UX pattern TBD) | Email subject field must use "Sample:" prefix or [placeholder] brackets to signal it is editable, not a finalized subject. D_PCE_0817B_07. |
+| T202 | Per-course date override CTA: "Edit" not "Add a custom rule" | Admin | Setup evaluations wizard date override (T129) | P1 — DESIGN-REVIEW | CTA that opens per-course date override must be labeled "Edit." D_PCE_0817B_08. |
+| T203 | Dashboard term card order: Current → Upcoming → Last (not chronological) | Admin | Evaluation dashboard term cards | P1 — supplements T46 | Term cards ordered: Current first, Upcoming second, Last third. Supplements T46 (which did not specify left-to-right order). D_PCE_0817B_09. |
+
 ### Deferred / killed items from Aug 12–17
 
 | Decision | Reason | Source |

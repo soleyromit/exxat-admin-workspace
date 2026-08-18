@@ -174,7 +174,7 @@ export function DataTablePaginated<TData extends Record<string, unknown>>({
   ...rest
 }: DataTablePaginatedProps<TData>) {
   const config = {
-    pageSize: pagination?.pageSize ?? 10,
+    pageSize: pagination?.pageSize ?? 25,
     pageSizeOptions: pagination?.pageSizeOptions ?? [10, 25, 50, 100],
   }
 
