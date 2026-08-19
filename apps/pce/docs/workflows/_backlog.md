@@ -649,6 +649,32 @@ Sources:
 
 ---
 
+## Phase 1 design tasks — added 2026-08-18 (Course eval sync — Vishaka)
+
+Source: `docs/research/meetings/2026-08-18-course-eval-sync-up.md` (Granola `421b0a20`)
+
+> Vishaka + Romit end-to-end walkthrough of setup evaluations wizard, survey distribution table, and dashboard. Key outcomes: codes to separate column, term addition via drawer, bulk-action restrictions by status, board view deferred to Phase 2, feedback-requests terminology for dashboard, reopen-closed-survey confirmed not available.
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T204 | Evaluation codes → separate column in survey distribution/setup wizard table | Admin | Setup evaluations wizard / survey distribution | P1 — DESIGN-REVIEW | Codes must not be nested under the Course column. Show as a standalone column. Vishaka: "It makes it clear if we have it as a separate column. Right. So in sync with server distribution workflow." D_PCE_0818_01. |
+| T205 | Term addition via drawer — in-page, no navigation break | Admin | Setup terms / evaluation dashboard | P1 — DESIGN-REVIEW | When admin needs to add a term from within the evaluation setup flow, a Drawer opens in-page. Admin adds the term, closes the drawer, and resumes the workflow without leaving the page. Vishaka: "Design and experience where I can set up terms on the same page and continue my work." D_PCE_0818_02. |
+| T206 | Bulk actions restricted by status: Closed and Results Released are non-selectable | Admin | Survey list (`surveys/page.tsx`) | P1 — DESIGN-REVIEW | DataTable `selectable` is currently unrestricted. Only Draft, Ongoing, and Not Configured rows may be selected for bulk actions. Closed and "Results Released to Faculty" rows must be non-selectable (disabled checkboxes). Vishaka: "Anything which is closed, results available should be by default non-selectable." D_PCE_0818_03. |
+| T207 | Multi-term selection in setup term — confirm scope with Vishaka | Admin | Setup terms | P1 — DESIGN-REVIEW (open question) | Vishaka indicated setup term should support multiple terms in a single session. Confirm: can admin select multiple terms in one go, or does each term require a separate pass? Clarify before implementing setup-term screen. D_PCE_0818_04. |
+| T208 | Dashboard terminology: "feedback requests" not "students" | Admin | Evaluation completion dashboard (T46, T165) | P1 — applies at T46/T165 implementation | Any counter that tracks outstanding responses must use "feedback requests" (or "feedbacks"), never "students." One student can submit multiple feedbacks. Vishaka: "We are not saying students. We are saying feedbacks. Feedback requests." D_PCE_0818_05. |
+
+### Deferred / killed items from Aug 18
+
+| Decision | Reason | Source |
+|---|---|---|
+| Board view | Table view only in Phase 1. Board view is Phase 2. Vishaka: "Board view. I think we will build in the second pass first will be table view only." | D_PCE_0818_04, Aug 18 |
+| Reopen closed survey | Not available. Vishaka: "No, we're not giving that option currently." | D_PCE_0818_06, Aug 18 |
+| Onboarding workflow | Deferred. "You worry about onboarding in the next step." | D_PCE_0818_09, Aug 18 |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
