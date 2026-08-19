@@ -335,32 +335,41 @@ function TermWorkspaceInner() {
         sortable: true,
         width: 200,
         cell: (row) => (
-          <div className="min-w-0">
-            {/* title — narrower column (2026-08-14, to fit the whole table
-                without horizontal scroll) truncates a longer name more
-                often; without this a keyboard/hover user had no way to
-                recover it. */}
-            <p className="truncate text-sm font-medium" title={row.courseName}>{row.courseName}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {/* Same "Course material" chip vocabulary as Step 2's Evaluates
-                  column (EvaluateeChipCluster) — a collapsed row otherwise
-                  shows only faculty, silently dropping the fact that course
-                  content is evaluated too whenever there's no other visual
-                  cue for it. */}
-              {row.hasCourseMaterial && (
-                <Tip label="Course material is also evaluated" side="top">
-                  <Badge
-                    tabIndex={0}
-                    variant="outline"
-                    className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                  >
-                    <i className="fa-light fa-book-open text-[10px]" aria-hidden="true" />
-                    Course
-                  </Badge>
-                </Tip>
-              )}
-              <FacultyAvatarRow instructors={row.instructors} />
-            </div>
+          // title — narrower column (2026-08-14, to fit the whole table
+          // without horizontal scroll) truncates a longer name more often;
+          // without this a keyboard/hover user had no way to recover it.
+          <p className="truncate text-sm font-medium" title={row.courseName}>{row.courseName}</p>
+        ),
+      },
+      {
+        // Aug 18 ask (Romit) — Evaluatees split into its own column instead
+        // of a sub-row under Course, same fix/reasoning as the Code split
+        // above: two distinct facts (what course, who/what is evaluated)
+        // sharing one cell hid the second under the first's width budget.
+        // Matches Step 2's Evaluatees column (courses-evaluatees/
+        // step-survey-instances.tsx) in name and position.
+        key: 'evaluatees',
+        label: 'Evaluatees',
+        width: 180,
+        cell: (row) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* Same "Course material" chip vocabulary as Step 2's Evaluatees
+                column (EvaluateeChipCluster) — this column otherwise showed
+                only faculty, silently dropping the fact that course content
+                is evaluated too whenever there's no other visual cue for it. */}
+            {row.hasCourseMaterial && (
+              <Tip label="Course material is also evaluated" side="top">
+                <Badge
+                  tabIndex={0}
+                  variant="outline"
+                  className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                >
+                  <i className="fa-light fa-book-open text-[10px]" aria-hidden="true" />
+                  Course
+                </Badge>
+              </Tip>
+            )}
+            <FacultyAvatarRow instructors={row.instructors} />
           </div>
         ),
       },
