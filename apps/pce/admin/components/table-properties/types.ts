@@ -1,5 +1,7 @@
 "use client"
 
+import type * as React from "react"
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types for table-properties components
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +15,7 @@ export interface FilterFieldDef {
   type: "select" | "text" | "date"
   operators: FilterOperator[]
   /** Select options, or for `date` fields used by conditional rules (exact row strings). */
-  options?: { value: string; label: string }[]
+  options?: { value: string; label: string; node?: React.ReactNode }[]
 }
 
 export interface ActiveFilter {

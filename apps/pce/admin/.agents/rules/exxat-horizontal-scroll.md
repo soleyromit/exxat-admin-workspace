@@ -1,0 +1,39 @@
+---
+description: Exxat DS — shared horizontal scroll controls for overflowing tab bars, breadcrumbs, and chip rows
+activation: glob
+globs: {components,lib,src,packages}/**/*.{tsx,ts}
+---
+
+<!-- Synced from .agents/rules/exxat-horizontal-scroll.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — horizontal scroll controls
+
+**Authoritative narrative:** `docs/exxat-ds/horizontal-scroll-pattern.md` (workspace: `docs/exxat-ds/horizontal-scroll-pattern.md`).
+
+## MUST
+
+1. **Compose from shared primitives** — `@exxatdesignux/ui/components/ui/horizontal-scroll-controls` and/or `horizontal-scroll-region`. App re-exports: `@/components/ui/horizontal-scroll-controls`, `@/components/ui/horizontal-scroll-region`.
+2. **Default layout is grouped** — segmented `[← | →]` **after** the viewport (`controlsLayout="group-end"` on `HorizontalScrollRegion`, or `layout="group"` on `HorizontalScrollControls`). Reference: `list-page.tsx` views toolbar, `tabs.tsx` `TabsListScrollRegion`, `page-breadcrumb-trail.tsx`.
+3. **Pair hook + controls for custom layouts** — `useHorizontalScrollAffordances(ref)` + `HorizontalScrollControls`; viewport class from `horizontalScrollViewportClassName`.
+4. **Breadcrumb trails** — `HorizontalScrollRegion` with **`alignEnd`** so the current page stays visible when ancestors wrap; **`ariaLabel="Breadcrumb"`**.
+5. **Accessibility** — prev/next are real **`Button`**s with descriptive **`aria-label`**s and **`Tip`** labels; grouped control uses **`role="group"`**.
+
+## MUST NOT
+
+- Add bespoke left/right chevron pairs on every new overflow row — extend the shared component instead.
+- Use **`controlsLayout="split"`** (chevrons flanking both ends) unless product explicitly requires it — grouped end control is the DS default.
+- Hide overflow without keyboard-accessible prev/next when content exceeds the viewport.
+
+## Reference files
+
+- `packages/ui/src/components/ui/horizontal-scroll-controls.tsx` — `HorizontalScrollControls`, hooks
+- `packages/ui/src/components/ui/horizontal-scroll-region.tsx` — `HorizontalScrollRegion` wrapper
+- `packages/ui/src/components/templates/list-page.tsx` — hub view tabs
+- `packages/ui/src/components/ui/tabs.tsx` — `TabsListScrollRegion`
+- `components/page-breadcrumb-trail.tsx` — SiteHeader breadcrumb scroll
+
+## See also
+
+- **`exxat-tabs-chrome.md`** — view tabs live inside the scroll region
+- **`exxat-breadcrumbs-no-back.md`** — breadcrumb IA (scroll is additive chrome)
+- **`exxat-accessibility.md`** — Case C on icon-only chevrons

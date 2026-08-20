@@ -1,0 +1,93 @@
+---
+description: Exxat DS — when to use Tabs vs ViewSegmentedControl vs DropdownMenu; tabs chrome must not stretch full width
+alwaysApply: false
+globs: {components,lib,src}/**/*.{tsx,ts}
+appliesTo: [react]
+seeAlso:
+  - .cursor/rules/exxat-horizontal-scroll.mdc
+  - .cursor/rules/exxat-page-vs-drawer.mdc
+  - docs/exxat-ds/modern-saas-patterns.md
+---
+
+# Exxat DS — tabs & choice controls
+
+## Quick decision (MUST follow)
+
+| User is choosing… | Use | Example |
+|-------------------|-----|---------|
+| **Entity section** (different content regions, bookmarkable) | **`Tabs`** `w-fit` + `variant="line"` | Student Overview · Academics · Placements |
+| **Hub view type** (table / board / dashboard) | **`ListPageTemplate`** toolbar → **`ViewSegmentedControl`** | Placements view switcher — **not** Radix `Tabs` |
+| **Mode / filter** (2–5 options, stays on same surface) | **`ButtonSegmentedControl`** or **`ViewSegmentedControl`** (hub views) | Theme preview, chart type, card width, KPI count |
+| **Many or infrequent options** (6+, or save toolbar space) | **`DropdownMenu`** on **`Button`** `size="icon"` or `variant="outline"` | Period, program, cohort; ⋯ overflow |
+| **Settings tile pick** (large labeled choices) | **`SelectionTileGrid`** | Settings → Theme, Contrast |
+
+```
+Is it primary navigation between named sections of one record?
+  YES → Tabs (w-fit, line)
+  NO  → Is it ≤5 modes/filters on the same route?
+          YES → ButtonSegmentedControl or ViewSegmentedControl (hubs)
+          NO  → DropdownMenu (icon trigger) or SelectionTileGrid (settings)
+```
+
+## MUST NOT use `Tabs` for
+
+1. **Theme / color mode** (light · dark · system) — **`ButtonSegmentedControl`** (`TokensThemeSwitcher`) on doc pages, or **`SelectionTileGrid`** in Settings.
+2. **Chart type / layout mode** — **`ViewSegmentedControl`** (`data-view-dashboard-canvas`, catalog previews).
+3. **Toolbar filters** with five or fewer values — segmented control, not a tab row.
+4. **Full-width mode bars** — edge-to-edge `TabsList` reads as 2010s chrome ([`modern-saas-patterns.md`](docs/exxat-ds/modern-saas-patterns.md) anti-pattern).
+5. **Hub view switching** — `ListPageTemplate` owns this; never duplicate with Radix `Tabs`.
+
+## When `Tabs` IS correct
+
+- **Record / detail sub-nav** under `PageHeader` — [`jobs/record-detail.md`](docs/exxat-ds/jobs/record-detail.md). **Primary** (default pill).
+- **Token doc namespace groups** — primary `Tabs` + `TabsCountBadge` (not line variant).
+- **In-card / chart panels** — **secondary** `variant="line"` only.
+- **`TabsList`** defaults **`inline-flex w-fit`** — overflow → **`TabsListScrollRegion`**.
+- **ChartCard `variant="tabs"`** only — chart vs trend (or custom pair) **inside** `ChartCard` line tabs; do not copy that pattern outside chart cards.
+
+## `ButtonSegmentedControl` (Button + segmented chrome)
+
+- Primitive: `@/components/ui/button-segmented-control` — theme preview, compact mode pickers on doc pages.
+- Shares `viewSegmentedToolbarClass` / `viewSegmentedButtonClass` with hub view pills; built on **`Button`** `variant="ghost"`.
+
+## `Views segment` (`ViewSegmentedControl` primitive)
+
+- Hub toolbar: icon, label, count, chevron menu, Add view — `ListPageTemplate`.
+- Primitive: `@/components/ui/view-segmented-control` — `role="radiogroup"`, muted pill chrome (`viewSegmentedToolbarClass`).
+- **`iconOnly`** when toolbar is tight — pair each segment with **`Tip`** (built-in when `iconOnly`).
+- Keyboard: arrow keys, Home, End (same as hub view toolbar).
+
+## `DropdownMenu` (icon button menu)
+
+- Use when options are **too many** for a segmented row or the control is **secondary** (chart period, program filter on `ChartCard variant="selector"`).
+- Trigger: **`Button`** `size="icon"` or labeled outline + chevron — **not** a fake tab.
+- Overflow actions: **`PageHeader`** ⋯ pattern — [`exxat-page-header-actions.mdc`](exxat-page-header-actions.mdc).
+
+## List hubs (All students, Placements, …)
+
+**MUST** use **`ListPageTemplate`** view toolbar — `role="toolbar"` + **`w-max`** segmented control (`viewSegmentedToolbarClass`), **not** Radix **`Tabs`** stretched across the page.
+
+- Reference: `packages/ui/src/components/templates/list-page.tsx` (views toolbar block).
+- View tabs sit inside **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** — **`.cursor/rules/exxat-horizontal-scroll.mdc`**.
+
+## Entity / record detail (Overview, Academics, Placements, …)
+
+**MUST** use **`Tabs`**, **`TabsList`**, **`TabsTrigger`** from `@/components/ui/tabs`:
+
+- **`TabsList`** defaults to **`inline-flex w-fit`** — **MUST NOT** pass `className="w-full"` or wrap the list in a full-width flex container that forces triggers to **`flex-1`**.
+- When tabs overflow, use **`TabsListScrollRegion`** — grouped scroll control at the end.
+- Prefer **`variant="line"`** for record sub-nav under a **`PageHeader`**.
+
+## MUST NOT
+
+- A single grey/white bar spanning the entire content width with tabs distributed edge-to-edge.
+- Mix hub **view tabs** (table/list/board) with entity **section tabs** (Overview/Academics) — different patterns.
+- Hand-rolled bordered `RadioGroup` rows for mode switching when **`ViewSegmentedControl`** exists.
+
+## See also
+
+- **`docs/exxat-ds/blueprints/page-header.md`** — header never carries view tabs
+- **`docs/exxat-ds/data-views-pattern.md`** — `ListPageTemplate` view toolbar
+- **`exxat-horizontal-scroll.mdc`** — overflowing tab/segment rows
+- **`exxat-design-reference-hub.mdc`** — theme preview on doc pages
+- **`exxat-chart-cards.mdc`** — ChartCard `variant="tabs"` exception

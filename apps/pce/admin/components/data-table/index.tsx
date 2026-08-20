@@ -24,14 +24,14 @@
  */
 
 import * as React from "react"
-import { cn } from "@exxat/ds/packages/ui/src"
-import { Button } from "@exxat/ds/packages/ui/src"
-import { Input } from "@exxat/ds/packages/ui/src"
-import { Kbd, KbdGroup } from "@exxat/ds/packages/ui/src"
-import { Tip } from "@exxat/ds/packages/ui/src"
-import { useModKeyLabel } from "@exxat/ds/packages/ui/src"
+import { cn } from "@exxatdesignux/ui"
+import { Button } from "@exxatdesignux/ui"
+import { Input } from "@exxatdesignux/ui"
+import { Kbd, KbdGroup } from "@exxatdesignux/ui"
+import { Tip } from "@exxatdesignux/ui"
+import { useModKeyLabel } from "@exxatdesignux/ui"
 import { isEditableTarget } from "@/lib/editable-target"
-import { Checkbox } from "@exxat/ds/packages/ui/src"
+import { Checkbox } from "@exxatdesignux/ui"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,21 +39,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import { OPERATOR_LABELS } from "@/components/table-properties/types"
 import type { ActiveFilter } from "@/components/table-properties/types"
-import { formatYmdForDisplay } from "@exxat/ds/packages/ui/src"
+import { formatYmdForDisplay } from "@exxatdesignux/ui"
 import { FilterDateCalendar } from "./filter-date-calendar"
 import type { DataTableProps, ColumnDef, SortDir } from "./types"
 import { useTableState } from "./use-table-state"
@@ -287,7 +287,7 @@ function FilterPillBase<TData>({
         )}
 
         {filterDef.type === "select" && (
-          <div className="py-1 max-h-64 overflow-y-auto">
+          <div>
             {showSearch && (
               <div className="px-2 pt-1 pb-1">
                 <div className="relative">
@@ -312,6 +312,7 @@ function FilterPillBase<TData>({
                 </div>
               </div>
             )}
+            <div role="listbox" aria-multiselectable="true" aria-label={`${col.label} options`} className="py-1 max-h-64 overflow-y-auto">
             {filteredOpts.map(opt => {
               const checked = filter.values.includes(opt.value)
               return (
@@ -333,7 +334,7 @@ function FilterPillBase<TData>({
                       checked ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background"
                     )}
                   >
-                    {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "8px" }} />}
+                    {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "8px" }} aria-hidden="true" />}
                   </span>
                   {renderOptionValue
                     ? renderOptionValue(filter.fieldKey, opt.value)
@@ -345,6 +346,7 @@ function FilterPillBase<TData>({
             {filteredOpts.length === 0 && (
               <p className="px-3 py-2 text-xs text-muted-foreground">No options found</p>
             )}
+            </div>
             {filter.values.length > 0 && (
               <div className="border-t border-border px-2 py-2">
                 <button
@@ -415,6 +417,7 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   renderFilterOptionValue,
   toolbarSlot,
   searchAriaLabel = "Search table",
+  edgeInset = true,
 }: {
   state: ReturnType<typeof useTableState<TData>>
   columns: ColumnDef<TData>[]
@@ -424,11 +427,13 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   toolbarSlot?: (state: ReturnType<typeof useTableState<TData>>) => React.ReactNode
   /** Passed to the search input `aria-label` (e.g. "Search placements") */
   searchAriaLabel?: string
+  /** When false, toolbar omits horizontal inset (parent owns page padding). Mirrors the DS DataTable API. */
+  edgeInset?: boolean
 }) {
   const {
     search, setSearch, searchOpen, setSearchOpen, searchRef,
     activeFilters, setActiveFilters, openFilterId,
-    filterBarVisible, setFilterBarVisible,
+    filterBarVisible,
     addFilter, updateFilter, removeFilter,
   } = state
 
@@ -454,7 +459,8 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 px-4 lg:px-6",
+        "flex items-center gap-1.5",
+        edgeInset && "px-4 lg:px-6",
         showQueryControls ? "min-h-10 pt-2 pb-2" : "min-h-0 justify-end py-1.5",
       )}
     >
@@ -479,15 +485,18 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
               dropdowns skip hideOthers. Fixed 2026-05-11. */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <button type="button"
-                className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs text-muted-foreground hover:text-interactive-hover-foreground border border-dashed border-input/70 hover:border-input hover:bg-interactive-hover-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                className="h-6 border border-dashed border-input/70 hover:border-input hover:bg-interactive-hover-subtle text-muted-foreground hover:text-interactive-hover-foreground"
               >
                 <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                 Add filter
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuLabel className="text-xs">Filter by field</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs" style={{ color: 'var(--foreground)' }}>Filter by field</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {filterableCols.map(c => (
                 <DropdownMenuItem key={c.key} onClick={() => addFilter(c.key)}>
@@ -499,13 +508,15 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
           </DropdownMenu>
 
           {activeFilters.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => setActiveFilters([])}
-              className="text-xs text-muted-foreground hover:text-interactive-hover-foreground transition-colors px-1"
+              className="px-1 text-muted-foreground hover:text-interactive-hover-foreground"
             >
               Clear all
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -572,54 +583,6 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
         {showQueryControls && filterableCols.length > 0 && (
           <>
             <div className="h-4 w-px bg-border/70" aria-hidden="true" />
-            {/* TooltipProvider lives at app root — inner is vestigial.
-                Per actions-overlays.md depth audit. */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                  {activeFilters.length > 0 ? (
-                    <button type="button"
-                      aria-label={filterBarVisible ? "Hide filters" : "Show filters"}
-                      onClick={() => setFilterBarVisible(v => !v)}
-                      className={cn(
-                        "inline-flex items-center gap-1 size-8 justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        filterBarVisible
-                          ? "bg-accent text-accent-foreground hover:bg-accent/90"
-                          : "text-muted-foreground hover:text-interactive-hover-foreground hover:bg-interactive-hover",
-                      )}
-                    >
-                      <i className="fa-light fa-filter text-[13px]" aria-hidden="true" />
-                      <span className="text-xs font-semibold tabular-nums">{activeFilters.length}</span>
-                    </button>
-                  ) : (
-                    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <button type="button" aria-label="Add filter"
-                          onClick={() => setFilterBarVisible(true)}
-                          className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-interactive-hover-foreground hover:bg-interactive-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <i className="fa-light fa-filter text-[13px]" aria-hidden="true" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel className="text-xs">Filter by field</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {filterableCols.map(c => (
-                          <DropdownMenuItem key={c.key} onClick={() => addFilter(c.key)}>
-                            {c.filter?.icon && <i className={`fa-light ${c.filter.icon}`} aria-hidden="true" />}
-                            {c.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {activeFilters.length > 0
-                  ? (filterBarVisible ? "Hide filters" : "Show filters")
-                  : "Filter"}
-              </TooltipContent>
-            </Tooltip>
           </>
         )}
 
@@ -639,6 +602,8 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   toolbarSlot?: (state: ReturnType<typeof useTableState<TData>>) => React.ReactNode
   /** Slot rendered inside the floating bulk-action bar (after the "N selected" label) */
   bulkActionsSlot?: (selected: Set<string | number>, rows: TData[]) => React.ReactNode
+  /** When true, suppresses the floating bulk-action bar entirely */
+  hideBulkActions?: boolean
   /** Optional "add new row" row text — pass false to hide */
   addRowLabel?: string | false
   /** Custom option-value renderer for filter pills */
@@ -659,6 +624,27 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   groupLabels?: Record<string, string>
   /** Ordered list of group keys; rows not in any listed group sort at the end. */
   groupOrder?: string[]
+  /** Optional leading icon per group key, rendered before the group label (PCE extension). */
+  groupIcons?: Record<string, React.ReactNode>
+  /**
+   * Optional per-group header band styling (PCE extension) — background +
+   * color applied to the group divider row's cells; label, icon and record
+   * count inherit the color. Use AA-safe tinted pairs (e.g. the
+   * --icon-disc-* bg tokens with their --chip-* inks).
+   */
+  groupHeaderStyles?: Record<string, React.CSSProperties>
+  /**
+   * When false, table toolbar and grid omit `mx-4 lg:mx-6` / `px-4 lg:px-6` insets.
+   * Use on embedded surfaces where the page shell or content rail already pads
+   * horizontally (e.g. wizard steps). Mirrors the DS DataTable API (v0.6.55).
+   */
+  edgeInset?: boolean
+  /**
+   * When false, header cells drop `position: sticky; top: 0`. Use when the
+   * table scrolls with the page (no owned scroll region) — a sticky header
+   * there detaches and floats over rows. Pinned-column stickiness is kept.
+   */
+  stickyHeader?: boolean
 }
 
 type DataTableInnerProps<TData extends Record<string, unknown>> = DataTableExtendedProps<TData> & {
@@ -677,12 +663,17 @@ function DataTableInner<TData extends Record<string, unknown>>({
   defaultSort,
   toolbarSlot,
   bulkActionsSlot,
+  hideBulkActions = false,
   addRowLabel = false,
   renderFilterOptionValue,
   hasFooter = false,
   conditionalRules,
   showColumnHeaders = true,
   state,
+  groupIcons,
+  groupHeaderStyles,
+  edgeInset = true,
+  stickyHeader = true,
 }: DataTableInnerProps<TData>) {
   const {
     sortRules, setSortRules,
@@ -783,13 +774,14 @@ function DataTableInner<TData extends Record<string, unknown>>({
         renderFilterOptionValue={renderFilterOptionValue}
         toolbarSlot={toolbarSlot}
         searchAriaLabel="Search table"
+        edgeInset={edgeInset}
       />
 
       {/* ── Table ────────────────────────────────────────────────────────── */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={cn("mx-4 lg:mx-6 overflow-x-auto border border-border", hasFooter ? "rounded-t-lg" : "rounded-lg")}
+        className={cn("overflow-x-auto border border-border", edgeInset && "mx-4 lg:mx-6", hasFooter ? "rounded-t-lg" : "rounded-lg")}
       >
         <table
           className="w-full text-sm border-separate border-spacing-0"
@@ -822,10 +814,10 @@ function DataTableInner<TData extends Record<string, unknown>>({
                     onDragOver={isFree  ? e => handleDragOver(col.key, e)  : undefined}
                     onDrop={isFree      ? () => handleDrop(col.key)        : undefined}
                     onDragEnd={isFree   ? handleDragEnd                    : undefined}
-                    style={stickyStyle(col.key, true)}
+                    style={stickyStyle(col.key, stickyHeader)}
                     className={cn(
                       "group/th relative h-9 px-3 text-left align-middle select-none",
-                      "text-xs font-medium text-muted-foreground tracking-wide",
+                      "text-xs font-medium text-muted-foreground",
                       "bg-dt-header-bg border-b border-border",
                       showGridlines && (!isEdgePinCol
                         ? "border-r border-border last:border-r-0"
@@ -836,8 +828,19 @@ function DataTableInner<TData extends Record<string, unknown>>({
                       isEdgePinCol && stickyShadow(effectivePins[col.key])
                     )}
                   >
-                    <div className="flex items-center justify-between gap-1 min-w-0">
-                      <div className="flex items-center min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        "flex items-center min-w-0",
+                        /* Select column: center against the full cell so the
+                           header checkbox shares the body rows' exact x —
+                           the justify-between + gap scaffolding (for filter/
+                           menu slots) shifts it left otherwise. */
+                        col.key === "select"
+                          ? "justify-center"
+                          : "justify-between gap-1",
+                      )}
+                    >
+                      <div className={cn("flex items-center min-w-0", col.key !== "select" && "flex-1")}>
                         {col.header ? (
                           col.header()
                         ) : col.key === "select" ? (
@@ -1028,30 +1031,96 @@ function DataTableInner<TData extends Record<string, unknown>>({
 
           {/* ── Table body ───────────────────────────────────────────────── */}
           <tbody>
-            {(pagedRows !== rows
+            {(groupBy == null
               ? [{ groupKey: null as string | null, groupLabel: null as string | null, rows: pagedRows }]
               : groupedRows
             ).map(({ groupKey, groupLabel, rows: groupRows }) => (
               <React.Fragment key={groupKey ?? "__all__"}>
-                {groupLabel && (
-                  <tr>
-                    <td
-                      colSpan={displayCols.length}
-                      className={cn(
-                        "px-4 py-1.5 text-xs font-semibold text-muted-foreground tracking-wide bg-dt-group-bg select-none sticky left-0",
-                        "border-b border-border",
+                {groupLabel && (() => {
+                  const groupStyle = groupKey != null ? groupHeaderStyles?.[groupKey] : undefined
+                  const groupCellBase = cn(
+                    "py-1.5 text-xs font-semibold select-none border-b border-border",
+                    // A tinted band supplies its own bg + ink; default stays muted.
+                    groupStyle ? undefined : "text-muted-foreground bg-dt-group-bg",
+                  )
+                  const hasSelectCell = selectable && displayCols[0]?.key === "select"
+                  /* Group select-all (PCE extension) — toggles every row in the section. */
+                  const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
+                  const all = ids.length > 0 && ids.every(id => selected.has(id))
+                  const some = ids.some(id => selected.has(id))
+                  const groupCheckbox = selectable && (
+                    <Checkbox
+                      checked={all ? true : some ? "indeterminate" : false}
+                      onCheckedChange={() => {
+                        const n = new Set(selected)
+                        if (all) ids.forEach(id => n.delete(id))
+                        else ids.forEach(id => n.add(id))
+                        setSelected(n)
+                      }}
+                      aria-label={`Select all ${groupLabel ?? "group"} rows`}
+                    />
+                  )
+                  const labelContent = (
+                    <>
+                      {groupKey != null && groupIcons?.[groupKey] != null && (
+                        <span className="mr-1.5 inline-flex">{groupIcons[groupKey]}</span>
                       )}
-                    >
                       {groupLabel}
                       {/* WCAG 2.1 AA fix 2026-05-11: opacity-60 on muted-foreground
                          drops to 2.57:1 contrast (visual-review caught). Using
-                         text-muted-foreground at full opacity hits 4.6:1+. */}
-                      <span className="ml-2 font-normal normal-case tracking-normal text-muted-foreground">
+                         text-muted-foreground at full opacity hits 4.6:1+.
+                         On a tinted band the count inherits the band ink instead
+                         (same rule: full opacity, no alpha tricks). */}
+                      <span className={cn(
+                        "ml-2 text-[12px] font-normal normal-case tracking-normal",
+                        groupStyle ? undefined : "text-muted-foreground",
+                      )}>
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
-                    </td>
-                  </tr>
-                )}
+                    </>
+                  )
+                  return (
+                    <tr>
+                      {hasSelectCell ? (
+                        <>
+                          {/* Own select cell (same px-3 + centered anatomy as the
+                             body select cells) so the checkbox shares their exact
+                             x — a colSpan label cell can never line up because
+                             fixed-layout stretching redistributes column widths. */}
+                          <td className={cn(groupCellBase, "px-3 sticky left-0 z-10")} style={groupStyle}>
+                            <div
+                              className="flex items-center justify-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {groupCheckbox}
+                            </div>
+                          </td>
+                          <td colSpan={displayCols.length - 1} className={cn(groupCellBase, "px-3")} style={groupStyle}>
+                            {/* The colSpan cell spans the full table width, so on a
+                               horizontal scroll the label rode off-screen leaving a
+                               blank colored band. The inner sticky span pins the
+                               text to the visible edge (past the 40px select col)
+                               while the cell itself scrolls. */}
+                            <span className="sticky inline-flex items-center" style={{ left: 52 }}>
+                              {labelContent}
+                            </span>
+                          </td>
+                        </>
+                      ) : (
+                        <td colSpan={displayCols.length} className={cn(groupCellBase, "px-3 sticky left-0")} style={groupStyle}>
+                          {selectable && (
+                            <span className="mr-2 inline-flex align-middle" onClick={(e) => e.stopPropagation()}>
+                              {groupCheckbox}
+                            </span>
+                          )}
+                          <span className="sticky inline-flex items-center" style={{ left: 12 }}>
+                            {labelContent}
+                          </span>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })()}
                 {groupRows.map((row, rowIndex) => {
                   const rowId = getRowId(row, rowIndex, getRowIdProp)
                   const isSelected = selected.has(rowId)
@@ -1214,7 +1283,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
       </div>
 
       {/* ── Floating bulk-action bar ──────────────────────────────────────── */}
-      {anySelected && (
+      {!hideBulkActions && anySelected && (
         <div
           role="status"
           aria-live="polite"

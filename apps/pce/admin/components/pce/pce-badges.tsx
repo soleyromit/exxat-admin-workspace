@@ -1,92 +1,91 @@
 'use client'
 
-import { Badge } from '@exxat/ds/packages/ui/src'
-import type { SurveyStatus, TemplateSection } from '@/lib/pce-mock-data'
-import { SECTION_ABBREV } from '@/lib/pce-mock-data'
+import { StatusBadge } from '@exxatdesignux/ui'
+import type { StatusBadgeTone } from '@exxatdesignux/ui'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import type { SurveyStatus } from '@/lib/pce-mock-data'
+import type { StatusTint } from '@/lib/list-status-badges'
+import {
+  LIST_HUB_STATUS_TINT_SUCCESS,
+  LIST_HUB_STATUS_TINT_WARNING,
+  LIST_HUB_STATUS_TINT_NEUTRAL,
+  LIST_HUB_STATUS_TINT_INFO,
+  LIST_HUB_STATUS_TINT_PLANNED,
+  LIST_HUB_STATUS_TINT_COMPLETED,
+} from '@/lib/list-status-badges'
 
-/* Variant carries the semantics; bg/fg/dot carry the product-design brand tint.
- *   - default  → state has user attention (pending review, active collecting)
- *   - outline  → de-emphasized state (draft, closed)
- *   - secondary→ neutral informational state (released)
- * No destructive used — per memory feedback_aarti_no_red: no red in status viz.
- */
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'ghost' | 'link'
+// ── CourseOffering status ─────────────────────────────────────────────────────
+/** AI sentiment chips — one vocabulary for every comment / written-response
+ *  surface ('concern' renders amber "Constructive", never red). */
+export const SENTIMENT_CHIP = {
+  positive: { label: 'Positive', tone: 'success' },
+  concern: { label: 'Constructive', tone: 'warning' },
+  neutral: { label: 'Neutral', tone: 'neutral' },
+} as const satisfies Record<string, { label: string; tone: StatusBadgeTone }>
 
-const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant; bg: string; fg: string; dot: string }> = {
-  draft: {
-    label: 'Draft',
-    variant: 'outline',
-    bg: 'var(--pce-status-draft-bg)',
-    fg: 'var(--pce-status-draft-fg)',
-    dot: 'var(--pce-status-draft-fg)',
-  },
-  active: {
-    label: 'Scheduled',
-    variant: 'default',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-    fg: 'var(--brand-color-dark)',
-    dot: 'var(--brand-color)',
-  },
-  collecting: {
-    label: 'Ongoing',
-    variant: 'default',
-    bg: 'var(--pce-status-collecting-bg)',
-    fg: 'var(--pce-status-collecting-fg)',
-    dot: 'var(--pce-status-collecting-dot)',
-  },
-  pending_review: {
-    label: 'Closed, Pending Review',
-    variant: 'default',
-    bg: 'var(--pce-status-pending-bg)',
-    fg: 'var(--pce-status-pending-fg)',
-    dot: 'var(--pce-status-pending-fg)',
-  },
-  released: {
-    label: 'Closed, Results Available',
-    variant: 'secondary',
-    bg: 'var(--pce-status-released-bg)',
-    fg: 'var(--pce-status-released-fg)',
-    dot: 'var(--pce-status-released-fg)',
-  },
-  closed: {
-    label: 'Closed',
-    variant: 'outline',
-    bg: 'var(--muted)',
-    fg: 'var(--muted-foreground)',
-    dot: 'var(--muted-foreground)',
-  },
+export const OFFERING_STATUS_BADGE: Record<string, { tint: StatusTint; icon: string; label: string }> = {
+  planned:   { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar-days', label: 'Planned'   },
+  active:    { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',  label: 'Active'    },
+  completed: { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-flag-checkered',label: 'Completed' },
+  archived:  { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-box-archive',   label: 'Archived'  },
+}
+export function OfferingStatusBadge({ status }: { status: string }) {
+  const s = OFFERING_STATUS_BADGE[status] ?? OFFERING_STATUS_BADGE.active
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+}
+
+// ── Student enrollment status ─────────────────────────────────────────────────
+export const ENROLLMENT_STATUS_BADGE: Record<string, { tint: StatusTint; icon: string; label: string }> = {
+  enrolled:   { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',  label: 'Enrolled'   },
+  graduated:  { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-graduation-cap',label: 'Graduated'  },
+  withdrawn:  { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-circle-xmark',  label: 'Withdrawn'  },
+  'on-leave': { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-circle-pause',  label: 'On Leave'   },
+}
+export function EnrollmentStatusBadge({ status }: { status: string }) {
+  const s = ENROLLMENT_STATUS_BADGE[status] ?? ENROLLMENT_STATUS_BADGE.enrolled
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+}
+
+// ── Survey status ─────────────────────────────────────────────────────────────
+// ONE vocabulary across the app (2026-07-08 unification — the dashboard, hub,
+// and results pages previously ran three string sets for the same states):
+// Draft → Scheduled → Live → In review → Released.
+export const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon: string; label: string }> = {
+  draft:          { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-pen-ruler',      label: 'Draft'     },
+  scheduled:      { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar',       label: 'Scheduled' },
+  active:         { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'      },
+  collecting:     { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'      },
+  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'In review' },
+  closed:         { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'In review' },
+  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-circle-check',   label: 'Released'  },
 }
 
 export function SurveyStatusBadge({ status }: { status: SurveyStatus }) {
-  const s = STATUS_CONFIG[status]
-  return (
-    <Badge
-      variant={s.variant}
-      data-status={status}
-      className="rounded gap-1.5 whitespace-nowrap font-medium border-0"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      <span
-        style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: s.dot, display: 'inline-block', flexShrink: 0 }}
-        aria-hidden="true"
-      />
-      {s.label}
-    </Badge>
-  )
+  const s = SURVEY_STATUS_BADGE[status]
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
 }
 
-export function TemplateSectionChips({ sections }: { sections: TemplateSection[] }) {
-  return (
-    <div className="flex gap-1">
-      {sections.map(s => (
-        <Badge
-          key={s}
-          variant="outline"
-          className="rounded font-mono border-border text-[10px] px-[5px] py-[1px]"
-        >
-          {SECTION_ABBREV[s]}
-        </Badge>
-      ))}
-    </div>
-  )
+// ── DS OS survey status badge ─────────────────────────────────────────────────
+// Same canonical labels/icons as SURVEY_STATUS_BADGE, rendered through the DS
+// StatusBadge organism (semantic tone) instead of the local ListHubStatusBadge.
+// New surfaces (dashboard, /results) use this; existing hubs migrate in a sweep.
+const SURVEY_STATUS_TONE: Record<SurveyStatus, StatusBadgeTone> = {
+  draft:          'neutral',
+  scheduled:      'info',
+  active:         'success',
+  collecting:     'success',
+  pending_review: 'warning',
+  closed:         'warning',
+  released:       'success',
+}
+
+export function SurveyStatusBadgeOS({
+  status,
+  size = 'sm',
+}: {
+  status: SurveyStatus
+  size?: 'sm' | 'md'
+}) {
+  const s = SURVEY_STATUS_BADGE[status]
+  return <StatusBadge label={s.label} tone={SURVEY_STATUS_TONE[status]} icon={s.icon} size={size} />
 }

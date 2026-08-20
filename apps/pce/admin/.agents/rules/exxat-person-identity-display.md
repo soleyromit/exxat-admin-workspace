@@ -1,0 +1,50 @@
+---
+description: Exxat DS — avatar + name + email when showing a person; omit email in dense contexts (e.g. board cards).
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-person-identity-display.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — person identity (name + email)
+
+Use this when rendering **a known person** (user, collaborator, author roster row, invitee, etc.) — not anonymous counts or system actors.
+
+## MUST (when email is available)
+
+1. **Primary** — Display name (or given + family name) as the dominant line.
+2. **Avatar** — Use **`AvatarInitials`** / the same primitives as **`PageHeader`** collaborator stack and **team** roster patterns (initials from display name via **`initialsFromDisplayName`** where applicable).
+3. **Secondary** — Work email (or login id) on a **muted** second line **under** the name, smaller type (`text-xs` / `text-muted-foreground`), truncated with **`truncate`** / **`min-w-0`** when the container is narrow.
+
+## Context: when **not** to show email
+
+Dense or width-constrained surfaces **MUST NOT** squeeze email if it harms scanability or layout:
+
+- **Board / kanban cards** — title row, card trailing, or narrow columns: **avatar + name (or initials chip) only**; skip the email line. Prefer a **Tip** on the avatar/name with full email for discovery if the card is interactive.
+- **Icon-only rails** — avatar only + tooltip with name + email.
+- **Single-line table cells** — if the column is not “Person”, only show what fits (e.g. name + Tip); do not wrap email into a second line inside a 1-line cell unless the column is dedicated to identity.
+
+## Table / list / drawer / inspector
+
+- **Dedicated person column** or **profile / invite / access** surfaces — show **avatar + name + email** (stacked or name with email below), consistent with **`InviteCollaboratorsDrawer`** and **`PageHeader`** collaboration variant.
+- **Example:** `LibraryTable` **Author** — `AvatarInitials`, **primary name** (`text-sm font-medium`), **muted `text-xs` email** with optional `mailto:` (row click does not navigate when the link is used).
+
+## Avatar rows — **never overlapping**
+
+When multiple people share a row (face rail, reviewer pile, attendee list, collaborator stack):
+
+- **MUST** render avatars **side-by-side** with a small gap (`gap-1` / `gap-1.5`) — same pattern as the **`PageHeader`** collaboration variant.
+- **MUST NOT** overlap avatars (Slack / GitHub face piles with negative margins like `-space-x-2` and ring-on-background separators). Ring contrast is fragile in dark mode, click targets stack, and screen readers announce ambiguous groupings.
+- **`AvatarGroup`** in **`packages/ui`** already ships the non-overlap default (`flex items-center gap-1.5`). Pair with **`AvatarGroupCount`** for the **`+N`** overflow chip, wrapped in a **`Tip`** that names the hidden people. Each visible avatar gets its own **`Tip`** with the person’s name (per **§8.6 (Case B)** in **`AGENTS.md`**).
+
+## MUST NOT
+
+- Show raw email as the only visible identifier when a display name exists (unless the product context is strictly technical, e.g. audit log “principal” column).
+- Use a different avatar size/shape for the same person between list and detail without a deliberate density tier.
+- Restore an overlapping face pile by adding back `-space-x-*` / negative margins / `*:ring-*` to **`AvatarGroup`** or any ad-hoc row of avatars.
+
+## See also
+
+- **`.agents/rules/exxat-table-column-cells.md`** — data point → table cell (person avatar column, status, progress, …).
+- **`.agents/rules/exxat-collaboration-access.md`** — face rail, invite sheet, access roster.
+- **`.agents/skills/exxat-collaboration-access/SKILL.md`**
+- **`./AGENTS.md`** collaboration + list hub patterns where relevant.

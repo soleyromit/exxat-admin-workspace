@@ -3,7 +3,7 @@
 /**
  * Table Properties Drawer (stripped vendor) — PCE.
  *
- * Vendored 2026-05-11 from `exxat-ds/apps/web/components/table-properties/`
+ * Vendored 2026-05-11 from `@exxatdesignux/ui — vendored from DS web app table-properties/`
  * per `docs/governance/component-depth-audits/organisms-templates.md`
  * + `docs/governance/ds-adoption.md` (kind="vendor").
  *
@@ -39,7 +39,7 @@ import {
   SheetTitle,
   Tip,
   ToggleSwitch,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import { FilterDateCalendar } from "@/components/data-table/filter-date-calendar"
 import {
   type ActiveFilter,
@@ -450,7 +450,7 @@ function FilterPanel({
                       size="xs"
                       onClick={() => onToggleFilterConnector(leftId)}
                       className={cn(
-                        "shrink-0 h-auto px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
+                        "shrink-0 h-auto px-2.5 py-0.5 text-xs font-semibold",
                         "bg-muted/40 text-muted-foreground hover:bg-interactive-hover hover:text-interactive-hover-foreground",
                       )}
                       aria-label={connector === "and"
@@ -560,7 +560,7 @@ function FilterCard({
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-md border border-border overflow-hidden">
       <div className="flex items-start justify-between px-3 pt-2.5 pb-2 gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground">{fieldDef.label}</p>
@@ -639,7 +639,7 @@ function FilterCard({
                           checked ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background"
                         )}
                       >
-                        {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "7px" }} />}
+                        {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "7px" }} aria-hidden="true" />}
                       </span>
                       <span className="text-foreground">{opt.label}</span>
                     </div>
@@ -747,13 +747,13 @@ function SortPanel({
                   isOver && "ring-2 ring-ring bg-accent/30",
                 )}
               >
-                <div className="rounded-lg border border-border bg-background overflow-hidden">
+                <div className="rounded-md border border-border bg-background overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <DragHandleGripIcon className="text-[13px] text-muted-foreground/40" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {idx === 0 && (
-                          <span className="text-xs font-bold text-accent-foreground bg-accent rounded px-1 py-0.5 leading-none uppercase tracking-wide shrink-0">
+                          <span className="text-xs font-semibold text-accent-foreground bg-accent rounded px-1 py-0.5 leading-none shrink-0">
                             Primary
                           </span>
                         )}

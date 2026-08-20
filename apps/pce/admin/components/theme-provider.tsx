@@ -2,11 +2,10 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
-
-// Vendored from exxat-ds/apps/web/components/theme-provider.tsx (2026-05-12).
-// Slim copy — preserves the 'd' hotkey for light/dark toggle. next-themes
-// manages the `.dark` class on <html>; useAppTheme (from @exxat/ds) manages
-// brand / contrast / text-size attributes alongside.
+// Import from the SAME deep path DS components use (e.g. nav-user.tsx uses
+// "@exxatdesignux/ui/hooks/use-color-scheme"). The barrel export is a separate
+// module instance under turbopack → its context wouldn't satisfy their useTheme.
+import { ThemeProvider as DSThemeProvider } from "@exxatdesignux/ui/hooks/use-color-scheme"
 
 function ThemeProvider({
   children,
@@ -15,19 +14,26 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
       {...props}
     >
-      <ThemeHotkey />
-      {children}
+      {/* DS 0.6.55 components (NavUser, etc.) read ColorSchemeContext via the DS
+          useTheme — mount the DS ThemeProvider here in the client boundary. */}
+      <DSThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeHotkey />
+        {children}
+      </DSThemeProvider>
     </NextThemesProvider>
   )
 }
 
 function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
   return (
     target.isContentEditable ||
     target.tagName === "INPUT" ||
@@ -41,14 +47,30 @@ function ThemeHotkey() {
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
-      if (event.key.toLowerCase() !== "d") return
-      if (isTypingTarget(event.target)) return
+      if (event.defaultPrevented || event.repeat) {
+        return
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return
+      }
+
+      if (event.key.toLowerCase() !== "d") {
+        return
+      }
+
+      if (isTypingTarget(event.target)) {
+        return
+      }
+
       setTheme(resolvedTheme === "dark" ? "light" : "dark")
     }
+
     window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+    }
   }, [resolvedTheme, setTheme])
 
   return null
