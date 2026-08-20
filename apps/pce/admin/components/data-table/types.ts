@@ -67,6 +67,12 @@ export interface DataTableProps<TData extends Record<string, unknown>> {
   selectable?: boolean
   /** Enable global search */
   searchable?: boolean
+  /** When false, hides the entire toolbar row's query controls (search,
+   *  filter pills) and collapses its reserved height from the default
+   *  min-h-10 down to a slim min-h-0 bar. Use on small, already-scoped
+   *  tables (a handful of rows) where search/filter add nothing and the
+   *  toolbar's default height reads as dead space above the table. */
+  showQueryControls?: boolean
   /** Enable "Group by" feature */
   groupable?: boolean
   /** Custom empty state */

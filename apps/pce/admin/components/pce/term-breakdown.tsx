@@ -331,9 +331,9 @@ export function BreakdownRow({
         aria-hidden="true"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
           <p className="text-xs font-medium text-foreground">{title}</p>
-          {actions && !urgent && <div className="ms-auto -my-1 flex shrink-0 items-center gap-1">{actions}</div>}
+          {actions && !urgent && <div className="ms-auto flex shrink-0 items-center gap-1">{actions}</div>}
         </div>
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         {meta && (

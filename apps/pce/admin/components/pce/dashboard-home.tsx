@@ -1293,7 +1293,7 @@ function TermHistoryTable({
   if (rows.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-3" aria-label={label}>
+    <section className="flex flex-col gap-2" aria-label={label}>
       {/* Plain heading, always visible — no click-to-expand (Romit's catch,
           2026-08-19: the earlier single-trigger-Tabs disclosure hid Past/
           Future terms behind a collapsed toggle by default). Every row that
@@ -1308,18 +1308,17 @@ function TermHistoryTable({
         data={rows}
         columns={columns}
         getRowId={(row) => row.id}
-        /* DataTable's toolbar row is min-h-10 regardless of content — with
-           no toolbarSlot it rendered nothing but a lone search-toggle icon
-           floating at the far right, which read as a large dead gap between
-           the heading and the table (Romit's catch, 2026-08-19). A count
-           label (component-consistency.md §2: toolbarSlot is REQUIRED —
-           "always show count") fills that space with real information
-           instead of leaving it empty. */
-        toolbarSlot={() => (
-          <span className="text-xs text-muted-foreground">
-            {rows.length} {mode === 'past' ? 'past' : 'future'} term{rows.length === 1 ? '' : 's'}
-          </span>
-        )}
+        /* showQueryControls=false — DataTable's toolbar row defaults to
+           min-h-10 regardless of content; with search/filters hidden and no
+           toolbarSlot it still reserved that height as dead space between
+           the heading and the table (Romit's catch, 2026-08-19, x2: the
+           first fix filled the space with a count label, but the count
+           already lives on the heading's own Badge — two counts for one
+           number was the next thing flagged). showQueryControls collapses
+           the bar to its slim min-h-0 variant instead (threaded through as a
+           new opt-in prop on DataTable/DataTablePaginated — additive, every
+           other table's default behavior is unchanged). */
+        showQueryControls={false}
         pagination={{ pageSize: 25 }}
         edgeInset={false}
         stickyHeader={false}

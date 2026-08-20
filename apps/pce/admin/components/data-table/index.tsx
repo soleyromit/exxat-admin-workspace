@@ -672,6 +672,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   getRowSelectionLabel,
   selectable = true,
   searchable = true,
+  showQueryControls = true,
   emptyState,
   onRowClick,
   defaultSort,
@@ -791,6 +792,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
         state={state}
         columns={columns}
         searchable={searchable}
+        showQueryControls={showQueryControls}
         renderFilterOptionValue={renderFilterOptionValue}
         toolbarSlot={toolbarSlot}
         searchAriaLabel="Search table"
