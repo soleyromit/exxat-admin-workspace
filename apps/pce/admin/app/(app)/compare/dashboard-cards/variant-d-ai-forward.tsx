@@ -1,51 +1,74 @@
 'use client'
 
 // ============================================================================
-// Course Evaluation — Dashboard home, v8 (Aug 19 2026).
+// COMPARE VARIANT D — "priority-first" term-card triptych (throwaway; lives
+// beside the other /compare/* explorations until a direction is picked).
 //
-// IA: TERM LIFECYCLE MONITOR (Romit, from the live PCE dashboard — IA base per
-// pce-design-workflow; visuals mapped to DS, red → amber per aarti_no_red).
+// THESIS
+// Production's cards lead with computed facts (a response-rate bar, a coverage
+// %, then status-bucket rows each carrying their own action). This variant
+// adds ONE thing above them: a single prioritized "most important thing on this
+// card" callout, so the card answers "what should I do first" before it answers
+// "what are the numbers". The facts and their per-row actions stay exactly as
+// operable as production's.
 //
-//   1. Terms triptych — Current / Last term / Upcoming slot. Card internals
-//      are ported from the reviewed "priority-first" compare variant
-//      (app/(app)/compare/dashboard-cards/variant-d-ai-forward.tsx, review
-//      corrections landed Aug 19): each card leads with ONE prioritized
-//      `PriorityCallout` recommendation (plain threshold logic, not AI —
-//      labelled "Needs attention" / "Recommended" / "Status"), then a
-//      `LaneDivider` into the pulled-data facts (`FactStrip`) and a `Ledger`
-//      of `BreakdownRow`s, each keeping its own operable action (Set up /
-//      Manage / Remind / Review feedback) independent of the headline.
-//   2. Past terms / Future terms — two separately-headed, collapsed-by-default
-//      disclosure tables below the kanban (split from one merged "Past terms"
-//      table — Aug 19). Rows navigate to the term workspace.
+// NOT AI — AND IT NO LONGER CLAIMS TO BE (review correction, Aug 19).
+// The first cut of this file rendered the callout through `AiInsightCard` with
+// the fa-sparkles + `var(--brand-color)` affordance and the literal label
+// "AI insight". Nothing in this file calls a model. The callout is plain
+// deterministic threshold logic over helpers that already existed in
+// `pce-term-metrics.ts` (`liveAtRiskCodes`, `coveragePercent`,
+// `RESPONSE_TARGET`, `AT_RISK_THRESHOLD`, `auditTerm`) — an ordered candidate
+// list of real conditions, top one promoted to the headline, second demoted to
+// a muted "Then" line. Branding that as AI told the reader a model had looked
+// at their term when nothing had. It now renders as a plain callout labelled
+// for what it is ("Needs attention" / "Recommended" / "Status"), tinted with
+// the app's own reserved `LIST_HUB_STATUS_TINT_WARNING` status family rather
+// than an AI/brand tint. The "Based on …" citation line is KEPT — showing the
+// inputs a conclusion was computed from is honest regardless of what computed
+// it, and it is the only thing that makes the headline auditable.
 //
-// REMOVED from the dashboard (Romit: "too crowded"): KPI band, charts, and
-// the cross-term action rail — per-course viz + the full work queue live in
-// the term workspace (/course-evaluation/term/[id]); cross-term viz lives in
-// Analytics. ONE status vocabulary; this page says "evaluations", never
-// "surveys".
+// EVERY BUCKET ROW STAYS OPERABLE (review correction, Aug 19).
+// The first cut also stripped per-row actions ("the AI lane owns every verb").
+// That read as unfinished, not minimal: an admin needs to Remind one specific
+// live bucket, Extend one specific scheduled bucket, set up one specific draft
+// bucket, or review one specific closed bucket independently of whatever the
+// headline happens to point at. Rows are now the real production
+// `BreakdownRow` + `RowAction` from `components/pce/term-breakdown.tsx` — same
+// DS `Button variant="ghost" size="sm"` with the same icon vocabulary — so the
+// variant differs from production in HIERARCHY only, which is the thing
+// actually being compared.
+//   - The response-rate bar is kept (it is the product's #1 goal metric per
+//     Vishal, transcript 7a175890) but sits under the callout, as evidence.
+//   - Rows deliberately do NOT take `BreakdownRow`'s `urgent` wash here: the
+//     callout above already carries this card's one warning tint, and two
+//     stacked washes would flatten the hierarchy this variant exists to test.
+//   - No red anywhere (aarti_no_red): at-risk / behind-pace states use the
+//     reserved `LIST_HUB_STATUS_TINT_WARNING` amber family, same as production.
 // ============================================================================
 
-import { useMemo, useState, Suspense } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
   Badge,
   Button,
-  PageHeader,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   StatusBadge,
-  Card, CardContent, CardFooter, CardHeader, CardTitle,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   Tip,
 } from '@exxatdesignux/ui'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
-import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { AddTermDrawer, AddTermDatesDrawer } from '@/components/pce/add-term-drawer'
-
+import { BreakdownRow, RowAction } from '@/components/pce/term-breakdown'
+import { AddTermDatesDrawer } from '@/components/pce/add-term-drawer'
 import { ResponseProgressCell } from '@/components/pce/response-gauge'
-import { DataTablePaginated } from '@/components/data-table/pagination'
-import type { ColumnDef } from '@/components/data-table/types'
 import {
   LIST_HUB_STATUS_TINT_SUCCESS,
   LIST_HUB_STATUS_TINT_WARNING,
@@ -54,27 +77,37 @@ import {
 import { auditTerm } from '@/lib/pce-term-readiness'
 import { prismCoursesHref } from '@/lib/pce-course-readiness'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
-import { BreakdownRow, RowAction } from '@/components/pce/term-breakdown'
 import {
   RESPONSE_TARGET,
-  classifyTermWindow, snapshot, evalWindow, parseDate, breakdownFor, coveragePercent,
-  coverageLead, coverageCodes, scheduledLead, scheduledCountdown, liveLead, liveCountdown,
-  liveAtRiskCodes, weightedRate,
-  type TermSnapshot, type TermWindowPosition, type CourseBreakdown,
+  classifyTermWindow,
+  snapshot,
+  breakdownFor,
+  evalWindow,
+  parseDate,
+  coveragePercent,
+  coverageLead,
+  coverageCodes,
+  scheduledLead,
+  scheduledCountdown,
+  liveLead,
+  liveCountdown,
+  liveAtRiskCodes,
+  weightedRate,
+  type TermSnapshot,
+  type CourseBreakdown,
+  type TermWindowPosition,
 } from '@/lib/pce-term-metrics'
-import type { PceSurvey, ProgramTerm } from '@/lib/pce-mock-data'
+import type { ProgramTerm } from '@/lib/pce-mock-data'
 
-/* ── shared bits ──────────────────────────────────────────────────────────── */
+/* ── shared vocabulary (mirrors dashboard-home.tsx so the triptych reads the
+      same at a glance — only the card INTERIOR is the variant) ────────────── */
 
-/** The three window positions that render a kanban card — 'future' terms
- * (starting 30+ days out) never get a badge, they only surface in the
- * history tables below until they enter the Upcoming window. */
 type TermPosition = Exclude<TermWindowPosition, 'future'>
 
 const POSITION_BADGE: Record<TermPosition, { label: string; tone: StatusBadgeTone }> = {
-  current:  { label: 'Current',   tone: 'success' },
-  last:     { label: 'Last term', tone: 'neutral' },
-  upcoming: { label: 'Upcoming',  tone: 'info' },
+  current: { label: 'Current', tone: 'success' },
+  last: { label: 'Last term', tone: 'neutral' },
+  upcoming: { label: 'Upcoming', tone: 'info' },
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -82,7 +115,6 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const fmtDate = (d: string) =>
   parseDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-/** Date range — drops the redundant year on the start when both share one. */
 const fmtRange = (a: string, b: string) => {
   const sameYear = parseDate(a).getFullYear() === parseDate(b).getFullYear()
   const start = sameYear ? fmtDate(a).replace(/, \d{4}$/, '') : fmtDate(a)
@@ -90,11 +122,10 @@ const fmtRange = (a: string, b: string) => {
 }
 
 /* ── the recommendation model ──────────────────────────────────────────────
-   Ported from the reviewed compare variant (variant-d-ai-forward.tsx). A
-   `Rec` is never authored — it is assembled from a real condition that is
+   A `Rec` is never authored — it is assembled from a real condition that is
    already true in the data by plain `if` logic (no model, no inference).
-   `short` is the same fact compressed to one clause so a demoted candidate
-   can appear as the "Then" line without rewording. */
+   `short` is the same fact compressed to one clause so a demoted candidate can
+   appear as the "Then" line without rewording. */
 
 interface RecAction {
   label: string
@@ -110,8 +141,8 @@ interface Rec {
   headline: string
   /** Rendered as "Based on {basis}" — the show-your-work line. Always the real
    *  inputs the condition was evaluated against, never a confidence adjective.
-   *  The headline is only auditable because this line names the numbers it
-   *  came from. */
+   *  Kept from the first cut: the headline is only auditable because this line
+   *  names the numbers it came from. */
   basis: string
   /** One clause, for the "Then" line when this candidate is second. */
   short: string
@@ -225,7 +256,7 @@ function DataLaneLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-xs font-medium text-muted-foreground">{children}</p>
 }
 
-/** Small labelled figure. Deliberately compact — in this design the numbers
+/** Small labelled figure. Deliberately compact — in this variant the numbers
  *  are the evidence, not the headline. */
 function Fact({ label, value }: { label: string; value: string }) {
   return (
@@ -268,7 +299,7 @@ function Chips({
         <Badge
           key={code}
           variant="outline"
-          className="rounded-full px-2 py-0 text-xs font-medium"
+          className="rounded-full px-2 py-0 text-[11px] font-medium"
           style={
             atRisk?.has(code)
               ? {
@@ -284,10 +315,10 @@ function Chips({
       ))}
       {hidden.length > 0 && (
         <Tip label={hidden.join(', ')} side="top">
-          <span tabIndex={0} className="inline-flex outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <span tabIndex={0} className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Badge
               variant="outline"
-              className="cursor-default rounded-full border-dashed px-2 py-0 text-xs font-medium"
+              className="cursor-default rounded-full border-dashed px-2 py-0 text-[11px] font-medium"
               style={{ color: 'var(--primary)' }}
             >
               +{hidden.length} more
@@ -300,15 +331,15 @@ function Chips({
 }
 
 /** Date fact as its own small chip. Mirrors `RowCountdown` in
- *  term-breakdown.tsx (module-private there) so a countdown reads
- *  identically on both surfaces. */
+ *  term-breakdown.tsx (module-private there, and this variant may not modify a
+ *  production file) so a countdown reads identically on both surfaces. */
 function CountdownChip({ label, urgent = false }: { label: string; urgent?: boolean }) {
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium tabular-nums"
+      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums"
       style={{ color: urgent ? LIST_HUB_STATUS_TINT_WARNING.fg : 'var(--muted-foreground)' }}
     >
-      <i className="fa-light fa-clock" aria-hidden="true" />
+      <i className="fa-light fa-clock" aria-hidden="true" style={{ fontSize: 10 }} />
       {label}
     </span>
   )
@@ -336,11 +367,12 @@ function RowMeta({
 }
 
 /** Overflow trigger for a row's secondary action — pairs with one visible
- *  `RowAction primary`. term-breakdown.tsx's own `RowActionMenu` is
- *  module-private, so the anatomy (ghost `icon-sm` trigger, fa-ellipsis,
+ *  `RowAction primary`, exactly as production's rows do. term-breakdown.tsx's
+ *  own `RowActionMenu` is module-private and this variant is not allowed to
+ *  edit that file, so the anatomy (ghost `icon-sm` trigger, fa-ellipsis,
  *  `DropdownMenuItem asChild` → `Link`) is reproduced verbatim rather than
  *  re-designed — if that component is ever exported, delete this and import
- *  it instead. */
+ *  it. */
 function RowOverflowMenu({ items }: { items: { href: string; label: string; icon: string }[] }) {
   return (
     <DropdownMenu>
@@ -412,13 +444,7 @@ function TermCardShell({
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">{children}</CardContent>
-      {/* gap-2 — without it, a footer's flex-1 label fills 100% of the space
-          up to the link with zero gap between them; short labels (e.g. "13
-          courses in this term") leave slack inside their own box that reads
-          as a gap, but a label long enough to fill its grown box edge-to-edge
-          (Upcoming's "Eval window opens Aug 24, 2026") visually touches the
-          link with no separation at all (Romit's catch, 2026-08-19). */}
-      <CardFooter className="mt-auto gap-2">{footer}</CardFooter>
+      <CardFooter className="mt-auto">{footer}</CardFooter>
     </Card>
   )
 }
@@ -426,7 +452,8 @@ function TermCardShell({
 /** Footer link. The destination and the label are BOTH per-column: a finished
  *  term's real next step is reading results (analytics), not re-entering the
  *  operational workspace, and Upcoming vs Current shouldn't read as the same
- *  link twice. */
+ *  link twice — three identical "View details" links across the triptych was a
+ *  review finding, not a simplification. */
 function ViewDetailsLink({
   term,
   label = 'View details',
@@ -537,7 +564,9 @@ function currentRecs(
         `${plural(b.live.length, 'live evaluation')}`,
         /* Qualified deliberately: this is the LIVE-only weighted rate, which
            is a different number from the term-wide `snap.rate` printed in the
-           data lane below (that one includes closed courses). */
+           data lane below (that one includes closed courses). Two unlabelled
+           percentages on one card is the exact "conflicting content" failure
+           the production card's ninth-pass audit had to unwind. */
         liveRate != null ? `${liveRate}% average across live courses` : null,
         `${AT_RISK_THRESHOLD}% at-risk floor`,
         closing ? closing.toLowerCase() : null,
@@ -607,16 +636,15 @@ function currentRecs(
   ]
 }
 
-function CurrentTermCard({
+function CurrentTermCardAi({
   snap,
   breakdown,
-  noTemplates = false,
+  noTemplates,
   className,
 }: {
   snap: TermSnapshot
   breakdown: CourseBreakdown | null
-  /** No survey templates exist yet — evaluations are blocked on creating one. */
-  noTemplates?: boolean
+  noTemplates: boolean
   className?: string
 }) {
   const { term } = snap
@@ -774,19 +802,10 @@ function lastRecs(snap: TermSnapshot, b: CourseBreakdown | null): Rec[] {
 
   const recs: Rec[] = []
   const stragglers = b.notConfiguredCount + b.draft.length + b.scheduled.length
+  const closedRate = weightedRate(b.closed)
 
-  /* The ONLY genuinely wrong state for a finished term: courses that ended
-     without ever collecting. A healthy closed term (everything collected,
-     nothing outstanding) gets NO callout at all — the "closed at X%, review
-     results" and "nothing left to chase" recs used to render here too, but
-     both were pure restatement: the footer's own "View analytics" link
-     already goes to the exact same destination, and Term data below already
-     shows the same closed-count/response-rate numbers. A card-sized callout
-     that says nothing the rest of the card doesn't is exactly the "hypothetical
-     use case" clutter Romit flagged (2026-08-20: "remove this card" — the
-     healthy Fall 2025 card was showing "Recommended: review results" for a
-     term with zero real issues). `PriorityCallout` already renders nothing
-     when `recs` is empty, so simply not pushing a rec here is the fix. */
+  /* 1 — the one genuinely wrong state for a finished term: courses that ended
+         without ever collecting. Everything else here is informational. */
   if (stragglers > 0) {
     const codes = [
       ...b.notConfiguredCodes,
@@ -802,17 +821,39 @@ function lastRecs(snap: TermSnapshot, b: CourseBreakdown | null): Rec[] {
     })
   }
 
-  return recs
+  /* 2 — results exist and nobody has been pointed at them. */
+  if (b.closed.length > 0) {
+    recs.push({
+      headline:
+        closedRate != null
+          ? `The term closed at ${closedRate}% average response${closedRate >= RESPONSE_TARGET ? ', at or above target' : `, below the ${RESPONSE_TARGET}% target`}. Review results and share them with faculty.`
+          : 'Collection has finished. Review the results and share them with faculty.',
+      basis: `${b.closed.length} of ${plural(b.totalCourses, 'course')} closed${closedRate != null ? ` · ${closedRate}% weighted response` : ''}`,
+      short: closedRate != null ? `Closed at ${closedRate}% average response.` : 'Results are ready to review.',
+      action: {
+        label: 'View analytics',
+        href: `/analytics?tab=term&term=${encodeURIComponent(term.name)}`,
+      },
+      emphasis: false,
+    })
+  }
+
+  if (recs.length > 0) return recs
+  return [
+    calmRec(
+      'Nothing left to chase for this term.',
+      `${plural(b.totalCourses, 'course')} · ended ${fmtDate(term.endDate)}`,
+      'Nothing outstanding.',
+    ),
+  ]
 }
 
-function LastTermCard({
+function LastTermCardAi({
   snap,
   breakdown,
-  className,
 }: {
   snap: TermSnapshot
   breakdown: CourseBreakdown | null
-  className?: string
 }) {
   const { term } = snap
   const b = breakdown
@@ -833,7 +874,6 @@ function LastTermCard({
     <TermCardShell
       term={term}
       position="last"
-      className={className}
       metaTrailing={term.startDate && term.endDate ? fmtRange(term.startDate, term.endDate) : undefined}
       footer={
         <>
@@ -860,18 +900,32 @@ function LastTermCard({
           <Ledger
             rows={
               <>
-                {/* Setup/draft/scheduled stragglers are NOT their own rows here
-                    (unlike Current/Upcoming) — the term already ended, so
-                    "need setup" + a "Manage" action would imply ongoing
-                    configurability that doesn't exist for a closed window.
-                    The PriorityCallout above already names this exact
-                    population with closure-appropriate language ("the term
-                    ended with N courses that never collected — close them out
-                    or drop them") and a read-only "Open term workspace"
-                    action. Repeating it here as an actionable bucket both
-                    duplicated the callout AND contradicted it (Romit's catch,
-                    2026-08-19: "since the term is done why would there be a
-                    warning and again need a setup?"). */}
+                {setupCount > 0 && (
+                  <BreakdownRow
+                    icon="fa-list-check"
+                    tint={LIST_HUB_STATUS_TINT_WARNING}
+                    title={coverageLead(b.notConfiguredCount, b.draft.length) ?? ''}
+                    meta={<RowMeta codes={coverageCodes(b.notConfiguredCodes, b.draft)} />}
+                    actions={
+                      <RowAction href={workspaceHref('active')} primary icon="fa-pen-ruler">
+                        Manage
+                      </RowAction>
+                    }
+                  />
+                )}
+                {b.scheduled.length > 0 && (
+                  <BreakdownRow
+                    icon="fa-calendar-xmark"
+                    tint={LIST_HUB_STATUS_TINT_WARNING}
+                    title={`${plural(b.scheduled.length, 'course')} never opened`}
+                    meta={<RowMeta codes={b.scheduled.map((s) => s.courseCode)} />}
+                    actions={
+                      <RowAction href={workspaceHref('active')} primary icon="fa-pen-ruler">
+                        Manage
+                      </RowAction>
+                    }
+                  />
+                )}
                 {b.live.length > 0 && (
                   <BreakdownRow
                     icon="fa-circle-dot"
@@ -921,7 +975,13 @@ function LastTermCard({
 
 /* ── UPCOMING TERM — readiness / prep ─────────────────────────────────────── */
 
-function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: CourseBreakdown | null }) {
+function UpcomingCardAi({
+  snap,
+  breakdown,
+}: {
+  snap: TermSnapshot
+  breakdown: CourseBreakdown | null
+}) {
   const { term } = snap
   const b = breakdown
   const [datesOpen, setDatesOpen] = useState(false)
@@ -1118,312 +1178,34 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
   )
 }
 
-/* No term is collecting AND none scheduled next — a slim strip with the setup
- * action. (When an upcoming card is present it speaks for itself, so this
- * notice is suppressed; an absent LAST term needs no placeholder either.) */
-function NoActiveTermNotice({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
-      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <i className="fa-light fa-calendar-xmark text-muted-foreground" aria-hidden="true" />
-        No term is collecting right now
-      </span>
-      <span className="text-sm text-muted-foreground">
-        Set up a term to start collecting responses.
-      </span>
-      <Button variant="outline" size="sm" className="ms-auto" onClick={onAdd}>
-        Set up term
-      </Button>
-    </div>
-  )
-}
+/* ── the triptych ─────────────────────────────────────────────────────────── */
 
-/* ── term history (below the kanban, split into Past / Future) ────────────── */
-
-type TermRow = {
-  id: string
-  name: string
-  position: TermWindowPosition
-  academicYear: string
-  startDate: string
-  endDate: string
-  offerings: number
-  coverage: { surveyed: number; total: number } | null
-  rate: number | null
-} & Record<string, unknown>
-
-/** Row population for one history table. `position: 'last'` excludes
- *  `shownLastId` (the one Last-window term already shown as a kanban card —
- *  Vishal, transcript 7a175890: "last should be the first card", singular).
- *  `position: 'future'` is every term 30d+ out that hasn't entered the
- *  Upcoming window yet. */
-function termRowsFor(
-  terms: ProgramTerm[],
-  ce: PceSurvey[],
-  today: string,
-  position: 'last' | 'future',
-  shownLastId: string | null,
-): TermRow[] {
-  return [...terms]
-    .reverse()
-    .filter((t) => {
-      const pos = classifyTermWindow(t, today)
-      return position === 'last' ? pos === 'last' && t.id !== shownLastId : pos === 'future'
-    })
-    .map((t) => {
-      const snap = snapshot(t, ce)
-      return {
-        id: t.id,
-        name: t.name,
-        position: classifyTermWindow(t, today),
-        academicYear: t.academicYear,
-        startDate: t.startDate,
-        endDate: t.endDate,
-        offerings: snap.coverage?.total ?? 0,
-        coverage: snap.coverage,
-        rate: snap.rate,
-      }
-    })
-}
-
-/** Shared table anatomy for both history sections (split Aug 19 2026 — one
- *  merged "Past terms" table previously conflated two different populations,
- *  a finished term and one that hasn't started, under one label and one
- *  Actions verb). Only the label, row population, and Actions-column verb
- *  differ between "Past terms" (`mode="past"` — View analytics / View
- *  surveys) and "Future terms" (`mode="future"` — Schedule surveys). Table
- *  anatomy itself — columns, `getRowId`, pagination, row click, empty state —
- *  is unchanged from before the split. */
-function TermHistoryTable({
-  label,
-  rows,
-  mode,
-  emptyTitle,
-  emptyBody,
-}: {
-  label: string
-  rows: TermRow[]
-  mode: 'past' | 'future'
-  emptyTitle: string
-  emptyBody: string
-}) {
-  const router = useRouter()
-
-  const columns: ColumnDef<TermRow>[] = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: 'Term',
-        cell: (row) => (
-          <div className="flex flex-col">
-            <Link
-              href={`/course-evaluation/term/${row.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {row.name}
-            </Link>
-            <span className="text-xs text-muted-foreground">AY {row.academicYear.replace(/–20(\d\d)$/, '–$1')}</span>
-          </div>
-        ),
-      },
-      {
-        key: 'startDate',
-        label: 'Dates',
-        width: 190,
-        cell: (row) => (row.startDate && row.endDate ? fmtRange(row.startDate, row.endDate) : 'Not set yet'),
-      },
-      {
-        key: 'offerings',
-        label: 'Course offerings',
-        width: 130,
-        cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
-      },
-      {
-        key: 'coverage',
-        label: 'Evaluation coverage',
-        width: 160,
-        cell: (row) =>
-          row.coverage ? (
-            <span className="tabular-nums">
-              {row.coverage.total > 0 ? Math.round((row.coverage.surveyed / row.coverage.total) * 100) : 0}%
-              <span className="text-muted-foreground"> · {row.coverage.surveyed} of {row.coverage.total}</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
-      },
-      {
-        key: 'rate',
-        label: 'Response rate',
-        width: 130,
-        cell: (row) => (
-          <span className="tabular-nums">{row.rate != null ? `${row.rate}%` : '—'}</span>
-        ),
-      },
-      {
-        key: 'actions',
-        label: '',
-        width: 210,
-        /* This table's rows are all one `position` by construction (`past`
-           rows are always 'last', `future` rows are always 'future'), so the
-           `mode` prop — not `row.position` — decides the verb. Checking
-           `mode` here rather than trusting every row's `position` field stays
-           correct even if row population ever changes upstream. */
-        cell: (row) =>
-          mode === 'future' ? (
-            <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-              <Link href={`/surveys/push?term=${row.id}`}>Schedule surveys</Link>
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="default" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                <Link href={`/analytics?tab=term&term=${encodeURIComponent(row.name)}`}>View analytics</Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                <Link href={`/course-evaluation/term/${row.id}`}>View surveys</Link>
-              </Button>
-            </div>
-          ),
-      },
-    ],
-    [mode],
-  )
-
-  if (rows.length === 0) return null
-
-  return (
-    <section className="flex flex-col gap-3" aria-label={label}>
-      {/* Plain heading, always visible — no click-to-expand (Romit's catch,
-          2026-08-19: the earlier single-trigger-Tabs disclosure hid Past/
-          Future terms behind a collapsed toggle by default). Every row that
-          exists here is real history/roadmap, not overflow to hide. */}
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
-        <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium tabular-nums">
-          {rows.length}
-        </Badge>
-      </div>
-      <DataTablePaginated<TermRow>
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        /* DataTable's toolbar row is min-h-10 regardless of content — with
-           no toolbarSlot it rendered nothing but a lone search-toggle icon
-           floating at the far right, which read as a large dead gap between
-           the heading and the table (Romit's catch, 2026-08-19). A count
-           label (component-consistency.md §2: toolbarSlot is REQUIRED —
-           "always show count") fills that space with real information
-           instead of leaving it empty. */
-        toolbarSlot={() => (
-          <span className="text-xs text-muted-foreground">
-            {rows.length} {mode === 'past' ? 'past' : 'future'} term{rows.length === 1 ? '' : 's'}
-          </span>
-        )}
-        pagination={{ pageSize: 25 }}
-        edgeInset={false}
-        stickyHeader={false}
-        onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
-        emptyState={
-          <div className="flex flex-col items-center gap-2 py-8">
-            <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-            <p className="text-sm font-medium">{emptyTitle}</p>
-            <p className="text-xs text-muted-foreground">{emptyBody}</p>
-          </div>
-        }
-      />
-    </section>
-  )
-}
-
-/** Everything NOT on the kanban, as two separately-headed tables: "Past
- *  terms" (every Last-window term beyond the one shown as a kanban card) and
- *  "Future terms" (every term 30d+ out that hasn't entered the Upcoming
- *  window yet). Previously one merged table under a single "Past terms"
- *  label — split Aug 19 2026 so each population gets its own heading and its
- *  own Actions verb instead of a `row.position` ternary inside one table.
- *  Always visible, no collapse toggle (Romit's second catch, same day) — a
- *  disclosure gate hid real history/roadmap rows by default for no reason
- *  once the tables carry actual data. */
-function TermHistorySection({
-  ce, today, terms, shownLastId,
-}: {
-  ce: PceSurvey[]
-  today: string
-  terms: ProgramTerm[]
-  shownLastId: string | null
-}) {
-  const pastRows = useMemo(
-    () => termRowsFor(terms, ce, today, 'last', shownLastId),
-    [terms, ce, today, shownLastId],
-  )
-  const futureRows = useMemo(
-    () => termRowsFor(terms, ce, today, 'future', shownLastId),
-    [terms, ce, today, shownLastId],
-  )
-
-  return (
-    <>
-      <TermHistoryTable
-        label="Past terms"
-        rows={pastRows}
-        mode="past"
-        emptyTitle="No past terms yet"
-        emptyBody="Completed terms will appear here as history."
-      />
-      <TermHistoryTable
-        label="Future terms"
-        rows={futureRows}
-        mode="future"
-        emptyTitle="No future terms yet"
-        emptyBody="Terms starting more than 30 days out will appear here until they enter the Upcoming window."
-      />
-    </>
-  )
-}
-
-/* ── page ─────────────────────────────────────────────────────────────────── */
-
-function DashboardHomeInner() {
+export default function VariantAiForward() {
   const { surveys, programTerms, templates } = usePce()
-  const [addTermOpen, setAddTermOpen] = useState(false)
 
-  /* Terms come from STATE (not the static mock) so a term finished in the
-   * setup wizard appears here as a card immediately. */
   const ordered = useMemo(
     () => [...programTerms].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [programTerms],
   )
-  /* Stable within one mount — every classification call below uses this same
-   * instant, so terms can't drift into different windows mid-render. */
   const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
-
   const ce = useMemo(
     () => surveys.filter((s) => !s.surveyType || s.surveyType === 'course_evaluation'),
     [surveys],
   )
 
-  /* Any of Current/Last/Upcoming can now hold more than one term (Aug 19 2026
-   * feedback) — no more picking a single "the" current term. Terms starting
-   * 30+ days out ('future') deliberately aren't in any of these three; they
-   * live in the history table below until they enter the Upcoming window. */
+  /* Term selection mirrors dashboard-home.tsx EXACTLY — this variant
+     redesigns the card, not which term lands in which slot. Last is capped to
+     the single most recently ended term (Vishal, transcript 7a175890: "last
+     should be the first card" — singular). */
   const currentTerms = useMemo(
     () => ordered.filter((t) => classifyTermWindow(t, today) === 'current'),
     [ordered, today],
   )
-  /* Last is capped to ONE card (Vishal, transcript 7a175890: "last should be
-   * the first card" — singular, unlike Current/Upcoming which can genuinely
-   * have several concurrent programs). Every other Last-window term falls
-   * into the history table via TermHistorySection's `shownLastId` exclusion
-   * instead of stacking a second card here. */
-  const lastCandidates = useMemo(
-    () => ordered.filter((t) => classifyTermWindow(t, today) === 'last'),
-    [ordered, today],
-  )
   const lastTerms = useMemo(() => {
-    const mostRecent = [...lastCandidates].sort((a, b) => b.endDate.localeCompare(a.endDate))[0]
+    const candidates = ordered.filter((t) => classifyTermWindow(t, today) === 'last')
+    const mostRecent = [...candidates].sort((a, b) => b.endDate.localeCompare(a.endDate))[0]
     return mostRecent ? [mostRecent] : []
-  }, [lastCandidates])
+  }, [ordered, today])
   const upcomingTerms = useMemo(
     () => ordered.filter((t) => classifyTermWindow(t, today) === 'upcoming'),
     [ordered, today],
@@ -1433,134 +1215,52 @@ function DashboardHomeInner() {
   const lastSnaps = useMemo(() => lastTerms.map((t) => snapshot(t, ce)), [lastTerms, ce])
   const upcomingSnaps = useMemo(() => upcomingTerms.map((t) => snapshot(t, ce)), [upcomingTerms, ce])
 
-  /* Breakdown Mode (Cases 4–9) — null whenever the card is still in one of
-   * its single-CTA empty states (no courses / no evaluations yet), which the
-   * cards themselves check first via `snap.coverage`/`snap.total`. */
   const breakdownForSnap = (snap: TermSnapshot) => breakdownFor(snap.term, ce)
 
-  /* First run = no terms at all (not merely no surveys) — a term created but
-   * not yet dated/populated still gets its own card, not the empty state. */
-  const firstRun = programTerms.length === 0
+  if (currentSnaps.length === 0 && lastSnaps.length === 0 && upcomingSnaps.length === 0) {
+    return (
+      <Card className="bg-muted/30 shadow-none">
+        <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <i className="fa-light fa-calendar-xmark text-muted-foreground" aria-hidden="true" />
+            No term is in the last, current, or upcoming window
+          </span>
+          <span className="text-sm text-muted-foreground">
+            Switch demo accounts, or set up a term on the dashboard, to populate this variant.
+          </span>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <div className="flex flex-col flex-1">
-      {/* Scope in the title — two dashboards live in this shell (Course
-          Evaluation vs Programmatic Surveys); a bare "Dashboard" gave no
-          orientation (Romit 2026-07-19). Matches the command-menu label. */}
-      <SiteHeader title="Course Evaluation Dashboard" />
-      <PageHeader
-        title="Course Evaluation Dashboard"
-        subtitle="Set up evaluations, track response rate, and remind"
-        actions={
-          /* Before any term exists, "Set up Evaluations" is premature (there's
-             nothing to evaluate) and duplicates the empty state's own CTA — so
-             the header stays clean and the single "Set up term" action lives in
-             the empty state. Both header actions return once a term exists. */
-          firstRun ? undefined : (
-            <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
-              <Button variant="outline" size="default" onClick={() => setAddTermOpen(true)}>
-                Set up term
-              </Button>
-              <Button variant="default" size="default" asChild>
-                <Link href="/surveys/push">Set up Evaluations</Link>
-              </Button>
-            </div>
-          )
-        }
-      />
-
-      <div className="flex-1 px-7 py-4">
-        {firstRun ? (
-          <FirstRun onAdd={() => setAddTermOpen(true)} />
-        ) : (
-          <div className="flex flex-col gap-6">
-            {/* ── Terms kanban — Last / Current / Upcoming (Aug 19 2026 feedback:
-                 fixed left-to-right order; each column can hold more than one
-                 card). Current stays the wide hero column since it's still the
-                 working surface — it just isn't the leftmost one anymore. ── */}
-            <h2 className="sr-only">Terms</h2>
-            {/* No active term → a slim notice ONLY when there's no upcoming
-                card to convey it (the Upcoming card's badge + setup CTA already
-                say "nothing's collecting, this is next"). */}
-            {currentSnaps.length === 0 && upcomingSnaps.length === 0 && (
-              <NoActiveTermNotice onAdd={() => setAddTermOpen(true)} />
-            )}
-            {/* Each column gets an explicit grid-column line, not just source
-                order — a demo account with only a Current term (Last/Upcoming
-                both empty) left Current as the grid's ONLY child, and CSS
-                Grid auto-placement dropped it into track 1 (the narrow 1fr
-                column) instead of its intended 1.35fr hero track. Found live
-                on Brightwater OT (Case 4, single-term account): the card
-                rendered ~100px narrower than intended, which is what made
-                the footer summary + "View Details" both wrap to two lines —
-                not a text-length problem, a layout one. */}
-            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1fr_1.35fr_1fr]">
-              {lastSnaps.length > 0 && (
-                <div className="flex flex-col gap-4 lg:[grid-column:1]">
-                  {lastSnaps.map((s) => (
-                    <LastTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                  ))}
-                </div>
-              )}
-              {currentSnaps.length > 0 && (
-                <div className="flex flex-col gap-4 lg:[grid-column:2]">
-                  {currentSnaps.map((s) => (
-                    <CurrentTermCard
-                      key={s.term.id}
-                      snap={s}
-                      breakdown={breakdownForSnap(s)}
-                      noTemplates={templates.length === 0}
-                    />
-                  ))}
-                </div>
-              )}
-              {upcomingSnaps.length > 0 && (
-                <div className="flex flex-col gap-4 lg:[grid-column:3]">
-                  {upcomingSnaps.map((s) => (
-                    <UpcomingCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* ── Term history — Past terms + Future terms, separately headed ── */}
-            <TermHistorySection
-              ce={ce}
-              today={today}
-              terms={ordered}
-              shownLastId={lastTerms[0]?.id ?? null}
+    <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1fr_1.35fr_1fr]">
+      {lastSnaps.length > 0 && (
+        <div className="flex flex-col gap-4 lg:[grid-column:1]">
+          {lastSnaps.map((s) => (
+            <LastTermCardAi key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
+          ))}
+        </div>
+      )}
+      {currentSnaps.length > 0 && (
+        <div className="flex flex-col gap-4 lg:[grid-column:2]">
+          {currentSnaps.map((s) => (
+            <CurrentTermCardAi
+              key={s.term.id}
+              snap={s}
+              breakdown={breakdownForSnap(s)}
+              noTemplates={templates.length === 0}
             />
-          </div>
-        )}
-      </div>
-
-      <AddTermDrawer open={addTermOpen} onOpenChange={setAddTermOpen} />
-    </div>
-  )
-}
-
-export function DashboardHome() {
-  return (
-    <Suspense>
-      <DashboardHomeInner />
-    </Suspense>
-  )
-}
-
-function FirstRun({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex min-h-[min(420px,60vh)] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6">
-      <i className="fa-light fa-calendar-plus text-3xl text-muted-foreground" aria-hidden="true" />
-      <div className="flex flex-col items-center gap-1">
-        <h2 className="text-sm font-medium text-foreground">No term set up yet</h2>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>
-          Configure a term calendar to discover its course offerings and start
-          driving evaluation response rates.
-        </p>
-      </div>
-      <Button variant="default" size="sm" onClick={onAdd}>
-        Set up term
-      </Button>
+          ))}
+        </div>
+      )}
+      {upcomingSnaps.length > 0 && (
+        <div className="flex flex-col gap-4 lg:[grid-column:3]">
+          {upcomingSnaps.map((s) => (
+            <UpcomingCardAi key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

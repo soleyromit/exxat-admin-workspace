@@ -233,6 +233,12 @@ export function prismAddFacultyHref(o: CourseOffering): string {
   return `${PRISM_BASE}/offerings/${o.id}?add=faculty`
 }
 
+/** Prism's Courses list — used when a term has no offerings at all, so
+ *  there's no single offering to deep-link into (dashboard Case 2). */
+export function prismCoursesHref(): string {
+  return `${PRISM_BASE}/courses`
+}
+
 export function courseLabelOf(o: CourseOffering): string {
   const mc = MOCK_MASTER_COURSES.find((m) => m.id === o.masterCourseId)
   return mc ? `${mc.code} – ${mc.name}` : o.masterCourseId

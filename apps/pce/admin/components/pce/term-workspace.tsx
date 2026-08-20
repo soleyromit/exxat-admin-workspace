@@ -33,7 +33,7 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import {
   Badge, Tip,
   Button,
@@ -287,7 +287,17 @@ function TermWorkspaceInner() {
     { key: 'active', label: 'Active', match: isExtendable },
     { key: 'finished', label: 'Closed & results', match: (st) => !isNeedsSetup(st) && !isExtendable(st) },
   ]
-  const [activeTab, setActiveTab] = useState<'all' | 'needs_setup' | 'active' | 'finished'>('all')
+  const searchParams = useSearchParams()
+  /* Dashboard Breakdown Mode row actions (Aug 19 2026 feedback) deep-link
+   * here with `?tab=` so "Review feedback" lands on Closed & results
+   * instead of All — read once on mount, same as the tab itself: an admin
+   * switching tabs afterward shouldn't get yanked back by a stale param. */
+  const [activeTab, setActiveTab] = useState<'all' | 'needs_setup' | 'active' | 'finished'>(
+    () => {
+      const t = searchParams?.get('tab')
+      return t === 'needs_setup' || t === 'active' || t === 'finished' ? t : 'all'
+    },
+  )
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const group of TAB_GROUPS) counts[group.key] = tableRows.filter((row) => group.match(row.status)).length

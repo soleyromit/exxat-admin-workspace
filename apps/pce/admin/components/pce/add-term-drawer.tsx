@@ -5,7 +5,7 @@ import {
   Input,
   Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   LocalBanner,
-  DatePickerField,
+  DateRangePickerField,
 } from '@exxatdesignux/ui'
 import {
   FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent,
@@ -148,26 +148,18 @@ export function AddTermDrawer({ open, onOpenChange }: {
                   <FieldDescription id="dash-term-year-desc">Format: YYYY–YYYY (e.g., 2026–2027).</FieldDescription>
                 )}
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field orientation="vertical">
-                  <FieldLabel htmlFor="dash-term-start">Start date *</FieldLabel>
-                  <DatePickerField
-                    id="dash-term-start"
-                    value={ymdToDate(draft.startDate)}
-                    onChange={d => setDraft({ ...draft, startDate: dateToYmd(d) })}
-                  />
-                  {errors.startDate && <FieldError id="dash-term-start-error">{errors.startDate}</FieldError>}
-                </Field>
-                <Field orientation="vertical">
-                  <FieldLabel htmlFor="dash-term-end">End date *</FieldLabel>
-                  <DatePickerField
-                    id="dash-term-end"
-                    value={ymdToDate(draft.endDate)}
-                    onChange={d => setDraft({ ...draft, endDate: dateToYmd(d) })}
-                  />
-                  {errors.endDate && <FieldError id="dash-term-end-error">{errors.endDate}</FieldError>}
-                </Field>
-              </div>
+              <Field orientation="vertical">
+                <FieldLabel htmlFor="dash-term-dates">Term dates *</FieldLabel>
+                <DateRangePickerField
+                  id="dash-term-dates"
+                  value={{ from: ymdToDate(draft.startDate), to: ymdToDate(draft.endDate) }}
+                  onChange={range => setDraft({ ...draft, startDate: dateToYmd(range?.from), endDate: dateToYmd(range?.to) })}
+                  numberOfMonths={1}
+                />
+                {(errors.startDate || errors.endDate) && (
+                  <FieldError id="dash-term-dates-error">{errors.startDate || errors.endDate}</FieldError>
+                )}
+              </Field>
             </FieldGroup>
           </FloatingSheetPanelBody>
 
@@ -176,6 +168,7 @@ export function AddTermDrawer({ open, onOpenChange }: {
             primaryLabel="Add term"
             primaryForm="add-term-form"
             onPrimary={commit}
+            primaryIconClassName="fa-light fa-calendar-plus text-xs"
           />
         </form>
       </FloatingSheetPanelContent>
@@ -292,26 +285,18 @@ export function AddTermDatesDrawer({ term, open, onOpenChange }: {
                   <FieldDescription id="dash-dates-year-desc">Format: YYYY–YYYY (e.g., 2026–2027).</FieldDescription>
                 )}
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field orientation="vertical">
-                  <FieldLabel htmlFor="dash-dates-start">Start date *</FieldLabel>
-                  <DatePickerField
-                    id="dash-dates-start"
-                    value={ymdToDate(draft.startDate)}
-                    onChange={d => setDraft({ ...draft, startDate: dateToYmd(d) })}
-                  />
-                  {errors.startDate && <FieldError id="dash-dates-start-error">{errors.startDate}</FieldError>}
-                </Field>
-                <Field orientation="vertical">
-                  <FieldLabel htmlFor="dash-dates-end">End date *</FieldLabel>
-                  <DatePickerField
-                    id="dash-dates-end"
-                    value={ymdToDate(draft.endDate)}
-                    onChange={d => setDraft({ ...draft, endDate: dateToYmd(d) })}
-                  />
-                  {errors.endDate && <FieldError id="dash-dates-end-error">{errors.endDate}</FieldError>}
-                </Field>
-              </div>
+              <Field orientation="vertical">
+                <FieldLabel htmlFor="dash-dates-dates">Term dates *</FieldLabel>
+                <DateRangePickerField
+                  id="dash-dates-dates"
+                  value={{ from: ymdToDate(draft.startDate), to: ymdToDate(draft.endDate) }}
+                  onChange={range => setDraft({ ...draft, startDate: dateToYmd(range?.from), endDate: dateToYmd(range?.to) })}
+                  numberOfMonths={1}
+                />
+                {(errors.startDate || errors.endDate) && (
+                  <FieldError id="dash-dates-dates-error">{errors.startDate || errors.endDate}</FieldError>
+                )}
+              </Field>
             </FieldGroup>
           </FloatingSheetPanelBody>
 
@@ -320,6 +305,7 @@ export function AddTermDatesDrawer({ term, open, onOpenChange }: {
             primaryLabel="Add term dates"
             primaryForm="add-term-dates-form"
             onPrimary={commit}
+            primaryIconClassName="fa-light fa-calendar-plus text-xs"
           />
         </form>
       </FloatingSheetPanelContent>
