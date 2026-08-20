@@ -675,6 +675,38 @@ Source: `docs/research/meetings/2026-08-18-course-eval-sync-up.md` (Granola `421
 
 ---
 
+## Phase 1 design tasks — added 2026-08-19 (Dashboard structure + hierarchy — Vishal AM + design review PM)
+
+Sources:
+- `docs/research/meetings/2026-08-19-course-eval-dashboard-vishal.md` (Granola `7a175890`)
+- `docs/research/meetings/2026-08-19-course-eval-hierarchy-layout-review.md` (Granola `713d7675`)
+
+> Vishal morning session (Aug 19 9:29 AM): full 5-state term model spec, column order, past/future card data models, coverage formula, per-status inline actions. PM design review session (Aug 19 5:09 PM): hierarchy concerns, past/future table vs. "go to all terms" button. Two unresolved conflicts emerged — column order (T203 vs. new Vishal spec) and past-term treatment (Vishal table vs. PM "go to all terms"). Both require alignment before any dashboard code.
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T209 | ⚠️ Dashboard column order: resolve conflict — Last→Current→Upcoming (Vishal Aug 19) vs. Current→Upcoming→Last (T203, Aarti Aug 17) | Admin | Evaluation dashboard term cards | **P0 — ALIGNMENT NEEDED** | Vishal: "Last should be the first card. Current should be the second card. Upcoming should be the last card." T203 says Current first. Do NOT touch column order in any dashboard code until Romit aligns with Aarti + Vishal. D_PCE_0819A_02. |
+| T210 | Past terms table: always visible below 3 columns — no "show more" | Admin | Evaluation dashboard — past terms section | P1 — DESIGN-REVIEW | Vishal: "I'll not even have this view show more. By default, I'll be showing this information too." Past terms rendered as a table below the 3-column primary view. ⚠️ CONFLICTS T216 (PM session same day). Resolve T209/T216 first. D_PCE_0819A_03. |
+| T211 | Past term table fields and actions spec | Admin | Evaluation dashboard — past term table | P1 — DESIGN-REVIEW | Fields per row: academic year, start + end dates, course offerings count, evaluation coverage (% primary + "N of M" subtext), avg response rate, program avg + course avg + faculty avg. Actions: view analytics, view survey. D_PCE_0819A_04. |
+| T212 | Future term card spec: 3 data points + schedule action only | Admin | Evaluation dashboard — future term cards | P1 — DESIGN-REVIEW | Future terms: academic year, start/end dates, course offerings count. Single action: schedule survey. No analytics data in future term cards. D_PCE_0819A_06. |
+| T213 | Evaluation coverage formula: (scheduled + live + closed + published) / total | Admin | Evaluation dashboard — coverage metric | P1 — applies at T210/T211 implementation | Primary display = %; subtext = "5 out of 20" count. Applies to both past term table and term card metrics. D_PCE_0819A_05. |
+| T214 | Term card status breakdown: show live + scheduled counts explicitly | Admin | Evaluation dashboard term cards | P1 — DESIGN-REVIEW | Do not use a single aggregated count. Show live count + scheduled count individually. Vishal: "Scheduled we need to show. Live we need to show. And probably remaining." D_PCE_0819A_07. |
+| T215 | Complex case inline actions per status in term card | Admin | Evaluation dashboard term cards | P1 — DESIGN-REVIEW | Scheduled evaluations: primary = update, secondary = delete; message = "N evaluations going out in N days" (next-nearest date). Live evaluations: avg response rate + "closing in N days" message; actions = reminder (primary) + extend. Published: analytics metrics inline (program avg, course avg, faculty avg) + view analytics action. D_PCE_0819A_09, D_PCE_0819A_10. |
+| T216 | ⚠️ Past/future terms: resolve conflict — always-visible table (Vishal) vs. "go to all terms" button (PM session) | Admin | Evaluation dashboard | **P0 — ALIGNMENT NEEDED** | PM session feedback: "just create a button that takes you to all terms." Vishal AM: table always visible. Romit must discuss with Vishal and confirm approach. Do NOT build either pattern until resolved. D_PCE_0819B_01 vs. D_PCE_0819A_03. |
+| T217 | Dashboard information hierarchy pass — reduce visual noise | Admin | Evaluation dashboard (in-progress design) | P1 — DESIGN-REVIEW | Current design is "too jumbled up into many things." Tabs-on-top + grid-below pattern preferred over all-equal-weight dashboard layout. Review design before presenting to Arun. D_PCE_0819B_02. |
+
+### Deferred / killed items from Aug 19
+
+| Decision | Reason | Source |
+|---|---|---|
+| True Kanban with movable cards | Cards are system-determined; drag-to-move would mislead users. Not building. | D_PCE_0819A_11, Aug 19 Vishal |
+| Analytics design finalization | Requirements still in review. No design action until requirements confirmed. | D_PCE_0819B_03, Aug 19 PM |
+| Programmatic survey | Parked (reconfirmed). | D_PCE_0819B_04, Aug 19 PM |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
