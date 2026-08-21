@@ -50,8 +50,8 @@ type WizardStep = 1 | 2 | 3 | 'success'
 
 /* Legacy survey courseType → display label (push-wizard type vocabulary). */
 const COURSE_TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom',
-  clinical: 'Practice',
+  didactic: 'Didactic',
+  clinical: 'Experiential',
 }
 
 function pendingFor(s: PceSurvey): number {

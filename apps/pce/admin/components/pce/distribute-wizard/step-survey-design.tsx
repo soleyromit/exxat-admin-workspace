@@ -112,7 +112,7 @@ export function StepSurveyDesign({
   // the LEGACY `courseType` ('didactic'|'clinical'), NOT the new CB/LB/PB `deliveryMode`. So
   // Lab-based (LB) offerings (which carry courseType:'didactic') group under "Didactic" here. The
   // readiness step is the only deliveryMode-aware surface in P0; making this step deliveryMode-aware
-  // (Classroom/Lab/Practice groups) is deferred to a later phase.
+  // (Didactic/Lab/Experiential groups) is deferred to a later phase.
   const didacticOfferings = selectedOfferings.filter(o => o.courseType === 'didactic')
   const clinicalOfferings = selectedOfferings.filter(o => o.courseType === 'clinical')
   const untypedOfferings = selectedOfferings.filter(o => !o.courseType)

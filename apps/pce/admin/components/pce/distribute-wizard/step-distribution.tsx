@@ -20,8 +20,8 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 
 const TYPE_LABEL: Record<string, string> = {
-  didactic: 'Classroom',
-  clinical: 'Practice',
+  didactic: 'Didactic',
+  clinical: 'Experiential',
   seminar:  'Lab',
 }
 

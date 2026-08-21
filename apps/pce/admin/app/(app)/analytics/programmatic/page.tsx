@@ -27,7 +27,7 @@ function surveyTypeName(name: string): string {
   if (name.includes('Alumni'))    return 'Alumni Outcomes'
   if (name.includes('Preceptor')) return 'Preceptor Satisfaction'
   if (name.includes('Exit'))      return 'Program Exit'
-  return 'General'
+  return 'Other'
 }
 
 /* Historical response rate trend — last 4 terms per survey type. null = not yet collected. */

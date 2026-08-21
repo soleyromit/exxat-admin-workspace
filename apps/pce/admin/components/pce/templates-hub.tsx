@@ -76,15 +76,15 @@ export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluat
       icon: 'fa-chalkboard-teacher',
       operators: ['is', 'is_not'],
       options: [
-        { value: 'didactic', label: 'Classroom' },
-        { value: 'clinical', label: 'Practice' },
+        { value: 'didactic', label: 'Didactic' },
+        { value: 'clinical', label: 'Experiential' },
         { value: 'seminar',  label: 'Lab' },
       ],
     },
     cell: (row) => {
       const ct = row.template.courseType
       if (!ct || ct === 'any') return <span className="text-sm text-muted-foreground">Any</span>
-      const label = ct === 'didactic' ? 'Classroom' : ct === 'clinical' ? 'Practice' : 'Lab'
+      const label = ct === 'didactic' ? 'Didactic' : ct === 'clinical' ? 'Experiential' : 'Lab'
       return (
         <span
           className="text-xs font-medium rounded px-1.5 py-0.5"

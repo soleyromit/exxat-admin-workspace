@@ -462,11 +462,10 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const subjectGroups: Array<{ key: string; label: string }> = [
     { key: 'course_content', label: 'Course' },
     { key: 'faculty',        label: 'Faculty' },
-    { key: 'general',        label: 'General' },
   ]
   const [activeGroup, setActiveGroup] = useState('course_content')
   // Tabs/guided variants — which sequential stop (aspect or faculty role set)
-  // is on stage. Keys: 'course', `stop-<roleSetId>`, 'general'.
+  // is on stage. Keys: 'course', `stop-<roleSetId>`.
   const [activeStop, setActiveStop] = useState('course')
   // Guided rail (variant D) — Faculty disclosure override. null = auto
   // (open while a faculty stop is active or a role set has no roles yet);
@@ -474,7 +473,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const [facultyManual, setFacultyManual] = useState<boolean | null>(null)
   // Empty stops open straight into the standard empty section card (Jul 23) —
   // no decision gate, no pre-written titles: a new template's sections are
-  // the admin's to name. Course/General seed one "Untitled Section"; a
+  // the admin's to name. Course seeds one "Untitled Section"; a
   // faculty role set does the same once roles are picked. The ref makes
   // seeding once-per-stop: StrictMode's double mount effect would otherwise
   // seed twice (both runs see the same pre-add snapshot), and a section the
@@ -492,7 +491,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
       if (!set || set.roles.length === 0) return
       subjectKey = 'faculty'
     } else {
-      subjectKey = activeStop === 'course' ? 'course_content' : activeStop === 'general' ? 'general' : null
+      subjectKey = activeStop === 'course' ? 'course_content' : null
     }
     if (!subjectKey) return
     const seedKey = `${template.id}|${subjectKey}|${roleSetId ?? ''}`
@@ -507,7 +506,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const [docAspect, setDocAspect] = useState('course_content')
   useEffect(() => {
     if (variant !== 'document') return
-    const els = ['course_content', 'faculty', 'general']
+    const els = ['course_content', 'faculty']
       .map(k => document.getElementById(`aspect-${k}`))
       .filter((el): el is HTMLElement => !!el)
     if (els.length === 0) return
@@ -558,7 +557,7 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     const s = WIZARD_STEPS.find(st => st.n === n)
     if (s) goToStep(s.key)
   }
-  // Opening instruction PER aspect (Course/Faculty/General) — shown at the start of
+  // Opening instruction PER aspect (Course/Faculty) — shown at the start of
   // that section in the evaluation (not a single common instruction).
   const [aspectInstructions, setAspectInstructions] = useState<Record<string, { title: string; text: string }>>({})
   const setAspectInstruction = (key: string, patch: Partial<{ title: string; text: string }>) =>
@@ -607,7 +606,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
   const ASPECT_INFO: Record<string, string> = {
     course_content: 'Evaluates the course itself. Asked once per course.',
     faculty:        'Evaluates teaching staff. Sections group into role sets that evaluate one or more roles.',
-    general:        'Evaluates the program overall. Asked once per evaluation.',
   }
   const aspectCounts = (key: string) => {
     const secs = sections.filter(s => s.subjectKey === key)
@@ -639,9 +637,9 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
     return newId
   }
 
-  // Sequential "stops" for the tabs/guided variants — Course, each faculty
+  // Sequential "stops" for the tabs/guided variants — Course, then each faculty
   // role set as its own first-class stop (a role, not a "role set", drives
-  // the sequence), then General.
+  // the sequence).
   // label = full role list (rail, aria); shortLabel = compact "first +N" form
   // for tabs and prev/next buttons where an unbounded list won't fit.
   const builderStops: { key: string; label: string; shortLabel: string; subjectKey: string; roleSetId?: string }[] = [
@@ -658,7 +656,6 @@ export function TemplateEditor({ templateId, embedded = false, onPublished, vari
         roleSetId: set.id,
       }
     }),
-    { key: 'general', label: 'General', shortLabel: 'General', subjectKey: 'general' },
   ]
   const stopSections = (stop: { subjectKey: string; roleSetId?: string }) =>
     sections.filter(s => s.subjectKey === stop.subjectKey && (stop.subjectKey !== 'faculty' || s.roleSetId === stop.roleSetId))
@@ -2285,7 +2282,6 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                   const ASPECT_ICON: Record<string, string> = {
                     course_content: 'fa-book-open',
                     faculty: 'fa-chalkboard-user',
-                    general: 'fa-building-columns',
                   }
                   const doneMeta = (stop: typeof builderStops[number]) => stopQuestionCount(stop) > 0 ? (
                     <span className="text-xs tabular-nums ms-auto shrink-0" style={{ color: 'var(--brand-color)' }}>
@@ -2330,7 +2326,6 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                       : set.roles.length === 1 ? ROLE_LABEL(set.roles[0])
                       : `${ROLE_LABEL(set.roles[0])} +${set.roles.length - 1}`
                   const courseStop = builderStops.find(s => s.key === 'course')!
-                  const generalStop = builderStops.find(s => s.key === 'general')!
                   const facultyCur = curStop.subjectKey === 'faculty'
                   const facultyDone = facultyStops.length > 0 && !anyRolesPending && facultyStops.every(s => stopQuestionCount(s) > 0)
                   const pendingCount = facultyRoleSets.filter(rs => rs.roles.length === 0).length
@@ -2431,7 +2426,6 @@ Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' 
                           )}
                         </div>
                       )}
-                      {renderRailItem(generalStop, 'General', { icon: ASPECT_ICON.general })}
                     </>
                   )
                 })()}

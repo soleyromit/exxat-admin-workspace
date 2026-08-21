@@ -96,7 +96,7 @@ export function SubjectPickerSheet({
           {generalSubjects.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-                General
+                Always available
               </p>
               {generalSubjects.map(subject => (
                 <SubjectRow

@@ -1260,22 +1260,23 @@ interface PlotPerson {
 
 /** Section → evaluation-type classifier. Builder templates mark faculty
  *  sections with roleSetId; richer/legacy templates encode the same thing in
- *  subjectKey (course_instructor, lab_instructor, …). course_director is the
- *  General bucket ("Overall Experience"). Keying on roleSetId alone lumped
- *  every tmplrich section under Course — the exact mis-attribution of the
- *  2026-07-17 critique. */
+ *  subjectKey (course_instructor, lab_instructor, …). course_director
+ *  ("Overall Experience") groups under Faculty — the General category was
+ *  retired, Course/Faculty are the only two categories. Keying on roleSetId
+ *  alone lumped every tmplrich section under Course — the exact
+ *  mis-attribution of the 2026-07-17 critique. */
 const FACULTY_SUBJECT_KEYS = new Set([
   'faculty',
   'course_instructor',
   'course_coordinator',
   'teaching_assistant',
   'lab_instructor',
+  'course_director',
   'preceptor',
   'clinical_supervisor',
 ])
-function sectionGroupOf(s: PceTemplateSection): 'Course' | 'Faculty' | 'General' {
+function sectionGroupOf(s: PceTemplateSection): 'Course' | 'Faculty' {
   if (s.roleSetId || FACULTY_SUBJECT_KEYS.has(s.subjectKey)) return 'Faculty'
-  if (s.subjectKey === 'course_director') return 'General'
   return 'Course'
 }
 
@@ -2472,9 +2473,8 @@ function ResultDetail({
     ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
     : null
 
-  /* Question breakdown groups — Course / Faculty / General via the section
-     classifier (roleSetId OR subjectKey); a split offering's survey only shows
-     its own half (General rides with the course half). */
+  /* Question breakdown groups — Course / Faculty via the section classifier
+     (roleSetId OR subjectKey). */
   const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Course')
   /* Course-only scope (the "Course" pill) hides Faculty questions the same
      way a split "Course evaluation" survey does — it's a view, not a
@@ -2483,7 +2483,6 @@ function ResultDetail({
     result.evalScope === 'course' || facultyScope === 'course'
       ? []
       : sections.filter((s) => sectionGroupOf(s) === 'Faculty')
-  const generalSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'General')
   const scoreFor = (subjectKey: string, questionId: string, faculty: boolean) => {
     if (!qData) return undefined
     if (faculty) {
@@ -2518,6 +2517,9 @@ function ResultDetail({
     surveyIdForToggle: survey.id,
   })) as IndexedComment[]
   const courseComments = allComments.filter((c) => c.section === 'course_content')
+  /* course_director ("Overall Experience") comments have no per-instructor
+     attribution — they fold into Faculty as unattributed, never into a named
+     instructor's group (that would misattribute program-level feedback). */
   const generalComments = allComments.filter((c) => c.section === 'course_director')
   const facultyComments = allComments.filter((c) => c.section === 'faculty_performance')
   /* Subject attribution — explicit facultyId, else the sole instructor. The
@@ -2535,7 +2537,7 @@ function ResultDetail({
   const unattributedFacultyComments =
     facultyScope === 'course'
       ? []
-      : facultyComments.filter((c) => !survey.instructors.some((i) => i.id === commentSubjectId(c)))
+      : [...facultyComments.filter((c) => !survey.instructors.some((i) => i.id === commentSubjectId(c))), ...generalComments]
   /* The card's own rule: counts, chips, themes and lists draw from ONE pool so
      no two numbers disagree. With comment groups scope-filtered above, the pool
      must scope the same way — course/general comments and unattributed faculty
@@ -2558,8 +2560,7 @@ function ResultDetail({
   const viewerComments = isPD ? scopedComments : visibleComments
   const commentTypeCounts = {
     course: viewerComments.filter((c) => c.section === 'course_content').length,
-    faculty: viewerComments.filter((c) => c.section === 'faculty_performance').length,
-    general: viewerComments.filter((c) => c.section === 'course_director').length,
+    faculty: viewerComments.filter((c) => c.section === 'faculty_performance' || c.section === 'course_director').length,
   }
   const aiThemes = deriveThemes(visibleComments)
   const topThemes = [...aiThemes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 3)
@@ -2650,7 +2651,6 @@ function ResultDetail({
       [
         { key: 'Course' as const, sections: courseSections },
         { key: 'Faculty' as const, sections: facultySections },
-        { key: 'General' as const, sections: generalSections },
       ]
         .map((g) => ({
           key: g.key,
@@ -2661,7 +2661,7 @@ function ResultDetail({
           ),
         }))
         .filter((g) => g.items.length > 0),
-    [courseSections, facultySections, generalSections],
+    [courseSections, facultySections],
   )
 
   /* Question breakdown rows — rated + free-text, in template order. */
@@ -2671,7 +2671,6 @@ function ResultDetail({
     for (const group of [
       { label: 'Course', list: courseSections, faculty: false },
       { label: 'Faculty', list: facultySections, faculty: true },
-      { label: 'General', list: generalSections, faculty: false },
     ]) {
       for (const section of group.list) {
         for (const q of section.questions) {
@@ -2734,7 +2733,7 @@ function ResultDetail({
     }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, courseSections, facultySections, generalSections, result.facultyId, inCollection, facultyScope, roleScope, survey.instructors])
+  }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, roleScope, survey.instructors])
 
   /* Question-group provenance — band label + icon + "about whom" per group,
      shared with the written-responses sheet and the anchor rail. */
@@ -2761,12 +2760,6 @@ function ResultDetail({
           : undefined),
       anchorId: 'group-faculty',
       contextLine: `Faculty evaluation${scopedFacultyName ? ` · ${scopedFacultyName}` : ''}`,
-    },
-    General: {
-      icon: 'fa-comments',
-      label: 'General',
-      anchorId: 'group-general',
-      contextLine: 'General',
     },
   }
 
@@ -3198,7 +3191,6 @@ function ResultDetail({
                           {viewerComments.length} student comment{viewerComments.length !== 1 ? 's' : ''}
                           {commentTypeCounts.course > 0 ? ` · ${commentTypeCounts.course} course` : ''}
                           {commentTypeCounts.faculty > 0 ? ` · ${commentTypeCounts.faculty} faculty` : ''}
-                          {commentTypeCounts.general > 0 ? ` · ${commentTypeCounts.general} general` : ''}
                           {facultyScope === 'course' ? ' · course only' : ''}
                           {previewQuote ? (
                             <span className="block italic truncate">&ldquo;{previewQuote.text}&rdquo;</span>
@@ -3254,14 +3246,6 @@ function ResultDetail({
                           title="Faculty evaluation: not attributed to one instructor"
                           icon={EVALUATION_TYPE_ICON.faculty_roles}
                           comments={unattributedFacultyComments}
-                          hiddenIdx={hiddenIdx}
-                          canModerate={isPD}
-                          filter={qualFilter}
-                        />
-                        <CommentList
-                          title="General"
-                          icon="fa-comments"
-                          comments={generalComments}
                           hiddenIdx={hiddenIdx}
                           canModerate={isPD}
                           filter={qualFilter}

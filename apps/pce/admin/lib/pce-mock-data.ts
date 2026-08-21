@@ -28,7 +28,7 @@ export interface EvaluationInstance {
   deadline: string
 }
 
-// Classroom (didactic) · Practice (clinical) · Lab (seminar).
+// Didactic (didactic) · Experiential (clinical) · Lab (seminar).
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
 export interface PceSubject {
@@ -352,7 +352,7 @@ export interface PceSurvey {
   term: string
   /** Cohort = graduating class (e.g., "Class of 2027"). Per Aarti 2026-05-08 16:09 D3, the atomic unit for evaluation is course × term × cohort × faculty. */
   cohort?: string
-  /** Per UC-14 + workspace ADR-002: Classroom (didactic) | Practice (clinical) | Lab (seminar). Used for the course-type split filter on Cohort view (C5). */
+  /** Per UC-14 + workspace ADR-002: Didactic (didactic) | Experiential (clinical) | Lab (seminar). Used for the course-type split filter on Cohort view (C5). */
   courseType?: 'didactic' | 'clinical' | 'seminar'
   /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
   priorOfferings?: PriorOffering[]
@@ -1619,6 +1619,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'Course materials were well-structured and easy to follow.', sentiment: 'positive' },
       { section: 'course_content', text: 'Some lab sessions felt rushed.', sentiment: 'concern' },
       { section: 'course_content', text: 'The gap between lecture content and exam difficulty was significant.', sentiment: 'concern' },
+      { section: 'course_director', text: 'Overall this was one of the stronger courses this term.', sentiment: 'positive' },
     ],
   },
   {
@@ -1829,9 +1830,9 @@ export const COURSE_TYPE_LABEL: Record<DeliveryMode, string> = {
 
 /** Full names (tooltips / a11y). */
 export const COURSE_TYPE_FULL_LABEL: Record<DeliveryMode, string> = {
-  classroom: 'Classroom',
+  classroom: 'Didactic',
   lab: 'Lab',
-  practice: 'Practice',
+  practice: 'Experiential',
 }
 
 export interface CourseOffering {

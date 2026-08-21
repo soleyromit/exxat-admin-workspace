@@ -698,9 +698,9 @@ export function StepCoursesEvaluateesClassic({
         filter: {
           type: 'select', icon: 'fa-shapes',
           options: [
-            { value: 'Classroom', label: 'Classroom' },
+            { value: 'Didactic', label: 'Didactic' },
             { value: 'Lab', label: 'Lab' },
-            { value: 'Practice', label: 'Practice' },
+            { value: 'Experiential', label: 'Experiential' },
           ],
         },
         // D5 (Romit, Jul 21): tinted categorical pill — soft chart-hue wash +
