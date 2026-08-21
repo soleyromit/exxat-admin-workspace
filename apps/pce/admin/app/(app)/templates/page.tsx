@@ -29,7 +29,6 @@ interface TemplateRow extends Record<string, unknown> {
 
 export default function TemplatesPage() {
   const { templates } = usePce()
-  const [createOpen, setCreateOpen] = useState(false)
   const [editTemplate, setEditTemplate] = useState<PceTemplate | null>(null)
   const [deleteTemplate, setDeleteTemplate] = useState<PceTemplate | null>(null)
 
@@ -128,15 +127,16 @@ export default function TemplatesPage() {
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
-        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          New Template
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          To add a template, email{' '}
+          <a href="mailto:support@exxat.com" className="underline">support@exxat.com</a>{' '}
+          with your evaluation form.
+        </p>
       </header>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
-          <EmptyState onCreate={() => setCreateOpen(true)} />
+          <EmptyState />
         ) : (
           <DataTable<TemplateRow>
             data={rows}
@@ -151,10 +151,6 @@ export default function TemplatesPage() {
         )}
       </div>
 
-      <CreateTemplateSheet
-        open={createOpen}
-        onOpenChange={v => { setCreateOpen(v) }}
-      />
       <CreateTemplateSheet
         open={!!editTemplate}
         onOpenChange={v => { if (!v) setEditTemplate(null) }}
@@ -205,24 +201,18 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   )
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <i
-        className="fa-light fa-rectangle-list"
-        aria-hidden="true"
-        style={{ fontSize: 40, color: 'var(--muted-foreground)' }}
-      />
+      <i className="fa-light fa-rectangle-list text-4xl text-muted-foreground" aria-hidden="true" />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">No templates yet</p>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-          Create a template to start distributing post course evaluations.
+        <p className="text-sm text-muted-foreground max-w-xs">
+          To add a template, email{' '}
+          <a href="mailto:support@exxat.com" className="underline">support@exxat.com</a>{' '}
+          with your PDF or paper evaluation form and the team will set it up for you.
         </p>
       </div>
-      <Button variant="default" size="sm" onClick={onCreate}>
-        <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-        Create Template
-      </Button>
     </div>
   )
 }

@@ -707,6 +707,41 @@ Sources:
 
 ---
 
+## Phase 1 design tasks — added 2026-08-20 (Cohere design review — Aarti + Vishaka)
+
+Source: `docs/research/meetings/2026-08-20-cohere-design-review-aarti.md` (Granola `87f007fe`)
+
+> Full stakeholder walkthrough with Aarti + Vishaka reviewing the live PCE build and Figma ahead of Cohere. Vishal presented; David, Monil, Kunal present. Key outcomes: management dashboard role restriction hardened, template self-service hidden for beta, two label corrections applied, five flagged items added.
+
+### ✅ Applied directly
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T218 | Rename "Program avg" KPI → "Course avg" | Admin | `analytics/page.tsx` line 227 | P1 — ✅ APPLIED | Aarti: "Course rating program rating doesn't fit they are not rating the program in any of the surveys." Changed `label: 'Program avg'` → `label: 'Course avg'`. D_PCE_0820_04. |
+| T219 | Rename "Program trend" card → "Avg course trend" | Admin | `analytics/page.tsx` line 590 | P1 — ✅ APPLIED | Same rationale as T218. D_PCE_0820_05. |
+| T220 | Templates page: hide self-service template creation for beta/Cohere | Admin | `templates/page.tsx` | P1 — ✅ APPLIED | Aarti: "hide the ad template button for now... replace with an instruction box." Removed "New Template" button from header and EmptyState button. Added contact-support instruction text. D_PCE_0820_03. |
+
+### Flagged — DESIGN-REVIEW required
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T221 | Nav / tile rename: "Post Course Evaluations" → "Course Surveys" | Admin | `app-sidebar.tsx` + nav | P1 — DESIGN-REVIEW | Aarti: "Surveys in my mind is a different connotation. Post course evaluations has a different meaning. Call it course surveys." Vishaka confirmed. Structural nav change — verify all nav labels, page titles, and metadata before touching. D_PCE_0820_01. |
+| T222 | Management role dashboard: restrict to average ratings ONLY — no faculty/course below-threshold detail | Admin | Management dashboard (not yet built) | P0 — DESIGN-REVIEW | Aarti: "The only thing that is acceptable to add to the [management view] is the average rating." MUST NOT show per-course or per-faculty performance counts to management role. Needs role-gated dashboard design before any code. D_PCE_0820_02. |
+| T223 | "Competency trends" label → "Section averages" in by-faculty analytics | Admin | By-faculty analytics (T73 — not yet built) | P1 — DESIGN-REVIEW | Vishaka: "you should just say section averages." Applies to the section-level drill-down in faculty detail view. D_PCE_0820_06. |
+| T224 | Hide "General / Other factors" analytics section when not present in template | Admin | `analytics/page.tsx` | P1 — DESIGN-REVIEW | Aarti confirmed: "we can hide it throughout." Decision: if no general section in template, suppress that analytics row/tab entirely. Logic for detection needs spec. D_PCE_0820_07. |
+| T225 | Template course type vocabulary: "Didactic" and "Experiential" (not "Classroom" / "Clinical" / "Practice") | Admin | Template creation form + analytics filter | P1 — DESIGN-REVIEW | Vishaka: "We decided to use experiential and didactic. So those are the terms." Affects `pce-mock-data.ts` type union + filter options. TypeScript change required. D_PCE_0820_08. |
+| T226 | Competitive analysis grid: PCE analytics charts vs. Qualtrics, Anthology | Design | Design task / sales enablement | P2 | Aarti: "you should also do a competitive analysis." Vishal to create chart-by-chart grid. Not a screen change — deliverable is a document. D_PCE_0820_11. |
+| T227 | Multi-section course aggregation: analytics design for course-with-multiple-sections | Admin | Analytics — course drilldown | P1 — DESIGN-REVIEW | When one course has multiple sections (course offerings), analytics aggregates at course level; filter by course + faculty narrows to section. "I'll talk to Vishal when I'm in India about that." Do not design until Aarti + Vishal have aligned discussion. D_PCE_0820_12. |
+| T228 | Faculty report downloads: must include graphs, callouts, and program comparison | Admin | Faculty download report | P1 — DESIGN-REVIEW | "Even those downloadable reports still need to have graphs and chats and callouts and comparison available." Specifically: faculty cannot see other faculty's responses, but can compare their rating to program average. D_PCE_0820_13. |
+
+### Confirmed kills from Aug 20
+
+| Decision | Reason | Source |
+|---|---|---|
+| Significant movers analytics section | Confirmed not in initial release. "Will not be building in the initial go." Criteria (delta, percentile) TBD. D_PCE_0820_09. | D_PCE_0820_09, Aug 20 Aarti/Vishal |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.

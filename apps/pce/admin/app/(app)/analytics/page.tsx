@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
   const kpiMetrics: MetricItem[] = [
     {
       id: 'program-avg',
-      label: 'Program avg',
+      label: 'Course avg',
       value: programAvg ? `${programAvg.toFixed(2)}/5` : '—',
       delta: `${releasedSurveys.length} of ${scopedSurveys.length} released`,
       trend: 'neutral',
@@ -587,7 +587,7 @@ export default function AnalyticsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Program trend</CardTitle>
+                  <CardTitle className="text-sm">Avg course trend</CardTitle>
                   <CardDescription>Last 5 terms, current highlighted.</CardDescription>
                 </CardHeader>
                 <CardContent>
