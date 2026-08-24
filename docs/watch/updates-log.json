@@ -1653,6 +1653,26 @@
             "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
             "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
             "files": ["apps/exam-management/admin/app/(app)/students/[id]/student-detail-client.tsx"]
+        },
+        {
+            "id": "2026-08-24-granola-intake-001",
+            "date": "2026-08-24",
+            "product": "pce",
+            "type": "decision-extracted",
+            "title": "Weekly Granola intake — 34 new decisions, 1 supersession (pce-075→pce-139), 0 conflicts",
+            "summary": "Processed 7 meetings from Aug 17–20, 2026. Extracted 34 new confirmed design decisions (pce-decision-110 through pce-decision-143) and 1 workspace decision (workspace-decision-003). pce-decision-075 (Classroom/Lab/Experiential course types) superseded by pce-decision-139 (Didactic/Experiential only — confirmed by Aarti and Vishal in Cohere design review). No decision conflicts flagged. Key decisions: CE module renamed to 'Course Surveys'; Cohere beta hides self-service template creation; management view restricted to aggregate averages only; dashboard uses Last/Current/Upcoming column layout; bulk selection restricted to same-status rows; High Charts confirmed as charting library.",
+            "meetings": [
+                "c9fa0219 — Home page design and login flow — with Aarti (Aug 17)",
+                "be0b0a3c — Course evaluation setup — survey design, scheduling, and notification templates (Aug 17)",
+                "8ddd2979 — Faculty evaluation analytics — term-by-term data structure and dashboard design (Aug 17)",
+                "421b0a20 — Course Eval sync up (Aug 18)",
+                "7a175890 — Course evaluation dashboard — term states, card cases, and layout structure with Vishal (Aug 19)",
+                "713d7675 — Course evaluations UI — information hierarchy and past/future terms layout (Aug 19)",
+                "87f007fe — Course Eval Design review for Cohere (Aug 20)"
+            ],
+            "decisionsAdded": ["pce-decision-110", "pce-decision-111", "pce-decision-112", "pce-decision-113", "pce-decision-114", "pce-decision-115", "pce-decision-116", "pce-decision-117", "pce-decision-118", "pce-decision-119", "pce-decision-120", "pce-decision-121", "pce-decision-122", "pce-decision-123", "pce-decision-124", "pce-decision-125", "pce-decision-126", "pce-decision-127", "pce-decision-128", "pce-decision-129", "pce-decision-130", "pce-decision-131", "pce-decision-132", "pce-decision-133", "pce-decision-134", "pce-decision-135", "pce-decision-136", "pce-decision-137", "pce-decision-138", "pce-decision-139", "pce-decision-140", "pce-decision-141", "pce-decision-142", "pce-decision-143", "workspace-decision-003"],
+            "supersessions": [{"old": "pce-decision-075", "new": "pce-decision-139"}],
+            "conflicts": []
         }
     ]
 }

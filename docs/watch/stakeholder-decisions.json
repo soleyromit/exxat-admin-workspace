@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-17",
+  "lastUpdated": "2026-08-24",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -977,8 +977,9 @@
       "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 28, 2026",
       "sourceType": "transcript",
       "date": "2026-07-28",
-      "status": "confirmed",
-      "supersedes": "pce-decision-040"
+      "status": "superseded",
+      "supersedes": "pce-decision-040",
+      "supersededBy": "pce-decision-139"
     },
     {
       "id": "pce-decision-076",
@@ -1369,6 +1370,357 @@
       "source": "Survey completion dashboard and role-based admin design with Vishal transcript — Aug 12, 2026",
       "sourceType": "transcript",
       "date": "2026-08-12",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-110",
+      "product": "pce",
+      "text": "Survey scheduling does not lock in student targets at schedule time. At the moment a survey goes live, the system reads whoever is currently enrolled in the course. Students added after scheduling are automatically included; students removed after scheduling are excluded. There are no pre-created per-student distribution targets at scheduling time.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-111",
+      "product": "pce",
+      "text": "Courses that already have a scheduled or live survey must be excluded (unchecked and not pre-selected) by default in setup wizard step 1. Do not default-select already-scheduled courses alongside unconfigured ones — this creates ambiguity about whether the admin is setting up from scratch or overriding an existing survey. Only courses needing action (not yet configured) are pre-selected.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-112",
+      "product": "pce",
+      "text": "Default rows-per-page in all CE survey/course tables is 25 (not 10). The bias in every CE screen should be showing more information in a more compact way.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-113",
+      "product": "pce",
+      "text": "Per-course date override in the setup wizard uses the verb 'edit' not 'add custom rule.' Each course either uses the default dates or has its dates edited individually — it is a course-by-course date edit, not a named rule applied to groups of courses. A '+' button with the label 'add custom rule' is incorrect.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-114",
+      "product": "pce",
+      "text": "The CE email template editor must match the capabilities of the existing Prism notification hub template editor: rich text editing, header and footer with university logo, attachment support, preview button, set-as-default option, and merge fields. The same Prism users who use notification templates will use CE email templates — a lesser experience in CE will create immediate user complaints. Reference the existing Prism template editor as the baseline, then improve on it.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-115",
+      "product": "pce",
+      "text": "The CE email sender address (from: exxat surveys or equivalent) must be customizable per university. The UI must include an instruction that communicates this address can be changed to the university's own address. An edit button or link to configure this should be present, though it can be implemented in a follow-up pass.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluation setup — survey design, scheduling, and notification templates transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-116",
+      "product": "pce",
+      "text": "Setup term (configuring which Prism terms are enabled for CE) and setup evaluations (distributing surveys for a term) are fully separate workflows. After setting up a term, the user has two choices: configure more terms, or set up evaluations for that term. The setup evaluation wizard does not embed term configuration as a sub-step.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-117",
+      "product": "pce",
+      "text": "All analytics calculations must happen at the term level — never merge raw data from multiple terms. Cross-term comparisons use average-of-averages: each term's average gets equal weighting regardless of student count. A term with 15 students and a term with 45 students both contribute one equal average to the cross-term aggregate.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-118",
+      "product": "pce",
+      "text": "Faculty and course trend charts in analytics must show one data point per term — the final term-level rating. Do not show intra-survey trends (how ratings changed day-by-day during the open survey window). The only meaningful data point is the final rating for the completed term.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-119",
+      "product": "pce",
+      "text": "Terms whose response rate falls below the validity floor threshold (pce-decision-104) must be excluded from cross-term average calculations. Below-threshold response rates represent statistically invalid data — including them in cross-term averages would contaminate the aggregate.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-120",
+      "product": "pce",
+      "text": "High Charts is the confirmed charting library for all PCE analytics visualizations. All charts must use a consistent High Charts theme across the module.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-121",
+      "product": "pce",
+      "text": "Analytics language must use 'best performing' and 'needs attention' — never 'worst performing' for low-rated faculty or courses. The program director views their faculty data; the framing must be constructive and supportive, not punitive or depressing. Show top performers and those 'needing attention,' not top performers and worst performers.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-122",
+      "product": "pce",
+      "text": "The by-cohort view in analytics is a separate tab, not a small toggle switch. Cohort-level analytics and term-level analytics are distinct orientations that warrant separate top-level tabs in the analytics structure.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-123",
+      "product": "pce",
+      "text": "When expanding the term-by-term analytics comparison view, show: courses that went up since last term, courses that went down since last term, faculty that went up since last term, faculty that went down since last term. This delta view (needle movers) is more actionable than a full AI narrative summary of all changes.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Faculty evaluation analytics — term-by-term data structure and dashboard design transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-124",
+      "product": "pce",
+      "text": "Course code must be displayed as a separate column in CE tables (e.g., survey list, manage survey) — not combined or nested under the course name column. Separate columns make it clearer.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-125",
+      "product": "pce",
+      "text": "Multi-select in the manage survey table is restricted to same-status rows only — admins can only bulk-select rows in the same status. Closed and 'results available' rows are non-selectable by default. Actions differ significantly by status, so mixing statuses in a bulk selection is not supported. Bulk actions are available only for: draft, live, and not-configured rows.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-126",
+      "product": "pce",
+      "text": "Board/Kanban view for manage survey is deferred to the second pass. First pass is table view only.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-127",
+      "product": "pce",
+      "text": "Closed and results-available surveys in the manage survey table are surfaced via a collapsed accordion — not in the main table alongside active/draft/live rows. The primary table shows only actionable statuses (not configured, draft, scheduled, live). Closed and published entries are accessible by expanding the accordion.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-128",
+      "product": "pce",
+      "text": "When a user clicks 'setup term' from the CE dashboard empty state, term configuration must open in a drawer on the same page — not navigate the user away to a separate page. After adding a term in the drawer, the user closes the drawer and continues from the dashboard. This prevents breaking the user's workflow.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-129",
+      "product": "pce",
+      "text": "Dashboard KPI language: use 'feedback requests' not 'students' when counting outstanding responses. One student may submit multiple feedback responses (for different faculty roles in the same course), so the count is feedback-level, not student-level. Example: '122 feedback requests still need to respond' is correct; '122 students still need to respond' is incorrect.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 18, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-18",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-130",
+      "product": "pce",
+      "text": "The CE dashboard uses a three-column layout with columns for: Last term (leftmost), Current term (center), Upcoming term (rightmost) — following chronological left-to-right order. This is the confirmed column sequence. Past terms (before last) and future terms (after upcoming) are shown in a separate section below the three cards.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-131",
+      "product": "pce",
+      "text": "Five term states are defined for the CE dashboard: (1) Current, (2) Upcoming, (3) Last (previous term), (4) Past (any term before Last), (5) Future (any term beyond Upcoming). Only Current, Upcoming, and Last are shown as the three primary columns. Past terms and future terms outside these three are folded into separate sections.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-132",
+      "product": "pce",
+      "text": "Past terms section in the CE dashboard is shown by default — no 'show more' gate. Past term cards display: academic year, start/end dates, course offerings count, evaluation coverage (percentage as primary text + 'X of Y courses' as subtext), average response rate, program average, course average, faculty average. Actions: view analytics, view survey.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-133",
+      "product": "pce",
+      "text": "Enabling a term for CE requires that term's start date and end date to be present. Prism terms without start/end dates are ineligible and excluded from CE term setup. The user selects from a list; terms with missing dates are not shown or shown as disabled.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-134",
+      "product": "pce",
+      "text": "Template configuration is NOT required to show the 'setup evaluations' CTA on a term card. A template is only required when the user reaches step 2 of the setup evaluation wizard — at that point, if no template exists, prompt the user to configure one and provide a navigation link. Do not gate the setup evaluations entry point on template existence.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-135",
+      "product": "pce",
+      "text": "Evaluation coverage metric on dashboard cards = (count of scheduled + live + closed + published courses) / (total courses in the term). Show the percentage as the primary figure and the raw count as subtext (e.g., '75% · 15 of 20 courses'). Coverage below 100% drives the primary CTA to set up remaining evaluations.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-136",
+      "product": "pce",
+      "text": "The CE dashboard layout is NOT a Kanban board. It uses a column-based card layout that resembles Kanban visually, but states are system-determined — users cannot drag or move term cards between columns. A true Kanban implies drag-and-drop which would be incorrect here.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-137",
+      "product": "pce",
+      "text": "Survey status counts on dashboard term cards must show Live count + Scheduled count + total (not 'in review' or vague labels). Example: '30 live · 7 scheduled · 50 total'. Live and Scheduled are the two most actionable statuses and must be explicitly surfaced.",
+      "stakeholder": "Vishal",
+      "source": "Course evaluation dashboard — term states, card cases, and layout structure with Vishal transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-138",
+      "product": "pce",
+      "text": "The CE module must be labeled 'Course Surveys' in the UI navigation and product labels — not 'Course Evaluations.' This avoids confusion with 'Evaluations' in Exxat's clinical placement management (Lamp/EXXAT). The word 'survey' better describes the action and is self-explanatory. Aarti confirmed: 'course survey is self-explanatory and it helps us distinguish from evaluations which is a term we use for our clinical placement management.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course Eval Design review for Cohere transcript — Aug 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-139",
+      "product": "pce",
+      "text": "Course types for CE templates are confirmed as Didactic and Experiential only. Not Classroom/Lab/Experiential (three types). Aarti: 'didactic and experiential is what we use here as well.' Vishal confirmed: 'we decided to use experiential and didactic.' These two are the only course type taxonomy options.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course Eval Design review for Cohere transcript — Aug 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-20",
+      "status": "confirmed",
+      "supersedes": "pce-decision-075"
+    },
+    {
+      "id": "pce-decision-140",
+      "product": "pce",
+      "text": "For the Cohere beta launch, the 'Add template' / self-service template creation capability is hidden from customers. Instead, show an instruction box stating: 'If you want to add a template, please reach out to support@exxat.com with the paper or PDF form of your evaluation form and we will set it up for you.' Engineering may continue developing the capability in the background but it must not be shown to customers until it is production-quality.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course Eval Design review for Cohere transcript — Aug 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-141",
+      "product": "pce",
+      "text": "The admin management dashboard must not show which specific faculty are rated poorly or well — only program-level aggregate averages (overall program average, overall course average, overall faculty average) are shown on the management-role view. Aarti: 'The only thing that is acceptable to add to the management view is the average rating. Do not show which courses are badly rated and which faculty are badly rated — those become gossip topics for people who don't need visibility into that.' Individual-level ratings belong only in the content/results role view.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course Eval Design review for Cohere transcript — Aug 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-142",
+      "product": "pce",
+      "text": "Past and future terms must NOT appear as a separate table below the three-column dashboard. Instead, provide a visible action button or link at the top of the dashboard (e.g., 'View all terms' or 'Go to all terms') that navigates to the directory/terms page. This prevents the dashboard from becoming a jumbled multi-section page with too many information layers.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluations UI — information hierarchy and past/future terms layout transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-143",
+      "product": "pce",
+      "text": "Programmatic/General surveys are parked for Cohere. Design focus is exclusively on directory and course surveys (CE module) for the Cohere launch. No active design work on programmatic survey flow.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course evaluations UI — information hierarchy and past/future terms layout transcript — Aug 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "workspace-decision-003",
+      "product": "workspace",
+      "text": "Design decisions must be backed by real usage data from the deployed Exact product — not hypothetical user behavior. Aarti: 'Today you cannot act as ignorant about the client's real usage as you would have a few years back when you joined. The fact that we are able to pull this information should be baked into how you present your designs to the leadership.' This applies especially to decisions about module-switching frequency, OU code switching, and navigation patterns.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Home page design and login flow — with Aarti transcript — Aug 17, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-17",
       "status": "confirmed"
     }
   ]
