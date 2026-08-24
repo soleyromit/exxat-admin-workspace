@@ -104,7 +104,6 @@ import {
   Button,
   PageHeader,
   Card, CardHeader, CardTitle, CardContent, CardFooter,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   StatusBadge,
   Tip,
 } from '@exxatdesignux/ui'
@@ -119,6 +118,7 @@ import {
   LIST_HUB_STATUS_TINT_WARNING,
   LIST_HUB_STATUS_TINT_PLANNED,
   LIST_HUB_STATUS_TINT_COMPLETED,
+  LIST_HUB_STATUS_TINT_NEUTRAL,
   type StatusTint,
 } from '@/lib/list-status-badges'
 import { auditTerm } from '@/lib/pce-term-readiness'
@@ -132,6 +132,9 @@ import {
   type TermSnapshot, type TermWindowPosition, type CourseBreakdown,
 } from '@/lib/pce-term-metrics'
 import type { PceSurvey, ProgramTerm } from '@/lib/pce-mock-data'
+
+const COVERAGE_TIP =
+  "The share of this term's course offerings with an evaluation set up and collecting responses — not the response rate itself."
 
 /* ── shared bits ──────────────────────────────────────────────────────────── */
 
@@ -220,6 +223,7 @@ function StatementHero({
   annotationColor,
   size = 'lg',
   serif = true,
+  tip,
 }: {
   label: string
   /** Small mono fact on the label's baseline — e.g. "target 80%". */
@@ -236,11 +240,22 @@ function StatementHero({
    *  Coverage's hero keeps the serif treatment; only asked to change
    *  response rate. */
   serif?: boolean
+  /** Same jargon-gloss purpose as `LedgerLine`'s `tip` — this hero is the
+   *  ONE fact big enough to not go through LedgerLine at all, so it needs
+   *  its own copy of the same affordance rather than inheriting one. */
+  tip?: string
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          {label}
+          {tip && (
+            <Tip label={tip} triggerClassName="inline-flex">
+              <i className="fa-light fa-circle-info cursor-help text-[11px]" aria-hidden="true" />
+            </Tip>
+          )}
+        </p>
         {trailing && (
           <p className="text-xs tabular-nums text-muted-foreground">{trailing}</p>
         )}
@@ -306,10 +321,19 @@ function StatementGauge({
   const tier = rate >= target ? 'onTarget' : rate >= floor ? 'valid' : 'belowFloor'
   const fillClass =
     tier === 'onTarget' ? 'bg-[var(--chart-2)]' : tier === 'valid' ? 'bg-[var(--brand-color)]' : 'bg-[var(--chart-4)]'
+  /* "Floor" gets a `tip` — it's the one word here that's product shorthand,
+     not plain English (Romit, 2026-08-25: "what does floor and coverage
+     mean here? the users might be confused"). "Target" doesn't need one;
+     the word already says what it means. */
   const marks = [
-    { at: floor, ink: 'var(--muted-foreground)', word: 'floor' },
+    {
+      at: floor,
+      ink: 'var(--muted-foreground)',
+      word: 'Floor',
+      tip: `Below ${floor}% response, a course's results aren't considered statistically reliable.`,
+    },
     /* Target tick in full ink — the line that matters most reads darkest. */
-    { at: target, ink: 'var(--foreground)', word: 'target' },
+    { at: target, ink: 'var(--foreground)', word: 'Target', tip: undefined as string | undefined },
   ]
   return (
     <div>
@@ -337,7 +361,21 @@ function StatementGauge({
               style={{ left: `${m.at}%` }}
             >
               <span className="text-xs leading-none tabular-nums text-muted-foreground">{m.at}</span>
-              <span className="text-[10px] leading-none text-muted-foreground">{m.word}</span>
+              {/* Dotted underline here, not the `fa-circle-info` icon used
+                  for Coverage — "floor" and "target" ticks sit only 10%
+                  apart on the track, and ANY added icon width collides with
+                  the neighboring label regardless of which side it's on.
+                  The underline adds zero width, so it's the one that
+                  actually fits this specific spot. */}
+              {m.tip ? (
+                <Tip label={m.tip} triggerClassName="inline-flex">
+                  <span className="cursor-help text-[10px] leading-none text-muted-foreground underline decoration-dotted underline-offset-2">
+                    {m.word}
+                  </span>
+                </Tip>
+              ) : (
+                <span className="text-[10px] leading-none text-muted-foreground">{m.word}</span>
+              )}
             </span>
           </span>
         ))}
@@ -368,10 +406,38 @@ function StatementGauge({
  *  on the skill's MUST-NOT list. `tabular-nums` alone still keeps digits
  *  fixed-width for alignment — the DS body face supports the feature, mono
  *  isn't required for it). */
-function LedgerLine({ label, value }: { label: string; value: string }) {
+function LedgerLine({
+  label,
+  value,
+  bold = false,
+  tip,
+}: {
+  label: string
+  value: string
+  bold?: boolean
+  /** Plain-language gloss for a label that's internal shorthand, not a
+   *  self-evident word (Romit, 2026-08-25: "what does floor and coverage
+   *  mean here? the users might be confused" — "Coverage" and "floor" are
+   *  both product jargon with no visible definition anywhere on the card).
+   *  Rendered as a small `fa-circle-info` glyph after the label, the DS's
+   *  own convention for this (template-editor.tsx, library form) — the
+   *  dotted-underline-on-the-label version tried first put the hover target
+   *  on the word itself, easy to miss; a dedicated icon (Romit, same day:
+   *  "can have an i icon instead of hovering on the label") is the
+   *  recognizable "there's more here" affordance instead. */
+  tip?: string
+}) {
+  const dtClassName = bold ? 'shrink-0 text-sm font-semibold text-foreground' : 'shrink-0 text-xs text-muted-foreground'
   return (
     <div className="flex items-baseline gap-2 py-1">
-      <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
+      <dt className={`${dtClassName} flex items-center gap-1`}>
+        {label}
+        {tip && (
+          <Tip label={tip} triggerClassName="inline-flex">
+            <i className="fa-light fa-circle-info cursor-help text-[11px] text-muted-foreground" aria-hidden="true" />
+          </Tip>
+        )}
+      </dt>
       <span
         aria-hidden="true"
         className="mb-[3px] min-w-4 flex-1 self-end border-b border-dotted border-border"
@@ -383,12 +449,12 @@ function LedgerLine({ label, value }: { label: string; value: string }) {
   )
 }
 
-function FactLedger({ facts }: { facts: { label: string; value: string }[] }) {
+function FactLedger({ facts }: { facts: { label: string; value: string; tip?: string }[] }) {
   if (facts.length === 0) return null
   return (
     <dl className="flex flex-col">
       {facts.map((f) => (
-        <LedgerLine key={f.label} label={f.label} value={f.value} />
+        <LedgerLine key={f.label} label={f.label} value={f.value} tip={f.tip} />
       ))}
     </dl>
   )
@@ -430,34 +496,6 @@ function CourseCodesTip({ codes, atRisk }: { codes: string[]; atRisk?: Set<strin
         {atRiskCount > 0 && ` · ${atRiskCount} at risk`}
       </span>
     </Tip>
-  )
-}
-
-/** Overflow trigger for a row's secondary action — pairs with one visible
- *  `RowAction primary`. term-breakdown.tsx's own `RowActionMenu` is
- *  module-private, so the anatomy (ghost `icon-sm` trigger, fa-ellipsis,
- *  `DropdownMenuItem asChild` → `Link`) is reproduced verbatim rather than
- *  re-designed — if that component is ever exported, delete this and import
- *  it instead. */
-function RowOverflowMenu({ items }: { items: { href: string; label: string; icon: string }[] }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon-sm" aria-label="More actions" className="text-muted-foreground">
-          <i className="fa-light fa-ellipsis text-xs" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {items.map((item) => (
-          <DropdownMenuItem key={item.href} asChild>
-            <Link href={item.href}>
-              <i className={`fa-light ${item.icon}`} aria-hidden="true" />
-              {item.label}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 
@@ -590,31 +628,17 @@ function StatementRow({
 }) {
   const attention = !!timeline.attention
   const tint = timeline.tint ?? null
-  /* Node treatment: filled is reserved for the ONE row a card's urgency is
-     actually about (amber, per the reserved-warning doctrine elsewhere in
-     this file) — every other row is a hollow disc in its own status tint
-     (Live=success, Scheduled=planned, Closed=completed, Setup=neutral ink),
-     never implied to be "ahead of" or "behind" another. Fill color for the
-     attention node uses the tint's mid-tone `.border` swatch rather than
-     its darkest `.fg` — a small solid disc in the deep, near-black amber
-     `.fg` read as harsh (Romit, 2026-08-25: "use better icon and color,
-     since the current ones are too sharp"); the softer mid-tone still
-     reads clearly against the ring + icon. Node/icon size bumped 18→20px /
-     9→11px the same day ("icons aren't visible to me, therefore its not
-     indicative") — every icon here is still decorative reinforcement of a
-     visible text label + tint, never the only signal, but a signal too
-     small to perceive isn't reinforcing anything. */
-  const nodeStyle: React.CSSProperties = attention
-    ? {
-        background: LIST_HUB_STATUS_TINT_WARNING.border,
-        color: 'var(--card)',
-        boxShadow: `0 0 0 2px var(--card), 0 0 0 3.5px ${LIST_HUB_STATUS_TINT_WARNING.border}`,
-      }
-    : {
-        background: tint ? tint.bg : 'var(--card)',
-        border: `1px solid ${tint ? tint.border : 'var(--border)'}`,
-        color: tint ? tint.fg : 'var(--muted-foreground)',
-      }
+  /* Settled after a 3-way live comparison (Romit, 2026-08-25: chip layout
+     from "B", then "no ring" + "pastel filled circle, no border" as the
+     final call). Fill uses each tint's mid-tone `.border` swatch — soft
+     enough to read as pastel, not the near-invisible pale `.bg` (tried
+     earlier, rejected as "really bad") or the harsh saturated `.fg`. Icon
+     renders in `--card` (white) on top for contrast, no stroke. */
+  const nodeTint = attention ? LIST_HUB_STATUS_TINT_WARNING : (tint ?? LIST_HUB_STATUS_TINT_NEUTRAL)
+  const nodeStyle: React.CSSProperties = {
+    background: nodeTint.border,
+    color: 'var(--card)',
+  }
   return (
     <div className="group flex gap-2.5">
       {/* The rail gutter — decorative; sr users get the same story from the
@@ -625,7 +649,7 @@ function StatementRow({
           className="absolute left-1/2 top-[13px] flex size-5 -translate-x-1/2 items-center justify-center rounded-full"
           style={nodeStyle}
         >
-          <i className={`${attention ? 'fa-solid' : 'fa-light'} ${icon} text-[11px] leading-none`} aria-hidden="true" />
+          <i className={`fa-solid ${icon} text-[12px] leading-none`} aria-hidden="true" />
         </span>
         <RailSegment kind={timeline.connectBottom} className="bottom-0 top-[33px]" />
       </div>
@@ -633,7 +657,7 @@ function StatementRow({
           crosses the row boundary unbroken. */}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 border-t border-border/60 py-2.5 group-first:border-t-0">
         <dl>
-          <LedgerLine label={label} value={count} />
+          <LedgerLine label={label} value={count} bold />
         </dl>
         {(description || trigger) && (
           <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
@@ -822,12 +846,12 @@ function CurrentTermCard({
   /* Avg response is NOT a fact line here — it is the statement's ledger
      figure (the hero); printing it twice made the anchor compete with its
      own echo. */
-  const facts: { label: string; value: string }[] = []
+  const facts: { label: string; value: string; tip?: string }[] = []
   /* PRD ("UI feedback on Dashboard.docx", Case 6): once every course has at
      least a scheduled evaluation, coverage should read as a settled
      "complete" state, not a bare percentage sitting alongside the still-in-
      flight response-rate figure above it. */
-  if (b) facts.push({ label: 'Coverage', value: isFullyCovered(b) ? 'Complete' : `${coveragePercent(b)}%` })
+  if (b) facts.push({ label: 'Coverage', value: isFullyCovered(b) ? 'Complete' : `${coveragePercent(b)}%`, tip: COVERAGE_TIP })
   if (snap.daysLeft != null) facts.push({ label: 'Window closes in', value: plural(snap.daysLeft, 'day') })
 
   /* Rail geometry — the stages this card actually renders, as peers, not a
@@ -918,7 +942,7 @@ function CurrentTermCard({
             <div className="flex flex-col gap-2">
               <StatementHero
                 label="Response rate"
-                trailing={`target ${RESPONSE_TARGET}%`}
+                trailing={`Target ${RESPONSE_TARGET}%`}
                 value={`${snap.rate}`}
                 unit="%"
                 annotation={rateAnnotation(snap.rate).text}
@@ -978,11 +1002,9 @@ function CurrentTermCard({
                         <LedgerAction href={workspaceHref('active')} primary>
                           Manage
                         </LedgerAction>
-                        <RowOverflowMenu
-                          items={[
-                            { href: workspaceHref('active'), label: 'Extend', icon: 'fa-calendar-pen' },
-                          ]}
-                        />
+                        <LedgerAction href={workspaceHref('active')}>
+                          Extend
+                        </LedgerAction>
                       </>
                     }
                   />
@@ -991,7 +1013,7 @@ function CurrentTermCard({
                   <StatementRow
                     label="Live"
                     count={`${b.live.length}`}
-                    icon="fa-circle-dot"
+                    icon="fa-bolt"
                     timeline={rowTimeline('live')}
                     description={liveRowStory(b.live) ?? undefined}
                     trigger={<CourseCodesTip codes={b.live.map((s) => s.courseCode)} atRisk={atRisk} />}
@@ -1000,11 +1022,9 @@ function CurrentTermCard({
                         <LedgerAction href={`/surveys/remind?from=term:${term.id}`} primary>
                           Remind
                         </LedgerAction>
-                        <RowOverflowMenu
-                          items={[
-                            { href: workspaceHref('active'), label: 'Extend', icon: 'fa-calendar-pen' },
-                          ]}
-                        />
+                        <LedgerAction href={workspaceHref('active')}>
+                          Extend
+                        </LedgerAction>
                       </>
                     }
                   />
@@ -1013,7 +1033,7 @@ function CurrentTermCard({
                   <StatementRow
                     label="Closed"
                     count={`${b.closed.length} of ${b.totalCourses} (${Math.round((b.closed.length / b.totalCourses) * 100)}%)`}
-                    icon="fa-flag-checkered"
+                    icon="fa-check"
                     timeline={rowTimeline('closed')}
                     description={closedNarrative(b.closed, b.totalCourses) ?? undefined}
                     trigger={<CourseCodesTip codes={b.closed.map((s) => s.courseCode)} />}
@@ -1088,10 +1108,10 @@ function LastTermCard({
      line repeating it would be the same echo `snap.rate`'s hero comment
      above already rules out for the response figure (Romit's catch,
      2026-08-22: found live as "Closed 13 of 13" printed twice back to back). */
-  const facts: { label: string; value: string }[] = []
+  const facts: { label: string; value: string; tip?: string }[] = []
   if (b) {
     if (closedRate == null) facts.push({ label: 'Avg response', value: '—' })
-    facts.push({ label: 'Coverage', value: `${coveragePercent(b)}%` })
+    facts.push({ label: 'Coverage', value: `${coveragePercent(b)}%`, tip: COVERAGE_TIP })
   }
 
   /* Rail geometry — the only real bucket a finished term still has is
@@ -1164,7 +1184,7 @@ function LastTermCard({
                    below), this figure is an average over whichever courses
                    happen to be done so far, not a settled term total. */
                 label={b.closed.length === b.totalCourses ? 'Final response rate' : 'Response rate (closed courses)'}
-                trailing={`target ${RESPONSE_TARGET}%`}
+                trailing={`Target ${RESPONSE_TARGET}%`}
                 value={`${closedRate}`}
                 unit="%"
                 annotation={rateAnnotation(closedRate).text}
@@ -1202,7 +1222,7 @@ function LastTermCard({
                   <StatementRow
                     label="Still open"
                     count={`${stragglerCount}`}
-                    icon="fa-circle-exclamation"
+                    icon="fa-triangle-exclamation"
                     timeline={{
                       connectTop: 'none',
                       connectBottom: b.closed.length > 0 ? 'solid' : 'none',
@@ -1221,7 +1241,7 @@ function LastTermCard({
                   <StatementRow
                     label="Closed"
                     count={`${b.closed.length} of ${b.totalCourses} (${Math.round((b.closed.length / b.totalCourses) * 100)}%)`}
-                    icon="fa-flag-checkered"
+                    icon="fa-check"
                     timeline={{
                       ...tl('closed'),
                       connectTop: stragglerCount > 0 ? 'solid' : tl('closed').connectTop,
@@ -1269,7 +1289,7 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
   /* Coverage is this card's ledger figure — before a term starts, readiness
      is the balance being certified; response rate doesn't exist yet, so the
      statement anchors on the number that predicts it. */
-  const facts: { label: string; value: string }[] = []
+  const facts: { label: string; value: string; tip?: string }[] = []
   facts.push({ label: 'Course offerings', value: `${snap.coverage?.total ?? readiness.total}` })
   facts.push({ label: 'Starts in', value: startsIn != null ? plural(startsIn, 'day') : 'Not set yet' })
 
@@ -1326,6 +1346,7 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
       {cov != null && (
         <StatementHero
           label="Evaluation coverage"
+          tip={COVERAGE_TIP}
           trailing={dated ? `window opens ${win.open}` : undefined}
           value={`${cov}`}
           unit="%"
@@ -1390,7 +1411,7 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
               <StatementRow
                 label="Missing roster data"
                 count={`${readiness.needsData}`}
-                icon="fa-circle-exclamation"
+                icon="fa-triangle-exclamation"
                 timeline={rowTimeline('roster')}
                 description={`${plural(readiness.needsData, 'course')} ${readiness.needsData === 1 ? 'is' : 'are'} missing a faculty or student roster — evaluations can't go out until that's filled in.`}
                 trigger={
@@ -1433,15 +1454,9 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
                     <LedgerAction href={`/course-evaluation/term/${term.id}?tab=active`} primary>
                       Manage
                     </LedgerAction>
-                    <RowOverflowMenu
-                      items={[
-                        {
-                          href: `/course-evaluation/term/${term.id}?tab=active`,
-                          label: 'Extend',
-                          icon: 'fa-calendar-pen',
-                        },
-                      ]}
-                    />
+                    <LedgerAction href={`/course-evaluation/term/${term.id}?tab=active`}>
+                      Extend
+                    </LedgerAction>
                   </>
                 }
               />
