@@ -1,8 +1,8 @@
 {
-  "generated": "2026-08-21",
+  "generated": "2026-08-24",
   "source": "@exxatdesignux/ui",
-  "version": "1.0.0",
-  "componentCount": 758,
+  "version": "1.5.1",
+  "componentCount": 790,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -117,6 +117,22 @@
       "category": "primitives"
     },
     "AppThemeSync": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AskLeoButton": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AskLeoButtonProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AskLeoLauncher": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "AskLeoLauncherWash": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -356,6 +372,14 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "CONDITIONAL_RULE_COLOR_SOURCES": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CUSTOM_RULE_TINT_PERCENT": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "Calendar": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -548,6 +572,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "ConditionalRuleColorSource": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "ContextMenu": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -649,6 +677,10 @@
       "category": "primitives"
     },
     "DEDICATED_SEARCH_RESULTS_OUTER_CONTENT_CLASSNAME": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "DEFAULT_CUSTOM_RULE_COLOR": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1172,6 +1204,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "FloatingWindowSizeOptions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "FloatingWindowViewport": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1296,6 +1332,42 @@
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
+    "InlineEditActions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineEditShell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "templates"
+    },
+    "InlineInputCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineInputEdit": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineInputEditProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineSelectCell": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineSelectEdit": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineSelectEditOption": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InlineSelectEditProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "Input": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1321,6 +1393,22 @@
       "category": "primitives"
     },
     "InputGroupTextarea": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InputOTP": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InputOTPGroup": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InputOTPSeparator": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "InputOTPSlot": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1429,6 +1517,26 @@
       "category": "organisms"
     },
     "Label": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "LegacyStorageMigrationEntry": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "LegacyStorageMigrationManifest": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "LegacyStorageMigrationMode": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "LegacyStorageMigrationOptions": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "LegacyStorageMigrationResult": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2028,6 +2136,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "REGEXP_ONLY_DIGITS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "RESPONSIVE_ACTIONS_COMPACT_MAX_WIDTH_PX": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -2093,6 +2205,14 @@
       "category": "primitives"
     },
     "ResponsiveActionRowProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RichTextEditor": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "RichTextEditorProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2165,6 +2285,10 @@
       "category": "primitives"
     },
     "STATUS_BADGE_TONE_CLASS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "STATUS_RULE_COLORS": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2869,6 +2993,10 @@
       "category": "hooks"
     },
     "useDraggableList": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useExclusiveShellOverlay": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },

@@ -52,6 +52,28 @@ export interface DemoAccount {
 const SPRING26 = MOCK_PROGRAM_TERMS.find((t) => t.id === 'pt1')! // current, window open
 const FALL26 = MOCK_PROGRAM_TERMS.find((t) => t.id === 'pt5')! // upcoming (dated)
 
+/** `acc-upcoming-only`'s whole purpose is demoing the Upcoming card, so its
+ *  term dates are computed relative to `new Date()` instead of reusing
+ *  FALL26's fixed ones — those go stale as real time catches up to them
+ *  (caught live, 2026-08-25: FALL26's Aug 24 start date IS today, so this
+ *  account rendered as Current instead of Upcoming — the exact "demo
+ *  accounts don't match the scenario" gap Romit flagged; every other
+ *  fixed-date term in this file has the same latent problem, but this is
+ *  the one account whose single reason to exist breaks because of it).
+ *  Same `id`/shape as FALL26 (via spread) so it still resolves against
+ *  `MOCK_COURSE_OFFERINGS`' existing `termId` keys and keeps the same
+ *  ~116-day span FALL26 itself uses. */
+const daysFromNow = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+const UPCOMING_ONLY_TERM: ProgramTerm = {
+  ...FALL26,
+  startDate: daysFromNow(20),
+  endDate: daysFromNow(20 + 116),
+}
+
 /* Case 2 (Lakeside OT) — "term set up, dates entered, zero courses." Was a
  * DATELESS term (the old, since-repurposed Case 2 shape) until the Aug 19
  * feedback explicitly renamed this scenario: dates are mandatory at setup
@@ -293,7 +315,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     id: 'acc-upcoming-only',
     name: 'Cascade Nursing',
     blurb: 'Case 3 shape on the Upcoming column — pre-launch, courses ready, none scheduled',
-    terms: [FALL26],
+    terms: [UPCOMING_ONLY_TERM],
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: [],
   },

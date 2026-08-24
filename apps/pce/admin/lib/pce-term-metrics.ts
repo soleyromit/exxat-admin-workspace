@@ -166,33 +166,78 @@ export const termsOrdered: ProgramTerm[] = [...MOCK_PROGRAM_TERMS].sort(
  * matter its dates. `classifyTermWindow` takes the caller's own live term
  * list instead, and returns every window a term can land in (more than one
  * term can now be Current/Last/Upcoming at once). */
-export type TermWindowPosition = 'current' | 'last' | 'upcoming' | 'future'
+export type TermWindowPosition = 'current' | 'last' | 'past' | 'upcoming' | 'future'
 
-/** Last: more than this many days since the term ended. */
-export const LAST_TERM_FLOOR_DAYS = 14
-/** Current: today is on/before end date + this many days. */
+/** Current: today is on/before end date + this many days (T ≤ E + 14). */
 export const CURRENT_TERM_GRACE_DAYS = 14
-/** Upcoming: term starts within this many days from now. */
+/** Last: today is within this many days after the term ended (14 < T−E ≤ 30);
+ *  beyond it the term is Past. */
+export const LAST_TERM_CEILING_DAYS = 30
+/** Upcoming: term starts within this many days from now, inclusive
+ *  (0 < S−T ≤ 30); beyond it the term is Future. */
 export const UPCOMING_WINDOW_DAYS = 30
 
-/**
- *   Last     — today is more than 14 days past the term's end date.
- *   Current  — today falls between the start date and end date + 14 days.
- *   Upcoming — the term starts within the next 30 days (not yet started).
- *   Future   — starts 30+ days out — doesn't get a kanban card yet; surfaces
- *              in the term history table until it enters the Upcoming window.
- * A term with no dates yet is always Upcoming — there's nothing to window
- * against, and it still needs a home (the "add dates" card).
- */
+/** Matches the PRD's 5-state term definition verbatim (T = today, S = start,
+ *  E = end — "UI feedback on Dashboard.docx", Term Definition):
+ *    Current  — S ≤ T ≤ E + 14
+ *    Last     — 14 < (T − E) ≤ 30
+ *    Past     — (T − E) > 30
+ *    Upcoming — 0 < (S − T) ≤ 30
+ *    Future   — (S − T) > 30
+ *  Each pair uses an inclusive-then-exclusive cutoff so every value of T
+ *  lands in exactly one bucket. Two bugs this replaces (Romit, 2026-08-25:
+ *  "ensure that all scenarios are covered properly per demo account"): (1)
+ *  "Last" had no ceiling at all — a term that ended 200 days ago still
+ *  classified as `'last'` forever, with no distinct Past state, so it could
+ *  wrongly compete to be shown as the featured Last-term card whenever no
+ *  genuinely-recent Last term existed. (2) Upcoming used `<` instead of `≤`
+ *  against the 30-day window, so a term starting in exactly 30 days
+ *  misclassified as Future a day early.
+ *  A term with no dates yet is always Upcoming — there's nothing to window
+ *  against, and it still needs a home (the "add dates" card). */
 export function classifyTermWindow(
   term: ProgramTerm,
   todayIso: string = new Date().toISOString().slice(0, 10),
 ): TermWindowPosition {
   if (!term.startDate || !term.endDate) return 'upcoming'
   const startMinusToday = daysBetween(todayIso, term.startDate)
-  if (startMinusToday > 0) return startMinusToday < UPCOMING_WINDOW_DAYS ? 'upcoming' : 'future'
+  if (startMinusToday > 0) return startMinusToday <= UPCOMING_WINDOW_DAYS ? 'upcoming' : 'future'
   const todayMinusEnd = daysBetween(term.endDate, todayIso)
-  return todayMinusEnd > LAST_TERM_FLOOR_DAYS ? 'last' : 'current'
+  if (todayMinusEnd <= CURRENT_TERM_GRACE_DAYS) return 'current'
+  return todayMinusEnd <= LAST_TERM_CEILING_DAYS ? 'last' : 'past'
+}
+
+/** Registrar rule on top of the plain per-term grace window (Romit,
+ *  2026-08-24: "fall and spring cannot be current at the same time... think
+ *  yourself as a university who is administrating and running"). A real
+ *  academic calendar is sequential, not parallel — `classifyTermWindow`'s
+ *  14-day grace period exists so the just-finished term doesn't go cold the
+ *  instant it ends, but that grace is only meaningful in the GAP between two
+ *  terms. The moment a newer term actually starts, the older one is over,
+ *  full stop — it doesn't get to keep "Current" just because it's still
+ *  inside its own trailing window. Multiple simultaneous "Current" terms
+ *  stays possible for genuinely independent programs with unrelated
+ *  calendars; this only demotes terms that lose to a term which has ALREADY
+ *  started, i.e. the same sequential timeline. */
+export function resolveTermPositions(
+  terms: ProgramTerm[],
+  todayIso: string = new Date().toISOString().slice(0, 10),
+): Map<string, TermWindowPosition> {
+  const positions = new Map<string, TermWindowPosition>()
+  for (const term of terms) positions.set(term.id, classifyTermWindow(term, todayIso))
+
+  const currentCandidates = terms.filter((t) => positions.get(t.id) === 'current')
+  if (currentCandidates.length > 1) {
+    const inSession = currentCandidates.filter(
+      (t) => t.startDate <= todayIso && t.endDate >= todayIso,
+    )
+    const pool = inSession.length > 0 ? inSession : currentCandidates
+    const winner = [...pool].sort((a, b) => b.startDate.localeCompare(a.startDate))[0]
+    for (const t of currentCandidates) {
+      if (t.id !== winner.id) positions.set(t.id, 'last')
+    }
+  }
+  return positions
 }
 
 /* ── term stage model (shares the survey vocabulary) ──────────────────────── */
@@ -503,11 +548,23 @@ export function liveNarrative(live: PceSurvey[]): string | null {
 
 /** Full-sentence narrative for the Closed row's subtitle — replaces a
  *  redundant "29% closed" (the title "2 of 7 closed" already states that
- *  ratio) with the actual outcome: how collection landed once it ended. */
-export function closedNarrative(closed: PceSurvey[]): string | null {
+ *  ratio) with the actual outcome: how collection landed once it ended.
+ *  When `totalCourses` is passed and every course in it has closed, the
+ *  sentence pivots from a status report to an invitation — there's nothing
+ *  left to chase, so the reader's real next step is reading the results,
+ *  not parsing another "N of N" ratio. */
+export function closedNarrative(closed: PceSurvey[], totalCourses?: number): string | null {
   if (closed.length === 0) return null
   const rate = weightedRate(closed)
-  return rate != null ? `Finished collecting. Average response ${rate}%.` : 'Finished collecting.'
+  const fullyClosed = totalCourses != null && closed.length === totalCourses
+  if (fullyClosed) {
+    return rate != null
+      ? `Every course finished collecting, averaging ${rate}% response — the results below are ready to review.`
+      : 'Every course finished collecting — the results below are ready to review.'
+  }
+  return rate != null
+    ? `Finished collecting so far, averaging ${rate}% response.`
+    : 'Finished collecting so far.'
 }
 
 /** "3 courses need setup" lead — same split as Scheduled/Live above,
