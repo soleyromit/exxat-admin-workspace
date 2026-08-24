@@ -707,6 +707,27 @@ Sources:
 
 ---
 
+## Phase 1 design tasks — added 2026-08-24 (Aarti Cohere prep design review + weekly assessment)
+
+Source: `docs/research/meetings/2026-08-21-course-eval-cohere-design-review-aarti.md` (Granola `87f007fe`)
+
+### Applied changes (2026-08-24 — granola-deep-assessment routine)
+
+| # | Task | Persona | Surface | Status | Notes |
+|---|---|---|---|---|---|
+| T218 | Vocabulary fix: "course evaluation" → "course survey" in surveys LocalBanner | Admin | `surveys/page.tsx` ~line 208 | ✅ APPLIED | Aarti 87f007fe: "when we just say course of valid confusion then it's learning activity." |
+| T219 | Vocabulary fix: "post course evaluations" → "course surveys" in templates EmptyState | Admin | `templates/page.tsx` EmptyState | ✅ APPLIED | Same source. |
+| T220 | Remove "New Template" button from header; replace EmptyState "Create Template" with support instruction | Admin | `templates/page.tsx` | ✅ APPLIED | Aarti 87f007fe: "hide that Ad template button for now… replace with instruction box... reach out to support@exxat.com with the paper or pdf form of your evaluation form." ⚠️ Confirm support email alias — transcript says "support@exa.com" (speech shortening); applied as `support@exxat.com`. |
+
+### New NEEDS REVIEW tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T221 | Vocabulary audit — search all PCE UI copy for bare "course evaluation" and confirm which strings need "course survey" vs. "post-course evaluation" | Admin | All PCE admin screens | P1 — DESIGN-REVIEW | Aarti 87f007fe directive. Some longer-form copy may intentionally say "post-course evaluation." A one-time audit (grep for "course evaluation" in `apps/pce/admin/`) needed before Cohere. D_PCE_87f_01. |
+| T222 | Confirm support email alias for template-request instruction | Admin | `templates/page.tsx` EmptyState | P0 — CONFIRM WITH AARTI | Transcript captured "support@exa.com"; applied as `support@exxat.com`. Must confirm the intended address before Cohere. D_PCE_87f_02. |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.

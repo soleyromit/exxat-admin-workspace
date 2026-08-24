@@ -205,7 +205,7 @@ export default function SurveysPage() {
               onClick: () => setStatusFilter('pending_review'),
             }}
           >
-            {pendingReviewCount} course evaluation{pendingReviewCount !== 1 ? 's' : ''} need{pendingReviewCount === 1 ? 's' : ''} your review before results can be shared with faculty.
+            {pendingReviewCount} course survey{pendingReviewCount !== 1 ? 's' : ''} need{pendingReviewCount === 1 ? 's' : ''} your review before results can be shared with faculty.
           </LocalBanner>
         </div>
       )}

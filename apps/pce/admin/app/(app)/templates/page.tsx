@@ -128,10 +128,7 @@ export default function TemplatesPage() {
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
-        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          New Template
-        </Button>
+        {/* 87f007fe — Aarti: hide Add Template button; users must contact support */}
       </header>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
@@ -206,23 +203,21 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
+  void onCreate
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <i
-        className="fa-light fa-rectangle-list"
+        className="fa-light fa-rectangle-list text-muted-foreground text-[40px]"
         aria-hidden="true"
-        style={{ fontSize: 40, color: 'var(--muted-foreground)' }}
       />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">No templates yet</p>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-          Create a template to start distributing post course evaluations.
+        <p className="text-sm text-muted-foreground max-w-80">
+          To add a course survey template, email{' '}
+          <a href="mailto:support@exxat.com" className="underline">support@exxat.com</a>{' '}
+          with your evaluation form (PDF or paper scan).
         </p>
       </div>
-      <Button variant="default" size="sm" onClick={onCreate}>
-        <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-        Create Template
-      </Button>
     </div>
   )
 }
