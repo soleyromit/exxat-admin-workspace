@@ -1532,6 +1532,127 @@
                 "docs/watch/flags/pce.md",
                 "docs/watch/updates-log.json"
             ]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-001",
+            "date": "2026-08-24",
+            "product": "pce",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — app-sidebar.tsx:216",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/pce/admin/components/app-sidebar.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-002",
+            "date": "2026-08-24",
+            "product": "pce",
+            "type": "compliance-violation",
+            "title": "New P3: FA icons without aria-hidden — surveys/[id]/responses/page.tsx:163,189",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icons — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 instances).",
+            "files": ["apps/pce/admin/app/(app)/surveys/[id]/responses/page.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-003",
+            "date": "2026-08-24",
+            "product": "pce",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — analytics/page.tsx:619",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/pce/admin/app/(app)/analytics/page.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-004",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — action-items-panel.tsx:257",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/components/action-items-panel.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-005",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — empty-state.tsx:79",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/components/empty-state.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-006",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icons without aria-hidden — faculty-ui-kit.tsx:76,110,243",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icons — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 instances).",
+            "files": ["apps/exam-management/admin/components/faculty-ui-kit.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-007",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — competency/competency-client.tsx:174",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/app/(app)/competency/competency-client.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-008",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — courses/[id]/tabs/accommodations-tab.tsx:152",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/app/(app)/courses/[id]/tabs/accommodations-tab.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-009",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — courses/[id]/tabs/assessments-tab.tsx:261",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/app/(app)/courses/[id]/tabs/assessments-tab.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-010",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — courses/offerings/[id]/course-offering-detail-client.tsx:825",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/app/(app)/courses/offerings/[id]/course-offering-detail-client.tsx"]
+        },
+        {
+            "id": "2026-08-24-compliance-sweep-011",
+            "date": "2026-08-24",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "New P3: FA icon without aria-hidden — students/[id]/student-detail-client.tsx:249",
+            "severity": "P3",
+            "consequence": "Screen readers announce decorative icon — noise and confusion for AT users.",
+            "fixLevel": "Add aria-hidden=\"true\" to the <i> element.",
+            "files": ["apps/exam-management/admin/app/(app)/students/[id]/student-detail-client.tsx"]
         }
     ]
 }

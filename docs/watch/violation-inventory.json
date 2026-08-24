@@ -9,7 +9,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -18,13 +18,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/key-metrics/index.tsx",
-      "lines": [225],
+      "lines": [225, 414, 618, 662],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (4 instances)."
     },
     {
       "id": "2026-06-22-pce-003",
@@ -35,7 +35,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -48,7 +48,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -57,13 +57,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/admin/page.tsx",
-      "lines": [110],
+      "lines": [110, 120],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 instances)."
     },
     {
       "id": "2026-06-22-pce-006",
@@ -74,7 +74,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -83,13 +83,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/page.tsx",
-      "lines": [64],
+      "lines": [64, 76],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 instances)."
     },
     {
       "id": "2026-06-22-pce-008",
@@ -100,7 +100,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -113,7 +113,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -126,7 +126,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -139,7 +139,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -152,7 +152,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace pagination controls with DS <Button> using appropriate variant and size."
     },
@@ -165,7 +165,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\" pattern."
     },
@@ -178,7 +178,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -191,7 +191,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -200,39 +200,39 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/key-metrics/index.tsx",
-      "lines": [225],
+      "lines": [225, 414, 618, 662],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (4 instances)."
     },
     {
       "id": "2026-06-22-exam-004",
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/app-sidebar.tsx",
-      "lines": [98, 206],
+      "lines": [98, 206, 402],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 instances)."
     },
     {
       "id": "2026-06-22-exam-005",
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/search-input.tsx",
-      "lines": [241, 277],
+      "lines": [232, 241, 277],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 instances)."
     },
     {
       "id": "2026-06-22-exam-006",
@@ -243,7 +243,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -256,7 +256,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -265,26 +265,26 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [711, 748, 3369],
+      "lines": [210, 686, 711, 748, 2597, 3369, 3436],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
-      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
-      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icons to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (7 instances)."
     },
     {
       "id": "2026-06-22-exam-009",
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-sidebar.tsx",
-      "lines": [147, 189, 226, 625, 958, 1398],
+      "lines": [147, 189, 226, 417, 550, 625, 958, 984, 1312, 1398],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users. Line 958 uses aria-label instead of aria-hidden; needs role=\"img\" or aria-hidden if decorative.",
-      "fixLevel": "Add aria-hidden=\"true\" to decorative <i> elements; for line 958 confirm if icon is meaningful (add role=\"img\") or decorative (switch to aria-hidden)."
+      "fixLevel": "Add aria-hidden=\"true\" to decorative <i> elements (10 instances); for line 958 confirm if icon is meaningful (add role=\"img\") or decorative (switch to aria-hidden)."
     },
     {
       "id": "2026-06-22-exam-010",
@@ -295,7 +295,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -308,7 +308,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -321,7 +321,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -334,7 +334,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -347,7 +347,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -360,7 +360,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -373,7 +373,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -386,7 +386,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -399,7 +399,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -412,7 +412,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -425,7 +425,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Without modal={false}, Radix DropdownMenu locks body scroll on open — breaks scroll inside nested drawers/dialogs and causes layout shift on mobile.",
       "fixLevel": "Add modal={false} to each <DropdownMenu> root in qb-table.tsx (5 instances)."
     },
@@ -438,7 +438,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or a role=\"button\" div for drag handles."
     },
@@ -451,7 +451,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -464,7 +464,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -477,7 +477,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -490,7 +490,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -503,7 +503,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace pagination controls with DS <Button>."
     },
@@ -516,7 +516,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\"."
     },
@@ -529,7 +529,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or Button asChild pattern."
     },
@@ -542,7 +542,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using appropriate variant and size."
     },
@@ -555,7 +555,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "toast() is banned for product feedback; expected pattern is LocalBanner. QB undo exception only covers qb-table.tsx.",
       "fixLevel": "Move sidebar folder-action feedback to LocalBanner, or extend QB undo exception to cover qb-sidebar in the sweep rule."
     },
@@ -568,7 +568,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "opacity-60 on hover/idle states can drop text contrast below 4.5:1 WCAG AA threshold — risk for low-vision users.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground or text-foreground/60 token to avoid compounding opacity on already-muted text."
     },
@@ -581,7 +581,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "opacity-60 applied to container element by default (not just hover) — text inside at ~2.57:1 vs WCAG AA 4.5:1 minimum.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground and group-hover:text-foreground pattern to avoid blanket opacity on text containers."
     },
@@ -594,7 +594,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -607,9 +607,152 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-08-17",
+      "lastSeen": "2026-08-24",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
+    },
+    {
+      "id": "2026-08-24-pce-015",
+      "product": "pce",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/pce/admin/components/app-sidebar.tsx",
+      "lines": [216],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-pce-016",
+      "product": "pce",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/pce/admin/app/(app)/surveys/[id]/responses/page.tsx",
+      "lines": [163, 189],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icons to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 instances)."
+    },
+    {
+      "id": "2026-08-24-pce-017",
+      "product": "pce",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/pce/admin/app/(app)/analytics/page.tsx",
+      "lines": [619],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-034",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/components/action-items-panel.tsx",
+      "lines": [257],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-035",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/components/empty-state.tsx",
+      "lines": [79],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-036",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/components/faculty-ui-kit.tsx",
+      "lines": [76, 110, 243],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icons to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 instances)."
+    },
+    {
+      "id": "2026-08-24-exam-037",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/app/(app)/competency/competency-client.tsx",
+      "lines": [174],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-038",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/accommodations-tab.tsx",
+      "lines": [152],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-039",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/assessments-tab.tsx",
+      "lines": [261],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-040",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/app/(app)/courses/offerings/[id]/course-offering-detail-client.tsx",
+      "lines": [825],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
+    },
+    {
+      "id": "2026-08-24-exam-041",
+      "product": "exam-management",
+      "rule": "WCAG-4.1.2-fa-aria-hidden",
+      "file": "apps/exam-management/admin/app/(app)/students/[id]/student-detail-client.tsx",
+      "lines": [249],
+      "severity": "P3",
+      "status": "open",
+      "firstSeen": "2026-08-24",
+      "lastSeen": "2026-08-24",
+      "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
+      "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     }
   ]
 }
