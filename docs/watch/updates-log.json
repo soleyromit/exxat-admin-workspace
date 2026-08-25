@@ -1673,6 +1673,18 @@
             "decisionsAdded": ["pce-decision-110", "pce-decision-111", "pce-decision-112", "pce-decision-113", "pce-decision-114", "pce-decision-115", "pce-decision-116", "pce-decision-117", "pce-decision-118", "pce-decision-119", "pce-decision-120", "pce-decision-121", "pce-decision-122", "pce-decision-123", "pce-decision-124", "pce-decision-125", "pce-decision-126", "pce-decision-127", "pce-decision-128", "pce-decision-129", "pce-decision-130", "pce-decision-131", "pce-decision-132", "pce-decision-133", "pce-decision-134", "pce-decision-135", "pce-decision-136", "pce-decision-137", "pce-decision-138", "pce-decision-139", "pce-decision-140", "pce-decision-141", "pce-decision-142", "pce-decision-143", "workspace-decision-003"],
             "supersessions": [{"old": "pce-decision-075", "new": "pce-decision-139"}],
             "conflicts": []
+        },
+        {
+            "id": "2026-08-25-transcript-diff-001",
+            "date": "2026-08-25",
+            "product": "all",
+            "type": "clean-run",
+            "title": "Transcript-PRD diff — 2026-08-25 — 0 conflicts found",
+            "what": "Scanned transcripts from Aug 11–25, 2026 against PCE and Exam Management PRD snapshots. No new Aarti/Vishaka directives contradict current PRD or decisions cache beyond items already captured. Course type terminology (Didactic/Experiential) from Aug 20 Cohere design review was already captured by the 2026-08-24 granola-intake run as pce-decision-139 — excluded per decisions-cache supersession rule. Aug 11–12 PCE configurable-threshold and mixed-Likert conflicts are already logged in pce.md (2026-08-18 entries). Aug 24 exam accommodations visibility is a pre-existing conflict (logged 2026-07-14).",
+            "why": "Weekly transcript-PRD diff job. Clean run — no new P1 flags written.",
+            "source": "automated — transcript-prd-diff agent",
+            "severity": "none",
+            "files": ["docs/watch/flags/system.md"]
         }
     ]
 }
