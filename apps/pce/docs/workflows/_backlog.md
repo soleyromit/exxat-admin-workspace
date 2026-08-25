@@ -726,6 +726,15 @@ Source: `docs/research/meetings/2026-08-21-course-eval-cohere-design-review-aart
 | T221 | Vocabulary audit — search all PCE UI copy for bare "course evaluation" and confirm which strings need "course survey" vs. "post-course evaluation" | Admin | All PCE admin screens | P1 — DESIGN-REVIEW | Aarti 87f007fe directive. Some longer-form copy may intentionally say "post-course evaluation." A one-time audit (grep for "course evaluation" in `apps/pce/admin/`) needed before Cohere. D_PCE_87f_01. |
 | T222 | Confirm support email alias for template-request instruction | Admin | `templates/page.tsx` EmptyState | P0 — CONFIRM WITH AARTI | Transcript captured "support@exa.com"; applied as `support@exxat.com`. Must confirm the intended address before Cohere. D_PCE_87f_02. |
 
+## DS typography tasks — added 2026-08-24
+
+Source: Office Hour — Design System, Himanshu + Romit (Granola `414e5c37`)
+
+> Himanshu reviewed Romit's PCE term dashboard card design. Gave typography direction for card body and KPI contexts.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T223 | **Card and KPI typography: use Inter, not IvyPraxis/Pesto, in body and metric contexts.** Himanshu: "IV pesto is having like a readability issue I tried like using this font in kpi… if you look at inter then this inter looks much more legible." Rule: IvyPraxis (serif) = page-level headers ONLY. Card body, KPIs, metrics, labels, all data = Inter. Apply when building the PCE term dashboard cards and any new card-based components. | Design | All PCE card surfaces | P1 | D_PCE_0824_01. Forward-looking rule — applies to term dashboard cards (in progress), not retroactively to existing deployed screens. |
 ---
 
 ## Open product questions

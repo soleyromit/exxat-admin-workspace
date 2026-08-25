@@ -285,6 +285,24 @@ Source: `docs/research/meetings/2026-08-13-course-eval-ds-pattern-sync.md` (Gran
 |---|---|---|---|---|---|
 | T112 | DS design language alignment — working session with Himanshu | Design / Eng | Cross-product (exam-management all surfaces) | P1 — DESIGN-REVIEW | Himanshu walked through 6 new DS patterns on Aug 13 that apply to exam-management: (1) compact sidebar — no card-based approach; (2) line-only tabs — no primary/secondary split; (3) tab overflow → icon-based with "more" menu; (4) sticky tabs + sticky section/table headers on scroll; (5) KPI cards — concise top + optional graph (sm/md/lg); (6) resizable sheets + in-sheet record navigation without going back. Vinay is building the component set; engineering picks up new components automatically. Romit to schedule working session with Himanshu AFTER course eval survey distribution handoff. Do NOT apply DS changes until components are released and working session is completed (Romit hit errors on previous upgrade attempt). D_DS_0813_01–07. |
 
+## Coordination tasks — added 2026-08-24
+
+Source: `docs/research/meetings/2026-08-24-leadership-cohere-review.md` (Granola `0e389b16`)
+
+> Leadership demo + Cohere conference positioning meeting. Aarti, Vishaka, Vishal, Kanti, David, Wilson. Exam management product walk-through through the full lifecycle. Session structure and differentiators confirmed.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T113 | **Cohere session update — T98 revision.** Session structure locked: Vishaka leads ~10 min context; Vishal presents ~30 min product. Demo focus = assessment creation + evaluation + analysis (not deep QB). Daily alignment calls this week (Kanti + Vishaka + Vishal). Sept 15 = broader US team. | Romit / Kanti | Cohere prep | P0 — this week | Updates T98. D_EM_0824_01, D_EM_0824_02. |
+| T114 | **ExamSoft feature comparison table** — section-by-section parity matrix: what they have, what we have, what we have better, what we defer. PM task (Vishal's team). Required before Cohere presentation is final. Not a Romit design task — but must be complete before Romit can finalize demo screens. | Vishal PM team | PM / Cohere | P0 — PM task | D_EM_0824_04. Block on design for Cohere. |
+| T115 | **Document UNC Nursing differentiator** — opt-out lockdown browser for open-book exams is a validated ExamSoft gap. Add to product differentiators list and ensure Cohere deck reflects it. Romit ensures it's visible in any design artifact that shows competitive positioning. | Romit / Vishal | Product docs | P1 | D_EM_0824_03. New validated pain point, not previously documented. |
+
+### Updates to existing tasks (Aug 24)
+
+| # | Update |
+|---|---|
+| T98 | **Session structure confirmed:** Vishaka leads ~10 min, then Vishal ~30 min. Focus on assessment creation + evaluation + analysis. Optional: 2–3 min agentic AI teaser at end (Darshan proof-of-concept, team comfort-dependent). D_EM_0824_01, D_EM_0824_02, D_EM_0824_05. |
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |

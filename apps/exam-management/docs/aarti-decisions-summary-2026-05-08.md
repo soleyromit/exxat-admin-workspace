@@ -1591,6 +1591,53 @@ Note: P-bis is already displayed as a number in the assessment builder question 
 
 ---
 
+### 5.69 Cohere conference positioning, ExamSoft differentiators, and session structure (2026-08-24)
+
+Source: `docs/research/meetings/2026-08-24-leadership-cohere-review.md` (Granola `0e389b16`)
+
+**Cohere session structure confirmed (D_EM_0824_01)**
+
+Vishaka leads the first ~10 minutes to set the context ("why is Exxat investing in exam management?"). Vishal presents the product for the remaining ~30 minutes. Three core messages must land:
+1. Prism ecosystem fit — courses, faculty, students pre-populated; no re-registration
+2. LMS integration — turnkey adoption, grade push to LMS
+3. Competitive roadmap — AI differentiators, ExamSoft gaps we close
+
+Kanti + Vishaka coordinate with Vishal daily this week to finalize. Broader US team alignment: Sept 15.
+
+**Cohere demo focus directive (D_EM_0824_02)**
+
+Question bank is introduced conceptually only — not the showcase. "It's important for us to have the question bank capability in the product, but on its own it doesn't win us any brownie points." The 30-minute product presentation focuses on: assessment creation → distribution → evaluation → analysis.
+
+> "Focus more of your time on the assessment, the ability to create an assessment, distribute an assessment and evaluate." — Aarti
+
+**UNC Nursing validated pain point — new ExamSoft differentiator (D_EM_0824_03)**
+
+ExamSoft cannot disable lockdown browser for open-book exams. Exxat can. This is validated from a direct UNC Nursing meeting (Vishal). Differentiator #2 after AI. Must be added to the product differentiators list and Cohere deck.
+
+> "They need ability to opt out of browser lockdown to be able to give open book exams, which today exam soft is not able to do. So that's another differentiator for us." — Vishal
+
+**ExamSoft feature parity table (D_EM_0824_04)**
+
+Aarti and Vishaka directed the PM team to produce a section-by-section ExamSoft feature comparison: what they have, what we have, what we have better, what we defer. Required before Cohere alignment is final.
+
+**Agentic AI teaser — optional Cohere closer (D_EM_0824_05)**
+
+Darshan's conversational QB proof-of-concept (tell AI "select all diabetic questions and move to this folder") shown at the end if the team is comfortable. 2–3 minutes. Polished UI not required. Closes with the AI vision.
+
+**Cohere booth and beta adoption (D_EM_0824_06)**
+
+Four booth TVs: Ask Leo · AI optimizations · ExactOne · New modules (exam management). Beta adoption QR code on decks, standees, and booth. Single QR → Excel with per-module tabs.
+
+**AI = Build stage only, confirmed at leadership (D_EM_0824_07)**
+
+Manual lifecycle ships first. AI differentiates but does not replace manual flow. Nov/Dec 2026 = QB + AI MVP. Jan 1 2027 = full launch. This repeats and elevates D_EM_0719_05 (T105) with leadership alignment on record.
+
+**No FAST for exam management — leadership confirmed (D_EM_0824_08)**
+
+"The decision is not to use fast because we need a different level of control over the questions. There is analysis that need to be done for question. This is we very much care what the question is and how it's structured." Engineering decision confirmed at leadership level.
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1633,6 +1680,7 @@ Note: P-bis is already displayed as a number in the assessment builder question 
 | 2026-07-19 10:04 | Modular product strategy — pricing tiers, upsell opportunities, and AI capabilities | `1bc03a5a` | Aarti + Romit |
 | 2026-07-23 10:30 | Exam management weekly call — faculty grading journey, score override, Cronbach's alpha, Cohere planning | `0261fe62` | Aarti + Bhargav + Vishal + Nipun + David + Romit |
 | 2026-07-30 10:30 | Exam management weekly call — assessment repurposing, cross-course import, AI blueprint planning, PB flag threshold | `afac83e4` | Aarti + Nipun + Bhargav + Romit |
+| 2026-08-24 09:00 | Exam management review with leadership team — Cohere session structure, ExamSoft differentiators, demo focus, agentic AI teaser | `0e389b16` | Aarti + Vishaka + Vishal + Kanti + David + Wilson + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
