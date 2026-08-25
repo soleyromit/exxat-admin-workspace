@@ -1,0 +1,73 @@
+---
+description: Exxat DS — prefer centralized reusable components; ask the user before new bespoke primitives.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-reuse-before-custom.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — reuse before custom
+
+## MUST
+
+0. **Search the component map first** — Before writing **any** new component, grep
+ the generated map at **`docs/exxat-ds/component-map.json`**
+ for the intent in your own words: `tree view`, `split pane`, `stepper`, `drawer`,
+ `command palette`, `kpi`, … Every registered primitive is indexed by `keywords`,
+ so a miss is evidence, not a guess. **A hit means import it** — use the entry's
+ `packageImport` (or `import`) and open its `source` for the reference wiring.
+
+ Do **not** rely on memory or on the selection guide alone: the map is generated
+ from the registry, so it is the only complete inventory. This exists because a
+ survey found the hand-written guide named only 42% of registered
+ components/templates, and agents rebuilt the rest.
+
+ A new file you add under **`components/`** is checked automatically —
+ `pnpm ds:pattern-registry:check` (staged adds, wired into pre-commit) fails the
+ commit if a brand-new pattern has no `sourcePath` row in
+ `registry-entries.ts`. Register it, or add it to that script's `ALLOWLIST`
+ with a one-line reason if it is genuinely route-only glue.
+
+1. **Compose first** — Use existing **`components/ui/`**, **`components/data-views/`**, **`components/templates/`**, **`PageHeader`**, **`ListPageTemplate`**, **`DataTable`**, **`KeyMetrics`**, and patterns in **`AGENTS.md` §9** before writing new layout or interaction chrome.
+2. **Search the codebase** — Grep or open the nearest hub (Placements, Team, Library) for the same UX (toolbar, drawer, metrics, board card, `ListPageViewFrame`, etc.).
+3. **Extend in place** — Prefer adding a variant, slot, or prop to a shared component over a one-off duplicate under a single route.
+
+## Named rebuilds to never hand-roll
+
+These are the surfaces most often rebuilt from scratch. The
+**`exxat-ds-check`** hook flags them post-write from the map's `fingerprints`:
+
+| Hand-rolled | Use instead |
+|---|---|
+| `ResizablePanelGroup` + custom expandable tree | **`ListPageTreePanelShell`** + **`OutlineTreeMenu`** (ref `hub-tree-panel-view.tsx`) |
+| `role="tablist"` + buttons | **`Tabs`**, or **`ViewSegmentedControl`** / **`ButtonSegmentedControl`** for an inner mode switch |
+| `<table>` with manual sorting | **`DataTable`** + **`useTableState`** (**`HubTable`** in a hub) |
+| `createPortal` + `fixed inset-0` overlay | **`Dialog`** (blocking) / **`Sheet`** (reversible) / **`FloatingWindow`** (tool window) |
+| `currentStep` / `activeStep` state machine | **`Wizard`** |
+| Page layout written per route | **`ListPageTemplate`** / **`PrimaryPageTemplate`** / **`SecondaryPanelHubTemplate`** ([selection guide §1.0](../../docs/exxat-ds/component-selection-guide.md)) |
+| Hand-styled `<input>` / `<textarea>` / `<select>` / native radio / checkbox | **`Field`** + **`Input`** / **`Textarea`** / **`Select`** / **`RadioGroup`** / **`Checkbox`** ([`exxat-form-fields.md`](./exxat-form-fields.md)) |
+| Static Leo mark inside a button / FAB | **`AskLeoButton`** with **`animatedStar`**, or **`LeoIcon`** ambient + hover `invited` ([`exxat-leo-icon-motion.md`](./exxat-leo-icon-motion.md)) |
+
+## When the tool must ask the user
+
+**MUST pause and ask the user** (with a short option list) when, after scanning, **no reasonable reuse** exists and the implementation would add **any** of:
+
+- A **new reusable primitive** (new file under `components/` meant for multiple routes), or  
+- A **non-trivial bespoke widget** (custom data grid, chart system, modal stack, or parallel design-system fork) that is not already implied by the task.
+
+Do **not** silently ship a second stack for the same product pattern (e.g. another “table”, another metrics strip, another sidebar).
+
+When the user **uploads a screenshot or mockup**, read **`exxat-no-image-pixel-copy.md`** first — extract IA only; map to DS patterns; never pixel-copy colors or chrome.
+
+If the **user or task already explicitly** approved a greenfield component (“build a new X from scratch”), you may proceed without re-asking.
+
+## MUST NOT
+
+- Add **route-only copies** of patterns that already live in **`components/`** or **`packages/ui`** without product reason.
+- Introduce **parallel primitives** (second button row, second card shell, second command surface) when an existing one can be parameterized.
+- Wrap charts in a **new card shell** — use **`ChartCard`** from `charts-overview.tsx` ([`exxat-chart-cards.md`](./exxat-chart-cards.md)).
+
+## See also
+
+- **`./AGENTS.md` §1** (compose / scan before new UI), **§9** architecture table  
+- **`.agents/rules/exxat-ds-agents.md`**  
+- **`.agents/rules/exxat-centralized-list-dataset.md`** — one dataset / one presentation path for hubs

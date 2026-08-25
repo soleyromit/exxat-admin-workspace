@@ -1,0 +1,54 @@
+---
+description: Exxat DS — compact utility bar, Back mode, height token, and single source of truth for global actions.
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-utility-bar.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — utility bar
+
+## Intent
+
+`UtilityBarSlot` is the **only** shell mount for Search, Ask Leo, Notifications, What's new, Help, Onboarding, and Profile on compact chrome. **Workspace settings** live in the profile menu (not a gear on the bar).
+
+**Compact is the only shell** (`ShellLayoutVariant = "compact"`; persist key `shell:layout-variant:v3`).
+
+## MUST
+
+1. **Height token** — `--shell-utility-bar-height: 2.625rem` (42px). Bar uses `h-(--shell-utility-bar-height)`. Rail `top` and compact `--header-height` read the same token. **MUST NOT** hardcode `h-10` / `2.5rem` / `40px` for this chrome.
+2. **Full-width spacing** — when `[data-shell-utility-bar-full]`, rely on **`globals.css`** (`top: calc(var(--shell-utility-bar-height) + var(--shell-system-banner-height, 0px))`, `padding-top: 0` on workspace). Do not add redundant `pt-*` on `AppSidebar`.
+3. **Comfort / Dense** — `useUtilityBarCompact()` (mobile ≤767 or reflow). Dense: product mark-only; Search / What's new / Help / Onboarding under **More**; Ask Leo icon-only; school avatar stays (`showProgram={false}`); breadcrumb is **current page only** and `flex-1` truncates between product and trailing; **trailing cluster always `ms-auto`** (actions · identity) so free space never parks after profile. Bar spacing is uniform `gap-1` (identity rule `mx-1`). Product sits in equal `px-1.5` between the rail rule and the crumb rule (crumb rule is drawn in the leading cluster).
+4. **Canonical triggers** — `requestOpenCommandMenu`, `AskLeoToggle`, `getSecondaryNavForProduct`, `utilityBarActionButtonClass`.
+5. **One hover hit shape** — every icon control (toggle, Back, Search, bell, Help, More, …) MUST use `Button` `variant="ghost"` `size="icon-sm"` (or `asChild` + `Link`) **plus** `utilityBarActionButtonClass` (`rounded-md` + sidebar-accent). **MUST NOT** ship a bare `Link` / `button` with only size classes.
+6. **Back mode** — when `siteHeader.back` is set **or** `isRecordDetailChromePath` with a derivable parent crumb (`utility-bar-page-chrome.tsx`):
+   - Leading: icon slot (`--sidebar-width-icon`) · full-height `Separator` · parent label (same geometry as toggle | product).
+   - Trailing: **Ask Leo only** (rightmost). Hide toggle, product, breadcrumb trail, search, bell, what's new, help, onboarding, school, profile, and `siteHeader.trailing`.
+   - Peer jump lives on `PageHeader` via `PageTitleRecordSwitcher`, not on the bar.
+7. **What's new** — one seen list (`useWhatsNewSeen`).
+8. **Suppress** on exam-lock and `/builder/onboarding` (unless onboarding sidebar preview).
+
+## Sticky stack (with tabs / hubs)
+
+Utility bar is **outside** `[data-page-scroll]`. Inside the scrollport:
+
+| Layer | Slot | Role |
+|-------|------|------|
+| 1 | utility bar | Global chrome (fixed above scrollport) |
+| 2 | `tabs-sticky-subheader` or `list-views-sticky-subheader` | Sticky under utility; height = `--shell-utility-bar-height`; full-width `border-b` |
+| 3 | DataTable floating column header | Pins via `getStickyTableHeaderOffset()` to the bottom of layer 2 when stuck |
+
+**MUST NOT** invent a second sticky offset; extend `STICKY_SUBHEADER_SLOTS` in `packages/ui/src/lib/page-scroll-port.ts` if a new strip is added.
+
+## MUST NOT
+
+- Duplicate global utility triggers in sidebar or page header when the bar is mounted.
+- Hardcode settings routes per product.
+- Mix hover radii on the bar.
+- Keep Comfort/Dense action chrome on Back mode (except Ask Leo).
+
+## See also
+
+- `docs/exxat-ds/shell-utility-bar-pattern.md`
+- `docs/exxat-ds/record-detail-chrome-pattern.md`
+- `docs/exxat-ds/tabs-pattern.md`
+- `exxat-tabs-chrome.md`, `exxat-command-menu.md`, `exxat-kbd-shortcuts.md`

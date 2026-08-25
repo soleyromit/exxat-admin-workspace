@@ -1,0 +1,42 @@
+---
+description: Exxat DS — ListPageTemplate hub scroll — page scroll for all hub views
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-list-page-hub-scroll.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — list page hub scroll
+
+**Binding for `ListPageTemplate` hubs (Library, Team, Compliance, …).**
+
+## Scroll owner
+
+| Views | Vertical scroll |
+|---|---|
+| **table · list · board · folder · panel · tree-panel · dashboard** | `[data-page-scroll]` only — body grows with page |
+
+## MUST
+
+1. **All hub views** — Use **`HubTable` `toolbarShell(<ViewBody />)`** (or `viewportToolbarShell`, an alias). Do not nest `overflow-y-auto` on Miller / tree column bodies.
+2. **Split hubs** — Use **`ListPageSplitHubChrome`** with **`minHeight` only** (no `100dvh` / `maxHeight` lock). Column headers use **`ListPageTreeColumnHeader`** sticky under the views strip (`top-(--shell-utility-bar-height)`).
+3. **`ListPageTemplate` tab body** — Default `min-h-min`. Keep `LIST_PAGE_VIEWPORT_FILL_VIEWS` empty unless a product documents an opt-in.
+4. **Header + metrics** — Stay **`shrink-0`** above view tabs.
+5. **Resize handles** — Use the global **`ResizableHandle`** (grip on by default). Split hubs MUST pass **`stickyGrip`** so the grip stays in the page viewport on tall groups, plus **`LIST_PAGE_SPLIT_RESIZABLE_GROUP_STYLE`** + **`LIST_PAGE_SPLIT_RESIZABLE_PANEL_STYLE`** so library `overflow`/`height` defaults do not trap sticky headers. Stacking only: **`LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS`**. Shell rails (secondary / Ask Leo) omit `stickyGrip` and use **`groupResizeBehavior="preserve-pixel-size"`**.
+
+## MUST NOT
+
+- Pin only the filter toolbar while a middle pane scrolls.
+- Lock split chrome with `calc(100dvh - …)` (steals page scroll).
+- Hide the resize track — the separator must stay visible between panels / rails.
+
+## Sticky views strip (all hubs)
+
+Hub view tabs pin at **`z-40 isolate self-start bg-background`** under the utility bar.
+
+## Reference
+
+- **`list-page-split-hub-chrome.tsx`** — grow-with-page card + gutters
+- **`list-page-split-hub-tokens.ts`** — panel / handle classes
+- **`list-page-tree-column-header.tsx`** — sticky panel headers
+- **`resizable.tsx`** — shared handle affordance
+- **`library-table.tsx`** / **`hub-tree-panel-view.tsx`** — reference wiring
