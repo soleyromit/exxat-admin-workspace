@@ -737,6 +737,50 @@ Source: Office Hour — Design System, Himanshu + Romit (Granola `414e5c37`)
 | T223 | **Card and KPI typography: use Inter, not IvyPraxis/Pesto, in body and metric contexts.** Himanshu: "IV pesto is having like a readability issue I tried like using this font in kpi… if you look at inter then this inter looks much more legible." Rule: IvyPraxis (serif) = page-level headers ONLY. Card body, KPIs, metrics, labels, all data = Inter. Apply when building the PCE term dashboard cards and any new card-based components. | Design | All PCE card surfaces | P1 | D_PCE_0824_01. Forward-looking rule — applies to term dashboard cards (in progress), not retroactively to existing deployed screens. |
 ---
 
+---
+
+## Phase 1 design tasks — added 2026-08-26 (Course eval sync up — Vishal + Post-Course Survey Cadence)
+
+Sources:
+- `docs/research/meetings/2026-08-25-course-eval-sync-vishal.md` (Granola `fb6bd7f5`)
+- `docs/research/meetings/2026-08-25-post-course-survey-cadence.md` (Granola `970c20a2`)
+
+> Vishal sync (Aug 25): dashboard 2-vs-3 card conflict, per-status survey actions, faculty role column, removal of weekly trend and responses-by-role from analytics scope, raw responses to reports only, global status chip removal from course detail header. Post-Course Survey Cadence session (Aug 25, Vishaka + David + Kanti + Monal): analytics KPI split (course rating vs. faculty rating as separate cards), evaluation coverage as count not percentage, group-by toggle killed, term filter excluded from trend charts, "less is more" launch scope directive, Surveys nav subtext.
+
+### New tasks — from Course eval sync up (fb6bd7f5)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T224 | ⚠️ Dashboard: drop "Upcoming" card — show only Last + Current (2 cards, not 3) | Admin | Evaluation dashboard term cards | **P0 — ALIGNMENT NEEDED** | Vishal Aug 25: "Maybe we don't need three. Right. So we always have two cards. One last term and one current term. That's about it. Upcoming probably is not required." CONFLICTS T46, T203 (Current→Upcoming→Last with 3 cards) and T212 (Upcoming card data model). Do NOT change dashboard code until Romit aligns with Aarti + Vishal. D_PCE_0825A_01. |
+| T225 | Per-status survey actions: Scheduled = Edit+Preview direct; Live = Remind primary + 3-dot (Edit, Preview, View results) | Admin | Survey list / detail row actions | P1 — DESIGN-REVIEW | Vishal Aug 25 directive. Current `RowActions` in `surveys/page.tsx` does not differentiate by status beyond `collecting`. D_PCE_0825A_02. |
+| T226 | Remove global course-offering status chip from detail page header (multi-survey architecture) | Admin | Course offering detail page (not yet built) | P1 — forward-looking constraint | Vishal Aug 25: "at the global level we can remove it because it sounds that it's going to be confusing." Applies when course offering detail page with multi-survey layout is built. D_PCE_0825A_03. |
+| T227 | Faculty role column in survey/evaluation distribution table | Admin | Survey list (`surveys/page.tsx` DataTable) | P1 — DESIGN-REVIEW | Vishal Aug 25: "Where are we capturing the role faculty role of that person?" Current table shows instructor name only; role (primary, guest) is tooltip-only. Add Role as a visible column. D_PCE_0825A_04. |
+| T228 | Raw responses → reports section only; do not display inline in analytics | Admin | Analytics (`analytics/page.tsx`) | P1 — do not build inline | Vishal Aug 25 scope guard. Raw responses are downloadable from a Reports surface only — not shown inline in analytics views. D_PCE_0825A_05. |
+| T229 | **KILL: do not build weekly response trend (week-on-week)** | Admin | Analytics | P1 — do not build | Vishal relayed Aarti's position Aug 25: "she was saying that they don't care." Weekly/week-on-week response trend chart is removed from analytics scope entirely. D_PCE_0825A_06. |
+| T230 | **KILL: do not build "responses by role" analytics section** | Admin | Analytics | P1 — do not build | Vishal Aug 25: "responses by role course coordinator four not needed we will not have the spec down at all." Do not build any breakdown of responses by role type. D_PCE_0825A_07. |
+| T231 | **KILL: do not show global status chip on course offering detail page header** | Admin | Course offering detail page (not yet built) | P1 — forward-looking constraint | Vishal Aug 25: "at the global level we can remove it." Applies when course offering detail page is built with multi-survey architecture. No current code to change. D_PCE_0825A_08. |
+
+### New tasks — from Post-Course Survey Cadence (970c20a2)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T232 | Analytics overview: two separate KPI cards — (1) avg course rating, (2) avg faculty rating | Admin | Analytics overview KPIs (`analytics/page.tsx` KeyMetrics) | P1 — DESIGN-REVIEW | David Aug 25: "I almost envision two cards, one for course reading, one for faculty rating." Do NOT combine into a single rating KPI. D_PCE_0825B_01. |
+| T233 | Evaluation coverage KPI: display as count "N of M" not percentage; remove sparkline from this card | Admin | Analytics overview KPIs (`analytics/page.tsx` KeyMetrics) | P1 — DESIGN-REVIEW | Monal Aug 25: "showing it as 19 course offerings across 3 courses." Format: large number = N covered, subtext = "out of [total] course offerings." No trend line on this card. D_PCE_0825B_02. |
+| T234 | **KILL: do not build group-by toggle (academic year / term) on trend charts** | Admin | Analytics trend charts | P1 — do not build | Vishaka Aug 25: "remove this group by and by default show term over term Trend." Toggle does not exist in current code; confirmed as do-not-build. D_PCE_0825B_03. |
+| T235 | Analytics trend charts: term filter does not apply — always show full history across all terms | Admin | Analytics trend charts | P1 — forward-looking constraint | Vishaka Aug 25: "I would even say that for the trend is a truly, you cannot have a snapshot when it comes to trend is always all data across all terms." Trend charts are globally scoped; the term Select dropdown must not filter them. D_PCE_0825B_04. |
+| T236 | "Less is more" — remove advanced analytics from launch scope; iterate post-beta | Admin | Analytics (`analytics/page.tsx`) | P1 — scope directive | Vishaka Aug 25: "less is more. Let's give them clean, clear analytics that we know for sure they need and they will use." Any advanced analytics addition requires explicit sign-off from Vishaka/David before including. D_PCE_0825B_05. |
+| T237 | Surveys nav item: add subtext "Programmatic and Course Surveys" below label | Admin | `app-sidebar.tsx` ADMIN_NAV | P2 — DESIGN-REVIEW | David Aug 25: "maybe we can add programmatic and course surveys in the subtype, the subtext of the descriptor." Current `SidebarMenuButton` uses flat label only. Check DS sidebar API for subtext/description slot before implementing. D_PCE_0825B_06. |
+
+### Deferred / killed items from Aug 25
+
+| Decision | Reason | Source |
+|---|---|---|
+| Programmatic survey scope | Parked — not resolved in either Aug 25 session (previously parked D_PCE_0819B_04). | Aug 25 Post-Course Survey Cadence |
+| Analytics "by faculty" vs. "by course" drill-down | Not finalized — spec pending. | Aug 25 Post-Course Survey Cadence |
+| T209 / T216 (column order and past-terms conflicts) | Not resolved in Aug 25 Vishal sync. | Aug 25 Course eval sync up |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
