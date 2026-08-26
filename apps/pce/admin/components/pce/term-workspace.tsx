@@ -41,7 +41,6 @@ import {
   Skeleton,
   ToggleGroup, ToggleGroupItem,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
-  Tabs, TabsList, TabsTrigger, TabsCountBadge,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -272,43 +271,32 @@ function TermWorkspaceInner() {
     return counts
   }, [tableRows])
 
-  /* Aug 18 ask (Granola 421b0a20, Vishal: "under all tab, we don't provide
-   * any multi-selection, but under scheduled or live tab, we give multi
-   * selection... which means you're saying we need to have tabs") —
-   * grouped tabs, not one per raw status: "no survey configured, draft can
-   * be one [tab]" is Romit's own grouping call (2026-08-18). needsSetup and
-   * finished are mutually exclusive and exhaustive with isExtendable
-   * (scheduled/active/collecting), so every RowStatus lands in exactly one
-   * non-"all" tab — nothing can silently fall through unrepresented. */
+  /* Grouped status TABS retired (Romit, 2026-08-25, per Vishal's Aug 25
+   * Course Eval sync: "let's not think about the engineering... showing too
+   * many tabs is not right... filter no tabs" — engineering would otherwise
+   * have to store a THIRD grouping (needs_setup/active/finished) on top of
+   * the real survey status, a mapping that isn't scalable: every new status
+   * value has to be slotted into one of the three groups by hand). The
+   * status column's own `filter: { type: 'select', options: STATUS_LABELS }`
+   * (below) already does real per-status filtering — that's the "filter"
+   * half of the decision, and it predates this change, so nothing new had
+   * to be built for it. */
   const isNeedsSetup = (st: RowStatus) => st === 'not_configured' || st === 'draft'
-  const TAB_GROUPS: { key: 'all' | 'needs_setup' | 'active' | 'finished'; label: string; match: (st: RowStatus) => boolean }[] = [
-    { key: 'all', label: 'All', match: () => true },
-    { key: 'needs_setup', label: 'Needs setup', match: isNeedsSetup },
-    { key: 'active', label: 'Active', match: isExtendable },
-    { key: 'finished', label: 'Closed & results', match: (st) => !isNeedsSetup(st) && !isExtendable(st) },
-  ]
   const searchParams = useSearchParams()
   /* Dashboard Breakdown Mode row actions (Aug 19 2026 feedback) deep-link
-   * here with `?tab=` so "Review feedback" lands on Closed & results
-   * instead of All — read once on mount, same as the tab itself: an admin
-   * switching tabs afterward shouldn't get yanked back by a stale param. */
-  const [activeTab, setActiveTab] = useState<'all' | 'needs_setup' | 'active' | 'finished'>(
-    () => {
-      const t = searchParams?.get('tab')
-      return t === 'needs_setup' || t === 'active' || t === 'finished' ? t : 'all'
-    },
+   * here with `?tab=finished` so "Review feedback" lands scoped to closed
+   * surveys instead of the full list — there's no tab control to land ON
+   * anymore, so this now pre-filters the DATA itself once on mount (not a
+   * toggleable view): the admin can broaden back out via the status
+   * column's own filter same as any other filtered state. */
+  const [initialScope] = useState<'all' | 'finished'>(() =>
+    searchParams?.get('tab') === 'finished' ? 'finished' : 'all',
   )
-  const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const group of TAB_GROUPS) counts[group.key] = tableRows.filter((row) => group.match(row.status)).length
-    return counts
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableRows])
   const visibleRows = useMemo(() => {
-    const group = TAB_GROUPS.find((g) => g.key === activeTab)!
-    return tableRows.filter((row) => group.match(row.status))
+    if (initialScope === 'all') return tableRows
+    return tableRows.filter((row) => !isNeedsSetup(row.status) && !isExtendable(row.status))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableRows, activeTab])
+  }, [tableRows, initialScope])
 
   /* Existing remind contract (surveys/remind reads ?ids + ?from only) —
    * accepts one id or several (bulk) joined the same way surveys-table.tsx's
@@ -544,20 +532,25 @@ function TermWorkspaceInner() {
               </div>
             )
           }
+          /* One primary action visible, everything else folded under the
+             ⋯ overflow (Romit, 2026-08-25, per Vishal's Aug 25 sync:
+             "let's only show one action at a time everything else should
+             be folded under three dots" — Scheduled used to show Extend as
+             its lone visible action already, but Live showed BOTH Remind
+             and Extend side by side, two actions competing for the same
+             weight). "Extend" is retired as a distinct visible verb in
+             favor of "Edit survey" ("instead of extend you need to change
+             it to edit survey" — editing the close date is the one thing
+             this action does today, but the label now matches what the
+             admin is actually doing rather than naming one narrow effect
+             of it). Live: Remind stays the sole visible primary — Edit
+             survey/Preview form/View results all move into the overflow
+             ("reminder is there and so then in this case edit can go
+             inside three dots. Edit survey preview form view results").
+             Scheduled: Edit survey becomes the sole visible primary —
+             Preview form/Archive stay in the overflow, same as before. */
           return (
             <div className="flex items-center justify-end gap-1">
-              {/* One consistent style always (2026-08-14, Romit's catch) —
-                  this used to switch to `outline` under the at-risk
-                  threshold (AT_RISK_THRESHOLD, pce-at-risk.ts), which read
-                  as a random inconsistency rather than a signal: the
-                  Response rate bar in the same row already color-codes
-                  urgency, on its own 3-tier scale that doesn't line up with
-                  this button's single 60% cutoff anyway. `outline`, not
-                  `ghost` (2026-08-14, Romit's next catch) — Remind/Extend
-                  are actions the admin actually has to take on a Live row,
-                  same weight as every other primary action in this column
-                  (Set up evaluation, Edit, Review and publish, View
-                  results), all of which are already `outline`. */}
               {isLive(row.status) && (
                 <Button
                   variant="outline"
@@ -569,17 +562,17 @@ function TermWorkspaceInner() {
                   Remind
                 </Button>
               )}
-              {isExtendable(row.status) && (
+              {isExtendable(row.status) && !isLive(row.status) && (
                 <Button
                   variant="outline"
                   size="sm"
                   // row.survey is guaranteed here — not_configured returned
                   // above, and isExtendable only ever matches a real status.
                   onClick={(e) => { e.stopPropagation(); setExtendTargets([row.survey!]) }}
-                  aria-label={`Extend the close date for the ${label}`}
+                  aria-label={`Edit the ${label}`}
                 >
-                  <i className="fa-light fa-calendar-pen" aria-hidden="true" />
-                  Extend
+                  <i className="fa-light fa-pen" aria-hidden="true" />
+                  Edit survey
                 </Button>
               )}
               {/* Closed/pending review — nothing is visible to faculty yet
@@ -609,6 +602,15 @@ function TermWorkspaceInner() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {/* Edit survey — folded here for Live only (Scheduled keeps
+                      it as the visible primary above, so repeating it here
+                      would duplicate the same action twice in the same row). */}
+                  {isExtendable(row.status) && isLive(row.status) && (
+                    <DropdownMenuItem onSelect={() => setExtendTargets([row.survey!])}>
+                      <i className="fa-light fa-pen" aria-hidden="true" />
+                      Edit survey
+                    </DropdownMenuItem>
+                  )}
                   {/* Finished rows (Closed/Pending review/Released) already
                       have a visible button to this exact destination above
                       — "Review & publish results" or "View results" — so
@@ -640,10 +642,10 @@ function TermWorkspaceInner() {
                       "undo a mistake" path for a survey that should never
                       have gone out. Scoped to rows that haven't reached
                       review/results yet (row.survey is guaranteed here, same
-                      as Extend above). A not_configured row already returned
-                      above this point (see the top of this cell), so TS
-                      narrows it out here — only the archived exclusion needs
-                      an explicit check (nothing left to undo). */}
+                      as Edit survey above). A not_configured row already
+                      returned above this point (see the top of this cell),
+                      so TS narrows it out here — only the archived exclusion
+                      needs an explicit check (nothing left to undo). */}
                   {row.status !== 'archived' && !isFinished(row.status) && (
                     <>
                       <DropdownMenuSeparator />
@@ -771,46 +773,16 @@ function TermWorkspaceInner() {
 
             {/* ── Evaluations — table ⇄ kanban ── */}
             <section className="flex flex-col gap-2" aria-label="Evaluations">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                {/* Status tab strip reinstated (2026-08-18, Granola 421b0a20,
-                    Vishal) — the 2026-08-17 removal called a per-status tab
-                    strip "fully redundant" with the Status filter's own
-                    checkboxes. This isn't that: it's GROUPED tabs (needs
-                    setup / active / closed & results), which the filter
-                    checkboxes can't express as a single click, and it's what
-                    scopes bulk-select to a coherent set of rows (only Active
-                    ever has a meaningful multi-select bar) instead of one
-                    long list where selection eligibility varies row to row.
-                    Table-view only (Romit's catch, 2026-08-18) — Board
-                    reads termSurveys directly into its own status columns
-                    (no_survey/scheduled/live/closed_review/released, all
-                    visible side by side already), so the tab filter never
-                    touched it: it sat there looking clickable and doing
-                    nothing, a dead control on the one view where every
-                    status is already on screen at once.
-                    `invisible`, not a conditional unmount (Romit's second
-                    catch, 2026-08-18) — removing it from the DOM in Board
-                    view shrank this row's total content width, which could
-                    tip `flex-wrap` into wrapping the Table/Board toggle
-                    differently between the two views: a visible jump on
-                    every switch. `invisible` keeps the reserved width
-                    identical in both views (and drops out of the tab order
-                    same as an unmount, unlike opacity-0) — just the pixels
-                    are hidden, not the layout. */}
-                <Tabs
-                  value={activeTab}
-                  onValueChange={(v) => setActiveTab(v as typeof activeTab)}
-                  className={evalView !== 'table' ? 'invisible' : undefined}
-                >
-                  <TabsList>
-                    {TAB_GROUPS.map((group) => (
-                      <TabsTrigger key={group.key} value={group.key}>
-                        {group.label}
-                        <TabsCountBadge count={tabCounts[group.key] ?? 0} />
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
+              <div className="flex items-center justify-end gap-3 flex-wrap">
+                {/* Grouped status tabs retired (Romit, 2026-08-25, per
+                    Vishal's Aug 25 sync — see the retirement note above
+                    `visibleRows`). Bulk-select scoping never actually
+                    depended on the tab: `isRowSelectable` below already
+                    gates on row status directly (isExtendable), same as it
+                    did while tabs existed — the tab was never load-bearing
+                    for that, just a second UI surface saying the same
+                    thing. The status column's own filter (STATUS_LABELS)
+                    is the one control for narrowing this list now. */}
                 <ToggleGroup
                   type="single"
                   variant="outline"

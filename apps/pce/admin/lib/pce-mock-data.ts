@@ -1791,23 +1791,12 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   { id: 'mc22', code: 'DPT-801', name: 'Evidence-Based Practice',             department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
 ]
 
-const daysFromNow = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
-}
-
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
   // endDate + 7d grace runs right up to pt5's Aug 24 start, so "current" hands
   // off from Spring to Fall with no gap regardless of what day this is viewed
   // (was Jul 15 — drifted stale once "today" passed Jul 22, breaking every
   // demo scenario and the real default dashboard's Current-term card).
   { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-08-16', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
-  // Fall 2026 Session B — short clinical block that runs alongside Fall
-  // 2026's main didactic term, computed relative to "today" so it always
-  // lands in the Upcoming window (starts 1-30 days out) instead of a fixed
-  // date going stale.
-  { id: 'pt9', name: 'Fall 2026 – Session B', season: 'Fall', academicYear: '2026–2027', startDate: daysFromNow(20), endDate: daysFromNow(20 + 56), status: 'active', enabledForEval: true },
   { id: 'pt2', name: 'Fall 2025',   season: 'Fall',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
   { id: 'pt3', name: 'Spring 2025', season: 'Spring', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
   { id: 'pt4', name: 'Fall 2024',   season: 'Fall',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },

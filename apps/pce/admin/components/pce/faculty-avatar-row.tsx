@@ -10,15 +10,21 @@
 // table already imports the board component, so exporting this from
 // term-workspace.tsx would make the board import back from it (circular).
 //
-// Same AvatarGroup + per-person Tip + non-overlapping layout as Step 2's
-// Evaluates column (courses-evaluatees/step-survey-instances.tsx
-// EvaluateeChipCluster) — the established in-product pattern for "who, at a
-// glance, with a name on hover," not a bare "+N" text suffix.
-// AvatarGroupCount (not a text Badge) for overflow — never an overlapping
-// -space-x stack (AvatarGroup's own doc comment: "Overlapping face
-// piles... MUST NOT").
+// Same role-label Badge + per-role AvatarGroup + per-person Tip as Step 2's
+// Evaluatees column (courses-evaluatees/step-survey-instances.tsx
+// EvaluateeChipCluster) — that column switched from a bare avatar cluster to
+// role-label badges on 2026-08-12 ("Primary faculty ×2" + avatars per role),
+// but this shared component was never updated to match, so the survey table
+// and board kept the pre-08-12 look (Romit, 2026-08-25: "the evaluatee table
+// isn't looking the same as push survey evaluatees column"). Grouped by
+// PceInstructor's own 'primary' | 'guest' role field — a simpler taxonomy
+// than the wizard's per-instance role labels, so at most two badges ever
+// render here, never an overflow "+N" badge.
+// AvatarGroupCount (not a text Badge) for within-group overflow — never an
+// overlapping -space-x stack (AvatarGroup's own doc comment: "Overlapping
+// face piles... MUST NOT").
 
-import { AvatarGroup, AvatarGroupCount, AvatarInitials, Tip } from '@exxatdesignux/ui'
+import { AvatarGroup, AvatarGroupCount, AvatarInitials, Badge, Tip } from '@exxatdesignux/ui'
 import type { PceInstructor } from '@/lib/pce-mock-data'
 
 // Program Director gets a distinct ring — Aarti, same meeting (0ef80c33):
@@ -33,29 +39,50 @@ import type { PceInstructor } from '@/lib/pce-mock-data'
 // so the distinction survives for screen readers and non-color viewing.
 const isProgramDirector = (i: PceInstructor) => i.position === 'Program Director'
 
+const MAX_PER_GROUP = 3
+
+function RoleGroup({ label, icon, instructors }: { label: string; icon: string; instructors: PceInstructor[] }) {
+  const shown = instructors.slice(0, MAX_PER_GROUP)
+  const overflow = instructors.length - MAX_PER_GROUP
+  return (
+    <>
+      <Badge
+        tabIndex={0}
+        variant="outline"
+        className="h-6 gap-1 border-border bg-background px-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+      >
+        <i className={`fa-light ${icon} text-[10px]`} aria-hidden="true" />
+        {label}{instructors.length > 1 ? ` ×${instructors.length}` : ''}
+      </Badge>
+      <AvatarGroup className="gap-0.5" role="group" aria-label={`${label}: ${instructors.map((i) => i.name).join(', ')}`}>
+        {shown.map((i) => {
+          const isPD = isProgramDirector(i)
+          return (
+            <Tip key={i.id} label={isPD ? `${i.name} — Program Director` : i.name} side="top">
+              <span
+                tabIndex={0}
+                className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                style={isPD ? { boxShadow: '0 0 0 1.5px var(--chart-3)', borderRadius: '9999px' } : undefined}
+              >
+                <AvatarInitials initials={i.initials} size="sm" className="size-5" />
+              </span>
+            </Tip>
+          )
+        })}
+        {overflow > 0 && <AvatarGroupCount className="text-[11px]">+{overflow}</AvatarGroupCount>}
+      </AvatarGroup>
+    </>
+  )
+}
+
 export function FacultyAvatarRow({ instructors, className }: { instructors: PceInstructor[]; className?: string }) {
   if (instructors.length === 0) return null
-  const MAX = 3
-  const shown = instructors.slice(0, MAX)
-  const overflow = instructors.length - MAX
-  const names = instructors.map((i) => i.name).join(', ')
+  const primary = instructors.filter((i) => i.role === 'primary')
+  const guest = instructors.filter((i) => i.role === 'guest')
   return (
-    <AvatarGroup className={className ?? 'gap-0.5'} role="group" aria-label={`Faculty: ${names}`}>
-      {shown.map((i) => {
-        const isPD = isProgramDirector(i)
-        return (
-          <Tip key={i.id} label={isPD ? `${i.name} — Program Director` : i.name} side="top">
-            <span
-              tabIndex={0}
-              className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              style={isPD ? { boxShadow: '0 0 0 1.5px var(--chart-3)', borderRadius: '9999px' } : undefined}
-            >
-              <AvatarInitials initials={i.initials} size="sm" className="size-5" />
-            </span>
-          </Tip>
-        )
-      })}
-      {overflow > 0 && <AvatarGroupCount className="text-[11px]">+{overflow}</AvatarGroupCount>}
-    </AvatarGroup>
+    <div className={className ?? 'flex flex-wrap items-center gap-1.5'}>
+      {primary.length > 0 && <RoleGroup label="Primary faculty" icon="fa-chalkboard-user" instructors={primary} />}
+      {guest.length > 0 && <RoleGroup label="Guest faculty" icon="fa-microphone" instructors={guest} />}
+    </div>
   )
 }

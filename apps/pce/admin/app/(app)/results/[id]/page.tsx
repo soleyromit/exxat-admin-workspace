@@ -49,6 +49,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
   LocalBanner,
   StatusBadge,
   PersonIdentityCell,
@@ -60,11 +63,6 @@ import {
   TooltipContent,
   ToggleGroup,
   ToggleGroupItem,
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
   ExportDrawer,
   FloatingSheetPanel,
   FloatingSheetPanelBody,
@@ -72,14 +70,6 @@ import {
   FloatingSheetPanelHeader,
   ToggleSwitch,
 } from '@exxatdesignux/ui'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  chartTooltipKeyboardSyncProps,
-} from '@exxatdesignux/ui/components/ui/chart'
-import type { ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
 import { RatingBreakdownRows } from '@/components/pce/rating-viz'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -90,8 +80,6 @@ import {
   OutlineTreeSub,
   OutlineTreeSubItem,
 } from '@/components/data-views/outline-tree-menu'
-import { termCollectionSeries, paceToTarget } from '@/lib/pce-collection'
-import { CHART_AXIS_TICK, CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { EditEndDateDialog, SendReminderDialog } from '@/components/pce/pce-modals'
@@ -102,7 +90,6 @@ import {
   MOCK_RESPONSES,
   MOCK_SURVEY_QUESTION_DATA,
   MOCK_OPEN_TEXT_RESPONSES,
-  MOCK_PROGRAM_TERMS,
   medianFromDistribution,
   programAvgForQuestion,
   EVALUATION_TYPE_LABEL,
@@ -364,29 +351,39 @@ function EvaluationSummaryStrip({
   )
 }
 
-/** Faculty scope selector — for a co-taught course, a segmented control that
- *  scopes Overview / Reports to the whole course ("All faculty") or one
- *  instructor. The selected option IS the current view (clear active state);
- *  an amber dot flags instructors still in review. A single-instructor course
- *  shows just the identity + its status. */
+/** Faculty scope selector — Course / Faculty tabs, with WHICH faculty (and
+ *  optionally which role) as an "Add filter" chip underneath Faculty, not a
+ *  third thing crammed into the tab row itself (Romit, 2026-08-25, per
+ *  Vishal's "try and simplify this faculty course and evaluate a selection"
+ *  — explored as three live variants, "C" — reusing the exact Add-filter/
+ *  filter-chip pattern already shipped on the term-workspace survey table —
+ *  was the pick: "most consistent with how filtering already works
+ *  elsewhere in this app"). `scope`'s own values are unchanged
+ *  ('all' | 'course' | a facultyId) — only the UI presenting it moved; every
+ *  downstream computation keyed on `scope`/`facultyScope` elsewhere on this
+ *  page needed no changes. A single-instructor course shows just the
+ *  identity + its status, same as before. */
 function FacultyScopeSelector({
   instructors,
   scope,
-  setScope,
+  toggleFacultyId,
   roleScope = 'all',
-  setRoleScope,
+  toggleRoleScope,
   evalRoleById,
   isPD,
   avatarUrlById,
   showCourse,
 }: {
   instructors: EvalResult[]
-  scope: 'all' | 'course' | string
-  setScope: (v: string) => void
-  /** Course-association role scope — the middle ground between "All faculty" and one
-   *  person on a co-taught course (same vocabulary as Analytics → By Faculty). */
-  roleScope?: 'all' | FacultyEvalRoleId
-  setRoleScope?: (v: 'all' | FacultyEvalRoleId) => void
+  scope: 'all' | 'course' | string[]
+  /** Toggles ONE instructor in/out of the picked set — multi-select
+   *  (Romit, 2026-08-25: "I am not able to add multiple faculty/role"). */
+  toggleFacultyId: (id: string) => void
+  /** Course-association role scope — the middle ground between "All faculty" and
+   *  specific people on a co-taught course (same vocabulary as Analytics → By Faculty). */
+  roleScope?: 'all' | FacultyEvalRoleId[]
+  /** Toggles ONE role in/out of the picked set — same multi-select shape as `toggleFacultyId`. */
+  toggleRoleScope?: (role: FacultyEvalRoleId) => void
   /** facultyId → course-association role, shared derivation with analytics. */
   evalRoleById?: (facultyId: string) => FacultyEvalRoleId
   isPD: boolean
@@ -394,10 +391,13 @@ function FacultyScopeSelector({
    *  photos as every plot marker (one identity treatment page-wide). */
   avatarUrlById?: Record<string, string | undefined>
   /** This offering has course-content questions in scope — offers a "Course"
-   *  pill alongside the faculty pills so a coordinator can view course-only
+   *  tab alongside "Faculty" so a coordinator can view course-only
    *  analytics the same way they drill into one instructor. */
   showCourse?: boolean
 }) {
+  /* Controls the shared checkbox menu both the Faculty pill and the Role
+   * pill reopen — declared above the early return below (Rules of Hooks). */
+  const [open, setOpen] = useState(false)
   // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
   // affordance) — a faculty viewer keeps their own identity row and can never
   // scope the Faculty Performance signal onto a colleague's instructor block.
@@ -421,74 +421,153 @@ function FacultyScopeSelector({
     )
   }
   /* Roles present among THESE instructors, canonical order — offering a role whose
-     pills would vanish entirely is the same "dropdown ≠ table" bug the analytics
+     filter would match nobody is the same "dropdown ≠ table" bug the analytics
      role filter guards against (§4.7). */
   const roleOptions = evalRoleById
     ? EVAL_FACULTY_ROLES.filter((r) => instructors.some((f) => evalRoleById(f.facultyId) === r.id))
     : []
-  const roleLabel = roleOptions.find((r) => r.id === roleScope)?.label
-  const visible = instructors.filter(
-    (f) => roleScope === 'all' || evalRoleById?.(f.facultyId) === roleScope,
-  )
+  const activeInstructors = Array.isArray(scope) ? instructors.filter((f) => scope.includes(f.facultyId)) : []
+  const activeRoles = roleScope === 'all' ? [] : roleScope
+  const activeRoleLabels = activeRoles.map((id) => roleOptions.find((r) => r.id === id)?.label).filter((l): l is NonNullable<typeof l> => !!l)
+  const hasFilter = activeInstructors.length > 0 || activeRoleLabels.length > 0
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={scope}
-        onValueChange={(v) => v && setScope(v)}
-        aria-label={showCourse ? 'Scope the results by course or instructor' : 'Scope the results by instructor'}
-      >
-        {/* Course-only view — the mirror of picking one instructor: shows
-            course-content analytics without any faculty-performance framing
-            (Romit, 2026-08-17 — this offering's results page had no way to
-            view course-only analytics, only "All faculty" or one person). */}
-        {showCourse && (
-          <ToggleGroupItem value="course" className="gap-2">
-            <i className={`fa-light ${EVALUATION_TYPE_ICON.course_material} text-xs`} aria-hidden="true" />
-            Course
-          </ToggleGroupItem>
-        )}
-        <ToggleGroupItem value="all" className="gap-2">
-          <i className="fa-light fa-users text-xs" aria-hidden="true" />
-          {/* The selected option IS the current view — with a role scoped, "all"
-              means "everyone holding that role", and the pill must say so. */}
-          {roleLabel ? `All ${roleLabel.toLowerCase()}s` : 'All faculty'}
-        </ToggleGroupItem>
-        {visible.map((f) => (
-          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-2">
-            {/* Same portraits as the plot markers; 24px disc floor. */}
-            <Avatar className="size-6 shrink-0">
-              <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
-              <AvatarFallback className="text-xs font-medium">{f.facultyInitials}</AvatarFallback>
-            </Avatar>
-            {f.facultyName}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-      {/* Role filter — PD-only like the pills; hidden when every instructor holds the
-          same role (a one-option filter is a promise of a choice that doesn't exist). */}
-      {setRoleScope && roleOptions.length > 1 && (
-        <>
-          <label className="shrink-0 text-sm text-muted-foreground" htmlFor="results-role">
-            Role
-          </label>
-          <Select
-            value={roleScope}
-            onValueChange={(v) => setRoleScope(v as 'all' | FacultyEvalRoleId)}
-          >
-            <SelectTrigger id="results-role" className="h-8 w-44 text-sm" aria-label="Scope the results to a role">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All roles</SelectItem>
-              {roleOptions.map((r) => (
-                <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {/* Course/Faculty scope-switching itself now lives one level up, as
+          real page tabs (Romit, 2026-08-25: "should we merge overview tab
+          with course and faculty tab?") — Course/Faculty/Reports/My Logs
+          are one unified TabsList, each a genuine TabsContent panel, which
+          also resolved the earlier axe finding from trying to fake that
+          with a non-panel-swapping `Tabs` instance in here. This component
+          now only handles WHICH faculty / which role within the Faculty
+          panel. */}
+      {/* WHICH faculty and WHICH role — INDEPENDENT filters that AND
+          together, each its own pill, same shape as the term-workspace
+          survey table's filter bar (Romit, 2026-08-25: "i want this to work
+          as datatable filter, where i select multiple and the result are
+          shown" — picking a role used to silently replace a faculty pick
+          instead of narrowing it further). Both pills open the SAME
+          checkbox menu (controlled `open` state, since Radix needs one
+          trigger to anchor the popper) so either can add to or edit the
+          other dimension; each pill's own ⋯xmark clears only that
+          dimension. The trailing "+" stays available even with pills
+          present, to start the dimension that's still empty. */}
+      {scope !== 'course' && (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          {activeInstructors.length > 0 && (
+            <div className="inline-flex items-center h-6 max-w-[14rem] rounded border border-brand/45 bg-brand/10 text-xs">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex h-6 min-w-0 items-center gap-1.5 whitespace-nowrap rounded-l pl-2 pr-1.5 hover:bg-brand/15"
+              >
+                {/* Up to 2 avatars inline — a 3rd+ pick switches to a
+                    plain count so the chip doesn't grow unbounded. */}
+                {activeInstructors.length <= 2 ? (
+                  <span className="flex shrink-0 -space-x-1">
+                    {activeInstructors.map((f) => (
+                      <Avatar key={f.facultyId} className="size-4 shrink-0 ring-1 ring-[var(--card)]">
+                        <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+                        <AvatarFallback className="text-[9px]">{f.facultyInitials}</AvatarFallback>
+                      </Avatar>
+                    ))}
+                  </span>
+                ) : (
+                  <i className="fa-light fa-users text-xs text-brand-color shrink-0" aria-hidden="true" />
+                )}
+                <span className="shrink-0 text-foreground">Faculty</span>
+                <span className="min-w-0 truncate font-medium text-foreground">
+                  {activeInstructors.length <= 2
+                    ? activeInstructors.map((f) => f.facultyName).join(', ')
+                    : `${activeInstructors.length} selected`}
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${activeInstructors.map((f) => f.facultyName).join(', ')} filter`}
+                onClick={() => activeInstructors.forEach((f) => toggleFacultyId(f.facultyId))}
+                className="inline-flex h-6 w-5 shrink-0 items-center justify-center rounded-r text-muted-foreground hover:bg-brand/15 hover:text-destructive"
+              >
+                <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+          {activeRoleLabels.length > 0 && (
+            <div className="inline-flex items-center h-6 max-w-[14rem] rounded border border-brand/45 bg-brand/10 text-xs">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex h-6 min-w-0 items-center gap-1.5 whitespace-nowrap rounded-l pl-2 pr-1.5 hover:bg-brand/15"
+              >
+                <i className="fa-light fa-user-tag text-xs text-brand-color shrink-0" aria-hidden="true" />
+                <span className="shrink-0 text-foreground">Role</span>
+                <span className="min-w-0 truncate font-medium text-foreground">{activeRoleLabels.join(', ')}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${activeRoleLabels.join(', ')} role filter`}
+                onClick={() => activeRoles.forEach((r) => toggleRoleScope?.(r))}
+                className="inline-flex h-6 w-5 shrink-0 items-center justify-center rounded-r text-muted-foreground hover:bg-brand/15 hover:text-destructive"
+              >
+                <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              aria-label={hasFilter ? 'Add another filter' : undefined}
+              className={
+                hasFilter
+                  ? 'h-6 w-6 p-0 text-muted-foreground hover:text-foreground'
+                  : 'h-6 border border-dashed border-input/70 text-muted-foreground hover:border-input'
+              }
+            >
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+              {!hasFilter && 'Add filter'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="text-xs">Faculty</DropdownMenuLabel>
+            {instructors.map((f) => (
+              <DropdownMenuCheckboxItem
+                key={f.facultyId}
+                checked={activeInstructors.some((a) => a.facultyId === f.facultyId)}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  toggleFacultyId(f.facultyId)
+                }}
+              >
+                <Avatar className="size-5 shrink-0">
+                  <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
+                  <AvatarFallback className="text-[10px]">{f.facultyInitials}</AvatarFallback>
+                </Avatar>
+                {f.facultyName}
+              </DropdownMenuCheckboxItem>
+            ))}
+            {/* Hidden when every instructor holds the same role — a
+                one-option filter is a promise of a choice that doesn't exist. */}
+            {toggleRoleScope && roleOptions.length > 1 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs">Role</DropdownMenuLabel>
+                {roleOptions.map((r) => (
+                  <DropdownMenuCheckboxItem
+                    key={r.id}
+                    checked={activeRoles.includes(r.id)}
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      toggleRoleScope(r.id)
+                    }}
+                  >
+                    {r.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   )
@@ -888,8 +967,11 @@ function ScoreTile({
 }: {
   label: string
   icon?: string
-  /** Scoped identity — photo + name replace icon + generic label. */
-  person?: { name: string; initials: string; avatarUrl?: string }
+  /** Scoped identity — photo + name replace icon + generic label. `role` is
+   *  the course-association role (Romit, 2026-08-25: "can't see faculty
+   *  role") — a second line under the name, not squeezed onto the name's
+   *  own line where it would only worsen truncation. */
+  person?: { name: string; initials: string; avatarUrl?: string; role?: string }
   badge?: React.ReactNode
   value: string
   suffix?: string
@@ -901,8 +983,12 @@ function ScoreTile({
       {/* Fixed three-row skeleton (identity + pill / hero / caption), each
           row min-height'd — tiles align by construction. The status pill
           rides the heading line, right-aligned; counts are gone (Romit
-          round 11: "remove the counts, keep the pill on the heading line"). */}
-      <div className="flex min-h-6 items-center justify-between gap-2">
+          round 11: "remove the counts, keep the pill on the heading line").
+          Wraps when the identity block and a long status label (e.g.
+          "Results available") can't both fit on one line — the badge never
+          shrinks or truncates, so without wrap the name absorbed the whole
+          squeeze and could truncate down to a couple of characters. */}
+      <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-2 gap-y-1">
         {person ? (
           <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
             <Avatar className="size-6 shrink-0">
@@ -910,7 +996,10 @@ function ScoreTile({
               <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
             </Avatar>
             <span className="sr-only">{label}: </span>
-            <span className="min-w-0 truncate font-medium text-foreground">{person.name}</span>
+            <span className="min-w-0 flex flex-col leading-tight">
+              <span className="truncate font-medium text-foreground">{person.name}</span>
+              {person.role && <span className="truncate text-xs font-normal text-muted-foreground">{person.role}</span>}
+            </span>
           </p>
         ) : (
           <p className="min-w-0 flex items-center gap-1.5 text-sm text-muted-foreground leading-snug">
@@ -955,18 +1044,26 @@ function ScoreCard({
   value,
   programAvg,
   priors,
+  breakdown,
 }: {
   title: string
   /** Evaluation-type glyph — ties the card to its type without a second row. */
   icon?: string
   /** Scoped identity — the card IS this person: photo + name replace the
-   *  generic type label (Romit round 9); title survives as sr-only context. */
-  person?: { name: string; initials: string; avatarUrl?: string }
+   *  generic type label (Romit round 9); title survives as sr-only context.
+   *  `role` is the course-association role, shown as a second line. */
+  person?: { name: string; initials: string; avatarUrl?: string; role?: string }
   /** Per-type status (each type runs on its own clock — Romit 2026-07-17). */
   statusBadge?: React.ReactNode
   value: number | null
   programAvg: number | null
   priors: { term: string; avg: number; actionItems?: PriorOffering['actionItems'] }[]
+  /** Per-instructor avatar + average, shown when the card's `value` is a
+   *  BLEND across more than one person (co-taught course, "All faculty"
+   *  scope) — otherwise the card's single blended number has no identity
+   *  attached to it at all (Vishal, 2026-08-25 sync — flagged as a missing
+   *  avatar, not a missing number: the number was always there). */
+  breakdown?: { id: string; name: string; initials: string; avatarUrl?: string; avg: number | null }[]
 }) {
   const delta = value != null && programAvg != null ? value - programAvg : null
   const prior = priors.length > 0 ? priors[priors.length - 1] : null
@@ -1033,6 +1130,21 @@ function ScoreCard({
             )
           }
         />
+        {breakdown && breakdown.length > 1 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-border px-4 py-3">
+            {breakdown.map((f) => (
+              <div key={f.id} className="flex items-center gap-1.5">
+                <Avatar className="size-6">
+                  <AvatarImage src={f.avatarUrl} alt="" className="object-cover" />
+                  <AvatarFallback className="text-[10px]">{f.initials}</AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-muted-foreground">
+                  {f.name} <span className="font-medium text-foreground tabular-nums">{f.avg != null ? f.avg.toFixed(2) : '—'}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -1087,7 +1199,7 @@ interface ThemeRowDatum {
    *  aggregated across the theme's questions — feeds the detail popover. */
   dist: [number, number, number, number, number]
   /** Per-instructor average within this theme (scope-aware) — photo markers. */
-  instructors: { id: string; initials: string; name: string; avatarUrl?: string; avg: number }[]
+  instructors: { id: string; initials: string; name: string; avatarUrl?: string; role?: 'primary' | 'guest'; avg: number }[]
   /** The contributing questions — the popover lists them as jump links. */
   questionRows: { id: string; text: string; avg: number }[]
 }
@@ -1175,6 +1287,7 @@ function ThemeBoxplotChart({
                         name: fi.name,
                         initials: fi.initials,
                         avatarUrl: fi.avatarUrl,
+                        role: fi.role,
                         avg: fi.avg,
                       }))}
                       whiskers
@@ -1253,6 +1366,10 @@ interface PlotPerson {
   name: string
   initials: string
   avatarUrl?: string
+  /** Same 'primary' | 'guest' vocabulary as the Evaluatees column (Romit,
+   *  2026-08-25: "their role isn't defined here" — the per-person popover
+   *  showed name + average with no role at all). */
+  role?: 'primary' | 'guest'
   avg: number
   counts?: number[]
   total?: number
@@ -1484,12 +1601,30 @@ function ScaleTrackPlot({
             person: undefined,
           },
         ]
-  /* Near-equal scores: labels drop to a second row instead of colliding. */
+  /* Near-equal scores: colliding markers fan out with a real (non-
+     overlapping) gap instead of stacking. Round 1 (Romit, 2026-08-25 —
+     screenshot showed two "4.3" labels stacked under a SINGLE avatar) only
+     staggered the label text vertically while every colliding AVATAR still
+     rendered at the exact same `x`, so the later one painted directly over
+     the earlier one and hid it completely. Round 2 (Romit: "hard to see and
+     click" — a 10px nudge on a 24px avatar still left them 14px overlapped)
+     widens the step to the full avatar diameter + a small gap (28px), and
+     moves the WHOLE marker (avatar + its own label together, both children
+     of the same translated wrapper) by that offset — so each person's
+     avatar sits fully clear of its neighbor's, has its own full-size click
+     target, and its value renders directly beneath IT rather than needing a
+     separate vertical stack to avoid colliding with a neighbor's number. */
   let lastLabelX = -Infinity
+  let collisionOffsetPx = 0
   const placed = marks.map((m) => {
     const secondRow = m.x - lastLabelX < 9
-    if (!secondRow) lastLabelX = m.x
-    return { ...m, secondRow }
+    if (!secondRow) {
+      lastLabelX = m.x
+      collisionOffsetPx = 0
+    } else {
+      collisionOffsetPx += 28
+    }
+    return { ...m, xOffsetPx: collisionOffsetPx }
   })
   return (
     <div className="relative h-16 w-full min-w-0">
@@ -1584,7 +1719,11 @@ function ScaleTrackPlot({
                 : `Course average ${m.value.toFixed(1)}, details`
             }
             className={`absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
-            style={{ left: `${m.x}%`, top: m.person ? 16 : 22 }}
+            style={{
+              left: `${m.x}%`,
+              top: m.person ? 16 : 22,
+              marginLeft: m.xOffsetPx ? `${m.xOffsetPx}px` : undefined,
+            }}
           >
             {m.person ? (
               <Avatar className="size-6 ring-2 ring-[var(--card)]">
@@ -1599,10 +1738,7 @@ function ScaleTrackPlot({
             )}
             <span
               className="mt-1 text-xs font-semibold leading-none tabular-nums"
-              style={{
-                color: m.below ? 'var(--chip-4)' : 'var(--foreground)',
-                marginTop: m.secondRow ? 14 : undefined,
-              }}
+              style={{ color: m.below ? 'var(--chip-4)' : 'var(--foreground)' }}
             >
               {m.value.toFixed(1)}
             </span>
@@ -1617,6 +1753,16 @@ function ScaleTrackPlot({
                   </Avatar>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{m.person.name}</p>
+                    {/* Role wasn't shown anywhere on this popover at all
+                        (Romit, 2026-08-25: "their role isn't defined here")
+                        — same 'Primary faculty' / 'Guest faculty' vocabulary
+                        as the Evaluatees column, not just a "Guest" flag on
+                        the exception case. */}
+                    {m.person.role && (
+                      <p className="text-xs text-muted-foreground">
+                        {m.person.role === 'primary' ? 'Primary faculty' : 'Guest faculty'}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground tabular-nums">
                       Average {m.value.toFixed(1)}
                       {m.person.total != null
@@ -1868,150 +2014,10 @@ function QuestionBreakdownTable({
   )
 }
 
-/* ── collection pace chart (live evaluations) ─────────────────────────────────
-   The in-flight page is a COLLECTION COCKPIT: the admin's question is "are we
-   accumulating fast enough, and do I need to nudge?" — daily responses + the
-   cumulative rate against the 70% target answer it (Sprig in-progress pattern). */
-
-/** ISO date → the pace chart's short day label (e.g. "Jul 10"). */
-function shortIsoDay(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  if (!y || !m || !d) return iso
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-const paceConfig: ChartConfig = {
-  responses: { label: 'Responses that day', color: 'var(--chart-1)' },
-  cumulativePct: { label: 'Cumulative rate', color: 'var(--brand-color)' },
-}
-
-function CollectionPaceCard({ survey }: { survey: PceSurvey }) {
-  const series = useMemo(() => {
-    const term = MOCK_PROGRAM_TERMS.find((t) => t.name === survey.term) ?? MOCK_PROGRAM_TERMS[0]
-    return termCollectionSeries([survey], term)
-  }, [survey])
-  const pace = useMemo(
-    () => paceToTarget(series.points, series.enrolled, series.collected, 70),
-    [series],
-  )
-  const todayPoint = series.points.find((p) => p.isToday)
-  const daysLeft = survey.deadline
-    ? Math.ceil((new Date(survey.deadline).getTime() - Date.now()) / 86_400_000)
-    : null
-  if (series.points.length === 0) return null
-
-  const behind = survey.responseRate < 70
-  const paceLeo: ChartLeoInsight = {
-    headline: behind
-      ? `${survey.responseRate}% collected · behind the 70% target`
-      : `${survey.responseRate}% collected · on target`,
-    explanation: pace
-      ? `About ${pace.perDay} response${pace.perDay !== 1 ? 's' : ''}/day needed by close${daysLeft != null && daysLeft > 0 ? ` (${daysLeft}d left)` : ''}. A reminder typically lifts the daily count.`
-      : 'The collection window has ended.',
-    kind: behind ? 'dip' : 'trend',
-  }
-
-  return (
-    <ChartCard
-      variant="normal"
-      title="Collection pace"
-      description={`${survey.responseCount} of ${survey.enrollmentCount} responded · target 70%${survey.deadline ? ` · closes ${survey.deadline}` : ''}${
-        survey.originalDeadline && survey.originalDeadline !== survey.deadline
-          ? ` (extended from ${survey.originalDeadline})`
-          : ''
-      }${survey.nextScheduledReminderAt ? ` · next reminder ${shortIsoDay(survey.nextScheduledReminderAt)}` : ''}`}
-      leoInsight={paceLeo}
-    >
-      <ChartFigure
-        label="Collection pace"
-        summary={`Daily responses and cumulative response rate for this evaluation against a 70 percent target. Currently ${survey.responseRate} percent from ${survey.responseCount} of ${survey.enrollmentCount} students.`}
-        dataLength={series.points.length}
-      >
-        {(activeIndex) => (
-          <>
-            <ChartContainer config={paceConfig} className="h-48 w-full">
-              <ComposedChart
-                accessibilityLayer
-                data={series.points}
-                margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
-              >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={CHART_AXIS_TICK} interval="preserveStartEnd" minTickGap={28} />
-                <YAxis
-                  yAxisId="pct"
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  tickFormatter={(v: number) => `${v}%`}
-                  width={40}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={CHART_AXIS_TICK}
-                />
-                <YAxis yAxisId="count" hide />
-                <ReferenceLine
-                  yAxisId="pct"
-                  y={70}
-                  stroke="var(--muted-foreground)"
-                  strokeDasharray="4 3"
-                  label={{ value: '70% target', position: 'insideTopLeft', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
-                />
-                {todayPoint && series.points.some((p) => p.future) && (
-                  <ReferenceLine
-                    yAxisId="pct"
-                    x={todayPoint.day}
-                    stroke="var(--border-control-35)"
-                    label={{ value: 'Today', position: 'insideTop', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
-                  />
-                )}
-                {/* Reminder sends — the series already flags them; the bump
-                    after each mark is the reminder working. */}
-                {series.points
-                  .filter((p) => p.reminder)
-                  .map((p) => (
-                    <ReferenceLine
-                      key={`reminder-${p.iso}`}
-                      yAxisId="pct"
-                      x={p.day}
-                      stroke="var(--border-control-35)"
-                      strokeDasharray="2 3"
-                      label={{ value: 'Reminder', position: 'insideTopRight', fontSize: CHART_TICK_FONT_SIZE, fill: 'var(--muted-foreground)' }}
-                    />
-                  ))}
-                <ChartTooltip
-                  key={chartTooltipKeyboardSyncProps(activeIndex).key}
-                  {...chartTooltipKeyboardSyncProps(activeIndex).props}
-                  cursor={{ stroke: 'var(--border)' }}
-                  content={
-                    <ChartTooltipContent
-                      formatter={(v: unknown, name: unknown) => [
-                        name === 'cumulativePct' ? `${v as number}% cumulative` : `${v as number} responses`,
-                        '',
-                      ]}
-                    />
-                  }
-                />
-                <Bar yAxisId="count" dataKey="responses" fill="var(--chart-1)" fillOpacity={0.5} maxBarSize={10} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-                <Line yAxisId="pct" type="monotone" dataKey="cumulativePct" stroke="var(--brand-color)" strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
-              </ComposedChart>
-            </ChartContainer>
-            <ChartDataTable
-              caption="Collection pace by day"
-              headers={['Day', 'Responses', 'Cumulative rate', 'Reminder']}
-              rows={series.points
-                .filter((p) => (p.responses != null && p.responses > 0) || p.reminder)
-                .map((p) => [
-                  p.day,
-                  p.responses ?? 0,
-                  p.cumulativePct != null ? `${p.cumulativePct}%` : '—',
-                  p.reminder ? 'Sent' : '—',
-                ])}
-            />
-          </>
-        )}
-      </ChartFigure>
-    </ChartCard>
-  )
-}
+/* Collection pace chart (weekly response-trend) removed — Vishal, 2026-08-25
+   sync, looking at the dev build: "do we need this? ... I also feel you
+   don't need this." `Response rate`/`Live response rate` on the KPI strip
+   already answer the collection-health question this chart existed for. */
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
@@ -2211,50 +2217,110 @@ function ResultDetail({
 
   /* Report scope — live overviews/reports can be per-faculty (Romit): 'all'
    * or a single instructorId; the chips in the identity strip drive it. */
-  const [facultyScope, setFacultyScope] = useState<'all' | string>('all')
+  /* Multi-select (Romit, 2026-08-25: "I am not able to add multiple
+   * faculty/role") — a specific pick is now a SET of ids, not one id, so a
+   * coordinator can scope to "Dr. Hassan AND Dr. Patel" on a 3+-instructor
+   * course instead of only ever one person at a time. `[]` never persists —
+   * `toggleFacultyId` snaps an emptied set back to the 'all' sentinel so
+   * downstream code only ever has to branch on 'all' | 'course' | a real,
+   * non-empty array. */
+  const [facultyScope, setFacultyScope] = useState<'all' | 'course' | string[]>('all')
 
-  /* Role scope — the middle ground between "All faculty" and one person on a
-   * co-taught course. Same course-association vocabulary as Analytics → By
-   * Faculty (2026-05-19, Monil: roles derive from course associations, not
+  /* Page tab — Course / Faculty / Reports / My Logs, merged into one TabsList
+   * (Romit, 2026-08-25: "should we merge overview tab with course and
+   * faculty tab?"). Reports/My Logs don't touch `facultyScope` at all, so
+   * switching to either and back preserves whatever faculty/role filter was
+   * active. Switching TO Course always sets scope to 'course'; switching TO
+   * Faculty resets to 'all' ONLY when coming from Course — matches the exact
+   * reset behavior the old Course/Faculty ToggleGroup already had. */
+  const [pageTab, setPageTabRaw] = useState<'course' | 'faculty' | 'reports' | 'mylogs'>('faculty')
+  const setPageTab = (v: string) => {
+    if (v !== 'course' && v !== 'faculty' && v !== 'reports' && v !== 'mylogs') return
+    if (v === 'course') setFacultyScope('course')
+    else if (v === 'faculty' && facultyScope === 'course') {
+      setFacultyScope('all')
+      setRoleScopeRaw('all')
+    }
+    setPageTabRaw(v)
+  }
+
+  /* Role scope — the middle ground between "All faculty" and specific people
+   * on a co-taught course. Same course-association vocabulary as Analytics →
+   * By Faculty (2026-05-19, Monil: roles derive from course associations, not
    * faculty rank), same shared derivation (`facultyEvalRole`), so a person can
-   * never carry two different roles depending on the surface. */
-  const [roleScope, setRoleScopeRaw] = useState<'all' | FacultyEvalRoleId>('all')
+   * never carry two different roles depending on the surface. Also a SET now,
+   * same reasoning as facultyScope — "Instructor + Guest Lecturer" together,
+   * not one role at a time. */
+  const [roleScope, setRoleScopeRaw] = useState<'all' | FacultyEvalRoleId[]>('all')
   const evalRoleFor = (facultyId: string): FacultyEvalRoleId => {
     const inst = survey.instructors.find((i) => i.id === facultyId)
     return facultyEvalRole(inst?.role ?? 'primary', MOCK_FACULTY.find((f) => f.id === facultyId)?.position)
   }
-  /* ONE predicate for every faculty-scoped aggregate on the page. A picked
-   * person wins outright; 'all' means "everyone holding the scoped role". */
-  const inFacultyScope = (facultyId: string): boolean =>
-    facultyScope !== 'all'
-      ? facultyId === facultyScope
-      : roleScope === 'all' || evalRoleFor(facultyId) === roleScope
-  const setRoleScope = (v: 'all' | FacultyEvalRoleId) => {
-    setRoleScopeRaw(v)
-    /* A picked instructor the new role excludes would leave the pills showing a
-     * selection that no longer exists — snap back to the role's "all". */
-    if (facultyScope !== 'all' && v !== 'all' && evalRoleFor(facultyScope) !== v) setFacultyScope('all')
+  /* ONE predicate for every faculty-scoped aggregate on the page. Faculty-set
+   * and role-set are now INDEPENDENT filters that AND together — same as a
+   * real DataTable filter bar (Romit, 2026-08-25: "I want this to work as
+   * datatable filter, where i select multiple and the results are shown")
+   * — picking a role after picking specific people used to silently replace
+   * the pick instead of narrowing it further. 'all' on either dimension
+   * means "no constraint from this dimension", not "everyone" outright. */
+  const inFacultyScope = (facultyId: string): boolean => {
+    if (facultyScope === 'course') return false
+    const matchesFaculty = !Array.isArray(facultyScope) || facultyScope.includes(facultyId)
+    const matchesRole = roleScope === 'all' || roleScope.includes(evalRoleFor(facultyId))
+    return matchesFaculty && matchesRole
   }
+  /** Toggles ONE role in/out of the set — independent of any faculty pick
+   *  (no longer resets it). The "Add filter" menu's role checkboxes call
+   *  this per click, so multiple roles can build up across several clicks
+   *  without the menu closing between them. */
+  const setRoleScope = (role: FacultyEvalRoleId) => {
+    setRoleScopeRaw((prev) => {
+      const arr = prev === 'all' ? [] : prev
+      const next = arr.includes(role) ? arr.filter((r) => r !== role) : [...arr, role]
+      return next.length === 0 ? 'all' : next
+    })
+  }
+  /** Toggles ONE instructor in/out of the set — independent of any role
+   *  pick, same multi-pick shape as `setRoleScope`. */
+  const toggleFacultyId = (id: string) => {
+    setFacultyScope((prev) => {
+      const arr = Array.isArray(prev) ? prev : []
+      const next = arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]
+      return next.length === 0 ? 'all' : next
+    })
+  }
+  const hasAnyFacultyFilter = Array.isArray(facultyScope) || roleScope !== 'all'
   const roleScopeLabel =
-    roleScope === 'all' ? null : EVAL_FACULTY_ROLES.find((r) => r.id === roleScope)?.label ?? null
-  const roleScopedInstructors = survey.instructors.filter((i) => roleScope === 'all' || evalRoleFor(i.id) === roleScope)
+    roleScope === 'all'
+      ? null
+      : roleScope
+          .map((id) => EVAL_FACULTY_ROLES.find((r) => r.id === id)?.label)
+          .filter((l): l is NonNullable<typeof l> => !!l)
+          .join(', ') || null
+  /* The people the CURRENT combination of filters actually resolves to —
+   * the intersection of the faculty pick and the role pick when both are
+   * active, either one alone when only one is, or everyone when neither is. */
+  const matchedInstructors = survey.instructors.filter((i) => inFacultyScope(i.id))
 
   /* Whose faculty data the page currently shows — a picked instructor, the
-   * sole instructor, or (multi-instructor, 'all') nobody nameable. Drives the
-   * Faculty Performance card title, the question-group band, comment-group
-   * headers, and the summary strip (Romit 2026-07-17: every faculty-scoped
-   * surface must SAY whose data it is). */
-  const scopedInstructor =
-    facultyScope !== 'all' ? survey.instructors.find((i) => i.id === facultyScope) ?? null : null
+   * sole instructor, or (multi-instructor / filtered to 2+) nobody nameable
+   * (the ScoreCard's `breakdown` prop takes over instead — see
+   * `facultyBreakdown` below). Drives the Faculty Performance card title,
+   * the question-group band, comment-group headers, and the summary strip
+   * (Romit 2026-07-17: every faculty-scoped surface must SAY whose data it
+   * is). Only resolves to ONE identity when the filters resolve to exactly
+   * one instructor — 2+ matched is a genuine "these specific people" blend,
+   * same shape as "All faculty" for display purposes. */
+  const scopedInstructor = hasAnyFacultyFilter && matchedInstructors.length === 1 ? matchedInstructors[0] : null
   const soleInstructor = survey.instructors.length === 1 ? survey.instructors[0] : null
   const scopedFacultyName = scopedInstructor?.name ?? soleInstructor?.name ?? null
   const facultyChipLabel =
     scopedFacultyName ??
-    (survey.instructors.length > 1
-      ? roleScopeLabel
-        ? `${roleScopedInstructors.length} × ${roleScopeLabel}`
-        : `${survey.instructors.length} instructors`
-      : null)
+    (hasAnyFacultyFilter
+      ? `${matchedInstructors.length} instructors`
+      : survey.instructors.length > 1
+        ? `${survey.instructors.length} instructors`
+        : null)
 
   /* Ops actions — the full set from the evaluations table (Romit 2026-07-09) */
   const [remindOpen, setRemindOpen] = useState(false)
@@ -2281,11 +2347,13 @@ function ResultDetail({
     (r) => r.courseCode === result.courseCode && r.term === result.term && r.id !== result.id,
   )
   /* The faculty whose access the header can enable follows the scope selector:
-   * a picked instructor, or the page owner while viewing the whole course. */
-  const scopedFaculty =
-    facultyScope === 'all'
-      ? result
-      : [result, ...siblings].find((f) => f.facultyId === facultyScope) ?? result
+   * a picked instructor, or the page owner while viewing the whole course.
+   * Only resolves to one non-`result` person when exactly one is picked —
+   * 2+ picked has no single "whose access" answer, so it falls back to the
+   * course's own default result (same fallback 'all' already used). */
+  const scopedFaculty = scopedInstructor
+    ? [result, ...siblings].find((f) => f.facultyId === scopedInstructor.id) ?? result
+    : result
 
   /* Score cards — this course vs program, plus prior term */
   const courseAvg = responses?.sectionScores.find((s) => s.section === 'course_content')?.avg ?? null
@@ -2308,6 +2376,33 @@ function ResultDetail({
     return avgs.reduce((a, b) => a + b, 0) / avgs.length
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inCollection, qData, survey.instructors, facultyScope, roleScope, sectionFacultyAvg])
+  /* Per-instructor breakdown for "All faculty" on a co-taught course — the
+   * Faculty Performance card used to fall back to a generic icon with one
+   * blended number and no identity at all in this mode (Vishal, 2026-08-25
+   * sync: "ideally the faculty's image would be shown ... and there will be
+   * averages" — flagged as a visual bug, not a missing feature: the avatar
+   * pattern already exists in FacultyScopeSelector's pills and the
+   * ScaleTrackPlot markers, it just was never wired into this card). Each
+   * instructor's own average mirrors facultyAvg's math, scoped to one person
+   * instead of the whole faculty-scope predicate. */
+  const facultyBreakdown = useMemo(() => {
+    if (!qData) return []
+    return survey.instructors
+      .filter((i) => inFacultyScope(i.id))
+      .map((i) => {
+        const avgs = (qData.instructorBlocks ?? [])
+          .filter((b) => b.instructorId === i.id)
+          .flatMap((b) => b.scores.map((q) => q.avg))
+        return {
+          id: i.id,
+          name: i.name,
+          initials: i.initials,
+          avatarUrl: i.avatarUrl,
+          avg: avgs.length > 0 ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null,
+        }
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qData, survey.instructors, facultyScope, roleScope])
   const programCourseAvg = useMemo(() => {
     const all = MOCK_RESPONSES.flatMap((r) =>
       r.sectionScores.filter((s) => s.section === 'course_content').map((s) => s.avg),
@@ -2406,6 +2501,7 @@ function ResultDetail({
             initials: inst.initials,
             name: inst.name,
             avatarUrl: inst.avatarUrl,
+            role: inst.role,
             avg: mineTheme.reduce((a, x) => a + x.avg, 0) / mineTheme.length,
           }
         })
@@ -2598,9 +2694,9 @@ function ResultDetail({
   const [railGroupsOpen, setRailGroupsOpen] = useState<Record<string, boolean>>({})
   /* Scroll-spy — highlight the section band under the sticky shell. Entries
      only report crossings, so keep the last known section when none reports. */
-  const [activeAnchor, setActiveAnchor] = useState<string>(inCollection ? 'pace' : 'scores')
+  const [activeAnchor, setActiveAnchor] = useState<string>('scores')
   useEffect(() => {
-    const ids = ['pace', 'scores', 'themes', 'questions', 'comments', 'feedback-loop']
+    const ids = ['scores', 'themes', 'questions', 'comments', 'feedback-loop']
     const els = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el)
@@ -2696,7 +2792,7 @@ function ResultDetail({
           let perFaculty: BreakdownRow['perFaculty']
           /* Identity markers render for ≤3 IN-SCOPE people — scoping to a role
              with two holders earns the photo markers even on a 5-person course. */
-          if (group.faculty && (facultyScope !== 'all' || roleScopedInstructors.length <= 3)) {
+          if (group.faculty && (facultyScope !== 'all' || matchedInstructors.length <= 3)) {
             const split = (qData.instructorBlocks ?? []).flatMap((b) => {
               const inst = survey.instructors.find(
                 (i) => i.id === b.instructorId && inFacultyScope(i.id),
@@ -2709,6 +2805,7 @@ function ResultDetail({
                 name: inst.name,
                 initials: inst.initials,
                 avatarUrl: inst.avatarUrl,
+                role: inst.role,
                 avg: hit.avg,
                 counts: c,
                 total: c.reduce((a, b) => a + b, 0),
@@ -2750,8 +2847,8 @@ function ResultDetail({
       sub:
         scopedFacultyName ??
         (survey.instructors.length > 1
-          ? `${roleScopedInstructors.length} ${roleScopeLabel ? `× ${roleScopeLabel}` : 'instructors'}${
-              roleScopedInstructors.length <= 3
+          ? `${matchedInstructors.length} ${roleScopeLabel ? `× ${roleScopeLabel}` : 'instructors'}${
+              matchedInstructors.length <= 3
                 ? ', photo marker per instructor'
                 : isPD
                   ? ', use the instructor selector above for per-person scores'
@@ -2785,194 +2882,22 @@ function ResultDetail({
     persistent: { label: 'Persistent', tone: 'warning' },
   }
 
-  return (
+  const facultyScopeSelector = (
+    <FacultyScopeSelector
+      instructors={inCollection ? liveFacultyRows : [result, ...siblings]}
+      scope={facultyScope}
+      toggleFacultyId={toggleFacultyId}
+      roleScope={roleScope}
+      toggleRoleScope={setRoleScope}
+      evalRoleById={evalRoleFor}
+      isPD={isPD}
+      avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
+      showCourse={templateHasCourse && result.evalScope !== 'instructor'}
+    />
+  )
+
+  const overviewContent = (
     <>
-      <SiteHeader
-        breadcrumbs={origin.trail}
-        title={result.courseCode}
-      />
-      <PageHeader
-        title={
-          /* Custom title node = PageHeader does NOT wrap it in its <h1> — so
-             this node must supply the h1 itself, with the DS's exact title
-             classes, or the page loses its heading and serif treatment. */
-          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="line-clamp-2 min-w-0 overflow-hidden break-words font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
-              {`${result.courseCode} · ${result.courseName}`}
-            </h1>
-            {inCollection ? (
-              <SurveyStatusBadgeOS status={survey.status} />
-            ) : (
-              <StatusBadge
-                label={RESULT_STATUS_BADGE.available.label}
-                tone={RESULT_STATUS_BADGE.available.tone}
-                icon={RESULT_STATUS_BADGE.available.icon}
-              />
-            )}
-          </span>
-        }
-        subtitle={
-          /* Cohort + course type were in the data but never on the page —
-             Aarti's atomic evaluation unit is course × term × cohort. */
-          `${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}`
-        }
-        actions={
-          /* Hierarchy: ONE primary per state. Live → Send reminder is the
-             highest-leverage act (below-target collection); Extend is the
-             fallback; link/preview live in the Share card with context.
-             Finished → reading actions visible, ops demoted to a ⋯ menu. */
-          <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Result actions">
-            {inCollection && isPD && (
-              <>
-                <Button variant="default" size="sm" onClick={() => setRemindOpen(true)}>
-                  Send reminder
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>
-                  Extend close date
-                </Button>
-                {/* Secondary ops tucked into ⋯ (Romit) — copy link + preview
-                    moved here from the removed Share card. */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon-sm" aria-label="More actions">
-                      <i className="fa-light fa-ellipsis" aria-hidden="true" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={copySurveyLink}>
-                      <i className="fa-light fa-link" aria-hidden="true" />
-                      {linkCopied ? 'Link copied' : 'Copy survey link'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/surveys/${survey.id}/preview`}>
-                        <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
-                        Preview form
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
-            {!inCollection && (() => {
-              /* ONE visible action + ⋯ (Romit 2026-07-18: "tuck in some of
-                 the options inside more"): Enable faculty access when it
-                 applies, else Preview form; everything else in the menu.
-                 Non-PD viewers have no menu and keep Preview form visible. */
-              const showEnable = isPD && !scopedFaculty.releasedToFaculty
-              return (
-              <>
-                {showEnable ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      onRelease()
-                      setReleaseSuccess(true)
-                    }}
-                  >
-                    {facultyScope === 'all'
-                      ? 'Enable faculty access'
-                      : `Enable access for ${scopedFaculty.facultyName}`}
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
-                  </Button>
-                )}
-                {isPD && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon-sm" aria-label="More actions">
-                        <i className="fa-light fa-ellipsis" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {showEnable && (
-                        <DropdownMenuItem asChild>
-                          <Link href={`/surveys/${survey.id}/preview`}>
-                            <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
-                            Preview form
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      {/* PD-only: /analytics is an ungated admin surface with
-                          program-wide data — faculty must not land there
-                          (scope flag 2026-07-16). */}
-                      <DropdownMenuItem asChild>
-                        <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
-                          <i className="fa-light fa-chart-line" aria-hidden="true" />
-                          View Longitudinal Insights
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={copySurveyLink}>
-                        <i className="fa-light fa-link" aria-hidden="true" />
-                        {linkCopied ? 'Link copied' : 'Copy survey link'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setRemindOpen(true)}>
-                        <i className="fa-light fa-bell" aria-hidden="true" />
-                        Send reminder
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setExtendOpen(true)}>
-                        <i className="fa-light fa-calendar-plus" aria-hidden="true" />
-                        Extend close date
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </>
-              )
-            })()}
-          </div>
-        }
-      />
-
-      <div className="flex-1 px-7 py-4">
-        <div className="flex flex-col gap-4">
-          {/* Identity strip — the faculty SCOPE control (live) or the result
-              owner (finished). Status chip lives beside the title now. */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <FacultyScopeSelector
-              instructors={inCollection ? liveFacultyRows : [result, ...siblings]}
-              scope={facultyScope}
-              setScope={setFacultyScope}
-              roleScope={roleScope}
-              setRoleScope={setRoleScope}
-              evalRoleById={evalRoleFor}
-              isPD={isPD}
-              avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
-              showCourse={templateHasCourse && result.evalScope !== 'instructor'}
-            />
-          </div>
-
-          {/* Split offerings ONLY — the strip's real job is cross-survey
-              navigation with sibling state inline. On a merged survey the
-              per-type summary lives on the score cards instead (a second pill
-              row under the scope selector read as one crowded filter cluster —
-              Romit 2026-07-17). */}
-          {offeringSiblings.length > 0 && (
-            <EvaluationSummaryStrip
-              survey={survey}
-              result={result}
-              siblings={offeringSiblings}
-              courseAvg={templateHasCourse ? courseAvg : null}
-              facultyAvg={facultyAvg}
-              facultyLabel={facultyChipLabel}
-              hasCourse={templateHasCourse && result.evalScope !== 'instructor'}
-              onGo={(anchorId) => goTo(anchorId, 'questions')}
-            />
-          )}
-
-          <Tabs defaultValue="overview" className="flex flex-col gap-4">
-            <div className="border-b border-border">
-              <TabsList variant="line">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
-                {isOwner && <TabsTrigger value="mylogs">My Logs</TabsTrigger>}
-              </TabsList>
-            </div>
-
-            {/* ── Overview — content column + side column (share card, rail) ── */}
-            <TabsContent value="overview" className="m-0">
               {/* Sub-xl has no rail — a compact jump menu keeps the section
                   anchors reachable. */}
               <div className="xl:hidden mb-4 flex justify-end">
@@ -2981,9 +2906,6 @@ function ResultDetail({
                     <Button variant="outline" size="sm">On this page</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {inCollection && (
-                      <DropdownMenuItem onSelect={() => goTo('pace')}>Collection pace</DropdownMenuItem>
-                    )}
                     <DropdownMenuItem onSelect={() => goTo('scores')}>
                       {inCollection ? 'Early signal' : 'Scores'}
                     </DropdownMenuItem>
@@ -3014,13 +2936,6 @@ function ResultDetail({
                 }`}
               >
               <div className="flex flex-col gap-4 min-w-0">
-              {/* Live: collection health leads — this page is the cockpit
-                  while responses accumulate; scores are early signal below. */}
-              {inCollection && (
-                <div id="pace" className="scroll-mt-16">
-                  <CollectionPaceCard survey={survey} />
-                </div>
-              )}
 
               <div id="scores" className="scroll-mt-16 flex flex-col gap-2">
                 {inCollection ? (
@@ -3029,8 +2944,18 @@ function ResultDetail({
                     {/* Course scope drops a card silently otherwise — the badge is
                         what actually says "you're looking at course-only data now"
                         (Romit 2026-08-17: Course and All faculty read the same at a
-                        glance without it). */}
-                    {facultyScope === 'course' && <StatusBadge label="Course only" tone="neutral" />}
+                        glance without it). Mirrored for a single named instructor
+                        (Romit, 2026-08-25) — the Course pill stays visible in the
+                        selector at every scope now (reverted the version that hid
+                        it, which read as the control itself changing shape), so
+                        this banner is what actually tells you you're scoped to one
+                        person instead of leaving that to be inferred from which
+                        cards happen to be missing. */}
+                    {facultyScope === 'course' ? (
+                      <StatusBadge label="Course only" tone="neutral" />
+                    ) : facultyScope !== 'all' ? (
+                      <StatusBadge label={`${facultyChipLabel ?? 'Faculty'} only`} tone="neutral" />
+                    ) : null}
                     <span className="text-xs text-muted-foreground">
                       Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far. Expect movement until close
                     </span>
@@ -3038,7 +2963,11 @@ function ResultDetail({
                 ) : (
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <h2 className="text-sm font-semibold text-foreground">Scores</h2>
-                    {facultyScope === 'course' && <StatusBadge label="Course only" tone="neutral" />}
+                    {facultyScope === 'course' ? (
+                      <StatusBadge label="Course only" tone="neutral" />
+                    ) : facultyScope !== 'all' ? (
+                      <StatusBadge label={`${facultyChipLabel ?? 'Faculty'} only`} tone="neutral" />
+                    ) : null}
                   </div>
                 )}
                 {releaseSuccess && (
@@ -3080,6 +3009,7 @@ function ResultDetail({
                             name: (scopedInstructor ?? soleInstructor)!.name,
                             initials: (scopedInstructor ?? soleInstructor)!.initials,
                             avatarUrl: (scopedInstructor ?? soleInstructor)!.avatarUrl,
+                            role: EVAL_FACULTY_ROLES.find((r) => r.id === evalRoleFor((scopedInstructor ?? soleInstructor)!.id))?.label,
                           }
                         : undefined
                     }
@@ -3094,6 +3024,7 @@ function ResultDetail({
                         avg: p.facultyAvg as number,
                         actionItems: p.actionItems,
                       }))}
+                    breakdown={(scopedInstructor ?? soleInstructor) == null ? facultyBreakdown : undefined}
                   />
                   )}
                   {/* Response rate as a peer KPI card (Romit 2026-07-17) */}
@@ -3339,11 +3270,6 @@ function ResultDetail({
                       </Tooltip>
                     </div>
                     <OutlineTreeMenu className="gap-0.5">
-                      {inCollection && (
-                        <OutlineTreeMenuItem>
-                          <RailLink label="Collection pace" active={activeAnchor === 'pace'} onGo={() => goTo('pace')} />
-                        </OutlineTreeMenuItem>
-                      )}
                       <OutlineTreeMenuItem>
                         <RailLink
                           label={inCollection ? 'Early signal' : 'Scores'}
@@ -3460,6 +3386,205 @@ function ResultDetail({
                 )}
               </div>
               </div>
+    </>
+  )
+
+  return (
+    <>
+      <SiteHeader
+        breadcrumbs={origin.trail}
+        title={result.courseCode}
+      />
+      <PageHeader
+        title={
+          /* Custom title node = PageHeader does NOT wrap it in its <h1> — so
+             this node must supply the h1 itself, with the DS's exact title
+             classes, or the page loses its heading and serif treatment. */
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="line-clamp-2 min-w-0 overflow-hidden break-words font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
+              {`${result.courseCode} · ${result.courseName}`}
+            </h1>
+            {/* Global status badge REMOVED here (Vishal, 2026-08-25 sync: "since
+                we have aspects for each aspect we can show whether it is
+                completed or not ... at the global level we can remove it
+                because it's confusing until the deep dive") — a course
+                offering with multiple aspects (course content + each
+                faculty's survey) can have a DIFFERENT status per aspect, so
+                one blended badge here was misleading. Per-aspect status still
+                shows correctly on each ScoreCard below (courseInst/facultyInst
+                statusBadge props) — that's the only place status belongs now. */}
+          </span>
+        }
+        subtitle={
+          /* Cohort + course type were in the data but never on the page —
+             Aarti's atomic evaluation unit is course × term × cohort. Eval
+             window (open–close) added same sync: "what was the start date,
+             what was the end date, are we capturing it somewhere?" — it
+             wasn't shown anywhere on this page. */
+          `${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}${survey.openDate ? ` · Eval window ${survey.openDate} – ${survey.deadline}` : ''}`
+        }
+        actions={
+          /* Hierarchy: ONE primary per state. Live → Send reminder is the
+             highest-leverage act (below-target collection); Extend is the
+             fallback; link/preview live in the Share card with context.
+             Finished → reading actions visible, ops demoted to a ⋯ menu. */
+          <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Result actions">
+            {inCollection && isPD && (
+              <>
+                <Button variant="default" size="sm" onClick={() => setRemindOpen(true)}>
+                  Send reminder
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>
+                  Extend close date
+                </Button>
+                {/* Secondary ops tucked into ⋯ (Romit) — copy link + preview
+                    moved here from the removed Share card. */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon-sm" aria-label="More actions">
+                      <i className="fa-light fa-ellipsis" aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={copySurveyLink}>
+                      <i className="fa-light fa-link" aria-hidden="true" />
+                      {linkCopied ? 'Link copied' : 'Copy survey link'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/surveys/${survey.id}/preview`}>
+                        <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                        Preview form
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+            {!inCollection && (() => {
+              /* ONE visible action + ⋯ (Romit 2026-07-18: "tuck in some of
+                 the options inside more"): Enable faculty access when it
+                 applies, else Preview form; everything else in the menu.
+                 Non-PD viewers have no menu and keep Preview form visible. */
+              const showEnable = isPD && !scopedFaculty.releasedToFaculty
+              return (
+              <>
+                {showEnable ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRelease()
+                      setReleaseSuccess(true)
+                    }}
+                  >
+                    {scopedInstructor
+                      ? `Enable access for ${scopedFaculty.facultyName}`
+                      : 'Enable faculty access'}
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/surveys/${survey.id}/preview`}>Preview form</Link>
+                  </Button>
+                )}
+                {isPD && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon-sm" aria-label="More actions">
+                        <i className="fa-light fa-ellipsis" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {showEnable && (
+                        <DropdownMenuItem asChild>
+                          <Link href={`/surveys/${survey.id}/preview`}>
+                            <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                            Preview form
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      {/* PD-only: /analytics is an ungated admin surface with
+                          program-wide data — faculty must not land there
+                          (scope flag 2026-07-16). */}
+                      <DropdownMenuItem asChild>
+                        <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                          <i className="fa-light fa-chart-line" aria-hidden="true" />
+                          View Longitudinal Insights
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={copySurveyLink}>
+                        <i className="fa-light fa-link" aria-hidden="true" />
+                        {linkCopied ? 'Link copied' : 'Copy survey link'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setRemindOpen(true)}>
+                        <i className="fa-light fa-bell" aria-hidden="true" />
+                        Send reminder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setExtendOpen(true)}>
+                        <i className="fa-light fa-calendar-plus" aria-hidden="true" />
+                        Extend close date
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </>
+              )
+            })()}
+          </div>
+        }
+      />
+
+      <div className="flex-1 px-7 py-4">
+        <div className="flex flex-col gap-4">
+          {/* Split offerings ONLY — the strip's real job is cross-survey
+              navigation with sibling state inline. On a merged survey the
+              per-type summary lives on the score cards instead (a second pill
+              row under the scope selector read as one crowded filter cluster —
+              Romit 2026-07-17). */}
+          {offeringSiblings.length > 0 && (
+            <EvaluationSummaryStrip
+              survey={survey}
+              result={result}
+              siblings={offeringSiblings}
+              courseAvg={templateHasCourse ? courseAvg : null}
+              facultyAvg={facultyAvg}
+              facultyLabel={facultyChipLabel}
+              hasCourse={templateHasCourse && result.evalScope !== 'instructor'}
+              onGo={(anchorId) => goTo(anchorId, 'questions')}
+            />
+          )}
+
+          <Tabs value={pageTab} onValueChange={setPageTab} className="flex flex-col gap-4">
+            {/* Filter lives on the tab row itself, right-aligned — not its
+                own row below the tabs (Romit, 2026-08-25: "i see that the
+                filter is a row, rather than being integrated with either
+                scores or on the right side of the tab"). Only Course/Faculty
+                read `facultyScope`/`roleScope`, so it hides on Reports/My
+                Logs the same way it already hid there before this move. */}
+            <div className="border-b border-border flex items-center justify-between gap-3">
+              <TabsList variant="line">
+                {templateHasCourse && result.evalScope !== 'instructor' && (
+                  <TabsTrigger value="course">Course</TabsTrigger>
+                )}
+                <TabsTrigger value="faculty">Faculty</TabsTrigger>
+                <TabsTrigger value="reports">Reports</TabsTrigger>
+                {isOwner && <TabsTrigger value="mylogs">My Logs</TabsTrigger>}
+              </TabsList>
+              {(pageTab === 'course' || pageTab === 'faculty') && (
+                <div className="shrink-0 pb-2">{facultyScopeSelector}</div>
+              )}
+            </div>
+
+            {/* ── Course ── shares the same content as Faculty (both render
+                `overviewContent`); the content itself already conditionally
+                shows/hides Course-Content vs Faculty-Performance cards based
+                on `facultyScope`, which `pageTab` keeps in sync with. ── */}
+            <TabsContent value="course" className="m-0 flex flex-col gap-4">
+              {overviewContent}
+            </TabsContent>
+
+            {/* ── Faculty ── */}
+            <TabsContent value="faculty" className="m-0 flex flex-col gap-4">
+              {overviewContent}
             </TabsContent>
 
             {/* ── Reports ── */}
