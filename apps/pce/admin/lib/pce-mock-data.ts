@@ -129,13 +129,51 @@ export interface PceTemplate {
  *  Source of truth for the "Below threshold" KPI on the Evaluations hub. */
 export const EVAL_RELEASE_THRESHOLD_PCT = 60
 
-/** Faculty roles eligible to be evaluated in a course evaluation. */
+/** Faculty roles eligible to be evaluated in a course evaluation. Mirrors Prism's
+ *  role directory (~40 roles) — the Faculty Roles to Evaluate control (Settings)
+ *  must scale to this list, per Monil (Aug 27): flat list, searchable, checkbox rows. */
 export const EVAL_FACULTY_ROLES = [
-  { id: 'course-coordinator', label: 'Course Coordinator' },
-  { id: 'instructor',         label: 'Instructor' },
-  { id: 'teaching-assistant', label: 'Teaching Assistant' },
-  { id: 'lab-assistant',      label: 'Lab Assistant' },
-  { id: 'guest-lecturer',     label: 'Guest Lecturer' },
+  { id: 'course-coordinator',        label: 'Course Coordinator' },
+  { id: 'instructor',                label: 'Instructor' },
+  { id: 'teaching-assistant',        label: 'Teaching Assistant' },
+  { id: 'lab-assistant',             label: 'Lab Assistant' },
+  { id: 'guest-lecturer',            label: 'Guest Lecturer' },
+  { id: 'clinical-instructor',       label: 'Clinical Instructor' },
+  { id: 'preceptor',                 label: 'Preceptor' },
+  { id: 'adjunct-faculty',           label: 'Adjunct Faculty' },
+  { id: 'program-director',          label: 'Program Director' },
+  { id: 'department-chair',          label: 'Department Chair' },
+  { id: 'associate-professor',       label: 'Associate Professor' },
+  { id: 'assistant-professor',       label: 'Assistant Professor' },
+  { id: 'professor',                 label: 'Professor' },
+  { id: 'clinical-coordinator',      label: 'Clinical Coordinator' },
+  { id: 'site-coordinator',          label: 'Site Coordinator' },
+  { id: 'simulation-lab-coordinator', label: 'Simulation Lab Coordinator' },
+  { id: 'skills-lab-instructor',     label: 'Skills Lab Instructor' },
+  { id: 'practicum-supervisor',      label: 'Practicum Supervisor' },
+  { id: 'field-instructor',          label: 'Field Instructor' },
+  { id: 'internship-coordinator',    label: 'Internship Coordinator' },
+  { id: 'research-mentor',           label: 'Research Mentor' },
+  { id: 'thesis-advisor',            label: 'Thesis Advisor' },
+  { id: 'academic-advisor',          label: 'Academic Advisor' },
+  { id: 'curriculum-coordinator',    label: 'Curriculum Coordinator' },
+  { id: 'assessment-coordinator',    label: 'Assessment Coordinator' },
+  { id: 'accreditation-liaison',     label: 'Accreditation Liaison' },
+  { id: 'ipe-coordinator',           label: 'Interprofessional Education Coordinator' },
+  { id: 'service-learning-coordinator', label: 'Service Learning Coordinator' },
+  { id: 'simulation-technician',     label: 'Simulation Technician' },
+  { id: 'sp-coordinator',            label: 'Standardized Patient Coordinator' },
+  { id: 'skills-assessor',           label: 'Skills Assessor' },
+  { id: 'osce-examiner',             label: 'OSCE Examiner' },
+  { id: 'grand-rounds-facilitator',  label: 'Grand Rounds Facilitator' },
+  { id: 'case-conference-leader',    label: 'Case Conference Leader' },
+  { id: 'journal-club-facilitator',  label: 'Journal Club Facilitator' },
+  { id: 'community-health-liaison',  label: 'Community Health Liaison' },
+  { id: 'telehealth-supervisor',     label: 'Telehealth Supervisor' },
+  { id: 'quality-improvement-mentor', label: 'Quality Improvement Mentor' },
+  { id: 'peer-mentor-coordinator',   label: 'Peer Mentor Coordinator' },
+  { id: 'honors-advisor',            label: 'Honors Program Advisor' },
+  { id: 'capstone-advisor',          label: 'Capstone Project Advisor' },
 ] as const
 
 /** Default selected faculty roles (all active teaching roles, TAs excluded by default). */
@@ -175,11 +213,14 @@ export const EVAL_BENCHMARKS = {
   targetFacultyScore: 4.0, // out of 5
 } as const
 
-/** Default Likert scale configuration — single source read by template editor + analytics. */
+/** Default Likert scale configuration — single source read by template editor + analytics.
+ *  `scores` are the flat point values assigned to each option (per Monil, Aug 27 — independent
+ *  of label text/preset; students never see them, only admins configuring the scale). */
 export const EVAL_DEFAULT_SCALE = {
   preset: 'agreement' as const,
   points: 5,
   labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
+  scores: [1, 2, 3, 4, 5],
 }
 
 // ── Evaluation Dates — anchor-date model (mirrors live /settings → Evaluation Dates) ──

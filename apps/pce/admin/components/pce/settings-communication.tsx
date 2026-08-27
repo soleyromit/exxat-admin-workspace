@@ -3,23 +3,19 @@
 /**
  * Communication section of Central Settings (mirrors live pce-three IA).
  *  - Email Templates manager: Invitation + Reminder groups, per-template
- *    preview/edit/duplicate/delete, "New Template" (edit in a DS Sheet).
- *  - Reminder Cadence engine: frequency + anchor + start → computed schedule preview.
+ *    edit/duplicate/delete, "New Template" (edit in a DS Sheet).
  */
 
 import { useState } from 'react'
 import {
   Button, Input, Textarea, Badge, Label,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxatdesignux/ui'
 import { SettingsFormRow } from '@/components/settings-form-row'
 import {
-  EVAL_EMAIL_TEMPLATES, EVAL_REMINDER_CADENCE,
-  REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
+  EVAL_EMAIL_TEMPLATES,
   type EvalEmailTemplate, type EvalEmailType,
-  type ReminderFrequency, type ReminderAnchor,
 } from '@/lib/pce-mock-data'
 
 const VARIABLE_CHIPS = [
@@ -37,6 +33,11 @@ const TYPE_BADGE: Record<EvalEmailType, { label: string; variant: 'default' | 's
   reminder:   { label: 'Reminder', variant: 'secondary' },
 }
 
+const TYPE_ICON: Record<EvalEmailType, string> = {
+  invitation: 'fa-paper-plane',
+  reminder:   'fa-bell',
+}
+
 // ── Panel shell — flat settings group ────────────────────────────────────────
 /** Flat settings group — same idiom as the Evaluation Rules / Schedule tabs
  *  (heading + rows, hairline separation; no Card chrome). */
@@ -47,7 +48,7 @@ function Panel({ title, description, action, children }: {
     <section className="flex flex-col gap-4 border-t border-border pt-6 first:border-0 first:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <h3 className="text-sm font-semibold">{title}</h3>
+          <h2 className="text-sm font-semibold">{title}</h2>
           {description && <p className="text-xs text-muted-foreground leading-snug max-w-xl">{description}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
@@ -72,17 +73,20 @@ function TemplateRow({ t, onEdit, onDuplicate, onDelete }: {
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   )
+  const typeIcon = TYPE_ICON[t.type]
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
+    <div className="flex items-center gap-3 px-2 py-3.5 border-b border-border last:border-0">
+      <div className="flex size-8 items-center justify-center rounded-full bg-muted shrink-0">
+        <i className={`fa-light ${typeIcon} text-sm text-muted-foreground`} aria-hidden="true" />
+      </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate">{t.name}</span>
           <Badge variant={status.variant} className="font-normal shrink-0">{status.label}</Badge>
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{t.subject}</p>
+        <p className="text-xs text-muted-foreground truncate mt-1">{t.subject}</p>
       </div>
-      <div className="flex items-center shrink-0">
-        {iconBtn('fa-eye', 'Preview', onEdit)}
+      <div className="flex items-center gap-0.5 shrink-0">
         {iconBtn('fa-pen', 'Edit', onEdit)}
         {iconBtn('fa-copy', 'Duplicate', onDuplicate)}
         {iconBtn('fa-trash', 'Delete', onDelete)}
@@ -93,8 +97,8 @@ function TemplateRow({ t, onEdit, onDuplicate, onDelete }: {
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col">
-      <p className="text-xs font-medium text-muted-foreground mb-1 mt-4 first:mt-0">{label}</p>
+    <div className="flex flex-col border-t border-border pt-4 mt-4 first:border-0 first:pt-0 first:mt-0">
+      <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
       <div className="flex flex-col">{children}</div>
     </div>
   )
@@ -116,7 +120,7 @@ function TemplateEditorSheet({ template, onClose, onSave }: {
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
           <SheetTitle className="text-base">{template?.id.startsWith('new-') ? 'New template' : 'Edit template'}</SheetTitle>
           <SheetDescription className="text-xs">
-            {template ? TYPE_BADGE[template.type].label : ''} email · used for survey {template?.type === 'reminder' ? 'reminders' : 'invitations'}.
+            {template ? TYPE_BADGE[template.type].label : ''} email
           </SheetDescription>
         </SheetHeader>
 
@@ -158,75 +162,6 @@ function TemplateEditorSheet({ template, onClose, onSave }: {
   )
 }
 
-// ── Reminder cadence ──────────────────────────────────────────────────────────
-const FREQ_STEP: Record<ReminderFrequency, number> = { daily: 1, every_3_days: 3, every_7_days: 7, custom: 3 }
-
-function computeSchedule(start: number, freq: ReminderFrequency): number[] {
-  const step = FREQ_STEP[freq]
-  const out: number[] = []
-  for (let d = start; d >= 1; d -= step) out.push(d)
-  return out
-}
-
-function ReminderCadence() {
-  const [frequency, setFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
-  const [anchor, setAnchor]       = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
-  const [start, setStart]         = useState(EVAL_REMINDER_CADENCE.startDaysBefore)
-  const schedule = computeSchedule(start, frequency)
-  const anchorLabel = REMINDER_ANCHOR_LABELS[anchor]
-
-  return (
-    <Panel title="Reminder Cadence" description="How often reminder emails repeat, and when they start.">
-      <SettingsFormRow label="Reminder frequency" description="How often reminder emails repeat.">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {(Object.keys(REMINDER_FREQUENCY_LABELS) as ReminderFrequency[]).map(f => (
-            <Button key={f} variant={frequency === f ? 'default' : 'outline'} size="sm" className="h-8"
-              aria-pressed={frequency === f} onClick={() => setFrequency(f)}>
-              {REMINDER_FREQUENCY_LABELS[f]}
-            </Button>
-          ))}
-        </div>
-      </SettingsFormRow>
-
-      <SettingsFormRow label="Anchor date" description="The reference point the cadence is calculated from.">
-        <Select value={anchor} onValueChange={v => setAnchor(v as ReminderAnchor)}>
-          <SelectTrigger className="w-48 h-8 text-sm" aria-label="Reminder anchor date"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {(Object.keys(REMINDER_ANCHOR_LABELS) as ReminderAnchor[]).map(a => (
-              <SelectItem key={a} value={a}>{REMINDER_ANCHOR_LABELS[a]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsFormRow>
-
-      <SettingsFormRow label="Start sending" description={`Begin reminders this many days before ${anchorLabel}, repeating until the anchor.`}>
-        <div className="flex items-center gap-2">
-          <Input type="number" min={1} max={60} value={start}
-            onChange={e => setStart(Math.max(1, Math.min(60, Number(e.target.value))))}
-            className="w-16 h-8 text-sm tabular-nums text-right" aria-label="Start sending days before anchor" />
-          <span className="text-sm text-muted-foreground">days before</span>
-        </div>
-      </SettingsFormRow>
-
-      <SettingsFormRow label="Schedule preview" description="When each reminder fires for the active term.">
-        {schedule.length > 0 ? (
-          <div className="rounded-2 bg-muted/50 px-3.5 py-3 flex flex-col gap-1">
-            {schedule.map(d => (
-              <div key={d} className="flex items-center gap-2 text-sm">
-                <i className="fa-light fa-bell text-xs text-muted-foreground" aria-hidden="true" />
-                <span className="tabular-nums">{d} day{d !== 1 ? 's' : ''} before {anchorLabel}</span>
-                <span className="text-xs text-muted-foreground">· reminder sent</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No reminders scheduled.</p>
-        )}
-      </SettingsFormRow>
-    </Panel>
-  )
-}
-
 // ── Section export ────────────────────────────────────────────────────────────
 export function CommunicationSection() {
   const [templates, setTemplates] = useState<EvalEmailTemplate[]>(EVAL_EMAIL_TEMPLATES)
@@ -249,7 +184,7 @@ export function CommunicationSection() {
     <div className="flex flex-col gap-4">
       <Panel
         title="Email Templates"
-        description="Templates used for survey invitations and reminders. Create new templates, preview how they render, or edit existing ones."
+        description="Templates used for survey invitations and reminders."
         action={<Button size="sm" onClick={() => startNew('invitation')}>
           <i className="fa-light fa-plus" aria-hidden="true" />New template
         </Button>}
@@ -265,8 +200,6 @@ export function CommunicationSection() {
           )) : <p className="text-xs text-muted-foreground py-3">No reminder templates yet.</p>}
         </Group>
       </Panel>
-
-      <ReminderCadence />
 
       <TemplateEditorSheet template={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
     </div>

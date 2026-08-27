@@ -7,12 +7,15 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   RadioGroup, RadioGroupItem, ToggleSwitch,
   Tabs, TabsList, TabsTrigger, TabsContent,
+  Popover, PopoverTrigger, PopoverContent,
+  Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { SettingsFormRow } from '@/components/settings-form-row'
 import { RoleAccessGrid } from '@/components/pce/role-access-grid'
 import { CommunicationSection } from '@/components/pce/settings-communication'
+import { AcademicCalendarSection } from '@/components/pce/settings-academic-calendar'
 import { TemplatesHub } from '@/components/pce/templates-hub'
 import {
   EVAL_RELEASE_THRESHOLD_PCT,
@@ -55,12 +58,13 @@ const SCALE_LABELS: Record<Exclude<ScalePreset, 'custom'>, Record<ScalePoints, s
   },
 }
 
+// Schedule & release hidden per Romit (Aug 27) — tab removed from SECTIONS, TabsContent + state kept for re-enable.
 const SECTIONS = [
-  { id: 'templates',        label: 'Templates' },
-  { id: 'evaluation-rules', label: 'Evaluation Rules' },
-  { id: 'evaluation-dates', label: 'Schedule & release' },
-  { id: 'communication',    label: 'Communication' },
-  { id: 'role-access',      label: 'Role access' },
+  { id: 'templates',          label: 'Templates' },
+  { id: 'evaluation-rules',   label: 'Evaluation Rules' },
+  { id: 'academic-calendar',  label: 'Academic Calendar' },
+  { id: 'communication',      label: 'Communication' },
+  { id: 'role-access',        label: 'Role access' },
 ] as const
 type SectionId = typeof SECTIONS[number]['id']
 
@@ -84,21 +88,38 @@ function ResolvesTo({ caption, children }: { caption: string; children: React.Re
   )
 }
 
-// Scale label band — answers "what will students see?" (kept; 12px floor, DS tokens)
-function LabelBand({ labels }: { labels: string[] }) {
+// Scale label band — answers "what will students see?" DS card surface (not a
+// generic muted box) so it reads as a distinct preview, not another form field.
+// Vertical row-per-point list (not a horizontal strip) so it sits beside the
+// edit table at a fixed width and each row lines up with its table row —
+// scales the same at 3 or 7 points instead of squeezing into a half column.
+// Score shown per node uses the live score value, not the point index — the two
+// can diverge once an admin edits "Score value" in the table below.
+function LabelBand({ labels, scores }: { labels: string[]; scores: number[] }) {
   const n = labels.length
   return (
-    <div className="rounded-2 bg-muted/50 px-4 py-4">
-      <div className="relative flex">
-        <div className="absolute top-[10px] h-px bg-border" style={{ left: `${50 / n}%`, right: `${50 / n}%` }} />
-        {labels.map((label, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-2">
-            <div className="w-5 h-5 rounded-full border-2 bg-card z-10 flex items-center justify-center" style={{ borderColor: 'var(--border)' }}>
-              <span className="text-xs tabular-nums leading-none text-muted-foreground">{i + 1}</span>
+    <div className="rounded-2 border border-border bg-card px-4 py-3 w-56 shrink-0">
+      <p className="text-xs text-muted-foreground mb-2 whitespace-nowrap">Preview — student view</p>
+      <div className="h-[18px]" aria-hidden="true" />
+      <div className="flex flex-col gap-2">
+        {labels.map((label, i) => {
+          const endpoint = i === 0 || i === n - 1
+          return (
+            <div key={i} className="flex items-center gap-2.5 h-8">
+              <div
+                className="w-[22px] h-[22px] rounded-full bg-card flex items-center justify-center shrink-0"
+                style={{ border: `${endpoint ? 1.5 : 1}px solid var(${endpoint ? '--foreground' : '--border'})` }}
+              >
+                <span
+                  className={`text-[11px] tabular-nums leading-none ${endpoint ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'}`}
+                >
+                  {Number.isFinite(scores[i]) ? scores[i] : i + 1}
+                </span>
+              </div>
+              <span className={`text-xs leading-tight ${endpoint ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
             </div>
-            <span className="text-xs text-center leading-tight text-muted-foreground" style={{ maxWidth: n > 5 ? 72 : 88 }}>{label}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -122,8 +143,11 @@ function SettingsInner() {
   const [scalePoints, setScalePoints]   = useState<ScalePoints>(String(EVAL_DEFAULT_SCALE.points) as ScalePoints)
   const [scalePreset, setScalePreset]   = useState<ScalePreset>(EVAL_DEFAULT_SCALE.preset)
   const [customLabels, setCustomLabels] = useState<string[]>(EVAL_DEFAULT_SCALE.labels)
-  const activeLabels = scalePreset === 'custom' ? customLabels : SCALE_LABELS[scalePreset][scalePoints]
+  const [scores, setScores]             = useState<number[]>(EVAL_DEFAULT_SCALE.scores)
+  const activeLabels = customLabels
   const changePreset = (p: ScalePreset) => { setScalePreset(p); if (p !== 'custom') setCustomLabels(SCALE_LABELS[p][scalePoints]) }
+  const resizeScores = (prev: number[], k: number) =>
+    prev.length < k ? [...prev, ...Array.from({ length: k - prev.length }, (_, i) => prev.length + i + 1)] : prev.slice(0, k)
   const changePoints = (pts: ScalePoints) => {
     setScalePoints(pts)
     if (scalePreset !== 'custom') setCustomLabels(SCALE_LABELS[scalePreset][pts])
@@ -131,13 +155,33 @@ function SettingsInner() {
       const k = Number(pts)
       setCustomLabels(prev => prev.length < k ? [...prev, ...Array.from({ length: k - prev.length }, (_, i) => `Label ${prev.length + i + 1}`)] : prev.slice(0, k))
     }
+    setScores(prev => resizeScores(prev, Number(pts)))
   }
   const scaleMax = Number(scalePoints)
 
-  // Faculty roles — one-click toggle chips (was Select + Add + remove-✕)
+  // Faculty roles — searchable checklist, scales to Prism's ~40 roles (was chip toggle-group)
   const [roles, setRoles] = useState<string[]>(EVAL_DEFAULT_FACULTY_ROLE_IDS)
+  const [roleQuery, setRoleQuery] = useState('')
   const toggleRole = (id: string) =>
     setRoles(p => (p.includes(id) ? p.filter(r => r !== id) : [...p, id]))
+  // Row order is frozen at the selection the checklist opened with — selected roles
+  // sort first, then alphabetically — so toggling a checkbox mid-review never
+  // reshuffles rows out from under the cursor.
+  const sortRoleIds = (selected: string[]) => {
+    const selectedSet = new Set(selected)
+    return EVAL_FACULTY_ROLES
+      .slice()
+      .sort((a, b) => {
+        const selDiff = Number(selectedSet.has(b.id)) - Number(selectedSet.has(a.id))
+        return selDiff !== 0 ? selDiff : a.label.localeCompare(b.label)
+      })
+      .map(r => r.id)
+  }
+  const [roleOrder, setRoleOrder] = useState<string[]>(() => sortRoleIds(EVAL_DEFAULT_FACULTY_ROLE_IDS))
+  const roleById = new Map<string, typeof EVAL_FACULTY_ROLES[number]>(EVAL_FACULTY_ROLES.map(r => [r.id, r]))
+  const filteredRoles = roleOrder
+    .map(id => roleById.get(id)!)
+    .filter(r => r.label.toLowerCase().includes(roleQuery.toLowerCase()))
 
   // Benchmarks
   const [bRate, setBRate]       = useState<number>(EVAL_BENCHMARKS.targetResponseRate)
@@ -167,7 +211,7 @@ function SettingsInner() {
 
   // Dirty tracking — signature vs a saved baseline (robust to StrictMode double
   // effects: dirty is DERIVED, not accumulated).
-  const sig = JSON.stringify([scalePoints, scalePreset, customLabels, roles, bRate, bCourse, bFaculty,
+  const sig = JSON.stringify([scalePoints, scalePreset, customLabels, scores, roles, bRate, bCourse, bFaculty,
     releaseMethod, releaseThreshold, commentMod,
     windowAnchor, opensOffset, closesOffset, releaseAnchor, releaseOffset])
   const baseline = useRef<string | null>(null)
@@ -179,7 +223,10 @@ function SettingsInner() {
     setScalePoints(String(EVAL_DEFAULT_SCALE.points) as ScalePoints)
     setScalePreset(EVAL_DEFAULT_SCALE.preset)
     setCustomLabels(EVAL_DEFAULT_SCALE.labels)
+    setScores(EVAL_DEFAULT_SCALE.scores)
     setRoles(EVAL_DEFAULT_FACULTY_ROLE_IDS)
+    setRoleOrder(sortRoleIds(EVAL_DEFAULT_FACULTY_ROLE_IDS))
+    setRoleQuery('')
     setBRate(EVAL_BENCHMARKS.targetResponseRate)
     setBCourse(EVAL_BENCHMARKS.targetCourseScore)
     setBFaculty(EVAL_BENCHMARKS.targetFacultyScore)
@@ -237,57 +284,112 @@ function SettingsInner() {
             {/* ── Evaluation Rules ─────────────────────────────────────── */}
             <TabsContent value="evaluation-rules" className="flex flex-col gap-8 mt-0">
               <SettingsFormRow label="Rating scale" description="Central default for scaled / rating questions in new templates.">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-1.5">
-                    {(['3', '4', '5', '7'] as ScalePoints[]).map(p => (
-                      <Button key={p} variant={scalePoints === p ? 'default' : 'outline'} size="sm" className="h-8"
-                        aria-pressed={scalePoints === p} onClick={() => changePoints(p)}>{p}-point</Button>
-                    ))}
-                  </div>
-                  <Select value={scalePreset} onValueChange={v => changePreset(v as ScalePreset)}>
-                    <SelectTrigger className="w-44 h-8 text-sm" aria-label="Scale type"><SelectValue /></SelectTrigger>
-                    <SelectContent>{SCALE_PRESETS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <LabelBand labels={activeLabels} />
-                  {scalePreset === 'custom' && (
-                    <div className="flex flex-col gap-2 max-w-md">
-                      <p className="text-xs text-muted-foreground">Edit each point</p>
-                      {activeLabels.map((lab, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <Label className="text-xs tabular-nums text-muted-foreground w-4 shrink-0 text-right">{i + 1}</Label>
-                          <Input value={lab}
-                            onChange={e => { const next = [...customLabels]; next[i] = e.target.value; setCustomLabels(next) }}
-                            className="h-8 text-sm" aria-label={`Scale point ${i + 1} label`} />
-                        </div>
-                      ))}
+                <div className="flex items-stretch gap-6">
+                  <div className="flex flex-col gap-5 rounded-2 border border-border bg-card px-5 py-5 flex-1 min-w-0 max-w-md">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        {(['3', '4', '5', '7'] as ScalePoints[]).map(p => (
+                          <Button key={p} variant="outline" size="sm" className={`h-8 ${scalePoints === p ? 'bg-muted border-foreground/30' : 'text-muted-foreground'}`}
+                            aria-pressed={scalePoints === p} onClick={() => changePoints(p)}>{p}-point</Button>
+                        ))}
+                      </div>
+                      <Select value={scalePreset} onValueChange={v => changePreset(v as ScalePreset)}>
+                        <SelectTrigger className="w-44 h-8 text-sm" aria-label="Scale type"><SelectValue /></SelectTrigger>
+                        <SelectContent>{SCALE_PRESETS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
-                  )}
+
+                    <div className="flex flex-col gap-2 pt-4 border-t border-border">
+                      <p className="text-sm font-medium text-foreground">Edit label and score per point</p>
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 shrink-0" />
+                        <span className="text-xs text-muted-foreground flex-1">Label</span>
+                        <span className="text-xs text-muted-foreground w-20 text-right">Score value</span>
+                      </div>
+                      <div className="flex flex-col">
+                        {activeLabels.map((lab, i) => (
+                          <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border last:border-0">
+                            <Label className="text-xs tabular-nums text-muted-foreground w-4 shrink-0 text-right">{i + 1}</Label>
+                            <Input value={lab}
+                              onChange={e => { const next = [...customLabels]; next[i] = e.target.value; setCustomLabels(next) }}
+                              className="h-8 text-sm flex-1" aria-label={`Scale point ${i + 1} label`} />
+                            <Input type="number" value={Number.isFinite(scores[i]) ? scores[i] : i + 1}
+                              onChange={e => { const next = [...scores]; next[i] = Number(e.target.value); setScores(next) }}
+                              className="w-20 h-8 text-sm tabular-nums text-right" aria-label={`Score value for ${lab}`} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <LabelBand labels={activeLabels} scores={scores} />
                 </div>
               </SettingsFormRow>
 
               {/* "Answer-type labels" removed per Jun 30 PCE meeting — redundant with the
                   rating-scale endpoints (custom point editing lives on the scale itself). */}
 
-              <SettingsFormRow label="Faculty roles to evaluate" description="Default set of roles rated in new templates. Click a role to include or exclude it.">
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-wrap gap-2" role="group" aria-label="Faculty roles to evaluate">
-                    {EVAL_FACULTY_ROLES.map(r => {
-                      const on = roles.includes(r.id)
-                      return (
-                        <Button
-                          key={r.id}
-                          variant="outline"
-                          size="sm"
-                          aria-pressed={on}
-                          onClick={() => toggleRole(r.id)}
-                          className={on ? 'bg-muted' : 'text-muted-foreground'}
-                        >
-                          {on && <i className="fa-solid fa-check text-xs" aria-hidden="true" />}
-                          {r.label}
-                        </Button>
-                      )
-                    })}
-                  </div>
+              <SettingsFormRow label="Faculty roles to evaluate" description="Default set of roles rated in new templates. Search and check roles to include.">
+                <div className="flex flex-col gap-2 max-w-sm">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-full justify-start font-normal text-muted-foreground gap-2"
+                        aria-haspopup="listbox"
+                      >
+                        <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+                        Search and add roles…
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-80 p-0" aria-label="Search faculty roles">
+                      <Command>
+                        <CommandInput
+                          value={roleQuery}
+                          onValueChange={setRoleQuery}
+                          placeholder="Search roles…"
+                        />
+                        <CommandList style={{ maxHeight: 280 }}>
+                          {filteredRoles.length === 0 ? (
+                            <CommandEmpty>No roles match &quot;{roleQuery}&quot;.</CommandEmpty>
+                          ) : (
+                            <CommandGroup>
+                              {filteredRoles.map(r => {
+                                const on = roles.includes(r.id)
+                                return (
+                                  <CommandItem
+                                    key={r.id}
+                                    value={r.id}
+                                    onSelect={() => toggleRole(r.id)}
+                                    aria-label={on ? `${r.label} — selected` : r.label}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <span className="text-sm">{r.label}</span>
+                                    {on && <i className="fa-solid fa-check text-xs text-brand-color" aria-hidden="true" />}
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandGroup>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {roles.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Selected faculty roles">
+                      {roles.map(id => {
+                        const r = roleById.get(id)
+                        if (!r) return null
+                        return (
+                          <Button key={id} variant="outline" size="sm" className="h-7 bg-muted gap-1.5"
+                            onClick={() => toggleRole(id)} aria-label={`Remove ${r.label}`}>
+                            {r.label}
+                            <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  )}
                   <p className="text-xs" style={{ color: 'var(--muted-foreground)' }} role="status">
                     {roles.length === 0
                       ? 'No roles selected. New templates will rate the course only.'
@@ -307,6 +409,11 @@ function SettingsInner() {
                 </div>
               </SettingsFormRow>
 
+            </TabsContent>
+
+            {/* ── Academic Calendar ────────────────────────────────────── */}
+            <TabsContent value="academic-calendar" className="mt-0">
+              <AcademicCalendarSection />
             </TabsContent>
 
             {/* ── Schedule & release ───────────────────────────────────── */}
