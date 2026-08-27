@@ -1206,8 +1206,6 @@ interface SectionRowDatum {
   dist: [number, number, number, number, number]
   /** Per-instructor average within this section (scope-aware) — photo markers. */
   instructors: { id: string; initials: string; name: string; avatarUrl?: string; role?: 'primary' | 'guest'; avg: number }[]
-  /** The contributing questions — the popover lists them as jump links. */
-  questionRows: { id: string; text: string; avg: number }[]
 }
 
 /* Pedagogical section categories (was THEME_ORDER) — shared by
@@ -1241,7 +1239,6 @@ function SectionBoxplotChart({
   sections,
   partial,
   courseOnly,
-  onQuestionJump,
   openSections,
   onOpenSectionsChange,
 }: {
@@ -1250,7 +1247,6 @@ function SectionBoxplotChart({
   /** Page is scoped to the Course pill — says so in the description, same as
    *  every other section on the page (Romit 2026-08-17). */
   courseOnly?: boolean
-  onQuestionJump?: (questionId: string) => void
   /** Controlled from the page so "Export as PDF" can force every section
    *  open before printing — a closed AccordionContent is fully unmounted by
    *  Radix, not just visually hidden, so print CSS alone can't reveal it. */
@@ -1401,8 +1397,6 @@ function SectionBoxplotChart({
                           whiskers
                           detailTitle={s.title}
                           detailMeta={`${s.questions} question${s.questions !== 1 ? 's' : ''}`}
-                          questionLinks={s.questionRows}
-                          onQuestionJump={onQuestionJump}
                         />
                       </div>
                     </div>
@@ -1690,27 +1684,9 @@ function ProgramTriangle() {
   )
 }
 
-/** Focus ring for in-plot popover triggers (Radix renders real buttons). */
+/** Focus ring for in-plot tooltip triggers (Radix renders real buttons). */
 const PLOT_TRIGGER_RING =
   'cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-
-/* Popover body primitives — DS sectioned-popover anatomy (p-0 content, each
-   section owns px-3 py-2, border-b/border-t separators; Slite/Medium
-   definition-row formatting for stats). */
-
-/** Definition row: label left, tabular value right. */
-function PopoverStatRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-right text-xs tabular-nums text-foreground">{value}</span>
-    </div>
-  )
-}
-
-function PopoverSection({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return <div className={`px-3 py-2 ${className}`}>{children}</div>
-}
 
 function ScaleTrackPlot({
   counts,
@@ -1721,8 +1697,6 @@ function ScaleTrackPlot({
   whiskers = false,
   detailTitle,
   detailMeta,
-  questionLinks,
-  onQuestionJump,
 }: {
   counts: number[]
   total: number
@@ -1731,12 +1705,9 @@ function ScaleTrackPlot({
   people?: PlotPerson[]
   /** Theme rows only — aggregates have real min–max variance. */
   whiskers?: boolean
-  /** Header of the detail popover (question rows: "Rating distribution"). */
+  /** Header of the hover tooltip (question rows: "Rating distribution"). */
   detailTitle: string
   detailMeta?: string
-  /** Theme popover: contributing questions as jump links. */
-  questionLinks?: { id: string; text: string; avg: number }[]
-  onQuestionJump?: (questionId: string) => void
 }) {
   if (total <= 0 || avg == null) {
     /* No responses yet — quiet muted track, never a blank cell. */
@@ -1751,69 +1722,55 @@ function ScaleTrackPlot({
   const median = ratingQuantile(counts, total, 0.5)
   const lowest = counts.findIndex((c) => c > 0) + 1
   const highest = 5 - [...counts].reverse().findIndex((c) => c > 0)
-  /* "vs program" definition row — shared by the detail + person popovers. */
-  const gapLine = (v: number) =>
-    programAvg == null ? null : (
-      <PopoverStatRow
-        label="Vs program"
-        value={
-          Math.abs(v - programAvg) > 0.05 ? (
-            <>
-              {programAvg.toFixed(1)}{' '}
-              <span
-                className="font-medium"
-                style={{ color: v > programAvg ? 'var(--chart-2)' : 'var(--chip-4)' }}
-              >
+  /* Compact hover content — Median + vs-program only, no repeated rating-
+   * distribution bars: every row here (section or question) already has its
+   * own accordion revealing RatingBreakdownRows once expanded, so a second
+   * copy in a click-popover was pure duplication. This is now the ONLY
+   * interaction on this plot — every marker (band, course dot, named
+   * instructors, program-average tick) is a hover Tooltip; the previous
+   * "Questions in this section" click-popover (with jump-link buttons) is
+   * gone entirely, not just simplified (Romit, 2026-08-27, after seeing it
+   * still rendered as a heavy popover: "I just need a tooltip of what 3.8
+   * is, on hover. not this") — that navigation is still reachable from the
+   * "On this page" rail's own per-question links. TooltipContent is
+   * inverted (bg-foreground/text-background) — de-emphasis is
+   * text-background/70, not text-muted-foreground, which is illegible on
+   * the dark surface. */
+  /* Three explicit, labeled numbers — not just "Median"/"Vs program" with no
+   * anchor for what's being compared. A viewer hovering a mark where median
+   * happens to equal program average saw two unexplained identical "3.8"
+   * rows with nothing to say why (Romit, 2026-08-27, screenshot of exactly
+   * that: "can you add a better tooltip message"). "This score" states the
+   * value the mark itself represents; "· matches" replaces silence when the
+   * delta is negligible instead of just omitting the parenthetical. */
+  const tooltipStat = (v: number) => (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-background/70">This score</span>
+        <span className="font-medium tabular-nums">{v.toFixed(1)}</span>
+      </div>
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-background/70">Median</span>
+        <span className="tabular-nums">{median.toFixed(1)}</span>
+      </div>
+      {programAvg != null && (
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-background/70">Program avg</span>
+          <span className="tabular-nums">
+            {programAvg.toFixed(1)}
+            {/* No semantic chart-2/chip-4 color here — those tokens are
+               calibrated for a light surface and fail contrast against
+               TooltipContent's inverted dark background (axe: 2.32:1, needs
+               4.5:1). Plain text (inherits text-background) stays legible. */}
+            {Math.abs(v - programAvg) > 0.05 ? (
+              <span className="ml-1 font-medium">
                 ({v > programAvg ? '+' : '−'}{Math.abs(v - programAvg).toFixed(1)})
               </span>
-            </>
-          ) : (
-            <>
-              {programAvg.toFixed(1)} <span className="text-muted-foreground">· at program</span>
-            </>
-          )
-        }
-      />
-    )
-  /* The detail popover body — DS sectioned anatomy: header · stat rows ·
-     distribution · (themes) question jump links. Shared by band + course dot. */
-  const detailContent = (
-    <div className="flex flex-col">
-      <div className="border-b border-border px-3 py-2">
-        <div className="min-w-0 flex flex-col gap-0.5">
-          <p className="text-sm font-semibold truncate">{detailTitle}</p>
-          {detailMeta && <p className="text-xs text-muted-foreground line-clamp-2">{detailMeta}</p>}
+            ) : (
+              <span className="ml-1 text-background/70">· matches</span>
+            )}
+          </span>
         </div>
-      </div>
-      {/* Middle 50% / Range / Responses-count removed (2026-08-26 transcript:
-          "response also is not required... which means we basically need to
-          show median and distribution") — Median + rating distribution +
-          vs-program only, on both section rows and question rows (shared
-          code path). */}
-      <PopoverSection className="flex flex-col gap-1.5">
-        <PopoverStatRow label="Median" value={median.toFixed(1)} />
-        {gapLine(avg)}
-      </PopoverSection>
-      <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
-        <p className="text-xs text-muted-foreground">Rating distribution</p>
-        <RatingBreakdownRows counts={counts} total={total} />
-      </PopoverSection>
-      {questionLinks && questionLinks.length > 0 && onQuestionJump && (
-        <PopoverSection className="flex flex-col gap-0.5 border-t border-border">
-          <p className="text-xs text-muted-foreground">Questions in this section</p>
-          {questionLinks.map((q) => (
-            <Button
-              key={q.id}
-              variant="ghost"
-              size="sm"
-              className="h-auto justify-start gap-2 px-1.5 py-1 text-xs font-normal"
-              onClick={() => onQuestionJump(q.id)}
-            >
-              <span className="shrink-0 font-medium tabular-nums">{q.avg.toFixed(1)}</span>
-              <span className="min-w-0 truncate text-start">{q.text}</span>
-            </Button>
-          ))}
-        </PopoverSection>
       )}
     </div>
   )
@@ -1867,9 +1824,9 @@ function ScaleTrackPlot({
     <div className="relative h-16 w-full min-w-0">
       {/* program benchmark — above the track so it never collides with scores */}
       {programAvg != null && (
-        <Popover>
-          <PopoverTrigger
-            aria-label={`Program average ${programAvg.toFixed(1)}, details`}
+        <Tooltip>
+          <TooltipTrigger
+            aria-label={`Program average ${programAvg.toFixed(1)}`}
             className={`absolute top-0 flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
             style={{ left: `${scaleX(programAvg)}%` }}
           >
@@ -1886,16 +1843,14 @@ function ScaleTrackPlot({
               {programAvg.toFixed(1)}
             </span>
             <ProgramTriangle />
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-4" side="top" align="center" sideOffset={6}>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={6}>
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium">Program average {programAvg.toFixed(1)}</p>
-              <p className="text-xs text-muted-foreground">
-                Response-weighted across all offerings with this {questionLinks ? 'section' : 'question'}.
-              </p>
+              <p className="font-medium">Program average {programAvg.toFixed(1)}</p>
+              <p className="text-background/70">Response-weighted across all offerings.</p>
             </div>
-          </PopoverContent>
-        </Popover>
+          </TooltipContent>
+        </Tooltip>
       )}
       {/* dotted 1–5 track */}
       <div className="absolute inset-x-0 top-7 h-px bg-border" aria-hidden="true" />
@@ -1929,10 +1884,10 @@ function ScaleTrackPlot({
           ))}
         </>
       )}
-      {/* middle 50% band — click for the formatted distribution popover */}
-      <Popover>
-        <PopoverTrigger
-          aria-label={`${detailTitle}, distribution details`}
+      {/* middle 50% band — hover for Median + vs-program */}
+      <Tooltip>
+        <TooltipTrigger
+          aria-label={`${detailMeta ?? detailTitle}, median and program comparison`}
           className={`absolute top-7 h-2.5 -translate-y-1/2 rounded-full ${PLOT_TRIGGER_RING}`}
           style={{
             left: `${scaleX(p25)}%`,
@@ -1941,32 +1896,33 @@ function ScaleTrackPlot({
             opacity: 0.42,
           }}
         />
-        <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={10}>
-          {detailContent}
-        </PopoverContent>
-      </Popover>
+        <TooltipContent side="top" sideOffset={10}>
+          <div className="flex flex-col gap-1">
+            {detailMeta && <p className="max-w-56 truncate font-medium">{detailMeta}</p>}
+            {tooltipStat(avg)}
+          </div>
+        </TooltipContent>
+      </Tooltip>
       {/* median — brand line per the DS boxplot spec */}
       <span
         className="pointer-events-none absolute top-7 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ left: `${scaleX(median)}%`, background: 'var(--brand-color)' }}
         aria-hidden="true"
       />
-      {/* identity markers + at-mark value labels */}
-      {placed.map((m) => (
-        <Popover key={m.key}>
-          <PopoverTrigger
-            aria-label={
-              m.person
-                ? `${m.person.name}, average ${m.value.toFixed(1)}, details`
-                : `Course average ${m.value.toFixed(1)}, details`
-            }
-            className={`absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`}
-            style={{
-              left: `${m.x}%`,
-              top: m.person ? 16 : 22,
-              marginLeft: m.xOffsetPx ? `${m.xOffsetPx}px` : undefined,
-            }}
-          >
+      {/* identity markers + at-mark value labels — every marker is a hover
+          Tooltip, same as the middle-50% band above. */}
+      {placed.map((m) => {
+        const label = m.person
+          ? `${m.person.name}, average ${m.value.toFixed(1)}`
+          : `Course average ${m.value.toFixed(1)}`
+        const triggerStyle = {
+          left: `${m.x}%`,
+          top: m.person ? 16 : 22,
+          marginLeft: m.xOffsetPx ? `${m.xOffsetPx}px` : undefined,
+        }
+        const triggerClass = `absolute flex -translate-x-1/2 flex-col items-center ${PLOT_TRIGGER_RING}`
+        const triggerContent = (
+          <>
             {m.person ? (
               <AvatarInitials initials={m.person.initials} size="sm" className="ring-2 ring-[var(--card)]" />
             ) : (
@@ -1981,48 +1937,38 @@ function ScaleTrackPlot({
             >
               {m.value.toFixed(1)}
             </span>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-0" side="top" align="center" sideOffset={6}>
-            {m.person ? (
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2.5 border-b border-border px-3 py-2">
-                  <AvatarInitials initials={m.person.initials} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{m.person.name}</p>
+          </>
+        )
+        return (
+          <Tooltip key={m.key}>
+            <TooltipTrigger
+              aria-label={`${label}, median and program comparison`}
+              className={triggerClass}
+              style={triggerStyle}
+            >
+              {triggerContent}
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={6}>
+              <div className="flex flex-col gap-1">
+                {m.person && (
+                  <p className="font-medium">
+                    {m.person.name}
                     {/* Role wasn't shown anywhere on this popover at all
                         (Romit, 2026-08-25: "their role isn't defined here")
                         — same 'Primary faculty' / 'Guest faculty' vocabulary
                         as the Evaluatees column, not just a "Guest" flag on
                         the exception case. */}
                     {m.person.role && (
-                      <p className="text-xs text-muted-foreground">
-                        {m.person.role === 'primary' ? 'Primary faculty' : 'Guest faculty'}
-                      </p>
+                      <span className="text-background/70"> · {m.person.role === 'primary' ? 'Primary faculty' : 'Guest faculty'}</span>
                     )}
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      Average {m.value.toFixed(1)}
-                      {m.person.total != null
-                        ? ` · ${m.person.total} rating${m.person.total !== 1 ? 's' : ''}`
-                        : ''}
-                    </p>
-                  </div>
-                </div>
-                {programAvg != null && (
-                  <PopoverSection className="flex flex-col gap-1.5">{gapLine(m.value)}</PopoverSection>
+                  </p>
                 )}
-                {m.person.counts && m.person.total != null && m.person.total > 0 && (
-                  <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
-                    <p className="text-xs text-muted-foreground">Rating distribution</p>
-                    <RatingBreakdownRows counts={m.person.counts} total={m.person.total} />
-                  </PopoverSection>
-                )}
+                {tooltipStat(m.value)}
               </div>
-            ) : (
-              detailContent
-            )}
-          </PopoverContent>
-        </Popover>
-      ))}
+            </TooltipContent>
+          </Tooltip>
+        )
+      })}
     </div>
   )
 }
@@ -2163,7 +2109,7 @@ function WrittenResponsesRow({
 
 /* Question rows = one wide ScaleTrackPlot per row (see its block comment).
    The former numbers + chips columns folded INTO the plot: at-mark value
-   labels, photo identity markers, program ▲, click-popovers for the detail.
+   labels, photo identity markers, program ▲, hover tooltips for the detail.
    The freed ~17rem funds the track width that makes middle-50% differences
    clear (Δpx ≥ 8 at ~24rem). */
 function QuestionBreakdownTable({
@@ -2962,26 +2908,17 @@ function ResultDetail({
           }
         })
         .filter((x): x is NonNullable<typeof x> => x != null)
-      /* Contributing questions, deduped by id (faculty questions repeat per
-         instructor block) — averaged for the popover's jump-link list. */
-      const byId = new Map<string, { text: string; avgs: number[] }>()
-      for (const x of qs) {
-        const hit = byId.get(x.id)
-        if (hit) hit.avgs.push(x.avg)
-        else byId.set(x.id, { text: x.text, avgs: [x.avg] })
-      }
-      const questionRows = [...byId.entries()]
-        .map(([id, v]) => ({ id, text: v.text, avg: v.avgs.reduce((a, n) => a + n, 0) / v.avgs.length }))
-        .sort((a, b) => a.avg - b.avg)
+      /* Distinct contributing questions (faculty questions repeat per
+         instructor block) — just the count, for "N questions" in the row. */
+      const questionCount = new Set(qs.map((x) => x.id)).size
       rows.push({
         id: title,
         title,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
-        questions: questionRows.length,
+        questions: questionCount,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
         dist,
         instructors,
-        questionRows,
       })
     }
     return rows
@@ -3433,21 +3370,6 @@ function ResultDetail({
                 {inCollection ? (
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <h2 className="text-sm font-semibold text-foreground">Early signal</h2>
-                    {/* Course scope drops a card silently otherwise — the badge is
-                        what actually says "you're looking at course-only data now"
-                        (Romit 2026-08-17: Course and All faculty read the same at a
-                        glance without it). Mirrored for a single named instructor
-                        (Romit, 2026-08-25) — the Course pill stays visible in the
-                        selector at every scope now (reverted the version that hid
-                        it, which read as the control itself changing shape), so
-                        this banner is what actually tells you you're scoped to one
-                        person instead of leaving that to be inferred from which
-                        cards happen to be missing. */}
-                    {facultyScope === 'course' ? (
-                      <StatusBadge label="Course only" tone="neutral" />
-                    ) : facultyScope !== 'all' ? (
-                      <StatusBadge label={`${facultyChipLabel ?? 'Faculty'} only`} tone="neutral" />
-                    ) : null}
                     <span className="text-xs text-muted-foreground">
                       Averages from the {result.responses} response{result.responses !== 1 ? 's' : ''} so far. Expect movement until close
                     </span>
@@ -3459,11 +3381,6 @@ function ResultDetail({
                         heading so document structure/heading order and the
                         "On this page" rail anchor are unaffected. */}
                     <h2 className="sr-only">Scores</h2>
-                    {facultyScope === 'course' ? (
-                      <StatusBadge label="Course only" tone="neutral" />
-                    ) : facultyScope !== 'all' ? (
-                      <StatusBadge label={`${facultyChipLabel ?? 'Faculty'} only`} tone="neutral" />
-                    ) : null}
                   </div>
                 )}
                 {releaseSuccess && (
@@ -3570,7 +3487,6 @@ function ResultDetail({
                   onOpenSectionsChange={setOpenSections}
                   partial={inCollection}
                   courseOnly={facultyScope === 'course'}
-                  onQuestionJump={(id) => goTo(`question-${id}`, 'questions')}
                 />
               </div>
 
