@@ -1451,6 +1451,40 @@ function SectionBoxplotChart({
   )
 }
 
+/* Shared cell chrome for SectionHeatmapTable and QuestionHeatmapTable — both
+ * render a CSS-Grid cross-tab (heat-tinted 1–5 columns + avg/median/
+ * program-avg + per-instructor columns), so a header cell, a rated-question
+ * row, and a free-text row all need identical padding to visually align. A
+ * free-text row once shipped without the same left inset as rated rows and
+ * read as "misaligned" (Romit, 2026-08-27) because each row kind hand-typed
+ * its own className string. Routing every row kind through these constants
+ * (and HeatCell below) makes that drift structurally impossible — there is
+ * exactly one place that owns each cell role's chrome. */
+const HEAT_TH = 'border-b border-border bg-background text-xs font-medium text-muted-foreground'
+const HEAT_LABEL_CELL = 'border-b border-border py-2 pr-4 text-left align-middle'
+const HEAT_STAT_AVG = 'border-b border-border px-3 py-2 text-right text-sm font-medium tabular-nums text-foreground'
+const HEAT_STAT_MEDIAN = 'border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground'
+const HEAT_STAT_PROGRAM = 'border-b border-border px-3 py-2 text-right text-sm tabular-nums text-muted-foreground'
+const HEAT_INSTRUCTOR_CELL = 'border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground'
+const HEAT_FULL_ROW_PAD = 'px-3'
+const HEAT_FULL_ROW_STYLE = { gridColumn: '1 / -1' } as const
+
+function HeatCell({ share, total, color }: { share: number; total: number; color: string }) {
+  return (
+    <div className="border-b border-border p-0.5 text-center align-middle" aria-hidden="true">
+      <div className="relative flex h-9 items-center justify-center overflow-hidden rounded-sm">
+        <div
+          className="absolute inset-0"
+          style={{ background: color, opacity: total > 0 ? Math.min(0.12 + share * 0.55, 0.62) : 0 }}
+        />
+        <span className="relative z-10 text-xs font-medium tabular-nums text-foreground">
+          {total > 0 ? `${Math.round(share * 100)}%` : '—'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 /** Alternate view for Section-wise distribution (2026-08-26 transcript,
  *  Kevin's "watermark" prototype): every section as a plain table row, rating
  *  1–5 columns heat-tinted by share of responses, avg/median/program printed
@@ -1477,29 +1511,26 @@ function SectionHeatmapTable({
    * (aria-hidden) — the sr-only ChartDataTable sibling this renders
    * alongside already carries the real semantics. Horizontal scroll on the
    * wrapper, not shrinkable columns — plain, no sticky header. */
-  const cols = `minmax(0,1fr) repeat(5,4rem) repeat(3,6rem) repeat(${instructors.length},7rem)`
+  /* minmax(0,Xrem), not fixed — no horizontal-scroll wrapper (Romit:
+   * "remove horizontal scroll bar"), so columns must shrink to fit the
+   * card's actual width instead of overflowing it. repeat(0,7rem) — the
+   * solo-instructor/course-only case — would also make the whole
+   * grid-template-columns value invalid in some engines, collapsing every
+   * row into a single stacked column; omit that segment when there are no
+   * instructors rather than emit a zero-count repeat(). */
+  const cols = `minmax(0,1fr) repeat(5,minmax(0,4rem)) repeat(3,minmax(0,6rem))${instructors.length > 0 ? ` repeat(${instructors.length},minmax(0,7rem))` : ''}`
   return (
-    <div aria-hidden="true" className="overflow-x-auto">
+    <div aria-hidden="true">
       <div className="grid" style={{ gridTemplateColumns: cols }}>
-        <div className="border-b border-border bg-background py-2 pr-4 text-left text-xs font-medium text-muted-foreground">
-          Section
-        </div>
+        <div className={`${HEAT_TH} py-2 pr-4`}>Section</div>
         {[1, 2, 3, 4, 5].map((n) => (
-          <div key={n} className="border-b border-border bg-background px-1 py-2 text-center text-xs font-medium text-muted-foreground">
-            {n}
-          </div>
+          <div key={n} className={`${HEAT_TH} px-1 py-2 text-center`}>{n}</div>
         ))}
-        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-          This course
-        </div>
-        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-          Median
-        </div>
-        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-          Program avg
-        </div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`}>This course</div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`}>Median</div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`}>Program avg</div>
         {instructors.map((fi) => (
-          <div key={fi.id} className="whitespace-nowrap border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+          <div key={fi.id} className={`${HEAT_TH} whitespace-nowrap px-3 py-2 text-right`}>
             {fi.name}
           </div>
         ))}
@@ -1509,43 +1540,22 @@ function SectionHeatmapTable({
           const median = total > 0 ? ratingQuantile(s.dist, total, 0.5) : null
           return (
             <Fragment key={s.id}>
-              <div className="border-b border-border py-2 pr-4 text-left align-middle">
+              <div className={HEAT_LABEL_CELL}>
                 <span className="text-sm text-foreground">{s.title}</span>
                 <span className="block text-xs tabular-nums text-muted-foreground">
                   {s.questions} question{s.questions !== 1 ? 's' : ''}
                 </span>
               </div>
-              {[0, 1, 2, 3, 4].map((i) => {
-                const n = s.dist[i] ?? 0
-                const share = total > 0 ? n / total : 0
-                const series = RATING_SERIES[i]
-                return (
-                  <div key={i} className="border-b border-border p-0.5 text-center align-middle">
-                    <div className="relative flex h-9 items-center justify-center overflow-hidden rounded-sm">
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: series.color, opacity: total > 0 ? Math.min(0.12 + share * 0.55, 0.62) : 0 }}
-                      />
-                      <span className="relative z-10 text-xs font-medium tabular-nums text-foreground">
-                        {total > 0 ? `${Math.round(share * 100)}%` : '—'}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-              <div className="border-b border-border px-3 py-2 text-right text-sm font-medium tabular-nums text-foreground">
-                {s.avg.toFixed(1)}
-              </div>
-              <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground">
-                {median != null ? median.toFixed(1) : '—'}
-              </div>
-              <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-muted-foreground">
-                {s.programAvg != null ? s.programAvg.toFixed(1) : '—'}
-              </div>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <HeatCell key={i} share={total > 0 ? (s.dist[i] ?? 0) / total : 0} total={total} color={RATING_SERIES[i].color} />
+              ))}
+              <div className={HEAT_STAT_AVG}>{s.avg.toFixed(1)}</div>
+              <div className={HEAT_STAT_MEDIAN}>{median != null ? median.toFixed(1) : '—'}</div>
+              <div className={HEAT_STAT_PROGRAM}>{s.programAvg != null ? s.programAvg.toFixed(1) : '—'}</div>
               {instructors.map((fi) => {
                 const hit = s.instructors.find((x) => x.id === fi.id)
                 return (
-                  <div key={fi.id} className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground">
+                  <div key={fi.id} className={HEAT_INSTRUCTOR_CELL}>
                     {hit ? hit.avg.toFixed(1) : '—'}
                   </div>
                 )
@@ -2413,22 +2423,31 @@ function QuestionHeatmapTable({
    * sr-only ChartDataTable sibling already carries their real semantics —
    * but WrittenResponsesRow is genuinely interactive (View all button,
    * Visible-to-faculty toggles) and must stay OUT of aria-hidden. Plain
-   * header, no sticky — horizontal scroll on the wrapper instead. */
-  const th = 'border-b border-border bg-background text-xs font-medium text-muted-foreground'
-  const cols = `26rem repeat(5,4rem) repeat(3,6rem) repeat(${instructors.length},7rem)`
-  const fullRow = { gridColumn: '1 / -1' }
+   * header, no sticky — horizontal scroll on the wrapper instead. Cell
+   * chrome comes from the HEAT_* constants shared with SectionHeatmapTable
+   * (see above) — that's what keeps the rated-row and free-text-row left
+   * inset from drifting apart again. */
+  /* minmax(0,Xrem), not fixed — no horizontal-scroll wrapper (Romit:
+   * "remove horizontal scroll bar"), so columns must shrink to fit the
+   * card's actual width instead of overflowing it. repeat(0,7rem) — the
+   * course-only case — would also make the whole grid-template-columns
+   * value invalid in some engines, collapsing every row into a single
+   * stacked column; omit that segment when there are no instructors rather
+   * than emit a zero-count repeat(). */
+  const cols = `minmax(0,26rem) repeat(5,minmax(0,4rem)) repeat(3,minmax(0,6rem))${instructors.length > 0 ? ` repeat(${instructors.length},minmax(0,7rem))` : ''}`
+  const questionLabelCell = `${HEAT_LABEL_CELL} pl-3`
   return (
-    <div className="overflow-x-auto">
+    <div>
       <div className="grid" style={{ gridTemplateColumns: cols }}>
-        <div className={`${th} py-2 pr-4 text-left`} aria-hidden="true">Question</div>
+        <div className={`${HEAT_TH} py-2 pr-4`} aria-hidden="true">Question</div>
         {[1, 2, 3, 4, 5].map((n) => (
-          <div key={n} className={`${th} px-1 py-2 text-center`} aria-hidden="true">{n}</div>
+          <div key={n} className={`${HEAT_TH} px-1 py-2 text-center`} aria-hidden="true">{n}</div>
         ))}
-        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Average</div>
-        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Median</div>
-        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Program avg</div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`} aria-hidden="true">Average</div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`} aria-hidden="true">Median</div>
+        <div className={`${HEAT_TH} px-3 py-2 text-right`} aria-hidden="true">Program avg</div>
         {instructors.map((fi) => (
-          <div key={fi.facultyId} className={`${th} whitespace-nowrap px-3 py-2 text-right`} aria-hidden="true">
+          <div key={fi.facultyId} className={`${HEAT_TH} whitespace-nowrap px-3 py-2 text-right`} aria-hidden="true">
             {fi.name}
           </div>
         ))}
@@ -2437,19 +2456,19 @@ function QuestionHeatmapTable({
           const meta = groupMeta[group]
           return (
             <Fragment key={group}>
-              <div className="bg-muted/50 px-3 py-2 text-left text-xs font-medium text-foreground" style={fullRow} aria-hidden="true">
+              <div className="bg-muted/50 px-3 py-2 text-left text-xs font-medium text-foreground" style={HEAT_FULL_ROW_STYLE} aria-hidden="true">
                 {meta?.label ?? group}
                 {meta?.sub && <span className="font-normal text-muted-foreground"> · {meta.sub}</span>}
               </div>
               {sectionsFor(group).map((sectionTitle) => (
                 <Fragment key={sectionTitle}>
-                  <div className="px-3 pt-2 pb-1 text-left text-sm font-semibold text-foreground" style={fullRow} aria-hidden="true">
+                  <div className="px-3 pt-2 pb-1 text-left text-sm font-semibold text-foreground" style={HEAT_FULL_ROW_STYLE} aria-hidden="true">
                     {sectionTitle}
                   </div>
                   {orderedFor(group, sectionTitle).map((r) => {
                     if (r.kind === 'freeText') {
                       return (
-                        <div key={r.id} style={fullRow}>
+                        <div key={r.id} className={HEAT_FULL_ROW_PAD} style={HEAT_FULL_ROW_STYLE}>
                           <WrittenResponsesRow
                             row={r}
                             surveyId={surveyId}
@@ -2464,40 +2483,19 @@ function QuestionHeatmapTable({
                     const median = total > 0 ? ratingQuantile(counts, total, 0.5) : null
                     return (
                       <Fragment key={r.id}>
-                        <div className="border-b border-border py-2 pr-4 pl-3 text-left align-middle text-sm font-normal text-foreground" aria-hidden="true">
+                        <div className={`${questionLabelCell} text-sm font-normal text-foreground`} aria-hidden="true">
                           {r.label}
                         </div>
-                        {[0, 1, 2, 3, 4].map((i) => {
-                          const n = counts[i] ?? 0
-                          const share = total > 0 ? n / total : 0
-                          const series = RATING_SERIES[i]
-                          return (
-                            <div key={i} className="border-b border-border p-0.5 text-center align-middle" aria-hidden="true">
-                              <div className="relative flex h-9 items-center justify-center overflow-hidden rounded-sm">
-                                <div
-                                  className="absolute inset-0"
-                                  style={{ background: series.color, opacity: total > 0 ? Math.min(0.12 + share * 0.55, 0.62) : 0 }}
-                                />
-                                <span className="relative z-10 text-xs font-medium tabular-nums text-foreground">
-                                  {total > 0 ? `${Math.round(share * 100)}%` : '—'}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                        <div className="border-b border-border px-3 py-2 text-right text-sm font-medium tabular-nums text-foreground" aria-hidden="true">
-                          {r.avg != null ? r.avg.toFixed(1) : '—'}
-                        </div>
-                        <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground" aria-hidden="true">
-                          {median != null ? median.toFixed(1) : '—'}
-                        </div>
-                        <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-muted-foreground" aria-hidden="true">
-                          {r.programAvg != null ? r.programAvg.toFixed(1) : '—'}
-                        </div>
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <HeatCell key={i} share={total > 0 ? (counts[i] ?? 0) / total : 0} total={total} color={RATING_SERIES[i].color} />
+                        ))}
+                        <div className={HEAT_STAT_AVG} aria-hidden="true">{r.avg != null ? r.avg.toFixed(1) : '—'}</div>
+                        <div className={HEAT_STAT_MEDIAN} aria-hidden="true">{median != null ? median.toFixed(1) : '—'}</div>
+                        <div className={HEAT_STAT_PROGRAM} aria-hidden="true">{r.programAvg != null ? r.programAvg.toFixed(1) : '—'}</div>
                         {instructors.map((fi) => {
                           const hit = r.perFaculty?.find((x) => x.facultyId === fi.facultyId)
                           return (
-                            <div key={fi.facultyId} className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground" aria-hidden="true">
+                            <div key={fi.facultyId} className={HEAT_INSTRUCTOR_CELL} aria-hidden="true">
                               {hit ? hit.avg.toFixed(1) : '—'}
                             </div>
                           )

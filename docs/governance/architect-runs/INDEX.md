@@ -51,3 +51,4 @@ From `.claude/agents/architect.md` §"Hard rules":
 5. Cite file:line + ISO-date for every claim
 6. Honor self-retire (3 rejections → never propose again)
 7. No product-code edits — only governance/infra/docs proposals
+| 2026-08-27 | grid-table-sibling-divergence | PROPOSED | Proposed: grid-table-cell-chrome-divergence WARN audit rule (detect 2+ JSX functions in one file with independent cell-chrome Tailwind strings, no shared const); Gate 1 wording expansion (trigger ds-adoption-reviewer on new JSX-returning functions in existing files, not just new files); Pattern B intra-file sibling-consistency sub-check in verification-discipline.md + Gate 2. Retire: 3 dead no-op DOCUMENTED_HAND_ROLLS entries. Pattern B worsening (4th instance, first intra-file variant). |
