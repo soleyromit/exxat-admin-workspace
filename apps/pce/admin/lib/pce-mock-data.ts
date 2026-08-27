@@ -929,7 +929,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
-    questionCount: 8,
+    questionCount: 12,
     usedBySurveyCount: 3,
     lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
@@ -942,12 +942,16 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
         { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
         { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
-        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+        { id: 'q12', text: 'Feedback on assignments was communicated in a timely manner.', answerType: 'likert', order: 4 },
+        { id: 'q13', text: 'The grading rubric for exams was fair and transparent.', answerType: 'likert', order: 5 },
+        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
       ],
       faculty_performance: [
         { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
         { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
-        { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
+        { id: 'q14', text: "The instructor's grading of assignments was fair and consistent.", answerType: 'likert', order: 2 },
+        { id: 'q15', text: 'The instructor explains complex concepts clearly and engages the class.', answerType: 'likert', order: 3 },
+        { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 4 },
       ],
       course_director: [],
     },
@@ -962,7 +966,9 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
           { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
           { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
           { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
-          { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+          { id: 'q12', text: 'Feedback on assignments was communicated in a timely manner.', answerType: 'likert', order: 4 },
+          { id: 'q13', text: 'The grading rubric for exams was fair and transparent.', answerType: 'likert', order: 5 },
+          { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
         ],
       },
       {
@@ -974,7 +980,9 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         questions: [
           { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
           { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
-          { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
+          { id: 'q14', text: "The instructor's grading of assignments was fair and consistent.", answerType: 'likert', order: 2 },
+          { id: 'q15', text: 'The instructor explains complex concepts clearly and engages the class.', answerType: 'likert', order: 3 },
+          { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 4 },
         ],
       },
     ],
@@ -2723,12 +2731,13 @@ export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; tex
     { section: 'faculty_performance', text: 'Clear communicator; would appreciate more clinical examples.',                   sentiment: 'neutral'  },
   ]
   const OT_POOL: { text: string; sentiment: 'positive' | 'neutral' | 'concern' }[] = [
-    { text: 'Slow down the pacing before exams. The last unit felt rushed.',            sentiment: 'concern'  },
-    { text: 'More worked examples in lab would make the material stick.',                sentiment: 'concern'  },
     { text: 'Keep the case-based sessions, easily the most useful part.',               sentiment: 'positive' },
     { text: 'The readings were well chosen and matched the lectures.',                   sentiment: 'positive' },
     { text: 'Consider recording sessions so we can review before assessments.',          sentiment: 'neutral'  },
     { text: 'Office hours earlier in the week would help before quizzes.',               sentiment: 'concern'  },
+    { text: 'Group discussions helped connect the material to real cases.',              sentiment: 'positive' },
+    { text: 'A short recap at the start of each session would help continuity.',         sentiment: 'neutral'  },
+    { text: 'More time for questions at the end of lecture would help.',                 sentiment: 'concern'  },
   ]
   for (const s of MOCK_SURVEYS) {
     if (s.surveyType === 'programmatic') continue
@@ -2752,6 +2761,12 @@ export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; tex
           })
       const sectionScores: Record<string, QuestionScore[]> = {}
       const freeTextCounts: Record<string, number> = {}
+      // Texts already used by ANOTHER free-text question on THIS survey — a
+      // hash-based pick alone can collide across different questions (same
+      // quote appearing under two different prompts, Romit live review).
+      // Walk forward from the hashed index until an unused pool entry is
+      // found; only reuse once every pool entry is already spoken for.
+      const usedTextsThisSurvey = new Set<string>()
       for (const sec of sections) {
         if (!sec.roleSetId) sectionScores[sec.subjectKey] = mkScores(sec.questions, 0)
         // Open-text quotes per free-text question — the per-question "View
@@ -2760,7 +2775,12 @@ export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; tex
           if (q.answerType !== 'free_text') continue
           const n = Math.min(2 + (djb2(s.id + q.id) % 3), s.responseCount)
           for (let i = 0; i < n; i++) {
-            const pick = OT_POOL[(djb2(s.id + q.id) + i * 5) % OT_POOL.length]
+            const startIdx = (djb2(s.id + q.id) + i * 5) % OT_POOL.length
+            let pick = OT_POOL[startIdx]
+            for (let k = 1; k <= OT_POOL.length && usedTextsThisSurvey.has(pick.text); k++) {
+              pick = OT_POOL[(startIdx + k) % OT_POOL.length]
+            }
+            usedTextsThisSurvey.add(pick.text)
             MOCK_OPEN_TEXT_RESPONSES.push({
               id: `gen-ot-${s.id}-${q.id}-${i}`,
               surveyId: s.id,

@@ -18,11 +18,35 @@
 //   Spec's violet banner → LocalBanner info variant (no off-palette violet).
 //   Spec's red coding → amber (aarti_no_red).
 //
-// DS OS: PageHeader · LocalBanner · Tabs · Card · Collapsible · StatusBadge ·
-// PersonIdentityCell · ExportDrawer. AI insight card removed (Romit
-// 2026-07-17). Theme viz: per-theme stacked rating bars (shared rating-viz).
+// DS OS: PageHeader · LocalBanner · Tabs · Card · Collapsible · Accordion ·
+// StatusBadge · PersonIdentityCell · ExportDrawer. AI insight card removed
+// (Romit 2026-07-17).
 // Mobbin: Zoom survey results (tabs + per-question) · Dovetail (themes) ·
 // Gorgias (comments + download).
+//
+// 2026-08-26 (single-survey-analytics review, raw transcript) supersedes two
+// earlier decisions on this page, deliberately, not by oversight:
+//   - Section-wise distribution ("Theme-wise distribution" until today) is a
+//     RENAME, not a re-architecture: "themesh distribution is nothing but
+//     the section" (Romit) — SECTION_ORDER/classifySection is the SAME
+//     pedagogical categorization the old ThemeBoxplotChart used, just
+//     relabeled. It's now an Accordion (type="multiple"); expanding a
+//     section reveals its rating distribution as always-visible rows
+//     (RatingBreakdownRows), not a hover-only Tooltip — export must show
+//     what the accordion shows. Question Breakdown groups by this same
+//     classifySection, not raw section titles either. A second Heat map
+//     view (toggle) is also available — Kevin's "watermark" prototype
+//     (excel-style, no expand needed), still pending a Friday call with
+//     David before either is picked as the default.
+//   - Middle 50% / Range / Responses-count are removed from every scale-plot
+//     popover (section rows AND question rows) — Median + rating
+//     distribution only.
+//   - Faculty filter reverts to single-select (was made multi-select
+//     2026-08-25 at Romit's own request) — multi-select's aggregated-export
+//     use case belongs to longitudinal analytics, not this page. The Role
+//     filter is removed entirely for the same reason (2026-08-26 re-read).
+// The separate deriveThemes()/aiThemes AI comment-topic-clustering feature
+// (lib/pce-themes.ts) is untouched — it legitimately keeps "Theme."
 // ============================================================================
 
 import { Fragment, Suspense, useEffect, useMemo, useState } from 'react'
@@ -45,6 +69,11 @@ import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+  KeyMetrics,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -70,9 +99,9 @@ import {
   FloatingSheetPanelHeader,
   ToggleSwitch,
 } from '@exxatdesignux/ui'
-import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
-import { RatingBreakdownRows } from '@/components/pce/rating-viz'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ChartCard, ChartDataTable, type ChartLeoInsight } from '@/components/charts-overview'
+import { RatingBreakdownRows, RATING_SERIES } from '@/components/pce/rating-viz'
+import { AvatarInitials } from '@/components/ui/avatar'
 import {
   OutlineTreeLeafButton,
   OutlineTreeMenu,
@@ -362,74 +391,99 @@ function EvaluationSummaryStrip({
  *  ('all' | 'course' | a facultyId) — only the UI presenting it moved; every
  *  downstream computation keyed on `scope`/`facultyScope` elsewhere on this
  *  page needed no changes. A single-instructor course shows just the
- *  identity + its status, same as before. */
+ *  identity + its status, same as before.
+ *
+ *  2026-08-26: faculty picking reverts to SINGLE faculty at a time (was made
+ *  multi-select 2026-08-25 at Romit's own request — "I am not able to add
+ *  multiple faculty/role"). Today's single-survey-analytics review found no
+ *  export use case for an aggregated multi-faculty report at this level —
+ *  that need belongs to longitudinal analytics, a different surface.
+ *  2026-08-26 (later re-read): the Role filter itself is removed from this
+ *  page too — "do we want to aggregate at a role level? ... No. That was a
+ *  use case for longitudinal analytics, not for single course offering."
+ *  Course-association role still SHOWS (the ScoreCard's person.role label),
+ *  it just no longer FILTERS anything here. */
 function FacultyScopeSelector({
   instructors,
   scope,
   toggleFacultyId,
-  roleScope = 'all',
-  toggleRoleScope,
-  evalRoleById,
   isPD,
-  avatarUrlById,
   showCourse,
 }: {
   instructors: EvalResult[]
-  scope: 'all' | 'course' | string[]
-  /** Toggles ONE instructor in/out of the picked set — multi-select
-   *  (Romit, 2026-08-25: "I am not able to add multiple faculty/role"). */
+  scope: 'all' | 'course' | string
+  /** Picks ONE instructor, or clears back to 'all' if it's already picked. */
   toggleFacultyId: (id: string) => void
-  /** Course-association role scope — the middle ground between "All faculty" and
-   *  specific people on a co-taught course (same vocabulary as Analytics → By Faculty). */
-  roleScope?: 'all' | FacultyEvalRoleId[]
-  /** Toggles ONE role in/out of the picked set — same multi-select shape as `toggleFacultyId`. */
-  toggleRoleScope?: (role: FacultyEvalRoleId) => void
-  /** facultyId → course-association role, shared derivation with analytics. */
-  evalRoleById?: (facultyId: string) => FacultyEvalRoleId
   isPD: boolean
-  /** facultyId → portrait, from survey.instructors — pills show the same
-   *  photos as every plot marker (one identity treatment page-wide). */
-  avatarUrlById?: Record<string, string | undefined>
   /** This offering has course-content questions in scope — offers a "Course"
    *  tab alongside "Faculty" so a coordinator can view course-only
    *  analytics the same way they drill into one instructor. */
   showCourse?: boolean
 }) {
-  /* Controls the shared checkbox menu both the Faculty pill and the Role
-   * pill reopen — declared above the early return below (Rules of Hooks). */
+  /* Controls the checkbox menu the Faculty pill reopens — declared above the
+   * early return below (Rules of Hooks). */
   const [open, setOpen] = useState(false)
   // Scope pills are PD-only (spec ST-15: the faculty switcher is a coordinator
   // affordance) — a faculty viewer keeps their own identity row and can never
   // scope the Faculty Performance signal onto a colleague's instructor block.
-  if (!isPD || (instructors.length <= 1 && !showCourse)) {
+  // Solo-instructor courses render NOTHING here (not a bare identity row) —
+  // this component only ever renders inside the Faculty tab (Romit's earlier
+  // move), where the Faculty Performance ScoreCard right below it ALREADY
+  // shows that same instructor's name + release status. A duplicate row
+  // above "Scores" repeating both was pure redundancy (Romit, live review).
+  if (instructors.length <= 1) return null
+  if (!isPD) {
     const f = instructors[0]
     if (!f) return null
     return (
       <div className="flex items-center gap-2">
-        <Avatar className="size-7">
-          <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
-          <AvatarFallback className="text-xs">{f.facultyInitials}</AvatarFallback>
-        </Avatar>
+        <AvatarInitials initials={f.facultyInitials} size="sm" />
         <span className="text-sm font-semibold text-foreground">{f.facultyName}</span>
-        {isPD && (
-          <StatusBadge
-            label={f.releasedToFaculty ? 'Released' : 'Pending release'}
-            tone={f.releasedToFaculty ? 'neutral' : 'warning'}
-          />
-        )}
       </div>
     )
   }
-  /* Roles present among THESE instructors, canonical order — offering a role whose
-     filter would match nobody is the same "dropdown ≠ table" bug the analytics
-     role filter guards against (§4.7). */
-  const roleOptions = evalRoleById
-    ? EVAL_FACULTY_ROLES.filter((r) => instructors.some((f) => evalRoleById(f.facultyId) === r.id))
-    : []
-  const activeInstructors = Array.isArray(scope) ? instructors.filter((f) => scope.includes(f.facultyId)) : []
-  const activeRoles = roleScope === 'all' ? [] : roleScope
-  const activeRoleLabels = activeRoles.map((id) => roleOptions.find((r) => r.id === id)?.label).filter((l): l is NonNullable<typeof l> => !!l)
-  const hasFilter = activeInstructors.length > 0 || activeRoleLabels.length > 0
+  const activeInstructors =
+    scope !== 'all' && scope !== 'course' ? instructors.filter((f) => f.facultyId === scope) : []
+  const hasFilter = activeInstructors.length > 0
+
+  /* Exactly two faculty (2026-08-26 transcript, Q: "how many faculties on
+   * average? A: 1.25-1.5... between 1 to 2, 80% of them" — then explicitly:
+   * "the UI can be expected to be different between one and two... only in
+   * the case where it is two, then we can have the toggle"): a direct
+   * two-way (well, three-way with All) toggle, not hidden behind "Add
+   * filter" — the whole point is there's nothing to "add," there are only
+   * ever two people to flip between. 3+ faculty keeps the "more" menu below,
+   * per the same exchange ("if exceeding two or three, a more icon ...
+   * click, select one"). */
+  if (instructors.length === 2 && scope !== 'course') {
+    const toggleValue = scope === 'all' ? 'all' : scope
+    return (
+      <ToggleGroup
+        type="single"
+        value={toggleValue}
+        onValueChange={(v) => {
+          if (!v) return
+          if (v === 'all') {
+            if (scope !== 'all') toggleFacultyId(scope)
+          } else {
+            toggleFacultyId(v)
+          }
+        }}
+        variant="outline"
+        size="sm"
+        aria-label="Faculty"
+      >
+        <ToggleGroupItem value="all">All faculty</ToggleGroupItem>
+        {instructors.map((f) => (
+          <ToggleGroupItem key={f.facultyId} value={f.facultyId} className="gap-1.5">
+            <AvatarInitials initials={f.facultyInitials} size="sm" className="shrink-0" fallbackClassName="text-[9px]" />
+            {f.facultyName}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    )
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {/* Course/Faculty scope-switching itself now lives one level up, as
@@ -438,19 +492,14 @@ function FacultyScopeSelector({
           are one unified TabsList, each a genuine TabsContent panel, which
           also resolved the earlier axe finding from trying to fake that
           with a non-panel-swapping `Tabs` instance in here. This component
-          now only handles WHICH faculty / which role within the Faculty
-          panel. */}
-      {/* WHICH faculty and WHICH role — INDEPENDENT filters that AND
-          together, each its own pill, same shape as the term-workspace
-          survey table's filter bar (Romit, 2026-08-25: "i want this to work
-          as datatable filter, where i select multiple and the result are
-          shown" — picking a role used to silently replace a faculty pick
-          instead of narrowing it further). Both pills open the SAME
-          checkbox menu (controlled `open` state, since Radix needs one
-          trigger to anchor the popper) so either can add to or edit the
-          other dimension; each pill's own ⋯xmark clears only that
-          dimension. The trailing "+" stays available even with pills
-          present, to start the dimension that's still empty. */}
+          now only handles WHICH faculty within the Faculty panel — Role is
+          no longer a filter dimension here (2026-08-26 re-read: role-level
+          aggregation belongs to longitudinal analytics, not a single course
+          offering). */}
+      {/* WHICH faculty — single-select pill + "Add filter" menu, same shape
+          as the term-workspace survey table's filter bar. The trailing "+"
+          stays available even with a pill present, since picking a
+          different person replaces rather than adds. */}
       {scope !== 'course' && (
         <DropdownMenu open={open} onOpenChange={setOpen}>
           {activeInstructors.length > 0 && (
@@ -460,52 +509,20 @@ function FacultyScopeSelector({
                 onClick={() => setOpen(true)}
                 className="inline-flex h-6 min-w-0 items-center gap-1.5 whitespace-nowrap rounded-l pl-2 pr-1.5 hover:bg-brand/15"
               >
-                {/* Up to 2 avatars inline — a 3rd+ pick switches to a
-                    plain count so the chip doesn't grow unbounded. */}
-                {activeInstructors.length <= 2 ? (
-                  <span className="flex shrink-0 -space-x-1">
-                    {activeInstructors.map((f) => (
-                      <Avatar key={f.facultyId} className="size-4 shrink-0 ring-1 ring-[var(--card)]">
-                        <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
-                        <AvatarFallback className="text-[9px]">{f.facultyInitials}</AvatarFallback>
-                      </Avatar>
-                    ))}
-                  </span>
-                ) : (
-                  <i className="fa-light fa-users text-xs text-brand-color shrink-0" aria-hidden="true" />
-                )}
+                {/* Single-select — always exactly one avatar, never a count. */}
+                <AvatarInitials
+                  initials={activeInstructors[0].facultyInitials}
+                  size="sm"
+                  className="shrink-0 ring-1 ring-[var(--card)]"
+                  fallbackClassName="text-[9px]"
+                />
                 <span className="shrink-0 text-foreground">Faculty</span>
-                <span className="min-w-0 truncate font-medium text-foreground">
-                  {activeInstructors.length <= 2
-                    ? activeInstructors.map((f) => f.facultyName).join(', ')
-                    : `${activeInstructors.length} selected`}
-                </span>
+                <span className="min-w-0 truncate font-medium text-foreground">{activeInstructors[0].facultyName}</span>
               </button>
               <button
                 type="button"
-                aria-label={`Remove ${activeInstructors.map((f) => f.facultyName).join(', ')} filter`}
-                onClick={() => activeInstructors.forEach((f) => toggleFacultyId(f.facultyId))}
-                className="inline-flex h-6 w-5 shrink-0 items-center justify-center rounded-r text-muted-foreground hover:bg-brand/15 hover:text-destructive"
-              >
-                <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-              </button>
-            </div>
-          )}
-          {activeRoleLabels.length > 0 && (
-            <div className="inline-flex items-center h-6 max-w-[14rem] rounded border border-brand/45 bg-brand/10 text-xs">
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="inline-flex h-6 min-w-0 items-center gap-1.5 whitespace-nowrap rounded-l pl-2 pr-1.5 hover:bg-brand/15"
-              >
-                <i className="fa-light fa-user-tag text-xs text-brand-color shrink-0" aria-hidden="true" />
-                <span className="shrink-0 text-foreground">Role</span>
-                <span className="min-w-0 truncate font-medium text-foreground">{activeRoleLabels.join(', ')}</span>
-              </button>
-              <button
-                type="button"
-                aria-label={`Remove ${activeRoleLabels.join(', ')} role filter`}
-                onClick={() => activeRoles.forEach((r) => toggleRoleScope?.(r))}
+                aria-label={`Remove ${activeInstructors[0].facultyName} filter`}
+                onClick={() => toggleFacultyId(activeInstructors[0].facultyId)}
                 className="inline-flex h-6 w-5 shrink-0 items-center justify-center rounded-r text-muted-foreground hover:bg-brand/15 hover:text-destructive"
               >
                 <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
@@ -539,33 +556,10 @@ function FacultyScopeSelector({
                   toggleFacultyId(f.facultyId)
                 }}
               >
-                <Avatar className="size-5 shrink-0">
-                  <AvatarImage src={avatarUrlById?.[f.facultyId]} alt="" className="object-cover" />
-                  <AvatarFallback className="text-[10px]">{f.facultyInitials}</AvatarFallback>
-                </Avatar>
+                <AvatarInitials initials={f.facultyInitials} size="sm" className="shrink-0" fallbackClassName="text-[10px]" />
                 {f.facultyName}
               </DropdownMenuCheckboxItem>
             ))}
-            {/* Hidden when every instructor holds the same role — a
-                one-option filter is a promise of a choice that doesn't exist. */}
-            {toggleRoleScope && roleOptions.length > 1 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Role</DropdownMenuLabel>
-                {roleOptions.map((r) => (
-                  <DropdownMenuCheckboxItem
-                    key={r.id}
-                    checked={activeRoles.includes(r.id)}
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      toggleRoleScope(r.id)
-                    }}
-                  >
-                    {r.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </>
-            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -873,12 +867,7 @@ function CommentList({
           is aria-level 2, heading order must not skip (axe heading-order). */}
       <div className="flex items-center gap-2 pb-1.5 border-b border-border min-w-0">
         {person ? (
-          /* Photo identity — same treatment as every other mark on the page
-             (UX-audit I2); initials remain the fallback. */
-          <Avatar className="size-6 shrink-0">
-            <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
-            <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
-          </Avatar>
+          <AvatarInitials initials={person.initials} size="sm" className="shrink-0" fallbackClassName="text-xs font-medium" />
         ) : icon ? (
           <i className={`fa-light ${icon} text-xs text-muted-foreground`} aria-hidden="true" />
         ) : null}
@@ -905,16 +894,14 @@ function CommentList({
                 key={c.index}
                 className="flex items-start gap-6 py-3 border-b border-border last:border-0"
               >
-                {/* Quote first — the comment is the content; the sentiment chip
-                    annotates beneath. De-emphasis via the AA-calibrated token,
-                    never opacity. */}
-                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                {/* Quote and sentiment chip side by side, not stacked
+                    (Romit: "let the chips be besides the quotes") — wraps to
+                    its own line only if the quote itself doesn't leave room. */}
+                <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
                   <p className={`text-sm leading-relaxed ${isHidden ? 'text-muted-foreground' : ''}`}>
                     &ldquo;{c.text}&rdquo;
                   </p>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge label={chip.label} tone={chip.tone} />
-                  </div>
+                  <StatusBadge label={chip.label} tone={chip.tone} />
                 </div>
                 {/* Moderation is a stateful control, not a chip-shaped button:
                     the switch carries BOTH the current visibility and the
@@ -991,10 +978,7 @@ function ScoreTile({
       <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-2 gap-y-1">
         {person ? (
           <p className="min-w-0 flex items-center gap-2 text-sm leading-snug">
-            <Avatar className="size-6 shrink-0">
-              <AvatarImage src={person.avatarUrl} alt="" className="object-cover" />
-              <AvatarFallback className="text-xs font-medium">{person.initials}</AvatarFallback>
-            </Avatar>
+            <AvatarInitials initials={person.initials} size="sm" className="shrink-0" fallbackClassName="text-xs font-medium" />
             <span className="sr-only">{label}: </span>
             <span className="min-w-0 flex flex-col leading-tight">
               <span className="truncate font-medium text-foreground">{person.name}</span>
@@ -1063,7 +1047,7 @@ function ScoreCard({
    *  scope) — otherwise the card's single blended number has no identity
    *  attached to it at all (Vishal, 2026-08-25 sync — flagged as a missing
    *  avatar, not a missing number: the number was always there). */
-  breakdown?: { id: string; name: string; initials: string; avatarUrl?: string; avg: number | null }[]
+  breakdown?: { id: string; name: string; initials: string; avatarUrl?: string; role?: string; avg: number | null }[]
 }) {
   const delta = value != null && programAvg != null ? value - programAvg : null
   const prior = priors.length > 0 ? priors[priors.length - 1] : null
@@ -1131,17 +1115,35 @@ function ScoreCard({
           }
         />
         {breakdown && breakdown.length > 1 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-border px-4 py-3">
+          <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
             {breakdown.map((f) => (
-              <div key={f.id} className="flex items-center gap-1.5">
-                <Avatar className="size-6">
-                  <AvatarImage src={f.avatarUrl} alt="" className="object-cover" />
-                  <AvatarFallback className="text-[10px]">{f.initials}</AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-muted-foreground">
-                  {f.name} <span className="font-medium text-foreground tabular-nums">{f.avg != null ? f.avg.toFixed(2) : '—'}</span>
-                </span>
-              </div>
+              /* Text (initials) avatar + rating per instructor, no visible
+                 name — the full name lives in the tooltip only (Romit:
+                 "text avatar and rating, both in a chip... no full name.
+                 put it in the tooltip"). No outer chip background — the
+                 DS AvatarInitials circle already carries its own
+                 --avatar-initials-bg fill; a second pill behind it was
+                 redundant chrome (Romit: "remove the chip background
+                 covering text avatar initials and rating"). */
+              <Tooltip key={f.id}>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex shrink-0 cursor-default items-center gap-1.5">
+                    <AvatarInitials initials={f.initials} size="sm" fallbackClassName="text-[9px]" />
+                    <span className="text-xs font-medium tabular-nums text-foreground">
+                      {f.avg != null ? f.avg.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {f.name}
+                  {/* TooltipContent is bg-foreground/text-background (inverted,
+                      theme-independent) — text-muted-foreground is calibrated
+                      for a light card surface and reads near-illegible here
+                      (Romit: "Role not visible"). text-background/70 is the
+                      correct de-emphasis on THIS surface. */}
+                  {f.role && <span className="text-background/70"> · {f.role}</span>}
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         )}
@@ -1184,76 +1186,159 @@ function ResponseRateCard({
   )
 }
 
-/* ── theme distribution ───────────────────────────────────────────────────────
-   One row per theme: the SAME five vertical rating columns as the question
-   breakdown, aggregated across the theme's questions (Romit 2026-07-16 —
-   one visual language page-wide; the distribution shape per theme is the
-   story), plus "Avg X · Program Y" printed at the right. */
+/* ── section distribution ─────────────────────────────────────────────────────
+   One row per REAL template section (not a classified taxonomy) — an
+   accordion: the trigger carries this-course/program/median at a glance plus
+   the boxplot track, expanding reveals the rating distribution as plain,
+   always-visible rows (RatingBreakdownRows) so nothing the export needs lives
+   behind a hover or a click (Aug 26 2026 decision — supersedes the
+   non-collapsible "Theme" viz and its gap-sort; rows now follow template
+   order, and `type="multiple"` keeps "look at two sections at once" working). */
 
-interface ThemeRowDatum {
-  theme: string
+interface SectionRowDatum {
+  id: string
+  title: string
   avg: number
   questions: number
   programAvg: number | null
   /** Response counts by rating level, index 0 = rated 1 … index 4 = rated 5,
-   *  aggregated across the theme's questions — feeds the detail popover. */
+   *  aggregated across the section's questions — feeds the distribution. */
   dist: [number, number, number, number, number]
-  /** Per-instructor average within this theme (scope-aware) — photo markers. */
+  /** Per-instructor average within this section (scope-aware) — photo markers. */
   instructors: { id: string; initials: string; name: string; avatarUrl?: string; role?: 'primary' | 'guest'; avg: number }[]
   /** The contributing questions — the popover lists them as jump links. */
   questionRows: { id: string; text: string; avg: number }[]
 }
 
-/* Theme rows share the question rows' scale-track boxplot (DS OS → Chart →
+/* Pedagogical section categories (was THEME_ORDER) — shared by
+ * Section-wise distribution and Question Breakdown's sub-headers so both
+ * agree on what a "section" is and in what order they appear. Module-level
+ * so QuestionBreakdownTable's own grouping can reuse the same order. */
+const SECTION_ORDER = ['Teaching Effectiveness', 'Communication', 'Assessment Practices', 'Course Content']
+
+/** Classifies a question's pedagogical section from its TEXT, with
+ *  provenance as the fallback (faculty-block questions teach/communicate;
+ *  course-section questions are content/assessment) — the SAME taxonomy
+ *  Section-wise distribution and Question Breakdown's sub-headers both use,
+ *  so a question always lands in the same section on either surface. */
+function classifySectionFromText(text: string, fromFaculty: boolean): string {
+  const t = text.toLowerCase()
+  if (/assess|exam|grad|rubric|fair/.test(t)) return 'Assessment Practices'
+  if (/communicat|respond|accessib|approach|feedback|available/.test(t)) return 'Communication'
+  if (/teach|instruct|explain|clarit|clear|engag|effectiv|present/.test(t)) return 'Teaching Effectiveness'
+  if (t) return 'Course Content'
+  return fromFaculty ? 'Teaching Effectiveness' : 'Course Content'
+}
+
+/* Section rows share the question rows' scale-track boxplot (DS OS → Chart →
    Statistical → Boxplot anatomy, laid horizontal): ONE vocabulary for every
-   score-vs-program read on this page. Theme rows add the whiskers — theme
-   aggregates have real min–max variance — and their detail popover carries
-   the 1–5 column distribution plus the contributing questions as jump links. */
-function ThemeBoxplotChart({
-  themes,
+   score-vs-program read on this page. ChartFigure is intentionally skipped
+   here (unlike other ChartCard bodies) — its capture-phase arrow-key handler
+   would stop-propagate before Radix Accordion's own roving-tabindex ever
+   reaches an AccordionTrigger; ChartCard's plain-children branch still
+   supplies the ChartLeoInsightOverlay pill on its own. */
+function SectionBoxplotChart({
+  sections,
   partial,
   courseOnly,
   onQuestionJump,
+  openSections,
+  onOpenSectionsChange,
 }: {
-  themes: ThemeRowDatum[]
+  sections: SectionRowDatum[]
   partial?: boolean
   /** Page is scoped to the Course pill — says so in the description, same as
    *  every other section on the page (Romit 2026-08-17). */
   courseOnly?: boolean
   onQuestionJump?: (questionId: string) => void
+  /** Controlled from the page so "Export as PDF" can force every section
+   *  open before printing — a closed AccordionContent is fully unmounted by
+   *  Radix, not just visually hidden, so print CSS alone can't reveal it. */
+  openSections: string[]
+  onOpenSectionsChange: (ids: string[]) => void
 }) {
-  if (themes.length === 0) return null
-  /* Sort by gap vs program, worst first — the deficit IS the story (Culture
-     Amp delta framing); themes without a benchmark sink to the end. */
-  const gapKey = (t: ThemeRowDatum) =>
-    t.programAvg != null ? t.avg - t.programAvg : Number.POSITIVE_INFINITY
-  const sorted = [...themes].sort((a, b) => gapKey(a) - gapKey(b) || a.avg - b.avg)
-  const weakest = [...themes].sort((a, b) => a.avg - b.avg)[0]
-  const themeLeo: ChartLeoInsight = {
-    headline: `${weakest.theme} is the lowest theme at ${weakest.avg.toFixed(1)}/5`,
+  if (sections.length === 0) return null
+  const weakest = [...sections].sort((a, b) => a.avg - b.avg)[0]
+  const sectionLeo: ChartLeoInsight = {
+    headline: `${weakest.title} is the lowest section at ${weakest.avg.toFixed(1)}/5`,
     explanation:
       weakest.programAvg != null
-        ? `Program average for this theme is ${weakest.programAvg.toFixed(1)}. Open the theme for its questions.`
+        ? `Program average for this section is ${weakest.programAvg.toFixed(1)}. Expand the section for its questions.`
         : `Averaged from ${weakest.questions} question${weakest.questions !== 1 ? 's' : ''}.`,
     kind: 'dip',
   }
-  const instructors = [...new Map(sorted.flatMap((t) => t.instructors).map((fi) => [fi.id, fi])).values()]
+  const instructors = [...new Map(sections.flatMap((s) => s.instructors).map((fi) => [fi.id, fi])).values()]
+  const dataTable = (
+    <ChartDataTable
+      caption="Section-wise distribution"
+      headers={[
+        'Section',
+        'Rated 1',
+        'Rated 2',
+        'Rated 3',
+        'Rated 4',
+        'Rated 5',
+        'This course',
+        'Median',
+        'Program average',
+        'Questions',
+        ...instructors.map((fi) => fi.name),
+      ]}
+      rows={sections.map((s) => {
+        const total = s.dist.reduce((a, n) => a + n, 0)
+        return [
+          s.title,
+          ...s.dist,
+          `${s.avg.toFixed(1)}/5`,
+          total > 0 ? `${ratingQuantile(s.dist, total, 0.5).toFixed(1)}/5` : '—',
+          s.programAvg != null ? `${s.programAvg.toFixed(1)}/5` : '—',
+          s.questions,
+          ...instructors.map((fi) => {
+            const hit = s.instructors.find((x) => x.id === fi.id)
+            return hit ? `${hit.avg.toFixed(1)}/5` : '—'
+          }),
+        ]
+      })}
+    />
+  )
   return (
     <ChartCard
-      variant="normal"
-      title="Theme-wise distribution"
-      description={`Score spread per theme vs program · sorted by gap, weakest first · click any mark for details${partial ? ' · partial data' : ''}${courseOnly ? ' · course only' : ''}`}
-      leoInsight={themeLeo}
+      variant="tabs"
+      title="Section-wise distribution"
+      description={`Score spread per section vs program${partial ? ' · partial data' : ''}${courseOnly ? ' · course only' : ''}`}
+      leoInsight={sectionLeo}
+      /* Heat map is a second candidate visual for this same data (2026-08-26
+       * transcript — Kevin's "watermark" prototype: "an excel view... I can
+       * compare all questions/sections in the same column quickly", vs. the
+       * boxplot/accordion this session built as the assigned interim task.
+       * Neither was picked yet ("let's take a call, compare both... Friday
+       * I'm having a call with David") — this toggle is exactly that
+       * side-by-side comparison, not a redesign of the default. */
+      tabOptions={[
+        { value: 'distribution', label: 'Distribution' },
+        { value: 'heatmap', label: 'Heat map' },
+      ]}
     >
-      <ChartFigure
-        label="Theme-wise distribution"
-        summary={`Boxplot per question theme on a 1 to 5 scale showing the middle fifty percent, median, full range, course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''}. ${weakest.theme} is lowest at ${weakest.avg.toFixed(1)}.`}
-        dataLength={themes.length}
-      >
-        {() => (
+      {(view) =>
+        view === 'heatmap' ? (
           <>
-            <div className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-end gap-6 pb-2 border-b border-border">
-              <span className="text-xs text-muted-foreground">Theme</span>
+            <p className="sr-only">
+              {`Heat map of section ratings on a 1 to 5 scale — darker cells mean a larger share of responses at that rating — plus this-course average, median, and program average per section. ${weakest.title} is lowest at ${weakest.avg.toFixed(1)}.`}
+            </p>
+            <SectionHeatmapTable sections={sections} instructors={instructors} />
+            {dataTable}
+          </>
+        ) : (
+          <>
+            <p className="sr-only">
+              {`Boxplot per section on a 1 to 5 scale showing the median, course average, program average${instructors.length > 0 ? ' and per-instructor averages' : ''}. Expand a section to see its full rating distribution. ${weakest.title} is lowest at ${weakest.avg.toFixed(1)}.`}
+            </p>
+            {/* Fixed 220px, not minmax(140px,220px) — each section row below is
+                its own independent grid, so content-sized columns would compute a
+                different width per row depending on that row's own title length,
+                same class of bug fixed in Question Breakdown's column. */}
+            <div className="grid grid-cols-[220px_minmax(0,1fr)] items-end gap-6 pb-2 border-b border-border">
+              <span className="text-xs text-muted-foreground">Section</span>
               <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <span key={n} className="absolute -translate-x-1/2" style={{ left: `${scaleX(n)}%` }}>
@@ -1262,79 +1347,214 @@ function ThemeBoxplotChart({
                 ))}
               </div>
             </div>
-            <div className="flex flex-col">
-              {sorted.map((t) => {
-                const total = t.dist.reduce((a, n) => a + n, 0)
+            <Accordion type="multiple" value={openSections} onValueChange={onOpenSectionsChange} className="flex flex-col">
+              {sections.map((s) => {
+                const total = s.dist.reduce((a, n) => a + n, 0)
+                const median = total > 0 ? ratingQuantile(s.dist, total, 0.5) : null
                 return (
-                  <div
-                    key={t.theme}
-                    className="grid grid-cols-[minmax(140px,220px)_minmax(0,1fr)] items-center gap-6 py-2.5 border-b border-border last:border-0"
-                  >
-                    <div className="min-w-0 flex flex-col gap-0.5">
-                      <p className="text-sm">{t.theme}</p>
-                      <p className="text-xs text-muted-foreground tabular-nums">
-                        {t.questions} question{t.questions !== 1 ? 's' : ''} · {total} rating
-                        {total !== 1 ? 's' : ''}
-                      </p>
+                  <AccordionItem key={s.id} value={s.id} className="border-b border-border last:border-0">
+                    {/* Grid IS the row — AccordionTrigger occupies column 1 only
+                        (title, the sole clickable toggle); ScaleTrackPlot's own
+                        Popover triggers are real <button>s, so they must be a
+                        SIBLING of AccordionTrigger's button, never nested inside
+                        it (nesting <button> in <button> is invalid HTML and threw
+                        a hydration error when tried). Trigger className overrides
+                        the DS default `justify-between` (twMerge resolves the
+                        conflict) — without it the chevron gets pushed to the far
+                        edge of this narrow title column, stranded in the gap
+                        before the graph instead of sitting next to the title it
+                        toggles. */}
+                    <div className="grid grid-cols-[220px_minmax(0,1fr)] items-center gap-6">
+                      {/* Leading chevron, matching this file's own disclosure
+                          convention (the "On this page" rail's per-group toggle)
+                          — DS Accordion's own chevron is trailing by default, so
+                          it's hidden here and replaced with one that comes first. */}
+                      <AccordionTrigger className="pce-leading-chevron-trigger group justify-start gap-2 py-2.5 hover:no-underline">
+                        <i
+                          className="fa-light fa-chevron-right shrink-0 text-xs text-muted-foreground transition-transform group-data-[state=open]:rotate-90"
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex flex-col gap-0.5 text-start">
+                          <p className="text-sm">{s.title}</p>
+                          {/* Count of questions kept, number of ratings dropped —
+                              transcript: "count of questions makes sense. Number
+                              of ratings is not required." */}
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            {s.questions} question{s.questions !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </AccordionTrigger>
+                      <div className="min-w-0">
+                        <ScaleTrackPlot
+                          counts={s.dist}
+                          total={total}
+                          avg={s.avg}
+                          programAvg={s.programAvg}
+                          people={s.instructors.map((fi) => ({
+                            facultyId: fi.id,
+                            name: fi.name,
+                            initials: fi.initials,
+                            avatarUrl: fi.avatarUrl,
+                            role: fi.role,
+                            avg: fi.avg,
+                          }))}
+                          whiskers
+                          detailTitle={s.title}
+                          detailMeta={`${s.questions} question${s.questions !== 1 ? 's' : ''}`}
+                          questionLinks={s.questionRows}
+                          onQuestionJump={onQuestionJump}
+                        />
+                      </div>
                     </div>
-                    <ScaleTrackPlot
-                      counts={t.dist}
-                      total={total}
-                      avg={t.avg}
-                      programAvg={t.programAvg}
-                      people={t.instructors.map((fi) => ({
-                        facultyId: fi.id,
-                        name: fi.name,
-                        initials: fi.initials,
-                        avatarUrl: fi.avatarUrl,
-                        role: fi.role,
-                        avg: fi.avg,
-                      }))}
-                      whiskers
-                      detailTitle={t.theme}
-                      detailMeta={`${t.questions} question${t.questions !== 1 ? 's' : ''}`}
-                      questionLinks={t.questionRows}
-                      onQuestionJump={onQuestionJump}
-                    />
+                    {/* Two-column expanded panel (Romit): metrics via the real DS
+                        KeyMetrics primitive on the left, rating distribution on
+                        the right. Stretching the Card itself (`h-full`) matched
+                        the OUTER border to the row height but left the content
+                        pinned to the top — a visible empty gap INSIDE the border,
+                        worse than before. Instead: let the card size naturally
+                        (tight around its content) and center that tight card
+                        vertically within the full-height wrapper, so there's no
+                        border enclosing dead space. */}
+                    <AccordionContent className="pb-3">
+                      <div className="grid grid-cols-[26rem_minmax(0,1fr)] gap-6 px-1">
+                        <div className="flex flex-col justify-center h-full">
+                          <KeyMetrics
+                            variant="compact"
+                            size="sm"
+                            metricsSingleRow
+                            /* DS Card bakes in `h-full` on itself unconditionally
+                               (confirmed via computed styles) — it fills whatever
+                               height its parent grid stretches it to regardless of
+                               this wrapper's flex/justify-center, which is why the
+                               centering above did nothing. Overriding to h-auto so
+                               the card sizes to its own content and CAN be centered. */
+                            className="h-auto"
+                            metrics={[
+                              { id: 'course', label: 'This course', value: s.avg.toFixed(1), delta: '', trend: 'neutral' },
+                              { id: 'program', label: 'Program', value: s.programAvg != null ? s.programAvg.toFixed(1) : '—', delta: '', trend: 'neutral' },
+                              { id: 'median', label: 'Median', value: median != null ? median.toFixed(1) : '—', delta: '', trend: 'neutral' },
+                            ]}
+                          />
+                        </div>
+                        <RatingBreakdownRows counts={s.dist} total={total} />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
+            {dataTable}
+          </>
+        )
+      }
+    </ChartCard>
+  )
+}
+
+/** Alternate view for Section-wise distribution (2026-08-26 transcript,
+ *  Kevin's "watermark" prototype): every section as a plain table row, rating
+ *  1–5 columns heat-tinted by share of responses, avg/median/program printed
+ *  directly — no expand needed, and columns stay scannable top-to-bottom
+ *  ("if I want to compare medians of all the courses, there is only one
+ *  column I need to go in and see"). Same RATING_SERIES palette as the rest
+ *  of the page's rating visuals — heat intensity is an opacity-tinted layer
+ *  BEHIND the text (not on it), so the printed percentage keeps full
+ *  contrast at every intensity, same technique as MiniRatingColumns. */
+function SectionHeatmapTable({
+  sections,
+  instructors,
+}: {
+  sections: SectionRowDatum[]
+  /** Per-instructor avg columns, appended after Program avg — same identities
+   *  the Distribution tab's ScaleTrackPlot shows as photo markers (Romit:
+   *  "I also don't see faculty ratings in the section wise" — the heat map
+   *  had dropped them entirely). Empty on a solo-instructor course, where
+   *  "This course" already IS that one instructor's number. */
+  instructors: { id: string; initials: string; name: string; avatarUrl?: string }[]
+}) {
+  /* CSS Grid, not a real <table> — needed for the group/section band rows
+   * below to span the full width via gridColumn: '1 / -1'. Fully decorative
+   * (aria-hidden) — the sr-only ChartDataTable sibling this renders
+   * alongside already carries the real semantics. Horizontal scroll on the
+   * wrapper, not shrinkable columns — plain, no sticky header. */
+  const cols = `minmax(0,1fr) repeat(5,4rem) repeat(3,6rem) repeat(${instructors.length},7rem)`
+  return (
+    <div aria-hidden="true" className="overflow-x-auto">
+      <div className="grid" style={{ gridTemplateColumns: cols }}>
+        <div className="border-b border-border bg-background py-2 pr-4 text-left text-xs font-medium text-muted-foreground">
+          Section
+        </div>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <div key={n} className="border-b border-border bg-background px-1 py-2 text-center text-xs font-medium text-muted-foreground">
+            {n}
+          </div>
+        ))}
+        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+          This course
+        </div>
+        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+          Median
+        </div>
+        <div className="border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+          Program avg
+        </div>
+        {instructors.map((fi) => (
+          <div key={fi.id} className="whitespace-nowrap border-b border-border bg-background px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+            {fi.name}
+          </div>
+        ))}
+
+        {sections.map((s) => {
+          const total = s.dist.reduce((a, n) => a + n, 0)
+          const median = total > 0 ? ratingQuantile(s.dist, total, 0.5) : null
+          return (
+            <Fragment key={s.id}>
+              <div className="border-b border-border py-2 pr-4 text-left align-middle">
+                <span className="text-sm text-foreground">{s.title}</span>
+                <span className="block text-xs tabular-nums text-muted-foreground">
+                  {s.questions} question{s.questions !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {[0, 1, 2, 3, 4].map((i) => {
+                const n = s.dist[i] ?? 0
+                const share = total > 0 ? n / total : 0
+                const series = RATING_SERIES[i]
+                return (
+                  <div key={i} className="border-b border-border p-0.5 text-center align-middle">
+                    <div className="relative flex h-9 items-center justify-center overflow-hidden rounded-sm">
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: series.color, opacity: total > 0 ? Math.min(0.12 + share * 0.55, 0.62) : 0 }}
+                      />
+                      <span className="relative z-10 text-xs font-medium tabular-nums text-foreground">
+                        {total > 0 ? `${Math.round(share * 100)}%` : '—'}
+                      </span>
+                    </div>
                   </div>
                 )
               })}
-            </div>
-            <ChartDataTable
-              caption="Theme-wise distribution"
-              headers={[
-                'Theme',
-                'Rated 1',
-                'Rated 2',
-                'Rated 3',
-                'Rated 4',
-                'Rated 5',
-                'This course',
-                'Median',
-                'Program average',
-                'Questions',
-                ...instructors.map((fi) => fi.name),
-              ]}
-              rows={sorted.map((t) => {
-                const total = t.dist.reduce((a, n) => a + n, 0)
-                return [
-                  t.theme,
-                  ...t.dist,
-                  `${t.avg.toFixed(1)}/5`,
-                  total > 0 ? `${ratingQuantile(t.dist, total, 0.5).toFixed(1)}/5` : '—',
-                  t.programAvg != null ? `${t.programAvg.toFixed(1)}/5` : '—',
-                  t.questions,
-                  ...instructors.map((fi) => {
-                    const hit = t.instructors.find((x) => x.id === fi.id)
-                    return hit ? `${hit.avg.toFixed(1)}/5` : '—'
-                  }),
-                ]
+              <div className="border-b border-border px-3 py-2 text-right text-sm font-medium tabular-nums text-foreground">
+                {s.avg.toFixed(1)}
+              </div>
+              <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground">
+                {median != null ? median.toFixed(1) : '—'}
+              </div>
+              <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-muted-foreground">
+                {s.programAvg != null ? s.programAvg.toFixed(1) : '—'}
+              </div>
+              {instructors.map((fi) => {
+                const hit = s.instructors.find((x) => x.id === fi.id)
+                return (
+                  <div key={fi.id} className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground">
+                    {hit ? hit.avg.toFixed(1) : '—'}
+                  </div>
+                )
               })}
-            />
-          </>
-        )}
-      </ChartFigure>
-    </ChartCard>
+            </Fragment>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -1348,6 +1568,11 @@ interface BreakdownRow {
   id: string
   label: string
   group: string
+  /** Real template section title (e.g. "Course Content", "Faculty
+   *  Performance") — the same name Section-wise distribution uses,
+   *  repeated here as a sub-header so a multi-section template's questions
+   *  don't all collapse into one flat "Course"/"Faculty" band. */
+  sectionTitle: string
   kind: 'rated' | 'freeText'
   avg?: number
   median?: number
@@ -1550,11 +1775,13 @@ function ScaleTrackPlot({
           {detailMeta && <p className="text-xs text-muted-foreground line-clamp-2">{detailMeta}</p>}
         </div>
       </div>
+      {/* Middle 50% / Range / Responses-count removed (2026-08-26 transcript:
+          "response also is not required... which means we basically need to
+          show median and distribution") — Median + rating distribution +
+          vs-program only, on both section rows and question rows (shared
+          code path). */}
       <PopoverSection className="flex flex-col gap-1.5">
         <PopoverStatRow label="Median" value={median.toFixed(1)} />
-        <PopoverStatRow label="Middle 50%" value={`${p25.toFixed(1)}–${p75.toFixed(1)}`} />
-        <PopoverStatRow label="Range" value={`${lowest}–${highest}`} />
-        <PopoverStatRow label="Responses" value={total} />
         {gapLine(avg)}
       </PopoverSection>
       <PopoverSection className="flex flex-col gap-1.5 border-t border-border">
@@ -1563,7 +1790,7 @@ function ScaleTrackPlot({
       </PopoverSection>
       {questionLinks && questionLinks.length > 0 && onQuestionJump && (
         <PopoverSection className="flex flex-col gap-0.5 border-t border-border">
-          <p className="text-xs text-muted-foreground">Questions in this theme</p>
+          <p className="text-xs text-muted-foreground">Questions in this section</p>
           {questionLinks.map((q) => (
             <Button
               key={q.id}
@@ -1637,19 +1864,24 @@ function ScaleTrackPlot({
             style={{ left: `${scaleX(programAvg)}%` }}
           >
             {/* Suppress the value when program ≈ score — a duplicated number
-                stacked over the marker reads as a rendering bug. */}
-            {Math.abs(programAvg - avg) > 0.05 && (
-              <span className="text-xs tabular-nums leading-none text-muted-foreground" aria-hidden="true">
-                {programAvg.toFixed(1)}
-              </span>
-            )}
+                stacked over the marker reads as a rendering bug. ALWAYS
+                rendered (never omitted): omitting this span removed it from
+                the flex-col layout entirely, collapsing the triangle (now
+                first child) upward — `invisible` keeps the layout slot while
+                hiding the text. */}
+            <span
+              className={`text-xs tabular-nums leading-none text-muted-foreground ${Math.abs(programAvg - avg) > 0.05 ? '' : 'invisible'}`}
+              aria-hidden="true"
+            >
+              {programAvg.toFixed(1)}
+            </span>
             <ProgramTriangle />
           </PopoverTrigger>
           <PopoverContent className="w-72 p-4" side="top" align="center" sideOffset={6}>
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium">Program average {programAvg.toFixed(1)}</p>
               <p className="text-xs text-muted-foreground">
-                Response-weighted across all offerings with this {questionLinks ? 'theme' : 'question'}.
+                Response-weighted across all offerings with this {questionLinks ? 'section' : 'question'}.
               </p>
             </div>
           </PopoverContent>
@@ -1726,10 +1958,7 @@ function ScaleTrackPlot({
             }}
           >
             {m.person ? (
-              <Avatar className="size-6 ring-2 ring-[var(--card)]">
-                <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
-                <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
-              </Avatar>
+              <AvatarInitials initials={m.person.initials} size="sm" className="ring-2 ring-[var(--card)]" />
             ) : (
               <span
                 className="size-2.5 rounded-full ring-2 ring-[var(--card)]"
@@ -1747,10 +1976,7 @@ function ScaleTrackPlot({
             {m.person ? (
               <div className="flex flex-col">
                 <div className="flex items-center gap-2.5 border-b border-border px-3 py-2">
-                  <Avatar className="size-8">
-                    <AvatarImage src={m.person.avatarUrl} alt="" className="object-cover" />
-                    <AvatarFallback className="text-xs">{m.person.initials}</AvatarFallback>
-                  </Avatar>
+                  <AvatarInitials initials={m.person.initials} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{m.person.name}</p>
                     {/* Role wasn't shown anywhere on this popover at all
@@ -1796,13 +2022,41 @@ function ScaleTrackPlot({
  *  the full anonymized list in a FloatingSheetPanel whose subtitle carries the
  *  evaluation-type provenance. Count comes from the actual response records so
  *  the sheet can always back what the row claims. */
-function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; surveyId: string; context?: string }) {
-  const responses = MOCK_OPEN_TEXT_RESPONSES.filter(
+function WrittenResponsesRow({
+  row,
+  surveyId,
+  context,
+  canModerate,
+}: {
+  row: BreakdownRow
+  surveyId: string
+  context?: string
+  /** PD/coordinator can hide a response from the faculty-facing view — same
+   *  "Visible to faculty" ToggleSwitch contract as CommentList, just local
+   *  state here since there's no global toggleHideComment-style action for
+   *  per-question open-text responses (2026-08-26 transcript: "we are
+   *  showing responses at a section question breakdown... ideally we should
+   *  be showing visible to faculty or not here... you click view all and you
+   *  can hide or remove a few from here"). */
+  canModerate: boolean
+}) {
+  const allResponses = MOCK_OPEN_TEXT_RESPONSES.filter(
     (x) => x.surveyId === surveyId && x.questionText === row.label,
   )
-  const count = responses.length
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<SentimentFilter>('all')
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
+  const toggleHidden = (id: string) =>
+    setHiddenIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const visibleToRole = canModerate ? allResponses : allResponses.filter((x) => !hiddenIds.has(x.id))
+  const responses = visibleToRole
+  const count = responses.length
+  const hiddenCount = allResponses.filter((x) => hiddenIds.has(x.id)).length
   const filtered =
     filter === 'all' ? responses : responses.filter((x) => (x.sentiment ?? 'neutral') === filter)
   /* Per-row sentiment badges only earn their ink when the visible list MIXES
@@ -1815,7 +2069,6 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
   /* Flagged responses were in the data but invisible — a moderator's queue
      signal, so it rides the meta line and marks the row in the sheet. */
   const flaggedCount = responses.filter((x) => x.flagged).length
-  const previews = responses.slice(0, 2)
   return (
     <div
       id={`question-${row.id}`}
@@ -1831,6 +2084,7 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
             {positives > 0 && <> · {positives} positive</>}
             {concerns > 0 && <> · {concerns} constructive</>}
             {flaggedCount > 0 && <> · {flaggedCount} flagged for review</>}
+            {canModerate && hiddenCount > 0 && <> · {hiddenCount} hidden from faculty</>}
           </p>
         </div>
         {count > 0 && (
@@ -1840,11 +2094,6 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
           </Button>
         )}
       </div>
-      {previews.map((x) => (
-        <p key={x.id} className="text-sm text-muted-foreground truncate">
-          &ldquo;{x.text}&rdquo;
-        </p>
-      ))}
       <FloatingSheetPanel open={open} onOpenChange={setOpen}>
         <FloatingSheetPanelContent>
           <FloatingSheetPanelHeader
@@ -1869,15 +2118,25 @@ function WrittenResponsesRow({ row, surveyId, context }: { row: BreakdownRow; su
               <ul className="rounded-lg border border-border divide-y divide-border">
                 {filtered.map((x) => {
                   const chip = x.sentiment ? SENTIMENT_CHIP[x.sentiment] : null
+                  const isHidden = hiddenIds.has(x.id)
+                  const switchId = `response-visible-${x.id}`
                   return (
-                    <li key={x.id} className="flex flex-col gap-1.5 px-3 py-2.5">
-                      <p className="text-sm leading-relaxed">&ldquo;{x.text}&rdquo;</p>
-                      {((chip && visibleSentimentKinds.size > 1) || x.flagged) && (
-                        <div className="flex items-center gap-1.5">
-                          {chip && visibleSentimentKinds.size > 1 && (
-                            <StatusBadge label={chip.label} tone={chip.tone} />
-                          )}
-                          {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
+                    <li key={x.id} className="flex items-start justify-between gap-4 px-3 py-2.5">
+                      <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                        <p className={`text-sm leading-relaxed ${isHidden ? 'text-muted-foreground' : ''}`}>
+                          &ldquo;{x.text}&rdquo;
+                        </p>
+                        {chip && visibleSentimentKinds.size > 1 && (
+                          <StatusBadge label={chip.label} tone={chip.tone} />
+                        )}
+                        {x.flagged && <StatusBadge label="Flagged" tone="warning" />}
+                      </div>
+                      {canModerate && (
+                        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                          <label htmlFor={switchId} className="text-xs text-muted-foreground">
+                            Visible to faculty
+                          </label>
+                          <ToggleSwitch id={switchId} checked={!isHidden} onChange={() => toggleHidden(x.id)} />
                         </div>
                       )}
                     </li>
@@ -1901,18 +2160,36 @@ function QuestionBreakdownTable({
   rows,
   surveyId,
   groupMeta,
+  canModerate,
+  openQuestions,
+  onOpenQuestionsChange,
 }: {
   rows: BreakdownRow[]
   surveyId: string
   groupMeta: Record<string, GroupMeta>
+  /** Threaded to WrittenResponsesRow's "Visible to faculty" toggle. */
+  canModerate: boolean
+  /** Controlled from the page so "Export as PDF" can force every question's
+   *  rating-distribution accordion open before printing (same reasoning as
+   *  Section-wise distribution's openSections). */
+  openQuestions: string[]
+  onOpenQuestionsChange: (ids: string[]) => void
 }) {
   if (rows.length === 0) return null
+  const [view, setView] = useState<'distribution' | 'heatmap'>('distribution')
   const groups = [...new Set(rows.map((r) => r.group))]
-  /* Within each group: lowest favorable share first (the fix-first order);
+  /* Sections present within a group, in SECTION_ORDER (same taxonomy +
+     order Section-wise distribution uses) — a section a group doesn't
+     actually have any questions in is simply absent, not an empty header. */
+  const sectionsFor = (group: string) => {
+    const present = new Set(rows.filter((r) => r.group === group).map((r) => r.sectionTitle))
+    return SECTION_ORDER.filter((s) => present.has(s))
+  }
+  /* Within each section: lowest favorable share first (the fix-first order);
      free-text rows keep the tail. */
-  const orderedFor = (group: string) =>
+  const orderedFor = (group: string, sectionTitle: string) =>
     rows
-      .filter((r) => r.group === group)
+      .filter((r) => r.group === group && r.sectionTitle === sectionTitle)
       .sort((a, b) => {
         if (a.kind !== b.kind) return a.kind === 'freeText' ? 1 : -1
         if (a.kind === 'freeText') return 0
@@ -1920,9 +2197,29 @@ function QuestionBreakdownTable({
       })
   return (
     <div className="flex flex-col">
+      {/* Distribution ↔ Heat map — same toggle mechanism as Section-wise
+          distribution (Romit: "just like how you did in section wise"). A
+          plain Tabs here, not ChartCard's tabs variant — this table already
+          lives inside the page's own Card/Collapsible chrome, so a second
+          Card would double up the border. ariaLabel scoped so this landmark
+          doesn't collide with Section-wise distribution's own Tabs. */}
+      <Tabs value={view} onValueChange={(v) => setView(v as 'distribution' | 'heatmap')} className="flex flex-col">
+        <TabsList variant="line" ariaLabel="Question breakdown view" className="mb-2">
+          <TabsTrigger value="distribution">Distribution</TabsTrigger>
+          <TabsTrigger value="heatmap">Heat map</TabsTrigger>
+        </TabsList>
+        <TabsContent value="heatmap" className="m-0">
+          <QuestionHeatmapTable rows={rows} groupMeta={groupMeta} surveyId={surveyId} canModerate={canModerate} />
+        </TabsContent>
+        <TabsContent value="distribution" className="m-0 flex flex-col">
       {/* No legend (round 5: "a lot of legends which isn't required") —
-          values ride the marks and the popovers explain on click. */}
-      <div className="grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-end gap-6 pb-2 border-b border-border">
+          values ride the marks and the popovers explain on click. Fixed
+          26rem, not minmax(160px,30rem) — each question row below is its own
+          independent grid (Accordion item), so a content-sized column would
+          compute a different width per row depending on that row's own
+          question-text length, same class of bug fixed in Section-wise
+          distribution's column. */}
+      <div className="grid grid-cols-[26rem_minmax(18rem,1fr)] items-end gap-6 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground">Question</span>
         <div className="relative h-4 text-xs text-muted-foreground tabular-nums" aria-hidden="true">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -1946,46 +2243,97 @@ function QuestionBreakdownTable({
             <span className="text-xs font-medium text-foreground">{meta?.label ?? group}</span>
             {meta?.sub && <span className="text-xs text-muted-foreground">· {meta.sub}</span>}
           </div>
-          {orderedFor(group).map((r) =>
-            r.kind === 'rated' ? (
-              <div
-                key={r.id}
-                id={`question-${r.id}`}
-                className="scroll-mt-16 grid grid-cols-[minmax(160px,30rem)_minmax(18rem,26rem)] items-center gap-6 py-2 border-b border-border last:border-0"
+          {sectionsFor(group).map((sectionTitle) => (
+            <Fragment key={sectionTitle}>
+              {/* Section sub-header — same name + order Section-wise
+                  distribution uses, so a multi-section template's questions
+                  don't collapse into one flat Course/Faculty band. Bolder
+                  than the group band above it (font-semibold vs font-medium)
+                  so the two levels stay visually distinguishable, not just
+                  differently indented. */}
+              <p className="pt-3 pb-1 text-sm font-semibold text-foreground">{sectionTitle}</p>
+              <Accordion
+                type="multiple"
+                value={openQuestions}
+                onValueChange={onOpenQuestionsChange}
+                className="flex flex-col"
               >
-                <p className="text-sm min-w-0">
-                  {r.label}
-                  {/* Screen-reader glance summary — the plot's popover buttons
-                      carry the drill-down; the data table carries everything. */}
-                  <span className="sr-only">
-                    {`: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
-                      (r.total ?? 0) > 0
-                        ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
-                        : ''
-                    }${
-                      r.perFaculty && r.perFaculty.length > 0
-                        ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
-                        : ''
-                    }`}
-                  </span>
-                </p>
-                <ScaleTrackPlot
-                  counts={r.counts ?? [0, 0, 0, 0, 0]}
-                  total={r.total ?? 0}
-                  avg={r.avg}
-                  programAvg={r.programAvg}
-                  people={r.perFaculty}
-                  detailTitle="Rating distribution"
-                  detailMeta={r.label}
-                />
-              </div>
-            ) : (
-              <WrittenResponsesRow key={r.id} row={r} surveyId={surveyId} context={meta?.contextLine} />
-            ),
-          )}
+                {orderedFor(group, sectionTitle).map((r) =>
+                  r.kind === 'rated' ? (
+                    <AccordionItem
+                      key={r.id}
+                      value={r.id}
+                      id={`question-${r.id}`}
+                      className="scroll-mt-16 border-b border-border last:border-0"
+                    >
+                      {/* Same grid-IS-the-row anatomy as Section-wise
+                          distribution's rows — AccordionTrigger in column 1
+                          only, ScaleTrackPlot's own Popover buttons as a
+                          sibling in column 2 (never nested inside the
+                          trigger's own <button>). */}
+                      <div className="grid grid-cols-[26rem_minmax(18rem,1fr)] items-center gap-6">
+                        <AccordionTrigger className="pce-leading-chevron-trigger group justify-start gap-2 py-2 hover:no-underline">
+                          <i
+                            className="fa-light fa-chevron-right shrink-0 text-xs text-muted-foreground transition-transform group-data-[state=open]:rotate-90"
+                            aria-hidden="true"
+                          />
+                          <p className="text-sm min-w-0 text-start">
+                            {r.label}
+                            {/* Screen-reader glance summary — the plot's popover
+                                buttons carry the drill-down; the data table
+                                carries everything. */}
+                            <span className="sr-only">
+                              {`: average ${r.avg != null ? r.avg.toFixed(1) : 'unknown'} of 5${r.programAvg != null ? `, program average ${r.programAvg.toFixed(1)}` : ''}, from ${r.total ?? 0} rating${(r.total ?? 0) !== 1 ? 's' : ''}${
+                                (r.total ?? 0) > 0
+                                  ? `, ${Math.round(favorableShare(r.counts, r.total) * 100)}% rated 4 or 5`
+                                  : ''
+                              }${
+                                r.perFaculty && r.perFaculty.length > 0
+                                  ? `. Per instructor: ${r.perFaculty.map((f) => `${f.name} ${f.avg.toFixed(1)}`).join(', ')}`
+                                  : ''
+                              }`}
+                            </span>
+                          </p>
+                        </AccordionTrigger>
+                        <div className="min-w-0">
+                          <ScaleTrackPlot
+                            counts={r.counts ?? [0, 0, 0, 0, 0]}
+                            total={r.total ?? 0}
+                            avg={r.avg}
+                            programAvg={r.programAvg}
+                            people={r.perFaculty}
+                            detailTitle="Rating distribution"
+                            detailMeta={r.label}
+                          />
+                        </div>
+                      </div>
+                      {/* Expanded panel — always-visible rating distribution,
+                          same RatingBreakdownRows primitive Section-wise
+                          distribution uses (Romit: "make some accordion with
+                          rate distribution, similar to section wise
+                          distribution"). */}
+                      <AccordionContent className="pb-3">
+                        <RatingBreakdownRows counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  ) : (
+                    <WrittenResponsesRow
+                      key={r.id}
+                      row={r}
+                      surveyId={surveyId}
+                      context={meta?.contextLine}
+                      canModerate={canModerate}
+                    />
+                  ),
+                )}
+              </Accordion>
+            </Fragment>
+          ))}
         </Fragment>
         )
       })}
+        </TabsContent>
+      </Tabs>
       <ChartDataTable
         caption="Question breakdown"
         headers={['Question', 'Group', 'Average', 'Median', 'Program average', 'Rated 1', 'Rated 2', 'Rated 3', 'Rated 4', 'Rated 5']}
@@ -2010,6 +2358,159 @@ function QuestionBreakdownTable({
             ]),
           ])}
       />
+    </div>
+  )
+}
+
+/** Alternate view for Question Breakdown (Romit: "just like how you did in
+ *  section wise") — one row per RATED question, grouped by group + section
+ *  (same SECTION_ORDER, same sub-headers), rating 1–5 columns heat-tinted by
+ *  response share, avg/median/program printed directly. Free-text rows have
+ *  no rating distribution to heat-map — they stay Distribution-view-only,
+ *  reachable via their own "View all" sheet regardless of which tab is
+ *  active. Per-instructor avg columns included (same as Section-wise
+ *  distribution's heat map) whenever a question carries `perFaculty`. */
+function QuestionHeatmapTable({
+  rows,
+  groupMeta,
+  surveyId,
+  canModerate,
+}: {
+  rows: BreakdownRow[]
+  groupMeta: Record<string, GroupMeta>
+  surveyId: string
+  /** Threaded to WrittenResponsesRow's "Visible to faculty" toggle. */
+  canModerate: boolean
+}) {
+  const groups = [...new Set(rows.map((r) => r.group))]
+  /* Sections present, rated OR free-text — a comment-only prompt (e.g. "What
+   * would you change about this course?") must still get its section
+   * sub-header here, same as the Distribution tab (Romit: "I don't see
+   * comment related table row for each section which we are seeing in the
+   * distribution tab"). */
+  const sectionsFor = (group: string) => {
+    const present = new Set(rows.filter((r) => r.group === group).map((r) => r.sectionTitle))
+    return SECTION_ORDER.filter((s) => present.has(s))
+  }
+  /* Rated rows first (weakest favorable share), free-text rows keep the
+   * tail — same order Distribution uses. Free-text rows render as their
+   * existing WrittenResponsesRow (View all / Visible-to-faculty), not a
+   * heat cell — there is no rating distribution to heat-map. */
+  const orderedFor = (group: string, sectionTitle: string) =>
+    rows
+      .filter((r) => r.group === group && r.sectionTitle === sectionTitle)
+      .sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'freeText' ? 1 : -1
+        if (a.kind === 'freeText') return 0
+        return favorableShare(a.counts, a.total) - favorableShare(b.counts, b.total)
+      })
+  const instructors = [
+    ...new Map(rows.flatMap((r) => r.perFaculty ?? []).map((fi) => [fi.facultyId, fi])).values(),
+  ]
+  /* CSS Grid, not a real <table> — needed so group/section band rows and
+   * WrittenResponsesRow can span the full width via gridColumn: '1 / -1'.
+   * The rated-row cells and headers are decorative (aria-hidden) — the
+   * sr-only ChartDataTable sibling already carries their real semantics —
+   * but WrittenResponsesRow is genuinely interactive (View all button,
+   * Visible-to-faculty toggles) and must stay OUT of aria-hidden. Plain
+   * header, no sticky — horizontal scroll on the wrapper instead. */
+  const th = 'border-b border-border bg-background text-xs font-medium text-muted-foreground'
+  const cols = `26rem repeat(5,4rem) repeat(3,6rem) repeat(${instructors.length},7rem)`
+  const fullRow = { gridColumn: '1 / -1' }
+  return (
+    <div className="overflow-x-auto">
+      <div className="grid" style={{ gridTemplateColumns: cols }}>
+        <div className={`${th} py-2 pr-4 text-left`} aria-hidden="true">Question</div>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <div key={n} className={`${th} px-1 py-2 text-center`} aria-hidden="true">{n}</div>
+        ))}
+        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Average</div>
+        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Median</div>
+        <div className={`${th} px-3 py-2 text-right`} aria-hidden="true">Program avg</div>
+        {instructors.map((fi) => (
+          <div key={fi.facultyId} className={`${th} whitespace-nowrap px-3 py-2 text-right`} aria-hidden="true">
+            {fi.name}
+          </div>
+        ))}
+
+        {groups.map((group) => {
+          const meta = groupMeta[group]
+          return (
+            <Fragment key={group}>
+              <div className="bg-muted/50 px-3 py-2 text-left text-xs font-medium text-foreground" style={fullRow} aria-hidden="true">
+                {meta?.label ?? group}
+                {meta?.sub && <span className="font-normal text-muted-foreground"> · {meta.sub}</span>}
+              </div>
+              {sectionsFor(group).map((sectionTitle) => (
+                <Fragment key={sectionTitle}>
+                  <div className="px-3 pt-2 pb-1 text-left text-sm font-semibold text-foreground" style={fullRow} aria-hidden="true">
+                    {sectionTitle}
+                  </div>
+                  {orderedFor(group, sectionTitle).map((r) => {
+                    if (r.kind === 'freeText') {
+                      return (
+                        <div key={r.id} style={fullRow}>
+                          <WrittenResponsesRow
+                            row={r}
+                            surveyId={surveyId}
+                            context={meta?.contextLine}
+                            canModerate={canModerate}
+                          />
+                        </div>
+                      )
+                    }
+                    const total = r.total ?? 0
+                    const counts = r.counts ?? [0, 0, 0, 0, 0]
+                    const median = total > 0 ? ratingQuantile(counts, total, 0.5) : null
+                    return (
+                      <Fragment key={r.id}>
+                        <div className="border-b border-border py-2 pr-4 pl-3 text-left align-middle text-sm font-normal text-foreground" aria-hidden="true">
+                          {r.label}
+                        </div>
+                        {[0, 1, 2, 3, 4].map((i) => {
+                          const n = counts[i] ?? 0
+                          const share = total > 0 ? n / total : 0
+                          const series = RATING_SERIES[i]
+                          return (
+                            <div key={i} className="border-b border-border p-0.5 text-center align-middle" aria-hidden="true">
+                              <div className="relative flex h-9 items-center justify-center overflow-hidden rounded-sm">
+                                <div
+                                  className="absolute inset-0"
+                                  style={{ background: series.color, opacity: total > 0 ? Math.min(0.12 + share * 0.55, 0.62) : 0 }}
+                                />
+                                <span className="relative z-10 text-xs font-medium tabular-nums text-foreground">
+                                  {total > 0 ? `${Math.round(share * 100)}%` : '—'}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        <div className="border-b border-border px-3 py-2 text-right text-sm font-medium tabular-nums text-foreground" aria-hidden="true">
+                          {r.avg != null ? r.avg.toFixed(1) : '—'}
+                        </div>
+                        <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground" aria-hidden="true">
+                          {median != null ? median.toFixed(1) : '—'}
+                        </div>
+                        <div className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-muted-foreground" aria-hidden="true">
+                          {r.programAvg != null ? r.programAvg.toFixed(1) : '—'}
+                        </div>
+                        {instructors.map((fi) => {
+                          const hit = r.perFaculty?.find((x) => x.facultyId === fi.facultyId)
+                          return (
+                            <div key={fi.facultyId} className="border-b border-border px-3 py-2 text-right text-sm tabular-nums text-foreground" aria-hidden="true">
+                              {hit ? hit.avg.toFixed(1) : '—'}
+                            </div>
+                          )
+                        })}
+                      </Fragment>
+                    )
+                  })}
+                </Fragment>
+              ))}
+            </Fragment>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -2217,19 +2718,18 @@ function ResultDetail({
 
   /* Report scope — live overviews/reports can be per-faculty (Romit): 'all'
    * or a single instructorId; the chips in the identity strip drive it. */
-  /* Multi-select (Romit, 2026-08-25: "I am not able to add multiple
-   * faculty/role") — a specific pick is now a SET of ids, not one id, so a
-   * coordinator can scope to "Dr. Hassan AND Dr. Patel" on a 3+-instructor
-   * course instead of only ever one person at a time. `[]` never persists —
-   * `toggleFacultyId` snaps an emptied set back to the 'all' sentinel so
-   * downstream code only ever has to branch on 'all' | 'course' | a real,
-   * non-empty array. */
-  const [facultyScope, setFacultyScope] = useState<'all' | 'course' | string[]>('all')
+  /* SINGLE-select (2026-08-26, single-survey-analytics review — reverses the
+   * 2026-08-25 flip to multi-select: "I am not able to add multiple
+   * faculty/role"). Today's review found no export use case for an
+   * aggregated multi-faculty report at THIS (single-survey) level — that
+   * belongs to longitudinal analytics. A pick is one instructorId; picking a
+   * second one replaces the first, not adds. */
+  const [facultyScope, setFacultyScope] = useState<'all' | 'course' | string>('all')
 
   /* Page tab — Course / Faculty / Reports / My Logs, merged into one TabsList
    * (Romit, 2026-08-25: "should we merge overview tab with course and
    * faculty tab?"). Reports/My Logs don't touch `facultyScope` at all, so
-   * switching to either and back preserves whatever faculty/role filter was
+   * switching to either and back preserves whatever faculty filter was
    * active. Switching TO Course always sets scope to 'course'; switching TO
    * Faculty resets to 'all' ONLY when coming from Course — matches the exact
    * reset behavior the old Course/Faculty ToggleGroup already had. */
@@ -2239,64 +2739,31 @@ function ResultDetail({
     if (v === 'course') setFacultyScope('course')
     else if (v === 'faculty' && facultyScope === 'course') {
       setFacultyScope('all')
-      setRoleScopeRaw('all')
     }
     setPageTabRaw(v)
   }
 
-  /* Role scope — the middle ground between "All faculty" and specific people
-   * on a co-taught course. Same course-association vocabulary as Analytics →
-   * By Faculty (2026-05-19, Monil: roles derive from course associations, not
-   * faculty rank), same shared derivation (`facultyEvalRole`), so a person can
-   * never carry two different roles depending on the surface. Also a SET now,
-   * same reasoning as facultyScope — "Instructor + Guest Lecturer" together,
-   * not one role at a time. */
-  const [roleScope, setRoleScopeRaw] = useState<'all' | FacultyEvalRoleId[]>('all')
+  /* facultyId → course-association role, shared derivation with Analytics →
+   * By Faculty (2026-05-19, Monil: roles derive from course associations,
+   * not faculty rank). Display-only here (the ScoreCard's person.role
+   * label) — role is NOT a filter dimension on this page (2026-08-26
+   * re-read: "do we want to aggregate at a role level? ... No. That was a
+   * use case for longitudinal analytics, not for single course offering"). */
   const evalRoleFor = (facultyId: string): FacultyEvalRoleId => {
     const inst = survey.instructors.find((i) => i.id === facultyId)
     return facultyEvalRole(inst?.role ?? 'primary', MOCK_FACULTY.find((f) => f.id === facultyId)?.position)
   }
-  /* ONE predicate for every faculty-scoped aggregate on the page. Faculty-set
-   * and role-set are now INDEPENDENT filters that AND together — same as a
-   * real DataTable filter bar (Romit, 2026-08-25: "I want this to work as
-   * datatable filter, where i select multiple and the results are shown")
-   * — picking a role after picking specific people used to silently replace
-   * the pick instead of narrowing it further. 'all' on either dimension
-   * means "no constraint from this dimension", not "everyone" outright. */
+  /* ONE predicate for every faculty-scoped aggregate on the page. */
   const inFacultyScope = (facultyId: string): boolean => {
     if (facultyScope === 'course') return false
-    const matchesFaculty = !Array.isArray(facultyScope) || facultyScope.includes(facultyId)
-    const matchesRole = roleScope === 'all' || roleScope.includes(evalRoleFor(facultyId))
-    return matchesFaculty && matchesRole
+    return facultyScope === 'all' || facultyScope === facultyId
   }
-  /** Toggles ONE role in/out of the set — independent of any faculty pick
-   *  (no longer resets it). The "Add filter" menu's role checkboxes call
-   *  this per click, so multiple roles can build up across several clicks
-   *  without the menu closing between them. */
-  const setRoleScope = (role: FacultyEvalRoleId) => {
-    setRoleScopeRaw((prev) => {
-      const arr = prev === 'all' ? [] : prev
-      const next = arr.includes(role) ? arr.filter((r) => r !== role) : [...arr, role]
-      return next.length === 0 ? 'all' : next
-    })
-  }
-  /** Toggles ONE instructor in/out of the set — independent of any role
-   *  pick, same multi-pick shape as `setRoleScope`. */
+  /** Picks ONE instructor. Clicking the already-picked instructor again
+   *  clears back to 'all' (single-select). */
   const toggleFacultyId = (id: string) => {
-    setFacultyScope((prev) => {
-      const arr = Array.isArray(prev) ? prev : []
-      const next = arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]
-      return next.length === 0 ? 'all' : next
-    })
+    setFacultyScope((prev) => (prev === id ? 'all' : id))
   }
-  const hasAnyFacultyFilter = Array.isArray(facultyScope) || roleScope !== 'all'
-  const roleScopeLabel =
-    roleScope === 'all'
-      ? null
-      : roleScope
-          .map((id) => EVAL_FACULTY_ROLES.find((r) => r.id === id)?.label)
-          .filter((l): l is NonNullable<typeof l> => !!l)
-          .join(', ') || null
+  const hasAnyFacultyFilter = facultyScope !== 'all' && facultyScope !== 'course'
   /* The people the CURRENT combination of filters actually resolves to —
    * the intersection of the faculty pick and the role pick when both are
    * active, either one alone when only one is, or everyone when neither is. */
@@ -2375,7 +2842,7 @@ function ResultDetail({
     if (avgs.length === 0) return sectionFacultyAvg
     return avgs.reduce((a, b) => a + b, 0) / avgs.length
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inCollection, qData, survey.instructors, facultyScope, roleScope, sectionFacultyAvg])
+  }, [inCollection, qData, survey.instructors, facultyScope, sectionFacultyAvg])
   /* Per-instructor breakdown for "All faculty" on a co-taught course — the
    * Faculty Performance card used to fall back to a generic icon with one
    * blended number and no identity at all in this mode (Vishal, 2026-08-25
@@ -2398,11 +2865,12 @@ function ResultDetail({
           name: i.name,
           initials: i.initials,
           avatarUrl: i.avatarUrl,
+          role: EVAL_FACULTY_ROLES.find((r) => r.id === evalRoleFor(i.id))?.label,
           avg: avgs.length > 0 ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null,
         }
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, survey.instructors, facultyScope, roleScope])
+  }, [qData, survey.instructors, facultyScope])
   const programCourseAvg = useMemo(() => {
     const all = MOCK_RESPONSES.flatMap((r) =>
       r.sectionScores.filter((s) => s.section === 'course_content').map((s) => s.avg),
@@ -2426,42 +2894,32 @@ function ResultDetail({
   const courseInst = evalInstances.get('course_material')
   const facultyInst = evalInstances.get('faculty_roles')
 
-  /* Theme strip rows — one per template section with question data, each
-     carrying the PROGRAM average for the same theme (benchmark on the viz) */
-  const themes = useMemo((): ThemeRowDatum[] => {
+  /* Section strip rows — one per pedagogical section with question data, each
+     carrying the PROGRAM average for the same section (benchmark on the viz).
+     classifySection is the SAME taxonomy the old ThemeBoxplotChart used
+     (SECTION_ORDER, module-level) — this is a rename, not a re-architecture. */
+  const sectionRows = useMemo((): SectionRowDatum[] => {
     if (!qData) return []
-    /* Pedagogical theme taxonomy (Romit's reference): questions group into
-     * Teaching Effectiveness / Communication / Assessment Practices / Course
-     * Content — classified from the template question TEXT, with provenance
-     * as the fallback (faculty-block questions teach/communicate; course-
-     * section questions are content/assessment). */
-    const THEME_ORDER = ['Teaching Effectiveness', 'Communication', 'Assessment Practices', 'Course Content']
     const textById = new Map<string, string>()
     for (const sec of sections) for (const q of sec.questions) textById.set(q.id, q.text)
-    const classify = (questionId: string, fromFaculty: boolean): string => {
-      const t = (textById.get(questionId) ?? '').toLowerCase()
-      if (/assess|exam|grad|rubric|fair/.test(t)) return 'Assessment Practices'
-      if (/communicat|respond|accessib|approach|feedback|available/.test(t)) return 'Communication'
-      if (/teach|instruct|explain|clarit|clear|engag|effectiv|present/.test(t)) return 'Teaching Effectiveness'
-      if (t) return 'Course Content'
-      return fromFaculty ? 'Teaching Effectiveness' : 'Course Content'
-    }
-    type ThemedQ = { theme: string; avg: number; distribution?: number[]; id: string; text: string }
+    const classifySection = (questionId: string, fromFaculty: boolean): string =>
+      classifySectionFromText(textById.get(questionId) ?? '', fromFaculty)
+    type SectionedQ = { section: string; avg: number; distribution?: number[]; id: string; text: string }
     const collect = (
       data: (typeof MOCK_SURVEY_QUESTION_DATA)[number],
       allowInstructor: (id: string) => boolean,
       parts: { course: boolean; faculty: boolean } = { course: true, faculty: true },
-    ): ThemedQ[] => {
-      const qs: ThemedQ[] = []
+    ): SectionedQ[] => {
+      const qs: SectionedQ[] = []
       if (parts.course)
         for (const scores of Object.values(data.sectionScores))
           for (const q of scores)
-            qs.push({ theme: classify(q.questionId, false), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
+            qs.push({ section: classifySection(q.questionId, false), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
       if (parts.faculty)
         for (const b of data.instructorBlocks ?? []) {
           if (!allowInstructor(b.instructorId)) continue
           for (const q of b.scores)
-            qs.push({ theme: classify(q.questionId, true), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
+            qs.push({ section: classifySection(q.questionId, true), avg: q.avg, distribution: q.distribution, id: q.questionId, text: textById.get(q.questionId) ?? q.questionId })
         }
       return qs
     }
@@ -2477,32 +2935,32 @@ function ResultDetail({
       },
     )
     const program = MOCK_SURVEY_QUESTION_DATA.flatMap((d) => collect(d, () => true))
-    /* Per-instructor themed questions (scope-aware) — the benchmark panel. */
+    /* Per-instructor sectioned questions (scope-aware) — the benchmark panel. */
     const allowedInstructors = survey.instructors.filter((i) => inFacultyScope(i.id))
-    const perInstructorThemed = allowedInstructors.map((inst) => ({
+    const perInstructorSectioned = allowedInstructors.map((inst) => ({
       inst,
       qs: (qData.instructorBlocks ?? [])
         .filter((b) => b.instructorId === inst.id)
-        .flatMap((b) => b.scores.map((q) => ({ theme: classify(q.questionId, true), avg: q.avg }))),
+        .flatMap((b) => b.scores.map((q) => ({ section: classifySection(q.questionId, true), avg: q.avg }))),
     }))
-    const rows: ThemeRowDatum[] = []
-    for (const theme of THEME_ORDER) {
-      const qs = mine.filter((x) => x.theme === theme)
+    const rows: SectionRowDatum[] = []
+    for (const title of SECTION_ORDER) {
+      const qs = mine.filter((x) => x.section === title)
       if (qs.length === 0) continue
       const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0]
       qs.forEach((x) => (x.distribution ?? []).forEach((n, i) => { if (i < 5) dist[i] += n }))
-      const prog = program.filter((x) => x.theme === theme)
-      const instructors = perInstructorThemed
+      const prog = program.filter((x) => x.section === title)
+      const instructors = perInstructorSectioned
         .map(({ inst, qs: iqs }) => {
-          const mineTheme = iqs.filter((x) => x.theme === theme)
-          if (mineTheme.length === 0) return null
+          const mineSection = iqs.filter((x) => x.section === title)
+          if (mineSection.length === 0) return null
           return {
             id: inst.id,
             initials: inst.initials,
             name: inst.name,
             avatarUrl: inst.avatarUrl,
             role: inst.role,
-            avg: mineTheme.reduce((a, x) => a + x.avg, 0) / mineTheme.length,
+            avg: mineSection.reduce((a, x) => a + x.avg, 0) / mineSection.length,
           }
         })
         .filter((x): x is NonNullable<typeof x> => x != null)
@@ -2518,7 +2976,8 @@ function ResultDetail({
         .map(([id, v]) => ({ id, text: v.text, avg: v.avgs.reduce((a, n) => a + n, 0) / v.avgs.length }))
         .sort((a, b) => a.avg - b.avg)
       rows.push({
-        theme,
+        id: title,
+        title,
         avg: qs.reduce((a, x) => a + x.avg, 0) / qs.length,
         questions: questionRows.length,
         programAvg: prog.length ? prog.reduce((a, x) => a + x.avg, 0) / prog.length : null,
@@ -2529,7 +2988,7 @@ function ResultDetail({
     }
     return rows
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, sections, inCollection, facultyScope, roleScope, survey.instructors, result.facultyId])
+  }, [qData, sections, inCollection, facultyScope, survey.instructors, result.facultyId])
 
   /* Collapsed-section previews — the closed shells still say something.
      Course-only scope excludes faculty_performance-keyed section scores too
@@ -2686,6 +3145,14 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /* Section-wise distribution's own accordion open-state, lifted here (not
+   * local to SectionBoxplotChart) so "Export as PDF" can force every section
+   * open before printing — a closed AccordionContent is fully unmounted by
+   * Radix, not just visually hidden, so print CSS alone can't reveal it. */
+  const [openSections, setOpenSections] = useState<string[]>([])
+  /* Question Breakdown's per-question rating-distribution accordion — same
+   * lifted-for-print reasoning as openSections. */
+  const [openQuestions, setOpenQuestions] = useState<string[]>([])
   /* Navigator chrome — the rail collapses to a slim icon strip (Craft TOC
      pattern) so the content column can reclaim the width on demand; question
      links fold per evaluation-type group (Udemy course-content pattern)
@@ -2696,7 +3163,7 @@ function ResultDetail({
      only report crossings, so keep the last known section when none reports. */
   const [activeAnchor, setActiveAnchor] = useState<string>('scores')
   useEffect(() => {
-    const ids = ['scores', 'themes', 'questions', 'comments', 'feedback-loop']
+    const ids = ['scores', 'sections', 'questions', 'comments', 'feedback-loop']
     const els = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el)
@@ -2716,7 +3183,7 @@ function ResultDetail({
     return () => observer.disconnect()
     /* showFeedbackLoop is declared below this hook — its inputs (ownerInsights,
        isPD, prior) stand in as deps so the observed set stays current. */
-  }, [inCollection, themes.length, qData, sections.length, allComments.length, ownerInsights, isPD, prior])
+  }, [inCollection, sectionRows.length, qData, sections.length, allComments.length, ownerInsights, isPD, prior])
   /* ONE sentiment filter governs every comment section (PR #53 anatomy). */
   const [qualFilter, setQualFilter] = useState<SentimentFilter>('all')
   const qualCountFor = (f: SentimentFilter) =>
@@ -2739,6 +3206,34 @@ function ResultDetail({
       () => document.getElementById(id)?.scrollIntoView({ behavior: 'auto', block: 'start' }),
       wasClosed ? 320 : 30,
     )
+  }
+  /* Export as PDF (2026-08-26 transcript: "I should be able to export this
+   * course section... as PDF") — house window.print() pattern, zero deps
+   * (same as chart-card-actions.tsx's ChartExportMenu). A closed Accordion/
+   * Collapsible section is fully UNMOUNTED by Radix, not just hidden, so CSS
+   * alone can't reveal it for print — force every section open via lifted
+   * state first, print, then restore exactly what the viewer had open. */
+  function printCurrentView() {
+    const prevSections = openSections
+    const prevQuestions = openQuestions
+    const prevQb = qbOpen
+    const prevQual = qualOpen
+    const prevTab = pageTab
+    if (pageTab === 'reports' || pageTab === 'mylogs') setPageTab('faculty')
+    setOpenSections(sectionRows.map((s) => s.id))
+    setOpenQuestions(breakdownRows.filter((r) => r.kind === 'rated').map((r) => r.id))
+    setQbOpen(true)
+    setQualOpen(true)
+    const restore = () => {
+      setOpenSections(prevSections)
+      setOpenQuestions(prevQuestions)
+      setQbOpen(prevQb)
+      setQualOpen(prevQual)
+      setPageTabRaw(prevTab)
+      window.removeEventListener('afterprint', restore)
+    }
+    window.addEventListener('afterprint', restore)
+    window.setTimeout(() => window.print(), 350)
   }
   /* Rail index mirrors the table's provenance: questions nested under their
      evaluation-type group, numbering restarting per group. */
@@ -2771,11 +3266,13 @@ function ResultDetail({
       for (const section of group.list) {
         for (const q of section.questions) {
           if (q.answerType === 'title') continue
+          const sectionTitle = classifySectionFromText(q.text, group.faculty)
           if (q.answerType === 'free_text') {
             out.push({
               id: q.id,
               label: q.text,
               group: group.label,
+              sectionTitle,
               kind: 'freeText',
             })
             continue
@@ -2817,6 +3314,7 @@ function ResultDetail({
             id: q.id,
             label: q.text,
             group: group.label,
+            sectionTitle,
             kind: 'rated',
             avg: score.avg,
             median: medianFromDistribution(counts),
@@ -2830,7 +3328,7 @@ function ResultDetail({
     }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, roleScope, survey.instructors])
+  }, [qData, courseSections, facultySections, result.facultyId, inCollection, facultyScope, survey.instructors])
 
   /* Question-group provenance — band label + icon + "about whom" per group,
      shared with the written-responses sheet and the anchor rail. */
@@ -2847,9 +3345,9 @@ function ResultDetail({
       sub:
         scopedFacultyName ??
         (survey.instructors.length > 1
-          ? `${matchedInstructors.length} ${roleScopeLabel ? `× ${roleScopeLabel}` : 'instructors'}${
+          ? `${matchedInstructors.length} instructors${
               matchedInstructors.length <= 3
-                ? ', photo marker per instructor'
+                ? ''
                 : isPD
                   ? ', use the instructor selector above for per-person scores'
                   : ''
@@ -2887,11 +3385,7 @@ function ResultDetail({
       instructors={inCollection ? liveFacultyRows : [result, ...siblings]}
       scope={facultyScope}
       toggleFacultyId={toggleFacultyId}
-      roleScope={roleScope}
-      toggleRoleScope={setRoleScope}
-      evalRoleById={evalRoleFor}
       isPD={isPD}
-      avatarUrlById={Object.fromEntries(survey.instructors.map((i) => [i.id, i.avatarUrl]))}
       showCourse={templateHasCourse && result.evalScope !== 'instructor'}
     />
   )
@@ -2909,8 +3403,8 @@ function ResultDetail({
                     <DropdownMenuItem onSelect={() => goTo('scores')}>
                       {inCollection ? 'Early signal' : 'Scores'}
                     </DropdownMenuItem>
-                    {themes.length > 0 && (
-                      <DropdownMenuItem onSelect={() => goTo('themes')}>Theme distribution</DropdownMenuItem>
+                    {sectionRows.length > 0 && (
+                      <DropdownMenuItem onSelect={() => goTo('sections')}>Section distribution</DropdownMenuItem>
                     )}
                     {qData && sections.length > 0 && (
                       <DropdownMenuItem onSelect={() => goTo('questions', 'questions')}>
@@ -2962,7 +3456,11 @@ function ResultDetail({
                   </div>
                 ) : (
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <h2 className="text-sm font-semibold text-foreground">Scores</h2>
+                    {/* "Scores" label removed (Romit) — the KPI cards right
+                        below already say what they are; kept as an sr-only
+                        heading so document structure/heading order and the
+                        "On this page" rail anchor are unaffected. */}
+                    <h2 className="sr-only">Scores</h2>
                     {facultyScope === 'course' ? (
                       <StatusBadge label="Course only" tone="neutral" />
                     ) : facultyScope !== 'all' ? (
@@ -2987,7 +3485,7 @@ function ResultDetail({
                   <ScoreCard
                     title="Course Content"
                     icon={EVALUATION_TYPE_ICON.course_material}
-                    statusBadge={courseInst ? <SurveyStatusBadgeOS status={courseInst.status} /> : undefined}
+                    statusBadge={courseInst ? <SurveyStatusBadgeOS status={courseInst.status} compact /> : undefined}
                     value={courseAvg}
                     programAvg={programCourseAvg}
                     priors={(survey.priorOfferings ?? []).map((p) => ({
@@ -3014,7 +3512,7 @@ function ResultDetail({
                         : undefined
                     }
                     icon={EVALUATION_TYPE_ICON.faculty_roles}
-                    statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} /> : undefined}
+                    statusBadge={facultyInst ? <SurveyStatusBadgeOS status={facultyInst.status} compact /> : undefined}
                     value={facultyAvg}
                     programAvg={programFacultyAvg}
                     priors={(survey.priorOfferings ?? [])
@@ -3045,6 +3543,10 @@ function ResultDetail({
                           Overall rating mix
                         </p>
                         <div className="flex flex-wrap items-start gap-x-10 gap-y-3">
+                          {/* "N ratings · all rated questions" subtext removed
+                              (2026-08-26 transcript: "I think this is not
+                              required... wherever we see that subtext or some
+                              text is not required, let's remove"). */}
                           <div className="flex flex-col gap-1">
                             <div className="flex items-baseline gap-2">
                               <span className="font-bold tabular-nums leading-none text-2xl sm:text-3xl text-foreground">
@@ -3052,9 +3554,6 @@ function ResultDetail({
                               </span>
                               <span className="text-xs text-muted-foreground">/ 5</span>
                             </div>
-                            <p className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-                              {overallMix.total} ratings · all rated questions
-                            </p>
                           </div>
                           <div className="min-w-56 max-w-xl flex-1">
                             <RatingBreakdownRows counts={overallMix.counts} total={overallMix.total} />
@@ -3066,9 +3565,11 @@ function ResultDetail({
                 )}
               </div>
 
-              <div id="themes" className="scroll-mt-16">
-                <ThemeBoxplotChart
-                  themes={themes}
+              <div id="sections" className="scroll-mt-16">
+                <SectionBoxplotChart
+                  sections={sectionRows}
+                  openSections={openSections}
+                  onOpenSectionsChange={setOpenSections}
                   partial={inCollection}
                   courseOnly={facultyScope === 'course'}
                   onQuestionJump={(id) => goTo(`question-${id}`, 'questions')}
@@ -3087,7 +3588,7 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · sorted lowest first · click any mark for details
+                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · click any mark for details
                           {facultyScope === 'course' ? ' · course only' : ''}
                         </CardDescription>
                         <CardAction>
@@ -3100,7 +3601,14 @@ function ResultDetail({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0">
-                        <QuestionBreakdownTable rows={breakdownRows} surveyId={survey.id} groupMeta={groupMeta} />
+                        <QuestionBreakdownTable
+                          rows={breakdownRows}
+                          surveyId={survey.id}
+                          groupMeta={groupMeta}
+                          canModerate={isPD}
+                          openQuestions={openQuestions}
+                          onOpenQuestionsChange={setOpenQuestions}
+                        />
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
@@ -3174,7 +3682,7 @@ function ResultDetail({
                           />
                         ))}
                         <CommentList
-                          title="Faculty evaluation: not attributed to one instructor"
+                          title="Faculty evaluation"
                           icon={EVALUATION_TYPE_ICON.faculty_roles}
                           comments={unattributedFacultyComments}
                           hiddenIdx={hiddenIdx}
@@ -3277,9 +3785,9 @@ function ResultDetail({
                           onGo={() => goTo('scores')}
                         />
                       </OutlineTreeMenuItem>
-                      {themes.length > 0 && (
+                      {sectionRows.length > 0 && (
                         <OutlineTreeMenuItem>
-                          <RailLink label="Theme distribution" active={activeAnchor === 'themes'} onGo={() => goTo('themes')} />
+                          <RailLink label="Section distribution" active={activeAnchor === 'sections'} onGo={() => goTo('sections')} />
                         </OutlineTreeMenuItem>
                       )}
                       {qData && sections.length > 0 && (
@@ -3456,15 +3964,28 @@ function ResultDetail({
                         Preview form
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={printCurrentView}>
+                      <i className="fa-light fa-file-arrow-down" aria-hidden="true" />
+                      Export as PDF
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             )}
             {!inCollection && (() => {
               /* ONE visible action + ⋯ (Romit 2026-07-18: "tuck in some of
-                 the options inside more"): Enable faculty access when it
-                 applies, else Preview form; everything else in the menu.
-                 Non-PD viewers have no menu and keep Preview form visible. */
+                 the options inside more"), primary now STATE-dependent
+                 (2026-08-26 transcript: "if the results are already
+                 available, view longitudinal insights is one primary
+                 action... if the survey needs to be published to faculty,
+                 then publish to faculty would be the primary action" — a
+                 real bug fix, not just a copy change: this used to show
+                 "Preview form" as primary even when results were already
+                 available). "Preview form" moves into ⋯ UNCONDITIONALLY in
+                 both states — it's never the headline action, only ever a
+                 secondary one. Non-PD viewers have no menu and keep Preview
+                 form as their one visible action (both other actions are
+                 PD-only concepts). */
               const showEnable = isPD && !scopedFaculty.releasedToFaculty
               return (
               <>
@@ -3478,8 +3999,14 @@ function ResultDetail({
                     }}
                   >
                     {scopedInstructor
-                      ? `Enable access for ${scopedFaculty.facultyName}`
-                      : 'Enable faculty access'}
+                      ? `Publish to Faculty · ${scopedFaculty.facultyName}`
+                      : 'Publish to Faculty'}
+                  </Button>
+                ) : isPD ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                      View Longitudinal Insights
+                    </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" asChild>
@@ -3494,22 +4021,28 @@ function ResultDetail({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/surveys/${survey.id}/preview`}>
+                          <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
+                          Preview form
+                        </Link>
+                      </DropdownMenuItem>
+                      {/* Already the primary button when results are
+                          available — no duplicate entry in that state.
+                          PD-only: /analytics is an ungated admin surface with
+                          program-wide data — faculty must not land there
+                          (scope flag 2026-07-16). */}
                       {showEnable && (
                         <DropdownMenuItem asChild>
-                          <Link href={`/surveys/${survey.id}/preview`}>
-                            <i className="fa-light fa-file-magnifying-glass" aria-hidden="true" />
-                            Preview form
+                          <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
+                            <i className="fa-light fa-chart-line" aria-hidden="true" />
+                            View Longitudinal Insights
                           </Link>
                         </DropdownMenuItem>
                       )}
-                      {/* PD-only: /analytics is an ungated admin surface with
-                          program-wide data — faculty must not land there
-                          (scope flag 2026-07-16). */}
-                      <DropdownMenuItem asChild>
-                        <Link href={`/analytics?tab=course&courseCode=${encodeURIComponent(result.courseCode)}`}>
-                          <i className="fa-light fa-chart-line" aria-hidden="true" />
-                          View Longitudinal Insights
-                        </Link>
+                      <DropdownMenuItem onSelect={printCurrentView}>
+                        <i className="fa-light fa-file-arrow-down" aria-hidden="true" />
+                        Export as PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={copySurveyLink}>
                         <i className="fa-light fa-link" aria-hidden="true" />
@@ -3554,13 +4087,12 @@ function ResultDetail({
           )}
 
           <Tabs value={pageTab} onValueChange={setPageTab} className="flex flex-col gap-4">
-            {/* Filter lives on the tab row itself, right-aligned — not its
-                own row below the tabs (Romit, 2026-08-25: "i see that the
-                filter is a row, rather than being integrated with either
-                scores or on the right side of the tab"). Only Course/Faculty
-                read `facultyScope`/`roleScope`, so it hides on Reports/My
-                Logs the same way it already hid there before this move. */}
-            <div className="border-b border-border flex items-center justify-between gap-3">
+            {/* The faculty filter lives INSIDE the Faculty tab's own content,
+                not sharing a row with the main Course/Faculty/Reports/My Logs
+                TabsList (Romit: "the tabs were supposed to be inside the
+                faculty tab, not beside the main tabs") — it's a Faculty-tab
+                concept (WHICH instructor), not a page-level nav control. */}
+            <div className="border-b border-border">
               <TabsList variant="line">
                 {templateHasCourse && result.evalScope !== 'instructor' && (
                   <TabsTrigger value="course">Course</TabsTrigger>
@@ -3569,9 +4101,6 @@ function ResultDetail({
                 <TabsTrigger value="reports">Reports</TabsTrigger>
                 {isOwner && <TabsTrigger value="mylogs">My Logs</TabsTrigger>}
               </TabsList>
-              {(pageTab === 'course' || pageTab === 'faculty') && (
-                <div className="shrink-0 pb-2">{facultyScopeSelector}</div>
-              )}
             </div>
 
             {/* ── Course ── shares the same content as Faculty (both render
@@ -3584,6 +4113,7 @@ function ResultDetail({
 
             {/* ── Faculty ── */}
             <TabsContent value="faculty" className="m-0 flex flex-col gap-4">
+              <div className="shrink-0">{facultyScopeSelector}</div>
               {overviewContent}
             </TabsContent>
 
@@ -3599,14 +4129,10 @@ function ResultDetail({
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setExportKind('pdf')
-                        setExportOpen(true)
-                      }}
-                    >
+                    {/* Real print, not the ExportDrawer placeholder (2026-08-26:
+                        "I should be able to export this course section...
+                        as PDF") — same printCurrentView() as the header ⋯ menu. */}
+                    <Button variant="outline" size="sm" onClick={printCurrentView}>
                       Download PDF
                     </Button>
                   </CardContent>

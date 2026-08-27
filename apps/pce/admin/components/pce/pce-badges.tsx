@@ -1,7 +1,16 @@
 'use client'
 
-import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@exxatdesignux/ui'
+import {
+  StatusBadge,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  STATUS_BADGE_TONE_CLASS,
+  STATUS_BADGE_SEMANTIC_SM_SHELL,
+  STATUS_BADGE_SEMANTIC_MD_SHELL,
+} from '@exxatdesignux/ui'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
+import { cn } from '@/lib/utils'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import type { SurveyStatus } from '@/lib/pce-mock-data'
 import type { StoryStatus } from '@/lib/pce-push-validation'
@@ -131,11 +140,36 @@ const SURVEY_STATUS_TONE: Record<SurveyStatus, StatusBadgeTone> = {
 export function SurveyStatusBadgeOS({
   status,
   size = 'sm',
+  compact = false,
 }: {
   status: SurveyStatus
   size?: 'sm' | 'md'
+  /** Icon-only pill + Tooltip for the full label — for tight rows where the
+   *  identity block and a long status label (e.g. "Results available") can't
+   *  both fit on one line (Romit: "results available text needs to be short
+   *  or just icon based with tooltip, so that it is in one line"). Same
+   *  tone/icon as the full badge, just without the visible text; the label
+   *  survives as the tooltip content and the span's `aria-label`. */
+  compact?: boolean
 }) {
   const s = SURVEY_STATUS_BADGE[status]
+  if (compact) {
+    const shell = size === 'md' ? STATUS_BADGE_SEMANTIC_MD_SHELL : STATUS_BADGE_SEMANTIC_SM_SHELL
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            role="img"
+            aria-label={s.label}
+            className={cn('rounded-4xl justify-center', shell, STATUS_BADGE_TONE_CLASS[SURVEY_STATUS_TONE[status]])}
+          >
+            <i className={`fa-light ${s.icon} text-xs`} aria-hidden="true" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{s.label}</TooltipContent>
+      </Tooltip>
+    )
+  }
   return <StatusBadge label={s.label} tone={SURVEY_STATUS_TONE[status]} icon={s.icon} size={size} />
 }
 

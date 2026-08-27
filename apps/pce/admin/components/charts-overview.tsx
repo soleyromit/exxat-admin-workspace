@@ -541,7 +541,11 @@ export function ChartCard({
           <ChartCardHeader title={title} description={description} variant="normal" />
           <Tabs defaultValue={tabOptions[0].value} value={selectedTab} onValueChange={handleFilter} className="flex flex-col flex-1 min-h-0">
             <div className="shrink-0 px-2">
-              <TabsList variant="line" className={chartCardLineTabsListClass}>
+              {/* ariaLabel scoped to this chart's own title — TabsList's DS
+                  default ("Tabs") is identical across every ChartCard using
+                  tabOptions, which axe's landmark-unique rule flags the
+                  moment a second one exists on the same page. */}
+              <TabsList variant="line" className={chartCardLineTabsListClass} ariaLabel={`${title} view`}>
                 {tabOptions.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value} className={chartCardTabTriggerClass}>
                     {tab.label}
