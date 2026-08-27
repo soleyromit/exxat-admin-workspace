@@ -2959,10 +2959,6 @@ function ResultDetail({
     const avg = total ? counts.reduce((a, n, i) => a + n * (i + 1), 0) / total : 0
     return { counts, total, avg }
   })()
-  const lowestScore = allQuestionScores.length
-    ? allQuestionScores.reduce((m, q) => (q.avg < m.avg ? q : m))
-    : null
-
   /* Question breakdown groups — Course / Faculty via the section classifier
      (roleSetId OR subjectKey). */
   const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Course')
@@ -3502,8 +3498,6 @@ function ResultDetail({
                         <CardTitle className="text-sm" aria-level={2}>Question breakdown</CardTitle>
                         <CardDescription>
                           {allQuestionScores.length} rated question{allQuestionScores.length !== 1 ? 's' : ''}
-                          {lowestScore ? ` · lowest ${lowestScore.avg.toFixed(1)}/5` : ''} · click any mark for details
-                          {facultyScope === 'course' ? ' · course only' : ''}
                         </CardDescription>
                         <CardAction>
                           <i
