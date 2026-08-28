@@ -303,6 +303,20 @@ Source: `docs/research/meetings/2026-08-24-leadership-cohere-review.md` (Granola
 |---|---|
 | T98 | **Session structure confirmed:** Vishaka leads ~10 min, then Vishal ~30 min. Focus on assessment creation + evaluation + analysis. Optional: 2–3 min agentic AI teaser at end (Darshan proof-of-concept, team comfort-dependent). D_EM_0824_01, D_EM_0824_02, D_EM_0824_05. |
 
+## Research findings → design tasks — added 2026-08-27
+
+Source: `docs/research/meetings/2026-08-27-exam-management-weekly-call.md` (Granola `7ed017c8`)
+
+> User research call with Vishaka (health science faculty expert). Topics: RBAC model by program type, case study grouping, team-taught section attribution, milestone exams, AI question generation patterns.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T116 | **RBAC model — dual-role requirement.** PA "one person manages all exams" model is NOT generalizable. Design must support both: assessment chair role (cross-course RBAC, milestone exams, LMS integration oversight) AND per-course faculty coordinator role (scoped to assigned courses only, cannot see other QB/question banks). | Admin / Faculty | RBAC / permissions | P1 — DESIGN-REVIEW | D_EM_0827_01. Vishaka: "every course coordinator is responsible for managing their own questions... they only could see their courses." Do not assume single admin model. Revisit T44 (permissions) in light of this. |
+| T117 | **Case study / vignette grouping — MVP scope confirmed.** Shared-stem UI: reference/case description persists on one side while questions advance. Very common in health science assessments (pharmacy, PA, PT). Include in MVP. | Admin / Faculty / Student | Assessment builder + taker | P1 | D_EM_0827_02. Vishaka: "a common picture or a common description keeps appearing on one side of the UI and on the second side the questions keep changing — that reference material is common for those four or five questions." Design the split-panel reference UX. |
+| T118 | **Team-taught section attribution.** For team-taught courses, students need to know which faculty authored which section so they can contextualize questions correctly. A free-text descriptor or section-level instructions field is the ask — not just section naming. | Admin / Faculty | Assessment builder | P1 | D_EM_0827_03. Vishaka: "For team taught courses Dr. Bhave's questions first 20... the same topic could be taught by multiple faculty and so reading the question students don't realize is Dr. Bhave asking this or Dr. Maggi asking this." Pair with T45 (section creation UI). |
+
+---
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |

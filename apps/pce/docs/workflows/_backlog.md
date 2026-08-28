@@ -779,6 +779,35 @@ Sources:
 | Analytics "by faculty" vs. "by course" drill-down | Not finalized — spec pending. | Aug 25 Post-Course Survey Cadence |
 | T209 / T216 (column order and past-terms conflicts) | Not resolved in Aug 25 Vishal sync. | Aug 25 Course eval sync up |
 
+## Phase 1 design tasks — added 2026-08-27
+
+Source: `docs/research/meetings/2026-08-27-course-eval-sync-up.md` (Granola `ab12472a`)
+
+> Weekly course eval sync with Vishal. Reviewed single-cell analytics view results screen, then walked through settings screen structure: evaluation rules, faculty roles, academic calendar, communication, RBAC placeholder. Settings screens not yet in codebase — all items below require file creation before they can be applied.
+
+| # | Task | App | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T238 | Remove distribution section from single-cell analytics view results screen | Admin | Single-cell analytics (view results) | P1 | Vishal: "We can remove this now. What do you think? It's repeated information." Target file not yet merged into `apps/pce/admin/`. Apply when prototype code lands. D_PCE_0827_01. |
+| T239 | **DESIGN-REVIEW: heat map vs accordion for section breakdown** | Admin | Single-cell analytics (view results) | P1 — DESIGN-REVIEW | Two layouts designed — heat map (compact, printable) and accordion. Vishal: "Let's review this with David and Vishaka and pick the best design out of both of them." Do NOT apply either layout until David + Vishaka review session is completed. D_PCE_0827_02. |
+| T240 | Add tooltip to distinguish "my score" vs "program average" in single-cell analytics | Admin | Single-cell analytics (view results) | P1 | Vishal: "just make sure that you add some tooltip kind of a thing so that I know which one is my score and which one is program average." Apply once distribution section is removed and view results file is located. D_PCE_0827_03. |
+| T241 | Settings — three-tab structure: Evaluation Rules \| Academic Calendar \| Communication | Admin | Settings / setup page | P1 — forward-looking constraint | Vishal: "one tab for evaluation rules, one tab for academic calendar, one tab for communication — three tabs." RBAC grid tab kept as placeholder only. Settings page not yet built. D_PCE_0827_04. |
+| T242 | Evaluation rules — remove "Custom" option from frequency dropdown | Admin | Settings → Evaluation Rules | P1 | Vishal: "Custom we will not have." Settings screen not yet built. Apply when page is created. D_PCE_0827_05. |
+| T243 | Evaluation rules — score config: show as editable numeric values (not serial numbers) | Admin | Settings → Evaluation Rules | P1 | Vishal: users define numeric score per Likert option (e.g. Strongly Disagree = 1, Agree = 3). Currently shows as serial-number list. Must feel like an editable score configuration, set once at onboarding. D_PCE_0827_06. |
+| T244 | **DESIGN-REVIEW: faculty roles to evaluate — redesign as scalable flat lookup** | Admin | Settings → Evaluation Rules | P1 — DESIGN-REVIEW | Horizontal checkbox design doesn't scale. Prism has ~40 roles; need a lookup UI for 15–20 roles where user selects 2–3. Vishal: "you have to think of a design where we can accommodate a lookup of 15–20 roles out of which I only select two roles to be evaluated." Course-type grouping is deferred; flat list for now. D_PCE_0827_07. |
+| T245 | Communication settings — remove reminder cadence component (Phase 2) | Admin | Settings → Communication | P1 | Vishal: "Reminder cadence we'll remove it. This will be in phase two." Settings screen not yet built. Do not include reminder cadence when communication tab is built. D_PCE_0827_08. |
+| T246 | Communication settings — hide schedule and release section (Phase 2) | Admin | Settings → Communication | P1 — forward-looking constraint | Vishal: "Communication schedule and release — we don't need right now. This you can hide. This is in phase two." When communication tab is built, exclude this section. D_PCE_0827_09. |
+| T247 | **ENGINEER FLAG: rich text editor for email templates — raise with Himanshu before designing** | Admin | Settings → Communication → Email templates | P1 — ENGINEER FLAG | Prism has rich text (bold/italic/font) in email templates. DS does not currently have a rich text component. Vishal: "If it is there in prism then Vill built it. This feedback you have to give to Himanshu." Do NOT hand-roll a rich text editor. Raise with Himanshu before any design iteration on email template body field. D_PCE_0827_10. |
+| T248 | Academic calendar tab — replicate Prism design, add "Add new term" button | Admin | Settings → Academic Calendar | P1 | Vishal: "You've seen academic calendar in prism. You have to replicate the same design. We will give them an add new term capability — it's a button where they can add any term they want." Settings screen not yet built. D_PCE_0827_11. |
+
+### Deferred / killed items from Aug 27
+
+| Decision | Reason | Source |
+|---|---|---|
+| Faculty roles by course type | Deferred — flat list for now. Course-type grouping to be added once more role data is available. | Aug 27 Course Eval Sync |
+| Custom frequency option | Killed — remove from evaluation rules dropdown. | Aug 27 Course Eval Sync |
+| Reminder cadence | Phase 2 — do not build at launch. | Aug 27 Course Eval Sync |
+| Communication schedule and release | Phase 2 — hide entire section at launch. | Aug 27 Course Eval Sync |
+
 ---
 
 ## Open product questions
