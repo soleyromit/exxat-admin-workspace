@@ -808,6 +808,40 @@ Source: `docs/research/meetings/2026-08-27-course-eval-sync-up.md` (Granola `ab1
 | Reminder cadence | Phase 2 — do not build at launch. | Aug 27 Course Eval Sync |
 | Communication schedule and release | Phase 2 — hide entire section at launch. | Aug 27 Course Eval Sync |
 
+## Phase 1 design tasks — added 2026-08-31
+
+Source: `docs/research/meetings/2026-08-26-single-server-analytics-export-strategy.md` (Granola `9dcd7804`)
+
+> Design review of single-survey course analytics page with Aarti and Vishal. Topics: action row cleanup, section distribution tile fields, faculty selection UX, PDF export, qualitative feedback. Section distribution layout flagged for David + Vishaka review (resolved in Aug 27 sync → T239).
+
+| # | Task | App | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T249 | Remove "preview form" action from analytics action row | Admin | Single-survey analytics | P1 | Aarti: "preview form is not required." Single-survey analytics page not yet in codebase. Apply when page is built. D_PCE_0826_01. |
+| T250 | Primary action is context-dependent on survey state | Admin | Single-survey analytics | P1 | Results available → "View longitudinal insights" (primary). Needs publishing → "Publish to faculty" (primary). All others secondary. D_PCE_0826_02. |
+| T251 | Remove "All rated questions" subtext from response card | Admin | Single-survey analytics | P1 | Aarti: "228 ratings. All rated questions. I think this is not required." D_PCE_0826_03. |
+| T252 | Section sort order = template definition order | Admin | Single-survey analytics | P1 | Aarti: "Order of the section should be same as how they created in the template." Do NOT sort by gap or score. D_PCE_0826_04. |
+| T253 | Remove "Number of ratings" count from section distribution tile | Admin | Single-survey analytics | P1 | Aarti: "Number of ratings is not required." D_PCE_0826_05. |
+| T254 | Remove "middle 50" / range display from section tile | Admin | Single-survey analytics | P1 | Aarti: "Median, middle 50, I think both of these are same... We don't need it." Keep median only. D_PCE_0826_06. |
+| T255 | Remove "response" subtext from distribution section | Admin | Single-survey analytics | P1 | Aarti: "Response also is not required." D_PCE_0826_07. |
+| T256 | Section tile — exactly four data points: my avg, program avg, median, rating distribution | Admin | Single-survey analytics | P1 | Aarti: "My average. Then my prob's average. Median and rating distribution. That's it." Nothing else on the tile. D_PCE_0826_08. |
+| T257 | Faculty selection = single select only | Admin | Single-survey analytics | P1 | Aarti: "One faculty at a time. Single select." D_PCE_0826_09. |
+| T258 | **DESIGN-REVIEW: Faculty display — chips when 2+, inline name when single** | Admin | Single-survey analytics | P1 — DESIGN-REVIEW | Aarti: "Should we give faculty as a chip here, all faculty? Names? So that I can just quickly flip between." Exact chip interaction needs visual spec before coding. D_PCE_0826_10. |
+| T259 | Show course content section in faculty view too | Admin | Single-survey analytics (faculty view) | P1 | Aarti: "Should we be showing course content here again? Yeah, we should." D_PCE_0826_11. |
+| T260 | **NEEDS REVIEW: Add PDF export action to course analytics page** | Admin | Single-survey analytics | P1 — NEEDS REVIEW | Aarti: "There should be some action here to export. The course feedback page. And that should export the page as PDF." New feature requiring export mechanism. Flag with Himanshu before building. D_PCE_0826_12. |
+| T261 | Qualitative feedback — hide/show toggle per response — DEFERRED | Admin | Single-survey analytics | P2 — DEFERRED | Redesign after Monal's qualitative feedback work lands. Do not build until Monal's workstream is complete. D_PCE_0826_13. |
+
+### Killed items from Aug 26 single-server analytics
+
+| Decision | Reason | Source |
+|---|---|---|
+| "Preview form" action | Not required on analytics action row | Aug 26 Single-server analytics |
+| "All rated questions" subtext | Not required | Aug 26 Single-server analytics |
+| "Number of ratings" on section tile | Not required | Aug 26 Single-server analytics |
+| "Middle 50" / range display | Redundant with median | Aug 26 Single-server analytics |
+| "Response" subtext in distribution | Not required | Aug 26 Single-server analytics |
+| Section sorted by gap/score | Always use template definition order | Aug 26 Single-server analytics |
+| Multi-select faculty | Single select only | Aug 26 Single-server analytics |
+
 ---
 
 ## Open product questions

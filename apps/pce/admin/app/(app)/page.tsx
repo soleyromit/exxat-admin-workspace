@@ -128,11 +128,11 @@ export default function ModuleHomePage() {
             <FolderCard
               href="/surveys"
               icon="fa-clipboard-list-check"
-              title="Course Evaluation"
+              title="Course surveys"
               description="End-of-term feedback on courses, instructors, and course coordinators."
               metric={
                 surveys.length > 0
-                  ? { count: activeCourseEvals, label: 'active evaluation' }
+                  ? { count: activeCourseEvals, label: 'active survey' }
                   : null
               }
             />
