@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-24",
+  "lastUpdated": "2026-08-31",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -756,7 +756,8 @@
       "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jul 14, 2026",
       "sourceType": "transcript",
       "date": "2026-07-14",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-144"
     },
     {
       "id": "pce-decision-058",
@@ -1721,6 +1722,227 @@
       "source": "Home page design and login flow — with Aarti transcript — Aug 17, 2026",
       "sourceType": "transcript",
       "date": "2026-08-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-144",
+      "product": "pce",
+      "text": "Dashboard card structure updated — max 2 cards (last term + current term). Upcoming term card removed entirely. Vishal: 'Maybe we don't need three. Right. So we always have two cards. One last term and one current term. That's about it. Upcoming probably is not required.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 25, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-25",
+      "status": "confirmed",
+      "supersedes": "pce-decision-057"
+    },
+    {
+      "id": "pce-decision-145",
+      "product": "pce",
+      "text": "Survey list page uses status filters (not tabs). Flat table with filter-by-survey-status control. Bulk selection requires a status filter applied first. Vishal: 'Filter no tabs just filters yes.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 25, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-25",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-146",
+      "product": "pce",
+      "text": "Survey action buttons by status: (Scheduled) primary = 'Edit survey'; secondary three-dots = Preview. (Live) primary = 'Remind'; three-dots = Edit survey, Preview form, View results. Vishal: 'everything else should be folded under three dots... instead of extend you need to change it to edit survey.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcripts — Aug 25 and Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-147",
+      "product": "pce",
+      "text": "CE Setup section = 3 tabs: (1) Evaluation rules, (2) Academic calendar (replicate Prism design + add-new-term button), (3) Communication. Role access grid = placeholder only, no build until RBAC ready.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-148",
+      "product": "pce",
+      "text": "Evaluation Rules tab: (a) Likert n-point scale selector; (b) custom numeric score per scale option (editable, saved on day one); (c) Faculty roles to evaluate — flat multi-select lookup up to 40 roles (horizontal radio buttons won't scale); (d) Benchmarks. Course type grouping for roles deferred. Vishal: 'you have to think of a design where we can accommodate a lookup of 15 20 roles out of which I only select two roles to be evaluated.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-149",
+      "product": "pce",
+      "text": "Communication tab: invite email template + reminder email template only. Reminder cadence removed (phase 2). No WYSIWYG rich text editor in v1 (plain text).",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-150",
+      "product": "pce",
+      "text": "Longitudinal analytics KPI = 4 tiles: (1) Course rating (avg course content score), (2) Faculty rating (avg faculty score), (3) Response rate, (4) Evaluation coverage as 'X course offerings evaluated out of Y' (not percentage, no sparkline). Below-benchmark: clickable count → right-side drawer. David: 'you want to have one that's the course rating. You want to have one that's a faculty rating.'",
+      "stakeholder": "David, Vishaka, Monil",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Aug 25, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-25",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-151",
+      "product": "pce",
+      "text": "Longitudinal analytics group-by toggle (academic year vs term) removed. Trend graphs always show term-over-term by default. Vishaka: 'less is more. Let's give them clean, clear analytics.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Aug 25, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-25",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-152",
+      "product": "pce",
+      "text": "Single survey analytics section naming = 'section' consistently (not 'theme'). Monil to review final verbiage. Vishal: 'Philosophically, let's stay consistent.'",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-153",
+      "product": "pce",
+      "text": "Section order in single survey analytics = matches template creation order (not sorted by gap). Vishal: 'Order of the section should be same as how they created in the template.'",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-154",
+      "product": "pce",
+      "text": "Single survey analytics section tile shows: (1) section average, (2) program average, (3) median, (4) rating distribution via accordion expand. Removed: 'all rated questions' subtext, rating range, response count. Vishal confirmed no per-section scale variation so range not needed.",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-155",
+      "product": "pce",
+      "text": "Single survey analytics PDF export: page-level PDF export action required. What is shown on screen = what is exported. Raw response data goes to Reports section only.",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-156",
+      "product": "pce",
+      "text": "Faculty filter on single survey analytics: name chips for quick switching (if >3, 'more' icon). Single select only (one faculty at a time, one report per faculty for export). Faculty entries = person + role combinations (e.g., 'Anita — Instructor' and 'Anita — Coordinator' are separate entries).",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-157",
+      "product": "pce",
+      "text": "Single survey analytics primary action: 'Preview form' removed post-fill. Primary = 'View longitudinal insights' (if results available) or 'Publish to faculty' (if unpublished). Other actions in three-dots.",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-158",
+      "product": "pce",
+      "text": "Qualitative feedback section: raw responses per section/question with admin-controlled faculty visibility toggle (show/hide per response). AI analysis is a separate section below. Two distinct UI sections: raw responses first, AI analysis second.",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-159",
+      "product": "pce",
+      "text": "Course content score shown in faculty analytics tab as overall course context. Not only in course content tab.",
+      "stakeholder": "Vishal",
+      "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-26",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-023",
+      "product": "exam-management",
+      "text": "Case study question grouping (shared vignette/reference material for multiple linked questions) is in MVP scope. Small configuration. Grouped questions remain together even if assessment is randomized. Vishaka: 'that's a very common way or part of testing didactic testing.' Vishal: 'it is a small configuration we should be able to definitely include that in the MVP.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Exam management weekly call transcript — Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-024",
+      "product": "exam-management",
+      "text": "Z-score-based predictive models for student board exam performance are out of scope for MVP, phase 2, and phase 3. Vishaka: 'I would say that is for our phase two or phase three even we don't need to worry about it right now because a, we don't even have a place to import all the standardized national examination scores.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Exam management weekly call transcript — Aug 27, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-27",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-025",
+      "product": "exam-management",
+      "text": "AI in exam management phase 1 = Build stage only. No AI in Plan, Configure, Distribute, Evaluate, or Analyze stages in phase 1. Aarti: 'we are only looking at build stage when it comes to AI.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management review with leadership team transcript — Aug 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-026",
+      "product": "exam-management",
+      "text": "Exam management setup section required before use: admins configure which terms are active; only those terms' course offerings are imported from Prism (not all historical data). Aarti: 'for both course survey and for exam, there is going to be a setup section where you must set up certain terms... based on what you set up, that is what will be brought into this module.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management review with leadership team transcript — Aug 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-027",
+      "product": "exam-management",
+      "text": "Design must support opt-out of lockdown browser for open-book exams. Confirmed differentiator vs ExamSoft. Aarti: 'we need ability to opt out of browser lockdown to be able to give open book exams, which today exam soft is not able to do. So that's another differentiator for us.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management review with leadership team transcript — Aug 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-028",
+      "product": "exam-management",
+      "text": "Exam management dashboard entry point to be built by Q4 end 2026 (replacing interim question-bank-first entry). Aarti: 'for us through Q4, there should be an entry point different here... we come up with a dashboard.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management review with leadership team transcript — Aug 24, 2026",
+      "sourceType": "transcript",
+      "date": "2026-08-24",
       "status": "confirmed"
     }
   ]

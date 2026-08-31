@@ -525,3 +525,10 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Update PRD §9 OR confirm with Monil whether the 1–5 Likert lock is still valid. If different scales per question are adopted, pce-decision-005 must be superseded and the FAAS UI question builder must be verified to support mixed Likert scales. Raise with Monil before building the analytics grouping logic (which currently assumes a single scale).
 
 ---
+
+## DECISION CONFLICT — 2026-08-31
+**Old decision (pce-decision-057):** Dashboard designed for 4 fill states including all three cards (current + last + upcoming term visible simultaneously). Monil (Jul 14, 2026): "We need to also capture all these scenarios... the fourth scenario you have all the terms."
+**New directive from Vishal in Course Eval sync up (Aug 25, 2026):** "Maybe we don't need three. Right. So we always have two cards. One last term and one current term. That's about it. Upcoming probably is not required."
+**Action:** Review and confirm whether upcoming term card is removed entirely or only in certain states. pce-decision-057 is from Monil (Jul 14); new directive is from Vishal (Aug 25). Confirm with Monil whether 4-state design is deprecated. pce-decision-057 marked superseded by pce-decision-144 pending confirmation.
+
+---

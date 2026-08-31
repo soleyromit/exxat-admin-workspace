@@ -1685,6 +1685,26 @@
             "source": "automated — transcript-prd-diff agent",
             "severity": "none",
             "files": ["docs/watch/flags/system.md"]
+        },
+        {
+            "id": "2026-08-31-granola-intake-001",
+            "date": "2026-08-31",
+            "product": "pce, exam-management",
+            "type": "decision-extracted",
+            "title": "Weekly Granola intake — 22 new decisions, 1 supersession (pce-057→pce-144), 1 conflict flagged",
+            "summary": "Processed 7 meetings from Aug 24–27, 2026. Extracted 16 new PCE decisions (pce-decision-144 through pce-decision-159) and 6 exam management decisions (exam-decision-023 through exam-decision-028). pce-decision-057 (Monil, Jul 14: 4-state dashboard with upcoming term card) superseded by pce-decision-144 (Vishal, Aug 25: max 2 cards, upcoming removed). 1 conflict flagged in docs/watch/flags/pce.md — confirm with Monil. Key PCE decisions: dashboard drops to 2 cards max; survey list uses filters not tabs; setup = 3 tabs; longitudinal analytics drops group-by toggle; section naming standardized to 'section'; PDF export page-level; faculty chips single-select with role combos. Key exam decisions: case study grouping in MVP scope; AI phase 1 = Build stage only; setup required before use; opt-out of lockdown browser supported; dashboard entry point by Q4 2026.",
+            "meetings": [
+                "Course Eval sync up (Aug 25, 2026)",
+                "Post-Course Survey Cadence Meeting BiWeely 45 Mins (Aug 25, 2026)",
+                "Single server analytics — UI design and export strategy (Aug 26, 2026)",
+                "Course Eval sync up (Aug 27, 2026)",
+                "Exam management weekly call (Aug 27, 2026)",
+                "Exam management review with leadership team (Aug 24, 2026)",
+                "Exam management — Question bank and assessment management (Aug 24, 2026)"
+            ],
+            "decisionsAdded": ["pce-decision-144", "pce-decision-145", "pce-decision-146", "pce-decision-147", "pce-decision-148", "pce-decision-149", "pce-decision-150", "pce-decision-151", "pce-decision-152", "pce-decision-153", "pce-decision-154", "pce-decision-155", "pce-decision-156", "pce-decision-157", "pce-decision-158", "pce-decision-159", "exam-decision-023", "exam-decision-024", "exam-decision-025", "exam-decision-026", "exam-decision-027", "exam-decision-028"],
+            "supersessions": [{"old": "pce-decision-057", "new": "pce-decision-144"}],
+            "conflicts": [{"old": "pce-decision-057", "new": "pce-decision-144", "flagFile": "docs/watch/flags/pce.md"}]
         }
     ]
 }
