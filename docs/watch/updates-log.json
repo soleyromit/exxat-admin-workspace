@@ -1705,6 +1705,34 @@
             "decisionsAdded": ["pce-decision-144", "pce-decision-145", "pce-decision-146", "pce-decision-147", "pce-decision-148", "pce-decision-149", "pce-decision-150", "pce-decision-151", "pce-decision-152", "pce-decision-153", "pce-decision-154", "pce-decision-155", "pce-decision-156", "pce-decision-157", "pce-decision-158", "pce-decision-159", "exam-decision-023", "exam-decision-024", "exam-decision-025", "exam-decision-026", "exam-decision-027", "exam-decision-028"],
             "supersessions": [{"old": "pce-decision-057", "new": "pce-decision-144"}],
             "conflicts": [{"old": "pce-decision-057", "new": "pce-decision-144", "flagFile": "docs/watch/flags/pce.md"}]
+        },
+        {
+            "id": "2026-09-01-transcript-diff-001",
+            "date": "2026-09-01",
+            "product": "pce",
+            "type": "prd-flagged",
+            "title": "TRANSCRIPT-PRD CONFLICT — Reminder cadence removed to Phase 2",
+            "what": "Vishal stated in Course Eval sync up (Aug 27, 2026): 'reminder Cadence we'll remove it this will be in phase two' / 'We will not have reminder cadence component'. PRD §13d Setup → Communication still lists Reminder cadence as an in-scope Phase 1 item.",
+            "why": "Direct contradiction between stakeholder transcript and PRD §13d scope list.",
+            "source": "automated — transcript-prd-diff agent",
+            "severity": "P1",
+            "meeting": "Course Eval sync up — Aug 27, 2026",
+            "speaker": "Vishal",
+            "files": ["docs/watch/flags/pce.md"]
+        },
+        {
+            "id": "2026-09-01-transcript-diff-002",
+            "date": "2026-09-01",
+            "product": "pce",
+            "type": "prd-flagged",
+            "title": "TRANSCRIPT-PRD CONFLICT — Communication schedule and release deferred to Phase 2",
+            "what": "Vishal stated in Course Eval sync up (Aug 27, 2026): 'communication schedule and release we don't need right now this you can hide this is in phase two'. PRD §13d Setup → Communication section includes Communication schedule and release as in-scope Phase 1 content.",
+            "why": "Direct contradiction between stakeholder transcript and PRD §13d scope list.",
+            "source": "automated — transcript-prd-diff agent",
+            "severity": "P1",
+            "meeting": "Course Eval sync up — Aug 27, 2026",
+            "speaker": "Vishal",
+            "files": ["docs/watch/flags/pce.md"]
         }
     ]
 }

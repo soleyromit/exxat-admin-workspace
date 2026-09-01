@@ -532,3 +532,23 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Action:** Review and confirm whether upcoming term card is removed entirely or only in certain states. pce-decision-057 is from Monil (Jul 14); new directive is from Vishal (Aug 25). Confirm with Monil whether 4-state design is deprecated. pce-decision-057 marked superseded by pce-decision-144 pending confirmation.
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-01
+**Meeting:** Course Eval sync up — Aug 27, 2026
+**Speaker:** Vishal
+**What they said:** "reminder Cadence we'll remove it this will be in phase two" / "We will not have reminder cadence component"
+**What the PRD says:** §13d Setup → Communication: "Eval window (anchored around start/end date of term), Email template, Reminder template, Reminder cadence" — Reminder cadence listed as an in-scope Communication sub-item under Setup.
+**Conflict:** PRD §13d includes Reminder cadence as a Phase 1 Setup/Communication item; transcript explicitly removes it to Phase 2.
+**Suggested action:** Update PRD §13d Communication to remove "Reminder cadence" from the Phase 1 sub-item list. Add a note: "Reminder cadence → Phase 2." Confirm with Monil before updating the sidebar Settings nav (§4 taxonomy also lists "Reminder cadence" under Settings sub-items).
+
+---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-01
+**Meeting:** Course Eval sync up — Aug 27, 2026
+**Speaker:** Vishal
+**What they said:** "communication schedule and release we don't need right now this you can hide this is in phase two"
+**What the PRD says:** §13d Setup → Communication section includes "Communication schedule and release" as an in-scope Setup sub-item.
+**Conflict:** PRD §13d lists "Communication schedule and release" as a Phase 1 Setup component; transcript explicitly defers it to Phase 2.
+**Suggested action:** Update PRD §13d to remove "Communication schedule and release" from Phase 1 scope. Add note: "Communication schedule and release → Phase 2 (hidden for now)." Confirm whether the Communication wizard step in the Create Survey flow is also affected.
+
+---
