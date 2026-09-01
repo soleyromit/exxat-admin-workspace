@@ -1733,6 +1733,18 @@
             "meeting": "Course Eval sync up — Aug 27, 2026",
             "speaker": "Vishal",
             "files": ["docs/watch/flags/pce.md"]
+        },
+        {
+            "id": "2026-09-01-workspace-context-health-001",
+            "date": "2026-09-01",
+            "product": "workspace",
+            "type": "architecture",
+            "title": "Context health check — 4 over-budget, 0 missing self-improvement",
+            "what": "4 CLAUDE.md files exceed the 100-line budget (all inactive products — P2): apps/patient-log/CLAUDE.md (259 lines), apps/skills-checklist/CLAUDE.md (252 lines), apps/learning-contracts/CLAUDE.md (252 lines), packages/CLAUDE.md (304 lines — not auto-loaded in active products). All 6 agent prompts have self-improvement loops. All CLAUDE.md doc map entries have read-conditions.",
+            "why": "Context drift erodes token savings. Each over-budget CLAUDE.md adds tokens to every message in every session.",
+            "source": "context-health-check monthly routine",
+            "severity": null,
+            "files": ["scripts/context-budget-audit.py"]
         }
     ]
 }
