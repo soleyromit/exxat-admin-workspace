@@ -317,6 +317,18 @@ Source: `docs/research/meetings/2026-08-27-exam-management-weekly-call.md` (Gran
 
 ---
 
+## Course eval sync — added 2026-09-01
+
+Source: `docs/research/meetings/2026-09-01-course-eval-sync-up.md` (Granola `e7f0d9d8-6686-4dce-9e98-38fefa32438f`)
+
+> Course evaluation sync with PM. Topics: dashboard design confirmed as Himanshu's (Romit owns workflows only), onboarding flow 4-step definition, RBAC architecture overview from PM. Course-eval not in this repo — tasks documented for completeness.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T119 | **Course eval — onboarding flow design (4 steps).** Design the 4-step onboarding experience: (1) Academic calendar, (2) Evaluation rules, (3) Communication, (4) Templates. Onboarding sits on top of dashboard, dismissible. Dismiss message: "you can always find this under settings." Completion criteria: at least 1 term = academic calendar done; user reviews defaults and confirms = evaluation rules done; navigates page and proceeds = communication done. Role access excluded from onboarding entirely. | Admin | Course eval onboarding | P1 | D_CE_0901_03, D_CE_0901_04, D_CE_0901_06 |
+| T120 | **Course eval — academic calendar: design primary path.** Primary use case: admin has an existing Prism academic year + terms and needs to enable specific terms for course evaluation. This path does NOT currently exist in design (only "create new academic year" is designed). Must be the primary/first-shown path in onboarding step 1. Terms are manual setup only — no Prism migration. Background listener job will sync future Prism terms automatically. | Admin | Academic calendar setup | P1 | D_CE_0901_05, D_CE_0901_08 |
+| T121 | **Course eval — RBAC UX design (merged grid + add-user flow).** Two deliverables: (a) Single RBAC grid — rows = roles (super admin / program admin / program admin limited / course manager / instructor), columns = permission types + faculty role mapping columns; admin maps each faculty role to course manager or instructor RBAC role. (b) Add-user flow — only super admin and program admin are selectable; course manager/instructor are association-resolved and must NOT appear as selectable options; UX must explain why. No custom roles. Get RBAC recording + Excel sheet + 1-pager from PM before starting. | Admin | User management / role access | P1 — DESIGN-REVIEW | D_CE_0901_09, D_CE_0901_10, D_CE_0901_11. Vishaka led RBAC architecture; PM has recording + materials. |
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |

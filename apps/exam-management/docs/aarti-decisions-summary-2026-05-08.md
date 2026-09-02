@@ -1638,6 +1638,42 @@ Manual lifecycle ships first. AI differentiates but does not replace manual flow
 
 ---
 
+### 5.70 Course eval sync — dashboard handoff, onboarding flow, and RBAC architecture (2026-09-01)
+
+Source: `docs/research/meetings/2026-09-01-course-eval-sync-up.md` (Granola `e7f0d9d8`)
+
+**Note:** Course-evaluation product is not in this workspace. Decisions documented for completeness.
+
+**Dashboard design settled (D_CE_0901_01, D_CE_0901_02)**
+
+Himanshu's dashboard design is being used. Romit's dashboard was not accepted. Romit's scope going forward is workflow screens only: survey distribution, view survey, single survey analytics, survey details. Dashboard layout: live term KPIs + last closed term KPI overview + response rate trend + rating trend for courses and faculty + action items. Actions collapsed to one visible + three-dots overflow.
+
+> "I couldn't even look at those designs to be frank. Right. So I told you that I have a demo." — PM
+
+**Onboarding flow — 4 steps (D_CE_0901_03, D_CE_0901_04, D_CE_0901_06)**
+
+Step 1: Academic calendar. Step 2: Evaluation rules. Step 3: Communication. Step 4: Templates. Role access EXCLUDED ("access we can ignore that will not be part of onboarding"). Onboarding sits on dashboard, dismissible. Dismiss message: "you can always find this under settings." Completion per step: at least 1 term = academic calendar done; user confirms defaults = evaluation rules done; user navigates page = communication done.
+
+> "We don't want to be intrusive. So it will probably sit somewhere on top of the dashboard. But if users wants to close it they can close it." — PM
+
+**Academic calendar — primary path gap (D_CE_0901_05, D_CE_0901_08)**
+
+Primary use case (most customers): enable an existing Prism academic year + select which terms to activate for course evaluations. This path is NOT currently designed — only the "create new academic year" path exists. Terms are manual setup; no Prism migration. Background listener job will sync future Prism-created terms. → T120.
+
+**Evaluation rules defaults (D_CE_0901_07)**
+
+Rating scale defaults to 5-point (some customers use 4 — not hard-coded). Benchmarks default to 74 and 4. Faculty roles to evaluate must be explicitly selected (tenant-defined; cannot be pre-populated).
+
+> "Rating scale can be selected by default to file. Benchmarks also can be defaulted or rather should be defaulted to 74 and 4." — PM
+
+**RBAC architecture — new design required (D_CE_0901_09, D_CE_0901_10, D_CE_0901_11)**
+
+Standard roles (no custom): super admin (institution), program admin (program), program admin limited (program), course manager (course), instructor (association). Course manager and instructor are NOT selectable at user creation — they resolve at runtime through course-faculty role associations. Single merged RBAC grid: rows = roles, columns = permission types + faculty role mapping columns (admin maps each faculty role to course manager or instructor). Add-user flow: only super admin and program admin are selectable. UX must communicate why course manager/instructor can't be assigned directly. PM is sharing a Vishaka RBAC recording + Excel sheet + 1-pager. → T121 (DESIGN-REVIEW).
+
+> "In a way you are merging these into this. Right. So you're adding a new column here. Which says faculty roles." — PM
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1681,6 +1717,7 @@ Manual lifecycle ships first. AI differentiates but does not replace manual flow
 | 2026-07-23 10:30 | Exam management weekly call — faculty grading journey, score override, Cronbach's alpha, Cohere planning | `0261fe62` | Aarti + Bhargav + Vishal + Nipun + David + Romit |
 | 2026-07-30 10:30 | Exam management weekly call — assessment repurposing, cross-course import, AI blueprint planning, PB flag threshold | `afac83e4` | Aarti + Nipun + Bhargav + Romit |
 | 2026-08-24 09:00 | Exam management review with leadership team — Cohere session structure, ExamSoft differentiators, demo focus, agentic AI teaser | `0e389b16` | Aarti + Vishaka + Vishal + Kanti + David + Wilson + Romit |
+| 2026-09-01 09:30 | Course Eval sync up — dashboard handoff, onboarding flow, RBAC architecture | `e7f0d9d8` | PM (unidentified) + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
