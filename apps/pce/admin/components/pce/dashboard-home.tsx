@@ -96,20 +96,33 @@
 // "surveys".
 // ============================================================================
 
-import { useMemo, useState, Suspense } from 'react'
+import { useMemo, useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Badge,
   Button,
+  Popover, PopoverTrigger, PopoverContent,
   PageHeader,
   Card, CardHeader, CardTitle, CardContent, CardFooter,
   StatusBadge,
   Tip,
+  KeyMetrics,
+  LocalBanner,
+  wizardMarkerClass, wizardLabelClass,
+  Tabs, TabsList, TabsTrigger, TabsTriggerLabel, TabsCountBadge, TabsContent,
+  type WizardStep,
+  type MetricItem,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { AddTermDrawer, AddTermDatesDrawer } from '@/components/pce/add-term-drawer'
+import { TermEditorSheet, existingAcademicYears, draftTerm } from '@/components/pce/term-editor-sheet'
+import { ProgressCell } from '@/components/data-views/table-cells'
+import { ResponseProgressCell } from '@/components/pce/response-gauge'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import { DashboardResponseTrend, dashboardTrendLabel } from '@/components/pce/analytics-plots'
+import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-core'
+import { termSeries, programSummary, shortTerm, termToYear, type TermSeriesPoint } from '@/lib/pce-analytics'
 
 import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -129,9 +142,12 @@ import {
   resolveTermPositions, snapshot, evalWindow, parseDate, breakdownFor, coveragePercent, isFullyCovered,
   coverageDetail, coverageCodes, scheduledCountdown,
   liveCountdown, liveAtRiskCodes, weightedRate, closedNarrative,
-  type TermSnapshot, type TermWindowPosition, type CourseBreakdown,
+  STAGE_BADGE,
+  termHasFinishedSurveys, nextTermAction,
+  type TermSnapshot, type TermWindowPosition, type CourseBreakdown, type TermStage,
+  type TermNextAction, type TermSetupStage,
 } from '@/lib/pce-term-metrics'
-import type { PceSurvey, ProgramTerm } from '@/lib/pce-mock-data'
+import { MOCK_PROGRAM_TERMS, type PceSurvey, type PceTemplate, type ProgramTerm } from '@/lib/pce-mock-data'
 
 const COVERAGE_TIP =
   "The share of this term's course offerings with an evaluation set up and collecting responses — not the response rate itself."
@@ -221,6 +237,7 @@ function StatementHero({
   unit,
   annotation,
   annotationColor,
+  annotationIcon,
   size = 'lg',
   serif = true,
   tip,
@@ -232,6 +249,10 @@ function StatementHero({
   unit?: string
   annotation?: string
   annotationColor?: string
+  /** FA class for a leading trend arrow (e.g. `fa-arrow-trend-up`) — color
+   *  alone was the only direction signal before this (A11Y-008: color is
+   *  never the only encoding), and the reference pairs every delta with one. */
+  annotationIcon?: string
   size?: 'lg' | 'md'
   /** The statement skin's serif display face for the ledger figure — off
    *  for the response-rate hero specifically (Romit, 2026-08-25: "use
@@ -271,7 +292,8 @@ function StatementHero({
         {unit && <span className={size === 'lg' ? 'text-2xl' : 'text-xl'}>{unit}</span>}
       </p>
       {annotation && (
-        <p className="text-xs font-medium" style={{ color: annotationColor ?? 'var(--muted-foreground)' }}>
+        <p className="flex items-center gap-1 text-xs font-medium" style={{ color: annotationColor ?? 'var(--muted-foreground)' }}>
+          {annotationIcon && <i className={`fa-light ${annotationIcon}`} aria-hidden="true" />}
           {annotation}
         </p>
       )}
@@ -685,18 +707,29 @@ function StatementRow({
 function LedgerAction({
   href,
   primary = false,
+  /** Real filled/primary `Button` — distinct from `primary`, which (despite
+   *  its name) has only ever mapped to 'outline' vs 'ghost' below, never an
+   *  actual filled variant. Every one of this component's ~20 call sites
+   *  already passes `primary`, so changing what THAT maps to would silently
+   *  reshape every Ledger-design card at once; `filled` is additive and
+   *  opt-in instead, for the one row (Operations' `LiveTermCard` "Schedule"
+   *  action) that needs to read as the next thing to do among several
+   *  otherwise-equal outline rows (caught live 2026-09-02: every action in
+   *  that card rendered identically, so nothing read as prioritized). */
+  filled = false,
   external = false,
   onClick,
   children,
 }: {
   href?: string
   primary?: boolean
+  filled?: boolean
   /** Prism lives outside this app — opens in a new tab. */
   external?: boolean
   onClick?: () => void
   children: React.ReactNode
 }) {
-  const variant = primary ? 'outline' : 'ghost'
+  const variant = filled ? 'default' : primary ? 'outline' : 'ghost'
   if (onClick) {
     return (
       <Button variant={variant} size="sm" onClick={onClick}>
@@ -1267,10 +1300,15 @@ function LastTermCard({
 
 /* ── UPCOMING TERM — readiness / prep ─────────────────────────────────────── */
 
-function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: CourseBreakdown | null }) {
+function UpcomingCard({ snap, breakdown, onEditDates }: {
+  snap: TermSnapshot
+  breakdown: CourseBreakdown | null
+  /** Opens the shared TermEditorSheet (same one Settings' Academic Calendar
+   *  and the dashboard's "Set up term" flow use) pre-filled for this term. */
+  onEditDates: (term: ProgramTerm) => void
+}) {
   const { term } = snap
   const b = breakdown
-  const [datesOpen, setDatesOpen] = useState(false)
 
   const dated = !!term.startDate && !!term.endDate
   const readiness = auditTerm(term.id)
@@ -1387,7 +1425,7 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
                 timeline={{ connectTop: 'none', connectBottom: !b || firstStage ? 'solid' : 'none', attention: true }}
                 description="No dates set yet, so no evaluation window can open."
                 actions={
-                  <LedgerAction onClick={() => setDatesOpen(true)} primary>
+                  <LedgerAction onClick={() => onEditDates(term)} primary>
                     Add term dates
                   </LedgerAction>
                 }
@@ -1465,7 +1503,6 @@ function UpcomingCard({ snap, breakdown }: { snap: TermSnapshot; breakdown: Cour
         }
       />
 
-      <AddTermDatesDrawer term={term} open={datesOpen} onOpenChange={setDatesOpen} />
     </TermCardShell>
   )
 }
@@ -1502,19 +1539,31 @@ type TermRow = {
   offerings: number
   coverage: { surveyed: number; total: number } | null
   rate: number | null
+  responseCount: number
+  enrollmentCount: number
+  stage: TermStage
+  /** Null for every account except the one whose terms are the global mock's
+   *  own (see `isScoredAccount` in `OperationsDashboardBody`) — there is no
+   *  per-account course/faculty score data model, so every other account
+   *  correctly shows "—" here instead of a borrowed number. */
+  courseAvg: number | null
+  facultyAvg: number | null
 } & Record<string, unknown>
 
 /** Row population for one history table. `position: 'last'` excludes
  *  `shownLastId` (the one Last-window term already shown as a kanban card —
  *  Vishal, transcript 7a175890: "last should be the first card", singular).
  *  `position: 'future'` is every term 30d+ out that hasn't entered the
- *  Upcoming window yet. */
+ *  Upcoming window yet. `scoreByTermName` is the Operations layout's
+ *  account-scoped series (empty map from the Ledger layout, which doesn't
+ *  show these two columns' source data) — see `OperationsDashboardBody`. */
 function termRowsFor(
   terms: ProgramTerm[],
   ce: PceSurvey[],
   positions: Map<string, TermWindowPosition>,
   position: 'past' | 'future',
   shownLastId: string | null,
+  scoreByTermName: Map<string, { courseAvg: number | null; facultyAvg: number | null }>,
 ): TermRow[] {
   return [...terms]
     .reverse()
@@ -1531,6 +1580,7 @@ function termRowsFor(
     })
     .map((t) => {
       const snap = snapshot(t, ce)
+      const score = scoreByTermName.get(t.name)
       return {
         id: t.id,
         name: t.name,
@@ -1541,6 +1591,11 @@ function termRowsFor(
         offerings: snap.coverage?.total ?? 0,
         coverage: snap.coverage,
         rate: snap.rate,
+        responseCount: snap.responseCount,
+        enrollmentCount: snap.enrollmentCount,
+        stage: snap.stage,
+        courseAvg: score?.courseAvg ?? null,
+        facultyAvg: score?.facultyAvg ?? null,
       }
     })
 }
@@ -1587,6 +1642,24 @@ function TermHistoryTable({
         ),
       },
       {
+        /* Reference (exxat-surveys-24f.pages.dev): a "Timeline" column
+           carrying a Past/Future badge — redundant with which TAB the row is
+           already under (this table used to be two headed sections; it's
+           one tabbed one now, see `TermHistorySection`), but restored
+           because a table exported/printed/scanned outside its tab context
+           otherwise loses that fact entirely. */
+        key: 'timeline',
+        label: 'Timeline',
+        width: 100,
+        cell: () => (
+          <ListHubStatusBadge
+            label={mode === 'past' ? 'Past' : 'Future'}
+            tint={mode === 'past' ? LIST_HUB_STATUS_TINT_COMPLETED : LIST_HUB_STATUS_TINT_PLANNED}
+            icon={mode === 'past' ? 'fa-clock-rotate-left' : 'fa-calendar-plus'}
+          />
+        ),
+      },
+      {
         key: 'startDate',
         label: 'Dates',
         width: 190,
@@ -1594,49 +1667,90 @@ function TermHistoryTable({
       },
       {
         key: 'offerings',
-        label: 'Course offerings',
-        width: 130,
+        label: 'Courses',
+        width: 90,
         cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
       },
       {
         key: 'coverage',
-        label: 'Evaluation coverage',
-        width: 160,
+        label: 'Coverage',
+        width: 170,
+        /* `tone="brand"` — coverage is "how much is set up," not a quality
+           judgment, so it stays off ProgressCell's graded amber/success/red
+           auto-tones (those are for the Response column instead). Kept
+           deliberately different from the reference's single flat fill for
+           both columns — see the file-level note on `TermHistorySection`. */
         cell: (row) =>
           row.coverage ? (
-            <span className="tabular-nums">
-              {row.coverage.total > 0 ? Math.round((row.coverage.surveyed / row.coverage.total) * 100) : 0}%
-              <span className="text-muted-foreground"> · {row.coverage.surveyed} of {row.coverage.total}</span>
-            </span>
+            <ProgressCell
+              value={row.coverage.surveyed}
+              max={row.coverage.total}
+              tone="brand"
+              label={<span className="text-xs tabular-nums text-muted-foreground">{row.coverage.surveyed} of {row.coverage.total}</span>}
+            />
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
       },
       {
         key: 'rate',
-        label: 'Response rate',
+        label: 'Response',
+        width: 190,
+        cell: (row) =>
+          row.rate != null ? (
+            <ResponseProgressCell
+              rate={row.rate}
+              responseCount={row.responseCount}
+              enrollmentCount={row.enrollmentCount}
+              target={RESPONSE_TARGET}
+              floor={AT_RISK_THRESHOLD}
+              detail="pct"
+            />
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: 'courseAvg',
+        label: 'Course avg',
+        width: 100,
+        cell: (row) => <span className="tabular-nums">{row.courseAvg != null ? row.courseAvg : '—'}</span>,
+      },
+      {
+        key: 'facultyAvg',
+        label: 'Faculty avg',
+        width: 100,
+        cell: (row) => <span className="tabular-nums">{row.facultyAvg != null ? row.facultyAvg : '—'}</span>,
+      },
+      {
+        /* "Evaluation stage" in the reference; this app's own vocabulary is
+           `TermStage`/`STAGE_BADGE` (Upcoming/Live/In review/Complete) —
+           reused as-is rather than inventing a "Published" state this app
+           has no other concept of. */
+        key: 'stage',
+        label: 'Evaluation stage',
         width: 130,
-        cell: (row) => (
-          <span className="tabular-nums">{row.rate != null ? `${row.rate}%` : '—'}</span>
-        ),
+        cell: (row) => <StatusBadge label={STAGE_BADGE[row.stage].label} tone={STAGE_BADGE[row.stage].tone} />,
       },
       {
         key: 'actions',
-        label: '',
-        width: 210,
+        label: 'Action',
+        width: 180,
         /* This table's rows are all one `position` by construction (`past`
            rows are always 'last', `future` rows are always 'future'), so the
            `mode` prop — not `row.position` — decides the verb. Checking
            `mode` here rather than trusting every row's `position` field stays
-           correct even if row population ever changes upstream. */
+           correct even if row population ever changes upstream. Stacked
+           vertically, both outline (reference anatomy) — neither action is
+           more "primary" than the other for a row you're just scanning. */
         cell: (row) =>
           mode === 'future' ? (
             <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
               <Link href={`/surveys/push?term=${row.id}`}>Schedule surveys</Link>
             </Button>
           ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="default" size="sm" asChild onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-start gap-1.5">
+              <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
                 <Link href={`/analytics?tab=term&term=${encodeURIComponent(row.name)}`}>View analytics</Link>
               </Button>
               <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
@@ -1649,102 +1763,1251 @@ function TermHistoryTable({
     [mode],
   )
 
-  if (rows.length === 0) return null
-
+  /* No per-table heading anymore — this is one tab's content inside the
+     single "Other terms (N)" tabbed table now (see `TermHistorySection`),
+     not its own headed section. `label` stays as the table's aria-label. */
   return (
-    <section className="flex flex-col gap-2" aria-label={label}>
-      {/* Plain heading, always visible — no click-to-expand (Romit's catch,
-          2026-08-19: the earlier single-trigger-Tabs disclosure hid Past/
-          Future terms behind a collapsed toggle by default). Every row that
-          exists here is real history/roadmap, not overflow to hide. */}
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
-        <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium tabular-nums">
-          {rows.length}
-        </Badge>
-      </div>
-      <DataTablePaginated<TermRow>
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        /* showQueryControls=false — DataTable's toolbar row defaults to
-           min-h-10 regardless of content; with search/filters hidden and no
-           toolbarSlot it still reserved that height as dead space between
-           the heading and the table (Romit's catch, 2026-08-19, x2: the
-           first fix filled the space with a count label, but the count
-           already lives on the heading's own Badge — two counts for one
-           number was the next thing flagged). showQueryControls collapses
-           the bar to its slim min-h-0 variant instead (threaded through as a
-           new opt-in prop on DataTable/DataTablePaginated — additive, every
-           other table's default behavior is unchanged). */
-        showQueryControls={false}
-        pagination={{ pageSize: 25 }}
-        edgeInset={false}
-        stickyHeader={false}
-        onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
-        emptyState={
-          <div className="flex flex-col items-center gap-2 py-8">
-            <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-            <p className="text-sm font-medium">{emptyTitle}</p>
-            <p className="text-xs text-muted-foreground">{emptyBody}</p>
-          </div>
-        }
-      />
-    </section>
+    <DataTablePaginated<TermRow>
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      /* showQueryControls=false — DataTable's toolbar row defaults to
+         min-h-10 regardless of content; with search/filters hidden and no
+         toolbarSlot it still reserved that height as dead space (Romit's
+         catch, 2026-08-19). showQueryControls collapses the bar to its slim
+         min-h-0 variant instead (threaded through as a new opt-in prop on
+         DataTable/DataTablePaginated — additive, every other table's
+         default behavior is unchanged). */
+      showQueryControls={false}
+      pagination={{ pageSize: 25 }}
+      edgeInset={false}
+      stickyHeader={false}
+      onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
+      emptyState={
+        <div className="flex flex-col items-center gap-2 py-8">
+          <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
+          <p className="text-sm font-medium">{emptyTitle}</p>
+          <p className="text-xs text-muted-foreground">{emptyBody}</p>
+        </div>
+      }
+    />
   )
 }
 
-/** Everything NOT on the kanban, as two separately-headed tables: "Past
- *  terms" (every Last-window term beyond the one shown as a kanban card) and
- *  "Future terms" (every term 30d+ out that hasn't entered the Upcoming
- *  window yet). Previously one merged table under a single "Past terms"
- *  label — split Aug 19 2026 so each population gets its own heading and its
- *  own Actions verb instead of a `row.position` ternary inside one table.
- *  Always visible, no collapse toggle (Romit's second catch, same day) — a
- *  disclosure gate hid real history/roadmap rows by default for no reason
- *  once the tables carry actual data. */
+/** Everything NOT on the kanban, as ONE tabbed table — "Other terms (N)"
+ *  above, `Past (N)` / `Future (N)` tabs inside, sharing one column set
+ *  (reference: exxat-surveys-24f.pages.dev). Was two separately-headed
+ *  tables (split Aug 19 2026 so each population got its own Actions verb
+ *  instead of a `row.position` ternary inside one table) — merged back
+ *  2026-09-02 to match the reference's anatomy; each tab still gets its own
+ *  row population and Actions verb via `mode`, just inside one card instead
+ *  of two stacked sections. Always visible, no collapse toggle (Romit's
+ *  catch, 2026-08-19) — a disclosure gate hid real history/roadmap rows by
+ *  default for no reason once the tables carry actual data; a `Tabs`
+ *  selector isn't a disclosure gate, both populations are one click away.
+ *
+ *  `scoreByTermName` backs the Course avg/Faculty avg columns — empty from
+ *  the Ledger layout (which has no equivalent source for them), real from
+ *  Operations' account-scoped series. See `OperationsDashboardBody`'s
+ *  `isScoredAccount` for why most accounts correctly show "—" here instead
+ *  of a borrowed number — deliberately NOT flattened to match the
+ *  reference's single fill color for both progress-bar columns, which would
+ *  mean giving up `ResponseProgressCell`'s floor/target tiers (Jul 10 2026
+ *  decision, still valid) for an undifferentiated bar. */
 function TermHistorySection({
-  ce, terms, positions, shownLastId,
+  ce, terms, positions, shownLastId, scoreByTermName = new Map(),
 }: {
   ce: PceSurvey[]
   terms: ProgramTerm[]
   positions: Map<string, TermWindowPosition>
   shownLastId: string | null
+  scoreByTermName?: Map<string, { courseAvg: number | null; facultyAvg: number | null }>
 }) {
   const pastRows = useMemo(
-    () => termRowsFor(terms, ce, positions, 'past', shownLastId),
-    [terms, ce, positions, shownLastId],
+    () => termRowsFor(terms, ce, positions, 'past', shownLastId, scoreByTermName),
+    [terms, ce, positions, shownLastId, scoreByTermName],
   )
   const futureRows = useMemo(
-    () => termRowsFor(terms, ce, positions, 'future', shownLastId),
-    [terms, ce, positions, shownLastId],
+    () => termRowsFor(terms, ce, positions, 'future', shownLastId, scoreByTermName),
+    [terms, ce, positions, shownLastId, scoreByTermName],
   )
+  const total = pastRows.length + futureRows.length
+
+  if (total === 0) return null
 
   return (
-    <>
-      <TermHistoryTable
-        label="Past terms"
-        rows={pastRows}
-        mode="past"
-        emptyTitle="No past terms yet"
-        emptyBody="Completed terms will appear here as history."
+    <section className="flex flex-col gap-2" aria-label="Other terms">
+      <div className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-foreground">Other terms</h2>
+        <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium tabular-nums">
+          {total}
+        </Badge>
+      </div>
+      <Tabs defaultValue="past" className="flex flex-col gap-3">
+        <TabsList variant="line" ariaLabel="Other terms — Past or Future">
+          <TabsTrigger value="past">
+            <TabsTriggerLabel>Past</TabsTriggerLabel>
+            <TabsCountBadge count={pastRows.length} />
+          </TabsTrigger>
+          <TabsTrigger value="future">
+            <TabsTriggerLabel>Future</TabsTriggerLabel>
+            <TabsCountBadge count={futureRows.length} />
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="past">
+          <TermHistoryTable
+            label="Past terms"
+            rows={pastRows}
+            mode="past"
+            emptyTitle="No past terms yet"
+            emptyBody="Completed terms will appear here as history."
+          />
+        </TabsContent>
+        <TabsContent value="future">
+          <TermHistoryTable
+            label="Future terms"
+            rows={futureRows}
+            mode="future"
+            emptyTitle="No future terms yet"
+            emptyBody="Terms starting more than 30 days out will appear here until they enter the Upcoming window."
+          />
+        </TabsContent>
+      </Tabs>
+    </section>
+  )
+}
+
+/* ── populated-state bodies ───────────────────────────────────────────────
+   Two interchangeable renders of the populated dashboard, switched via the
+   user-menu "Dashboard layout" toggle (identity-menu-items.tsx) + `usePce()`.
+   `LedgerDashboardBody` is the prior v9 "STATEMENT" design (round-4, see file
+   header) — preserved verbatim rather than deleted so it stays available for
+   side-by-side comparison. `OperationsDashboardBody` is the reference-design
+   rebuild (Romit, 2026-09-02: reversing the earlier "too crowded" KPI/chart
+   removal, on purpose this time, per exxat-surveys-24f.pages.dev). ── */
+
+interface DashboardBodyBaseProps {
+  currentSnaps: TermSnapshot[]
+  lastSnaps: TermSnapshot[]
+  breakdownForSnap: (snap: TermSnapshot) => CourseBreakdown | null
+  onAdd: () => void
+  ce: PceSurvey[]
+  ordered: ProgramTerm[]
+  positions: Map<string, TermWindowPosition>
+  lastTerms: ProgramTerm[]
+  /** Moved here from the Ledger-only prop type — `OperationsDashboardBody`
+   *  needs it too now, to know whether "no template" is this term's real
+   *  blocker (see `nextTermAction`) rather than always assuming "not
+   *  scheduled" is the next step. */
+  templates: PceTemplate[]
+}
+
+function LedgerDashboardBody({
+  currentSnaps, lastSnaps, upcomingSnaps, templates, breakdownForSnap, onAdd, onEditDates, ce, ordered, positions, lastTerms,
+}: DashboardBodyBaseProps & {
+  upcomingSnaps: TermSnapshot[]
+  onEditDates: (term: ProgramTerm) => void
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* ── Terms kanban — Last / Current / Upcoming (Aug 19 2026 feedback:
+           fixed left-to-right order; each column can hold more than one
+           card). Current stays the wide hero column since it's still the
+           working surface — it just isn't the leftmost one anymore. ── */}
+      <h2 className="sr-only">Terms</h2>
+      {/* No active term → a slim notice ONLY when there's no upcoming
+          card to convey it (the Upcoming card's badge + setup CTA already
+          say "nothing's collecting, this is next"). */}
+      {currentSnaps.length === 0 && upcomingSnaps.length === 0 && (
+        <NoActiveTermNotice onAdd={onAdd} />
+      )}
+      {/* Each column gets an explicit grid-column line, not just source
+          order — a demo account with only a Current term (Last/Upcoming
+          both empty) left Current as the grid's ONLY child, and CSS
+          Grid auto-placement dropped it into track 1 (the narrow 1fr
+          column) instead of its intended 1.35fr hero track. Found live
+          on Brightwater OT (Case 4, single-term account): the card
+          rendered ~100px narrower than intended, which is what made
+          the footer summary + "View Details" both wrap to two lines —
+          not a text-length problem, a layout one. */}
+      {(() => {
+        const groups = [
+          lastSnaps.length > 0,
+          currentSnaps.length > 0,
+          upcomingSnaps.length > 0,
+        ].filter(Boolean).length
+        /* Exactly one populated group → center it instead of pinning it
+           to a fixed grid track (Romit, 2026-08-26: "where there is
+           only one term card, i want it to be central aligned" —
+           e.g. a Current-only demo account used to sit hard in the
+           middle track, but a Last-only or Upcoming-only one landed
+           flush left/right instead, with two empty tracks either
+           side). Same 1.35fr-equivalent max width as the grid's hero
+           column, just centered via margin instead of a track. */
+        if (groups === 1) {
+          return (
+            <div className="mx-auto flex w-full max-w-[480px] flex-col gap-4">
+              {lastSnaps.map((s) => (
+                <LastTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
+              ))}
+              {currentSnaps.map((s) => (
+                <CurrentTermCard
+                  key={s.term.id}
+                  snap={s}
+                  breakdown={breakdownForSnap(s)}
+                  noTemplates={templates.length === 0}
+                />
+              ))}
+              {upcomingSnaps.map((s) => (
+                <UpcomingCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} onEditDates={onEditDates} />
+              ))}
+            </div>
+          )
+        }
+        return (
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1fr_1.35fr_1fr]">
+            {lastSnaps.length > 0 && (
+              <div className="flex flex-col gap-4 lg:[grid-column:1]">
+                {lastSnaps.map((s) => (
+                  <LastTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
+                ))}
+              </div>
+            )}
+            {currentSnaps.length > 0 && (
+              <div className="flex flex-col gap-4 lg:[grid-column:2]">
+                {currentSnaps.map((s) => (
+                  <CurrentTermCard
+                    key={s.term.id}
+                    snap={s}
+                    breakdown={breakdownForSnap(s)}
+                    noTemplates={templates.length === 0}
+                  />
+                ))}
+              </div>
+            )}
+            {upcomingSnaps.length > 0 && (
+              <div className="flex flex-col gap-4 lg:[grid-column:3]">
+                {upcomingSnaps.map((s) => (
+                  <UpcomingCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} onEditDates={onEditDates} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ── Term history — Past terms + Future terms, separately headed ── */}
+      <TermHistorySection
+        ce={ce}
+        terms={ordered}
+        positions={positions}
+        shownLastId={lastTerms[0]?.id ?? null}
       />
-      <TermHistoryTable
-        label="Future terms"
-        rows={futureRows}
-        mode="future"
-        emptyTitle="No future terms yet"
-        emptyBody="Terms starting more than 30 days out will appear here until they enter the Upcoming window."
+    </div>
+  )
+}
+
+/** One line-item row for the Operations "Live term" card — a count phrase,
+ *  a status badge, and one action button. Flat by design (no rail, no
+ *  gauge) per the reference: the Ledger design's per-row narrative is
+ *  deliberately traded for scannability here — this is the OTHER card
+ *  design, not a merge of the two. */
+function OperationsRow({
+  countLabel,
+  description,
+  courseCodes,
+  tint,
+  tintLabel,
+  icon,
+  /* A row can be true on two independent axes at once — e.g. "Live" (this
+     status bucket) AND "Low response" (a risk flag within it) — collapsing
+     that into one ternary badge (previously `atRisk ? 'Low response' :
+     'Live'` on the same slot) silently dropped whichever fact lost the
+     ternary (caught live 2026-09-02: an at-risk Live row showed "Low
+     response" alone, with no indication it was also the currently-Live
+     bucket). Optional second badge for exactly that case. */
+  warningLabel,
+  warningIcon,
+  action,
+}: {
+  /** Shown only when `courseCodes` is empty (the two account-level rows,
+   *  "0 course offerings"/"0 templates", which aren't about any specific
+   *  course). Every real row identifies its courses via tags instead. */
+  countLabel: string
+  /** One line under the tags naming what the status badge means for THIS
+   *  row (e.g. "Hasn't been scheduled yet") — the badge alone ("Not set
+   *  up"/"Draft"/"Scheduled") reads as a status word, not an explanation,
+   *  and nothing previously said what action the button actually takes
+   *  (Romit, 2026-09-02: "this is not understood, especially the content"). */
+  description: string
+  /** Real course codes behind the row. Rendered as tags (up to
+   *  `MAX_VISIBLE_COURSE_TAGS`), not a bare "N courses" count — a count
+   *  hides which courses are affected until clicked; tags name them up
+   *  front, with a "+N more" popover for the overflow (Romit, 2026-09-02:
+   *  "use tags instead of course count, and later show remaining courses
+   *  with tooltip/popover"). */
+  courseCodes: string[]
+  tint: StatusTint
+  tintLabel: string
+  icon: string
+  warningLabel?: string
+  warningIcon?: string
+  action: React.ReactNode
+}) {
+  const visibleCodes = courseCodes.slice(0, MAX_VISIBLE_COURSE_TAGS)
+  const overflowCodes = courseCodes.slice(MAX_VISIBLE_COURSE_TAGS)
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 py-3 first:border-t-0">
+      <div className="flex flex-col gap-1">
+        {courseCodes.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {visibleCodes.map((code) => <CourseCodeTag key={code} code={code} />)}
+            {overflowCodes.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                    aria-label={`${overflowCodes.length} more ${tintLabel} courses`}
+                  >
+                    +{overflowCodes.length} more
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56 p-3" aria-label={`Remaining courses: ${tintLabel}`}>
+                  <p className="mb-2 text-sm font-medium">{tintLabel}</p>
+                  <ul className="flex flex-col gap-1.5 font-mono text-sm text-muted-foreground">
+                    {overflowCodes.map((code) => <li key={code}>{code}</li>)}
+                  </ul>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        ) : (
+          <span className="text-sm font-medium text-foreground">{countLabel}</span>
+        )}
+        <span className="text-xs text-muted-foreground">{description}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {warningLabel && (
+          <ListHubStatusBadge label={warningLabel} tint={LIST_HUB_STATUS_TINT_WARNING} icon={warningIcon ?? 'fa-triangle-exclamation'} flat />
+        )}
+        <ListHubStatusBadge label={tintLabel} tint={tint} icon={icon} flat />
+        {action}
+      </div>
+    </div>
+  )
+}
+
+const MAX_VISIBLE_COURSE_TAGS = 3
+
+/** A single course-code chip — neutral and monospaced (system-identifier
+ *  convention, matching this app's other record-id treatments), deliberately
+ *  quieter than both the colored status `ListHubStatusBadge` and the outline
+ *  action `Button` beside it, so all three read as three different kinds of
+ *  thing at a glance rather than competing pills of the same visual weight. */
+function CourseCodeTag({ code }: { code: string }) {
+  return (
+    <span className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+      {code}
+    </span>
+  )
+}
+
+/** Compact 4-step setup checklist, embedded directly in the Live-term card's
+ *  body (below its "Next" headline) while initial setup is incomplete — was
+ *  its own floating "Getting started" `Card` sitting above this one, which
+ *  read as disconnected from the term it was actually about (Romit,
+ *  2026-09-02). Secondary to the headline by design: no per-step
+ *  description, no individually bordered/tinted step boxes — just which
+ *  step is next, which are done, which are still ahead. `action` is the
+ *  same `nextTermAction` result the headline above and the row list below
+ *  already use, so all three can never point at different steps. */
+/** Each step's OWN destination — independent of `nextTermAction`'s single
+ *  "the one next thing" priority pick — so every reachable, incomplete step
+ *  can carry a real button, not just whichever one is currently active
+ *  (Romit, 2026-09-02: "needed a better call to action for each step").
+ *  Step 0 never needs one here: it's always either done or the active step,
+ *  which reads `action` directly instead (see `TermSetupChecklist` below). */
+function stepCta(idx: number, term: ProgramTerm | null, hasTemplates: boolean): { href?: string; external?: boolean; label: string } {
+  // `term` is only null in the zero-current/zero-last fallback, where step 0
+  // ("Set up your first term") is always the active/incomplete one and
+  // steps 1-3 are therefore never `reachable` (see `TermSetupChecklist`) —
+  // these branches exist for type-safety, not because they render.
+  switch (idx) {
+    case 1: return { href: prismCoursesHref(), external: true, label: 'Add courses' }
+    // Once templates exist, "First survey" and "Schedule evaluations" are
+    // the SAME underlying action (`/surveys/push` both creates and
+    // schedules in one flow) — showing a button here too would repeat
+    // step 4's exact destination under a different number (caught live
+    // 2026-09-02 on `acc-noroster`: "Schedule" appeared on both step 3 and
+    // step 4). Only offer a distinct action here while a template is
+    // actually missing; otherwise this step just describes what step 4's
+    // action will also satisfy.
+    case 2: return hasTemplates
+      ? { label: 'Schedule' }
+      : { href: '/templates/new', label: 'Create template' }
+    case 3: return { href: term ? `/surveys/push?term=${term.id}` : undefined, label: 'Schedule' }
+    default: return { label: 'Set up term' }
+  }
+}
+
+/** Full step cards (label + description + a real CTA), not a bare
+ *  icon+label line — restored after the compact version dropped both the
+ *  description and every non-active step's action (Romit, 2026-09-02: "the
+ *  earlier stepper UI was better, but needed a better call to action for
+ *  each step"). The active step's card IS the "what do I do next" headline
+ *  (tinted, with `action`'s own button inside it) rather than a separate
+ *  block above the list — that separate block used to duplicate whatever
+ *  the active step already said, one of three places the same action could
+ *  appear on screen at once (caught live on `acc-noroster`: "Schedule" shown
+ *  in a standalone headline, in the checklist, and in the row list below,
+ *  all for the same click). */
+function TermSetupChecklist({
+  done, action, term, hasTemplates, compact,
+}: {
+  done: boolean[]
+  action: TermNextAction
+  term: ProgramTerm | null
+  hasTemplates: boolean
+  /** Set at the embedded `LiveTermCard` call site — the header text there is
+   *  a smaller sub-heading (`text-sm`) since `TermCardShell`'s own term
+   *  name/badge above it is already the card's primary heading; the
+   *  standalone-card call site uses the larger default. Always split
+   *  title-left / progress-right either way (Romit, 2026-09-02: "title
+   *  progress bar and 1 to 4 setup together but split" — every call site
+   *  gets the same header shape now, not just the standalone one). */
+  compact?: boolean
+}) {
+  const current = done.filter(Boolean).length
+  const activeIdx = ONBOARDING_STAGE_STEP[action.stage] ?? current
+  const progress = (
+    <div className="flex items-center gap-2">
+      <ProgressCell value={current} max={FIRST_TERM_STEPS.length} tone="brand" label={false} className="w-full max-w-[160px]" />
+      <p className="whitespace-nowrap text-xs text-muted-foreground">{current} of {FIRST_TERM_STEPS.length} set up</p>
+    </div>
+  )
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className={compact ? 'text-sm font-semibold text-foreground' : 'font-heading text-lg font-semibold text-foreground'}>
+          Getting started
+        </p>
+        {progress}
+      </div>
+      <div className="flex flex-col gap-2">
+        {FIRST_TERM_STEPS.map((step, idx) => {
+          // NOT `resolveStepStatus(idx, activeIdx, ...)` — that DS helper
+          // assumes a linear wizard where every step before `current` is
+          // done (`index < current`), which is wrong here: `activeIdx` comes
+          // from `nextTermAction`'s priority stage, not "the next undone
+          // step in order", so a step can sit BEFORE the active one and
+          // still be incomplete (e.g. `not-configured` maps to step 4 while
+          // step 3 "First survey" is still outstanding — confirmed live
+          // 2026-09-02, "First survey" rendered a false checkmark). Real
+          // completion comes only from `done[idx]`.
+          const status = done[idx] ? 'completed' : idx === activeIdx ? 'current' : 'upcoming'
+          const isActive = idx === activeIdx
+          // A step earns its own button once its prerequisite is done — its
+          // route exists regardless, but surfacing it before that reads as
+          // premature (e.g. "Schedule evaluations" before any courses are
+          // connected). Real data completes steps in order (see the
+          // `onboardingDone` comment on why step 4 can't be true without
+          // step 3), so this is never blocked by anything but real state.
+          const reachable = idx === 0 || done[idx - 1]
+          const other = stepCta(idx, term, hasTemplates)
+          const ctaLabel = isActive ? action.label : other.label
+          const ctaHref = isActive ? action.href : other.href
+          const ctaExternal = isActive ? action.external : other.external
+          return (
+            <div
+              key={step.id}
+              aria-current={isActive ? 'step' : undefined}
+              className={`flex flex-col gap-2 rounded-lg border p-3 ${isActive ? 'border-brand bg-brand-tint' : 'border-border'}`}
+            >
+              <div className="flex items-start gap-2.5">
+                <div className={wizardMarkerClass(isActive ? 'completed' : status, 'numbered')}>
+                  {status === 'completed' ? (
+                    <i className="fa-solid fa-check text-sm text-brand-foreground" aria-hidden="true" />
+                  ) : (
+                    <span className={isActive ? 'tabular-nums text-brand-foreground' : 'tabular-nums'}>{idx + 1}</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  {/* Same light-mode-contrast fix as the former standalone
+                      strip — `wizardLabelClass`'s "completed" branch is
+                      `text-brand`, which fails 4.5:1 in light mode (confirmed
+                      live via axe). */}
+                  <p className={status === 'completed' || isActive ? 'text-sm font-medium text-foreground' : wizardLabelClass(status)}>
+                    {step.label}
+                  </p>
+                  {status !== 'completed' && (
+                    <p className="text-xs text-muted-foreground">{isActive ? action.why : step.description}</p>
+                  )}
+                </div>
+              </div>
+              {/* The active step's button is never gated by `reachable` —
+                  `nextTermAction` already decided it's the real, currently-
+                  actionable priority (that's what "active" means), which
+                  can disagree with the naive "previous step must be done
+                  first" heuristic: e.g. `not-configured` maps to step 4
+                  while step 3 isn't done yet, because this app's push flow
+                  creates AND schedules a survey in one action — they're
+                  fulfilled together, not strictly in sequence. Confirmed
+                  live 2026-09-02 on `acc-noroster`: the gate suppressed the
+                  ONLY button on the page, leaving no way to act at all.
+                  `reachable` still gates the OTHER, secondary steps' buttons. */}
+              {status !== 'completed' && (isActive || (reachable && ctaHref)) && (
+                <div className="ms-9 w-fit">
+                  <LedgerAction
+                    href={ctaHref}
+                    external={ctaExternal}
+                    onClick={isActive ? action.onClick : undefined}
+                    filled={isActive}
+                    primary={!isActive}
+                  >
+                    {ctaLabel}
+                  </LedgerAction>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** Operations "Live term" card — the reference's flat course/evaluation
+ *  line-item list, built from the SAME real breakdown buckets
+ *  `CurrentTermCard` uses (never the reference's literal counts). */
+function LiveTermCard({
+  snap, breakdown, hasTemplates, onboarding,
+}: {
+  snap: TermSnapshot
+  breakdown: CourseBreakdown | null
+  hasTemplates: boolean
+  /** Only the ONE current-term card `nextTermAction`'s onboarding scope
+   *  actually points at gets this (see `OperationsDashboardBody`) — the
+   *  compact 4-step checklist beneath the headline below, shown only while
+   *  setup is incomplete. Every card gets the headline itself regardless
+   *  (computed locally from its own `action`, not this prop) — "what do I
+   *  do next" shouldn't go quiet just because initial setup finished
+   *  (Romit, 2026-09-02: "nor it is showing for last term or current term
+   *  any action that the user needs to do"). */
+  onboarding?: { done: boolean[] } | null
+}) {
+  const { term } = snap
+  const b = breakdown
+  /* Not-configured and Draft used to share one "Not set up" row/count
+     (`notConfiguredCount + draft.length`) — collapsed two structurally
+     different buckets (never touched vs. saved-but-unfinished) into one,
+     which also meant a term with real draft surveys never got the
+     reference's "Draft → Finish" row at all (caught live 2026-09-02, every
+     row this card could show was checked against the real breakdown data).
+     Split back into their own rows/counts below. */
+  const notConfiguredCount = b ? b.notConfiguredCount : 0
+  const atRisk = b ? liveAtRiskCodes(b.live) : new Set<string>()
+  const win = evalWindow(term)
+  const workspaceHref = (tab: 'active' | 'finished') => `/course-evaluation/term/${term.id}?tab=${tab}`
+  /* One shared model decides which row is "the next thing to do" — the same
+     `nextTermAction` the Getting Started strip reads, so the two surfaces
+     never point at different rows (previously the not-configured row was
+     unconditionally `filled`, even when e.g. a live course was already
+     falling behind target and needed a reminder more urgently). */
+  const action = nextTermAction(snap, b, { hasTemplates })
+  const isPrimary = (stage: TermSetupStage) => action.stage === stage
+
+  return (
+    <TermCardShell
+      term={term}
+      position="current"
+      metaTrailing={`Eval window ${win.open.replace(/, \d{4}$/, '')} – ${win.close}`}
+      footer={
+        <>
+          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {b ? `${plural(b.totalCourses, 'course')} in this term` : `${snap.total} evaluations`}
+          </p>
+          <ViewDetailsLink term={term} />
+        </>
+      }
+    >
+      {/* The merged "what do I do next" section — was a separate floating
+          "Getting started" card above this one, disconnected from the row
+          list it was pointing at (Romit, 2026-09-02: "the individual card
+          for getting started is not merged with current term").
+          While setup is incomplete, the checklist itself IS this section —
+          the active step's own card carries the headline + button.
+          Once setup is done, this renders NOTHING — a standalone "Next: X"
+          headline used to repeat here, duplicating the exact same label,
+          description, and filled button the row list already shows on its
+          one primary row (Romit, 2026-09-02, pointing at that headline:
+          "remove this" — the row list's own filled action + per-row
+          description already say what to do and why, once every row has
+          both, which they didn't when this headline was first added). */}
+      {onboarding && !onboarding.done.every(Boolean) && (
+        <div className="border-b border-border pb-4">
+          <TermSetupChecklist done={onboarding.done} action={action} term={term} hasTemplates={hasTemplates} compact />
+        </div>
+      )}
+      {/* The row list below is suppressed while the checklist above is
+          showing — for every account where setup is genuinely incomplete,
+          the row list would just restate whichever single bucket the active
+          step already names (confirmed live 2026-09-02 on `acc-noroster`:
+          the "Schedule" action appeared a third time here, identical to the
+          checklist's own step 4). Mixed-bucket terms only reach this state
+          once onboarding is already complete (having several buckets at
+          once implies surveys exist in more than one stage, which is enough
+          to satisfy all 4 checklist steps — verified against `acc-case4`),
+          so the row list never has real information to add while the
+          checklist is still visible. */}
+      {(!onboarding || onboarding.done.every(Boolean)) && (!b ? (
+        <Ledger
+          rows={
+            <OperationsRow
+              countLabel="0 course offerings"
+              description="No courses have been connected from Prism yet."
+              courseCodes={[]}
+              tint={LIST_HUB_STATUS_TINT_NEUTRAL}
+              tintLabel="Not synced"
+              icon="fa-graduation-cap"
+              action={<LedgerAction href={prismCoursesHref()} external primary>Add courses</LedgerAction>}
+            />
+          }
+        />
+      ) : (
+        <Ledger
+          rows={
+            <>
+              {/* No templates exist yet — the real blocker for an account
+                  like "Prairie DPT," which otherwise looked identical to a
+                  plain "not scheduled" term and offered the wrong action
+                  (caught live 2026-09-02: same as `CurrentTermCard`'s own
+                  `noTemplates` row on the Ledger layout, ported here since
+                  Operations never had it). */}
+              {!hasTemplates && (
+                <OperationsRow
+                  countLabel="0 templates"
+                  description="No survey template exists yet, so nothing can go out to courses."
+                  courseCodes={[]}
+                  tint={LIST_HUB_STATUS_TINT_NEUTRAL}
+                  tintLabel="No template"
+                  icon="fa-file-lines"
+                  action={<LedgerAction href="/templates/new" filled={isPrimary('no-template')} primary>Create template</LedgerAction>}
+                />
+              )}
+              {/* Every row's count is in COURSES, never "evaluations" — a row
+                  is fundamentally "N of my courses are at stage X," and the
+                  previous per-bucket noun swap (courses here, evaluations
+                  everywhere else) read as an unexplained inconsistency
+                  (Romit, 2026-09-02: "this is not understood, especially the
+                  content"). The count is also now a real popover naming
+                  which course(s), not an anonymous number. */}
+              {notConfiguredCount > 0 && (
+                <OperationsRow
+                  countLabel={plural(notConfiguredCount, 'course')}
+                  description="Hasn't been scheduled for evaluation yet."
+                  courseCodes={b.notConfiguredCodes}
+                  tint={LIST_HUB_STATUS_TINT_NEUTRAL}
+                  tintLabel="Not set up"
+                  icon="fa-list-check"
+                  action={<LedgerAction href={`/surveys/push?term=${term.id}`} filled={isPrimary('not-configured')} primary>Schedule</LedgerAction>}
+                />
+              )}
+              {b.draft.length > 0 && (
+                <OperationsRow
+                  countLabel={plural(b.draft.length, 'course')}
+                  description="Evaluation started but not yet sent to students or faculty."
+                  courseCodes={b.draft.map((s) => s.courseCode)}
+                  tint={LIST_HUB_STATUS_TINT_NEUTRAL}
+                  tintLabel="Draft"
+                  icon="fa-pen"
+                  action={<LedgerAction href={`/surveys/push?term=${term.id}`} filled={isPrimary('drafts')} primary>Finish</LedgerAction>}
+                />
+              )}
+              {b.scheduled.length > 0 && (
+                <OperationsRow
+                  countLabel={plural(b.scheduled.length, 'course')}
+                  description="Evaluation window is set but hasn't opened yet."
+                  courseCodes={b.scheduled.map((s) => s.courseCode)}
+                  tint={LIST_HUB_STATUS_TINT_PLANNED}
+                  tintLabel="Scheduled"
+                  icon="fa-calendar"
+                  action={<LedgerAction href={workspaceHref('active')} filled={isPrimary('scheduled')} primary>Update</LedgerAction>}
+                />
+              )}
+              {b.live.length > 0 && (
+                <OperationsRow
+                  countLabel={plural(b.live.length, 'course')}
+                  description={atRisk.size > 0 ? 'Collecting now, but response rate is falling behind target.' : 'Currently collecting responses.'}
+                  courseCodes={b.live.map((s) => s.courseCode)}
+                  tint={LIST_HUB_STATUS_TINT_SUCCESS}
+                  tintLabel="Live"
+                  icon="fa-bolt"
+                  warningLabel={atRisk.size > 0 ? 'Low response' : undefined}
+                  action={<LedgerAction href={`/surveys/remind?from=term:${term.id}`} filled={isPrimary('live-at-risk')} primary>Remind</LedgerAction>}
+                />
+              )}
+              {b.closed.length > 0 && (
+                <OperationsRow
+                  countLabel={plural(b.closed.length, 'course')}
+                  description="Collection has ended — ready for review."
+                  courseCodes={b.closed.map((s) => s.courseCode)}
+                  tint={LIST_HUB_STATUS_TINT_COMPLETED}
+                  tintLabel="Closed"
+                  icon="fa-check"
+                  action={<LedgerAction href={workspaceHref('finished')} filled={isPrimary('awaiting-review') || isPrimary('released')} primary>Review</LedgerAction>}
+                />
+              )}
+            </>
+          }
+        />
+      ))}
+    </TermCardShell>
+  )
+}
+
+/** Operations "Last closed term" card — a 3-stat panel (response rate /
+ *  course avg / faculty avg, each with a real delta vs the prior term in
+ *  `termSeries()`) instead of the Ledger design's rail+bucket-row anatomy.
+ *
+ *  No `StatementGauge` floor/target bullet under the response-rate stat —
+ *  the reference (exxat-surveys-24f.pages.dev) has no such element on this
+ *  card, plain number + trend-arrow delta only (confirmed live, Romit
+ *  2026-09-02: "the progress bar for last term isn't something which is
+ *  shown in the link"). The Ledger design's `LastTermCard` and the terms
+ *  table's `ResponseProgressCell` still carry the floor/target logic where
+ *  it has a real reference counterpart — only this card's copy of it is
+ *  removed, not the underlying threshold model in `pce-at-risk.ts`. */
+function LastClosedTermCard({
+  snap,
+  breakdown,
+  series,
+}: {
+  snap: TermSnapshot
+  breakdown: CourseBreakdown | null
+  series: TermSeriesPoint[]
+}) {
+  const { term } = snap
+  const b = breakdown
+  const closedRate = b ? weightedRate(b.closed) : null
+  const neverWentOut = b ? b.notConfiguredCount + b.draft.length + b.scheduled.length : 0
+  const stillLive = b ? b.live.length : 0
+  const stragglerCount = neverWentOut + stillLive
+
+  const idx = series.findIndex((s) => s.term === term.name)
+  const current = idx >= 0 ? series[idx] : null
+  const prior = idx > 0 ? series[idx - 1] : null
+
+  function deltaOf(curr: number | null | undefined, prev: number | null | undefined) {
+    if (curr == null || prev == null) return null
+    const d = Math.round((curr - prev) * 100) / 100
+    if (d === 0) return { text: 'No change vs prior term', color: undefined as string | undefined, icon: undefined as string | undefined }
+    return {
+      text: `${d > 0 ? '+' : ''}${d} vs prior term`,
+      color: d < 0 ? LIST_HUB_STATUS_TINT_WARNING.fg : undefined,
+      icon: d > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down',
+    }
+  }
+  const rateDelta = deltaOf(closedRate, prior?.responseRate ?? null)
+  const courseDelta = deltaOf(current?.courseAvg ?? null, prior?.courseAvg ?? null)
+  const facultyDelta = deltaOf(current?.facultyAvg ?? null, prior?.facultyAvg ?? null)
+
+  return (
+    <TermCardShell
+      term={term}
+      position="last"
+      metaTrailing={term.startDate && term.endDate ? fmtRange(term.startDate, term.endDate) : undefined}
+      footer={
+        <>
+          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {b ? `${plural(b.totalCourses, 'course')} in this term` : `${snap.total} evaluations`}
+          </p>
+          <ViewDetailsLink
+            term={term}
+            label="View analytics"
+            href={`/analytics?tab=term&term=${encodeURIComponent(term.name)}`}
+          />
+        </>
+      }
+    >
+      {!b ? (
+        <p className="text-sm text-muted-foreground">No course offerings synced for this term.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-4">
+            <StatementHero
+              label="Response rate"
+              value={closedRate != null ? `${closedRate}` : '—'}
+              unit={closedRate != null ? '%' : undefined}
+              annotation={rateDelta?.text}
+              annotationColor={rateDelta?.color}
+              annotationIcon={rateDelta?.icon}
+              size="md"
+              serif={false}
+            />
+            <StatementHero
+              label="Course avg"
+              value={current?.courseAvg != null ? `${current.courseAvg}` : '—'}
+              annotation={courseDelta?.text}
+              annotationColor={courseDelta?.color}
+              annotationIcon={courseDelta?.icon}
+              size="md"
+              serif={false}
+            />
+            <StatementHero
+              label="Faculty avg"
+              value={current?.facultyAvg != null ? `${current.facultyAvg}` : '—'}
+              annotation={facultyDelta?.text}
+              annotationColor={facultyDelta?.color}
+              annotationIcon={facultyDelta?.icon}
+              size="md"
+              serif={false}
+            />
+          </div>
+          {stragglerCount > 0 && (
+            <LocalBanner variant="warning" title="Needs attention">
+              {[
+                neverWentOut > 0 ? `${plural(neverWentOut, 'course')} never went out` : null,
+                stillLive > 0 ? `${plural(stillLive, 'course')} still collecting` : null,
+              ].filter(Boolean).join(' and ')} past this term's end.
+            </LocalBanner>
+          )}
+          {/* Reference has 3 actions here (View analytics filled, Export
+              summary + View details outline) — this card only had one, a
+              bare text link in the footer (`ViewDetailsLink`, still there
+              below, shared across every term card so left alone). "Export
+              summary" has no existing summary-export feature anywhere in
+              this codebase to link to (the one real export flow, results/
+              [id]'s `ExportDrawer`, is survey-level, not term-level) — wired
+              to the browser print dialog rather than a fabricated route;
+              real backend export is a separate feature to build, not a UI fix. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="default" size="sm" asChild>
+              <Link href={`/analytics?tab=term&term=${encodeURIComponent(term.name)}`}>View analytics</Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              Export summary
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/course-evaluation/term/${term.id}`}>View details</Link>
+            </Button>
+          </div>
+        </>
+      )}
+    </TermCardShell>
+  )
+}
+
+/** The reference-design (exxat-surveys-24f.pages.dev) populated dashboard —
+ *  program-wide KPI band, a Live-term / Last-closed-term pair (no Upcoming
+ *  column — dropped 2026-08-25, not reintroduced), a response-rate trend,
+ *  and the same shared Term history tables. All figures are real, derived
+ *  from the active demo account's own `ordered`/`ce` — never
+ *  `programSummary()`/`termSeries()` called bare, which read the GLOBAL
+ *  `MOCK_SURVEYS`/`MOCK_FACULTY_OFFERINGS` constants unconditionally and
+ *  never varied by account (caught live 2026-09-02: a zero-term "Riverside
+ *  DPT" account still reported "9 of 18 faculty below threshold" and a
+ *  5-term chart history — acc-healthy's own numbers, leaked into every
+ *  other account). See the two-gate model just below for the per-term
+ *  version of that fix. */
+function OperationsDashboardBody({
+  currentSnaps, lastSnaps, breakdownForSnap, onAdd, ce, ordered, positions, lastTerms, templates,
+  onboardingDone, stepAction, onboardingScopeTermId,
+}: DashboardBodyBaseProps & {
+  /** The same per-step completion + "what's next" model `DashboardHomeInner`
+   *  computes once and used to feed a separate floating "Getting started"
+   *  card above this whole body — now threaded down into whichever
+   *  `LiveTermCard` `onboardingScopeTermId` actually points at, so the
+   *  checklist lives inside the term card it's about instead of a card of
+   *  its own (Romit, 2026-09-02). */
+  onboardingDone: boolean[]
+  stepAction: TermNextAction
+  onboardingScopeTermId: string | null
+}) {
+  const hasTemplates = templates.length > 0
+  // Resolved from `ordered` (this body's own full term list) rather than
+  // threaded down as a separate prop — needed by the zero-current/zero-last
+  // fallback branch below, where there's no `LiveTermCard` to read a real
+  // `ProgramTerm` off of for the checklist's per-step (non-active) hrefs.
+  const onboardingTerm = ordered.find((t) => t.id === onboardingScopeTermId) ?? null
+
+  /* Course/faculty AVERAGE SCORES have no per-account data model at all —
+   * the demo-account fixtures (`pce-demo-accounts.ts`) model survey/offering
+   * *workflow* state (draft/scheduled/live/closed) for Cases 1-9, never
+   * score distributions; every score number `programSummary()`/`termSeries()`
+   * can produce still comes from the one legacy `MOCK_FACULTY_OFFERINGS`
+   * dataset that only `acc-healthy`'s terms happen to reuse (by literally
+   * being built from `MOCK_PROGRAM_TERMS`).
+   *
+   * Two gates, evaluated PER TERM (the prior version gated the whole
+   * ACCOUNT — `ordered.every(...)` — which is what let two zero-survey
+   * accounts slip through: `acc-upcoming-only`'s one term is literally
+   * `{...FALL26}`, keeping FALL26's own `pt5` id, and `acc-notemplates`'
+   * terms are the real `pt1`/`pt5` objects, so both passed the id check
+   * despite having zero surveys of their own — showing Johns Hopkins'
+   * numbers on both. Caught live 2026-09-02):
+   *   1. STATE gate — has this term actually had a survey finish
+   *      (`termHasFinishedSurveys`)? Nothing closed → nothing to score,
+   *      full stop, regardless of setup progress otherwise.
+   *   2. PROVENANCE gate — is this literally one of `MOCK_PROGRAM_TERMS`'
+   *      own term objects (by id)? That's the prototype's stand-in for "the
+   *      analytics warehouse has rows for this term" — Cases 4-9 build
+   *      their OWN term objects (`case4-term`, etc., same NAME as a real
+   *      term but a different id) specifically so a name-based check would
+   *      wrongly borrow Johns Hopkins' same-named term's scores; id is the
+   *      one thing that actually identifies "the same term the global mock
+   *      was built from," not a coincidental name match.
+   *  A term needs BOTH to contribute a real score — one gate answers "is
+   *  there anything to show yet," the other "do we have that data at all,"
+   *  and the KPI copy below cites whichever one actually failed. */
+  const finishedTermIds = useMemo(
+    () => new Set(ordered.filter((t) => termHasFinishedSurveys(t, ce)).map((t) => t.id)),
+    [ordered, ce],
+  )
+  const scoredTermIds = useMemo(
+    () => new Set([...finishedTermIds].filter((id) => MOCK_PROGRAM_TERMS.some((mt) => mt.id === id))),
+    [finishedTermIds],
+  )
+  const hasFinished = finishedTermIds.size > 0
+  const hasScores = scoredTermIds.size > 0
+  const globalSeries = useMemo(() => (hasScores ? termSeries() : []), [hasScores])
+  const globalSummary = useMemo(() => (hasScores ? programSummary() : null), [hasScores])
+
+  /* Response rate (+ its raw enrolled/responded/course counts) is rebuilt
+   * from the SAME `snapshot()`/`weightedRate()` the term cards and history
+   * table already use — never `termSeries()`'s own enrolled/responded sum,
+   * which disagreed with the card/table on the same term (the concrete bug:
+   * `termSeries()` reported Spring 2025 at 69%, where `snapshot()` — the
+   * number actually shown on the card and table — is 74%, because
+   * `weightedRate` excludes draft/scheduled surveys' 0% placeholder rate and
+   * `termSeries()` doesn't). This part applies to every account, scored or
+   * not — it's real survey data, not a borrowed score. */
+  const series: TermSeriesPoint[] = useMemo(
+    () =>
+      ordered.map((t) => {
+        const snap = snapshot(t, ce)
+        // Per-term gate, not just the account-level `hasScores` that decides
+        // whether `globalSeries` is populated at all — a name match alone
+        // (`gs.term === t.name`) is exactly how Cases 4-9 would otherwise
+        // borrow Johns Hopkins' same-named "Fall 2026" scores despite being
+        // a different term with no score data of its own.
+        const g = scoredTermIds.has(t.id) ? globalSeries.find((gs) => gs.term === t.name) : undefined
+        return {
+          term: t.name,
+          short: shortTerm(t.name),
+          year: termToYear(t.name),
+          courseAvg: g?.courseAvg ?? null,
+          facultyAvg: g?.facultyAvg ?? null,
+          responseRate: snap.rate,
+          enrolled: snap.enrollmentCount,
+          responded: snap.responseCount,
+          courses: snap.coverage?.total ?? 0,
+        }
+      }),
+    [ordered, ce, globalSeries],
+  )
+  const summary = globalSummary
+  /** Feeds the Other-terms table's Course avg / Faculty avg columns —
+   *  same `series` computed above, just keyed for lookup by term name. */
+  const scoreByTermName = useMemo(
+    () => new Map(series.map((s) => [s.term, { courseAvg: s.courseAvg, facultyAvg: s.facultyAvg }])),
+    [series],
+  )
+
+  const needsSetupTotal = useMemo(
+    () =>
+      currentSnaps.reduce((sum, s) => {
+        const b = breakdownForSnap(s)
+        return sum + (b ? b.notConfiguredCount + b.draft.length : 0)
+      }, 0),
+    [currentSnaps, breakdownForSnap],
+  )
+
+  const primaryCurrent = currentSnaps[0] ?? null
+  const primaryBreakdown = primaryCurrent ? breakdownForSnap(primaryCurrent) : null
+  const primaryLastBreakdown = lastSnaps[0] ? breakdownForSnap(lastSnaps[0]) : null
+  const primaryLastClosedRate = primaryLastBreakdown ? weightedRate(primaryLastBreakdown.closed) : null
+  const rateDiff =
+    primaryCurrent?.rate != null && primaryLastClosedRate != null ? primaryCurrent.rate - primaryLastClosedRate : null
+  const hasOpened = primaryCurrent?.rate != null
+
+  // Score-tile fail copy is STATE-shaped ("no results yet"/"not published"),
+  // never ACCOUNT-shaped ("for this account") — the old copy implied the
+  // gap was about which account was picked, when it's really about which
+  // stage this term's own evaluations are at (Romit, 2026-09-02: "metrics
+  // doesn't make sense until the complete setup is done"). Two distinct
+  // failure copies because they're two distinct facts: nothing has closed
+  // yet (state gate) vs. something closed but no score data exists for it
+  // (provenance gate) — collapsing them into one sentence would hide which
+  // one is actually true for e.g. Brightwater OT (Case 4, has a closed
+  // survey, still shows "—" only because of the second gate).
+  const scoreFailCopy = (noun: 'course' | 'faculty') =>
+    hasFinished
+      ? 'Scores not published for these terms yet'
+      : `No results yet — ${noun === 'course' ? 'course' : 'faculty'} scores appear once evaluations close`
+
+  const kpis: MetricItem[] = [
+    {
+      id: 'needs-setup',
+      label: 'Needs setup',
+      value: primaryBreakdown ? needsSetupTotal : '—',
+      href: primaryBreakdown ? `/surveys/push?term=${primaryCurrent!.term.id}` : undefined,
+      delta: '',
+      trend: 'neutral',
+      description: !primaryCurrent
+        ? 'No active term'
+        : !primaryBreakdown
+          ? 'No course offerings connected yet'
+          : needsSetupTotal === 0
+            ? 'All courses scheduled'
+            : currentSnaps.length > 1
+              ? `Across ${plural(currentSnaps.length, 'active term')}`
+              : 'Courses without a scheduled window',
+      /* No `alert` prop here — the DS's `alert: 'warning'` tile styling fails
+         WCAG contrast (2.99:1 on the tinted background vs the required
+         4.5:1), confirmed live via axe; the value + description already
+         carry the signal without relying on a failing DS affordance. Flag to
+         Himanshu: KeyMetrics' warning-alert text color needs a token fix
+         before any product surface can use it.
+         Also flag: `MetricCell` renders no trailing chevron for the `href`
+         case (the reference shows one) — link-ness is hover-only today;
+         forking the DS component for one affordance isn't worth it here. */
+    },
+    {
+      id: 'response-rate',
+      label: 'Response rate',
+      value: hasOpened ? `${primaryCurrent!.rate}%` : '—',
+      href: hasOpened ? `/course-evaluation/term/${primaryCurrent!.term.id}?tab=active` : undefined,
+      delta: rateDiff != null ? `${rateDiff > 0 ? '+' : ''}${rateDiff}` : '',
+      trend: rateDiff == null ? 'neutral' : rateDiff > 0 ? 'up' : rateDiff < 0 ? 'down' : 'neutral',
+      description: !primaryCurrent
+        ? 'No live term right now'
+        : hasOpened
+          ? `${primaryCurrent.term.name} · vs last closed term`
+          : `${primaryCurrent.term.name} · nothing collecting yet`,
+    },
+    {
+      id: 'courses-below',
+      label: 'Courses below threshold',
+      value: summary ? summary.coursesBelowThreshold : '—',
+      href: summary ? '/analytics?tab=course' : undefined,
+      delta: '',
+      trend: 'neutral',
+      description: summary
+        ? `Of ${summary.courseCount} scored, below the ${summary.courseMedian} median`
+        : scoreFailCopy('course'),
+    },
+    {
+      id: 'faculty-below',
+      label: 'Faculty below threshold',
+      value: summary ? summary.facultyBelowThreshold : '—',
+      href: summary ? '/analytics?tab=faculty' : undefined,
+      delta: '',
+      trend: 'neutral',
+      description: summary
+        ? `Of ${summary.facultyCount} scored, below the ${summary.facultyMedian} median`
+        : scoreFailCopy('faculty'),
+    },
+  ]
+
+  /* Real Leo insight (see `ChartLeoPlotInsightOverlay` in
+     `analytics-plots.tsx`), modeled on `analytics-panels.tsx`'s
+     `responseTrendLeo` for the same "terms vs target" question — replaces
+     the chart's former hand-rolled callout entirely. `anchor.xValue` must be
+     the exact axis-tick text (`dashboardTrendLabel`), since the overlay
+     resolves position by tick textContent match, not by raw term name. */
+  const trendLeo: ChartLeoInsight | null = useMemo(() => {
+    const pts = series.filter((s) => s.responseRate != null)
+    if (pts.length < 2) return null
+    const rates = pts.map((s) => s.responseRate as number)
+    const below = rates.filter((r) => r < RESPONSE_TARGET).length
+    const lowest = Math.min(...rates)
+    const trough = pts[rates.indexOf(lowest)]!
+    const last = rates[rates.length - 1]!
+    const recovered = lowest < last - 4
+    return {
+      headline: `${below} of ${pts.length} terms came in under the ${RESPONSE_TARGET}% target`,
+      explanation: recovered
+        ? `Collection bottomed out at ${lowest}% in ${trough.term} and has climbed to ${last}% since. A single delta would hide the dip — a drop-and-recovery and a flat line produce the same number.`
+        : `Collection runs to ${last}%, with the low at ${lowest}% in ${trough.term}. Read the path: the target is what a rate means, not the rate on its own.`,
+      kind: below > 0 ? 'dip' : 'trend',
+      delta: { value: `${lowest}%`, label: `low · ${trough.term}` },
+      bullets: [
+        `Latest ${last}% · low ${lowest}% (${trough.term}) · target ${RESPONSE_TARGET}%.`,
+        `${below} of ${pts.length} terms below target.`,
+      ],
+      anchor: { xValue: dashboardTrendLabel(trough.term), yValue: lowest },
+    }
+  }, [series])
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h2 className="sr-only">Program status</h2>
+      {/* KPI band + trend chart both stay hidden until at least one term
+          exists at all (`ordered.length === 0` — a genuinely first-time
+          account, e.g. `acc-fresh`) — every tile/chart would read nothing
+          but dashes and "no results yet" copy, which is noise, not
+          information, on a screen whose only real content is "set up your
+          first term" (Romit, 2026-09-02: reference shows neither on this
+          exact state either). Once ANY term exists — even one that's
+          upcoming or has zero courses — they come back, since they start
+          reflecting real (if sparse) state at that point. */}
+      {ordered.length > 0 && (
+        /* shrink-0: the DS's `KeyMetrics variant="flat"` renders its own
+            `overflow-hidden` section, which — as a flex-column item — gets an
+            automatic min-height of 0 and silently absorbs 100% of any height
+            deficit from this page's outer flex-1 scroll chain, clipping every
+            value/delta/description to nothing (confirmed live 2026-09-02: real
+            height 194px, painted height 87px, `overflow: hidden`). shrink-0
+            here stops the deficit from ever reaching it — flag to Himanshu:
+            the DS component itself should ship this. */
+        <div className="shrink-0">
+          <KeyMetrics variant="flat" size="md" showHeader={false} metricsSingleRow metrics={kpis} />
+        </div>
+      )}
+
+      {currentSnaps.length === 0 && lastSnaps.length === 0 ? (
+        /* No current term AND no last term — e.g. a brand-new account, or
+           one whose only term is upcoming (acc-upcoming-only). Same merged
+           headline+checklist pattern `LiveTermCard` uses below, since there's
+           no term card here to embed it in yet — `NoActiveTermNotice`'s old
+           plain banner gave no checklist and no "why" at all.
+           shrink-0: the DS `Card` bakes in `overflow-hidden` (card.tsx) —
+           without this, this Card is a flex-column item in the same
+           outer flex-1 chain that clipped the KPI band earlier this
+           session (min-height:auto resolves to 0 under `overflow-hidden`,
+           so it silently absorbs the layout deficit instead of the
+           checklist steps rendering at full height). Confirmed live
+           2026-09-02: checklist steps were clipped to a 1px sliver. */
+        <div className="shrink-0">
+          <Card>
+            <CardContent className="flex flex-col gap-3 pt-6">
+              {/* Same de-duplication as `LiveTermCard`: while the checklist
+                  is showing, its own active-step card carries the headline
+                  and button — a separate "Next: X" block above it would
+                  repeat "Set up term" twice in the same small card (caught
+                  live 2026-09-02 on `acc-fresh`, the same redundancy pattern
+                  the row list had). Only falls back to the plain headline if
+                  onboarding is somehow already complete despite having no
+                  current/last term to show a real card for. */}
+              {!onboardingDone.every(Boolean) ? (
+                <TermSetupChecklist done={onboardingDone} action={stepAction} term={onboardingTerm} hasTemplates={hasTemplates} />
+              ) : (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium text-foreground">Next: {stepAction.label}</p>
+                    <p className="text-sm text-muted-foreground">{stepAction.why}</p>
+                  </div>
+                  <div className="w-fit">
+                    <LedgerAction href={stepAction.href} external={stepAction.external} onClick={stepAction.onClick} filled>
+                      {stepAction.stage === 'no-term' && <i className="fa-light fa-calendar-plus" aria-hidden="true" style={{ fontSize: 12 }} />}
+                      {stepAction.label}
+                    </LedgerAction>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-sm font-semibold text-foreground">Live term</h3>
+            {currentSnaps.length > 0 ? (
+              currentSnaps.map((s) => (
+                <LiveTermCard
+                  key={s.term.id}
+                  snap={s}
+                  breakdown={breakdownForSnap(s)}
+                  hasTemplates={hasTemplates}
+                  onboarding={s.term.id === onboardingScopeTermId ? { done: onboardingDone } : null}
+                />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="flex min-h-[160px] flex-1 items-center justify-center">
+                  <p className="text-sm text-muted-foreground">No term is collecting right now</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-sm font-semibold text-foreground">Last closed term</h3>
+            {lastSnaps.length > 0 ? (
+              lastSnaps.map((s) => (
+                <LastClosedTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} series={series} />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="flex min-h-[160px] flex-1 items-center justify-center">
+                  <p className="text-sm text-muted-foreground">No recent term to review</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {ordered.length > 0 && (
+        <ChartCard
+          variant="normal"
+          title="Response rate by term"
+          description="Closed terms and the live collection window, against this program's target."
+          leoInsight={trendLeo}
+        >
+          {series.length > 0 ? (
+            <ChartFigure
+              label="Response rate by term"
+              summary={`Response rate against the ${RESPONSE_TARGET}% target across ${series.length} terms.`}
+              dataLength={series.length}
+              leoInsight={trendLeo}
+            >
+              {() => (
+                <>
+                  <DashboardResponseTrend series={series} target={RESPONSE_TARGET} height={220} />
+                  <ChartDataTable
+                    caption="Response rate by term"
+                    headers={['Term', 'Response rate']}
+                    rows={series
+                      .filter((s) => s.responseRate != null)
+                      .map((s) => [s.term, `${s.responseRate}%`])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          ) : (
+            <p className="py-8 text-center text-sm text-muted-foreground">No term history yet.</p>
+          )}
+        </ChartCard>
+      )}
+
+      <TermHistorySection
+        ce={ce}
+        terms={ordered}
+        positions={positions}
+        shownLastId={lastTerms[0]?.id ?? null}
+        scoreByTermName={scoreByTermName}
       />
-    </>
+    </div>
   )
 }
 
 /* ── page ─────────────────────────────────────────────────────────────────── */
 
 function DashboardHomeInner() {
-  const { surveys, programTerms, templates } = usePce()
-  const [addTermOpen, setAddTermOpen] = useState(false)
+  const { surveys, programTerms, templates, addProgramTerm, updateProgramTerm, dashboardLayout } = usePce()
+  /* Same term-editor sheet as Common Settings' Academic Calendar tab (Romit,
+   * 2026-09-02: "I want the designs to remain consistent" / "replace the
+   * setup term sheet with academic year sheet") — `editingTerm` is null when
+   * closed, a `draftTerm()` placeholder when creating, or a real term when
+   * editing an existing one's dates. */
+  const [editingTerm, setEditingTerm] = useState<ProgramTerm | null>(null)
+  function saveTerm(t: ProgramTerm) {
+    if (t.id.startsWith('new-')) addProgramTerm({ ...t, id: `pt${Date.now()}` })
+    else updateProgramTerm(t.id, t)
+    setEditingTerm(null)
+  }
 
   /* Terms come from STATE (not the static mock) so a term finished in the
    * setup wizard appears here as a card immediately. */
@@ -1803,8 +3066,51 @@ function DashboardHomeInner() {
   const breakdownForSnap = (snap: TermSnapshot) => breakdownFor(snap.term, ce)
 
   /* First run = no terms at all (not merely no surveys) — a term created but
-   * not yet dated/populated still gets its own card, not the empty state. */
+   * not yet dated/populated still gets its own card, not the empty state.
+   * Only gates the header's "Set up Evaluations"/"Set up term" actions
+   * (premature with nothing to evaluate yet) — NOT whether the onboarding
+   * strip shows, see `onboardingDone` below. */
   const firstRun = programTerms.length === 0
+
+  /* Real per-step onboarding progress, derived from the same breakdown data
+   * the dashboard body already computes — never a hardcoded counter. Steps
+   * tick off individually as term/courses/survey/schedule state changes;
+   * previously `firstRun` was a hard on/off switch and the entire 4-step
+   * checklist vanished the instant one term existed, which read as "steps
+   * getting removed" rather than progress (Romit, 2026-09-02).
+   *
+   * Falls back to the nearest upcoming term when there's no current one —
+   * caught live 2026-09-02 on `acc-upcoming-only` ("Cascade Nursing"): its
+   * one term is deliberately dated in the future (demoing the Upcoming
+   * card), so `currentSnaps[0]` alone saw nothing and step 2 stayed active
+   * despite that term's courses already being connected. A term still being
+   * set up ahead of its start date is still mid-onboarding for it, not a
+   * separate case the strip should be blind to. */
+  const onboardingSnap = currentSnaps[0] ?? upcomingSnaps[0] ?? null
+  const primaryBreakdown = onboardingSnap ? breakdownForSnap(onboardingSnap) : null
+  const hasTemplates = templates.length > 0
+  const onboardingDone = useMemo(
+    () => [
+      programTerms.length > 0,
+      primaryBreakdown !== null,
+      primaryBreakdown
+        ? primaryBreakdown.draft.length + primaryBreakdown.scheduled.length + primaryBreakdown.live.length + primaryBreakdown.closed.length > 0
+        : false,
+      primaryBreakdown
+        ? primaryBreakdown.scheduled.length + primaryBreakdown.live.length + primaryBreakdown.closed.length > 0
+        : false,
+    ],
+    [programTerms.length, primaryBreakdown],
+  )
+  const onboardingComplete = onboardingDone.every(Boolean)
+  /* The one thing to do next, for whichever term onboarding is scoped to —
+     same model the Live-term card's own `filled` row uses, so the strip and
+     the card underneath it never point at different actions (Romit,
+     2026-09-02: "Getting started card isn't connected with any actions"). */
+  const stepAction = useMemo(
+    () => nextTermAction(onboardingSnap, primaryBreakdown, { hasTemplates, onAdd: () => setEditingTerm(draftTerm()) }),
+    [onboardingSnap, primaryBreakdown, hasTemplates],
+  )
 
   return (
     <div className="flex flex-col flex-1">
@@ -1822,7 +3128,7 @@ function DashboardHomeInner() {
              the empty state. Both header actions return once a term exists. */
           firstRun ? undefined : (
             <div className="flex items-center gap-2" role="group" aria-label="Dashboard actions">
-              <Button variant="outline" size="default" onClick={() => setAddTermOpen(true)}>
+              <Button variant="outline" size="default" onClick={() => setEditingTerm(draftTerm())}>
                 Set up term
               </Button>
               <Button variant="default" size="default" asChild>
@@ -1833,109 +3139,52 @@ function DashboardHomeInner() {
         }
       />
 
-      <div className="flex-1 px-7 py-4">
-        {firstRun ? (
-          <FirstRun onAdd={() => setAddTermOpen(true)} />
+      <div className="flex flex-1 flex-col gap-6 px-7 py-4">
+        {/* Operations merges this guidance directly into `LiveTermCard`
+            (Romit, 2026-09-02: "not merged with current term") — only the
+            Ledger layout, unchanged this round, still needs the standalone
+            strip. */}
+        {dashboardLayout === 'ledger' && !onboardingComplete && (
+          <OnboardingProgressStrip done={onboardingDone} action={stepAction} scopeTerm={onboardingSnap?.term ?? null} />
+        )}
+        {dashboardLayout === 'ledger' ? (
+          <LedgerDashboardBody
+            currentSnaps={currentSnaps}
+            lastSnaps={lastSnaps}
+            upcomingSnaps={upcomingSnaps}
+            templates={templates}
+            breakdownForSnap={breakdownForSnap}
+            onAdd={() => setEditingTerm(draftTerm())}
+            onEditDates={setEditingTerm}
+            ce={ce}
+            ordered={ordered}
+            positions={positions}
+            lastTerms={lastTerms}
+          />
         ) : (
-          <div className="flex flex-col gap-6">
-            {/* ── Terms kanban — Last / Current / Upcoming (Aug 19 2026 feedback:
-                 fixed left-to-right order; each column can hold more than one
-                 card). Current stays the wide hero column since it's still the
-                 working surface — it just isn't the leftmost one anymore. ── */}
-            <h2 className="sr-only">Terms</h2>
-            {/* No active term → a slim notice ONLY when there's no upcoming
-                card to convey it (the Upcoming card's badge + setup CTA already
-                say "nothing's collecting, this is next"). */}
-            {currentSnaps.length === 0 && upcomingSnaps.length === 0 && (
-              <NoActiveTermNotice onAdd={() => setAddTermOpen(true)} />
-            )}
-            {/* Each column gets an explicit grid-column line, not just source
-                order — a demo account with only a Current term (Last/Upcoming
-                both empty) left Current as the grid's ONLY child, and CSS
-                Grid auto-placement dropped it into track 1 (the narrow 1fr
-                column) instead of its intended 1.35fr hero track. Found live
-                on Brightwater OT (Case 4, single-term account): the card
-                rendered ~100px narrower than intended, which is what made
-                the footer summary + "View Details" both wrap to two lines —
-                not a text-length problem, a layout one. */}
-            {(() => {
-              const groups = [
-                lastSnaps.length > 0,
-                currentSnaps.length > 0,
-                upcomingSnaps.length > 0,
-              ].filter(Boolean).length
-              /* Exactly one populated group → center it instead of pinning it
-                 to a fixed grid track (Romit, 2026-08-26: "where there is
-                 only one term card, i want it to be central aligned" —
-                 e.g. a Current-only demo account used to sit hard in the
-                 middle track, but a Last-only or Upcoming-only one landed
-                 flush left/right instead, with two empty tracks either
-                 side). Same 1.35fr-equivalent max width as the grid's hero
-                 column, just centered via margin instead of a track. */
-              if (groups === 1) {
-                return (
-                  <div className="mx-auto flex w-full max-w-[480px] flex-col gap-4">
-                    {lastSnaps.map((s) => (
-                      <LastTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                    ))}
-                    {currentSnaps.map((s) => (
-                      <CurrentTermCard
-                        key={s.term.id}
-                        snap={s}
-                        breakdown={breakdownForSnap(s)}
-                        noTemplates={templates.length === 0}
-                      />
-                    ))}
-                    {upcomingSnaps.map((s) => (
-                      <UpcomingCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                    ))}
-                  </div>
-                )
-              }
-              return (
-                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1fr_1.35fr_1fr]">
-                  {lastSnaps.length > 0 && (
-                    <div className="flex flex-col gap-4 lg:[grid-column:1]">
-                      {lastSnaps.map((s) => (
-                        <LastTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                      ))}
-                    </div>
-                  )}
-                  {currentSnaps.length > 0 && (
-                    <div className="flex flex-col gap-4 lg:[grid-column:2]">
-                      {currentSnaps.map((s) => (
-                        <CurrentTermCard
-                          key={s.term.id}
-                          snap={s}
-                          breakdown={breakdownForSnap(s)}
-                          noTemplates={templates.length === 0}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {upcomingSnaps.length > 0 && (
-                    <div className="flex flex-col gap-4 lg:[grid-column:3]">
-                      {upcomingSnaps.map((s) => (
-                        <UpcomingCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-
-            {/* ── Term history — Past terms + Future terms, separately headed ── */}
-            <TermHistorySection
-              ce={ce}
-              terms={ordered}
-              positions={positions}
-              shownLastId={lastTerms[0]?.id ?? null}
-            />
-          </div>
+          <OperationsDashboardBody
+            currentSnaps={currentSnaps}
+            lastSnaps={lastSnaps}
+            breakdownForSnap={breakdownForSnap}
+            onAdd={() => setEditingTerm(draftTerm())}
+            onboardingDone={onboardingDone}
+            stepAction={stepAction}
+            onboardingScopeTermId={onboardingSnap?.term.id ?? null}
+            ce={ce}
+            ordered={ordered}
+            positions={positions}
+            lastTerms={lastTerms}
+            templates={templates}
+          />
         )}
       </div>
 
-      <AddTermDrawer open={addTermOpen} onOpenChange={setAddTermOpen} />
+      <TermEditorSheet
+        term={editingTerm}
+        existingYears={existingAcademicYears(programTerms)}
+        onClose={() => setEditingTerm(null)}
+        onSave={saveTerm}
+      />
     </div>
   )
 }
@@ -1948,20 +3197,246 @@ export function DashboardHome() {
   )
 }
 
-function FirstRun({ onAdd }: { onAdd: () => void }) {
+/** Getting-started task list — what "set up your first term" actually
+ *  decomposes into. Copy/order unchanged from the original full-page
+ *  version (Romit, 2026-09-01 image ref). Chrome mapped to this file's
+ *  existing DS Card + the DS Wizard's own status→style functions
+ *  (`resolveStepStatus`/`wizardMarkerClass`/`wizardLabelClass`) rather than
+ *  the full `<Wizard>` shell, which is built for paged focus-workflow
+ *  routes, not an embedded dashboard checklist. */
+const FIRST_TERM_STEPS: WizardStep[] = [
+  {
+    id: 'term',
+    label: 'Set up your first term',
+    description: 'Add term dates and academic year so evaluations can be scoped to the right window.',
+  },
+  {
+    id: 'courses',
+    label: 'Connect course offerings',
+    description: 'Select courses that will receive student and faculty evaluations.',
+  },
+  {
+    id: 'survey',
+    label: 'First survey',
+    description: 'Import an evaluation template or create the first survey for this term.',
+  },
+  {
+    id: 'schedule',
+    label: 'Schedule evaluations',
+    description: 'Set open dates for each course before collection starts.',
+  },
+]
+
+/** Per-browser "user collapsed the checklist" preference — independent of
+ *  step completion, so manually hiding it mid-progress doesn't force it
+ *  back open on the next visit. Mirrors the restore-post-mount pattern
+ *  `pce-state.tsx` already uses for `dashboardLayout`/`activeAccountId`
+ *  (localStorage read deferred to an effect so SSR and first client render
+ *  agree, avoiding a hydration mismatch). */
+function useOnboardingCollapsed(): [boolean, (v: boolean) => void] {
+  const STORAGE_KEY = 'pce.onboardingStripCollapsed'
+  const [collapsed, setCollapsedState] = useState(false)
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(STORAGE_KEY) === '1') setCollapsedState(true)
+    } catch { /* ignore */ }
+  }, [])
+  function setCollapsed(v: boolean) {
+    setCollapsedState(v)
+    try { window.localStorage.setItem(STORAGE_KEY, v ? '1' : '0') } catch { /* ignore */ }
+  }
+  return [collapsed, setCollapsed]
+}
+
+/** Which checklist step owns a given `nextTermAction` stage — only the
+ *  stages reachable while the strip is still showing (`!onboardingComplete`)
+ *  are mapped; the post-onboarding stages (`live-*`, `scheduled`,
+ *  `awaiting-review`, `released`) can't occur here, since all 4 booleans
+ *  being true is exactly what hides the strip. */
+const ONBOARDING_STAGE_STEP: Partial<Record<TermSetupStage, number>> = {
+  'no-term': 0,
+  'no-courses': 1,
+  'no-template': 2,
+  // 'not-configured' means the courses have no evaluation SCHEDULED at all —
+  // that's step 4 ("Schedule evaluations"), not step 3 ("First survey").
+  // Previously mapped to 2: harmless when both steps happen to be
+  // incomplete together (the common case — no surveys yet at all, so
+  // neither "a survey exists" nor "one is scheduled" is true), but it made
+  // the checklist highlight "First survey" while the headline/button both
+  // said "Schedule" — confusing on `acc-noroster`, caught live 2026-09-02.
+  'not-configured': 3,
+  drafts: 3,
+}
+
+/** Getting-started strip — coexists with the real dashboard body instead of
+ *  a full-page takeover. `done` is real per-step completion (see
+ *  `onboardingDone` in `DashboardHomeInner`), so steps tick off one at a
+ *  time as term/courses/survey/schedule data actually changes; the parent
+ *  only renders this at all while at least one step is outstanding, so
+ *  there's no separate "fully onboarded" branch to draw here.
+ *
+ *  `action`/`scopeTerm` connect the checklist to a REAL destination — the
+ *  same route the Live-term card's own row for that stage already uses
+ *  (`nextTermAction`, `lib/pce-term-metrics.ts`). Previously only step 1 had
+ *  a button; steps 2-4 were static text on the theory that "the real action
+ *  already lives in the dashboard body below" — true, but nothing told the
+ *  reader WHERE below, which is exactly what read as "not connected to any
+ *  actions" (Romit, 2026-09-02). Reusing the card's own href here (rather
+ *  than inventing a scroll-to/highlight interaction this app has no
+ *  precedent for anywhere) means two entry points to one action, the same
+ *  relationship step 1's button already has with the page header's own
+ *  "Set up term" button. */
+function OnboardingProgressStrip({
+  done, action, scopeTerm,
+}: {
+  done: boolean[]
+  action: TermNextAction
+  scopeTerm: ProgramTerm | null
+}) {
+  const [collapsed, setCollapsed] = useOnboardingCollapsed()
+  const current = done.filter(Boolean).length
+  const activeIdx = ONBOARDING_STAGE_STEP[action.stage] ?? current
+
+  if (collapsed) {
+    return (
+      <Card>
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-expanded={false}
+          className="flex w-full items-center justify-between gap-2 rounded-[inherit] px-4 py-3 text-left"
+        >
+          <span className="text-sm font-medium text-foreground">
+            Getting started{scopeTerm ? ` · ${scopeTerm.name}` : ''} · {current} of {FIRST_TERM_STEPS.length} done
+          </span>
+          <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
+        </button>
+      </Card>
+    )
+  }
+
   return (
-    <div className="flex min-h-[min(420px,60vh)] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6">
-      <i className="fa-light fa-calendar-plus text-3xl text-muted-foreground" aria-hidden="true" />
-      <div className="flex flex-col items-center gap-1">
-        <h2 className="text-sm font-medium text-foreground">No term set up yet</h2>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 340, textAlign: 'center' }}>
-          Configure a term calendar to discover its course offerings and start
-          driving evaluation response rates.
-        </p>
-      </div>
-      <Button variant="default" size="sm" onClick={onAdd}>
-        Set up term
-      </Button>
-    </div>
+    <>
+      {/* Sr-only heading keeps the document outline at h1→h2→h3 — without it
+          this Card's h3 `CardTitle` would be the first heading after the
+          page's h1, skipping a level (axe `heading-order`, caught live:
+          previously `current` was always 0 so no step ever reached
+          `completed`/this strip rendering unconditionally, so the body's own
+          `<h2 className="sr-only">Program status</h2>` was always the first
+          heading after h1 — now both render together). */}
+      <h2 className="sr-only">Getting started</h2>
+      <Card>
+      <CardHeader className="border-b">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <CardTitle className="min-w-0 font-heading text-xl font-semibold leading-tight tracking-tight">
+            Getting started
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Collapse getting-started checklist"
+            aria-expanded="true"
+            onClick={() => setCollapsed(true)}
+          >
+            <i className="fa-light fa-chevron-up" aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="mt-3 flex flex-col gap-1.5">
+          <p className="text-xs text-muted-foreground">{current} of {FIRST_TERM_STEPS.length} completed</p>
+          <ProgressCell
+            value={current}
+            max={FIRST_TERM_STEPS.length}
+            tone="brand"
+            label={false}
+            className="w-full max-w-full"
+          />
+          {/* Names which term this checklist is actually about — previously
+              the strip gave no indication of that at all (Romit, 2026-09-02:
+              "isn't showing for last term or current term any action that
+              the user needs to do"). */}
+          {scopeTerm && (
+            <p className="text-xs text-muted-foreground">
+              Setting up {scopeTerm.name} · {fmtRange(scopeTerm.startDate, scopeTerm.endDate)}
+            </p>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        {FIRST_TERM_STEPS.map((step, idx) => {
+          // NOT `resolveStepStatus(idx, activeIdx, ...)` — that DS helper
+          // marks every step before `activeIdx` "completed" by index alone
+          // (`index < current`), which is wrong once `activeIdx` comes from
+          // `nextTermAction`'s stage rather than "the next undone step in
+          // order": a step can sit before the active one and still be
+          // outstanding (confirmed live 2026-09-02 on the Operations
+          // twin of this component — "First survey" rendered a false
+          // checkmark). Real completion comes only from `done[idx]`.
+          const status = done[idx] ? 'completed' : idx === activeIdx ? 'current' : 'upcoming'
+          const isActive = idx === activeIdx
+          return (
+            <div
+              key={step.id}
+              aria-current={isActive ? 'step' : undefined}
+              className={`flex flex-col gap-3 rounded-lg border p-4 transition-colors ${
+                isActive ? 'border-brand bg-brand-tint' : 'border-border'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                {/* Active step gets the DS's own solid "completed" marker
+                    treatment (border-brand bg-brand text-brand-foreground)
+                    instead of the lighter "current" outline — composing an
+                    existing wizardMarkerClass status, not a new color, so the
+                    in-progress step reads as prominently as the reference's
+                    filled circle while completed/upcoming keep their normal
+                    DS states. */}
+                <div className={wizardMarkerClass(isActive ? 'completed' : status, 'numbered')}>
+                  {status === 'completed' ? (
+                    <i className="fa-solid fa-check text-sm text-brand-foreground" aria-hidden="true" />
+                  ) : (
+                    <span className={isActive ? 'tabular-nums text-brand-foreground' : 'tabular-nums'}>{idx + 1}</span>
+                  )}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
+                  {/* Not `wizardLabelClass(status)` for the completed case —
+                      the DS's own completed-label class is `text-brand`,
+                      which fails contrast in light mode (3.55:1 vs the
+                      required 4.5:1, confirmed live via axe: `#8580c6` on
+                      white). It also puts brand color on a non-CTA text
+                      label (design-anti-patterns.md: brand reserved for
+                      primary CTAs). `text-foreground` matches the DS's own
+                      dark/high-contrast override for this exact status.
+                      Flag to Himanshu: `wizardLabelClass`'s light-mode
+                      completed branch needs the same fix already applied to
+                      its dark/hc variants. */}
+                  <p className={status === 'completed' ? 'text-sm font-medium leading-4 text-foreground' : wizardLabelClass(status)}>
+                    {step.label}
+                  </p>
+                  {/* Active step shows WHY this is next, specific to this
+                      term's real state (`action.why` — e.g. "No survey
+                      template exists yet" vs "4 courses have no evaluation
+                      scheduled"), not the same static sentence for every
+                      account; other steps keep their generic description. */}
+                  <p className="text-sm text-muted-foreground">{isActive ? action.why : step.description}</p>
+                </div>
+              </div>
+              {/* Real destination, reused from `nextTermAction` — the same
+                  href/onClick the term card's own row for this stage uses,
+                  so the strip and the card never disagree on where "next"
+                  goes. `LedgerAction` already handles the href/external/
+                  onClick fork (see its own doc comment). */}
+              {isActive && (
+                <div className="ms-12 w-fit">
+                  <LedgerAction href={action.href} external={action.external} onClick={action.onClick} filled>
+                    {action.stage === 'no-term' && <i className="fa-light fa-calendar-plus" aria-hidden="true" style={{ fontSize: 12 }} />}
+                    {action.label}
+                  </LedgerAction>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </CardContent>
+      </Card>
+    </>
   )
 }

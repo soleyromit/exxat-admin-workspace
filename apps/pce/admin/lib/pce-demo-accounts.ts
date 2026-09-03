@@ -91,14 +91,23 @@ const CASE2_TERM: ProgramTerm = {
 
 /* Case 3 (Summit PA) — dated, HAS course offerings, zero evaluations. Was
  * zero-offerings (the old Case 3 shape, now what Case 2 means) — offerings
- * are added below via CASE3_COURSES; this term carries no surveys. */
+ * are added below via CASE3_COURSES; this term carries no surveys.
+ *
+ * Dates are relative to `daysFromNow` (defined above for `acc-upcoming-only`),
+ * not fixed — the fixed 2026-06-01–08-15 span this account originally shipped
+ * with was exactly the "every other fixed-date term in this file has the same
+ * latent problem" case flagged in that same comment: it went stale as real
+ * time passed Aug 15, so this term silently resolved as a PAST term instead
+ * of current, breaking the scenario (the onboarding strip then read this
+ * account's real course history as a fresh, zero-courses program). Caught
+ * live 2026-09-02. */
 const CASE3_TERM: ProgramTerm = {
   id: 'case3-term',
   name: 'Summer 2026',
   season: 'Summer',
   academicYear: '2025–2026',
-  startDate: '2026-06-01',
-  endDate: '2026-08-15',
+  startDate: daysFromNow(-40),
+  endDate: daysFromNow(35),
   status: 'active',
   enabledForEval: true,
 }

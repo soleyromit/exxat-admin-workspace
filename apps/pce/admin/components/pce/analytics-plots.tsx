@@ -23,6 +23,9 @@ import {
   gridMark,
   type PlotTheme,
 } from '@/components/pce/plot-figure'
+import { ChartContainer, type ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
+import { ChartLeoPlotInsightOverlay } from '@/components/charts-core'
 import { heatmapCellColor, heatmapCellUsesLightText } from '@/lib/chart-heatmap-scale'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { RESPONSE_TARGET } from '@/lib/pce-analytics'
@@ -632,6 +635,240 @@ export function ProgramResponseTrend({
   if (!rows.length) return <ChartEmpty note="No response history recorded yet." />
 
   return <PlotFigure spec={spec} height={height} />
+}
+
+// Shared between the gradient's `userSpaceOnUse` pixel math and the
+// AreaChart's own `margin` prop below - they must stay identical, or the
+// gradient's y1/y2 stop won't line up with where the axis actually renders.
+const DASHBOARD_TREND_MARGIN = { top: 20, right: 12, left: 34, bottom: 26 }
+
+const DASHBOARD_TREND_CONFIG: ChartConfig = {
+  above: { label: 'On target', color: 'var(--chart-2)' },
+  // Amber `--chart-4`, never the reference's literal red — VIZ-004 / Aarti,
+  // applies file-wide (see the house-style block at the top of this file).
+  below: { label: 'Below target', color: 'var(--chart-4)' },
+}
+
+// "Spring 2026" -> "Spring '26" - the reference's fuller axis label. Exported
+// because the Leo anchor's `xValue` must match this string EXACTLY (the
+// overlay resolves x by axis-tick textContent, see `ChartLeoPlotInsightOverlay`
+// usage below) - a second inline copy of this regex elsewhere would silently
+// drift out of sync with what the axis actually renders.
+export const dashboardTrendLabel = (term: string) => term.replace(/(\d{2})(\d{2})$/, "'$2")
+
+interface DashboardTrendPoint { x: number; long: string; value: number; crossing?: boolean }
+export interface DashboardTrendRun { above: boolean; key: string; points: DashboardTrendPoint[] }
+
+/** Splits a series into contiguous above/below-target runs, inserting ONE
+ *  linearly-interpolated point at every crossing so consecutive runs SHARE
+ *  that exact point — segments touch precisely on the target line with no
+ *  gap and no overlap, matching the reference's construction (confirmed live
+ *  via its rendered DOM: separate solid-colored `<path>` segments, not one
+ *  continuous curve tinted by a position-based gradient — that band-not-
+ *  segment approach was this chart's own prior attempt, reverted here
+ *  because it painted a horizontal wash instead of following the real
+ *  above/below shape, 2026-09-02). Exported for testability. */
+export function splitAtTarget(
+  rows: { long: string; value: number }[],
+  target: number,
+): DashboardTrendRun[] {
+  if (!rows.length) return []
+  const isAbove = (v: number) => v >= target
+  const runs: DashboardTrendRun[] = []
+  let current: DashboardTrendRun = {
+    above: isAbove(rows[0].value),
+    key: 'run0',
+    points: [{ x: 0, long: rows[0].long, value: rows[0].value }],
+  }
+  for (let i = 0; i < rows.length - 1; i++) {
+    const a = rows[i]
+    const b = rows[i + 1]
+    const aAbove = isAbove(a.value)
+    const bAbove = isAbove(b.value)
+    if (aAbove !== bAbove) {
+      const t = (target - a.value) / (b.value - a.value)
+      const crossPoint: DashboardTrendPoint = { x: i + t, long: '', value: target, crossing: true }
+      current.points.push(crossPoint)
+      runs.push(current)
+      current = { above: bAbove, key: `run${runs.length}`, points: [crossPoint] }
+    }
+    current.points.push({ x: i + 1, long: b.long, value: b.value })
+  }
+  runs.push(current)
+  return runs
+}
+
+/**
+ * Dashboard hero variant of the response-rate trend - full 0-100 axis,
+ * per-run above/below-target gradient segments, and this codebase's real
+ * Leo-insight overlay on the worst term (not a hand-rolled callout — see
+ * below). A dedicated export rather than a `ProgramResponseTrend` prop so
+ * the three existing Analytics call sites (`analytics-panels.tsx`,
+ * `analytics-overview-panel.tsx`) keep their current axis/label behaviour
+ * unchanged - this chart answers a different question (the dashboard's
+ * single hero trend, glanced at daily) than the Analytics page's denser
+ * multi-chart grid, so it earns its own row here rather than a branch in
+ * the shared one.
+ *
+ * Built on Recharts + `ChartContainer` (`@exxatdesignux/ui/components/ui/chart`)
+ * rather than this file's usual Observable Plot - that's the DS's own chart
+ * wrapper (already used the same way by `micro-trend.tsx`, `faculty-profile-
+ * dashboard.tsx`, `question-chart-block.tsx`), and it's what the
+ * exxat-surveys-24f.pages.dev reference this chart matches is itself built
+ * on (confirmed live via its rendered `.recharts-wrapper`/`<linearGradient>`
+ * DOM, 2026-09-02) - Plot was the wrong engine choice for this one chart.
+ *
+ * Gradient recipe matches the reference's own `<linearGradient>` defs
+ * (5%/95% stop-opacity 0.35->0.02, vertical) with one deviation: the
+ * reference's below-target stop is literal `var(--destructive)` (red) -
+ * substituted here for `--chart-4` (amber) per the file-wide no-red rule.
+ *
+ * Real Leo, not a hand-rolled pill: this chart previously drew its own
+ * `<ReferenceDot label={...}>` callout on the worst term — a from-scratch
+ * copy of a pattern this codebase already has a real, shared component for
+ * (`ChartLeoPlotInsightOverlay`, used exactly this way by
+ * `app/(app)/analytics/programmatic/page.tsx`). Replaced below; the caller
+ * (`OperationsDashboardBody`) builds the `ChartLeoInsight` and passes it
+ * through `ChartCard`/`ChartFigure`, same double-wire that reference uses.
+ */
+export function DashboardResponseTrend({
+  series,
+  target = RESPONSE_TARGET,
+  height = 220,
+}: {
+  series: TermSeriesPoint[]
+  target?: number
+  height?: number
+}) {
+  const rows = React.useMemo(
+    () =>
+      series
+        .filter((s) => s.responseRate != null)
+        .map((s) => ({ long: dashboardTrendLabel(s.term), value: s.responseRate as number })),
+    [series],
+  )
+  const runs = React.useMemo(() => splitAtTarget(rows, target), [rows, target])
+
+  // Flatten every run's points into one shared data array, one row per
+  // distinct x — a crossing point is written by BOTH the run that ends
+  // there and the run that starts there, so their two `<Area dataKey>`
+  // columns both have a real value at that x and the paths touch exactly,
+  // with every other run's column left `null` there (Area/`connectNulls=
+  // false` treats null as "nothing to draw," not zero).
+  const chartData = React.useMemo(() => {
+    // `crossing` is 1/undefined, not boolean — `ChartLeoPlotInsightOverlay`'s
+    // `data` prop is typed `Record<string, string | number | null | undefined>[]`.
+    const byX = new Map<number, Record<string, number | string | null | undefined>>()
+    for (const run of runs) {
+      for (const p of run.points) {
+        const row = byX.get(p.x) ?? { x: p.x, long: p.long, crossing: p.crossing ? 1 : undefined }
+        row[run.key] = p.value
+        if (p.long) row.long = p.long
+        byX.set(p.x, row)
+      }
+    }
+    for (const row of byX.values()) {
+      for (const run of runs) if (!(run.key in row)) row[run.key] = null
+    }
+    return [...byX.values()].sort((a, b) => (a.x as number) - (b.x as number))
+  }, [runs])
+
+  const plotTop = DASHBOARD_TREND_MARGIN.top
+  const plotBottom = height - DASHBOARD_TREND_MARGIN.bottom
+
+  if (!rows.length) return <ChartEmpty note="No response history recorded yet." />
+
+  return (
+    <div className="relative w-full">
+      <ChartContainer config={DASHBOARD_TREND_CONFIG} style={{ height }} className="w-full">
+        <AreaChart data={chartData} margin={DASHBOARD_TREND_MARGIN}>
+          <defs>
+            {/* One gradient per TONE (above/below), not per run — every run
+                of a given tone reuses the same fade, matching the reference's
+                per-segment fill exactly without redefining it per segment. */}
+            {(['above', 'below'] as const).map((tone) => (
+              <linearGradient
+                key={tone} id={`dashboardTrendFill-${tone}`}
+                x1="0" y1={plotTop} x2="0" y2={plotBottom} gradientUnits="userSpaceOnUse"
+              >
+                <stop offset="5%" stopColor={`var(--color-${tone})`} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={`var(--color-${tone})`} stopOpacity={0.02} />
+              </linearGradient>
+            ))}
+          </defs>
+          <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+          {/* Numeric, not categorical — a crossing point sits at a fractional
+              index (e.g. x=1.4), which a category axis can't place. Points
+              still land exactly where a categorical axis would (integer x),
+              this only adds room for the interpolated in-between points. */}
+          <XAxis
+            dataKey="x"
+            type="number"
+            domain={rows.length > 1 ? [0, rows.length - 1] : [-0.5, 0.5]}
+            ticks={rows.map((_, i) => i)}
+            tickFormatter={(i: number) => rows[i]?.long ?? ''}
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={{ stroke: 'var(--border)' }}
+          />
+          <YAxis
+            domain={[0, 100]}
+            ticks={[0, 25, 50, 75, 100]}
+            tickFormatter={(d: number) => `${d}%`}
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={false}
+          />
+          {/* Reference lines use `--muted-foreground`, never `--border`
+              (A11Y-021: --border about 1.2:1) - house rule, top of this file. */}
+          <ReferenceLine
+            y={target}
+            stroke="var(--muted-foreground)"
+            strokeDasharray="4 4"
+            strokeOpacity={0.8}
+            label={{
+              value: `Target ${target}%`,
+              position: 'insideTopRight',
+              fill: 'var(--muted-foreground)',
+              fontSize: CHART_TICK_FONT_SIZE,
+            }}
+          />
+          {runs.map((run) => (
+            <Area
+              key={run.key}
+              dataKey={run.key}
+              type="monotone"
+              connectNulls={false}
+              isAnimationActive={false}
+              stroke={run.above ? 'var(--color-above)' : 'var(--color-below)'}
+              strokeWidth={2}
+              fill={`url(#dashboardTrendFill-${run.above ? 'above' : 'below'})`}
+              dot={(props: { cx?: number; cy?: number; payload?: { crossing?: number } }) =>
+                props.payload?.crossing ? (
+                  // Construction point, not real data — no dot drawn for it.
+                  <g key={`x-${props.cx}`} />
+                ) : (
+                  <circle
+                    key={`d-${props.cx}`}
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={3}
+                    fill={run.above ? 'var(--color-above)' : 'var(--color-below)'}
+                  />
+                )
+              }
+              activeDot={{ r: 4 }}
+            />
+          ))}
+        </AreaChart>
+      </ChartContainer>
+      {/* Real Leo overlay (pill + dashed connector + dot), not a hand-rolled
+          copy — reads `leoInsight` from the `ChartLeoInsightOverlay` context
+          `ChartFigure` already provides (see the caller in
+          `OperationsDashboardBody`). Renders nothing when no insight is set. */}
+      <ChartLeoPlotInsightOverlay data={chartData} xDataKey="long" chartFamily="line" />
+    </div>
+  )
 }
 
 /**

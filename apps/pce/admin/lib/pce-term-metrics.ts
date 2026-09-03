@@ -16,6 +16,7 @@ import {
 } from '@/lib/pce-mock-data'
 import { activeTerms, activeOfferings } from '@/lib/pce-demo-accounts'
 import { AT_RISK_THRESHOLD } from '@/lib/pce-at-risk'
+import { prismCoursesHref } from '@/lib/pce-course-readiness'
 import type { StatusBadgeTone } from '@exxatdesignux/ui'
 
 export const RESPONSE_TARGET = 70
@@ -269,6 +270,13 @@ export interface TermSnapshot {
    *  apart from "started, not finished" — the exact gap the term-card resume
    *  entry point needs to close. */
   draftCount: number
+  /** Raw headcounts behind `rate`, summed across the same `rated` (live or
+   *  finished) surveys `weightedRate` uses — so a "X of Y responded" caption
+   *  built from these always reconciles with the `rate` percentage shown
+   *  beside it. Real per-survey counts (`PceSurvey.responseCount`/
+   *  `enrollmentCount`), never derived from the rounded `rate` itself. */
+  responseCount: number
+  enrollmentCount: number
 }
 
 /** Full derived snapshot for one term from the live evaluation set. */
@@ -308,6 +316,8 @@ export function snapshot(term: ProgramTerm, ce: PceSurvey[]): TermSnapshot {
     daysLeft: stage === 'live' ? daysUntilClose(term) : null,
     coverage: coverageFor(term.id, list),
     draftCount: list.filter((s) => s.status === 'draft').length,
+    responseCount: rated.reduce((sum, s) => sum + s.responseCount, 0),
+    enrollmentCount: rated.reduce((sum, s) => sum + s.enrollmentCount, 0),
   }
 }
 
@@ -626,4 +636,142 @@ export function breakdownSummary(b: CourseBreakdown): string {
   if (b.closed.length > 0) parts.push(`${b.closed.length} closed`)
   parts.push(`${b.totalCourses} total`)
   return parts.join(' · ')
+}
+
+/** ≥1 survey for this term has actually finished (pending_review | closed |
+ *  released) — the precondition for any score-derived figure. Nothing has
+ *  closed yet → there is nothing to score, regardless of how far along
+ *  setup otherwise is (a term can be 100% scheduled and still have zero
+ *  finished surveys). */
+export function termHasFinishedSurveys(term: ProgramTerm, ce: PceSurvey[]): boolean {
+  return ce.some((s) => s.term === term.name && FINISHED(s))
+}
+
+/* ── the one "what should this admin do next" answer, shared by the Getting
+ * Started strip, the Live-term card's primary action, and (implicitly) every
+ * other affordance on the dashboard — a single ordered model instead of each
+ * surface guessing independently (Romit, 2026-09-02: "Getting started card
+ * isn't connected with any actions, nor is it showing... any action that the
+ * user needs to do"). Every destination below is a route a term-card row
+ * already navigates to — this never invents a new one, it just decides WHICH
+ * existing one is the one that matters right now. ────────────────────────── */
+
+export type TermSetupStage =
+  | 'no-term' | 'no-courses' | 'no-template' | 'not-configured'
+  | 'drafts' | 'live-at-risk' | 'live-healthy' | 'scheduled'
+  | 'awaiting-review' | 'released'
+
+export interface TermNextAction {
+  stage: TermSetupStage
+  /** Identical wording to the term-card row that owns this action — the
+   *  Getting Started strip and the card must never disagree on the verb. */
+  label: string
+  href?: string
+  external?: boolean
+  /** True next-action navigation, e.g. opening the term-creation sheet — the
+   *  one stage (`no-term`) with no href at all. */
+  onClick?: () => void
+  /** One sentence, state-specific — why THIS is the next thing, not a
+   *  generic description repeated for every account. */
+  why: string
+}
+
+/** Tiers, first match wins. Urgency (A) outranks sequence (B/C/D) because a
+ *  live collection window is time-boxed and unrecoverable once it closes,
+ *  while setup work (connecting courses, writing a survey) can happen any
+ *  time before the window opens — reminding a lagging live course matters
+ *  more right now than finishing an unrelated draft. */
+export function nextTermAction(
+  snap: TermSnapshot | null,
+  b: CourseBreakdown | null,
+  opts: { hasTemplates: boolean; onAdd?: () => void },
+): TermNextAction {
+  if (!snap) {
+    return {
+      stage: 'no-term',
+      label: 'Set up term',
+      onClick: opts.onAdd,
+      why: 'No term is set up yet — evaluations need term dates before anything else can happen.',
+    }
+  }
+  const { term } = snap
+
+  // A · urgent — a live course is already below the response target.
+  if (b && b.live.length > 0 && (liveAtRiskCodes(b.live).size > 0 || (snap.rate != null && snap.rate < RESPONSE_TARGET))) {
+    return {
+      stage: 'live-at-risk',
+      label: 'Remind',
+      href: `/surveys/remind?from=term:${term.id}`,
+      why: `${b.live.length} live evaluation${b.live.length === 1 ? ' is' : 's are'} running behind the ${RESPONSE_TARGET}% target — a reminder now still has time to help.`,
+    }
+  }
+
+  // B · blocked — nothing can proceed until this exists.
+  if (!b) {
+    return {
+      stage: 'no-courses',
+      label: 'Add courses',
+      href: prismCoursesHref(),
+      external: true,
+      why: `${term.name} has no course offerings connected yet, so there's nothing to evaluate.`,
+    }
+  }
+  if (!opts.hasTemplates) {
+    return {
+      stage: 'no-template',
+      label: 'Create template',
+      href: '/templates/new',
+      why: 'No survey template exists yet, so nothing can go out to courses.',
+    }
+  }
+
+  // C · sequence — courses exist, work through them in order.
+  if (b.notConfiguredCount > 0) {
+    return {
+      stage: 'not-configured',
+      label: 'Schedule',
+      href: `/surveys/push?term=${term.id}`,
+      why: `${b.notConfiguredCount} course${b.notConfiguredCount === 1 ? '' : 's'} still have no evaluation scheduled.`,
+    }
+  }
+  if (b.draft.length > 0) {
+    return {
+      stage: 'drafts',
+      label: 'Finish',
+      href: `/surveys/push?term=${term.id}`,
+      why: `${b.draft.length} draft${b.draft.length === 1 ? '' : 's'} started but never sent — finish setting ${b.draft.length === 1 ? 'it' : 'them'} up.`,
+    }
+  }
+
+  // D · steady state — everything scheduled or further along.
+  if (b.live.length > 0) {
+    return {
+      stage: 'live-healthy',
+      label: 'Monitor',
+      href: `/course-evaluation/term/${term.id}?tab=active`,
+      why: `${b.live.length} evaluation${b.live.length === 1 ? ' is' : 's are'} collecting on target — keep an eye on response rate.`,
+    }
+  }
+  if (b.scheduled.length > 0) {
+    return {
+      stage: 'scheduled',
+      label: 'Update',
+      href: `/course-evaluation/term/${term.id}?tab=active`,
+      why: `${b.scheduled.length} evaluation${b.scheduled.length === 1 ? ' is' : 's are'} scheduled and waiting on its open date.`,
+    }
+  }
+  if (snap.pending > 0) {
+    return {
+      stage: 'awaiting-review',
+      label: 'Review',
+      href: `/course-evaluation/term/${term.id}?tab=finished`,
+      why: `${snap.pending} evaluation${snap.pending === 1 ? ' is' : 's are'} closed and waiting on review.`,
+    }
+  }
+  return {
+    stage: 'released',
+    label: 'View analytics',
+    href: `/analytics?tab=term&term=${encodeURIComponent(term.name)}`,
+    why: `${term.name} is fully published — see how it performed.`,
+  }
 }
