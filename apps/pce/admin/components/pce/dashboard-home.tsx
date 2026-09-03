@@ -102,7 +102,7 @@ import { useRouter } from 'next/navigation'
 import {
   Badge,
   Button,
-  Popover, PopoverTrigger, PopoverContent,
+  Tooltip, TooltipTrigger, TooltipContent,
   PageHeader,
   Card, CardHeader, CardTitle, CardContent, CardFooter,
   StatusBadge,
@@ -2043,7 +2043,7 @@ function OperationsRow({
   /** Real course codes behind the row. Rendered as tags (up to
    *  `MAX_VISIBLE_COURSE_TAGS`), not a bare "N courses" count — a count
    *  hides which courses are affected until clicked; tags name them up
-   *  front, with a "+N more" popover for the overflow (Romit, 2026-09-02:
+   *  front, with a "+N more" tooltip for the overflow (Romit, 2026-09-02:
    *  "use tags instead of course count, and later show remaining courses
    *  with tooltip/popover"). */
   courseCodes: string[]
@@ -2063,24 +2063,21 @@ function OperationsRow({
           <div className="flex flex-wrap items-center gap-1.5">
             {visibleCodes.map((code) => <CourseCodeTag key={code} code={code} />)}
             {overflowCodes.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-auto rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                    aria-label={`${overflowCodes.length} more ${tintLabel} courses`}
+                    aria-label={`${overflowCodes.length} more ${tintLabel} courses: ${overflowCodes.join(', ')}`}
                   >
                     +{overflowCodes.length} more
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-56 p-3" aria-label={`Remaining courses: ${tintLabel}`}>
-                  <p className="mb-2 text-sm font-medium">{tintLabel}</p>
-                  <ul className="flex flex-col gap-1.5 font-mono text-sm text-muted-foreground">
-                    {overflowCodes.map((code) => <li key={code}>{code}</li>)}
-                  </ul>
-                </PopoverContent>
-              </Popover>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="font-mono">
+                  {overflowCodes.join(', ')}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         ) : (
