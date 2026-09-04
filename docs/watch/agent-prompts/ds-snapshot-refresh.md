@@ -70,3 +70,13 @@ If any step fails or produces unexpected output:
 ### 2026-06-16: git push rejected with HTTP 403
 **Symptom:** `git push -u origin main` fails with `error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403` repeatedly.
 **Fix:** Use `mcp__github__create_or_update_file` instead. Get the blob SHA with `git rev-parse origin/main:docs/watch/ds-snapshot.json`, then call the MCP tool with `owner=soleyromit`, `repo=exxat-admin-workspace`, `branch=main`, the file content, and the SHA.
+
+### 2026-09-04: Remote sessions start in detached HEAD; git commits become orphans
+**Symptom:** `git commit` succeeds but HEAD is detached from `refs/heads/main`. When you then run `git checkout main`, git warns "N commits behind, not connected to any of your branches" and the committed file reverts to the main branch version.
+**Cause:** The remote cloud container clones the repo but leaves HEAD detached. Commits go onto an orphan chain, not onto `main`.
+**Fix:** Skip the Step 4 `git commit` shell command entirely in remote sessions. Instead go straight to `mcp__github__create_or_update_file`. If you already made an orphan commit, rebuild the snapshot (Step 2) after checking out `main`, then push via MCP.
+
+### 2026-09-04: Stale blob SHA on first MCP push attempt
+**Symptom:** `mcp__github__create_or_update_file` returns "SHA mismatch: provided SHA … is stale. Current file SHA is …" even though you just ran `git rev-parse origin/main:docs/watch/ds-snapshot.json`.
+**Cause:** A previous automated run already pushed a newer version to GitHub after the local clone was made, so the local `origin/main` ref is behind the real remote HEAD.
+**Fix:** Call `mcp__github__get_file_contents` with `ref=main` to fetch the live SHA, verify the `generated` date in the returned content, then retry `create_or_update_file` with the SHA reported in the result's first line.
