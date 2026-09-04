@@ -6,5 +6,6 @@ Per-product ADRs. Workspace ADRs at `docs/decisions/`.
 
 | # | Title | Status | Date |
 |---|---|---|---|
+| §1 | Configuration, workflows, phased rollout — 20 decisions (D1–D20) | Decided | 2026-09-03 |
 
-(Empty until first Learning Contracts decision is captured.)
+See `decisions-summary.md` for the full decisions log.
