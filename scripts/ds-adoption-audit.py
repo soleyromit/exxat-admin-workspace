@@ -298,6 +298,12 @@ DOCUMENTED_HAND_ROLLS = {
     # colors rendered inside a static browser-chrome illustration). Not applied
     # as UI colors on any interactive element; intentional product design fidelity.
     "components/settings-appearance-card.tsx",
+    # pce: permissions-matrix.tsx — static read-only Course Survey RBAC
+    # reference matrix (5 roles x 4 function groups), cross-tab column model
+    # DataTable doesn't support (no sort/filter needed either). Documented in
+    # docs/governance/ds-adoption.md -> PCE hand-rolls, 2026-09-01; that entry
+    # predates this one, which syncs the enforcement list to match.
+    "components/pce/permissions-matrix.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of
@@ -375,6 +381,10 @@ GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = {
     # "Grandfathered hand-rolls" (2026-07-11).
     "components/command-menu.tsx",
     "components/ui/coach-mark.tsx",
+    # patient-log: export-drawer.tsx is a one-line re-export shim
+    # (`export * from "@exxatdesignux/ui/components/export-drawer"`) — already
+    # the canonical component, flagged on filename match alone. 2026-09-04.
+    "components/export-drawer.tsx",
 }
 # Previously listed:
 #   "lib/design-system/component-docs/coach-mark.tsx" — REDUNDANT 2026-07-14.

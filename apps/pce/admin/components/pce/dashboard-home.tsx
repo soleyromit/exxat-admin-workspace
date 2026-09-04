@@ -3057,10 +3057,24 @@ function DashboardHomeInner() {
   const lastSnaps = useMemo(() => lastTerms.map((t) => snapshot(t, ce)), [lastTerms, ce])
   const upcomingSnaps = useMemo(() => upcomingTerms.map((t) => snapshot(t, ce)), [upcomingTerms, ce])
 
+  /* `breakdownFor` reads the module-level `activeOfferings()` register
+   * (set by `switchAccount`, only ever called post-mount) directly during
+   * render — so unlike `programTerms`/`surveys`/`dashboardLayout`, its
+   * result was never gated behind the same "SSR + first client render
+   * agree, stored choice applies post-mount" safety net the rest of this
+   * file relies on (see `useOnboardingCollapsed` below). Any request whose
+   * hydration render landed after a prior client-side account switch already
+   * mutated that register saw a live value the server never had, so the
+   * KeyMetrics href built from it (line ~2752) could disagree with the SSR
+   * HTML. Mirroring `mounted` here closes that gap the same way. */
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   /* Breakdown Mode (Cases 4–9) — null whenever the card is still in one of
    * its single-CTA empty states (no courses / no evaluations yet), which the
-   * cards themselves check first via `snap.coverage`/`snap.total`. */
-  const breakdownForSnap = (snap: TermSnapshot) => breakdownFor(snap.term, ce)
+   * cards themselves check first via `snap.coverage`/`snap.total`. Also null
+   * pre-mount (see above) so SSR and the first client paint always agree. */
+  const breakdownForSnap = (snap: TermSnapshot) => (mounted ? breakdownFor(snap.term, ce) : null)
 
   /* First run = no terms at all (not merely no surveys) — a term created but
    * not yet dated/populated still gets its own card, not the empty state.
@@ -3297,17 +3311,19 @@ function OnboardingProgressStrip({
   if (collapsed) {
     return (
       <Card>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setCollapsed(false)}
           aria-expanded={false}
-          className="flex w-full items-center justify-between gap-2 rounded-[inherit] px-4 py-3 text-left"
+          className="h-auto w-full items-center justify-between gap-2 rounded-[inherit] px-4 py-3 text-left font-medium"
         >
           <span className="text-sm font-medium text-foreground">
             Getting started{scopeTerm ? ` · ${scopeTerm.name}` : ''} · {current} of {FIRST_TERM_STEPS.length} done
           </span>
           <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
-        </button>
+        </Button>
       </Card>
     )
   }

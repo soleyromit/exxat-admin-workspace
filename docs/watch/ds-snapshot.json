@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-02",
+  "generated": "2026-09-04",
   "source": "@exxatdesignux/ui",
-  "version": "1.5.1",
-  "componentCount": 790,
+  "version": "1.6.3",
+  "componentCount": 819,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -440,6 +440,30 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "Carousel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CarouselApi": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CarouselContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CarouselItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CarouselNext": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "CarouselPrevious": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "CellContext": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
@@ -847,6 +871,18 @@
     "DrawerSortCardProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
+    },
+    "DropdownButton": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "DropdownButtonProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "DropdownButtonVariant": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
     },
     "DropdownMenu": {
       "importPath": "@exxatdesignux/ui",
@@ -2012,6 +2048,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
+    "PageHeaderScrollActionsProvider": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "organisms"
+    },
     "PageHeaderVariant": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
@@ -2720,6 +2760,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "TabVisibilitySync": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "Table": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -2920,11 +2964,59 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "WHATS_NEW_SHEET_PANEL_PROPS": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "WIZARD_RECOMMENDED_MAX_STEPS": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
     "WIZARD_SCROLL_THRESHOLD": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewAnnouncementCard": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewAnnouncementCardProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewHighlight": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewLeoHero": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewReleaseItem": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheet": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheetEmpty": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheetEmptyProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheetFeaturedUpdate": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheetProps": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "WhatsNewSheetTrigger": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -2981,6 +3073,10 @@
       "category": "hooks"
     },
     "useAutoPanel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useCarousel": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
@@ -3072,6 +3168,22 @@
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
+    "usePageHeaderScrollActionsSlot": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "usePageHeaderScrollActionsSlotRef": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "usePageHeaderScrollRelocateEnabled": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "usePageVisible": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
     "usePaymentInputs": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
@@ -3113,6 +3225,10 @@
       "category": "hooks"
     },
     "useSecondaryPanel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useSetPageHeaderScrollRelocateEnabled": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
