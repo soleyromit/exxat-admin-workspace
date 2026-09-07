@@ -344,3 +344,21 @@ Source: `docs/research/meetings/2026-08-27-exam-management-weekly-call.md` (Gran
 > "For my benefit and your benefit and the project's benefit, create a summary of everything we have discussed."
 
 T27 — write the summary doc covering admin view structure, key tabs and information per topic. This `_backlog.md` + the meeting notes file together form the raw material; Romit needs to compile a polished summary doc separately.
+
+
+---
+
+## Course Evaluations — tasks from 2026-09-01 sync
+
+Source: `docs/research/meetings/2026-09-01-course-eval-sync.md`
+
+> Design sync between Romit and the CE PM. Dashboard direction resolved (Himanshu's design is canonical). RBAC model clarified. Onboarding flow defined.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T_CE_01 | **Retire Romit's dashboard Figma frames; adopt Himanshu's design.** PM explicitly rejected Romit's dashboard. Himanshu's version (two terms: live + last closed, KPI + analytics, action items, response rate trend + rating trend) is the design going forward. | Admin | Dashboard | P0 | PM: "I couldn't even look at those designs to be frank." Romit retains ownership of: single-survey analytics, survey details, other workflows. |
+| T_CE_02 | **Dashboard: reduce action items to one primary action + three-dots overflow.** Current design shows multiple visible actions per item. Must be one primary CTA, remaining actions in ⋯ menu. | Admin | Dashboard — action items | P1 | "Maybe we need to add three dots here so that I can click and view other actions." |
+| T_CE_03 | **Academic calendar: add "enable existing Prism terms" as primary flow.** Current design only covers creating new terms from scratch. Enabling existing Prism terms is the primary use case for most customers. This flow is missing. | Admin | Academic calendar settings | P0 | "That I feel would be the primary use case. Most of our customers would already have academic year and terms set up." |
+| T_CE_04 | **RBAC: design faculty-role → RBAC-role mapping grid.** Common settings needs a UI for admin to configure which tenant faculty roles map to "course manager" and "instructor" RBAC roles. This is a one-time system-level setup. The add-user flow must NOT show course manager / instructor as selectable options (they resolve through course associations automatically). | Admin | Role access / Common settings | P0 | Complex RBAC model per PM. Romit to review RBAC call recording + excel + one-pager from PM before designing. |
+| T_CE_05 | **Onboarding: 4 steps, non-intrusive, closeable.** Steps: (1) Academic calendar — enable at least 1 term. (2) Evaluation rules — explicit faculty role select; rating defaults to 5; benchmarks default to 74 and 4. (3) Communication — confirm default template. (4) Templates — show defaults, confirm. Role access: NOT in onboarding. Stepper sits on top of dashboard; user can close it; closing shows message pointing to Settings. | Admin | Onboarding flow | P1 | Role access explicitly excluded: "access we can ignore that will not be part of onboarding." |
+| T_CE_06 | **Prepare written proposal on design collaboration process.** PM asked Romit to document the problems in the current design review process and propose solutions. Deliverable: written doc listing issues + proposed working model. | Romit | Process | P1 | PM: "you come up with your proposal you probably list down what problems you are seeing and what is your proposal to solve the problem share it across." |
