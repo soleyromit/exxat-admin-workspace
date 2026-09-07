@@ -1745,6 +1745,50 @@
             "source": "context-health-check monthly routine",
             "severity": null,
             "files": ["scripts/context-budget-audit.py"]
+        },
+        {
+            "id": "2026-09-07-compliance-resolved-001",
+            "date": "2026-09-07",
+            "product": "pce",
+            "type": "compliance-resolved",
+            "title": "3 PCE FA icon violations fixed — app-sidebar, surveys/responses, analytics",
+            "what": "Violations pce-015 (app-sidebar.tsx:216), pce-016 (surveys/[id]/responses/page.tsx:163,189), pce-017 (analytics/page.tsx:619) — all WCAG-4.1.2-fa-aria-hidden — confirmed fixed: aria-hidden=\"true\" now present on all previously flagged <i> elements.",
+            "source": "compliance-sweep-weekly 2026-09-07",
+            "severity": "P3"
+        },
+        {
+            "id": "2026-09-07-compliance-resolved-002",
+            "date": "2026-09-07",
+            "product": "exam-management",
+            "type": "compliance-resolved",
+            "title": "8 Exam Management FA icon violations fixed — action-items-panel, empty-state, faculty-ui-kit, competency, accommodations, assessments tabs, course-offering, student-detail",
+            "what": "Violations exam-034 through exam-041 — all WCAG-4.1.2-fa-aria-hidden — confirmed fixed: aria-hidden=\"true\" now present on all previously flagged <i> elements in action-items-panel.tsx, empty-state.tsx, faculty-ui-kit.tsx, competency-client.tsx, accommodations-tab.tsx, assessments-tab.tsx, course-offering-detail-client.tsx, student-detail-client.tsx.",
+            "source": "compliance-sweep-weekly 2026-09-07",
+            "severity": "P3"
+        },
+        {
+            "id": "2026-09-07-compliance-violation-001",
+            "date": "2026-09-07",
+            "product": "pce",
+            "type": "compliance-violation",
+            "title": "NEW P1 — 11 PCE icon-only buttons without aria-label (WCAG 4.1.2)",
+            "what": "11 new P1 violations detected across PCE admin: row-actions.tsx:75, table-properties/drawer.tsx (6 instances), admin/competencies:301, admin/content-areas:270, admin/standards:292, admin/courses:336, admin/students:269, templates/[id]:273, templates/page:179, surveys/responses:182, surveys/page:276. All are size=\"icon-sm\" Buttons where aria-label not found on same line as size prop (verify if multi-line props).",
+            "consequence": "Icon-only buttons with no accessible name — screen reader users cannot determine button purpose. WCAG 4.1.2 failure blocks keyboard and AT users.",
+            "fixLevel": "Add aria-label to each icon-only Button describing its action. Verify multi-line JSX props first — aria-label may be present on an adjacent line.",
+            "source": "compliance-sweep-weekly 2026-09-07",
+            "severity": "P1"
+        },
+        {
+            "id": "2026-09-07-compliance-violation-002",
+            "date": "2026-09-07",
+            "product": "exam-management",
+            "type": "compliance-violation",
+            "title": "NEW P1 — 10 Exam Management icon-only buttons without aria-label (WCAG 4.1.2)",
+            "what": "10 new P1 violations detected across Exam Management admin: data-table/row-actions.tsx:70, question-editor.tsx:470, qb-table.tsx (14 instances across 1081-4033), qb-header.tsx:170,186, catalog-client.tsx:163, access/page.tsx:149, faculty-tab.tsx:180,188, students-tab.tsx:451, courses-client.tsx:147,496, terms-client.tsx:171. All are size=\"icon-sm\" Buttons where aria-label not found on same line (verify multi-line props).",
+            "consequence": "Icon-only buttons with no accessible name — AT users cannot use QB, courses, and terms controls. WCAG 4.1.2 failure blocks government/healthcare contracts.",
+            "fixLevel": "Add aria-label to each icon-only Button describing its action. Verify multi-line JSX props first — aria-label may be on an adjacent line.",
+            "source": "compliance-sweep-weekly 2026-09-07",
+            "severity": "P1"
         }
     ]
 }
