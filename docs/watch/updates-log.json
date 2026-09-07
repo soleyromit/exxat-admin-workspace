@@ -1789,6 +1789,19 @@
             "fixLevel": "Add aria-label to each icon-only Button describing its action. Verify multi-line JSX props first — aria-label may be on an adjacent line.",
             "source": "compliance-sweep-weekly 2026-09-07",
             "severity": "P1"
+        },
+        {
+            "id": "2026-09-07-granola-intake-001",
+            "date": "2026-09-07",
+            "product": "pce",
+            "type": "decision-extracted",
+            "title": "Granola intake — 13 new decisions from Sep 1–3 transcripts (5 PCE, 8 learning contracts)",
+            "what": "Processed 3 Exxat-relevant meetings from Aug 31–Sep 4. Extracted 13 confirmed decisions: pce-decision-160–164 (CE RBAC roles, academic calendar primary use case, Phase 1 no-auto-sync, evaluation rules defaults, onboarding 4-step flow) from Vishal's Course Eval sync up (Sep 1); lc-decision-001–008 (living document model, field-level audit log, cross-placement sharing, checkpoint config, competency flag, 3 program policies, Q1 hard deadline, no-narrow-drawer rule) from Aarti+Vishaka learning contracts meeting (Sep 3). Sep 4 pharmacy meeting (Vishaka+Ruchi) contained no new design decisions. 0 conflicts flagged.",
+            "source": "Course Eval sync up transcript — Sep 1, 2026; Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+            "meetingsProcessed": 3,
+            "newDecisions": 13,
+            "conflictsFlagged": 0,
+            "meetingsWithNoTranscript": 0
         }
     ]
 }

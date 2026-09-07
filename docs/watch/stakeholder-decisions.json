@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-31",
+  "lastUpdated": "2026-09-07",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -1943,6 +1943,136 @@
       "source": "Exam management review with leadership team transcript — Aug 24, 2026",
       "sourceType": "transcript",
       "date": "2026-08-24",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-160",
+      "product": "pce",
+      "text": "RBAC standard roles for CE: Super Admin (institution-level), Program Admin (program-level), Program Admin Limited (program-level, limited), Course Manager (course-level, content only, NO admin functions), Instructor (association-level, content only). Course Manager and Instructor resolve via Prism faculty role associations — not directly assignable at user-add time. The faculty-role-to-RBAC mapping is configured at module/tenant level. Admin functions (pushing surveys, reminders, response rates, hiding/releasing feedback, exporting) are exclusively for Program Admin and Super Admin. Vishal: 'course manager will never need admin function. Only program admins need admin functions.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Sep 1, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-01",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-161",
+      "product": "pce",
+      "text": "Primary use case for the Academic Calendar setup tab is enabling EXISTING Prism academic years/terms for CE — not creating new ones. The UI must prioritize the 'enable existing Prism term' path. Vishal: 'I feel would be the primary use case. Most of our customers would already have academic year and terms set up.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Sep 1, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-01",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-162",
+      "product": "pce",
+      "text": "New terms created in Prism do NOT auto-appear in CE in Phase 1. Term enrollment into CE is always a manual admin action in Phase 1. A background listener/auto-sync job is planned for a future phase. Vishal: 'every term whenever it is created in prism it won't automatically be updated here in course evaluations in the first phase.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Sep 1, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-01",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-163",
+      "product": "pce",
+      "text": "Evaluation Rules onboarding defaults: (1) Rating scale — default 5, configurable; (2) Benchmarks — default 74 and 4, configurable; (3) Faculty roles to evaluate — cannot be pre-selected, must be explicitly chosen by admin (tenant-specific, no safe default). Vishal: 'Rating scale can be selected by default to [five]. Benchmarks also can be defaulted or rather should be defaulted to 74 and 4. But faculty is not because faculty roles are really defined by tenant.'",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Sep 1, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-01",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-164",
+      "product": "pce",
+      "text": "CE onboarding experience is non-intrusive, lives on top of dashboard, dismissible. When dismissed, message: 'you can always find this under Setup.' 4 steps: (1) Academic calendar — enable at least one term; (2) Evaluation rules — confirm/adjust rating scale, benchmarks, select faculty roles; (3) Communication — confirm default email templates; (4) Templates — shown but managed by Exxat internal team for Cohere beta (per pce-decision-140). Dashboard design must be consistent with Exam Management dashboard.",
+      "stakeholder": "Vishal",
+      "source": "Course Eval sync up transcript — Sep 1, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-01",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-001",
+      "product": "portal",
+      "text": "Learning contract is a perpetual living document — all parties (student, field instructor/primary reviewer, placement faculty/field liaison, optional secondary reviewer) can edit at any time after initial approval. NOT restricted to checkpoints. The current system only allows checkpoint-based edits — this is the primary pain point being fixed. Aarti: any party can edit the contract at any point, not just at checkpoint time.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-002",
+      "product": "portal",
+      "text": "Field-level audit logging is required for learning contracts: who changed which field, what the change was, and when — independent of whether reapproval is triggered. Aarti: 'are you going to maintain audits or versions of the changes independent of whether [reapproval] is needed or not? Yes.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-003",
+      "product": "portal",
+      "text": "A learning contract can be shared across multiple placements and courses. Sharing scope is admin-configurable: (a) placement, (b) course (across placements in a course), (c) year (across all courses in an academic year), (d) student-universal. Cross-placement checkpoint data visibility is a configurable option planned for a future phase.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-004",
+      "product": "portal",
+      "text": "Checkpoints are defined at program level and inherited (editable) at course level. Defaults: mid and final; final is mandatory. Custom checkpoints are addable (e.g. Q1, Q2, Q3). Rating scale is configurable per checkpoint type. When rating scales differ between checkpoints, show a WARNING (not a block). Aarti: 'rating customizable by the checkpoint... with appropriate guardrails.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-005",
+      "product": "portal",
+      "text": "Each checkpoint definition requires a configurable 'count for competency' flag. Default logic: mid counts until final is available, then only final counts. Must be per-checkpoint configurable. Vishaka: 'will this be considered for competency? Yes, no — something like that.'",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-006",
+      "product": "portal",
+      "text": "Three admin-configurable program-level policies for learning contracts: (1) Secondary reviewer — 'allow optional' vs 'mandate when available' (two distinct options, not a single toggle); (2) Post-sign-off edits — full reapproval required vs notifications only; (3) Student self-assessment at checkpoints — allow or not. These are set once at program level.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-007",
+      "product": "portal",
+      "text": "Q1 2027 (January) is a hard deadline for learning contracts Phase 1. Q4 2026 target is uncertain. Phase 1 must be complete and coherent — no lightweight sub-phases. Aarti: 'this cannot miss the q one deadline.' And: 'I'm not in favor of releasing lightweight version of this... either launch a sensible phase one at the end of the year, or we don't launch it.' Missing Q1 means waiting until next fall for social work adoption.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "lc-decision-008",
+      "product": "portal",
+      "text": "Learning contracts config UI must NOT use a narrow drawer. Use a full page for editable configuration forms. If a drawer is required, it must be two-thirds width minimum. Aarti: 'Why don't we just create the entire page and leave the page as the editable form of the configuration. Like, why do you have to do it in a drawer and not the main page?' And: 'if you're going to put it in a drawer, I recommend not using one third, but using two third.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-03",
       "status": "confirmed"
     }
   ]
