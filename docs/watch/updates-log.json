@@ -1802,6 +1802,20 @@
             "newDecisions": 13,
             "conflictsFlagged": 0,
             "meetingsWithNoTranscript": 0
+        },
+        {
+            "id": "2026-09-08-transcript-diff-001",
+            "date": "2026-09-08",
+            "product": "pce",
+            "type": "prd-flagged",
+            "title": "Transcript→PRD diff — 1 new conflict: module renamed to 'Course Surveys' (Aug 25 transcript)",
+            "what": "Processed 7 product-relevant meetings from Aug 25–Sep 8 window (18 meetings fetched, 11 filtered as non-product). 3 conflicts from Aug 25–27 meetings already captured in prior flags (dashboard 2-card directive, reminder cadence Phase 2 deferral, communication schedule deferral). 1 genuinely new conflict identified: Aug 25 Post-Course Survey Cadence Meeting — Monil Pokar confirmed product UI rename from 'Post Course Evaluations'/'PCE' to 'Course Surveys' (Vishaka Bhavsar confirmed). PRD title and all §4 terminology still uses 'Post Course Evaluation'/'PCE'. Flagged in docs/watch/flags/pce.md as TRANSCRIPT-PRD CONFLICT — 2026-09-08. Exam Management and system products: no new conflicts found in Aug 25–Sep 8 window.",
+            "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) — Aug 25, 2026 (Granola ID: 970c20a2)",
+            "severity": "P1",
+            "meetingsProcessed": 7,
+            "newDecisions": 0,
+            "conflictsFlagged": 1,
+            "meetingsWithNoTranscript": 0
         }
     ]
 }

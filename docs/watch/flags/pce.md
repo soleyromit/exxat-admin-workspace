@@ -552,3 +552,13 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Update PRD §13d to remove "Communication schedule and release" from Phase 1 scope. Add note: "Communication schedule and release → Phase 2 (hidden for now)." Confirm whether the Communication wizard step in the Create Survey flow is also affected.
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-08
+**Meeting:** Post-Course Survey Cadence Meeting (BiWeely 45 Mins) — Aug 25, 2026
+**Speaker:** Monil Pokar (confirmed by Vishaka Bhavsar)
+**What they said:** "Course surveys is very well understood, so we can go with core surveys on our UI as well as we build those screens." / "we changed that monel based on our discussion because evaluation tends to conflict with our evaluation use and learning activities... Calling it post course evaluation again can be confusing."
+**What the PRD says:** PRD title: "Post Course Evaluation & Surveys" — all §4 Key User Flows, sidebar labels, step names, and dashboard language use "Course Evaluations" / "PCE" throughout. §4 sidebar taxonomy explicitly lists "Surveys → Course Evaluations."
+**Conflict:** Product is being renamed to "Course Surveys" across all UI (sidebar, CTAs, headings, dashboard); PRD still uses "Post Course Evaluation" / "PCE" terminology exclusively.
+**Suggested action:** Update PRD title and all §4 terminology from "Post Course Evaluation" / "PCE" to "Course Surveys." Update sidebar label, dashboard card labels, wizard step names, and template-creation headings. Confirm with Monil whether the sidebar top-level entry (currently "Surveys → Course Evaluations") should read "Surveys → Course Surveys."
+
+---
