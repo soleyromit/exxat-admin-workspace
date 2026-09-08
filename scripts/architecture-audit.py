@@ -27,6 +27,7 @@ Run from repo root:
     python3 scripts/architecture-audit.py             # human report
     python3 scripts/architecture-audit.py --strict    # exit 1 if any gaps
     python3 scripts/architecture-audit.py --json      # machine-readable
+    python3 scripts/architecture-audit.py --fix       # auto-patch missing skill frontmatter
 """
 from __future__ import annotations
 
@@ -114,6 +115,55 @@ def check_hooks_wired(report: Report) -> None:
 
 # ----------------------------------------------------------------------
 # 2. Skills load
+
+
+def _derive_skill_frontmatter(skill_md: Path) -> tuple[str, str]:
+    """Return (name, description) derived from directory slug + file content."""
+    slug = skill_md.parent.name
+    text = read(skill_md)
+    heading_m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+    heading = heading_m.group(1).strip() if heading_m else slug
+    # First non-empty, non-heading body line — strip markdown bold/code
+    first_body = ""
+    past_heading = False
+    for line in text.splitlines():
+        if re.match(r"^#+\s", line):
+            past_heading = True
+            continue
+        if past_heading and line.strip() and not line.startswith("-"):
+            first_body = re.sub(r"\*\*([^*]+)\*\*", r"\1",
+                                re.sub(r"`([^`]+)`", r"\1", line.strip()))
+            break
+    description = f"{heading}. {first_body}" if first_body else heading
+    return slug, description
+
+
+def fix_skill_frontmatter(skill_md: Path) -> bool:
+    """Prepend/patch YAML frontmatter for missing name: or description:.
+    Returns True if the file was modified."""
+    text = read(skill_md)
+    fm = parse_frontmatter(text)
+    if fm.get("name") and fm.get("description"):
+        return False
+
+    name, description = _derive_skill_frontmatter(skill_md)
+
+    if text.startswith("---"):
+        # Existing block — inject missing keys right after opening ---
+        end = text.find("\n---", 4)
+        inner = text[4:end]
+        prefix = ""
+        if not fm.get("name"):
+            prefix += f"name: {name}\n"
+        if not fm.get("description"):
+            prefix += f"description: {description}\n"
+        new_text = "---\n" + prefix + inner + text[end:]
+    else:
+        # No frontmatter at all — prepend a complete block
+        new_text = f"---\nname: {name}\ndescription: {description}\n---\n\n{text}"
+
+    skill_md.write_text(new_text, encoding="utf-8")
+    return True
 
 
 def check_skills(report: Report) -> None:
@@ -326,7 +376,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Audit workspace architecture wiring.")
     parser.add_argument("--strict", action="store_true", help="Exit 1 if any gaps")
     parser.add_argument("--json", action="store_true", help="Machine-readable output")
+    parser.add_argument("--fix", action="store_true",
+                        help="Auto-patch missing skill frontmatter (name + description), then audit")
     args = parser.parse_args()
+
+    if args.fix:
+        skills_dir = REPO_ROOT / ".claude" / "skills"
+        fixed = 0
+        if skills_dir.is_dir():
+            for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
+                if fix_skill_frontmatter(skill_md):
+                    print(f"  [fix] patched frontmatter: {skill_md.relative_to(REPO_ROOT)}")
+                    fixed += 1
+        if fixed:
+            print(f"  [fix] {fixed} skill(s) patched — re-running audit\n")
 
     report = Report()
     check_hooks_wired(report)
