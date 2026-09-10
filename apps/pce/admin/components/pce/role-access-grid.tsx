@@ -24,7 +24,7 @@ import {
   AvatarInitials, PillCell, RowActionsCell, KeyMetrics,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
-  Field, FieldLabel, FieldGroup, FieldDescription,
+  Field, FieldLabel, FieldGroup,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectSeparator,
   Tabs, TabsList, TabsTrigger, TabsTriggerLabel, TabsCountBadge, TabsContent,
   type MetricItem,
@@ -266,8 +266,8 @@ export function RoleAccessGrid() {
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-72 p-3" aria-label={`${row.roleLabel} access details`}>
-            <p className="text-sm font-medium mb-2">What {row.roleLabel} can access</p>
-            <RoleCapabilityList role={row.role} roleLabel={row.roleLabel} />
+            <p className="text-xs font-medium text-muted-foreground mb-2">What {row.roleLabel} can access</p>
+            <RoleCapabilityList role={row.role} />
           </PopoverContent>
         </Popover>
       ),
@@ -434,9 +434,15 @@ export function RoleAccessGrid() {
           usable inside a FloatingSheetPanel anywhere in the product. */}
       <FloatingSheetPanel open={grantOpen} onOpenChange={setGrantOpen}>
         <FloatingSheetPanelContent contentSlot="grant-role-sheet">
+          {/* No header description (Romit, 2026-09-10: "remove extra text, if its not
+              required under grant role"). Its only real payload was "why aren't Course
+              Manager and Instructor in the dropdown" — a question that occurs at the
+              dropdown, not at the title, and only to the reader who goes looking for
+              those roles. It now lives on-demand in the info tooltip beside the
+              "Administrative role" label, the same affordance PermissionsMatrix uses
+              for the identical caveat, so it costs no permanent vertical space. */}
           <FloatingSheetPanelHeader
             title="Grant role"
-            description="Administrative access only. Course Manager and Instructor resolve automatically from course assignments, managed under Permissions matrix → Faculty roles."
             onClose={() => setGrantOpen(false)}
           />
 
@@ -460,7 +466,30 @@ export function RoleAccessGrid() {
                 </Field>
 
                 <Field orientation="vertical">
-                  <FieldLabel htmlFor="perm-role">Administrative role *</FieldLabel>
+                  {/* The Course Manager / Instructor caveat lives here, on demand —
+                      same info-icon + Tooltip affordance as PermissionsMatrix's
+                      "Faculty roles" row. It answers the one question this field
+                      raises ("where are the other two roles?") at the point it is
+                      raised, and it absorbs what the removed FieldDescription said
+                      about the "No administrative role" case, so one tooltip
+                      replaces two permanent paragraphs. */}
+                  {/* h-5 pins this row to the label's own line height: the icon-xs
+                      Button is 24px and would otherwise push the Select 2px further
+                      down than the Faculty field's Select above it. The button still
+                      renders and hit-tests at its full size, just centred on the text. */}
+                  <div className="flex h-5 items-center gap-1.5">
+                    <FieldLabel htmlFor="perm-role">Administrative role *</FieldLabel>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-xs" aria-label="Why Course Manager and Instructor are not listed">
+                          <i className="fa-light fa-circle-info text-xs" style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="z-[90] max-w-xs">
+                        Course Manager and Instructor are not granted here. Those roles resolve automatically from a faculty member&apos;s course associations.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Select value={draft.role} onValueChange={v => setDraft(d => ({ ...d, role: v as GrantRoleValue }))}>
                     <SelectTrigger id="perm-role" aria-label="Administrative role" aria-required="true"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[90]">
@@ -471,45 +500,37 @@ export function RoleAccessGrid() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FieldDescription>
-                    {draft.role === NO_ADMIN_ROLE
-                      ? 'Access will be resolved automatically if this faculty member is later associated with a course.'
-                      : draftRoleMeta?.description}
-                  </FieldDescription>
+                  {/* Per-role FieldDescription dropped (Romit, 2026-09-10: "remove...
+                      placeholder text under role dropdown"). draftRoleMeta.description
+                      only restated the role name in a sentence ("Program Admin Limited...
+                      within their program") — the capability list below already answers
+                      "what does this role do" concretely, per function, so the paragraph
+                      was a third telling of the same fact. The NO_ADMIN_ROLE branch's
+                      automatic-resolution note moved into the label tooltip above. */}
                 </Field>
 
-                <Field orientation="vertical">
-                  <FieldLabel>Scope</FieldLabel>
-                  <p
-                    className="text-sm text-muted-foreground flex items-center px-3 border border-border rounded-md"
-                    style={{ height: 'var(--control-height)' }}
-                  >
-                    {draft.role === NO_ADMIN_ROLE
-                      ? 'Not applicable'
-                      : (draftRoleMeta?.scope === 'Institution' ? 'Institution-wide' : 'Program-wide')}
-                  </p>
-                  <FieldDescription>
-                    {draft.role === NO_ADMIN_ROLE ? 'No administrative scope to set.' : 'Implied by role. Not editable.'}
-                  </FieldDescription>
-                </Field>
+                {/* Scope dropped as its own field (Romit, 2026-09-10: "not clear how
+                    scope program-wide helps") — it never held new information, only
+                    restated a word ("Program-wide") from the role description directly
+                    above it ("...within their program"), and the badge didn't explain
+                    what that scope actually changes. The description already carries it
+                    in plain language; a separate field just repeated the same fact twice. */}
 
                 {/* Capability strip — scoped to the selected role, via the shared
                     RoleCapabilityList (permissions-matrix.tsx) so this sheet, the
                     Assignments tab's role-chip popover, and the matrix table can
-                    never drift from one another. Placed after Scope,
-                    not right under Role (Romit, 2026-09-02: "ok, but do it
-                    after course offering") — keeps the required fields above
-                    the fold, with this as a scannable summary once the grant
-                    is nearly configured. "No administrative role" reads as
+                    never drift from one another. "No administrative role" reads as
                     all-none here — this strip covers admin/content functions
                     only, not the separate course-association access that may
                     still resolve for this faculty member. */}
                 <Field orientation="vertical">
-                  <div className="flex items-center gap-1.5">
-                    <i className="fa-light fa-circle-info text-xs" style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
-                    <FieldLabel>What {draft.role === NO_ADMIN_ROLE ? 'this user' : draftRoleMeta?.label} can access</FieldLabel>
-                  </div>
-                  <RoleCapabilityList role={draft.role} roleLabel={draftRoleMeta?.label ?? 'No administrative role'} />
+                  {/* Decorative info glyph removed: it carried no tooltip, and the
+                      identical glyph two fields above is now a real affordance —
+                      one that does nothing beside one that does reads as broken. */}
+                  <FieldLabel className="text-xs text-muted-foreground">
+                    What {draft.role === NO_ADMIN_ROLE ? 'this user' : draftRoleMeta?.label} can access
+                  </FieldLabel>
+                  <RoleCapabilityList role={draft.role} />
                 </Field>
               </FieldGroup>
             </FloatingSheetPanelBody>
