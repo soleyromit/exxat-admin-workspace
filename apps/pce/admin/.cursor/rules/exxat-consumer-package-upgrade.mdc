@@ -21,6 +21,8 @@ alwaysApply: false
 | `npx exxat-ui upgrade --only <path>` | **Yes, one file** — fetches a single reference file from `generated-starter/` | You want a fix to a demo page or mock module you never customised |
 | `npx exxat-ui eject <path>` | **Yes** — forks one package file into the app and declares it app-owned | You must change a package file and no token / slot / wrapper will do |
 | `npx exxat-ui codemod nav-specs` | **Yes** — rewrites the app's own nav files, opt-in only | `upgrade` reported nav rows still carrying JSX icons |
+| `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate plan` | **No** unless `--output` is given | Detect legacy bootstrap versus a managed upgrade and produce a checksummed plan |
+| `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate apply --plan <file>` | **Yes, transactionally** | Apply a reviewed plan in an isolated Git worktree, validate it, then promote one patch |
 | `npx exxat-ui upgrade --force` | **Yes, destructively** — also overwrites declared app-owned files | **Only** on explicit user request, after showing them the kept-file list |
 
 `upgrade` also writes backups under `.exxat-ui/backups/<timestamp>/`. Prefer **git commit** before any upgrade.
@@ -31,8 +33,8 @@ Three sets, and most of the starter is in none of them:
 
 | Set | Behaviour | Contents |
 |---|---|---|
-| Framework wiring (~36) | **Overwritten**, with a backup | Product identity, routing, scope, shell layout, switcher chrome — has to match the installed package or the app gates the wrong products |
-| Seams (~84) | **Created if missing, never overwritten** | One-line re-export shims, slot fills (`app-shell-wiring.tsx`, `panel-bridges.tsx`), `globals.css`, `vite.config.ts` |
+| Framework wiring (33) | **Overwritten**, with a backup | Product identity, routing, scope, shell layout, switcher chrome — has to match the installed package or the app gates the wrong products |
+| Seams (~85) | **Created if missing, never overwritten** | Import-closed one-line re-export shims, generic fills, `globals.css`, `vite.config.ts`; product-specific `app-shell-wiring.tsx` and `panel-bridges.tsx` remain reference files |
 | Manual review (7) | **Reported, never written** | Files where both sides have real content |
 
 Everything else — demo hubs, pages, `components/design-system/`, most of `lib/mock/` — is **reference only**. It becomes the app's product on day one, so `upgrade` does not write it at any version. Fetch one deliberately:
@@ -53,13 +55,84 @@ Within the two written sets, ownership is **declared**, in `.exxat-ui/ejected.js
 `.exxat-ui/shell-baseline.json` used to answer this by hashing what the upgrader
 last wrote. It could tell whether a file had changed but never whether that was
 deliberate, so an incidental edit froze a file forever and an intentional one
-looked identical to a stale copy. The first `upgrade` after the switch converts
-existing drift into declarations, then deletes the baseline; from then on the
-consumer declares ownership before editing.
+looked identical to a stale copy.
+
+The first `upgrade` after the switch converts existing drift into declarations
+**only when a trustworthy baseline is there to read**, then deletes it. An app
+with no `shell-baseline.json` has nothing to separate a consumer edit from an
+untouched old package copy, so `upgrade` **fails closed**: it writes nothing,
+lists the unresolved paths, and waits for an explicit choice —
+`--declare-existing-owned` to preserve and record them, or `--force` to take the
+package copies with backups. Review the list per file; the two flags are
+per-run, not per-file, and a wholesale answer freezes stale copies or drops
+tenant work. A malformed ledger stops the run the same way.
 
 `upgrade --check` exit codes: **10** = portable work exists (what `sync-extras`
 acts on) · **11** = nothing portable, but this app owns package files ·
+**1** = unresolved ownership or malformed ledger, nothing written ·
 **0** = nothing to do.
+
+Current `postinstall` keeps the agent-context sync fail-open but lets `upgrade`
+exit 1 fail visibly, so unresolved ownership cannot masquerade as a successful
+install. `sync-extras` also prints the underlying error when its dry run sees
+exit 1. Older apps may still end their wired script with
+`exxat-ui upgrade --quiet || true`; `sync-extras` removes that terminal mask.
+It warns and leaves a custom chain untouched when another command follows the
+mask. After any major bump, run `upgrade --check` by hand and review its exit
+code.
+
+The starter's `predev` runs a cached npm version check at most once per day. A
+newer release prints the exact package update and `upgrade --check` commands.
+Run `exxat-ui check-update` to check immediately;
+`EXXAT_UI_SKIP_UPDATE_CHECK=1` is the explicit opt-out for offline or centrally
+managed environments.
+
+## Architecture migration: legacy bootstrap versus managed upgrade
+
+Use the migration workflow when the app predates `.exxat-ui/architecture.json`
+or when a release changes architecture, routes, flow contracts, or persisted
+state. Do not substitute `upgrade --force`.
+
+1. Pin the destination CLI and run
+   `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate plan --output .exxat-ui/plans/<name>.json`.
+2. If mode is `legacy-bootstrap`, run `exxat-ui migrate legacy inspect`.
+3. Review every route, navigation, authorization, mutation, draft, and storage
+   finding. Give every disposition a reason and connect routes to reviewed
+   flows. Resolve skipped implementation files or add a reasoned
+   `coverageAcknowledgements` entry for each one.
+4. Run `exxat-ui migrate legacy verify`, commit the inventory, review,
+   compatibility manifest, and ownership ledger, then generate a fresh plan.
+5. Run
+   `npx --yes --package=@exxatdesignux/ui@<target-version> exxat-ui migrate apply --plan <file>`
+   only from a clean Git root and with the same target version used for plan.
+
+Apply installs with lifecycle scripts disabled inside a detached worktree,
+runs the app's typecheck, test, or build gates, verifies framework idempotence,
+records a checksummed receipt chain, and then promotes one binary-safe patch.
+Any stale plan, changed `HEAD`, unresolved ownership, incomplete review, storage
+collision, or non-preserving behavior stops before the checkout changes.
+
+Automatic legacy bootstrap is preservation-only. Alias, redirect, replace,
+facade, copy, transform, migrate, remove, or retire dispositions require an
+app-owned adapter and contract test. Never change a disposition to `preserve`
+merely to clear a blocker.
+
+For prepublish customer testing, bind the exact tarball:
+
+```bash
+UI_TARBALL=file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz
+npx --yes --package="$UI_TARBALL" exxat-ui migrate plan \
+  --package-spec file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz \
+  --framework-package-spec file:/absolute/path/to/exxatdesignux-product-framework-x.y.z.tgz \
+  --output .exxat-ui/plans/local-tarball.json
+npx --yes --package="$UI_TARBALL" exxat-ui migrate apply \
+  --plan .exxat-ui/plans/local-tarball.json
+```
+
+The plan records both tarball checksums. Apply refuses if either artifact
+changes and verifies the installed package versions before recording a receipt.
+Both commands must use the destination tarball's CLI so its recipes and target
+architecture match the package being tested.
 
 ## Nav rows carry a class string, not a node
 

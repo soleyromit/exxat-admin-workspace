@@ -10,6 +10,7 @@ import { ChartVariantProvider } from "@/contexts/chart-variant-context"
 import { AskLeoSidebar } from "@/components/ask-leo-sidebar"
 import { AskLeoProvider } from "@/components/ask-leo-context"
 import { LeoAmbienceProvider } from "@/components/leo-ambience-context"
+import { LeoAmbienceProvider as PackageLeoAmbienceProvider } from "@exxatdesignux/ui/components/ui/leo-ambience-context"
 import { KeyMetricsAskLeoBridge } from "@/components/key-metrics-ask-leo-bridge"
 import { SystemBannerProvider } from "@/contexts/system-banner-context"
 import { SystemBannerSlot } from "@/components/system-banner-slot"
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <ChartVariantProvider>
                 <AskLeoProvider>
                   <LeoAmbienceProvider>
+                  <PackageLeoAmbienceProvider>
                   <KeyMetricsAskLeoBridge>
                     <SystemBannerProvider>
                       <CommandMenuProvider value={commandMenuConfig}>
@@ -80,6 +82,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       </CommandMenuProvider>
                     </SystemBannerProvider>
                   </KeyMetricsAskLeoBridge>
+                  </PackageLeoAmbienceProvider>
                   </LeoAmbienceProvider>
                 </AskLeoProvider>
               </ChartVariantProvider>

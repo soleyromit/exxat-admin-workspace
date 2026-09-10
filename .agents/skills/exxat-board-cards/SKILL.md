@@ -7,7 +7,7 @@ user-invocable: true
 
 # Exxat DS — board (kanban) cards
 
-**Canonical MUST/MUST NOT:** **`./AGENTS.md` §4.4** (or **`./AGENTS.md`** when the workspace is the `./` app folder only). **Claude:** **`.claude/skills/exxat-board-cards/SKILL.md`** (repo root) — same body as this file. This skill is the **how-to**; the handbook stays the contract.
+**Canonical MUST/MUST NOT:** **`docs/exxat-ds/handbook/agents-handbook.md` §4.4** (or **`./AGENTS.md`** when the workspace is the `./` app folder only). **Claude:** **`.claude/skills/exxat-board-cards/SKILL.md`** (repo root) — same body as this file. This skill is the **how-to**; the handbook stays the contract.
 
 ## When to use this skill
 

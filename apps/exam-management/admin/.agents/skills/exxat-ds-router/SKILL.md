@@ -43,7 +43,7 @@ Common: `hub-list`, `record-detail`, `overlay`, `focus-workflow`, `navigation`, 
 
 | Layer | Antigravity path | Cursor path |
 | --- | --- | --- |
-| L0 Constitution | `.agents/rules/` (4 always on) | `.agents/rules/` |
+| L0 Constitution | `.agents/rules/` (5 always on) | `.agents/rules/` |
 | L1 Router | `exxat-surface-router` skill + script | same |
 | L2 Job doc | `docs/exxat-ds/jobs/*.md` | same |
 | L3 Rule | `.agents/rules/*.md` | `.agents/rules/*.mdc` |

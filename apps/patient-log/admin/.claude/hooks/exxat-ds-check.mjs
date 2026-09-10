@@ -36,6 +36,55 @@
 "use strict"
 
 import { readFileSync, existsSync } from "node:fs"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const hookDir = dirname(fileURLToPath(import.meta.url))
+
+/**
+ * `component-map.json` — generated from the DS registry by
+ * `scripts/build-component-map.mjs`. Candidate paths in order: the builder
+ * workspace, a consumer repo after `exxat-ui sync-extras`, then the installed
+ * package (so the check still works before a consumer has synced).
+ */
+const COMPONENT_MAP_CANDIDATES = [
+  resolve(hookDir, "../../apps/web/docs/component-map.json"),
+  join(process.cwd(), "apps/web/docs/component-map.json"),
+  join(process.cwd(), "docs/exxat-ds/component-map.json"),
+  join(
+    process.cwd(),
+    "node_modules/@exxatdesignux/ui/consumer-extras/patterns/component-map.json",
+  ),
+]
+
+function loadComponentMap() {
+  for (const candidate of COMPONENT_MAP_CANDIDATES) {
+    try {
+      if (!existsSync(candidate)) continue
+      const parsed = JSON.parse(readFileSync(candidate, "utf8"))
+      if (Array.isArray(parsed?.entries)) return parsed
+    } catch {
+      /* try the next candidate */
+    }
+  }
+  return null
+}
+
+const identKey = value => String(value).toLowerCase().replace(/[^a-z0-9]/g, "")
+
+/** PascalCase component declarations authored in this file. */
+function localComponentNames(content) {
+  const names = new Set()
+  const patterns = [
+    /\bfunction\s+([A-Z][A-Za-z0-9]*)\s*\(/g,
+    /\bconst\s+([A-Z][A-Za-z0-9]*)\s*[:=]\s*(?:React\.)?(?:memo\(|forwardRef|function|\()/g,
+    /\bclass\s+([A-Z][A-Za-z0-9]*)\s+extends\b/g,
+  ]
+  for (const pattern of patterns) {
+    for (const match of content.matchAll(pattern)) names.add(match[1])
+  }
+  return [...names]
+}
 
 function emit(payload) {
   process.stdout.write(JSON.stringify(payload))
@@ -296,6 +345,94 @@ function run() {
         "Detail routes need ⋯ overflow (Export + domain actions) — see `learning-activities-course-detail-client.tsx` " +
         "(`.cursor/rules/exxat-page-header-actions.mdc`, `apps/web/docs/jobs/record-detail.md`).",
     )
+  }
+
+  // ── Reuse before custom, driven by the DS registry ───────────────────────
+  // (`.cursor/rules/exxat-reuse-before-custom.mdc`)
+  //
+  // Every check above encodes ONE past mistake. This one is generic: it reads
+  // `component-map.json` (generated from the registry) so it covers every
+  // registered primitive, including ones added after this hook was written.
+  // That matters because the recurring failure is not a specific component —
+  // it is agents rebuilding whatever they could not find in the router.
+  //
+  // DS source itself is exempt: declaring `Tabs` inside packages/ui IS the
+  // design system, and catalog/doc surfaces name many primitives on purpose.
+  const isDesignSystemSource =
+    normalized.includes("/packages/ui/src/") ||
+    normalized.includes("/lib/design-system/") ||
+    normalized.includes("/components/design-system/") ||
+    /-previews?\.(?:tsx|jsx)$/.test(normalized) ||
+    /showcase\.(?:tsx|jsx)$/.test(normalized)
+
+  if (!isDesignSystemSource) {
+    const map = loadComponentMap()
+
+    if (map) {
+      const importBlob = identKey((content.match(/^\s*import[\s\S]*?from\s*["'][^"']+["']/gm) ?? []).join("\n"))
+      const alreadyImported = entry => importBlob.includes(identKey(entry.name))
+      const fileKey = identKey(normalized.split("/").pop().replace(/\.(?:tsx|jsx)$/, ""))
+
+      /**
+       * The file that DEFINES a registered component naturally declares it.
+       * Match on the registry's `source`, on the tail of its import specifier,
+       * or on the filename, so `site-header.tsx` declaring `SiteHeader` is not
+       * reported as reinventing itself.
+       */
+      const definesEntry = entry => {
+        if (entry.source && normalized.endsWith(entry.source)) return true
+        const importTail = String(entry.import ?? "").replace(/^@[^/]*\//, "")
+        if (importTail && normalized.includes(`/${importTail}.`)) return true
+        return fileKey === identKey(entry.slug) || fileKey === identKey(entry.name)
+      }
+
+      const reuseFindings = []
+
+      // 1. A local component whose name collides with a registered export.
+      //    Exact-name only: a suffix rule (`*Button` → `Button`) matched
+      //    legitimate siblings like `PrimaryPageTemplate` vs `ListPageTemplate`,
+      //    and a check that cries wolf on every edit gets tuned out. Renamed
+      //    rebuilds are caught by the fingerprints below instead.
+      for (const local of localComponentNames(content)) {
+        const localKey = identKey(local)
+        const match = map.entries.find(
+          entry =>
+            localKey === identKey(entry.name) && !alreadyImported(entry) && !definesEntry(entry),
+        )
+        if (!match) continue
+        const importPath = match.packageImport ?? match.import
+        reuseFindings.push(
+          `Local component \`${local}\` collides with the design system's ` +
+            `\`${match.name}\` (${match.group}), which is not imported here. ` +
+            `Import it from \`${importPath}\`` +
+            `${match.source ? ` (source: ${match.source})` : ""} or, if it genuinely ` +
+            `does not fit, say so and ask before shipping a parallel primitive.`,
+        )
+      }
+
+      // 2. Structural fingerprints — hand-rolled markup that means a DS
+      //    primitive was rebuilt under a name that collides with nothing.
+      for (const print of map.fingerprints ?? []) {
+        const required = print.any ?? []
+        if (required.length === 0) continue
+        if (!required.every(needle => content.includes(needle))) continue
+        if ((print.alsoAny ?? []).length > 0 && !print.alsoAny.some(n => content.includes(n))) continue
+        if ((print.unless ?? []).some(needle => content.includes(needle))) continue
+        reuseFindings.push(
+          `This file hand-builds a surface the design system already ships ` +
+            `(\`${print.id}\`). Use **${print.use}** from \`${print.from}\`. ${print.why}`,
+        )
+      }
+
+      // Cap the noise — a long list reads as a linter dump and gets skimmed.
+      for (const finding of reuseFindings.slice(0, 3)) findings.push(finding)
+      if (reuseFindings.length > 3) {
+        findings.push(
+          `${reuseFindings.length - 3} more reuse collision(s) in this file. ` +
+            `Search \`component-map.json\` keywords for the intent before writing more chrome.`,
+        )
+      }
+    }
   }
 
   if (findings.length === 0) return silent()

@@ -12,7 +12,14 @@ import {
   FloatingSheetPanelHeader, FloatingSheetPanelWorkflowFooter,
 } from '@/lib/floating-sheet-panel'
 import { usePce } from '@/components/pce/pce-state'
+import { AcademicYearField } from '@/components/pce/academic-year-field'
 import type { ProgramTerm, TermSeason } from '@/lib/pce-mock-data'
+
+/** Academic years already in use across all terms, most recent first —
+ *  the "already exists in Prism" side of the picker. */
+function existingAcademicYears(terms: ProgramTerm[]): string[] {
+  return Array.from(new Set(terms.map(t => t.academicYear).filter(Boolean))).sort((a, b) => b.localeCompare(a))
+}
 
 /** Derive the season half of a term from its name (e.g. "Spring 2026" → Spring). */
 function seasonFromName(name: string): TermSeason {
@@ -50,9 +57,10 @@ export function AddTermDrawer({ open, onOpenChange }: {
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { addProgramTerm } = usePce()
+  const { addProgramTerm, programTerms } = usePce()
   const [draft, setDraft] = useState({ name: '', academicYear: '', startDate: '', endDate: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const existingYears = existingAcademicYears(programTerms)
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {}
@@ -133,14 +141,14 @@ export function AddTermDrawer({ open, onOpenChange }: {
               </Field>
               <Field orientation="vertical">
                 <FieldLabel htmlFor="dash-term-year">Academic year *</FieldLabel>
-                <Input
+                <AcademicYearField
                   id="dash-term-year"
-                  placeholder="e.g., 2026–2027"
                   value={draft.academicYear}
-                  onChange={e => setDraft({ ...draft, academicYear: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.academicYear}
-                  aria-describedby={errors.academicYear ? 'dash-term-year-error' : 'dash-term-year-desc'}
+                  onChange={academicYear => setDraft({ ...draft, academicYear })}
+                  existingYears={existingYears}
+                  error={errors.academicYear}
+                  triggerAriaInvalid={!!errors.academicYear}
+                  describedById={errors.academicYear ? 'dash-term-year-error' : 'dash-term-year-desc'}
                 />
                 {errors.academicYear ? (
                   <FieldError id="dash-term-year-error">{errors.academicYear}</FieldError>
@@ -191,11 +199,12 @@ export function AddTermDatesDrawer({ term, open, onOpenChange }: {
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { updateProgramTerm } = usePce()
+  const { updateProgramTerm, programTerms } = usePce()
   const [draft, setDraft] = useState({
     name: term.name, academicYear: term.academicYear, startDate: '', endDate: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const existingYears = existingAcademicYears(programTerms)
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {}
@@ -270,14 +279,14 @@ export function AddTermDatesDrawer({ term, open, onOpenChange }: {
               </Field>
               <Field orientation="vertical">
                 <FieldLabel htmlFor="dash-dates-year">Academic year *</FieldLabel>
-                <Input
+                <AcademicYearField
                   id="dash-dates-year"
-                  placeholder="e.g., 2026–2027"
                   value={draft.academicYear}
-                  onChange={e => setDraft({ ...draft, academicYear: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.academicYear}
-                  aria-describedby={errors.academicYear ? 'dash-dates-year-error' : 'dash-dates-year-desc'}
+                  onChange={academicYear => setDraft({ ...draft, academicYear })}
+                  existingYears={existingYears}
+                  error={errors.academicYear}
+                  triggerAriaInvalid={!!errors.academicYear}
+                  describedById={errors.academicYear ? 'dash-dates-year-error' : 'dash-dates-year-desc'}
                 />
                 {errors.academicYear ? (
                   <FieldError id="dash-dates-year-error">{errors.academicYear}</FieldError>

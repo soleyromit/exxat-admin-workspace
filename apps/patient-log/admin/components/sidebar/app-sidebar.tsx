@@ -72,7 +72,8 @@ import { useLocationHash } from "@/hooks/use-location-hash"
 import { useSidebarReflowZoom } from "@/hooks/use-sidebar-reflow-zoom"
 import { useSidebarDrillInWidth } from "@/hooks/use-sidebar-drill-in-width"
 import { useProduct, type Product } from "@/contexts/product-context"
-import { useShellLayout, showsProductInSidebar } from "@/contexts/shell-layout-context"
+import { useShellLayout } from "@/contexts/shell-layout-context"
+import { showsProductInSidebar } from "@/lib/shell-layout"
 import { useProductSwitch } from "@/contexts/product-route-sync"
 import { productSlug } from "@/stores/app-store"
 import { isListedCustomProduct } from "@/stores/app-store"
@@ -1166,13 +1167,11 @@ function TeamSwitcherInner({
           <>
             {/* Selected parent — click to switch parent */}
             <div className="p-1">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setSubView("parents")}
-                className={cn(
-                  "flex w-full items-start gap-2.5 rounded-md p-2 text-left transition-colors",
-                  "hover:bg-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                )}
+                className="h-auto w-full items-start justify-start gap-2.5 p-2 text-left"
               >
                 <Avatar className="size-9 shrink-0">
                   <AvatarImage
@@ -1189,7 +1188,7 @@ function TeamSwitcherInner({
                   <p className="text-xs font-semibold leading-snug">{parent.name}</p>
                 </div>
                 <span className="shrink-0 pt-0.5 text-xs font-medium text-brand">Change</span>
-              </button>
+              </Button>
             </div>
 
             <DropdownMenuSeparator />

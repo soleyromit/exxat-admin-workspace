@@ -32,7 +32,7 @@ Replaces separate loads of `exxat-drawer-vs-dialog`, `exxat-page-vs-drawer`, and
 Need hub visible behind?
 ├── YES → same route
 │   ├── short + blocking? → Dialog (AlertDialog)
-│   └── auxiliary / wide table → Sheet (showOverlay={false}, floating inset)
+│   └── auxiliary / wide table / read-more detail → FloatingSheetPanel
 └── NO → new route (wizard, settings, detail)
 ```
 
@@ -42,17 +42,18 @@ Need hub visible behind?
 
 | Surface | Implementation |
 |---------|----------------|
-| Table properties, export, invite | **`Sheet`** — `TablePropertiesDrawer`, `ExportDrawer`, `InviteCollaboratorsDrawer` |
+| Table properties, export, invite, any side panel or detail readout | **`FloatingSheetPanel`** — `TablePropertiesDrawer`, `ExportDrawer`, `InviteCollaboratorsDrawer` all compose it; never the raw `Sheet` / `SheetContent` primitive underneath |
 | Delete confirm, legal ack | **`Dialog`** / `AlertDialog` |
 | Long multi-step primary work | **Route** with own URL |
-| Side panels | **`Sheet` only** — no Vaul `Drawer` |
+| Side panels | **`FloatingSheetPanel` only** — no raw `Sheet`, no Vaul `Drawer` |
 
 ---
 
 ## MUST NOT
 
 - Import `vaul` or `@/components/ui/drawer`.
-- Centered dialog for wide export column pickers — use sheet.
+- Import the raw `Sheet` / `SheetContent` / `SheetTrigger` / `SheetClose` / `SheetHeader` / `SheetFooter` / `SheetTitle` / `SheetDescription` primitive directly — compose `FloatingSheetPanel` instead. Enforced by `exxat-ds/no-raw-sheet` (lint error, not a style note).
+- Centered dialog for wide export column pickers — use `FloatingSheetPanel`.
 - Irreversible delete via toast only — dialog with confirm.
 
 ---

@@ -50,6 +50,7 @@ Non-table view branches (e.g. **folder** icon grid, **panel** finder, OS-style f
 ## Architecture
 
 - **Page shell** — `ListPageTemplate` owns the views toolbar (tabs), optional metrics, and export drawer. Content for the active tab is rendered via `renderContent`.
+- **Sticky stack** — Utility bar (outside scroll) → `[data-slot="list-views-sticky-subheader"]` (view toolbar, `--shell-utility-bar-height`, full-width rule) → DataTable column header via `getStickyTableHeaderOffset()`. See `shell-utility-bar-pattern.md` / `tabs-pattern.md`.
 - **Per–lifecycle (or category) data** — `PlacementsTable` swaps **columns** and **row sets** based on `lifecycleTabId` (e.g. All / Upcoming / Ongoing / Completed). Each lifecycle tab gets its **own** `PlacementsTable` instance (`key={tab.filterId}`) so `useTableState` resets correctly when columns change.
 - **Shared table state** — `useTableState` holds sort, search, filters, grouping, column order/visibility/pins/widths, row height, gridlines, and pagination flags. **Table**, **list**, **board**, and **dashboard** all read the same state so switching view type keeps behavior aligned.
 

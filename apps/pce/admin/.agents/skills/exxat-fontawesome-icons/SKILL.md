@@ -7,7 +7,7 @@ user-invocable: true
 # Exxat DS — Font Awesome icons (no Lucide)
 
 **Cursor rule:** `.agents/rules/exxat-fontawesome-icons.md`  
-**Handbook:** `./AGENTS.md` §1 (item 8), §8 accessibility for icon-only / informational cases.
+**Handbook:** `docs/exxat-ds/handbook/agents-handbook.md` §1 (item 8), §8 accessibility for icon-only / informational cases.
 
 ## Stack
 

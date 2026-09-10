@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { HorizontalScrollRegion } from "@/components/ui/horizontal-scroll-region"
 import {
@@ -89,17 +90,18 @@ function RecordMenuTriggerButton({
   variant?: "breadcrumb" | "title"
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       aria-current={isCurrentPage ? "page" : undefined}
       aria-label={menuAriaLabel ?? `Switch ${label}`}
       aria-haspopup="menu"
       className={cn(
+        "h-auto",
         variant === "title"
-          ? "inline-flex max-w-full min-w-0 items-center gap-2.5 rounded-md py-0.5 text-left font-inherit text-inherit outline-none hover:text-interactive-hover-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          ? "max-w-full min-w-0 justify-start gap-2.5 py-0.5 text-left font-inherit text-inherit"
           : cn(
-              "inline-flex max-w-[min(100%,16rem)] min-h-8 items-center gap-1 rounded-md px-0.5 font-sans text-sm leading-none outline-none",
-              "hover:text-interactive-hover-foreground focus-visible:ring-2 focus-visible:ring-ring",
+              "max-w-[min(100%,16rem)] min-h-8 justify-start gap-1 px-0.5 font-sans text-sm leading-none",
               isCurrentPage ? "font-medium text-foreground" : "text-muted-foreground",
             ),
       )}
@@ -113,7 +115,7 @@ function RecordMenuTriggerButton({
         )}
         aria-hidden="true"
       />
-    </button>
+    </Button>
   )
 }
 
@@ -187,14 +189,16 @@ function RecordMenuSegment({
                 aria-label={menuAriaLabel ?? `Search ${label}`}
               />
               {search ? (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   aria-label="Clear search"
                   onClick={() => setSearch("")}
-                  className="icon-button-chrome absolute end-1.5 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="icon-button-chrome absolute end-1.5 top-1/2 -translate-y-1/2 rounded"
                 >
                   <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -264,6 +268,17 @@ function RecordMenuSegment({
 /** BreadcrumbMenuSegment — peer record switcher for trail segments. */
 function BreadcrumbMenuSegment(props: React.ComponentProps<typeof RecordMenuSegment>) {
   return <RecordMenuSegment {...props} />
+}
+
+/**
+ * Peer record switcher — breadcrumb leaf, utility bar title, or `PageHeader` title.
+ */
+export function PageRecordMenuSwitcher({
+  variant = "breadcrumb",
+  isCurrentPage = true,
+  ...props
+}: React.ComponentProps<typeof RecordMenuSegment>) {
+  return <RecordMenuSegment variant={variant} isCurrentPage={isCurrentPage} {...props} />
 }
 
 /**

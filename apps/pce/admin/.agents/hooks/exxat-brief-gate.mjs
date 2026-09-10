@@ -16,11 +16,10 @@
  * code (NOT a hack to the framework's internal constants).
  *
  * Why this exists
- *   The `exxat-ux-discovery-protocol.mdc` rule is `alwaysApply: true`, but
- *   agents have been observed skipping the brief checkpoint when the prompt
- *   "feels like" a refactor or a one-class restyle. This hook is the
- *   programmatic floor: even when the agent forgets, the USER sees the
- *   proposed edit and approves (or rejects) it before any file changes.
+ *   The constitution is the only always-on rule. Discovery protocol is
+ *   on-demand. This hook is the programmatic floor: even when the agent
+ *   forgets, the USER sees the proposed edit and approves (or rejects) it
+ *   before any file changes.
  *
  * Behavior
  *   - Shim file (re-exports from @exxatdesignux/ui) → `permission: "ask"` + shim message
@@ -86,26 +85,17 @@ function askNewBrief(reason, path, cwd) {
       `[exxat-brief-gate] HOLD. You are about to CREATE a new design-critical ` +
       `file (${reason}: ${path}).\n\n` +
       `REQUIRED next step (do not skip):\n` +
-      `  1. Load the exxat-senior-ux skill (.cursor/skills/exxat-senior-ux/SKILL.md ` +
-      `or .claude/skills/exxat-senior-ux/SKILL.md).\n` +
-      `  2. Grep the codebase for an existing component that already covers this ` +
-      `(\`.cursor/rules/exxat-reuse-before-custom.mdc\`, \`.cursor/skills/exxat-token-economy/SKILL.md\` ` +
-      `§3 primitive aliases, \`columns-showcase.tsx\` for cell renderers). A NEW file ` +
-      `is only justified when this search comes up empty — state what you searched ` +
-      `for and found when you request approval.\n` +
-      `  3. Post the design brief in chat (Problem / User & frequency / Product / ` +
-      `Scope / Persona / Job-to-be-done / Pattern / Reference (repo) / ` +
-      `Reference (modern) / Principles applied / Deviations / Out of scope / ` +
-      `Open questions).\n` +
-      `  4. END THE TURN with "Ready to build — confirm or edit." and WAIT ` +
-      `for the user's reply.\n` +
-      `  5. If a brief was already posted and confirmed earlier in this chat, ` +
-      `say that explicitly when requesting approval for this write.\n\n` +
-      `Do NOT work around this by stuffing the new surface into an unrelated ` +
-      `existing file just to avoid create-file prompts.\n\n` +
-      `If a brief was already posted and confirmed earlier in this chat, ` +
-      `point the user to it when requesting approval. Otherwise, post the ` +
-      `brief now.` +
+      `  1. Run the surface router (\`exxat-ui context <surface>\` or ` +
+      `\`node scripts/agent-context-router.mjs <surface>\`). Read only that packet.\n` +
+      `  2. Grep \`component-map.json\` / reuse rule for an existing primitive. ` +
+      `A NEW file is only justified when that search is empty — say what you searched.\n` +
+      `  3. Post the brief (Problem / User & frequency / Product / Scope / Persona / ` +
+      `Job-to-be-done / Pattern / Reference repo / Reference modern / Principles / ` +
+      `Deviations / Out of scope / Open questions). Do not open senior-ux or ` +
+      `token-economy unless IA is undecided.\n` +
+      `  4. END THE TURN with "Ready to build — confirm or edit." and WAIT.\n` +
+      `  5. If a brief was already confirmed in this chat, say so when asking approval.\n\n` +
+      `Do NOT stuff the new surface into an unrelated file to avoid this prompt.` +
       imageNote,
   })
 }
@@ -129,17 +119,12 @@ function askBrief(reason, path, cwd) {
       `[exxat-brief-gate] HOLD. You are about to edit a design-critical surface ` +
       `(${reason}: ${path}).\n\n` +
       `Before continuing you MUST:\n` +
-      `  1. Load the exxat-senior-ux skill (.claude/skills/exxat-senior-ux/SKILL.md ` +
-      `or .cursor/skills/exxat-senior-ux/SKILL.md).\n` +
-      `  2. Post the design brief in chat (Problem / User & frequency / Product / ` +
-      `Scope / Persona / Job-to-be-done / Pattern / Reference (repo) / ` +
-      `Reference (modern) / Principles applied / Deviations / Out of scope / ` +
-      `Open questions).\n` +
-      `  3. END THE TURN with "Ready to build — confirm or edit." and WAIT ` +
-      `for the user's reply.\n\n` +
-      `If a brief was already posted and confirmed earlier in this chat, ` +
-      `mention that explicitly when requesting approval so the user can ` +
-      `recognise it.` +
+      `  1. Run the surface router and read only that packet.\n` +
+      `  2. Post the brief (Problem / User & frequency / Product / Scope / Persona / ` +
+      `Job / Pattern / References / Principles / Deviations / Out of scope / ` +
+      `Open questions). Do not open senior-ux or token-economy unless IA is undecided.\n` +
+      `  3. END THE TURN with "Ready to build — confirm or edit." and WAIT.\n\n` +
+      `If a brief was already confirmed in this chat, say so when asking approval.` +
       imageNote,
   })
 }

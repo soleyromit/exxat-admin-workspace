@@ -1,0 +1,55 @@
+---
+description: Exxat DS — every HubTable bulk action MUST declare and bind a keyboard shortcut that avoids OS/browser chords.
+activation: glob
+globs: "**/hub-table.tsx,**/library-*.tsx,**/columns-showcase.tsx,**/data-table/**/*.tsx,**/*bulk*"
+---
+
+<!-- Synced from .agents/rules/exxat-bulk-action-shortcuts.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — bulk action keyboard shortcuts
+
+## MUST
+
+1. **Every `BulkAction` declares `shortcut: string`.** Required on
+   `BulkAction<TRow>` in `packages/ui/src/components/data-views/hub-table.tsx`.
+2. **Show the chord at rest.** Structured `bulkActions` render
+   `<Kbd variant="bare">` **inline** on labeled buttons and mount
+   `<Shortcut keys={…}>` while the bar is visible. Icon-only → Tip + chord.
+3. **Only use the safe family: ⌘⌥ / Ctrl+Alt + key.** Bulk chords MUST be
+   built as `` `${mod}${alt}<Key>` `` via `useModKeyLabel()` + `useAltKeyLabel()`.
+   Never ⌘⇧ / Ctrl+Shift, never mod-only letter, never bare ⌘⌫ for bulk delete.
+
+   ```tsx
+   const mod = useModKeyLabel()
+   const alt = useAltKeyLabel()
+   shortcut: `${mod}${alt}F`   // Favorite
+   shortcut: `${mod}${alt}A`   // Archive
+   shortcut: `${mod}${alt}E`   // Export
+   shortcut: `${mod}${alt}⌫`   // Delete
+   shortcut: `${mod}${alt}R`   // Send reminder
+   ```
+
+4. **Custom `bulkActionsSlot`** — same inline bare `Kbd` + `<Shortcut>` parity.
+5. **Clear selection** stays **Esc** (DataTable) — do not steal Esc for a bulk action.
+6. **Ban list** — follow `exxat-kbd-shortcuts.md` § “Never bind”. Especially never
+   bind bulk actions to ⌘⇧E, ⌘⌫, ⌘D, ⌘I, ⌘⌥←/→.
+
+## MUST NOT
+
+- Omit `shortcut` on a `BulkAction`.
+- Show a Kbd without a matching `<Shortcut>` (or vice versa).
+- Use ⌘⇧ / Ctrl+Shift chords for bulk actions (OS/browser collisions).
+- Use filled primary buttons in the bulk bar (P3).
+
+## Reference (safe)
+
+| Action | Chord |
+|--------|-------|
+| Favorite / Star | ⌘⌥F / Ctrl+Alt+F |
+| Archive | ⌘⌥A / Ctrl+Alt+A |
+| Export | ⌘⌥E / Ctrl+Alt+E |
+| Delete | ⌘⌥⌫ / Ctrl+Alt+Backspace |
+| Send reminder | ⌘⌥R / Ctrl+Alt+R |
+| Clear selection | Esc |
+
+Canonical: Library (`library-client.tsx`), Columns showcase, Learning Activities forms.

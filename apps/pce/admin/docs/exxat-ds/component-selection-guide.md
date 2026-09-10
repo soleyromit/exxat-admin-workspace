@@ -2,7 +2,7 @@
 
 **The UX router.** Agents: read **`_constitution.exxat-ds.mdc`** (always on), then **this file** — not `AGENTS.md` in full.
 
-**Companion:** [`token-taxonomy.md`](./token-taxonomy.md) · [`INDEX.yaml`](./INDEX.yaml) · [`jobs/`](./jobs/)
+**Companion:** [`design-system-taxonomy.md`](./design-system-taxonomy.md) · [`token-taxonomy.md`](./token-taxonomy.md) · [`INDEX.yaml`](./INDEX.yaml) · [`jobs/`](./jobs/)
 
 ---
 
@@ -17,7 +17,7 @@
 | DS catalog / showcase browse | [`jobs/catalog-browse.md`](./jobs/catalog-browse.md) | §1.4 |
 | Settings / preferences | [`jobs/settings-preferences.md`](./jobs/settings-preferences.md) | §2 (settings) |
 | Dedicated search (landing + results) | [`jobs/dedicated-search.md`](./jobs/dedicated-search.md) | §1.1 dedicated search |
-| Post-login `/home` landing / app switcher | — | `product-home/product-home-page.tsx` — **Products Home** (Storefront, Focus, Spotlight, Launcher variants) |
+| Post-login `/home` landing / app switcher | — | `product-home/product-home-page.tsx` — **Products Home** (Storefront, Focus, Spotlight, Launcher, Campus variants) |
 | Per-product pitch / marketing page | — | `product-home/product-marketing-page.tsx` — **Product Marketing Page** |
 | Dashboard / analytics page | — | §1.1 dashboard row + `charts-overview.tsx` |
 | Sheet / drawer on same route | — | §3 |
@@ -59,10 +59,21 @@ page layout: none of these should be rebuilt as bespoke chrome.
 | Hub with view tabs (table / list / board / dashboard / folder / panel / tree) | **`ListPageTemplate`** (§1.1) |
 | Page with a header and a max-width content column (record detail, showcase) | **`PrimaryPageTemplate`** |
 | Hub with a nested scope rail beside the primary nav (Library pattern) | **`SecondaryPanelHubTemplate`** ([`exxat-primary-nav-secondary-panel.mdc`](../../.cursor/rules/exxat-primary-nav-secondary-panel.mdc)) |
+| Resizable nested scope rail beside hub content (Library, Tokens, Ask Leo panel) | **`NestedSecondaryPanelShell`** |
 | Landing page with a search composer and recents | **`DiscoveryHubTemplate`** (§4) |
 | Authoring surface: form plus inspector, chrome stripped | **`NewFocusTemplate`** (§1.3) |
+| Signed-in product shell around routes | **App shell**: `UtilityBarSlot` + `AppSidebar` + optional secondary panel + one main content column |
 | Shell header with breadcrumbs | **`SiteHeader`** — one per route, inside `SidebarInset` |
 | Shell row for Search / Ask Leo / Notifications / Help / profile | **`UtilityBarSlot`** |
+| Responsive page or toolbar actions with deterministic overflow | **`ResponsiveActionRow`** |
+| Hub side panel for export, properties, or invite | **`FloatingSheetPanel`** |
+| Featured release note rail (What's new sheet) | **`WhatsNewSheet`** |
+| Compact scope rows shared by secondary panel hubs | **Secondary hub nav primitives** from `@exxatdesignux/ui/components/shell` |
+| Ask Leo input with attachments and dictation | **`AskLeoComposer`** |
+| Docked or floating Ask Leo conversation | **Ask Leo shell** |
+| Shared Leo dots, blob wash, and composer veil | **`LeoAmbientSurface`** |
+| Leo ambience preference window | **Leo Ambience Settings** |
+| Inline selection rewrite and undo controls | **`LeoAssistBar`** |
 
 **Full inventory:** [`component-map.json`](./component-map.json) — search `keywords` for
 your intent before writing any new component. A hit means import it

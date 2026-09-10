@@ -31,7 +31,6 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { ProductArt } from "@/components/product-app-mark"
 import { useRequestProductSwitch } from "@/contexts/product-switch-context"
 import { useProduct } from "@/contexts/product-context"
-import { adminObjectSummaries } from "@/lib/mock/admin-directory"
 import {
   catalogStageRank,
   findCatalogEntry,
@@ -42,7 +41,7 @@ import {
   TILE_GLYPH_SIZE_CLASS,
   TILE_MARK_SIZE_CLASS,
 } from "@/lib/product-glyph"
-import { productHomeSlug } from "@/lib/product-home"
+import { orderedDirectoryLaunchSummaries, productHomeSlug } from "@/lib/product-home"
 import {
   expandSwitcherProducts,
   type SwitcherProductEntry,
@@ -179,29 +178,29 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * People, Courses, and Personnel.
+ * Administrator and the shared record hubs.
  *
- * These are not products and never appear in either group above, but they are
- * the records every product in those groups reads from, and the switcher is
- * where someone goes when they want to be somewhere else. Leaving them out of
- * the one menu that lists every destination meant the only way to reach them
- * was to already be on the home page.
+ * These are not campus apps and never appear in Your App, but they are what
+ * every app in that group reads from, and the switcher is where someone goes
+ * when they want to be somewhere else. Leaving them out of the one menu that
+ * lists every destination meant the only way to reach them was to already be
+ * on the home page.
  *
- * Same heading and same order as the home page, so the two surfaces tell one
- * story.
+ * Same heading and same order as the Campus home Workspace section, so the two
+ * surfaces tell one story. Personnel Management is site-scoped and is not a
+ * Workspace row.
  */
 /**
- * Icon for the two rows below the last separator.
+ * Icon for a row that goes somewhere rather than opening an app.
  *
  * No tile, because these are not products and should not look like one, but the
  * same footprint a tile takes, so every label in the menu starts on the same
- * vertical line instead of the last two stepping left.
+ * vertical line instead of one row stepping left.
  *
- * Same glyph size as the tiled rows above. The tile is what says "product"; a
- * smaller glyph as well would step the icon column down twice at the bottom of
- * the menu for one distinction.
+ * Same glyph size as the tiled rows below. The tile is what says "product"; a
+ * smaller glyph as well would step the icon column twice for one distinction.
  */
-function FooterIcon({ icon }: { icon: string }) {
+function UtilityIcon({ icon }: { icon: string }) {
   return (
     <span className="inline-flex size-8 shrink-0 items-center justify-center" aria-hidden="true">
       <i className={cn("fa-light text-muted-foreground", TILE_GLYPH_SIZE_CLASS, icon)} />
@@ -209,31 +208,60 @@ function FooterIcon({ icon }: { icon: string }) {
   )
 }
 
-function DirectoryRows() {
-  const records = React.useMemo(() => adminObjectSummaries(), [])
-  // Everyone but a student, on the same predicate as the `/people`, `/courses`,
-  // and `/personnel` routes these link to. A wider gate than the Administrator
-  // row above deliberately: these are the rosters a coordinator works from, not
-  // the console that configures the workspace.
-  if (!canReadDirectory()) return null
+function WorkspaceRows() {
+  const { product } = useProduct()
+  const records = React.useMemo(() => orderedDirectoryLaunchSummaries(), [])
+  const showAdmin = isWorkspaceAdmin()
+  // Everyone but a student, on the same predicate as the `/people` and `/courses`
+  // routes these link to. A wider gate than the Administrator row below
+  // deliberately: these are the rosters a coordinator works from, not the
+  // console that configures the workspace.
+  const showRecords = canReadDirectory()
+  if (!showAdmin && !showRecords) return null
 
   return (
     <>
       <DropdownMenuSeparator />
-      <GroupLabel>Directory</GroupLabel>
-      {records.map(object => (
-        <DropdownMenuItem key={object.id} asChild className="items-center gap-2.5 py-1.5">
-          <Link to={object.href}>
+      <GroupLabel>Workspace</GroupLabel>
+      {showRecords
+        ? records.map(object => (
+            <DropdownMenuItem key={object.id} asChild className="items-center gap-2.5 py-1.5">
+              <Link to={object.href}>
+                <span className={NEUTRAL_TILE_CLASS} aria-hidden="true">
+                  <i className={cn("fa-light", TILE_GLYPH_SIZE_CLASS, object.icon)} />
+                </span>
+                <span className="min-w-0 flex-1 truncate">{object.label}</span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {object.total}
+                </span>
+              </Link>
+            </DropdownMenuItem>
+          ))
+        : null}
+      {showAdmin ? (
+        <DropdownMenuItem asChild className="items-center gap-2.5 py-1.5">
+          <Link to="/admin">
+            {/* Neutral tile between branded products: the console is not a product
+                with an identity of its own. The console's own mark rather than a
+                shield glyph — Compliance's mark is a shield, and two shields in
+                one menu is one shield too many. */}
             <span className={NEUTRAL_TILE_CLASS} aria-hidden="true">
-              <i className={cn("fa-light", TILE_GLYPH_SIZE_CLASS, object.icon)} />
+              <ProductArt
+                product="exxat-admin"
+                markClassName={TILE_MARK_SIZE_CLASS}
+                glyphClassName={TILE_GLYPH_SIZE_CLASS}
+              />
             </span>
-            <span className="min-w-0 flex-1 truncate">{object.label}</span>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {object.total}
-            </span>
+            <span className="min-w-0 flex-1 truncate">Administrator</span>
+            {product === "exxat-admin" ? (
+              <i
+                className="fa-solid fa-check ms-auto shrink-0 text-xs text-brand dark:text-brand-color-light"
+                aria-hidden="true"
+              />
+            ) : null}
           </Link>
         </DropdownMenuItem>
-      ))}
+      ) : null}
     </>
   )
 }
@@ -269,6 +297,20 @@ export function ProductSwitcherMenuItems() {
 
   return (
     <>
+      {/* The way back to `/home`, at the top rather than in the footer.
+          As "All apps" at the foot it read as a wider sibling of the rows above
+          it, so a reader looking for their app scanned it as one more option
+          and passed it. `/home` is not another app: it is the page the apps sit
+          on. Named for the place it goes and put where a reader looks first for
+          a way out, it stops competing with the list it introduces. */}
+      <DropdownMenuItem asChild className="items-center gap-2.5 py-1.5">
+        <Link to="/home">
+          <UtilityIcon icon="fa-house" />
+          Home
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+
       <GroupLabel>Your App</GroupLabel>
       {owned.map(entry => (
         <OwnedProductRow
@@ -282,43 +324,7 @@ export function ProductSwitcherMenuItems() {
         />
       ))}
 
-      {/* Administrator closes "Your App" rather than sitting in the footer
-          beside All apps. It is an app this person opens, not a utility link:
-          every comparable launcher (Okta, Salesforce, Microsoft 365) lists the
-          admin console with the apps. Role-gated, so a member never sees a door
-          they cannot walk through: `isWorkspaceAdmin` is the same predicate the
-          home tile and the `/admin` route read, so the three cannot disagree
-          about who administers this workspace. */}
-      {isWorkspaceAdmin() ? (
-        <DropdownMenuItem asChild className="items-center gap-2.5 py-1.5">
-          <Link to="/admin">
-            {/* The Directory rows' neutral tile, not the footer's bare glyph:
-                sitting between two branded products, an untiled row read as an
-                afterthought. Neutral rather than branded because the console is
-                not a product with an identity of its own.
-
-                The console's own mark rather than a shield glyph: Compliance's
-                mark is a shield, and two shields in one menu is one shield too
-                many. Grey either way — the mark inherits the tile's colour. */}
-            <span className={NEUTRAL_TILE_CLASS} aria-hidden="true">
-              <ProductArt
-                product="exxat-admin"
-                markClassName={TILE_MARK_SIZE_CLASS}
-                glyphClassName={TILE_GLYPH_SIZE_CLASS}
-              />
-            </span>
-            <span className="min-w-0 flex-1 truncate">Administrator</span>
-            {product === "exxat-admin" ? (
-              <i
-                className="fa-solid fa-check ms-auto shrink-0 text-xs text-brand dark:text-brand-color-light"
-                aria-hidden="true"
-              />
-            ) : null}
-          </Link>
-        </DropdownMenuItem>
-      ) : null}
-
-      <DirectoryRows />
+      <WorkspaceRows />
 
       {more.length > 0 ? (
         <>
@@ -329,14 +335,6 @@ export function ProductSwitcherMenuItems() {
           ))}
         </>
       ) : null}
-
-      <DropdownMenuSeparator />
-      <DropdownMenuItem asChild className="items-center gap-2.5 py-1.5">
-        <Link to="/home">
-          <FooterIcon icon="fa-grid-2" />
-          All apps
-        </Link>
-      </DropdownMenuItem>
     </>
   )
 }

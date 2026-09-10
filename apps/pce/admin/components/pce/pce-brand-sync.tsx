@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useProduct } from "@/contexts/product-context"
-import { PCE_BRAND_COLOR } from "@/lib/product-brand"
+import { PCE_BRAND_COLOR } from "@/lib/pce-brand"
 
 /**
  * Registers PCE's brand color as an accent override for the active product

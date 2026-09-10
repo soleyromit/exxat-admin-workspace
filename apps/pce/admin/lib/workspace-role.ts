@@ -36,6 +36,20 @@ export function isWorkspaceAdmin(): boolean {
 }
 
 /**
+ * Scope line for the home Administrator door's accessible name.
+ *
+ * Super Admin covers the workspace (`All programs`). Program Admin covers a
+ * short list (`3 programs`). The pill itself only says Administrator; this
+ * line is announced, not shown.
+ */
+export function administratorScopeCaption(): string | null {
+  if (!isWorkspaceAdmin()) return null
+  const ids = getLoginSession().administeredProgramIds
+  if (!ids) return "All programs"
+  return `${ids.length} program${ids.length === 1 ? "" : "s"}`
+}
+
+/**
  * Whether this session may open the shared records: People, Courses, Personnel.
  *
  * A second predicate rather than a second use of `isWorkspaceAdmin`, because the
@@ -45,15 +59,16 @@ export function isWorkspaceAdmin(): boolean {
  * teaches what, which staff cover a site. Gating it on the console left a faculty
  * member with no way to look up the people they place.
  *
- * The floor is the student, and it is the whole rule: a student who could open
- * these would be reading their entire cohort's records. So `member` and
- * `administrator` may, `student` may not, and a student who also opens as the
- * school (`opensAs`) gets the Directory in that identity and not in the other,
- * because it is the identity that decides, not the person.
+ * The floor is every student session: one app or many, they move between
+ * licensed products in Your App only, not the roster hubs in Workspace. So
+ * `member` and `administrator` may; `student` may not, including when two or
+ * more apps are granted. The console stays on `isWorkspaceAdmin`. A student who
+ * also opens as the school (`opensAs`) gets the Directory in that identity and
+ * not in the other, because it is the identity that decides, not the person.
  *
- * Every door reads this: the chips on all four home variants, the switcher rows,
- * and the three routes they link to, so a chip can never offer a page the route
- * turns away.
+ * Every door reads this: home chips or mosaic rows, the switcher rows, and the
+ * three routes they link to, so a chip can never offer a page the route turns
+ * away.
  */
 export function canReadDirectory(): boolean {
   return workspaceRole() !== "student"

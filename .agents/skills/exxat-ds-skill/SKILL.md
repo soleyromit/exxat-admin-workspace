@@ -20,7 +20,7 @@ description: >
 
 - **Stack:** Vite + React + react-router, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
 - **App root:** `apps/web/src/views/` — route modules wired in `src/App.tsx`
-- **Single source of truth:** `./AGENTS.md` for full prose explanations; this skill is the actionable summary
+- **Single source of truth:** `docs/exxat-ds/handbook/agents-handbook.md` for full prose explanations; this skill is the actionable summary
 - **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-primary-nav-secondary-panel`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.agents/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
 - **Library folder-scoped header (rule + doc):** **`.agents/rules/exxat-library-hub-header.md`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-primary-nav-secondary-panel`** when URL **`scope=folder`** drives the hub title.
 - **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and generated-starter shell ports without touching mock data or tenant copy. Then run **`npx --package=@exxatdesignux/ui@latest exxat-ui changelog`** (release notes), then **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/generated-starter/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
@@ -295,7 +295,7 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 | `components/foo-client.tsx` | `ListPageTemplate` orchestrator |
 | `app/(app)/foo/page.tsx` | Thin server component |
 
-**Do not** ship a **nav-linked hub** as an **empty page** or a single “replace this later” paragraph. If the route appears in **`lib/mock/navigation.tsx`**, implement the full hub (mock rows, **`ListPageTemplate`**, connected views per **`./AGENTS.md` §4.1**) unless the product explicitly defines a non-data shell.
+**Do not** ship a **nav-linked hub** as an **empty page** or a single “replace this later” paragraph. If the route appears in **`lib/mock/navigation.tsx`**, implement the full hub (mock rows, **`ListPageTemplate`**, connected views per **`docs/exxat-ds/handbook/agents-handbook.md` §4.1**) unless the product explicitly defines a non-data shell.
 
 ### Page vs drawer (actions)
 
@@ -303,7 +303,7 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 - **Dialog** — **Blocking** confirm/alert/short choice — **`docs/drawer-vs-dialog-pattern.md`**, **`.agents/rules/exxat-drawer-vs-dialog.md`**.
 - **New page** — Use **otherwise**: **primary**, **long-form**, **multi-step**, or flows that need their **own URL** without the hub visible.
 
-Align with **`./AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`docs/drawer-vs-dialog-pattern.md`**, **`.agents/rules/exxat-page-vs-drawer.md`**, **`.agents/rules/exxat-drawer-vs-dialog.md`**.
+Align with **`docs/exxat-ds/handbook/agents-handbook.md` §6.4**, **`docs/data-views-pattern.md`**, **`docs/drawer-vs-dialog-pattern.md`**, **`.agents/rules/exxat-page-vs-drawer.md`**, **`.agents/rules/exxat-drawer-vs-dialog.md`**.
 
 ---
 
@@ -319,7 +319,7 @@ Align with **`./AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`docs/dr
 | `ColumnDef` from `@/components/data-table/types` | Column type |
 | `FilterFieldDef`, `FilterOperator`, `ConditionalRule` from `@/components/table-properties/types` | Filter types |
 
-**Board (kanban) cards:** Use **`ListPageBoardCard`** and related parts from **`components/data-views/list-page-board-card.tsx`**; **`BoardCardTwoLineBlock`** / **`BoardCardIconRow`** from **`board-card-primitives.tsx`**. **List hub** status (Team, Compliance, Library, …): maps in **`lib/list-status-badges.ts`**; render with **`ListHubStatusBadge`** (**`surface="table"`** in table/list, **`surface="board"`** on cards); semantic tints **`LIST_HUB_STATUS_TINT_*`** for new domains; no **`uppercase`**. **Placements** uses **`StatusBadge`** in **`placements-table-cells.tsx`** (wrapper over **`ListHubStatusBadge`** + **`PLACEMENT_STATUS_*`**). **Full rules:** **`./AGENTS.md` §4.4**, **`.agents/rules/exxat-board-cards.md`**, **`.agents/skills/exxat-board-cards/SKILL.md`**.
+**Board (kanban) cards:** Use **`ListPageBoardCard`** and related parts from **`components/data-views/list-page-board-card.tsx`**; **`BoardCardTwoLineBlock`** / **`BoardCardIconRow`** from **`board-card-primitives.tsx`**. **List hub** status (Team, Compliance, Library, …): maps in **`lib/list-status-badges.ts`**; render with **`ListHubStatusBadge`** (**`surface="table"`** in table/list, **`surface="board"`** on cards); semantic tints **`LIST_HUB_STATUS_TINT_*`** for new domains; no **`uppercase`**. **Placements** uses **`StatusBadge`** in **`placements-table-cells.tsx`** (wrapper over **`ListHubStatusBadge`** + **`PLACEMENT_STATUS_*`**). **Full rules:** **`docs/exxat-ds/handbook/agents-handbook.md` §4.4**, **`.agents/rules/exxat-board-cards.md`**, **`.agents/skills/exxat-board-cards/SKILL.md`**.
 
 **Minimum required features on any data list page:**
 - Search (wire `searchable={displayOptions.showToolbarSearch}`)
@@ -428,7 +428,7 @@ When a hub is **shared**, use **`PageHeader` `variant="collaboration"`**: **empt
 
 **Library library — folder URL scope:** When **`?scope=folder&folderId=`** applies, **⋯ More** must also offer **Customize folder** (**`LibraryPageHeader`** **`onCustomizeFolder`**) and the **`LibraryNewFolderSheet`** must be mounted on **`LibraryClient`** so it works on every **`ListPageTemplate`** view tab. **`.agents/rules/exxat-library-hub-header.md`** · **`docs/library-hub-header-pattern.md`** (app: **`docs/exxat-ds/...`**).
 
-**Handbook:** `./AGENTS.md` §4.7 · **Doc:** `docs/collaboration-access-pattern.md` · **Skill:** `.agents/skills/exxat-collaboration-access/SKILL.md` · **Reference:** Library header + client.
+**Handbook:** `docs/exxat-ds/handbook/agents-handbook.md` §4.7 · **Doc:** `docs/collaboration-access-pattern.md` · **Skill:** `.agents/skills/exxat-collaboration-access/SKILL.md` · **Reference:** Library header + client.
 
 ---
 
@@ -631,7 +631,7 @@ Reference implementations: `new-placement-form.tsx` (Create placement = Enter on
 - **Natural language / AI:** Product **SHOULD** show **quick results in the palette** when the response fits; use **Ask Leo** (**⌘⌥K**) for **longer or complex** answers.
 - **Do not** treat the palette as a static link list only—leave room for inline AI results as they ship.
 
-**Details:** `docs/exxat-ds/command-menu-pattern.md`, **`./AGENTS.md` §7.1** (or `./` when the app folder is the workspace root).
+**Details:** `docs/exxat-ds/command-menu-pattern.md`, **`docs/exxat-ds/handbook/agents-handbook.md` §7.1** (or `./` when the app folder is the workspace root).
 
 ---
 
@@ -886,8 +886,8 @@ Copy and complete for every list/table/hub page:
 - [ ] Sidebar item added to `lib/mock/navigation.tsx` with light/solid icon pair
 - [ ] **Shell sidebar:** Product header uses **`ExxatProductLogo`**; school **`logoDevUrl`** + **`lib/logo-dev`**; team switcher menu **`!w-max`** (not trigger-width-only); expanded switcher **`h-auto min-h-12`** so school + program lines are not clipped; nav labels use **`SidebarNavLabel`** (wrap, no **`truncate`**) — **`exxat-sidebar-nav-labels.md`**; no **`CollapsibleTrigger` → `SidebarMenuButton` with `tooltip` prop**; child nav uses **popover** on icon rail per **§3.1**
 - [ ] Hub pages: `ListPageTemplate` + `DataTable` + `useTableState` + `TablePropertiesDrawer`
-- [ ] Board view: `ListPageBoardCard` shell + `ListHubStatusBadge` + `list-status-badges` when applicable (`./AGENTS.md` §4.4)
-- [ ] New primary hubs: not placeholder-only — full template + data + views (`./AGENTS.md` §4.1)
+- [ ] Board view: `ListPageBoardCard` shell + `ListHubStatusBadge` + `list-status-badges` when applicable (`docs/exxat-ds/handbook/agents-handbook.md` §4.4)
+- [ ] New primary hubs: not placeholder-only — full template + data + views (`docs/exxat-ds/handbook/agents-handbook.md` §4.1)
 - [ ] **§6.4:** Parent **context** + quick view/actions → drawer/sheet; primary or long flows → **new page** (`AGENTS.md`, `docs/data-views-pattern.md`)
 - [ ] No raw `<table>` or `ui/table` for product data lists
 - [ ] No double horizontal padding around `DataTable`

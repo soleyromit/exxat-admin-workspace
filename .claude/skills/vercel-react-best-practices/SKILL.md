@@ -146,4 +146,4 @@ Each rule file contains:
 
 ## Full Compiled Document
 
-For the complete guide with all rules expanded: `AGENTS.md`
+For the complete guide with all rules expanded (on demand only; Cursor always-applies any file named `AGENTS.md`): `references/react-best-practices.md`

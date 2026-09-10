@@ -23,7 +23,7 @@ Only port when release notes or a chrome bug require it. **Never** copy mock dat
 | `components/settings-appearance-card.tsx` | Products list + color picker |
 | `components/brand-color-picker.tsx` | Brand color popover |
 | `components/exxat-product-logo.tsx` | Wordmark (pink) vs preview custom |
-| `components/sidebar/app-sidebar.tsx` | Product logo button + nav slug |
+| `components/app-shell-wiring.tsx` | Product-specific shell slots and callbacks; reference-only, merge deliberately if the app already has this seam |
 | `lib/mock/navigation.tsx` | **Structure only** — keep your URLs/labels; port routing helpers |
 | `src/routes.tsx` | Product root routing shape |
 | `src/App.tsx` | Provider mount order + overlay |
@@ -37,7 +37,8 @@ Only port when release notes or a chrome bug require it. **Never** copy mock dat
 | `src/styles/globals.css` | `@import "@exxatdesignux/ui/globals.css"` + `@source` |
 | `src/main.tsx` | CSS import order |
 | `components/ui/*` shims | Re-exports from package (diff when CLI notes new primitives) |
-| `package.json` | `engines`, `pnpm.onlyBuiltDependencies`, dev scripts |
+| `package.json` | `engines`, `pnpm.onlyBuiltDependencies` (pnpm 9 and older), dev scripts |
+| `pnpm-workspace.yaml` | pnpm 10+ `onlyBuiltDependencies` / overrides. Required or `ERR_PNPM_IGNORED_BUILDS` blocks esbuild |
 
 ## § Do NOT port (content / data)
 

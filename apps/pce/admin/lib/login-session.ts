@@ -70,22 +70,20 @@ export const WORKSPACE_ROLES: readonly { value: WorkspaceRole; label: string }[]
 /**
  * How a role reads on a door rather than in a settings field.
  *
- * `member` is "school" here and "Member" in `WORKSPACE_ROLES`, because the two
+ * `member` is "Teaching Assistant" here and "Member" in `WORKSPACE_ROLES`, because the two
  * say different things: the builder is naming a role in a record, while a button
- * on a product card is naming the side of the program you are walking in as. The
- * word matches the seeded "Pick a role" flow, which has asked Student or School
- * since before any of this was configurable.
+ * on a product card is naming the staff side of the program you are walking in as.
  */
 export const OPEN_AS_LABEL: Record<WorkspaceRole, string> = {
   student: "student",
-  member: "school",
+  member: "Teaching Assistant",
   administrator: "administrator",
 }
 
 /**
  * The order the doors read in, which is not the order roles are listed in a
- * settings field. Student first, then school, matching the seeded "Pick a role"
- * flow: the person reaching for this card is a student who also happens to be
+ * settings field. Student first, then Teaching Assistant, matching the order the doors read
+ * on a forked card: the person reaching for this card is a student who also
  * staff, not the reverse.
  */
 const OPEN_AS_ORDER: readonly WorkspaceRole[] = ["student", "member", "administrator"]
@@ -138,6 +136,13 @@ export interface LoginSession {
    * the product card; `role` is whichever door was taken last.
    */
   opensAs: WorkspaceRole[]
+  /**
+   * Programs this administrator's console covers, or `null` for every program
+   * in the workspace. Super Admin is `null`. Program Admin is a short list.
+   * The home door stays in the same place either way; only the caption and
+   * the console contents change. Ignored when `role` is not administrator.
+   */
+  administeredProgramIds: string[] | null
 }
 
 export const DEFAULT_LOGIN_SESSION: LoginSession = {
@@ -146,6 +151,7 @@ export const DEFAULT_LOGIN_SESSION: LoginSession = {
   showMoreFromExxat: true,
   role: "administrator",
   opensAs: [],
+  administeredProgramIds: null,
 }
 
 /**
@@ -185,6 +191,15 @@ function isGrantable(value: unknown): value is Product {
   return GRANTABLE_PRODUCTS.some(entry => entry.value === value)
 }
 
+function normalizeAdministeredPrograms(
+  role: WorkspaceRole,
+  value: unknown,
+): string[] | null {
+  if (role !== "administrator" || !Array.isArray(value)) return null
+  const ids = value.filter((id): id is string => typeof id === "string" && id.length > 0)
+  return ids.length > 0 ? ids : null
+}
+
 function normalize(session: LoginSession): LoginSession {
   const products = (session.products ?? []).filter(isGrantable)
   const role = readWorkspaceRole(session)
@@ -197,6 +212,10 @@ function normalize(session: LoginSession): LoginSession {
     // The pair has to contain the role it is a pair with, or the card would offer
     // two doors and stand beside a session that took a third.
     opensAs: opensAs.includes(role) ? opensAs : [],
+    administeredProgramIds: normalizeAdministeredPrograms(
+      role,
+      session.administeredProgramIds,
+    ),
   }
 }
 
@@ -221,6 +240,9 @@ export function getLoginSession(): LoginSession {
           showMoreFromExxat: record.showMoreFromExxat !== false,
           role: readWorkspaceRole(record),
           opensAs: normalizeOpensAs(record.opensAs),
+          administeredProgramIds: Array.isArray(record.administeredProgramIds)
+            ? record.administeredProgramIds
+            : null,
         })
       }
     } catch {

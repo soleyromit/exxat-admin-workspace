@@ -84,6 +84,45 @@ export function AccountPreferencesMenu() {
   )
 }
 
+/** Course Evaluation dashboard layout switcher — 'operations' (KPI band +
+ *  Live/Last-closed term cards + response trend) vs 'ledger' (the prior
+ *  StatementRow design), kept side by side for visual comparison rather than
+ *  one replacing the other outright. */
+export function DashboardLayoutMenuItem() {
+  const { dashboardLayout, setDashboardLayout } = usePce()
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>
+        <i className="fa-light fa-table-layout" aria-hidden="true" />
+        Dashboard layout
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="max-w-[18rem]">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          Course Evaluation dashboard
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={dashboardLayout}
+          onValueChange={(v) => setDashboardLayout(v as "operations" | "ledger")}
+        >
+          <DropdownMenuRadioItem value="operations" className="items-start">
+            <span className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-foreground">Operations</span>
+              <span className="text-xs text-muted-foreground">KPI band, live term, response trend</span>
+            </span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="ledger" className="items-start">
+            <span className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-foreground">Ledger</span>
+              <span className="text-xs text-muted-foreground">Statement-style term cards (previous design)</span>
+            </span>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  )
+}
+
 /** Demo account switcher — each account is a distinct dashboard term-card scenario. */
 export function DemoAccountMenuItem() {
   const { accountId, accounts, switchAccount } = usePce()

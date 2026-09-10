@@ -3,11 +3,11 @@
 /**
  * ProductWordmark + ProductMark — render any product brand as a logo.
  *
- * - `ProductWordmark` renders `${prefix} ${suffix}` as HTML text:
- *   • `prefix` (e.g. "Exxat") in `font-sans` extra-bold (Inter 800), neutral.
- *   • `suffix` (e.g. "One" / "Prism" / "Pulse") in **Ivy Presto Italic**
- *     (`var(--font-heading)`, Adobe Fonts kit `wuk5wqn` preloaded in
- *     `app/layout.tsx`) tinted with `brandColor`.
+ * - `ProductWordmark` renders `${prefix} ${suffix}` as HTML text, both halves in
+ *   UI sans:
+ *   • `prefix` (e.g. "Exxat") extra-bold (Inter 800), neutral ink.
+ *   • `suffix` (e.g. "One" / "Prism" / "Pulse") semibold, tinted with
+ *     `brandColor`.
  *
  *   We render real font glyphs rather than baked-in SVG paths so a new product
  *   only needs `{ prefix, suffix, brandColor }` — no path-tracing required.
@@ -69,7 +69,7 @@ export function ProductWordmark({
         "text-[1.78em] tracking-tight",
         // Vertically centre the **cap mid-line** on the parent's mid-line.
         // Without this nudge the cap sits ~9 % of font-size above span centre
-        // because Inter / Ivy Presto baseline metrics put glyphs in the upper
+        // because Inter's baseline metrics put glyphs in the upper
         // portion of the line box. 0.09 em moves the cap centre down by that
         // exact offset so it shares an axis with the mark centre.
         "translate-y-[0.09em]",
@@ -89,22 +89,13 @@ export function ProductWordmark({
       <span
         data-product-wordmark-suffix
         className={cn(
-          // Per the official Exxat brand spec (Figma):
-          //   font-family: IvyPresto Text
-          //   weight:      SemiBold (600)  — NOT Bold / ExtraBold
-          //   tracking:   -3%              — overrides parent `tracking-tight`
-          //   line-height: auto            — inherited (parent sets `leading-none`)
-          // IvyPresto's Bodoni-lineage SemiBold already has the thick verticals
-          // that read as a logo; pushing to 700/800 makes the letterforms
-          // visually heavier than the brand asset.
-          "ms-[0.18em] font-semibold tracking-[-0.03em]",
+          // Same typeface as the prefix, one weight below it: the product name
+          // is the variable half of the lock-up and the brand colour already
+          // sets it apart, so matching "Exxat" at 800 would make the name shout
+          // over the company. See `exxat-product-logo.tsx` for why the name is
+          // no longer set in IvyPresto.
+          "font-sans ms-[0.18em] font-semibold tracking-[-0.02em]",
         )}
-        style={{
-          // Ivy Presto Text from Adobe Fonts. Upright (NOT italic) — matches
-          // the official Exxat wordmark. Fallback chain ends in `serif` so
-          // FOUT still renders a serif that reads as a logo rather than Inter.
-          fontFamily: "var(--font-heading), 'ivypresto-text', Georgia, serif",
-        }}
       >
         {suffix}
       </span>

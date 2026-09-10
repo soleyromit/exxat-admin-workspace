@@ -10,6 +10,10 @@
 
 import type { Product } from "@/contexts/product-context"
 import {
+  adminObjectSummaries,
+  type AdminObjectSummary,
+} from "@/lib/mock/admin-directory"
+import {
   PRODUCT_CATALOG,
   catalogStageRank,
   isProductEntitled,
@@ -25,6 +29,10 @@ import {
 import { productGlyph } from "@/lib/product-glyph"
 import { isProductRefHidden, type ProductRef } from "@/lib/product-ref"
 import { customSuffixCollidesWithBuiltInProduct } from "@/lib/product-routing"
+import {
+  isSchoolScopedProduct,
+  productLicensesScope,
+} from "@/lib/scope-switcher"
 import { isListedCustomProduct, type CustomProductBrand } from "@/stores/app-store"
 import { isWorkspaceAdmin, workspaceRole } from "@/lib/workspace-role"
 
@@ -65,6 +73,27 @@ export interface ProductHomeCard {
    * product — there is nothing to read about a console you already administer.
    */
   href?: string
+  /**
+   * Apps the Administrator card can point its console at. Set only on that
+   * card; every other card scopes to a school and program instead.
+   */
+  adminApps?: AdminAppTarget[]
+}
+
+/**
+ * One app the Administrator console can be pointed at.
+ *
+ * A subset of the app's own card rather than the card itself — the picker
+ * draws a mark and a name and composes a URL, and holding a whole card here
+ * would nest every card's release notes and marketing copy inside another one.
+ */
+export interface AdminAppTarget {
+  product: Product
+  customIndex?: number
+  label: string
+  brandColor: string
+  /** Matches `ProductHomeCard.slug`, and is what `?app=` carries. */
+  slug: string
 }
 
 /**
@@ -77,6 +106,33 @@ export interface ProductHomeCard {
  */
 export function isProductsHomePath(pathname: string): boolean {
   return pathname === "/home" || pathname.startsWith("/home/")
+}
+
+/**
+ * School-side launch doors: People, Courses, and Program Management.
+ *
+ * Lives here, not on `lib/mock/admin-directory.ts`, because the switcher is
+ * auto-ported and that mock is not. `adminObjectSummaries` has been the
+ * stable shape since 1.3.0; a new named export on the mock breaks every app
+ * that scaffolded before the export existed.
+ *
+ * Personnel Management hangs off brand > site > location. It stays in
+ * `adminObjectSummaries` for the console and for `/personnel`, but it is not
+ * a chip, switcher Directory row, or Campus Your App row.
+ */
+export function directoryLaunchSummaries(): AdminObjectSummary[] {
+  return adminObjectSummaries().filter(object => object.id !== "personnel")
+}
+
+/** People, courses, programs — the Campus Workspace grid and switcher read top to bottom. */
+const WORKSPACE_RECORD_IDS = ["people", "courses", "programs"] as const
+
+export function orderedDirectoryLaunchSummaries(): AdminObjectSummary[] {
+  const byId = new Map(directoryLaunchSummaries().map(object => [object.id, object]))
+  return WORKSPACE_RECORD_IDS.flatMap(id => {
+    const object = byId.get(id)
+    return object ? [object] : []
+  })
 }
 
 /** URL segment for a product's marketing page under `/home`. */
@@ -135,8 +191,8 @@ function customCards(
  * Clinical Education as if a coordinator might pick it to do their job. It
  * lives in the profile menu instead, next to the other account-level surfaces.
  *
- * People / Courses / Personnel are Directory destinations — shared records
- * rather than products — and keep their own row on the home.
+ * People / Courses / Programs / Personnel are Directory destinations — shared
+ * records rather than products — and keep their own row on the home.
  *
  * Administrator used to sit here on the argument that it configures the products
  * rather than being one. It is now listed, by role, via `adminCard` below: every
@@ -150,15 +206,36 @@ const PRODUCTS_OFF_HOME: readonly Product[] = [
   "exxat-admin",
   "exxat-people",
   "exxat-courses",
+  "exxat-programs",
   "exxat-personnel",
   // Exxat One, site side. Off the switcher and off the home, so the one Exxat One
   // a workspace sees is the school's. Its catalogue entry stays for lookups from
   // its own routes, which still resolve.
   "exxat-one-sites",
+  // Not marketed on the home yet. Same unlisted treatment as the switcher.
+  "exxat-accreditation",
+  "exxat-student-success",
 ]
 
 /** Where the Administrator console opens. Its overview, not a product dashboard. */
 const ADMIN_HREF = "/admin"
+
+/** Search param naming the app the console is pointed at. */
+export const ADMIN_APP_PARAM = "app"
+
+/**
+ * The console, optionally pointed at one app.
+ *
+ * A search param rather than a path segment: the console is the same page
+ * either way, showing fewer of the same records, and `/admin/prism` would
+ * promise a Prism-owned console that does not exist. It also means a URL with
+ * an app this workspace does not have degrades to the whole console rather
+ * than a 404.
+ */
+export function adminConsoleHref(slug?: string | null): string {
+  if (!slug) return ADMIN_HREF
+  return `${ADMIN_HREF}?${ADMIN_APP_PARAM}=${encodeURIComponent(slug)}`
+}
 
 /**
  * Administrator as an app card — built by hand rather than read from
@@ -168,8 +245,12 @@ const ADMIN_HREF = "/admin"
  * One gate, `isWorkspaceAdmin`, which folds in what the sign-in said about this
  * session. The switcher row and the `/admin` route ask the same question, so a
  * tile can never offer a console the route would turn away.
+ *
+ * `apps` is the owned list this card is about to join, so the picker on the
+ * card offers exactly the apps sitting beside it — an admin can never point the
+ * console at an app this workspace does not have.
  */
-function adminCard(): ProductHomeCard[] {
+function adminCard(apps: ProductHomeCard[]): ProductHomeCard[] {
   if (!isWorkspaceAdmin()) return []
 
   return [
@@ -188,6 +269,13 @@ function adminCard(): ProductHomeCard[] {
       entitled: true,
       slug: "admin",
       href: ADMIN_HREF,
+      adminApps: apps.map(app => ({
+        product: app.product,
+        customIndex: app.customIndex,
+        label: app.label,
+        brandColor: app.brandColor,
+        slug: app.slug,
+      })),
     },
   ]
 }
@@ -298,14 +386,14 @@ export function buildProductHomeInventory(
   hiddenProducts: ProductRef[],
 ): ProductHomeInventory {
   const builtIn = builtInCards(hiddenProducts)
+  const apps = [
+    ...builtIn.filter(card => card.entitled),
+    ...customCards(customProducts, hiddenProducts),
+  ]
   return {
     // Administrator last: the products you work in come before the console you
     // configure them from, however often you open it.
-    owned: [
-      ...builtIn.filter(card => card.entitled),
-      ...customCards(customProducts, hiddenProducts),
-      ...adminCard(),
-    ],
+    owned: [...apps, ...adminCard(apps)],
     // Betas lead, the rest keep catalog order (`catalogStageRank`). The featured
     // banner is unaffected: it names its product and only falls back to the first
     // card if that one is owned or hidden.
@@ -324,6 +412,26 @@ export function findProductHomeCard(
   // `href` cards have no marketing page, so `/home/admin` must stay a miss
   // rather than rendering a pitch with no catalog entry behind it.
   return [...owned, ...available].find(card => !card.href && card.slug === slug)
+}
+
+/**
+ * Whether the marketing page may offer Open for this visit.
+ *
+ * Workspace entitlement is not enough. Campus can send an owned school-family
+ * app to `/home/:slug` because the picker is on a program that product does not
+ * license. Opening would land in a different campus than the one just named.
+ * Site-family apps have no program to miss, so entitlement is the whole answer.
+ * When no campus is selected yet, an entitled school-family app may still open.
+ */
+export function canOpenHomeCardOnCampus(
+  card: Pick<ProductHomeCard, "product" | "entitled">,
+  parentId: string | null,
+  childId: string | null,
+): boolean {
+  if (!card.entitled) return false
+  if (!isSchoolScopedProduct(card.product)) return true
+  if (!parentId || !childId) return true
+  return productLicensesScope(card.product, parentId, childId)
 }
 
 /**

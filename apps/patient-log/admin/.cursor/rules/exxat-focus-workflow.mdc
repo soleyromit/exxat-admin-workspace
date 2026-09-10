@@ -10,8 +10,8 @@ globs:
   - components/focus-workflow-showcase-client.tsx
   - lib/exam-lock-shell.ts
   - lib/focus-workflow.ts
-  - apps/web/src/views/exam-lock.tsx
-  - apps/web/src/views/focus-workflow.tsx
+  - src/views/exam-lock.tsx
+  - src/views/focus-workflow.tsx
 tags: [shell, focus, exam-lock]
 seeAlso:
   - docs/exxat-ds/focus-workflow-pattern.md

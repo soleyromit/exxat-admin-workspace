@@ -1,6 +1,6 @@
 ---
-description: Exxat DS — STOP before code on any surface design (new, rebuild, redesign, replace); output a design brief and WAIT for user go-ahead
-activation: always_on
+description: Exxat DS — STOP before code on any surface design (new, rebuild, redesign, replace); output a design brief and WAIT for user go-ahead. Load when IA is undecided, not on every turn.
+activation: model_decision
 ---
 
 <!-- Synced from .agents/rules/exxat-ux-discovery-protocol.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->

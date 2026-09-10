@@ -1,13 +1,14 @@
-import { cn } from "@/lib/utils"
-
 /**
- * Shell utility-bar icon/text triggers — brand-tinted sidebar-accent hover,
- * not generic `interactive-hover` (muted grey). Matches sidebar chrome +
- * `icon-button-chrome` token rules in `globals.css`.
+ * Seam — see `@exxatdesignux/ui/components/shell/utility-bar-chrome`.
+ *
+ * The bar's chrome classes moved into the package because `AskLeoLauncher` needs
+ * `askLeoLauncherChipClass` and this file is framework wiring: the first
+ * consumer edit to any export here makes the whole file app-owned, and the chip
+ * class then stops arriving with releases while the stylesheet that styles it
+ * keeps shipping. Re-exporting means a local addition to the bar cannot starve
+ * the launcher.
+ *
+ * Add app-only bar chrome below the re-export. Do not redefine
+ * `askLeoLauncherChipClass` here.
  */
-export const utilityBarActionButtonClass =
-  "bg-transparent icon-button-chrome hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent aria-expanded:bg-sidebar-accent aria-expanded:text-sidebar-accent-foreground"
-
-export function utilityBarActionButtonClassName(...extra: Array<string | false | null | undefined>) {
-  return cn(utilityBarActionButtonClass, ...extra)
-}
+export * from "@exxatdesignux/ui/components/shell/utility-bar-chrome"

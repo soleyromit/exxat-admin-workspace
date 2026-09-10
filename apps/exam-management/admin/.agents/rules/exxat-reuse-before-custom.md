@@ -9,9 +9,43 @@ activation: model_decision
 
 ## MUST
 
+0. **Search the component map first** — Before writing **any** new component, grep
+ the generated map at **`docs/exxat-ds/component-map.json`**
+ for the intent in your own words: `tree view`, `split pane`, `stepper`, `drawer`,
+ `command palette`, `kpi`, … Every registered primitive is indexed by `keywords`,
+ so a miss is evidence, not a guess. **A hit means import it** — use the entry's
+ `packageImport` (or `import`) and open its `source` for the reference wiring.
+
+ Do **not** rely on memory or on the selection guide alone: the map is generated
+ from the registry, so it is the only complete inventory. This exists because a
+ survey found the hand-written guide named only 42% of registered
+ components/templates, and agents rebuilt the rest.
+
+ A new file you add under **`components/`** is checked automatically —
+ `pnpm ds:pattern-registry:check` (staged adds, wired into pre-commit) fails the
+ commit if a brand-new pattern has no `sourcePath` row in
+ `registry-entries.ts`. Register it, or add it to that script's `ALLOWLIST`
+ with a one-line reason if it is genuinely route-only glue.
+
 1. **Compose first** — Use existing **`components/ui/`**, **`components/data-views/`**, **`components/templates/`**, **`PageHeader`**, **`ListPageTemplate`**, **`DataTable`**, **`KeyMetrics`**, and patterns in **`AGENTS.md` §9** before writing new layout or interaction chrome.
 2. **Search the codebase** — Grep or open the nearest hub (Placements, Team, Library) for the same UX (toolbar, drawer, metrics, board card, `ListPageViewFrame`, etc.).
 3. **Extend in place** — Prefer adding a variant, slot, or prop to a shared component over a one-off duplicate under a single route.
+
+## Named rebuilds to never hand-roll
+
+These are the surfaces most often rebuilt from scratch. The
+**`exxat-ds-check`** hook flags them post-write from the map's `fingerprints`:
+
+| Hand-rolled | Use instead |
+|---|---|
+| `ResizablePanelGroup` + custom expandable tree | **`ListPageTreePanelShell`** + **`OutlineTreeMenu`** (ref `hub-tree-panel-view.tsx`) |
+| `role="tablist"` + buttons | **`Tabs`**, or **`ViewSegmentedControl`** / **`ButtonSegmentedControl`** for an inner mode switch |
+| `<table>` with manual sorting | **`DataTable`** + **`useTableState`** (**`HubTable`** in a hub) |
+| `createPortal` + `fixed inset-0` overlay | **`Dialog`** (blocking) / **`Sheet`** (reversible) / **`FloatingWindow`** (tool window) |
+| `currentStep` / `activeStep` state machine | **`Wizard`** |
+| Page layout written per route | **`ListPageTemplate`** / **`PrimaryPageTemplate`** / **`SecondaryPanelHubTemplate`** ([selection guide §1.0](../../docs/exxat-ds/component-selection-guide.md)) |
+| Hand-styled `<input>` / `<textarea>` / `<select>` / native radio / checkbox | **`Field`** + **`Input`** / **`Textarea`** / **`Select`** / **`RadioGroup`** / **`Checkbox`** ([`exxat-form-fields.md`](./exxat-form-fields.md)) |
+| Static Leo mark inside a button / FAB | **`AskLeoButton`** with **`animatedStar`**, or **`LeoIcon`** ambient + hover `invited` ([`exxat-leo-icon-motion.md`](./exxat-leo-icon-motion.md)) |
 
 ## When the tool must ask the user
 

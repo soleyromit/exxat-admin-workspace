@@ -26,7 +26,7 @@ export const BUILTIN_SWITCHER_PRODUCTS: SwitcherProductEntry[] = [
   { id: "exxat-one-schools", label: "Exxat One" },
   { id: "exxat-curriculum-mapping", label: "Curriculum Mapping" },
   { id: "exxat-compliance", label: "Compliance" },
-  { id: "exxat-surveys", label: "Surveys & Course Evaluations" },
+  { id: "exxat-surveys", label: "Surveys" },
   { id: "exxat-exam-management", label: "Exam Management" },
   { id: "exxat-accreditation", label: "Accreditation" },
   { id: "exxat-student-success", label: "Student & Program Success" },
@@ -82,7 +82,13 @@ export function resolveActiveSwitcherEntry(
  * `BUILTIN_SWITCHER_PRODUCTS` so the trigger can still name it while you are
  * in it and Settings can still list it.
  */
-const UNLISTED_SWITCHER_PRODUCTS: ReadonlySet<Product> = new Set<Product>(["exxat-design-os"])
+const UNLISTED_SWITCHER_PRODUCTS: ReadonlySet<Product> = new Set<Product>([
+  "exxat-design-os",
+  // Not marketed in the switcher yet. Routes and Settings entries stay so direct
+  // URLs and builder demos still resolve.
+  "exxat-accreditation",
+  "exxat-student-success",
+])
 
 /** Built-in rows + listed custom slots for switcher menus (drops slug collisions). */
 export function expandSwitcherProducts(

@@ -6,7 +6,7 @@ globs:
   - src/**/*.tsx
 tags: [keyboard, a11y]
 seeAlso:
-  - ./AGENTS.md
+  - docs/exxat-ds/handbook/agents-handbook.md
   - .cursor/rules/exxat-bulk-action-shortcuts.mdc
   - .cursor/rules/exxat-primary-button-shortcuts.mdc
 ---

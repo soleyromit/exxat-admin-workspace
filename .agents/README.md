@@ -13,11 +13,7 @@ This folder mirrors the Cursor agent corpus (`.cursor/`) for **Google Antigravit
 ## Quick start
 
 1. Open this repo in **Google Antigravity**.
-2. In **Customizations → Rules**, confirm these four are **Always On**:
-   - `_constitution.exxat-ds.md`
-   - `exxat-product-context.md`
-   - `exxat-product-routing.md`
-   - `exxat-ux-discovery-protocol.md`
+2. In **Customizations → Rules**, confirm only **`_constitution.exxat-ds.md`** is **Always On**. Product, routing, brief, and copy attach by glob or on demand.
 3. Load skill **`exxat-ds-router`** or run workflow **`/surface-router`** on any DS task.
 
 ## Sync from Cursor (maintainers)
@@ -45,4 +41,4 @@ Source of truth remains **`.cursor/`** in the monorepo; Antigravity copies are g
 
 - `docs/exxat-ds/agents/antigravity-parity.md` — full mapping table
 - `docs/exxat-ds/agent-context-architecture.md` — layer model
-- `./AGENTS.md` — ship checklist §13
+- `docs/exxat-ds/handbook/agents-handbook.md` — ship checklist §13

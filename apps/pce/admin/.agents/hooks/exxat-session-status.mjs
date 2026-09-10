@@ -32,19 +32,27 @@ try {
   // best-effort; sessionStart should never fail closed
 }
 
+const graphifyActive = existsSync(resolve(cwd, "graphify-out", "graph.json"))
+const graphifyBlock = graphifyActive
+  ? `[Exxat DS Graphify active]\n` +
+    `graphify-out/ is local and gitignored. Glob will not see GRAPH_REPORT.md.\n` +
+    `For architecture, dependency, impact, ownership, or broad where/how questions: ` +
+    `MUST run via Shell first: graphify query "<question>" --budget 1200\n` +
+    `Then Read only the returned source files. Do not launch explore agents or broad Grep first.\n` +
+    `Do not read GRAPH_REPORT.md in full. After code edits: graphify update .`
+  : `[Exxat DS Graphify missing]\n` +
+    `graphify-out/graph.json not found. Skip Graphify until ` +
+    `\`graphify extract . --code-only\` or \`graphify update .\` has been run.`
+
 emit({
   // Cursor renders `additional_context` into the agent's system context at
   // session start. Use it to remind the agent of the protocol up front so it
   // can't pretend not to have seen the rules.
   additional_context:
-    `[Exxat DS brief-gate active — @exxatdesignux/ui v${pkgVersion}]\n` +
-    `Before editing any page / route / sidebar / template / hub client / ` +
-    `wizard / settings card / store / nav config / mock data: load the ` +
-    `exxat-senior-ux skill and post a design brief, then END THE TURN with ` +
-    `"Ready to build — confirm or edit." and wait for the user.\n` +
-    `If the user attached a screenshot/mockup: IA only (labels, fields, nav) — ` +
-    `map to DS reference hubs; MUST NOT pixel-copy or "match the screenshot".\n` +
-    `Editing framework SHIM files (one-line re-exports from ` +
-    `@exxatdesignux/ui/...) is almost always wrong — register new products ` +
-    `with defineProduct() instead. See docs/exxat-ds/registering-a-product.md.`,
+    `[Exxat DS v${pkgVersion}] New page/hub/wizard: post a brief, then ` +
+    `"Ready to build — confirm or edit." screenshot/mockup = IA only. ` +
+    `Run the surface router before DS docs. Do not load senior-ux or ` +
+    `token-economy unless IA is undecided. Shims: use defineProduct(), ` +
+    `do not edit package re-exports.\n\n` +
+    graphifyBlock,
 })

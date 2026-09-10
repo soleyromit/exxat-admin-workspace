@@ -61,16 +61,16 @@ Answer **yes / no / N/A** to each. A **no** means re-plan; you'll save a regener
 
 1. **`HubTable`, not raw `<table>`?** — every hub-style grid in `ListPageTemplate.renderContent` uses `HubTable<TRow>` from `@/components/data-views`. Filters + Properties drawer + view-type tiles + bulk actions come free.
 2. **`view` + `onViewChange` plumbed?** — if the page has view tabs, pass both through `client → table → drawer toolbar → TablePropertiesDrawer`. Otherwise the drawer ships table-only copy on a Board tab.
-3. **Color + icon on every status chip?** — `ListHubStatusBadge` + a tint from `lib/list-status-badges.ts` + an FA icon. Color alone fails WCAG 1.4.1.
+3. **Color + icon on every status chip?** — `StatusCell` (columns) or `StatusBadge` (elsewhere) + a tint from `lib/list-status-badges.ts` + an FA icon. Color alone fails WCAG 1.4.1.
 4. **≤ 4 KPIs on the primary strip?** — `KEY_METRICS_KPI_COUNT_MAX = 4`. A fifth becomes a `MetricInsight` or a chart.
 5. **No toasts for product feedback?** — use `LocalBanner` / `SystemBanner` / inline status. Toasts are reserved for build-tool messages.
 6. **Multi-view only when asked?** — Default **`TABLE_ONLY_HUB_SUPPORTED_VIEWS`** (omit `supportedViewTypes`). Add **`FULL_HUB_SUPPORTED_VIEWS`** + renderers only when the user/product requests list/board/dashboard/folder views — not on every new hub.
 7. **Sheet only (no Vaul)?** — side panels use **`Sheet`**; **`vaul`** must not be in `package.json`.
-8. **Header + tabs + table preview?** — **`PageHeader`** + DS **`Button`** variants for actions; hub views via **`ListPageTemplate`** (not full-width tabs); record tabs **`TabsList`** `w-fit` + **`TabsListScrollRegion`** when overflowing; row preview via **`HoverCard`** + shared cells — not custom popovers.
+8. **Header + tabs + table preview?** — **`PageHeader`** + DS **`Button`** variants for actions; hub views via **`ListPageTemplate`** (not full-width tabs); record tabs **`TabsList`** `w-fit` (overflow is automatic, no wrapper); row preview via **`HoverCard`** + shared cells — not custom popovers.
 9. **Uploaded image ≠ spec?** — If the user attached a screenshot/mockup: extract **IA only** (labels, routes, fields); map to **`component-selection-guide`** + a **reference hub**; **MUST NOT** pixel-copy or plan "match the screenshot"; **MUST NOT** use **`frontend-design`** to mimic the upload — **`exxat-no-image-pixel-copy.mdc`** + **`exxat-senior-ux`** win.
 10. **Horizontal scroll on tabs/crumbs?** — **`HorizontalScrollRegion`** / **`HorizontalScrollControls`** with **`controlsLayout="group-end"`** — not bespoke flanking chevrons per surface.
 11. **Hub view tabs persist on reload?** — **`ListPageTemplate persistKey`** only in **uncontrolled** mode — no **`tabs` + `onTabsChange`** if persistence matters.
-12. **Correct cell per data point?** — Person → **`AvatarInitials` + name + email**; status → **`ListHubStatusBadge`**; progress / money / rating → named **`table-cells`** import — **`.cursor/rules/exxat-table-column-cells.mdc`**, skill **`exxat-table-column-cells`**.
+12. **Correct cell per data point?** — Person → **`AvatarInitials` + name + email**; status → **`StatusCell`** (add `options` + `onChange` when the user may change it); progress / money / rating → named **`table-cells`** import — **`.cursor/rules/exxat-table-column-cells.mdc`**, skill **`exxat-table-column-cells`**.
 13. **Single page scroll?** — No `overflow-y-auto` / `max-h-[*vh]` doc wrappers inside **`[data-page-scroll]`** — **`.cursor/rules/exxat-page-scroll-ownership.mdc`**. Tables, charts, drawers are the exceptions.
 14. **Design reference reuse?** — Theme preview → **`ButtonSegmentedControl`** (`TokensThemeSwitcher`); doc copy → **`DS_DOC_*`** (`text-sm`); no bespoke doc chrome — **`.cursor/rules/exxat-design-reference-hub.mdc`**.
 15. **Tabs only for sections, not modes?** — Theme/chart type/view filter → **`ButtonSegmentedControl`** or **`ViewSegmentedControl`** (hubs) or **`DropdownMenu`**; **`Tabs`** only for record sections + ChartCard chart/trend — **`.cursor/rules/exxat-tabs-chrome.mdc`**.
@@ -91,7 +91,7 @@ When the user says "X", reach for "Y". Save the search.
 | button, action, CTA | `Button` | `@/components/ui/button` |
 | input, text field, form field | `Input`, `FormField` | `@/components/ui/{input,form}` |
 | avatar | `AvatarInitials` | `@/components/ui/avatar` |
-| chip, badge, status, tag | `Badge`, `ListHubStatusBadge`, `StatusBadge` | `@/components/{ui/badge,list-hub-status-badge}` |
+| chip, badge, status, tag | `StatusCell` (in a column), `StatusBadge` (elsewhere), `Badge` | `@/components/{data-views,ui/status-badge,ui/badge}` |
 | dropdown, menu, ⋯ | `DropdownMenu` family | `@/components/ui/dropdown-menu` |
 | tooltip, hint | `Tip` (or `Tooltip`) | `@/components/ui/tip` |
 | sheet, side panel | `Sheet` family, `ExportDrawer`, `TablePropertiesDrawer` | `@/components/ui/sheet` |

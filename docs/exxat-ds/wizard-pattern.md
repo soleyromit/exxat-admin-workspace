@@ -14,7 +14,8 @@
 |----------------:|---------|---------|
 | **3–4** | Ideal | Horizontal `numbered` or `icons` |
 | **5–6** | Upper bound for horizontal rail | `compact` if labels are long |
-| **7+** | Avoid in product | Group into fewer chapters, use **vertical** rail, or split into a **route** per chapter |
+| **6–8** | Regroup first | Use a **vertical** rail only when every named chapter must remain visible |
+| **9+** | Restructure | Group into ≤6 chapters, support drafts, and split independent jobs into dedicated routes |
 
 Constants exported from the primitive:
 
@@ -22,6 +23,32 @@ Constants exported from the primitive:
 - `WIZARD_SCROLL_THRESHOLD = 5` — horizontal overflow + scroll controls; vertical rail gets `max-h-96` scroll.
 
 **Rule of thumb:** If you cannot name each step in ≤3 words and users cannot predict what is left from the rail alone, you have too many top-level steps. Put sections **inside** `WizardPanel` instead.
+
+---
+
+## Enterprise design-system guidance
+
+Carbon, PatternFly, and SAP Fiori all separate the progress indicator from the
+content architecture:
+
+- **Carbon progress indicator** supports horizontal and vertical orientation,
+  but recommends concise labels and a bounded sequence. Orientation solves
+  available space; it does not make an unbounded process easier to understand.
+- **PatternFly progress stepper** presents milestone status. Long processes
+  should expose meaningful milestones rather than every form screen.
+- **SAP Fiori wizard** uses branching and validation within a structured flow.
+  A large business process is divided into logical chapters rather than shown
+  as one long horizontal strip.
+
+Exxat policy follows the common conclusion:
+
+1. Keep **3–6 top-level chapters** when possible.
+2. For **6–8** named chapters, regroup first. Use a vertical rail when every
+   chapter must remain independently visible.
+3. For **9+** decisions, create ≤6 top-level chapters, place subsections inside
+   panels, support save-draft-resume, and split independent jobs into routes.
+4. Horizontal overflow controls are a resilience mechanism, not the default IA
+   for a long workflow.
 
 ---
 
@@ -34,7 +61,7 @@ Constants exported from the primitive:
 | Branching or save-draft-resume | Dedicated **route** per chapter (`focus-workflow` job) |
 | Switching peer views on one record | **`Tabs`**, not `Wizard` |
 
-**Modern analogues:** Stripe Connect onboarding (M4, M7); Linear project setup (M1, M4). **Principles:** P1, P2, P3, P5, P6, P13, P19.
+**Modern analogues:** Stripe Connect onboarding (M4, M7); Linear project setup (M1, M4). **Enterprise references:** Carbon progress indicator; PatternFly progress stepper; SAP Fiori wizard. **Principles:** P1, P2, P3, P5, P6, P13, P19.
 
 ---
 

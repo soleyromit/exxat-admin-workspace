@@ -7,7 +7,7 @@ user-invocable: true
 # Exxat DS — primary nav → secondary panel
 
 **Cursor rule:** `.agents/rules/exxat-primary-nav-secondary-panel.md`  
-**Handbook:** `./AGENTS.md` §4.6  
+**Handbook:** `docs/exxat-ds/handbook/agents-handbook.md` §4.6  
 **Library IA (three tiers):** `docs/exxat-ds/library-nav-ia-pattern.md`
 
 ## Wiring checklist

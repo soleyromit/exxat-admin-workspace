@@ -15,7 +15,8 @@ Replaces separate loads of `exxat-drawer-vs-dialog`, `exxat-page-vs-drawer`, and
 | Topic | Path |
 |-------|------|
 | Pattern | `docs/exxat-ds/drawer-vs-dialog-pattern.md` |
-| Page vs drawer | `./AGENTS.md` §6.4 |
+| What's new sheet | `docs/exxat-ds/whats-new-sheet-pattern.md` |
+| Page vs drawer | `docs/exxat-ds/handbook/agents-handbook.md` §6.4 |
 | Index | `docs/exxat-ds/INDEX.yaml` |
 
 ## Rules (scoped)
@@ -42,7 +43,7 @@ Need hub visible behind?
 
 | Surface | Implementation |
 |---------|----------------|
-| Table properties, export, invite, any side panel or detail readout | **`FloatingSheetPanel`** — `TablePropertiesDrawer`, `ExportDrawer`, `InviteCollaboratorsDrawer` all compose it; never the raw `Sheet` / `SheetContent` primitive underneath |
+| Table properties, export, invite, What's new, any side panel or detail readout | **`FloatingSheetPanel`** — `TablePropertiesDrawer`, `ExportDrawer`, `InviteCollaboratorsDrawer`, **`WhatsNewSheet`** all compose it; never the raw `Sheet` / `SheetContent` primitive underneath |
 | Delete confirm, legal ack | **`Dialog`** / `AlertDialog` |
 | Long multi-step primary work | **Route** with own URL |
 | Side panels | **`FloatingSheetPanel` only** — no raw `Sheet`, no Vaul `Drawer` |

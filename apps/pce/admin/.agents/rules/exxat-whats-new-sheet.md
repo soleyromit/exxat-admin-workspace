@@ -1,0 +1,30 @@
+---
+description: Exxat DS — compact What's new sheet (featured release rail, Leo hero, shared seen list).
+activation: model_decision
+---
+
+<!-- Synced from .agents/rules/exxat-whats-new-sheet.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — What's new sheet
+
+## MUST
+
+1. **Reuse the package composition** — `WhatsNewSheet`, `WhatsNewSheetEmpty`, `WhatsNewSheetTrigger`, `WhatsNewLeoHero`, and `WhatsNewAnnouncementCard` from `@exxatdesignux/ui`. App code wires catalog + routes in `WhatsNewSheetProvider`.
+2. **One provider, one sheet** — `WhatsNewSheetProvider` mounts once in `App`. Megaphone, profile menu, and More menu call `useWhatsNewSheet()`; never mount a second sheet.
+3. **Shared seen list** — dismissal uses `useWhatsNewSeen` / `home-whats-new-seen` with badges and `/home` digest cards.
+4. **Hero** — Leo `invited` + one-shot `DotPattern` burst via `WhatsNewLeoHero`. No screenshot in the compact sheet hero.
+5. **Footer** — primary CTA + Release history in `FloatingSheetPanelFooter`. Scroll body holds the card only.
+6. **Panel props** — `WHATS_NEW_SHEET_PANEL_PROPS`: left rail, bottom anchored, content height, `contentSlot="whats-new-sheet"`, outside click does not dismiss.
+
+## MUST NOT
+
+- Fork the sheet layout or card chrome in app components.
+- Add a duplicate toolbar close when the card dismiss is present.
+- Invent a separate unread store for the utility bar.
+
+## See also
+
+- **`docs/exxat-ds/whats-new-sheet-pattern.md`**
+- **`docs/exxat-ds/handoff/whats-new-sheet-small.md`**
+- **`exxat-utility-bar.md`** (megaphone placement)
+- **`exxat-overlays`** skill (sheet vs dialog)

@@ -147,7 +147,7 @@ generated files, and is done.
 
 ## 15. Stack note
 
-The reference app and `create-exxat-app` scaffold both ship **Vite + react-router-dom**.
+The reference app and `create-exxat-app` scaffold both ship **Vite + react-router**.
 Routes live under `src/views/`; navigation helpers are in `@/lib/router-compat`.
 No framework port step is required when merging designer work into production.
 

@@ -45,10 +45,11 @@
  *    with its fills named, and they are stripped on the way in.
  * 4. **No text, no gradients, no strokes under 2.4.** All three vanish at 15px.
  *
- * Products without a mark fall back to their Font Awesome glyph. Two do:
- * `exxat-custom`, because a tenant's product is authored at runtime and nobody
- * can draw it a mark in advance, and Clinical Education, which is a decision
- * rather than a gap — see the note where its entry used to be.
+ * Products without a mark fall back to their Font Awesome glyph. Six do:
+ * `exxat-custom` and Clinical Education (`exxat-prism`), for the reasons below;
+ * Exxat One (school side), Administrator, Exam Management, and Surveys, whose
+ * solid or sharp glyphs read at tile weight on brand circles without a stroked SVG
+ * outline.
  *
  * The Exxat circular logo is a different job and lives in `ProductMark`
  * (`components/product-wordmark.tsx`): that one is the company signing the app,
@@ -62,12 +63,10 @@ import {
   PRODUCT_TILE_GLYPH_CLASS,
   PRODUCT_TILE_SIZES,
   productGlyph,
+  productTileGlyph,
   type ProductTileSize,
 } from "@/lib/product-glyph"
 import { cn } from "@/lib/utils"
-
-/** Six square teeth, one per 60°, around the Administrator gear. */
-const GEAR_TEETH = [0, 60, 120, 180, 240, 300] as const
 
 /** The box a piece of supplied artwork was authored in. */
 type ArtBox = { x?: number; y?: number; width: number; height: number }
@@ -176,22 +175,6 @@ const MARKS: Partial<Record<Product, React.ReactNode>> = {
   // app. Solid also fixes the shape: the drawn bell was a plain circle, near
   // enough to Exxat One's rings on a round tile to be mistaken for them.
 
-  // Exxat One, school side — three rings, overlapping. The product is a
-  // partnership, so the mark is the parties in it: a school, a site, and the
-  // student between them. It was two rings while the mark had to say "both
-  // sides"; a third makes it a network rather than a pair, which is what a
-  // workspace with many partner sites actually has. All outlined so the overlaps
-  // stay visible — filling one turned the crossings into crescents that read as a
-  // single blob. The triangle, not a row: on a round tile a row of three reaches
-  // the curve at the midpoints and gets clipped, and a cluster does not.
-  "exxat-one-schools": (
-    <g fill="none" stroke="currentColor" strokeWidth="2.3">
-      <circle cx="12" cy="8.5" r="4.5" />
-      <circle cx="8.1" cy="15.4" r="4.5" />
-      <circle cx="15.9" cy="15.4" r="4.5" />
-    </g>
-  ),
-
   // Exxat One, site side — the same cluster with the top ring filled, which is
   // the site's own node. Only one of the two sides is ever in a workspace, so
   // this only has to differ from the school's, not pair with it.
@@ -202,34 +185,6 @@ const MARKS: Partial<Record<Product, React.ReactNode>> = {
         <circle cx="15.9" cy="15.4" r="4.5" />
       </g>
       <circle cx="12" cy="8.5" r="4.2" />
-    </>
-  ),
-
-  // Exam Management — a clipboard, scored. The clip is the whole silhouette
-  // argument: without it the board is a rounded rectangle, which is the least
-  // distinctive shape available. The check is white on the tile colour showing
-  // through the outlined board, so unlike Compliance's it does not need cutting
-  // out of anything.
-  "exxat-exam-management": (
-    <>
-      <path
-        d="M9 3.4H6.4a2.6 2.6 0 0 0-2.6 2.6v13.2a2.6 2.6 0 0 0 2.6 2.6h11.2a2.6 2.6 0 0 0
-           2.6-2.6V6a2.6 2.6 0 0 0-2.6-2.6H15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
-      <rect x="8.4" y="1.5" width="7.2" height="4" rx="1.6" />
-      <rect x="7.8" y="9" width="8.4" height="2.3" rx="1.15" />
-      <path
-        d="M7.8 16.1l2.5 2.5 5.9-5.9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </>
   ),
 
@@ -274,41 +229,6 @@ const MARKS: Partial<Record<Product, React.ReactNode>> = {
       <path d={MEDAL_DISC} fillRule="evenodd" clipRule="evenodd" />
       <path d={MEDAL_RIBBONS} fillRule="evenodd" clipRule="evenodd" />
     </>,
-  ),
-
-  // Surveys & Course Evaluations — answers counted. Bars used to be Student &
-  // Program Success's idea, which is why these were wrapped in a speech bubble to
-  // stay out of its way; that product is a curve now, so the bars are free.
-  //
-  // The artwork arrived inside a rounded square, which was the tile it was mocked
-  // on and not part of the mark. Kept, it would have drawn a second tile inside
-  // the real one.
-  "exxat-surveys": fitted(
-    { x: 19, y: 22, width: 43, height: 41 },
-    <>
-      <rect x="19" y="43" width="9" height="20" rx="4.5" />
-      <rect x="36" y="34" width="9" height="29" rx="4.5" />
-      <rect x="53" y="22" width="9" height="41" rx="4.5" />
-    </>,
-  ),
-
-  // Administrator — a gear. Radial, and the only mark with rotational symmetry,
-  // which is what separates it from the shield it used to share a glyph with.
-  "exxat-admin": (
-    <>
-      <circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" strokeWidth="3.2" />
-      {GEAR_TEETH.map(angle => (
-        <rect
-          key={angle}
-          x="10.4"
-          y="0.9"
-          width="3.2"
-          height="4.2"
-          rx="1"
-          transform={`rotate(${angle} 12 12)`}
-        />
-      ))}
-    </>
   ),
 
   // Design System — swatches, stacked. Squares, which nothing else in the set is.
@@ -382,15 +302,26 @@ export function ProductArt({
   product,
   markClassName,
   glyphClassName,
+  glyphOnly = false,
 }: {
   product: Product
   markClassName?: string
   glyphClassName?: string
+  /** Skip drawn marks and render the Font Awesome tile glyph instead. */
+  glyphOnly?: boolean
 }) {
-  if (hasProductAppMark(product)) {
+  if (!glyphOnly && hasProductAppMark(product)) {
     return <ProductAppMark product={product} className={markClassName} />
   }
-  return <i aria-hidden="true" className={cn(productGlyph(product), glyphClassName)} />
+  return (
+    <i
+      aria-hidden="true"
+      className={cn(
+        glyphOnly ? productTileGlyph(product) : productGlyph(product),
+        glyphClassName,
+      )}
+    />
+  )
 }
 
 /**
@@ -408,14 +339,17 @@ export function ProductArt({
 export function ProductTileArt({
   product,
   size = "md",
+  glyphOnly = false,
 }: {
   product: Product
   size?: ProductTileSize
+  glyphOnly?: boolean
 }) {
   const art = PRODUCT_TILE_SIZES[size]
   return (
     <ProductArt
       product={product}
+      glyphOnly={glyphOnly}
       markClassName={cn(art.mark, PRODUCT_TILE_GLYPH_CLASS)}
       glyphClassName={cn(art.glyph, PRODUCT_TILE_GLYPH_CLASS)}
     />

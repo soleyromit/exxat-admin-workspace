@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { DevInit } from './dev-init'
-import { PCE_BRAND_COLOR } from '@/lib/product-brand'
+import { PCE_BRAND_COLOR } from '@/lib/pce-brand'
 
 export const metadata: Metadata = {
   title: 'PCE Admin',

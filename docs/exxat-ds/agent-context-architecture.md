@@ -10,8 +10,8 @@
 
 | Layer | Cursor | Claude Code | Purpose | Load when |
 |-------|--------|-------------|---------|-----------|
-| **L0 Constitution** | `_constitution` + product-context + product-routing + ux-discovery-protocol + copy-discipline | `.claude/rules/` (same files) | Ten commandments, precedence | Every turn (**5** files) |
-| **L1 Surface router** | `exxat-surface-router` / `scripts/agent-context-router.mjs` → `exxat-token-economy` skill | Same skill; same helper in package CLI | What archetype am I touching? | First design/code turn |
+| **L0 Constitution** | `_constitution.exxat-ds.mdc` only | `.claude/rules/` (same file) | Ten commandments, copy floor, product lines | Every turn (**1** file) |
+| **L1 Surface router** | `exxat-surface-router` / `scripts/agent-context-router.mjs` | Same skill; same helper in package CLI | What archetype am I touching? | First design/code turn. Do not open token-economy unless IA is undecided. |
 | **L1b UX router** | `component-selection-guide.md` | Same path | Resolve ambiguous surface choices | Only when archetype is unclear |
 | **L2 Job doc** | `jobs/*.md` | Same (`docs/exxat-ds/jobs/` in consumers) | User intent + UX checklist | After router picks surface |
 | **L3 Scoped rule** | `.cursor/rules/exxat-*.mdc` (glob) | `.claude/rules/exxat-*.mdc` | Binding MUST/MUST NOT | Editing matching paths |
@@ -39,7 +39,7 @@
 
 Reviewers use this when a PR touches `.cursor/`, `docs/jobs/`, or pattern docs.
 
-- [ ] **No new `alwaysApply: true`** without design-system review (target: 5 files only — see `INDEX.yaml` → `rules.always_on`).
+- [ ] **No new `alwaysApply: true`** without design-system review (target: **1** file — `_constitution.exxat-ds.mdc`; see `INDEX.yaml` → `rules.always_on`).
 - [ ] **New pattern** has job doc OR updates existing job — not rule-only.
 - [ ] **Rule** is ≤80 lines of MUST/MUST NOT; detail lives in pattern/skill.
 - [ ] **Glob** covers real consumer paths (`apps/web/...` rewritten on vendor for `{components,lib,src}/**`).

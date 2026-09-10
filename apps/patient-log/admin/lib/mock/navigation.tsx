@@ -243,6 +243,38 @@ export function getPrimaryNavForProduct(
   return NAV_BY_PRODUCT[product]
 }
 
+/** Labelled primary-nav group. Unused here — this app has one unlabeled section per product. */
+export interface NavSection {
+  key: string
+  label: string
+  items: NavLinkItem[]
+}
+
+/** Primary nav layout — preamble rows, labelled sections, optional trailing rows. */
+export interface NavPrimaryLayout {
+  preamble: NavLinkItem[]
+  sections: NavSection[]
+  epilogue?: NavLinkItem[]
+}
+
+/**
+ * Layout form of {@link getPrimaryNavForProduct} — wraps the same flat list
+ * in a single unlabeled section. This app doesn't group its primary nav into
+ * labelled sections (unlike PCE/exam-management), so `sections` always holds
+ * exactly one entry and `preamble`/`epilogue` stay empty.
+ */
+export function getPrimaryNavLayoutForProduct(
+  product: Product,
+  customProducts: { suffix: string }[],
+  activeCustomIndex: number,
+): NavPrimaryLayout {
+  const items = getPrimaryNavForProduct(product, customProducts, activeCustomIndex)
+  return {
+    preamble: [],
+    sections: [{ key: "main", label: "", items }],
+  }
+}
+
 /**
  * @deprecated Prefer `NAV_BY_PRODUCT[product]` with the active product from
  * `useProduct()`. This export remains for any callsite that hasn't migrated
@@ -344,6 +376,16 @@ export const NAV_SECONDARY: NavSecondaryItem[] = [
     iconActive: <i className="fa-solid fa-circle-question" aria-hidden="true" />,
   },
 ]
+
+/**
+ * `product` is unused today — this app has no per-product secondary-nav
+ * variant (unlike PCE/exam-management's One — Sites case). Kept as a param
+ * so the signature matches the shared `utility-bar-slot.tsx` / `app-sidebar.tsx`
+ * shell contract, which always calls it with the active product.
+ */
+export function getSecondaryNavForProduct(product: Product): NavSecondaryItem[] {
+  return NAV_SECONDARY
+}
 
 // ── User ──────────────────────────────────────────────────────────────────────
 

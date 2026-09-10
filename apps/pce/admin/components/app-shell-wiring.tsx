@@ -41,6 +41,7 @@ import { usePce } from "@/components/pce/pce-state"
 import {
   AccountPreferencesMenu,
   DemoAccountMenuItem,
+  DashboardLayoutMenuItem,
 } from "@/components/pce/identity-menu-items"
 import {
   NAV_ADMIN,
@@ -87,7 +88,7 @@ function useNav(): ShellNav {
 const SHELL_DATA: AppShellData = { useNav }
 
 const USER_MENU_PREFERENCES = [AccountPreferencesMenu]
-const USER_MENU_CONSOLE_ITEMS = [DemoAccountMenuItem]
+const USER_MENU_CONSOLE_ITEMS = [DemoAccountMenuItem, DashboardLayoutMenuItem]
 
 const SHELL_SLOTS: AppShellSlots = {
   Notifications: NotificationBell,

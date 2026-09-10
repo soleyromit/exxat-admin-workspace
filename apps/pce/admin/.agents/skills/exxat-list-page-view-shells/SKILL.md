@@ -32,5 +32,5 @@ description: >-
 ## References
 
 - **`components/data-views/list-page-view-frame.tsx`** — implementation + exported constants.
-- **`./AGENTS.md` §4.5** — MUST/MUST NOT.
+- **`docs/exxat-ds/handbook/agents-handbook.md` §4.5** — MUST/MUST NOT.
 - **`.agents/rules/exxat-list-page-view-shells.md`**.

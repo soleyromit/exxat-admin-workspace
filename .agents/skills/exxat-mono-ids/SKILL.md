@@ -7,7 +7,7 @@ user-invocable: true
 # Exxat DS — monospace IDs
 
 **Cursor rule:** `.agents/rules/exxat-mono-ids.md`  
-**Handbook:** `./AGENTS.md` (§1, §13 checklist)
+**Handbook:** `docs/exxat-ds/handbook/agents-handbook.md` (§1, §13 checklist)
 
 ## Standard classes
 

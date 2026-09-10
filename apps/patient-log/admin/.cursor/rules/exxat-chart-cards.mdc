@@ -6,7 +6,6 @@ globs:
   - components/charts-overview.tsx
   - components/dashboard-report-charts.tsx
   - components/**/*dashboard-charts*
-  - packages/ui/src/components/**/*chart*
 tags: [dashboard, charts, reuse]
 seeAlso:
   - .cursor/rules/exxat-dashboard-view-charts.mdc

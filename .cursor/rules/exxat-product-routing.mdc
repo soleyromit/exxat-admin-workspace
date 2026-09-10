@@ -1,7 +1,14 @@
 ---
 description: Exxat DS — every route + persisted-state slot lives under exactly one product. Four products (Prism, One Schools, One Sites, Custom — Prism IA with tenant branding); Exxat One is two siblings, not one. URL = subpath per product; switching = hard redirect to /<root>/dashboard; persistKey is product-namespaced.
-alwaysApply: true
-appliesTo: [universal]
+alwaysApply: false
+globs: 
+  - components/product-switcher.tsx
+  - lib/product-*.ts
+  - lib/mock/navigation.tsx
+  - lib/mock/product-*.ts
+  - stores/app-store.ts
+  - docs/exxat-ds/multi-product-routing-pattern.md
+  - docs/exxat-ds/persisted-state-pattern.md
 ---
 
 # Exxat DS — multi-product routing & state isolation

@@ -1,6 +1,6 @@
 ---
 description: Exxat DS — every design declares Product, Scope, and Persona before code. Consumer apps inherit the four-product shell (Prism, One — Schools, One — Sites, Custom). Anchored to ProductSwitcher + scope selector at runtime.
-activation: always_on
+activation: model_decision
 ---
 
 <!-- Synced from .agents/rules/exxat-product-context.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->

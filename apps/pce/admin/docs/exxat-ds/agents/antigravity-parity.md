@@ -29,11 +29,9 @@ Antigravity also supports legacy `.agent/rules` and `.agent/workflows` — this 
 
 | File | Purpose |
 | --- | --- |
-| `_constitution.exxat-ds.md` | Ten commandments, precedence, UX router entry |
-| `exxat-product-context.md` | Product / Scope / Persona in briefs |
-| `exxat-product-routing.md` | Four-app URL roots, persistKey namespacing |
-| `exxat-ux-discovery-protocol.md` | Brief-before-design gate |
-| `exxat-copy-discipline.md` | No decorative descriptions; no dash punctuation in UI copy |
+| `_constitution.exxat-ds.md` | Sole always-on rule. Ten commandments, copy floor, product lines, UX router. |
+
+Product, routing, brief protocol, and copy detail attach by glob or on demand.
 
 ---
 

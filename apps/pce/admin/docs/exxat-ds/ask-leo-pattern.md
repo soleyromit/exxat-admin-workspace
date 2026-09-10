@@ -161,7 +161,7 @@ Hosts must not re-implement that policy — mount `<AskLeoShell />` and nothing 
 
 | Trigger | Location |
 |---------|----------|
-| Utility bar icon | `UtilityBarSlot` → `AskLeoToggle` |
+| Utility bar chip | `UtilityBarSlot` → `AskLeoLauncher` (`@exxatdesignux/ui/components/shell/ask-leo-launcher`) |
 | Corner FAB | `LeoLauncherFab` — products home, and a minimised window |
 | Sidebar (classic only) | `AppSidebar` quick actions |
 | KPI insight CTA | `KeyMetricsAskLeoBridge` |
@@ -183,11 +183,18 @@ Hosts must not re-implement that policy — mount `<AskLeoShell />` and nothing 
 8. Assistant turns render **without** `MessageAvatar` — full width.
 9. The thinking backdrop mounts only while `isThinking` and only when
    `useReducedMotion()` is false.
+10. The utility bar mounts **`AskLeoLauncher`** and passes `open`, `busy`,
+    `onToggle`, and the chord. Everything the arrival animates is inside that
+    component.
 
 ## MUST NOT
 
 - Duplicate scroll-stick logic — `MessageScroller` owns it.
 - Use toast for Leo status (`exxat-no-toast.mdc`).
+- Rebuild the launcher chip from `Button` + `LeoIcon` + the wash. The arrival is
+  a package stylesheet selecting `data-ask-leo-utility-*`; a hand-assembled chip
+  keeps rendering while releases update the CSS around it, which is a release
+  that changes nothing on screen.
 
 ## See also
 

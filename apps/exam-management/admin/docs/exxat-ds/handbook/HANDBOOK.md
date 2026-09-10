@@ -85,7 +85,7 @@ This is the **happy path** for the most common task: "I have an entity (records,
 │                                                                     │
 │ RULES  (binding MUST / MUST NOT — scoped by glob where possible)    │
 │                         →  .cursor/rules/*.mdc                      │
-│                         →  4 always-on (see INDEX.yaml)             │
+│                         →  5 always-on (see INDEX.yaml)             │
 │                                                                     │
 │ SKILLS  (workflows + checklists — load on demand)                   │
 │                         →  exxat-kpi · exxat-overlays ·             │

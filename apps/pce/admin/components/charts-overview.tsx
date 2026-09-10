@@ -488,10 +488,19 @@ export function ChartCard({
     resolveChartCardFilter(variant, defaultFilter, filterOptions, miniMetrics, tabOptions),
   )
 
-  // Reconcile when variant or option sets change (catalog variant switcher, prop updates).
+  // Keyed on option VALUES, not array identity — callers pass tabOptions/filterOptions
+  // as inline literals, which get a new reference on every parent re-render (e.g. the
+  // results page's scroll-spy). Depending on the arrays themselves reset the selected
+  // tab back to default on every unrelated re-render, including mid-scroll.
+  const filterOptionsKey = filterOptions?.map((o) => o.value).join("|")
+  const miniMetricsKey = miniMetrics?.map((m) => m.label).join("|")
+  const tabOptionsKey = tabOptions?.map((t) => t.value).join("|")
+
+  // Reconcile when variant or option sets actually change (catalog variant switcher, prop updates).
   React.useEffect(() => {
     setFilter(resolveChartCardFilter(variant, defaultFilter, filterOptions, miniMetrics, tabOptions))
-  }, [variant, defaultFilter, filterOptions, miniMetrics, tabOptions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant, defaultFilter, filterOptionsKey, miniMetricsKey, tabOptionsKey])
 
   const handleFilter = (v: string) => { setFilter(v); onFilterChange?.(v) }
 

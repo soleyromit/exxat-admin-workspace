@@ -1,9 +1,6 @@
 ---
-description: Exxat DS — ListPageTemplate hub scroll — one page scrollport; table/list/board grow together
+description: Exxat DS — ListPageTemplate hub scroll — page scroll for all hub views
 globs: 
-  - packages/ui/src/components/templates/list-page.tsx
-  - packages/ui/src/components/data-views/hub-table.tsx
-  - packages/ui/src/components/data-views/list-page-board-template.tsx
   - components/**/*-client.tsx
   - components/**/*-table.tsx
 tags: [layout, list-page, data-views]
@@ -19,27 +16,32 @@ seeAlso:
 
 ## Scroll owner
 
-**`PrimaryPageTemplate` → `[data-page-scroll]`** is the **only** vertical scroll for table, list, and board views. KPI strip, view tabs, filter toolbar, and view body **scroll together** — same cadence as **`DataTable`** on the table tab.
+| Views | Vertical scroll |
+|---|---|
+| **table · list · board · folder · panel · tree-panel · dashboard** | `[data-page-scroll]` only — body grows with page |
 
 ## MUST
 
-1. **Table / list / board** — Body grows with page content. Use **`HubTable` `toolbarShell(<ViewBody />)`** (toolbar + body in one `pb-6` block). **Do not** wrap board/list in `viewportToolbarShell`, `flex-1 min-h-0`, or nested `overflow-y-auto` unless product explicitly documents a split-pane exception.
-2. **`ListPageTemplate` tab body** — For `table`, `list`, and `board` tabs the template uses **`min-h-min`** (no viewport lock). Folder / panel / tree / dashboard tabs use **`min-h-0 flex-1`** for internal scroll.
-3. **Header + metrics** — Stay **`shrink-0`** above view tabs; never compress the KPI flat band into the tab row.
-4. **Board columns** — **`ListPageBoardTemplate`** uses natural column height + horizontal overflow only; vertical overflow belongs to **`[data-page-scroll]`**.
+1. **All hub views** — Use **`HubTable` `toolbarShell(<ViewBody />)`** (or `viewportToolbarShell`, an alias). Do not nest `overflow-y-auto` on Miller / tree column bodies.
+2. **Split hubs** — Use **`ListPageSplitHubChrome`** with **`minHeight` only** (no `100dvh` / `maxHeight` lock). Column headers use **`ListPageTreeColumnHeader`** sticky under the views strip (`top-(--shell-utility-bar-height)`).
+3. **`ListPageTemplate` tab body** — Default `min-h-min`. Keep `LIST_PAGE_VIEWPORT_FILL_VIEWS` empty unless a product documents an opt-in.
+4. **Header + metrics** — Stay **`shrink-0`** above view tabs.
+5. **Resize handles** — Use the global **`ResizableHandle`** (grip on by default). Split hubs MUST pass **`stickyGrip`** so the grip stays in the page viewport on tall groups, plus **`LIST_PAGE_SPLIT_RESIZABLE_GROUP_STYLE`** + **`LIST_PAGE_SPLIT_RESIZABLE_PANEL_STYLE`** so library `overflow`/`height` defaults do not trap sticky headers. Stacking only: **`LIST_PAGE_SPLIT_RESIZABLE_HANDLE_CLASS`**. Shell rails (secondary / Ask Leo) omit `stickyGrip` and use **`groupResizeBehavior="preserve-pixel-size"`**.
 
 ## MUST NOT
 
-- Pin the filter toolbar while only the board/list body scrolls (second scrollbar under tabs).
-- Put **`flex-1 min-h-0`** on board/list wrappers — cards clip at the viewport instead of scrolling the page.
-- Use **`scrollableViewportToolbarShell`** or equivalent for board — removed; use **`toolbarShell`** only.
+- Pin only the filter toolbar while a middle pane scrolls.
+- Lock split chrome with `calc(100dvh - …)` (steals page scroll).
+- Hide the resize track — the separator must stay visible between panels / rails.
 
-## Viewport-fill exception (internal scroll)
+## Sticky views strip (all hubs)
 
-**`folder` · `panel` · `tree-panel` · `dashboard`** — Use **`viewportToolbarShell`** so the body fills the tab and owns Miller/tree/canvas scroll regions. See **`exxat-list-page-view-shells.mdc`**.
+Hub view tabs pin at **`z-40 isolate self-start bg-background`** under the utility bar.
 
 ## Reference
 
-- **`packages/ui/src/components/templates/list-page.tsx`** — `LIST_PAGE_VIEWPORT_FILL_VIEWS`, tab body classes
-- **`packages/ui/src/components/data-views/hub-table.tsx`** — `toolbarShell` vs `viewportToolbarShell`
-- **`components/library-table.tsx`** — board → `toolbarShell`; folder/panel/tree → `viewportToolbarShell`
+- **`list-page-split-hub-chrome.tsx`** — grow-with-page card + gutters
+- **`list-page-split-hub-tokens.ts`** — panel / handle classes
+- **`list-page-tree-column-header.tsx`** — sticky panel headers
+- **`resizable.tsx`** — shared handle affordance
+- **`library-table.tsx`** / **`hub-tree-panel-view.tsx`** — reference wiring

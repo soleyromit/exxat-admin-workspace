@@ -11,6 +11,13 @@ description: >
 
 # Exxat DS — install & upgrade (`@exxatdesignux/ui`)
 
+**Binding rule (read first):** `.cursor/rules/exxat-consumer-package-upgrade.mdc`
+(Claude: `.claude/rules/…` · Antigravity: `.agents/rules/exxat-consumer-package-upgrade.md`).
+
+**Default when the user says "update / bump the package":** install only
+(`pnpm add` / `npm install`). Do **not** run `exxat-ui upgrade` unless they
+explicitly asked to sync shell chrome. Preview with `exxat-ui upgrade --check`.
+
 Use this skill for **consumer repos** (Assessment_V1, customer scaffolds) — not
 the DS monorepo (`apps/web` uses `workspace:*`).
 
@@ -87,13 +94,15 @@ Run and **summarize for the user** before any file edits:
 ```bash
 npx --package=@exxatdesignux/ui@latest exxat-ui doctor
 npx --package=@exxatdesignux/ui@latest exxat-ui changelog
-# Or read bundled notes (≥ 0.5.22 often points to GitHub RELEASES.md)
+# Or open node_modules/@exxatdesignux/ui/RELEASE_NOTES.md (≥ 0.8.8)
 ```
 
 Also open:
 
-- `node_modules/@exxatdesignux/ui/CHANGELOG.md` (recent entry)
+- Release notes via `exxat-ui changelog` (bundled `RELEASE_NOTES.md`, latest 5 versions)
+- `docs/exxat-ds/latest-release.md` after `sync-extras` (same content in the app tree)
 - `docs/exxat-ds/consumer-upgrade-checklist.md` (after sync-extras)
+- Full history only if needed: GitHub `packages/ui/RELEASES.md`
 
 **Output a short upgrade brief:**
 
@@ -106,6 +115,82 @@ Content/data files: none (unless release note says otherwise)
 
 **Wait for user confirmation** before porting if the release touches routing,
 store version, or product chrome.
+
+---
+
+## Phase 1b — Choose the migration mode
+
+Run a read-only architecture plan when the customer app predates the managed
+architecture marker or the release changes routes, flows, shell architecture,
+or persisted state:
+
+```bash
+TARGET_VERSION=x.y.z
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan
+```
+
+### Managed upgrade
+
+If mode is `managed-upgrade`, write the plan and apply it from a clean Git root:
+
+```bash
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan \
+  --output .exxat-ui/plans/package-upgrade.json
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate apply \
+  --plan .exxat-ui/plans/package-upgrade.json
+```
+
+### Legacy bootstrap
+
+If mode is `legacy-bootstrap`, do not force the shell upgrader. Build and review
+the legacy contract first:
+
+```bash
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate legacy inspect
+# Human review:
+# .exxat-ui/migrations/legacy-inventory.json
+# .exxat-ui/migrations/legacy-review.json
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate legacy verify
+git add .exxat-ui/migrations .exxat-ui/ejected.json
+git commit -m "review legacy migration contract"
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate plan \
+  --output .exxat-ui/plans/legacy-bootstrap.json
+npx --yes --package="@exxatdesignux/ui@$TARGET_VERSION" \
+  exxat-ui migrate apply \
+  --plan .exxat-ui/plans/legacy-bootstrap.json
+```
+
+Every finding needs a reason. Every discovered route needs a reviewed flow.
+Every skipped implementation path must be resolved or explicitly acknowledged
+with a reason in `coverageAcknowledgements`.
+Automatic bootstrap accepts preservation-only reviews. If an item needs an
+alias, redirect, replacement, facade, copy, transform, migration, removal, or
+retirement, stop and add an app-owned adapter plus a contract test. Never label
+changed behavior as preserved to make the plan apply.
+
+To test an unpublished tarball in a customer-app clone, bind its exact bytes:
+
+```bash
+UI_TARBALL=file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz
+npx --yes --package="$UI_TARBALL" exxat-ui migrate plan \
+  --package-spec file:/absolute/path/to/exxatdesignux-ui-x.y.z.tgz \
+  --framework-package-spec file:/absolute/path/to/exxatdesignux-product-framework-x.y.z.tgz \
+  --output .exxat-ui/plans/local-tarball.json
+npx --yes --package="$UI_TARBALL" exxat-ui migrate apply \
+  --plan .exxat-ui/plans/local-tarball.json
+```
+
+The plan stores both tarball checksums. Apply refuses a replaced or repacked
+artifact and verifies both installed versions. The staged install disables
+package lifecycle scripts, validates in a detached worktree, and promotes one
+patch only after every gate passes. Plan and apply must both run through the
+destination tarball's CLI.
 
 ---
 
@@ -137,27 +222,43 @@ node -p "require('./node_modules/@exxatdesignux/ui/package.json').version"
 npx --package=@exxatdesignux/ui@latest exxat-ui doctor
 ```
 
-Preferred next step:
+Default next step is a read-only ownership and port check:
 
 ```bash
-npx --package=@exxatdesignux/ui@latest exxat-ui upgrade
+npx --package=@exxatdesignux/ui@latest exxat-ui upgrade --check
 ```
 
-`upgrade` runs `sync-extras`, ports package-owned shell files from the generated
-starter, and refreshes predefined Prism / One / Design OS routes, sidebar chrome,
-and navigation. Builder-owned tenant catalog, data modules, mock/API wiring, and
-custom pages are preserved.
+Read the exit code: **10** means portable framework work exists, **11** means
+only declared app-owned files differ, **1** means ownership is unresolved or
+the ledger is malformed, and **0** means nothing is pending.
+
+`.exxat-ui/ejected.json` is the committed ownership ledger. On the first
+declarative run, a trustworthy old baseline can distinguish edits from stale
+package copies. Without one, exit 1 is intentional: review every path before
+choosing `--declare-existing-owned` to preserve it or `--force` to take the
+package copy with a backup. Both flags apply to the whole run, so do not use
+either wholesale on a mixed list.
+
+Only run `upgrade` after the check is understood. It ports package-owned
+framework wiring and creates missing import-closed shims. Tenant catalogs, data
+modules, mock/API wiring, custom pages, and declared paths are preserved.
 
 ---
 
-## Phase 3 — Refresh AI docs (safe — no app code)
+## Phase 3 — Refresh agent context and re-check framework wiring
 
 ```bash
 npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras
 ```
 
-Touches **only** `.cursor/skills/exxat-*`, `.cursor/rules/exxat-*.mdc`,
-`docs/exxat-ds/*`. Never modifies `src/`, `app/`, or product pages.
+This refreshes `.cursor/`, `.claude/`, `.agents/`, and `docs/exxat-ds/`.
+It can also auto-run the content-safe framework upgrade when `upgrade --check`
+returns 10. It never ports reference hubs, product pages, mocks, or API modules,
+but it can update undeclared framework wiring under `src/`, `components/`,
+`contexts/`, `lib/`, and `stores/`.
+
+If ownership is unresolved, stop. Do not trust a quiet install from an older
+postinstall that ended `upgrade` with `|| true`; run `upgrade --check` directly.
 
 Re-open the agent chat after sync so rules reload.
 
@@ -262,7 +363,7 @@ Full file list: [port-map.md](./port-map.md).
 | Command | Purpose |
 |---------|---------|
 | `exxat-ui doctor` | Installed vs npm `latest` |
-| `exxat-ui changelog` | Release notes |
+| `exxat-ui changelog` | Bundled upgrade notes (`RELEASE_NOTES.md`) |
 | `exxat-ui update` | Install commands + reminders |
 | `exxat-ui sync-extras` | Cursor skills + `docs/exxat-ds/` |
 | `exxat-ui audit <file>` | Prompt for UX/a11y audit skill |

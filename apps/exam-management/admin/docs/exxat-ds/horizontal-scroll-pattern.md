@@ -2,7 +2,9 @@
 
 **Audience:** humans + AI agents. **Binding rule:** [`.cursor/rules/exxat-horizontal-scroll.mdc`](../../.cursor/rules/exxat-horizontal-scroll.mdc).
 
-When a row of tabs, breadcrumbs, or chips overflows its container, Exxat DS uses a **shared scroll control** — not ad-hoc chevrons on each side of the bar.
+When a row of tabs or chips overflows its container, Exxat DS uses a **shared scroll control** — not ad-hoc chevrons on each side of the bar.
+
+**Breadcrumbs are not on this path.** A trail collapses its middle segments into More instead of scrolling, because scrolling hides the ancestors behind a gesture, and it does so on measured room rather than a crumb count. See [`.cursor/rules/exxat-breadcrumbs-no-back.mdc`](../../.cursor/rules/exxat-breadcrumbs-no-back.mdc).
 
 ---
 
@@ -34,6 +36,31 @@ When a row of tabs, breadcrumbs, or chips overflows its container, Exxat DS uses
 
 ---
 
+## The edge fades, it does not cut
+
+A clipped row ends mid-card, mid-label, or mid-chart, which reads as a rendering
+fault rather than as "there is more this way". So `HorizontalScrollViewport`
+writes `data-fade="start | end | both | none"` from its own scroll position and
+one rule in `packages/ui/src/globals.css` masks that side to transparent over
+`2rem`.
+
+Three things follow from it being a **mask** and not a coloured gradient:
+
+- It works on every surface. These rows sit on white cards, on brand-tinted
+ washes, and on the page canvas, so a scrim painted in one of those colours
+ would be wrong on the other two. A mask fades the content itself and lets
+ whatever is behind show through, in light, dark, and both high-contrast themes.
+- Only the side with content behind it fades, so a row nobody has scrolled keeps
+ its first card crisp against the page margin.
+- **Focus suppresses it.** A mask fades a focus ring along with the content it
+ belongs to, so while keyboard focus is anywhere in the row (the row's own ring
+ or any child's) nothing is masked.
+
+You get this by using the primitive. Do not add a `::after` scrim or a
+background-coloured fade of your own.
+
+---
+
 ## `HorizontalScrollRegion` (preferred)
 
 High-level wrapper — viewport + controls when needed.
@@ -42,7 +69,7 @@ High-level wrapper — viewport + controls when needed.
 <HorizontalScrollRegion
   ariaLabel="Views"
   controlsLayout="group-end"  // default
-  alignEnd={false}            // true for breadcrumb trails
+  alignEnd={false}            // true when the newest item matters most
 >
   {children}
 </HorizontalScrollRegion>
@@ -52,7 +79,7 @@ High-level wrapper — viewport + controls when needed.
 |---|---|---|
 | `ariaLabel` | `"Scroll"` | Prefix for prev/next `aria-label`s |
 | `controlsLayout` | `"group-end"` | `"split"` \| `"group-end"` \| `"group-start"` |
-| `alignEnd` | `false` | Pin scroll to trailing edge when content grows (SiteHeader breadcrumbs) |
+| `alignEnd` | `false` | Pin scroll to trailing edge when content grows |
 | `scrollClassName` | — | Extra classes on the viewport |
 
 ---
@@ -92,8 +119,8 @@ return (
 | Surface | Reference | Notes |
 |---|---|---|
 | Hub view tabs | `packages/ui/src/components/templates/list-page.tsx` | `controlsLayout="group-end"` |
-| Record section tabs | `packages/ui/src/components/ui/tabs.tsx` (`TabsListScrollRegion`) | same |
-| SiteHeader breadcrumbs | `apps/web/components/page-breadcrumb-trail.tsx` | `alignEnd` + grouped control |
+| Record section tabs | `packages/ui/src/components/ui/tabs.tsx` (`TabsList`, built in) | same |
+| SiteHeader breadcrumbs | `apps/web/components/page-breadcrumb-trail.tsx` | **Not scrolled.** Middle segments collapse into More on measured room |
 
 ---
 

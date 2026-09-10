@@ -10,6 +10,19 @@ constitution:
   handbook: apps/web/docs/HANDBOOK.md
   agents: apps/web/AGENTS.md
 
+# Complete, generated inventory — search `keywords` by intent BEFORE writing any
+# component. The selection guide routes decisions; this map proves what exists.
+component_map:
+  file: apps/web/docs/component-map.json
+  consumer_file: docs/exxat-ds/component-map.json
+  generate: pnpm ds:component-map
+  coverage_gate: pnpm ds:routing:check
+  # New apps/web/components/ patterns must register a row before they ship —
+  # diff-scoped (staged adds only), wired into .githooks/pre-commit. See
+  # scripts/check-pattern-registry.mjs for why it isn't a full-repo audit.
+  new_pattern_gate: pnpm ds:pattern-registry:check
+  rule: .cursor/rules/exxat-reuse-before-custom.mdc
+
 jobs:
   list-hub: apps/web/docs/jobs/list-hub.md
   focus-workflow: apps/web/docs/jobs/focus-workflow.md
@@ -48,6 +61,8 @@ patterns:
   data-views: apps/web/docs/data-views-pattern.md
   dashboard-chart-layout: apps/web/docs/dashboard-chart-layout-pattern.md
   focus-workflow: apps/web/docs/focus-workflow-pattern.md
+  detail-action-hierarchy: apps/web/docs/detail-action-hierarchy-pattern.md
+  record-detail-chrome: apps/web/docs/record-detail-chrome-pattern.md
   drawer-vs-dialog: apps/web/docs/drawer-vs-dialog-pattern.md
   command-menu: apps/web/docs/command-menu-pattern.md
   kpi-trend: apps/web/docs/kpi-trend-pattern.md
@@ -125,6 +140,7 @@ rules:
     - .cursor/rules/exxat-product-context.mdc
     - .cursor/rules/exxat-product-routing.mdc
     - .cursor/rules/exxat-ux-discovery-protocol.mdc
+    - .cursor/rules/exxat-copy-discipline.mdc
   scoped_constitution_detail:
     - .cursor/rules/exxat-reuse-before-custom.mdc
     - .cursor/rules/exxat-no-toast.mdc
@@ -165,12 +181,15 @@ rules:
     page-header-actions: .cursor/rules/exxat-page-header-actions.mdc
     persisted-state: .cursor/rules/exxat-persisted-state.mdc
     person-identity-display: .cursor/rules/exxat-person-identity-display.mdc
+    product-scope: .cursor/rules/exxat-product-scope.mdc
     sidebar-shell: .cursor/rules/exxat-sidebar-shell.mdc
     table-properties-drawer: .cursor/rules/exxat-table-properties-drawer.mdc
     table-row-preview: .cursor/rules/exxat-table-row-preview.mdc
     ux-principles: .cursor/rules/exxat-ux-principles.mdc
     utility-bar: .cursor/rules/exxat-utility-bar.mdc
     ask-leo: .cursor/rules/exxat-ask-leo.mdc
+    form-fields: .cursor/rules/exxat-form-fields.mdc
+    leo-icon-motion: .cursor/rules/exxat-leo-icon-motion.mdc
 
 references:
   library-hub: apps/web/components/library-client.tsx
@@ -214,16 +233,23 @@ task_router:
       - apps/web/lib/design-system/component-docs/message.tsx
     rules:
       - exxat-ask-leo
+      - exxat-leo-icon-motion
+      - exxat-form-fields
     skills:
       - exxat-fontawesome-icons
   utility_bar:
     read:
       - apps/web/docs/shell-utility-bar-pattern.md
+      - apps/web/docs/record-detail-chrome-pattern.md
+      - apps/web/docs/tabs-pattern.md
       - apps/web/components/utility-bar-slot.tsx
+      - apps/web/components/utility-bar-page-chrome.tsx
       - apps/web/contexts/shell-layout-context.tsx
       - apps/web/lib/design-system/component-docs/utility-bar.tsx
     rules:
       - exxat-utility-bar
+      - exxat-tabs-chrome
+    skills: []
   focus_shell:
     read:
       - apps/web/docs/jobs/focus-workflow.md

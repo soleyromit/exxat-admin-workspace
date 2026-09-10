@@ -1923,60 +1923,138 @@ export function deliveryModeOf(o: Pick<CourseOffering, 'deliveryMode' | 'courseT
 
 // Permissions (entity #6) — role × scope grants
 //
-// Per Aarti 2026-05-08 16:09 D6 + D7:
-//   - 3 view tiers: admin / faculty / student (workspace ADR-004)
-//   - 2 faculty sub-roles at course level: Course Coordinator (full CRUD on
-//     assigned offerings) + Instructor (limited capabilities, exact set TBD
-//     per Vishaka R7)
-//   - Collaborator pattern: faculty can be granted read-only or co-edit
-//     access on specific course offerings
-//
-// Phase 1 ships: role assignments + per-faculty collaborator grants.
-// Granular per-resource permission editing is a Phase 2 follow-up.
-export type RoleKey = 'admin' | 'course-coordinator' | 'instructor' | 'collaborator-readonly' | 'collaborator-edit'
-
+// Per Aarti 2026-05-08 16:09 D6 + D7 the product originally shipped a
+// broader PCE-program role model (admin / course-coordinator / instructor /
+// collaborator read-only / co-edit) covering Questions, Assessments,
+// Students, Accommodations. The Course Survey module now has its own
+// confirmed RBAC spec (see SurveyRbacRoleKey below, sourced from the Course
+// Survey RBAC spreadsheet + Granola transcripts) — as of 2026-09-01 this
+// grant system runs on THAT vocabulary so the Assignments roster and the
+// Permissions matrix reference the same 5 roles instead of two disjoint
+// role sets. The old collaborator concept has no equivalent in the
+// confirmed spec and was dropped from this surface; revisit if a future
+// requirement reintroduces ad-hoc sharing outside the 5 official roles.
 export interface RoleAssignment {
   id: string
   facultyId: string  // FK
-  role: RoleKey
-  /** Scope: 'global' (all offerings) or specific course offering ID. */
-  scope: 'global' | string
+  /** 'none' = added without an administrative role (Sep 1 sync: admin needs a way to
+   *  add a user before any course association resolves them to Course Manager/Instructor). */
+  role: SurveyRbacRoleKey | 'none'
+  /** Scope: 'global' (institution/program-wide) or 'none' (no administrative grant). */
+  scope: 'global' | 'none' | string
   grantedAt: string
   grantedBy: string
 }
 
-export const ROLE_LABELS: Record<RoleKey, string> = {
-  'admin':                 'Admin',
-  'course-coordinator':    'Course Coordinator',
-  'instructor':            'Instructor',
-  'collaborator-readonly': 'Collaborator (read-only)',
-  'collaborator-edit':     'Collaborator (co-edit)',
-}
-
-export const ROLE_DESCRIPTIONS: Record<RoleKey, string> = {
-  'admin':                 'Full access to all program-level entities + cross-product modules.',
-  'course-coordinator':    'Full ownership of an assigned offering: full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
-  'instructor':            'Limited access on assigned offerings.',
-  'collaborator-readonly': 'View-only access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
-  'collaborator-edit':     'Co-edit access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
-}
-
+// Course Manager / Instructor are NEVER manual grants (Sep 1 sync, Vishal, verbatim:
+// "you cannot select course manager [when adding a user]... these are decided based
+// on the associations") — resolved live from MOCK_COURSE_OFFERINGS faculty
+// associations via facultyEvalRole() + the tenant's RBAC↔faculty-role mapping (see
+// DEFAULT_RBAC_FACULTY_ROLE_MAP below). Only administrative roles are stored grants.
 export const MOCK_ROLE_ASSIGNMENTS: RoleAssignment[] = [
-  // Admin (rare — usually 1-2 per program)
-  { id: 'ra1',  facultyId: 'f1', role: 'admin',                 scope: 'global', grantedAt: '2024-08-01', grantedBy: 'System' },
-  // Course Coordinators per active offerings
-  { id: 'ra2',  facultyId: 'f2', role: 'course-coordinator',    scope: 'co1',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  { id: 'ra3',  facultyId: 'f3', role: 'course-coordinator',    scope: 'co2',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  { id: 'ra4',  facultyId: 'f3', role: 'course-coordinator',    scope: 'co3',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  { id: 'ra5',  facultyId: 'f4', role: 'course-coordinator',    scope: 'co5',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  { id: 'ra6',  facultyId: 'f4', role: 'course-coordinator',    scope: 'co6',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  { id: 'ra7',  facultyId: 'f2', role: 'course-coordinator',    scope: 'co7',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
-  // Instructors (limited)
-  { id: 'ra8',  facultyId: 'f5', role: 'instructor',            scope: 'co1',    grantedAt: '2025-08-25', grantedBy: 'Dr. Chen (CC)' },
-  // Collaborators
-  { id: 'ra9',  facultyId: 'f1', role: 'collaborator-edit',     scope: 'co1',    grantedAt: '2026-01-15', grantedBy: 'Dr. Chen (CC)' },
-  { id: 'ra10', facultyId: 'f1', role: 'collaborator-readonly', scope: 'co2',    grantedAt: '2026-01-15', grantedBy: 'Dr. Williams (CC)' },
+  { id: 'ra1', facultyId: 'f1', role: 'super-admin',           scope: 'global', grantedAt: '2024-08-01', grantedBy: 'System' },
+  { id: 'ra2', facultyId: 'f3', role: 'program-admin',         scope: 'global', grantedAt: '2025-08-20', grantedBy: 'System' },
+  { id: 'ra3', facultyId: 'f4', role: 'program-admin-limited', scope: 'global', grantedAt: '2025-08-20', grantedBy: 'Dr. Patel (Super Admin)' },
 ]
+
+// Course Survey RBAC — the confirmed 5-role model, shared by the Assignments
+// grant roster (above) and the Permissions matrix reference (below).
+//
+// Source: Course Survey RBAC spreadsheet (Romit, 2026-09-01) + Granola "Course
+// evaluation survey — roles, status tracking, and response rate thresholds"
+// (Vishal + Monil, 2026-08-12) confirming the 5-role model: "five kind of main
+// roles that we aligned on — super user... admin side is divided into two parts,
+// the setup part... and administrator or program director, more of the content...
+// and then course and course affiliation."
+//
+// The itemized `includes` lists on SURVEY_RBAC_MATRIX below are read from the
+// spreadsheet's grouped legend (User / Survey / Setup / Feedback sections) and
+// assigned to the function group they most plausibly belong to — the source
+// screenshot did not give a verified per-item × per-role breakdown, only the 4
+// top-level group columns. Confirm item-to-group placement with Vishal/Monil
+// before treating as final.
+export type SurveyRbacRoleKey = 'super-admin' | 'program-admin' | 'program-admin-limited' | 'course-manager' | 'instructor'
+
+export interface SurveyRbacRole {
+  key: SurveyRbacRoleKey
+  label: string
+  facultyRoles: string
+  scope: string
+  /** One-sentence capability summary — used in the Grant role dialog + role-badge tooltips. */
+  description: string
+}
+
+export const SURVEY_RBAC_ROLES: SurveyRbacRole[] = [
+  {
+    key: 'super-admin', label: 'Super Admin', facultyRoles: '—', scope: 'Institution',
+    description: 'Full access to every function across the institution, including program setup, course survey admin, and all feedback.',
+  },
+  {
+    key: 'program-admin', label: 'Program Admin', facultyRoles: '—', scope: 'Program',
+    description: 'Full access to program setup, course survey admin, and all feedback within their program.',
+  },
+  {
+    key: 'program-admin-limited', label: 'Program Admin Limited', facultyRoles: '—', scope: 'Program',
+    description: 'Program setup and course survey admin within their program. Cannot view course or instructor feedback.',
+  },
+  {
+    key: 'course-manager', label: 'Course Manager', facultyRoles: 'Course Coordinator, Course Director', scope: 'Course',
+    description: 'Views course feedback and their own feedback as an instructor. No survey setup or push/reminder access.',
+  },
+  {
+    key: 'instructor', label: 'Instructor', facultyRoles: 'Instructor, Co-instructor', scope: 'Associated feedback',
+    description: 'Views only their own instructor feedback. No course feedback or survey admin access.',
+  },
+]
+
+export type SurveyRbacAccess = 'full' | 'self' | 'none'
+
+export interface SurveyRbacFunctionGroup {
+  key: string
+  label: string
+  includes: string[]
+  access: Record<SurveyRbacRoleKey, SurveyRbacAccess>
+}
+
+export const SURVEY_RBAC_MATRIX: SurveyRbacFunctionGroup[] = [
+  {
+    key: 'program-setup',
+    label: 'Program setup & access controls',
+    includes: ['User Management', 'Access controls', 'Survey Templates', 'Email Templates', 'Terms Setup', 'Benchmarks'],
+    access: { 'super-admin': 'full', 'program-admin': 'full', 'program-admin-limited': 'full', 'course-manager': 'none', 'instructor': 'none' },
+  },
+  {
+    key: 'course-survey-admin',
+    label: 'Course survey admin (push, reminders)',
+    includes: ['Push survey', 'Send reminders', 'Survey list', 'Response Rate', 'Flag/hide feedback', 'Release feedback', 'Export Feedback'],
+    access: { 'super-admin': 'full', 'program-admin': 'full', 'program-admin-limited': 'full', 'course-manager': 'none', 'instructor': 'none' },
+  },
+  {
+    key: 'view-course-feedback',
+    label: 'View course feedback',
+    includes: ['Quantitative feedback', 'Qualitative feedback', 'AI Insights'],
+    access: { 'super-admin': 'full', 'program-admin': 'full', 'program-admin-limited': 'none', 'course-manager': 'full', 'instructor': 'none' },
+  },
+  {
+    key: 'view-instructor-feedback',
+    label: 'View instructor feedback',
+    includes: ['Quantitative feedback', 'Qualitative feedback', 'AI Insights'],
+    access: { 'super-admin': 'full', 'program-admin': 'full', 'program-admin-limited': 'none', 'course-manager': 'self', 'instructor': 'self' },
+  },
+]
+
+/** Which of a tenant's Prism course-association roles (EVAL_FACULTY_ROLES) resolve to
+ *  Course Manager vs Instructor — the "merge as a column into this grid" mapping from
+ *  the Sep 1 sync (Vishal, verbatim: "you're adding a new column here which says
+ *  faculty roles... in a way you are merging these into this"). Admin-editable on the
+ *  Permissions matrix tab; drives the derived (non-grantable) Course Manager/Instructor
+ *  rows on the Assignments tab via facultyEvalRole(). */
+export type RbacFacultyRoleMap = Record<'course-manager' | 'instructor', FacultyEvalRoleId[]>
+
+export const DEFAULT_RBAC_FACULTY_ROLE_MAP: RbacFacultyRoleMap = {
+  'course-manager': ['course-coordinator'],
+  'instructor': ['instructor'],
+}
 
 // Accommodations (entity #10) — workspace ADR-006 shared module
 //

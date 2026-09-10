@@ -1,6 +1,7 @@
 ---
 description: Exxat DS copy discipline. Omit decorative descriptions by default. Never use dash punctuation in user-visible copy (titles, body, tooltips, empty cells).
-activation: always_on
+activation: glob
+globs: {components,lib,src}/**/*.{tsx,ts}
 ---
 
 <!-- Synced from .agents/rules/exxat-copy-discipline.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->

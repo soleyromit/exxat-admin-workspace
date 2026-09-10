@@ -31,24 +31,28 @@ const PRODUCT_GLYPH: Record<Product, string> = {
   // this table is light because it paints neutral tiles and menu rows, where the
   // weight matches the text beside it.
   "exxat-prism": "fa-solid fa-stethoscope",
-  // The school looking out at partners, and the partner looking back.
-  "exxat-one-schools": "fa-light fa-handshake",
+  // Sharp numeral one — the product name, not a metaphor glyph.
+  "exxat-one-schools": "fa-sharp fa-solid fa-1",
   "exxat-one-sites": "fa-light fa-hospital",
   "exxat-curriculum-mapping": "fa-light fa-book-open",
   "exxat-compliance": "fa-light fa-shield-check",
-  // Bars, matching the drawn mark. They used to be a bubble to stay clear of
-  // Student & Program Success, which is a trend line now and no longer collides.
-  "exxat-surveys": "fa-light fa-chart-simple",
-  "exxat-exam-management": "fa-light fa-clipboard-check",
+  // Poll form, not a generic bar chart: matches the console and marketing copy.
+  "exxat-surveys": "fa-solid fa-square-poll-vertical",
+  // Fallback when a surface skips the drawn mark in `product-app-mark.tsx`.
+  "exxat-exam-management": "fa-solid fa-clipboard-list-check",
   "exxat-accreditation": "fa-light fa-award",
   "exxat-student-success": "fa-light fa-chart-line-up",
   "exxat-design-os": "fa-light fa-swatchbook",
-  // A gear, not a shield: Compliance is the shield, and the console that
-  // configures a workspace is not the product that clears a student.
-  "exxat-admin": "fa-light fa-gear",
-  "exxat-people": "fa-light fa-users",
-  "exxat-courses": "fa-light fa-books",
-  "exxat-personnel": "fa-light fa-user-nurse",
+  // Workspace record hubs and the admin console land in brand tiles on Campus
+  // home and in the switcher. Solid weight matches Prism and the drawn marks
+  // beside them; fa-light on a saturated tile reads as a failed load.
+  "exxat-admin": "fa-solid fa-gear",
+  "exxat-people": "fa-solid fa-users",
+  "exxat-courses": "fa-solid fa-books",
+  // A branching tree, not a graduation cap: a program is the branch a school
+  // divides itself into, and the cap belongs to the students inside one.
+  "exxat-programs": "fa-solid fa-sitemap",
+  "exxat-personnel": "fa-solid fa-user-nurse",
   // Custom tenant products inherit Prism's IA wholesale, so they inherit its
   // glyph too, solid weight included: both land in a brand tile, and the same
   // icon at two weights across two rows reads as a mistake. Their own brand
@@ -58,6 +62,17 @@ const PRODUCT_GLYPH: Record<Product, string> = {
 
 export function productGlyph(product: Product): string {
   return PRODUCT_GLYPH[product] ?? "fa-light fa-grid-2"
+}
+
+/**
+ * Glyph for a brand-filled tile — Campus home and any surface that skips drawn
+ * marks. Solid weight throughout so every door reads at the same optical weight
+ * on a saturated circle; menu rows keep {@link productGlyph}'s light default.
+ */
+export function productTileGlyph(product: Product): string {
+  const glyph = productGlyph(product)
+  if (glyph.startsWith("fa-kit")) return glyph
+  return glyph.replace("fa-light", "fa-solid")
 }
 
 /**

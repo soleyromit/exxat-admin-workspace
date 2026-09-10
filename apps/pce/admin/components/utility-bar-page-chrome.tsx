@@ -3,18 +3,40 @@
 /**
  * Page → utility bar chrome bridge.
  *
- * Compact hubs keep the full Comfort/Dense bar. Detail / focus routes that use
- * the back pattern (or record-detail trails we derive a parent from) switch the
- * bar into Back mode: leading back link only, no toggle, product, actions, or
- * identity. `SiteHeader` publishes the mode; `UtilityBarSlot` consumes it —
- * both sit in different subtrees under this provider.
+ * Compact hubs keep the full Comfort/Dense bar. Detail / focus routes switch the
+ * bar into Back or Breadcrumb mode: leading back link or ancestor trail, no
+ * toggle, product, actions, or identity. `SiteHeader` publishes the mode;
+ * `UtilityBarSlot` consumes it — both sit in different subtrees under this
+ * provider.
  */
 
 import * as React from "react"
 
+import type {
+  PageBreadcrumbMenuOption,
+  PageBreadcrumbTrailItem,
+} from "@/components/page-breadcrumb-trail"
+
 export type UtilityBarPageChrome =
   | { mode: "default" }
-  | { mode: "back"; href: string; label: string }
+  | {
+      mode: "back"
+      href: string
+      /** Parent destination — spoken on the icon, not shown at rest. */
+      label: string
+      /** Current page title — shown beside the back icon in Back mode. */
+      scrollTitle?: string
+      scrollTitleMenu?: PageBreadcrumbMenuOption[]
+      scrollTitleMenuAriaLabel?: string
+    }
+  | {
+      mode: "breadcrumb"
+      items?: PageBreadcrumbTrailItem[]
+      /** Final trail segment. Omit on record detail when the H1 carries the title. */
+      currentPage?: string
+      currentPageMenu?: PageBreadcrumbMenuOption[]
+      currentPageMenuAriaLabel?: string
+    }
 
 const DEFAULT_CHROME: UtilityBarPageChrome = { mode: "default" }
 

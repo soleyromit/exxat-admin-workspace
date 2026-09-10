@@ -1,30 +1,33 @@
 ---
-description: KeyMetrics variant flat — transparent band, brand glow only, OKLCH hairlines
+description: KeyMetrics hubs use per-metric cards + size sm|md|lg — flat only for grouped strips
 activation: glob
 globs: components/**/*key-metrics*,src/styles/globals.css,docs/exxat-ds/kpi*.md
 ---
 
 <!-- Synced from .agents/rules/exxat-kpi-flat-band.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
 
-# Exxat DS — KPI flat band (`variant="flat"`)
+# Exxat DS — KPI strip (`KeyMetrics` cards + size)
 
-**Authoritative detail:** **`docs/exxat-ds/kpi-flat-band-pattern.md`**, **`.agents/skills/exxat-kpi-flat-band/SKILL.md`**.
+**Authoritative detail:** **`docs/exxat-ds/kpi-flat-band-pattern.md`**, **`.agents/skills/exxat-kpi/SKILL.md`**.
 
 ## MUST
 
-1. **`KeyMetrics variant="flat"`** on list hubs / dashboard mix — **no** opaque band surface; section background is **only** `--key-metrics-flat-band-radial` (brand glow).
-2. **Cells** — **`bg-transparent`**; hairlines via **`flatMetricsHairlineClass`** (cell **borders**, not `gap-px` grid fill).
-3. **Four tiles** — default **4-across** verticals between columns; **2×2** hairlines only when `@container` is narrow (`@[max-width:29.99rem]`). **No** horizontal rule in 4-across layout.
-4. **OKLCH** — `--key-metrics-flat-divider`, glow stops via `color-mix(in oklch, var(--brand-color) …)`; divider uses `var(--sidebar-border)` mix. **Do not** hardcode rose/indigo on one product for all themes.
-5. **`--key-metrics-flat-band-shadow: none`** on flat band. **≤ 4** tiles — **`exxat-kpi-max-four.md`**.
+1. **List hubs** — **`KeyMetrics variant="cards" size="sm"`** (one card per metric).
+2. **Size scale** — `sm` hubs, `md` default / dashboard, `lg` catalog / hero demos only.
+3. **Mini charts** — optional `metric.chart` (`sparkline` | `bars`) on **`sm` / `md` / `lg`** (`cards` and `flat`). **`sm`:** chart on the **right** of the value (~28px). **`md` / `lg`:** chart below.
+4. **Alerts** — `alert: "warning" | "danger"` when something is wrong / negative (icon + tint + aria).
+5. **Whole-tile click** — `href` / `onClick` on `MetricItem`.
+6. **`variant="flat"`** — **grouped KPI strip only** (hairline cells in one band). Same MetricItem features as cards (size, chart, alert, click). Do **not** use flat for default list hubs.
+7. **No brand radial glow** — glow tokens stay **`none`**.
+8. **≤ 4** tiles — **`exxat-kpi-max-four.md`**.
 
 ## MUST NOT
 
-- Stack linear gradients, `bg-background` on cells, or `gap-px` + tinted grid background on flat KPI (reads as a grey/lavender **box**).
-- Use **`variant="card"`** for **`ListPageTemplate`** metrics when the strip should sit on the page canvas.
-- Reintroduce **`lg:border-l`** on insight column when `variant="flat"` (insight card ring is enough).
+- Use glow under KPI strips or KPI cards.
+- Ship hubs as `flat` when `cards` is the product default.
+- Embed pie / donut / radar / axes / legends inside KeyMetrics tiles.
+- Stack a fifth KPI on the strip.
 
 ## See also
 
 - **`exxat-kpi-max-four.md`**, **`exxat-kpi-trends.md`**, **`exxat-list-page-connected-views.md`**
-- **`exxat-primary-nav-secondary-panel.md`** — shell elevation (separate from KPI band)

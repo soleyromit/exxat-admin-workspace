@@ -26,7 +26,8 @@ toggle · product │ house · More · leaf │ search · bell · what's new · 
 
 - **One chrome row** — breadcrumb portals onto the bar; `SiteHeader` draws no second row.
 - **Bar height** — `--shell-utility-bar-height: 2.625rem` (42px); rail `top` and compact `--header-height` read the same token.
-- **Back mode** — `siteHeader.back` or record-detail trails (derived parent crumb): same leading geometry as hubs (`back icon` · full-height rule · label); **Ask Leo** stays on the trailing edge (rightmost). Hide other actions, school, profile, and `trailing`.
+- **Back mode** — `siteHeader.back`: same leading geometry as hubs (`back icon` · full-height rule · label); **Ask Leo** stays on the trailing edge (rightmost). Hide other global actions, school, profile, and `siteHeader.trailing`. **`PageHeader` actions port beside Ask Leo on scroll.**
+- **Breadcrumb mode** — record detail with `breadcrumbs` (default), or `siteHeader.utilityBarMode: "breadcrumb"`: ancestor trail at the page inset (`ps-2 sm:ps-3`); **Ask Leo** rightmost. Same hidden global chrome as Back mode. **`PageHeader` actions port beside Ask Leo on scroll.** Current page stays on `PageHeader` on record detail (peer switcher on the H1).
 - **Icon hit shape** — every bar icon (toggle, Back, Search, …) is `Button` ghost `icon-sm` + `utilityBarActionButtonClass` (`rounded-md` + sidebar-accent). Bare links without that class produce a sharp-square hover next to the rounded toggle — ban that.
 - **Flush sidebar** — `variant="sidebar"`, square density tokens via `html[data-shell-density="compact"]`.
 - **School avatar on the bar** — avatar only (`showProgram={false}`); program name stays in the tooltip and menu.

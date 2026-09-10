@@ -32,6 +32,8 @@ import {
 import { CRITERION_GROUP, templateCriteria } from '@/lib/pce-course-readiness'
 import { draftOrScheduledMatch } from '@/lib/pce-push-validation'
 
+export type DashboardLayout = 'operations' | 'ledger'
+
 export const DEFAULT_SETUP_EMAIL_SUBJECT =
   'Your course evaluation for {{course_name}} is now open'
 
@@ -129,6 +131,12 @@ interface PceState {
   accountId: string
   accounts: DemoAccount[]
   switchAccount: (id: string) => void
+  /** Course Evaluation dashboard's populated-state layout — 'operations' (KPI
+   *  band + Live/Last-closed term cards + response trend, the reference-design
+   *  rebuild) vs 'ledger' (the prior StatementRow/Ledger design, kept for
+   *  side-by-side comparison rather than deleted). */
+  dashboardLayout: DashboardLayout
+  setDashboardLayout: (layout: DashboardLayout) => void
   hiddenComments: Record<string, number[]>
   toggleRole: () => void
   releaseSurvey: (id: string) => void
@@ -232,6 +240,25 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       switchAccount(stored)
     }
   }, [switchAccount])
+  // ── Dashboard layout (Course Evaluation dashboard, operations vs ledger) ──
+  // Persisted like the demo account/role — SSR + first client render stay on
+  // 'operations' so hydration matches; a stored choice applies post-mount.
+  const DASHBOARD_LAYOUT_STORAGE_KEY = 'pce.dashboardLayout'
+  const [dashboardLayout, setDashboardLayoutState] = useState<DashboardLayout>('operations')
+  const setDashboardLayout = useCallback((layout: DashboardLayout) => {
+    setDashboardLayoutState(layout)
+    if (typeof window !== 'undefined') {
+      try { window.localStorage.setItem(DASHBOARD_LAYOUT_STORAGE_KEY, layout) } catch { /* ignore */ }
+    }
+  }, [])
+  useEffect(() => {
+    let stored: string | null = null
+    try { stored = window.localStorage.getItem(DASHBOARD_LAYOUT_STORAGE_KEY) } catch { /* ignore */ }
+    if (stored === 'operations' || stored === 'ledger') {
+      setDashboardLayoutState(stored)
+    }
+  }, [])
+
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
   const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
   const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
@@ -881,6 +908,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       setupDefaults, saveSetupDefaults,
       programTerms, addProgramTerm, updateProgramTerm,
       accountId, accounts: DEMO_ACCOUNTS, switchAccount,
+      dashboardLayout, setDashboardLayout,
       pushSurveyBatch,
       saveDraft,
       enableResults,

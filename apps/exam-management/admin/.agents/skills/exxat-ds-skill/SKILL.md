@@ -18,12 +18,12 @@ description: >
 
 ## 1. Project Overview
 
-- **Stack:** Vite + React + react-router-dom, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
+- **Stack:** Vite + React + react-router, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
 - **App root:** `apps/web/src/views/` — route modules wired in `src/App.tsx`
 - **Single source of truth:** `./AGENTS.md` for full prose explanations; this skill is the actionable summary
 - **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-primary-nav-secondary-panel`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.agents/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
 - **Library folder-scoped header (rule + doc):** **`.agents/rules/exxat-library-hub-header.md`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-primary-nav-secondary-panel`** when URL **`scope=folder`** drives the hub title.
-- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and generated-starter shell ports without touching mock data or tenant copy. Then read **`node_modules/@exxatdesignux/ui/CHANGELOG.md`**, run **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/generated-starter/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
+- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and generated-starter shell ports without touching mock data or tenant copy. Then run **`npx --package=@exxatdesignux/ui@latest exxat-ui changelog`** (release notes), then **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/generated-starter/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
 
 ---
 
@@ -85,13 +85,13 @@ To add a primary nav item, append to `NAV_PRIMARY`:
 
 ### 3.1 Application sidebar shell (`app-sidebar.tsx`)
 
-**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`VITE_LOGO_DEV_TOKEN`**).
+**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`VITE_LOGO_DEV_PUBLISHABLE_KEY`**).
 
 | Concern | Pattern |
 |--------|---------|
 | **Product (One / Prism)** | **`ExxatProductLogo`** (`components/exxat-product-logo.tsx`) for the header control and **`ProductSwitcher`** — **not** logo.dev rasters unless product explicitly changes that. The logo is now **generated from a config**, not hand-built SVG paths — see **§3.4** to add a new product. |
-| **School/program menu width** | **`DropdownMenuContent`** defaults to **intrinsic width** (**`min-w-52 w-max max-w-[min(24rem,calc(100vw-2rem))]`** via **`DROPDOWN_MENU_CONTENT_SURFACE_CLASS`** in **`@exxatdesignux/ui/lib/dropdown-menu-surface`**) — pure CSS, no **`ResizeObserver`**. The **school / program** switcher still uses an explicit wider surface (**`!w-max min-w-72 max-w-[min(100vw-2rem,28rem)]`**) so dense rows stay readable. |
-| **School/program copy** | **Do not truncate** school or program names in the switcher; wrap (**`break-words`**, **`whitespace-normal`**, **`items-start`** on multi-line rows). The selected-school summary shows **school name + current program**. |
+| **School/program menu width** | **`DropdownMenuContent`** defaults to **intrinsic width** (**`min-w-52 w-max max-w-[min(24rem,calc(100vw-2rem))]`** via **`DROPDOWN_MENU_CONTENT_SURFACE_CLASS`**). **School / product** switchers use **`SHELL_IDENTITY_MENU_SURFACE_CLASS`** (`w-72` + viewport cap) so long names wrap instead of growing the menu (Windows 125–150% mid-scale). |
+| **School/program copy** | **Do not truncate** school or program names in the switcher; wrap (**`break-words`**, **`whitespace-normal`**, **`line-clamp-2`** on the selected-school summary). |
 | **Team switcher trigger** | **`SidebarMenuButton` `size="lg"`** uses **`h-12`** + **`overflow-hidden`**, which **clips** a second line (program). When the sidebar is **expanded** or **mobile**, add **`h-auto min-h-12`** and **`overflow-x-clip overflow-y-visible`**. On **icon rail**, hide label rows with **`group-data-[collapsible=icon]:hidden`** (tooltip still exposes the full string). Icon mode defaults **`size-8` + `p-2`** (~16px inner) **clips** school logos — override **`!size-9`**, **`!p-0`**, **`overflow-visible`**. Omit header **chevrons** next to logos if they look like stray chrome. |
 | **Motion / Animate UI** | [Animate UI](https://animate-ui.com/docs) — open **copy-first** animated components (Motion + Tailwind). This repo uses **`motion/react`** + **`lib/motion-ui.ts`** presets; pull more animations from their registry into `components/` when needed. |
 | **Nav items with children** | See **§3.2** below for the full parent ↔ children pattern (collapsible vs popover, active-state rules, chevron + slide animation, reduced motion). |
@@ -274,7 +274,7 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 
 **Add view parity (binding):** `.agents/rules/exxat-hub-supported-views.md`, `docs/exxat-ds/hub-supported-views-pattern.md`. **MUST NOT** use `supportedViewTypes={["table"]}` or four-view-only allowlists without a documented exception. List view **MUST** use **`ListPageBoardCard`** (`library-table.tsx`).
 
-**View tabs overflow:** The views toolbar is wrapped in **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** (segmented `[← | →]` after the tab bar). Record **`TabsList`** uses **`TabsListScrollRegion`**. SiteHeader breadcrumbs use the same primitive with **`alignEnd`**. **Do not** hand-build flanking chevrons — **`HorizontalScrollControls`** / **`useHorizontalScrollAffordances`** from `@exxatdesignux/ui/components/ui/horizontal-scroll-controls`. **`docs/horizontal-scroll-pattern.md`**, **`exxat-horizontal-scroll.md`**.
+**View tabs overflow:** The views toolbar is wrapped in **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** (segmented `[← | →]` after the tab bar). Record **`TabsList`** measures itself and sheds labels, then tabs, into an overflow menu with no wrapper. SiteHeader breadcrumbs use the same primitive with **`alignEnd`**. **Do not** hand-build flanking chevrons — **`HorizontalScrollControls`** / **`useHorizontalScrollAffordances`** from `@exxatdesignux/ui/components/ui/horizontal-scroll-controls`. **`docs/horizontal-scroll-pattern.md`**, **`exxat-horizontal-scroll.md`**.
 
 **View tab persistence:** Pass **`persistKey`** (or **`productPersistKey(product, hubKey)`**) on **`ListPageTemplate`** for uncontrolled tabs. **Do not** pass **`tabs` / `onTabsChange`** and expect **`persistKey`** to restore — controlled mode disables tab persistence. Reference: **`tokens-themes-client.tsx`**.
 
@@ -356,7 +356,7 @@ Align with **`./AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`docs/dr
 
 **`DropdownMenuContent`** (from **`@/components/ui/dropdown-menu`**, backed by **`@exxatdesignux/ui`**) applies a **default surface** so **view settings**, **Add view**, **row ⋯**, **column ⋯**, and **filter field** menus get **`min-w-52`**, grow with **`w-max`**, and cap at **`max-w-[min(24rem,calc(100vw-2rem))]`** — all **static Tailwind** (no **`ResizeObserver`** / layout measurement).
 
-- **Override** only when the UX needs a fixed rail (e.g. **`className="w-20"`** on the pagination page-size menu, **`w-(--radix-dropdown-menu-trigger-width) min-w-60`** on **`NavUser`**, **`!w-max min-w-72 …`** on the school/program switcher).
+- **Override** only when the UX needs a fixed rail (e.g. **`className="w-20"`** on the pagination page-size menu, **`w-(--radix-dropdown-menu-trigger-width) min-w-60`** on **`NavUser`**, **`SHELL_IDENTITY_MENU_SURFACE_CLASS`** on school/product switchers).
 - **Reuse** **`DROPDOWN_MENU_CONTENT_SURFACE_CLASS`** if you build a custom menu primitive that does not wrap **`DropdownMenuContent`**.
 
 ### 5.2 KPI trends (`KeyMetrics`, `*-kpi.ts`)

@@ -1,10 +1,10 @@
 {
-  "ts": "2026-07-07T15:59:18.955Z",
+  "ts": "2026-09-10T13:50:06.373Z",
   "base": "http://localhost:3005",
   "dsUrl": "http://localhost:4000",
-  "route": "/surveys/s3",
+  "route": "/admin/eval-settings?section=role-access",
   "dsRoutesOk": 5,
-  "scanned": 702,
-  "deviations": 5,
+  "scanned": 515,
+  "deviations": 7,
   "result": "DEVIATIONS"
 }

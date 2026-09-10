@@ -1,0 +1,57 @@
+# Exxat DS - Google Antigravity agent index (generated)
+# 2026-09-03T14:08:05.927Z
+
+# Run npx exxat-ui sync-extras after editing .cursor/
+
+{
+  "version": 1,
+  "platform": "google-antigravity",
+  "synced_from": ".cursor/",
+  "sync_command": "npx exxat-ui sync-extras",
+  "constitution": {
+    "rule": ".agents/rules/_constitution.exxat-ds.md",
+    "router": "docs/exxat-ds/component-selection-guide.md",
+    "skill": ".agents/skills/exxat-token-economy/SKILL.md",
+    "handbook": "docs/exxat-ds/HANDBOOK.md",
+    "agents": "docs/exxat-ds/handbook/agents-handbook.md",
+    "architecture": "docs/exxat-ds/agent-context-architecture.md",
+    "antigravity_map": "docs/exxat-ds/agents/antigravity-parity.md"
+  },
+  "rules": {
+    "always_on": [
+      ".agents/rules/_constitution.exxat-ds.md"
+    ],
+    "directory": ".agents/rules/",
+    "count": 65
+  },
+  "skills": {
+    "directory": ".agents/skills/",
+    "count": 30,
+    "entry": ".agents/skills/exxat-ds-router/SKILL.md",
+    "note": "Includes all .cursor/skills + hand-maintained exxat-ds-router"
+  },
+  "hooks": {
+    "directory": ".agents/hooks/",
+    "note": "Reference copies; use .agents/workflows/ for Antigravity enforcement"
+  },
+  "workflows": {
+    "directory": ".agents/workflows/",
+    "commands": [
+      "/surface-router",
+      "/design-brief",
+      "/build-hub",
+      "/a11y-ship",
+      "/ux-audit",
+      "/react-doctor"
+    ]
+  },
+  "agents": {
+    "directory": "docs/exxat-ds/agents/",
+    "roles": [
+      "hub-builder",
+      "a11y-guardian",
+      "ds-doc-author",
+      "senior-ux"
+    ]
+  }
+}

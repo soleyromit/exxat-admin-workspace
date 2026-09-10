@@ -38,7 +38,11 @@ const nextConfig: NextConfig = {
       // but the dev server runs --turbopack, so mirror the alias here too —
       // otherwise Next's Pages-Router scan compiles src/pages/_error.tsx,
       // fails to resolve react-router-dom, and 500s every route.
-      'react-router-dom': './lib/react-router-compat.ts',
+      'react-router-dom': './lib/react-router-compat.tsx',
+      // @exxatdesignux/ui@0.7+ moved its internal router imports from
+      // react-router-dom to bare react-router (DS 0.7.0 breaking change) —
+      // same shim covers both, since the hooks it needs are identical.
+      'react-router': './lib/react-router-compat.tsx',
     },
   },
   webpack(config) {
@@ -48,7 +52,10 @@ const nextConfig: NextConfig = {
       '@exxat/student': path.resolve(__dirname, '../../../studentUX/src'),
       // DS dist imports react-router-dom; remap to a Next.js-safe no-op so
       // DS shell components render without requiring a <Router> wrapper.
-      'react-router-dom': path.resolve(__dirname, 'lib/react-router-compat.ts'),
+      'react-router-dom': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
+      // @exxatdesignux/ui@0.7+ moved its internal router imports from
+      // react-router-dom to bare react-router (DS 0.7.0 breaking change).
+      'react-router': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
     }
     return config
   },

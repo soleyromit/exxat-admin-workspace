@@ -4,7 +4,6 @@ alwaysApply: false
 globs: 
   - components/**/*drawer*
   - components/ui/sheet.tsx
-  - packages/ui/src/components/ui/sheet.tsx
 tags: [overlay]
 seeAlso:
   - .cursor/skills/exxat-overlays/SKILL.md

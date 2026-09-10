@@ -30,6 +30,7 @@ import { MOCK_FACULTY } from "@/lib/pce-mock-data"
 import {
   AccountPreferencesMenu,
   DemoAccountMenuItem,
+  DashboardLayoutMenuItem,
 } from "@/components/pce/identity-menu-items"
 import { utilityBarActionButtonClass } from "@/components/utility-bar-chrome"
 import { cn } from "@/lib/utils"
@@ -94,6 +95,7 @@ export function UtilityUserMenu() {
 
         <AccountPreferencesMenu />
         <DemoAccountMenuItem />
+        <DashboardLayoutMenuItem />
 
         <DropdownMenuSeparator />
 

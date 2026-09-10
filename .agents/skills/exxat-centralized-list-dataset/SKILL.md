@@ -8,7 +8,7 @@ user-invocable: true
 
 Goal: **one row model**, **one filtered bag** (`tableState.rows`), **one place for badge/KPI maps**, so **every** view tab and inspector matches after search/filters.
 
-**Canon:** `./AGENTS.md` §4.1–§4.2, `docs/data-views-pattern.md`, `.agents/rules/exxat-centralized-list-dataset.md`.
+**Canon:** `docs/exxat-ds/handbook/agents-handbook.md` §4.1–§4.2, `docs/data-views-pattern.md`, `.agents/rules/exxat-centralized-list-dataset.md`.
 
 ---
 

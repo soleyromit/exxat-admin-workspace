@@ -6,7 +6,7 @@ user-invocable: true
 
 # Exxat DS — collaboration & access
 
-**Handbook:** `./AGENTS.md` §4.7  
+**Handbook:** `docs/exxat-ds/handbook/agents-handbook.md` §4.7  
 **Narrative:** `docs/exxat-ds/collaboration-access-pattern.md`  
 **Cursor rule:** `.agents/rules/exxat-collaboration-access.md`  
 **Related (Library folder scope + ⋯ Customize folder):** `.agents/rules/exxat-library-hub-header.md` · `docs/library-hub-header-pattern.md`

@@ -4,7 +4,7 @@ alwaysApply: false
 globs: 
   - components/design-system/**/*.tsx
   - lib/design-system/**/*.tsx
-  - apps/web/src/views/design-system/**/*.tsx
+  - src/views/design-system/**/*.tsx
 tags: [design-system, docs]
 seeAlso:
   - .cursor/rules/exxat-reuse-before-custom.mdc

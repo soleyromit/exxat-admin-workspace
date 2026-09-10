@@ -38,25 +38,25 @@ export function normalizeShellLayoutVariant(stored: string): ShellLayoutVariant 
   return DEFAULT_SHELL_LAYOUT_VARIANT
 }
 
-export function showsUtilityBar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function showsUtilityBar(_variant: string = "compact"): boolean {
   return true
 }
 
 /** Full-width bar owns product; sidebar never shows the product switcher. */
-export function showsProductInSidebar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function showsProductInSidebar(_variant: string = "compact"): boolean {
   return false
 }
 
 /** Full-width bar owns scope; sidebar never shows the school/site switcher. */
-export function showsScopeInSidebar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function showsScopeInSidebar(_variant: string = "compact"): boolean {
   return false
 }
 
-export function isFullWidthUtilityBar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function isFullWidthUtilityBar(_variant: string = "compact"): boolean {
   return true
 }
 
-export function isCompactShell(_variant: ShellLayoutVariant = "compact"): boolean {
+export function isCompactShell(_variant: string = "compact"): boolean {
   return true
 }
 
@@ -65,17 +65,17 @@ export function isCompactShell(_variant: ShellLayoutVariant = "compact"): boolea
  * Also drops the workspace gutter, since the inset margin is what the gutter
  * was aligning to.
  */
-export function hasFlushSidebar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function hasFlushSidebar(_variant: string = "compact"): boolean {
   return true
 }
 
 /** Profile lives on the bar, not in SidebarFooter. */
-export function showsProfileInSidebar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function showsProfileInSidebar(_variant: string = "compact"): boolean {
   return false
 }
 
 /** Bar owns product, scope, and the sidebar toggle. */
-export function movesSidebarHeaderToBar(_variant: ShellLayoutVariant = "compact"): boolean {
+export function movesSidebarHeaderToBar(_variant: string = "compact"): boolean {
   return true
 }
 

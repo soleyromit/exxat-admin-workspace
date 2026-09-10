@@ -3,7 +3,6 @@ description: Exxat DS — do not use toast / sonner / transient snackbars for pr
 alwaysApply: false
 globs: 
   - components/**/*.tsx
-  - packages/ui/src/components/**/*.tsx
 tags: [feedback]
 seeAlso:
   - .cursor/rules/_constitution.exxat-ds.mdc

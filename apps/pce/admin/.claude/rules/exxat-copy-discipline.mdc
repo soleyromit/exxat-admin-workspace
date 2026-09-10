@@ -1,6 +1,7 @@
 ---
 description: Exxat DS copy discipline. Omit decorative descriptions by default. Never use dash punctuation in user-visible copy (titles, body, tooltips, empty cells).
-alwaysApply: true
+alwaysApply: false
+globs: {components,lib,src}/**/*.{tsx,ts}
 tags: [copy, voice]
 seeAlso:
   - docs/exxat-ds/voice-and-tone.md

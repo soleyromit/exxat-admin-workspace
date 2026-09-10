@@ -37,7 +37,8 @@ Only port when release notes or a chrome bug require it. **Never** copy mock dat
 | `src/styles/globals.css` | `@import "@exxatdesignux/ui/globals.css"` + `@source` |
 | `src/main.tsx` | CSS import order |
 | `components/ui/*` shims | Re-exports from package (diff when CLI notes new primitives) |
-| `package.json` | `engines`, `pnpm.onlyBuiltDependencies`, dev scripts |
+| `package.json` | `engines`, `pnpm.onlyBuiltDependencies` (pnpm 9 and older), dev scripts |
+| `pnpm-workspace.yaml` | pnpm 10+ `onlyBuiltDependencies` / overrides. Required or `ERR_PNPM_IGNORED_BUILDS` blocks esbuild |
 
 ## § Do NOT port (content / data)
 

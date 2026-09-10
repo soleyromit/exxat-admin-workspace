@@ -40,7 +40,8 @@ import { ProductMark } from "@/components/product-wordmark"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { utilityBarActionButtonClass } from "@/components/utility-bar-chrome"
 import { cn } from "@/lib/utils"
-import { EXXAT_PRISM_BRAND, PCE_BRAND_COLOR, applyBrandColorOverride } from "@/lib/product-brand"
+import { EXXAT_PRISM_BRAND, applyBrandColorOverride } from "@/lib/product-brand"
+import { PCE_BRAND_COLOR } from "@/lib/pce-brand"
 
 const PCE_PRODUCT_BRAND = applyBrandColorOverride(EXXAT_PRISM_BRAND, PCE_BRAND_COLOR)
 

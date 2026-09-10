@@ -1,14 +1,21 @@
 "use client"
 
+import { useProductSwitchPending } from "@/contexts/product-switch-context"
 import { useAppStore } from "@/stores/app-store"
 
 /**
  * Brief full-viewport overlay while the active product (and theme class) flips
- * after a switcher click or URL-driven product adoption.
+ * after URL-driven product adoption.
+ *
+ * A switcher press is handled by `ProductSwitchDialog` instead, which names the
+ * app and the program rather than saying "Switching product", so this stands down
+ * while that is up rather than stacking on top of it. What is left is the case
+ * with no press to attach a dialog to: a pasted link into another product.
  */
 export function ProductSwitchOverlay() {
   const switching = useAppStore(s => s.productSwitching)
-  if (!switching) return null
+  const dialogHandlingIt = useProductSwitchPending()
+  if (!switching || dialogHandlingIt) return null
 
   return (
     <div

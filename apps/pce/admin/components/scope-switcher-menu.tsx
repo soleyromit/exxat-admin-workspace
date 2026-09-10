@@ -218,7 +218,7 @@ export function ScopeSwitcherMenuBody({ scope }: { scope: ScopeSwitcherBag }) {
           type="button"
           variant="ghost"
           onClick={showParents}
-          className="h-auto w-full items-center justify-start gap-2.5 whitespace-normal p-2 text-left text-sm font-normal"
+          className="h-auto w-full items-center justify-start gap-2.5 p-2 text-left"
         >
           <Avatar className="size-9 shrink-0">
             <AvatarImage
@@ -232,10 +232,10 @@ export function ScopeSwitcherMenuBody({ scope }: { scope: ScopeSwitcherBag }) {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 break-words text-sm font-semibold leading-snug whitespace-normal">
+            <p className="break-words text-sm font-semibold leading-snug whitespace-normal">
               {parent.name}
             </p>
-            <p className="truncate text-xs text-muted-foreground">{child.name}</p>
+            <p className="break-words text-xs text-muted-foreground">{child.name}</p>
           </div>
           <span className="shrink-0 text-sm font-medium text-brand">Change</span>
         </Button>
@@ -272,7 +272,7 @@ export function ScopeSwitcherMenuBody({ scope }: { scope: ScopeSwitcherBag }) {
 }
 
 const PANEL_ROW =
-  "h-auto w-full items-start justify-start gap-2.5 whitespace-normal px-2 py-2 text-left text-sm font-normal"
+  "h-auto w-full items-start justify-start gap-2.5 px-2 py-2 text-left text-sm font-normal"
 
 /**
  * The school selector, as a blocking panel — same IA as {@link ScopeSwitcherMenuBody}
@@ -362,7 +362,7 @@ export function ScopeSwitcherPanel({
               type="button"
               variant="ghost"
               onClick={() => setView("parents")}
-              className="h-auto w-full items-center justify-start gap-2.5 whitespace-normal p-2 text-left text-sm font-normal"
+              className="h-auto w-full items-center justify-start gap-2.5 p-2 text-left"
             >
               <Avatar className="size-9 shrink-0">
                 <AvatarImage
@@ -376,7 +376,7 @@ export function ScopeSwitcherPanel({
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 break-words text-sm font-semibold leading-snug whitespace-normal">
+                <p className="break-words text-sm font-semibold leading-snug whitespace-normal">
                   {parent.name}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">{config.choosePrompt}</p>

@@ -8,7 +8,7 @@ user-invocable: true
 
 Standard target: **WCAG 2.1 Level AA** (and 2.2 where noted).
 
-**Canonical for agents (MUST/MUST NOT, checklist):** `./AGENTS.md` **§8** in the repo (same content summarized there; this skill stays the detailed checklist + product tokens).
+**Canonical for agents (MUST/MUST NOT, checklist):** `docs/exxat-ds/handbook/agents-handbook.md` **§8** in the repo (same content summarized there; this skill stays the detailed checklist + product tokens).
 
 ## Accessibility gate (axe + HC probe + Lighthouse)
 

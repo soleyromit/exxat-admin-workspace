@@ -13,7 +13,7 @@ activation: model_decision
 |------|------|
 | Pre-flight / task → files | `.agents/skills/exxat-token-economy/SKILL.md` |
 | Human orientation | `docs/exxat-ds/HANDBOOK.md` |
-| Binding manual + §13 checklist | `./AGENTS.md` |
+| Binding manual + §13 checklist | `docs/exxat-ds/handbook/agents-handbook.md` |
 | Pattern index | `docs/exxat-ds/INDEX.yaml` |
 | Design new surface | `.agents/skills/exxat-senior-ux/SKILL.md` |
 | Review existing surface | `.agents/skills/exxat-ux-audit/SKILL.md` |

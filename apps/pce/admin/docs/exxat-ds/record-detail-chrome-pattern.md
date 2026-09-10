@@ -6,7 +6,7 @@
 
 1. Record detail routes **hide** the primary sidebar and secondary panel — not icon-rail collapse.
 2. Primary sidebar expand/collapse lives on **`AppSidebar`** (`PrimarySidebarToggle`). While the rail is unmounted on record detail, use breadcrumb / back only (⌘B has nothing to expand until leaving the route).
-3. **One way back** via breadcrumb / back affordance only (P1). On compact shell, `SiteHeader` derives Back from the last ancestor crumb with `href` and switches the utility bar into **Back mode** (leading back icon · rule · label; **Ask Leo** rightmost; no toggle, product, other actions, school, profile, or `trailing`).
+3. **One way back** via breadcrumb / back affordance only (P1). On compact shell, record detail routes with `breadcrumbs` switch the utility bar into **Breadcrumb mode** (leading ancestor trail; **Ask Leo** rightmost). Focus / composer routes with `siteHeader.back` use **Back mode**. On scroll, **`PageHeader` actions port into the utility bar** (before Ask Leo) so overflow and export stay reachable. Override with `siteHeader.utilityBarMode`.
 4. **Peer jump on the H1** — when the user can open another record of the same type, put `PageTitleRecordSwitcher` in `PageHeader.title` (not on the Back bar). Back mode removed the breadcrumb leaf menu; the title switcher is the one place to change records.
 5. **Sticky module tabs** — horizontal `TabsList` pins as `[data-slot="tabs-sticky-subheader"]` under the utility bar; table headers (if any) pin below via `getStickyTableHeaderOffset`.
 6. Register the path in `lib/record-detail-chrome.ts` → `isRecordDetailChromePath` (wired through `isSidebarHiddenPath`).

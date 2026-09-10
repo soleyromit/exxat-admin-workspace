@@ -20,4 +20,4 @@ description: Audit an existing Exxat DS surface against P1–P20, modern SaaS pa
 
 - `docs/exxat-ds/modern-saas-patterns.md` (M1–M12)
 - `.agents/rules/_constitution.exxat-ds.md`
-- `./AGENTS.md` §8 (a11y floor)
+- `docs/exxat-ds/handbook/agents-handbook.md` §8 (a11y floor)

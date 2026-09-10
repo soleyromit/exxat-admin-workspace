@@ -15,6 +15,43 @@
 @source "../stores";
 @source "./";
 
+/* ── Stable scrollbar gutter — nested Radix overlays (a Select inside an
+   already-open Sheet, e.g. Course Eval's academic-year field) each run
+   their own independent scroll-lock/scrollbar-width compensation. Without
+   this, opening the inner Select re-measures the gutter and re-applies a
+   redundant `margin-right` on top of the Sheet's own, which is what reads
+   as the whole (fixed-position) sheet visibly shifting left when the
+   dropdown opens and back when it closes (Romit, 2026-09-02). Reserving the
+   gutter permanently makes that measurement constant regardless of how many
+   locks are stacked or in what order they fire, so there's nothing left to
+   redundantly compensate for. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* `scrollbar-gutter: stable` above makes react-remove-scroll's own width
+   compensation redundant — the gutter is already permanently reserved, so
+   there's nothing left to compensate for. But it still fires regardless
+   (confirmed live): react-remove-scroll injects its own <style> tag with
+   `body[data-scroll-locked] { margin-right: 15px !important; }` every time
+   ANY Radix overlay locks scroll — including the Academic year Select
+   nested inside the already-locked term-editor Sheet. Because `body` is a
+   normal in-flow element (unlike the `fixed`-position sheet itself, which
+   the scrollbar-gutter fix above already stabilizes), that margin change
+   shrinks/grows body's actual rendered width each time, reflowing
+   everything inside it — the dashboard content behind the sheet visibly
+   shifts (Romit, 2026-09-02: "moving the background design").
+   A plain `body { margin-right: 0 !important }` is NOT enough to win here:
+   their rule's selector (`body[data-scroll-locked]`) has an attribute
+   selector, which out-specifies a bare `body`, so their `!important` beats
+   ours even though both are `!important`. Matching their exact selector
+   (plus one ancestor for a margin of specificity, since their <style> tag
+   is also injected after this stylesheet in DOM order) is what actually
+   wins the cascade. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+
 /* ── DS Tabs fix — DS sets data-orientation="horizontal" but its Tailwind
    classes look for `data-horizontal` (a non-existent attribute). That breaks
    both the column layout and the line-variant active underline. Mirror the
@@ -262,4 +299,26 @@
 }
 @media (prefers-reduced-motion: reduce) {
   [data-slot='accordion-content'] { animation: none; }
+}
+
+/* results/[id] section-distribution rows want a LEADING chevron (matching
+ * this page's own "On this page" rail disclosure convention), but DS
+ * AccordionTrigger always appends its own chevron AFTER children — a
+ * Tailwind arbitrary-variant override ([&>i.accordion-chevron]:hidden)
+ * didn't take, so hide the DS default here instead. */
+.pce-leading-chevron-trigger > i.accordion-chevron {
+  display: none;
+}
+
+/* Export as PDF (results/[id] printCurrentView) forces every section open
+ * via React state before calling window.print() — a closed
+ * AccordionContent is fully unmounted by Radix, not just hidden, so the
+ * real fix has to be the state flip. This is only the defensive net: never
+ * let a print land mid-animation (partial height) if timing is ever off. */
+@media print {
+  [data-slot='accordion-content'] {
+    animation: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
 }

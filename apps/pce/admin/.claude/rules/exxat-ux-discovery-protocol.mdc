@@ -1,7 +1,6 @@
 ---
-description: Exxat DS — STOP before code on any surface design (new, rebuild, redesign, replace); output a design brief and WAIT for user go-ahead
-alwaysApply: true
-appliesTo: [universal]
+description: Exxat DS — STOP before code on any surface design (new, rebuild, redesign, replace); output a design brief and WAIT for user go-ahead. Load when IA is undecided, not on every turn.
+alwaysApply: false
 ---
 
 # Exxat DS — UX discovery protocol

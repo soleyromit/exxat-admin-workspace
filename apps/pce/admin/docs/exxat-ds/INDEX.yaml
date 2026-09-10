@@ -6,7 +6,7 @@ version: 1
 constitution:
   rule: .cursor/rules/_constitution.exxat-ds.mdc
   router: apps/web/docs/component-selection-guide.md
-  skill: .cursor/skills/exxat-token-economy/SKILL.md
+  skill: .cursor/skills/exxat-surface-router/SKILL.md
   handbook: apps/web/docs/HANDBOOK.md
   agents: apps/web/AGENTS.md
 
@@ -78,6 +78,7 @@ patterns:
   avatar: apps/web/docs/avatar-pattern.md
   multi-product-routing: apps/web/docs/multi-product-routing-pattern.md
   shell-utility-bar: apps/web/docs/shell-utility-bar-pattern.md
+  whats-new-sheet: apps/web/docs/whats-new-sheet-pattern.md
   ask-leo: apps/web/docs/ask-leo-pattern.md
   hub-supported-views: apps/web/docs/hub-supported-views-pattern.md
   library-hub-header: apps/web/docs/library-hub-header-pattern.md
@@ -108,6 +109,7 @@ skills:
   accessibility: .cursor/skills/exxat-accessibility/SKILL.md
   kpi: .cursor/skills/exxat-kpi/SKILL.md
   overlays: .cursor/skills/exxat-overlays/SKILL.md
+  whats-new-sheet: .cursor/skills/exxat-whats-new-sheet/SKILL.md
   sidebar-nav: .cursor/skills/exxat-sidebar-nav/SKILL.md
   primary-nav-secondary-panel: .cursor/skills/exxat-primary-nav-secondary-panel/SKILL.md
   ds-skill: .cursor/skills/exxat-ds-skill/SKILL.md
@@ -137,11 +139,11 @@ hooks:
 rules:
   always_on:
     - .cursor/rules/_constitution.exxat-ds.mdc
+  scoped_constitution_detail:
     - .cursor/rules/exxat-product-context.mdc
     - .cursor/rules/exxat-product-routing.mdc
     - .cursor/rules/exxat-ux-discovery-protocol.mdc
     - .cursor/rules/exxat-copy-discipline.mdc
-  scoped_constitution_detail:
     - .cursor/rules/exxat-reuse-before-custom.mdc
     - .cursor/rules/exxat-no-toast.mdc
     - .cursor/rules/exxat-token-discipline.mdc
@@ -187,6 +189,7 @@ rules:
     table-row-preview: .cursor/rules/exxat-table-row-preview.mdc
     ux-principles: .cursor/rules/exxat-ux-principles.mdc
     utility-bar: .cursor/rules/exxat-utility-bar.mdc
+    whats-new-sheet: .cursor/rules/exxat-whats-new-sheet.mdc
     ask-leo: .cursor/rules/exxat-ask-leo.mdc
     form-fields: .cursor/rules/exxat-form-fields.mdc
     leo-icon-motion: .cursor/rules/exxat-leo-icon-motion.mdc
@@ -240,16 +243,20 @@ task_router:
   utility_bar:
     read:
       - apps/web/docs/shell-utility-bar-pattern.md
+      - apps/web/docs/whats-new-sheet-pattern.md
       - apps/web/docs/record-detail-chrome-pattern.md
       - apps/web/docs/tabs-pattern.md
       - apps/web/components/utility-bar-slot.tsx
       - apps/web/components/utility-bar-page-chrome.tsx
       - apps/web/contexts/shell-layout-context.tsx
       - apps/web/lib/design-system/component-docs/utility-bar.tsx
+      - apps/web/lib/design-system/component-docs/whats-new-sheet.tsx
     rules:
       - exxat-utility-bar
+      - exxat-whats-new-sheet
       - exxat-tabs-chrome
-    skills: []
+    skills:
+      - exxat-whats-new-sheet
   focus_shell:
     read:
       - apps/web/docs/jobs/focus-workflow.md

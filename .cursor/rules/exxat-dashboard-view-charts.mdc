@@ -6,7 +6,7 @@ globs:
 
 # Exxat DS — Data view dashboard (list hubs)
 
-**Authoritative detail:** **`./AGENTS.md` §4.3** and **`exxat-dashboard-view-charts`** (this rule).
+**Authoritative detail:** **`docs/exxat-ds/handbook/agents-handbook.md` §4.3** and **`exxat-dashboard-view-charts`** (this rule).
 
 ## Two dashboard surfaces (do not fork chart engines)
 

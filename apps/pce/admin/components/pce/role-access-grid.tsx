@@ -23,6 +23,7 @@ import {
   Button, Card, CardContent,
   AvatarInitials, PillCell, RowActionsCell, KeyMetrics,
   Popover, PopoverTrigger, PopoverContent,
+  Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
   Tooltip, TooltipTrigger, TooltipContent,
   Field, FieldLabel, FieldGroup,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectSeparator,
@@ -36,7 +37,7 @@ import {
 import {
   MOCK_ROLE_ASSIGNMENTS, MOCK_FACULTY, MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS,
   SURVEY_RBAC_ROLES, DEFAULT_RBAC_FACULTY_ROLE_MAP, facultyEvalRole,
-  type RoleAssignment, type SurveyRbacRoleKey, type RbacFacultyRoleMap,
+  type RoleAssignment, type SurveyRbacRoleKey, type RbacFacultyRoleMap, type MasterCourse,
 } from '@/lib/pce-mock-data'
 import { resolveTermPositions } from '@/lib/pce-term-metrics'
 import { DataTable } from '@/components/data-table'
@@ -93,14 +94,24 @@ interface DerivedGrant {
   offeringIds: string[]
 }
 
+/** Offerings that count as "currently teaching" — CURRENT term only (via the
+ *  same registrar rule the dashboard uses — resolveTermPositions), not every
+ *  non-archived offering ever created, since CourseOffering.status stays
+ *  'active' across many simultaneous terms and filtering on it alone grows
+ *  unbounded as more terms/academic years are added (Romit, 2026-09-02:
+ *  "isn't scalable if i see more terms... added"). Shared by
+ *  deriveCourseRoleGrants and the Faculty picker's course-association line
+ *  so "currently teaching" means one thing across this file. */
+function currentTermActiveOfferings() {
+  const positions = resolveTermPositions(MOCK_PROGRAM_TERMS)
+  const currentTermIds = new Set(MOCK_PROGRAM_TERMS.filter(t => positions.get(t.id) === 'current').map(t => t.id))
+  return MOCK_COURSE_OFFERINGS.filter(o => o.status === 'active' && currentTermIds.has(o.termId))
+}
+
 /** Course Manager / Instructor access resolved live from course-faculty associations
  *  + the tenant's faculty-role mapping (Sep 1 sync, Vishal: "when a user logs in, we
  *  get a list of courses they have, we get their associated role, find the RBAC
- *  role"). Scoped to the CURRENT term only (via the same registrar rule the
- *  dashboard uses — resolveTermPositions), not every non-archived offering ever
- *  created — CourseOffering.status stays 'active' across many simultaneous terms,
- *  so filtering on it alone grows unbounded as more terms/academic years are
- *  added (Romit, 2026-09-02: "isn't scalable if i see more terms... added").
+ *  role").
  *
  *  Aggregated per (faculty, role) — not per (faculty, course) — because the same
  *  person routinely holds one role across several courses in the same term; a flat
@@ -109,10 +120,7 @@ interface DerivedGrant {
  *  here"). This is a current-access roster, not a historical log. */
 function deriveCourseRoleGrants(facultyRoleMap: RbacFacultyRoleMap): DerivedGrant[] {
   const byKey = new Map<string, DerivedGrant>()
-  const positions = resolveTermPositions(MOCK_PROGRAM_TERMS)
-  const currentTermIds = new Set(MOCK_PROGRAM_TERMS.filter(t => positions.get(t.id) === 'current').map(t => t.id))
-  for (const offering of MOCK_COURSE_OFFERINGS) {
-    if (offering.status !== 'active' || !currentTermIds.has(offering.termId)) continue
+  for (const offering of currentTermActiveOfferings()) {
     // Dedupe — the same person can appear in both collaboratorIds and
     // coInstructorIds (late-added co-instructor); they resolve to one row.
     const facultyIds = [...new Set([offering.primaryFacultyId, ...offering.collaboratorIds, ...(offering.coInstructorIds ?? [])])]
@@ -130,6 +138,106 @@ function deriveCourseRoleGrants(facultyRoleMap: RbacFacultyRoleMap): DerivedGran
   return Array.from(byKey.values())
 }
 
+/** facultyId → current-term course codes they're on (primary, collaborator, or
+ *  co-instructor) — the Faculty picker's course-association line (Romit,
+ *  2026-09-10: "see if there is a way to show any courses the faculties are
+ *  associated to"). Same current-term-active definition as deriveCourseRoleGrants. */
+function facultyCurrentCourseCodes(courseById: Map<string, MasterCourse>): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const offering of currentTermActiveOfferings()) {
+    const course = courseById.get(offering.masterCourseId)
+    if (!course) continue
+    const facultyIds = [...new Set([offering.primaryFacultyId, ...offering.collaboratorIds, ...(offering.coInstructorIds ?? [])])]
+    for (const facultyId of facultyIds) {
+      const existing = map.get(facultyId)
+      if (existing) { if (!existing.includes(course.code)) existing.push(course.code) }
+      else map.set(facultyId, [course.code])
+    }
+  }
+  return map
+}
+
+const SORTED_FACULTY = [...MOCK_FACULTY].sort((a, b) => a.name.localeCompare(b.name))
+
+/** Searchable, alphabetized Faculty picker — Popover+Command composition (DS has
+ *  no Combobox primitive; same pattern as FacultyRoleMapCell in
+ *  permissions-matrix.tsx). A plain Select stopped scaling once the roster passed
+ *  a couple dozen names (Romit, 2026-09-10: "order by faculty and also, add search
+ *  functionality"). Each row's course line answers "who is this, in context"
+ *  without leaving the sheet. */
+function FacultyCombobox({ value, onChange, courseCodesByFaculty }: {
+  value: string
+  onChange: (facultyId: string) => void
+  courseCodesByFaculty: Map<string, string[]>
+}) {
+  const [open, setOpen] = useState(false)
+  const selected = value ? SORTED_FACULTY.find(f => f.id === value) : undefined
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id="perm-faculty"
+          variant="outline"
+          aria-label={selected ? `Faculty: ${selected.name}` : 'Faculty'}
+          className="w-full justify-between font-normal"
+          style={{ height: 'var(--control-height)' }}
+        >
+          <span className={`truncate ${selected ? '' : 'text-muted-foreground'}`}>
+            {selected?.name ?? 'Choose faculty…'}
+          </span>
+          <i className="fa-light fa-chevron-down text-2xs shrink-0" style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-0 w-[var(--radix-popover-trigger-width)] z-[90]" aria-label="Search faculty">
+        <Command>
+          <CommandInput placeholder="Search faculty…" />
+          <CommandList style={{ maxHeight: 280 }}>
+            <CommandEmpty>No faculty match.</CommandEmpty>
+            <CommandGroup>
+              {SORTED_FACULTY.map(f => {
+                const courses = courseCodesByFaculty.get(f.id) ?? []
+                const checked = value === f.id
+                return (
+                  <CommandItem
+                    key={f.id}
+                    value={f.name}
+                    onSelect={() => { onChange(f.id); setOpen(false) }}
+                    className="flex items-center gap-2.5"
+                  >
+                    {/* Check glyph, not a DS Checkbox — Checkbox is a button and
+                        would nest inside role="option" (same reasoning as
+                        courses-evaluatees/scope-controls.tsx TokenSelect). */}
+                    <i className={`fa-solid fa-check text-xs shrink-0 ${checked ? '' : 'opacity-0'}`} aria-hidden="true" />
+                    <AvatarInitials initials={f.initials} size="sm" className="h-6 w-6 shrink-0" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm truncate">{f.name}</span>
+                      {/* Cap at 2 + a count, one line — wrapping the full list (tried
+                          first) grew rows to 3 uneven lines each and broke the list's
+                          scan rhythm (Romit, 2026-09-10: "doesn't look good on a
+                          dropdown"). `title` keeps the full list one hover away. */}
+                      {courses.length > 0 && (
+                        <span
+                          className="text-xs text-muted-foreground truncate"
+                          title={courses.length > 2 ? courses.join(', ') : undefined}
+                        >
+                          {courses.slice(0, 2).join(', ')}
+                          {courses.length > 2 && ` +${courses.length - 2} more`}
+                        </span>
+                      )}
+                    </div>
+                    {checked && <span className="sr-only">, selected</span>}
+                  </CommandItem>
+                )
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export function RoleAccessGrid() {
   const [rows, setRows] = useState<RoleAssignment[]>(MOCK_ROLE_ASSIGNMENTS)
   const [facultyRoleMap, setFacultyRoleMap] = useState<RbacFacultyRoleMap>(DEFAULT_RBAC_FACULTY_ROLE_MAP)
@@ -142,6 +250,7 @@ export function RoleAccessGrid() {
   const courseById = useMemo(() => new Map(MOCK_MASTER_COURSES.map(c => [c.id, c])), [])
   const termById = useMemo(() => new Map(MOCK_PROGRAM_TERMS.map(t => [t.id, t])), [])
   const roleByKey = useMemo(() => new Map(SURVEY_RBAC_ROLES.map(r => [r.key, r])), [])
+  const facultyCourseCodes = useMemo(() => facultyCurrentCourseCodes(courseById), [courseById])
 
   function describeScope(scope: string): string {
     if (scope === 'global') return 'All program (global)'
@@ -455,14 +564,11 @@ export function RoleAccessGrid() {
               <FieldGroup>
                 <Field orientation="vertical">
                   <FieldLabel htmlFor="perm-faculty">Faculty *</FieldLabel>
-                  <Select value={draft.facultyId} onValueChange={v => setDraft(d => ({ ...d, facultyId: v }))}>
-                    <SelectTrigger id="perm-faculty" aria-label="Faculty" aria-required="true">
-                      <SelectValue placeholder="Choose faculty…" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[90]">
-                      {MOCK_FACULTY.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <FacultyCombobox
+                    value={draft.facultyId}
+                    onChange={facultyId => setDraft(d => ({ ...d, facultyId }))}
+                    courseCodesByFaculty={facultyCourseCodes}
+                  />
                 </Field>
 
                 <Field orientation="vertical">

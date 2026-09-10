@@ -11,21 +11,13 @@
 
 import { useState } from 'react'
 import {
-  Button, Input, Label, Badge,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+  Button, Badge,
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
-  DateRangePickerField, FilterChipGroup,
+  FilterChipGroup,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxatdesignux/ui'
-import { MOCK_PROGRAM_TERMS, type ProgramTerm, type TermSeason } from '@/lib/pce-mock-data'
-
-// `react-day-picker` is a transitive dep of @exxatdesignux/ui, not hoisted into
-// this app's node_modules under pnpm — a structural stand-in avoids the missing-
-// module error while staying assignable to DateRangePickerField's real prop type.
-type DateRange = { from: Date | undefined; to?: Date | undefined }
-
-const SEASONS: TermSeason[] = ['Spring', 'Summer', 'Fall']
+import { MOCK_PROGRAM_TERMS, type ProgramTerm } from '@/lib/pce-mock-data'
+import { TermEditorSheet, existingAcademicYears, draftTerm } from '@/components/pce/term-editor-sheet'
 
 type DisplayStatus = 'current' | 'upcoming' | 'past'
 const STATUS_BADGE: Record<DisplayStatus, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
@@ -104,83 +96,6 @@ function TermRow({ t, today, onEdit }: { t: ProgramTerm; today: string; onEdit: 
   )
 }
 
-// ── Term editor sheet (DS sheet convention — mirrors TemplateEditorSheet) ──────
-function TermEditorSheet({ term, onClose, onSave }: {
-  term: ProgramTerm | null; onClose: () => void; onSave: (t: ProgramTerm) => void
-}) {
-  const [season, setSeason]             = useState<TermSeason>(term?.season ?? 'Fall')
-  const [academicYear, setAcademicYear] = useState(term?.academicYear ?? '')
-  const [range, setRange]               = useState<DateRange | undefined>(
-    term?.startDate && term?.endDate
-      ? { from: new Date(term.startDate + 'T00:00:00'), to: new Date(term.endDate + 'T00:00:00') }
-      : undefined
-  )
-  const open  = term !== null
-  const isNew = term?.id.startsWith('new-') ?? false
-  const canSave = Boolean(academicYear.trim() && range?.from && range?.to)
-  const thisYear = new Date().getFullYear()
-
-  const handleSave = () => {
-    if (!term || !range?.from || !range?.to) return
-    const iso = (d: Date) => d.toISOString().slice(0, 10)
-    onSave({
-      ...term,
-      season,
-      academicYear: academicYear.trim(),
-      name: `${season} ${range.from.getFullYear()}`,
-      startDate: iso(range.from),
-      endDate: iso(range.to),
-      status: 'active',
-      enabledForEval: true,
-    })
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <SheetContent side="right" showOverlay={false} showCloseButton={false}
-        className="w-full sm:max-w-[480px] flex flex-col gap-0 p-0">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <SheetTitle className="text-base">{isNew ? 'Set up term' : 'Edit term'}</SheetTitle>
-          <SheetDescription className="text-xs">
-            {isNew ? 'Define a new academic term and its survey calendar window.' : 'Update this term’s academic year and survey calendar window.'}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="flex-1 overflow-auto px-6 py-5 flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="term-season" className="text-sm">Term</Label>
-            <Select value={season} onValueChange={v => setSeason(v as TermSeason)}>
-              <SelectTrigger id="term-season" className="text-sm" aria-label="Season"><SelectValue /></SelectTrigger>
-              <SelectContent>{SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="term-year" className="text-sm">Academic year</Label>
-            <Input id="term-year" value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-              className="text-sm" placeholder="e.g. 2026–2027" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="term-dates" className="text-sm">Term dates</Label>
-            <DateRangePickerField
-              value={range}
-              onChange={setRange}
-              id="term-dates"
-              numberOfMonths={1}
-              fromYear={thisYear - 2}
-              toYear={thisYear + 5}
-            />
-          </div>
-        </div>
-
-        <SheetFooter className="px-6 py-4 border-t border-border flex-row justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} onClick={handleSave}>Save term</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
 // ── Section export ────────────────────────────────────────────────────────────
 type StatusFilter = 'all' | DisplayStatus
 
@@ -208,10 +123,7 @@ export function AcademicCalendarSection() {
     { value: 'past' as const, label: 'Past', count: counts.past },
   ]
 
-  const startNew = () => setEditing({
-    id: `new-${terms.length + 1}`, name: '', season: 'Fall', academicYear: '',
-    startDate: '', endDate: '', status: 'active', enabledForEval: true,
-  })
+  const startNew = () => setEditing(draftTerm())
   const saveEdit = (t: ProgramTerm) => {
     setTerms(prev => prev.some(x => x.id === t.id) ? prev.map(x => x.id === t.id ? t : x) : [...prev, t])
     setEditing(null)
@@ -271,7 +183,13 @@ export function AcademicCalendarSection() {
         )}
       </Panel>
 
-      <TermEditorSheet key={editing?.id ?? 'new'} term={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
+      <TermEditorSheet
+        key={editing?.id ?? 'new'}
+        term={editing}
+        existingYears={existingAcademicYears(terms)}
+        onClose={() => setEditing(null)}
+        onSave={saveEdit}
+      />
     </div>
   )
 }

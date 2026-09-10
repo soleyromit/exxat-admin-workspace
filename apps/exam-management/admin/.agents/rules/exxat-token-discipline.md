@@ -37,8 +37,11 @@ transition value to JSX, CSS, or Tailwind class strings.
    contrast). Taxonomy §6.
 5. **Status chips and badges** route through
    [`lib/list-status-badges.ts`](mdc:lib/list-status-badges.ts)
-   (`LIST_HUB_STATUS_TINT_*` + `ListHubStatusBadge`) — not direct
-   `bg-green-500` / `bg-red-500` / hex literals.
+   (`STATUS_BADGE_TONE_CLASS` + `ListHubStatusBadge`) — not direct
+   `bg-green-500` / `bg-red-500` / hex literals. Map each domain status onto
+   one of the five semantic tones (`success` / `warning` / `info` / `danger` /
+   `neutral`). The `LIST_HUB_STATUS_TINT_*` aliases are **deprecated** — do not
+   use them in new code.
 6. **KPI tints** route through `--insight-severity-*` (info / warning) — not
    direct chart-color reuse. Trend polarity is set via
    `MetricItem.trendPolarity` ([`exxat-kpi-trends.md`](mdc:.agents/rules/exxat-kpi-trends.md)).
