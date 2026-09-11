@@ -80,3 +80,8 @@ If any step fails or produces unexpected output:
 **Symptom:** `mcp__github__create_or_update_file` returns "SHA mismatch: provided SHA … is stale. Current file SHA is …" even though you just ran `git rev-parse origin/main:docs/watch/ds-snapshot.json`.
 **Cause:** A previous automated run already pushed a newer version to GitHub after the local clone was made, so the local `origin/main` ref is behind the real remote HEAD.
 **Fix:** Call `mcp__github__get_file_contents` with `ref=main` to fetch the live SHA, verify the `generated` date in the returned content, then retry `create_or_update_file` with the SHA reported in the result's first line.
+
+### 2026-09-11: Stop hook blocked by uncommitted local change after MCP push
+**Symptom:** After successfully pushing via MCP, the stop hook (`stop-hook-git-check.sh`) fires with "There are uncommitted changes." The local working tree has the modified snapshot but HEAD is detached; `git checkout main` is blocked because git won't overwrite the locally-modified file.
+**Cause:** The MCP push commits to GitHub but does not update the local working tree. The detached HEAD means the stash target is "(no branch)". Git refuses `checkout main` when the local file differs from both the current HEAD and the target branch.
+**Fix:** `git stash && git checkout main && git fetch origin main && git reset --hard origin/main`. The stash saves the local change, checkout reattaches HEAD, fetch pulls the MCP commit, and reset syncs the working tree to origin/main (which already has the correct file content). The stash can then be dropped.
