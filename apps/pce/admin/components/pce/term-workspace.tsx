@@ -13,7 +13,7 @@
 // This page says "evaluations", never "surveys".
 //
 // 2026-08-13 (Granola 0ef80c33, Vishal, raw transcript: "there are like some
-// of the surveys which are yet to be completed... so I would say DPT-611 and
+// of the surveys which are yet to be completed... so I would say NURS-611 and
 // then what's the response rate to that... not in every case you'll be
 // seeing all these different rows, the breakups... it should be just
 // available and just directly say point out that this is the response rate
@@ -495,11 +495,11 @@ function TermWorkspaceInner() {
              keeps "Edit". */
           if (row.resumable) {
             const isDraft = row.status === 'draft'
-            // Verb-only for the aria-label template ("Set up the DPT-611
+            // Verb-only for the aria-label template ("Set up the NURS-611
             // evaluation") — the visible button text ("Set up evaluation")
             // already carries its own noun, so reusing it verbatim in
             // `${x} the ${label}` doubled "evaluation" (caught by compliance
-            // review, 2026-08-14: "Set up evaluation the DPT-611 evaluation").
+            // review, 2026-08-14: "Set up evaluation the NURS-611 evaluation").
             const setupVerb = isDraft ? 'Set up' : 'Edit'
             return (
               <div className="flex items-center justify-end gap-1">

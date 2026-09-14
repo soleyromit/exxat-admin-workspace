@@ -153,7 +153,7 @@ export function UtilityBarSlot() {
         className={cn(
           barHeightClass,
           fullWidth
-            ? "z-50 w-full bg-sidebar pe-2"
+            ? "sticky top-0 z-50 w-full bg-sidebar pe-2"
             : "z-40 mx-2 mb-1.5 py-1 md:mb-2",
         )}
       >
@@ -179,7 +179,7 @@ export function UtilityBarSlot() {
         className={cn(
           barHeightClass,
           fullWidth
-            ? "z-50 w-full bg-sidebar pe-2"
+            ? "sticky top-0 z-50 w-full bg-sidebar pe-2"
             : "z-40 mx-2 mb-1.5 py-1 md:mb-2",
         )}
       >
@@ -203,10 +203,15 @@ export function UtilityBarSlot() {
         // Actions stay shrink-0; breadcrumb + product yield width first.
         barHeightClass,
         fullWidth
-          ? /* z-50: above [data-app-shell-row] (z-40) so a mis-offset fixed
-             sidebar cannot paint over breadcrumbs / product chrome. Ask Leo
-             floating windows sit at z-[55] so they can overlap this bar. */
-            cn("z-50 w-full bg-sidebar", compact ? "pe-2" : "pe-2 sm:pe-3")
+          ? /* sticky top-0: stays pinned to the viewport through page scroll,
+             matching the always-fixed rail beside it (the rail is
+             `position: fixed` in every state, expanded or collapsed — this
+             bar wasn't, so it used to scroll out of view while the rail
+             stayed put). z-50: above [data-app-shell-row] (z-40) so a
+             mis-offset fixed sidebar cannot paint over breadcrumbs / product
+             chrome. Ask Leo floating windows sit at z-[55] so they can
+             overlap this bar. */
+            cn("sticky top-0 z-50 w-full bg-sidebar", compact ? "pe-2" : "pe-2 sm:pe-3")
           : "z-40 mx-2 mb-1.5 py-1 md:mb-2",
       )}
     >

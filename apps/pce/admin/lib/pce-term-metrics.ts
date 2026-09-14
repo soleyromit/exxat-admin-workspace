@@ -75,7 +75,7 @@ export const FINISHED = (s: PceSurvey) => IN_REVIEW(s) || s.status === 'released
  *  no seed record in pce-mock-data.ts ever sets it) — so every pre-seeded
  *  Draft row, on both the board and the table, was silently unresumable:
  *  its card/row routed to an empty /results page instead of back into the
- *  wizard. Caught live testing the table's new Edit button against DPT-511
+ *  wizard. Caught live testing the table's new Edit button against NURS-511
  *  (survey `s7`, status 'draft', no wizardDraft, no offeringId — the data
  *  gap this narrower check was masking). Promoted here so both views share
  *  one (now-correct) definition instead of drifting. */
@@ -244,11 +244,18 @@ export function resolveTermPositions(
 /* ── term stage model (shares the survey vocabulary) ──────────────────────── */
 export type TermStage = 'upcoming' | 'live' | 'review' | 'complete'
 
-export const STAGE_BADGE: Record<TermStage, { label: string; tone: StatusBadgeTone }> = {
-  upcoming: { label: 'Upcoming',  tone: 'info' },
-  live:     { label: 'Live',      tone: 'success' },
-  review:   { label: 'In review', tone: 'warning' },
-  complete: { label: 'Complete',  tone: 'neutral' },
+/* Icons reuse this app's own established per-status vocabulary — 'fa-circle-dot'
+   for live (pce-badges.tsx), 'fa-hourglass-half' for review (pce-badges.tsx's
+   pending_review), 'fa-flag-checkered' for complete (pce-badges.tsx's
+   completed), 'fa-calendar-plus' for upcoming (POSITION_BADGE's Future term)
+   — not invented for this column, and not copied from the reference's own
+   icon choices (Romit, 2026-09-11: the reference's `StatusBadge` usage has a
+   leading icon; ours was missing one entirely). */
+export const STAGE_BADGE: Record<TermStage, { label: string; tone: StatusBadgeTone; icon: string }> = {
+  upcoming: { label: 'Upcoming',  tone: 'info',    icon: 'fa-calendar-plus' },
+  live:     { label: 'Live',      tone: 'success', icon: 'fa-circle-dot' },
+  review:   { label: 'In review', tone: 'warning', icon: 'fa-hourglass-half' },
+  complete: { label: 'Complete',  tone: 'neutral', icon: 'fa-flag-checkered' },
 }
 
 export interface TermSnapshot {

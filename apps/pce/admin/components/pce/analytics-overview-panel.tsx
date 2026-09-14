@@ -1,24 +1,29 @@
 'use client'
 
 /**
- * Analytics → Overview. The "brief me on the program" landing.
+ * Analytics → Overview — term-scoped landing (Romit, 2026-09-14 PRD; layout + multi-select
+ * correction 2026-09-14 later the same day).
  *
- * This tab was deleted in July ("'overview' retired Jul 2026 — the monitoring layer moved
- * to the Dashboard home", `analytics/page.tsx:21`), but the monitoring layer never arrived:
- * `dashboard-home.tsx` is a response-collection ops surface and imports no charts. Eight of
- * the twenty ADMIN analytics stories had no home as a result. Monil's accepted 2026-07-13
- * model has four tabs — "three tabs, in fact four: overview, by faculty, by course and by
- * term" — so this restores it rather than inventing it.
+ * Supersedes the whole-program Overview this file held since 2026-07 (Monil's 2026-07-13
+ * model had Overview aggregate across ALL terms). The new brief is explicit that Overview's
+ * job is RELATIVE COMPARISON within the chosen scope — "which are the better courses, which
+ * are the worst courses" only holds still if every course being compared sat the same term(s).
+ * The old whole-program story (trend across every term, drift arrows, response funnel,
+ * course×term heatmap) is real and still needed — it now belongs to By Term/By Course/By
+ * Faculty, which already answer the longitudinal question this tab used to.
  *
- * Structure follows the tab template Monil stated for every tab:
- *   (1) KPIs → (2) trend graphs across all terms → (3) deep-dive.
- *
- * Every card names the action it enables (Monil: "I want to investigate. What we can help
- * them is what we need to build") and carries a sentence headline, not a noun label —
- * a chart without a takeaway is a banned pattern (Knaflic, via claude-practices).
+ * Structure, in order: KPIs → course-vs-faculty quadrant → rating trend + response-rate trend
+ * (term-only, no AY/Term toggle, no program average) → Course Leaderboard → Faculty Leaderboard.
+ * The quadrant moved directly under the KPIs (Romit, 2026-09-14) — the PRD's original order had
+ * it after the trend charts. Filters are exactly what the PRD allows: the AY/Term pair, now rendered
+ * by the page shell OUTSIDE this panel and the tab bar entirely (confirmed against the
+ * reference's own DOM, 2026-09-14: its filter row is a SIBLING of the tab bar under one shared
+ * header, not nested inside a tab panel) — this component only receives the resolved `terms`.
+ * Term itself is a MULTI-select (Romit, 2026-09-14) — every stat below pools across whichever
+ * term(s) are selected, the same way "all terms" already pools in the rest of this file.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@exxatdesignux/ui'
 import {
@@ -28,146 +33,124 @@ import {
   type ChartLeoInsight,
 } from '@/components/charts-core'
 import {
-  GapQuadrant,
-  ProgramTrendStack,
-  DriftDumbbell,
-  CourseRankDots,
-  COURSE_RANK_LIMIT,
-  KpiSpark,
-  FacultyCompareLines,
-  FacultyScoreStrip,
-  ProgramResponseTrend,
-  type DriftRow,
+  CourseFacultyQuadrant,
+  TermRatingTrend,
+  TermResponseTrend,
+  RatingDistributionHistogram,
 } from '@/components/pce/analytics-plots'
-import { CourseTermGrid } from '@/components/pce/course-term-grid'
-import { responseFunnel } from '@/lib/pce-funnel'
-import { ResponseFunnelSankey } from '@/components/pce/response-funnel-sankey'
-import { AnalyticsSurveyDetails } from '@/components/pce/analytics-survey-details'
+import { DataTablePaginated, PaginationBar } from '@/components/data-table/pagination'
+import type { ColumnDef } from '@/components/data-table/types'
+import { ToggleGroup, ToggleGroupItem } from '@exxatdesignux/ui'
 import {
-  programSummary,
-  termSeries,
-  facultyStats,
-  facultyTermSeries,
+  termsKpis,
+  termOfferingsEvaluated,
+  termsYoyDelta,
+  recentTermsWindow,
   courseStats,
+  facultyEvalRoleOptions,
+  offeringPoints,
   gapPoints,
-  courseTermMatrix,
   medianOf,
+  dualMean,
   RESPONSE_TARGET,
   type DualMean,
+  type FacultyEvalRoleId,
 } from '@/lib/pce-analytics'
-import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
-import { EntityTrendExplorer } from '@/components/pce/entity-trend-explorer'
-import { scoreText } from '@/components/pce/score-cell'
+import { CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
+/** "▲ 0.21 vs. previous year" style KPI trend, from a year-over-year delta rather than the
+ *  window's last-vs-prior-term step. */
+function yoyTrend(delta: number | null): { value: string; trend: 'up' | 'down' | 'neutral' } {
+  if (delta == null) return { value: '', trend: 'neutral' }
+  return {
+    value: `${delta >= 0 ? '+' : ''}${fmt2(delta)}`,
+    trend: delta > 0 ? 'up' : delta < 0 ? 'down' : 'neutral',
+  }
+}
 
+interface CourseLeaderboardRow extends Record<string, unknown> {
+  courseCode: string
+  courseName: string
+  offerings: number
+  courseScore: number | null
+  facultyScore: number | null
+  responseRate: number
+  belowThreshold: boolean
+}
 
-/** Scores occupy a narrow high band; the ramp is spent there, not on 0–3 nobody scores. */
-const SCORE_HEAT_DOMAIN: readonly [number, number] = [3, 5]
+/** One row per (course, faculty) pair — the grain the Faculty entity toggle groups by course. */
+interface FacultyByCourseRow extends Record<string, unknown> {
+  courseCode: string
+  courseName: string
+  facultyId: string
+  name: string
+  rating: number | null
+  responseRate: number
+  offerings: number
+  belowThreshold: boolean
+}
 
-/**
- * §2.1 calls the three Aggregate cards "the cleverest move here: they double as a preview of
- * and a table of contents for the other three tabs. Each card's three KPIs are count /
- * average / % below benchmark — the same rhetorical shape three times, so one glance compares
- * dimensions."
- *
- * The insight is the SHAPE, not navigation. A first pass added "All 6 faculty →" CTAs under
- * each spark; wrong on both counts — a metric tile's job is to state a number, not to carry a
- * CTA, and the tab bar sits 40px above with the same three destinations. Redundant navigation
- * inside a tile is noise. The tiles keep the rhetorical shape; the tabs stay the doors.
- */
-export function AnalyticsOverviewPanel() {
-  const summary = useMemo(() => programSummary(), [])
-  const series = useMemo(() => termSeries(), [])
-  const faculty = useMemo(() => facultyStats(), [])
-  const courses = useMemo(() => courseStats(), [])
-  const gaps = useMemo(() => gapPoints(), [])
-  const matrix = useMemo(() => courseTermMatrix(), [])
-
-  /**
-   * The heatmap at real scale.
-   *
-   * Romit, 2026-07-15: a program averages 10–15 courses and the viz must stay legible as courses
-   * or students grow — then, seeing the result: "can't these charts have a scroll bar or expand
-   * so I can explore this data more clearly?"
-   *
-   * That question retired the first answer. I had made the chart TRUNCATE (15 weakest, rest
-   * behind a button), which trades the reader's data for the card's convenience. Every course is
-   * in the grid now, always, ordered weakest-first by `courseTermMatrix`; the chart shows a
-   * window of them and scrolls. Nothing is hidden and nothing is 1200px tall.
-   */
-  /* Card = the worst band only; the FULL grid lives behind Expand. `courseTermMatrix` orders
-     weakest-first, so the slice IS the worst 5 — nothing is hidden, it moved one click down. */
-  const heatRows = matrix.courses.slice(0, 5)
-
-
-
-
-
-  /* Pending/na courses have no score to rank — same population `CourseRankDots` filters to
-     internally. Captions that describe "how many are ranked/shown" read this count, not
-     `courses.length`, so they don't overclaim when some courses are still Pending (final
-     whole-branch review, fix 5). */
-  const coursesScored = useMemo(
-    () => courses.filter((c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value'),
-    [courses],
+/** Below-threshold rating cell — a pale tinted chip, not full-saturation text. Deliberate,
+ *  SCOPED exception to VIZ-004/Aarti's amber house rule (every other score visual in this
+ *  codebase stays amber); Romit's 2026-09-14 PRD asks for red by name, twice, for these two
+ *  leaderboards specifically — same class of explicit override already made once this session
+ *  for `DASHBOARD_TREND_CONFIG.below`. Background tint matches the reference
+ *  (https://pce-three.vercel.app/analytics-2, confirmed via its rendered cell backgrounds,
+ *  2026-09-14) via this DS's own `--conditional-rule-red` token rather than a literal hex.
+ *  Text stays `--foreground`, NOT `--destructive` — the first pass paired the red text with
+ *  the red tint (matching intent, not the reference's own pairing) and axe caught it at
+ *  3.66:1 against the pale background, short of AA's 4.5:1; `--foreground` on that same tint
+ *  is comfortably compliant and is this DS's own established pattern for `conditional-rule-*`
+ *  cell tints (`table-properties/types.ts`'s `ConditionalRule`) — the tint alone carries the
+ *  flag, the text stays legible. */
+function RatingCell({ value, below }: { value: number | null; below: boolean }) {
+  if (value == null) return <span className="text-muted-foreground">—</span>
+  if (!below) return <span className="font-semibold tabular-nums">{fmt2(value)}</span>
+  return (
+    <span
+      className="inline-block rounded font-semibold tabular-nums text-foreground"
+      style={{ background: 'var(--conditional-rule-red)', padding: '2px 8px' }}
+    >
+      {fmt2(value)}
+    </span>
   )
+}
 
-  /* The chart draws the lowest N; its data table is the ACCESSIBLE EQUIVALENT of the chart,
-     so it must list the same rows. A table of all 15 under a chart of 6 would mean the two
-     halves of one figure disagreed about what the figure shows. Derived with the same sort
-     the chart uses. */
-  const lowestCourses = useMemo(
-    () =>
-      [...coursesScored]
-        .sort((a, b) => a.score.value.weighted - b.score.value.weighted)
-        .slice(0, COURSE_RANK_LIMIT),
-    [coursesScored],
-  )
+export function AnalyticsOverviewPanel({
+  terms,
+  onOpenFaculty,
+}: {
+  /** One or more selected terms — Term is a multi-select; every stat below pools across all
+   *  of them, same rule "all terms" (omitted term) already follows elsewhere in this file. */
+  terms: string[]
+  /** Faculty rows open the SAME tab's By Faculty scroll target (existing pattern) — course
+   *  rows open a new tab instead, per PRD, so no callback is needed for those. */
+  onOpenFaculty: (facultyId: string) => void
+}) {
+  /** "Fall 2025" for one term, "3 terms" for several — every card description below reads off
+   *  this rather than repeating the full list. */
+  const termsLabel = terms.length === 1 ? terms[0]! : `${terms.length} terms`
+  const termsListLabel = terms.length === 1 ? terms[0]! : terms.join(', ')
 
-  const courseMedian = useMemo(
-    () =>
-      medianOf(
-        courses
-          .filter((c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value')
-          .map((c) => c.score.value.weighted),
-      ),
-    [courses],
-  )
+  const kpis = useMemo(() => termsKpis(terms), [terms])
+  const offeringsEval = useMemo(() => termOfferingsEvaluated(terms), [terms])
+  const window6 = useMemo(() => recentTermsWindow(terms, 6), [terms])
+  const gaps = useMemo(() => gapPoints(terms), [terms])
 
-  const funnel = useMemo(() => responseFunnel(), [])
+  /* "▲ 0.21 vs. previous year" — the reference's KPI delta. Year-over-year (same season, one
+     AY back per selected term), so a Fall term compares to the Fall before it rather than to
+     the Spring right next to it in the trend window. */
+  const yoy = useMemo(() => termsYoyDelta(terms), [terms])
+  const courseDelta = yoyTrend(yoy.courseAvg)
+  const facultyDelta = yoyTrend(yoy.facultyAvg)
+  const responseDelta = yoyTrend(yoy.responseRate)
+  const offeringsDelta = yoyTrend(yoy.offeringsPct)
 
-  const funnelLeo: ChartLeoInsight | null = useMemo(() => {
-    const w = funnel.worst
-    if (!w) return null
-    const where =
-      w.after === 'Invited'
-        ? 'never opened the invitation'
-        : w.after === 'Opened'
-          ? 'opened it and never started'
-          : 'started and abandoned'
-    const fix =
-      w.after === 'Invited'
-        ? 'That is a deliverability or timing problem, not an opinion. Students who never saw the ask cannot have declined it. Check send time and whether the invite is reaching inboxes before writing survey copy.'
-        : w.after === 'Opened'
-          ? 'They saw the ask and judged it not worth starting. That points at length or framing in the invitation, not at the questions themselves.'
-          : 'They committed and still quit partway. That is the survey being too long or too repetitive: the only stage where the instrument itself is the suspect.'
-    return {
-      headline: `${w.value.toLocaleString()} students ${where}, ${w.pct}% of everyone invited`,
-      explanation: `${fix} The response rate on this page counts only the final stage, so every stage above it is invisible in that one number.`,
-      kind: 'anomaly',
-      delta: { value: `${w.pct}%`, label: `lost after ${w.after}` },
-      bullets: [
-        `Invited ${funnel.counts.invited.toLocaleString()} → opened ${funnel.counts.opened.toLocaleString()} → started ${funnel.counts.started.toLocaleString()} → completed ${funnel.counts.completed.toLocaleString()}.`,
-        ...funnel.lost.map((l) => `Lost after ${l.after}: ${l.value.toLocaleString()} (${l.pct}%).`),
-      ],
-    }
-  }, [funnel])
-
-  /* The quadrant split is the mean of the PLOTTED points, not the program-wide mean — a
-     split line that doesn't match its own dots is the "numbers disagree with each other"
-     bug the legacy prototype shipped eight times over (§4 of the walkthrough). */
+  /* Quadrant split at the plotted courses' OWN mean, scoped to this selection — same rule the
+     whole-program version used, so a split line that matches its own dots isn't lost in the
+     term-scoping. */
   const courseMean = useMemo(
     () => (gaps.length ? gaps.reduce((s, g) => s + g.courseAvg, 0) / gaps.length : 0),
     [gaps],
@@ -176,763 +159,492 @@ export function AnalyticsOverviewPanel() {
     () => (gaps.length ? gaps.reduce((s, g) => s + g.facultyAvg, 0) / gaps.length : 0),
     [gaps],
   )
+  /* ── Course Leaderboard — course-only (PRD drops the Course/Faculty toggle), no Overall
+        column, + the two question-extreme columns the PRD adds. Sorted lowest-first by
+        default (Monil's "order by the lowest one" decision), every column sortable so the
+        reader can flip to descending for the "five best" half of the same requirement. ── */
+  const scoredCourses = useMemo(
+    () =>
+      courseStats(terms).filter(
+        (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
+      ),
+    [terms],
+  )
+  const courseMedian = useMemo(
+    () => medianOf(scoredCourses.map((c) => c.score.value.weighted)),
+    [scoredCourses],
+  )
+  const courseFacultyMedian = useMemo(
+    () =>
+      medianOf(
+        scoredCourses
+          .filter((c): c is typeof c & { facultyScore: { state: 'value'; value: DualMean } } => c.facultyScore.state === 'value')
+          .map((c) => c.facultyScore.value.weighted),
+      ),
+    [scoredCourses],
+  )
+  const courseRows: CourseLeaderboardRow[] = useMemo(
+    () =>
+      scoredCourses.map((c) => {
+        const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
+        const below = c.score.value.weighted < courseMedian || (facultyVal != null && facultyVal < courseFacultyMedian)
+        const offerings = offeringPoints().filter((o) => o.courseCode === c.courseCode && terms.includes(o.term)).length
+        return {
+          courseCode: c.courseCode,
+          courseName: c.courseName,
+          offerings,
+          courseScore: c.score.value.weighted,
+          facultyScore: facultyVal,
+          responseRate: c.responseRate,
+          belowThreshold: below,
+        }
+      }),
+    [scoredCourses, courseMedian, courseFacultyMedian, terms],
+  )
 
-  /* ── Story 1 — key numbers. Never a bare number: each tile carries its own
-        sparkline (VIZ-010) and an n-of-total caption. Trend polarity is
-        `informational` so the DS tints the arrow muted rather than
-        `text-destructive` — red is banned in score viz (VIZ-004, Aarti). ── */
+  const courseColumns: ColumnDef<CourseLeaderboardRow>[] = useMemo(
+    () => [
+      {
+        key: 'courseCode',
+        label: 'Course',
+        sortable: true,
+        // Every sortable column needs an EXPLICIT sortKey — DataTable's header only renders
+        // the sort button and aria-sort when `col.sortKey` is truthy (`col.sortable` alone
+        // is not enough); the sort comparator itself falls back to `col.key` when absent, so
+        // the table quietly sorted correctly while the header never showed it was sortable.
+        sortKey: 'courseCode',
+        width: 220,
+        cell: (row) => (
+          <span className="block truncate">
+            <span className="font-medium text-foreground">{row.courseCode}</span>
+            <span className="block truncate text-xs text-muted-foreground">{row.courseName}</span>
+          </span>
+        ),
+      },
+      {
+        key: 'offerings',
+        label: '# of Offerings',
+        sortable: true,
+        sortKey: 'offerings',
+        width: 120,
+        cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
+      },
+      {
+        key: 'courseScore',
+        label: 'Course rating',
+        sortable: true,
+        sortKey: 'courseScore',
+        width: 120,
+        cell: (row) => <RatingCell value={row.courseScore} below={row.belowThreshold} />,
+      },
+      {
+        key: 'facultyScore',
+        label: 'Faculty rating',
+        sortable: true,
+        sortKey: 'facultyScore',
+        width: 120,
+        cell: (row) => <RatingCell value={row.facultyScore} below={row.belowThreshold} />,
+      },
+      {
+        key: 'responseRate',
+        label: 'Response rate',
+        sortable: true,
+        sortKey: 'responseRate',
+        width: 120,
+        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+      },
+    ],
+    [],
+  )
 
-  const scoreDelta = (spark: { y: number }[]) => {
-    if (spark.length < 2) return { value: '', trend: 'neutral' as const }
-    const d = spark[spark.length - 1]!.y - spark[spark.length - 2]!.y
+  const courseLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
+    if (!courseRows.length) return null
+    const worst = [...courseRows].sort((a, b) => (a.courseScore ?? 99) - (b.courseScore ?? 99))[0]!
+    const below = courseRows.filter((r) => r.belowThreshold)
     return {
-      value: `${d >= 0 ? '+' : ''}${d.toFixed(2)}`,
-      trend: d > 0 ? ('up' as const) : d < 0 ? ('down' as const) : ('neutral' as const),
-    }
-  }
-
-  const facultyDelta = scoreDelta(summary.facultySpark)
-  const courseDelta = scoreDelta(summary.courseSpark)
-  const responseDelta = (() => {
-    const s = summary.responseSpark
-    if (s.length < 2) return { value: '', trend: 'neutral' as const }
-    const d = Math.round(s[s.length - 1]!.y - s[s.length - 2]!.y)
-    return {
-      value: `${d >= 0 ? '+' : ''}${d}%`,
-      trend: d > 0 ? ('up' as const) : d < 0 ? ('down' as const) : ('neutral' as const),
-    }
-  })()
-
-  /* ── Leo insights — derived from the chart's own data, never hand-written prose. ── */
-
-  const gapLeo: ChartLeoInsight | null = useMemo(() => {
-    if (gaps.length < 3) return null
-    // The widest faculty-over-course gap: the instructor is carrying a weak course.
-    const widest = [...gaps].sort(
-      (a, b) => (b.facultyAvg - b.courseAvg) - (a.facultyAvg - a.courseAvg),
-    )[0]!
-    const gap = widest.facultyAvg - widest.courseAvg
-    const bothLow = gaps.filter((g) => g.courseAvg < courseMean && g.facultyAvg < facultyMean)
-    return {
-      headline: `${widest.courseCode} scores ${fmt2(gap)} higher on teaching than on content`,
-      explanation:
-        `Students rate two different things: the course and the person teaching it. When faculty score runs ` +
-        `well above course score, the instructor is carrying material that needs a redesign; coaching the person ` +
-        `will not move it. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} sit in the both-need-attention quadrant.`,
-      kind: 'anomaly',
-      delta: { value: `+${fmt2(gap)}`, label: 'faculty over course' },
+      headline: `${worst.courseCode} rates lowest at ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'}`,
+      explanation: `${below.length} of ${courseRows.length} courses fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(courseFacultyMedian)} faculty-rating median for ${termsLabel}. Sort by either rating column to see the full spread.`,
+      kind: below.length > 0 ? 'anomaly' : 'trend',
+      delta: { value: worst.courseScore != null ? fmt2(worst.courseScore) : '—', label: worst.courseCode },
       bullets: [
-        `${widest.courseCode} · ${widest.courseName}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)} across ${widest.terms} term${widest.terms === 1 ? '' : 's'}.`,
-        `${bothLow.length} of ${gaps.length} courses are below both program means.`,
-        'Dots off the shaded band are anomalous for their kind, not merely low.',
+        `${worst.courseCode} · ${worst.courseName}: ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'} course, ${worst.facultyScore != null ? fmt2(worst.facultyScore) : '—'} faculty.`,
+        `${below.length} of ${courseRows.length} courses below threshold.`,
       ],
-      // Plot charts position the marker through `leoAnchor` + the live Plot scales; the
-      // anchor here carries the data-space Y and marks the insight as plot-anchored.
-      anchor: { yValue: widest.facultyAvg },
     }
-  }, [gaps, courseMean, facultyMean])
+  }, [courseRows, courseMedian, courseFacultyMedian, termsLabel])
 
-  const trendLeo: ChartLeoInsight | null = useMemo(() => {
-    const scored = series.filter((s) => s.courseAvg != null)
+  /* ── Faculty, grouped by course (Romit, 2026-09-14: "in the faculty toggle, i need to see
+        courses and underneath i will see the list of faculties" — a single leaderboard card
+        with a Course/Faculty entity toggle, matching the reference's own layout, rather than
+        the two side-by-side cards this session had shipped. Faculty mode needs one row per
+        (course, faculty) pair, not one row per faculty pooled across every course — `facultyStats`
+        gives the latter, so this reads `offeringPoints()` directly at its finest grain (faculty ×
+        course × term) and aggregates per course instead. Role stays a card-local toggle (the
+        reference's own "All Roles/Instructor/Coordinator" split), now shown only in Faculty
+        mode since it has no meaning against the flat Course table. ── */
+  const roleOptions = useMemo(() => facultyEvalRoleOptions(), [])
+  const [roleFilter, setRoleFilter] = useState<FacultyEvalRoleId | undefined>(undefined)
+  const [leaderboardEntity, setLeaderboardEntity] = useState<'course' | 'faculty'>('course')
+  const facultyByCourseRows: FacultyByCourseRow[] = useMemo(() => {
+    const offs = offeringPoints().filter((o) => terms.includes(o.term) && (!roleFilter || o.evalRole === roleFilter))
+    const byKey = new Map<string, typeof offs>()
+    offs.forEach((o) => {
+      const k = `${o.courseCode}::${o.facultyId}`
+      const list = byKey.get(k) ?? []
+      list.push(o)
+      byKey.set(k, list)
+    })
+    const unranked = [...byKey.values()].map((rows) => {
+      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
+      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      return {
+        courseCode: rows[0]!.courseCode,
+        courseName: rows[0]!.courseName,
+        facultyId: rows[0]!.facultyId,
+        name: rows[0]!.facultyName,
+        rating: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)).weighted,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
+        offerings: rows.length,
+        belowThreshold: false,
+      }
+    })
+    const median = medianOf(unranked.map((r) => r.rating).filter((v): v is number => v != null))
+    return unranked.map((r) => ({ ...r, belowThreshold: r.rating != null && r.rating < median }))
+  }, [terms, roleFilter])
+
+  /* Faculty mode (2026-09-14, second correction — Romit: "don't show grouped based rows in a
+     table. make it a course row, and below that show the list of faculties.") — DataTable's
+     own grouping (round 1 of this feature) rendered the band-inside-a-table look he explicitly
+     rejected. This is a real nested list instead: one course block per course (its own row of
+     stats), the faculty who taught it listed underneath, no `<table>` anywhere. Paginated by
+     COURSE COUNT, not row count — pagination-by-row-count was what caused a course's faculty to
+     split across pages in the DataTable version; paginating the outer list of course blocks
+     means a page always shows whole blocks. */
+  const facultyByCourse = useMemo(() => {
+    const byCourse = new Map<string, FacultyByCourseRow[]>()
+    facultyByCourseRows.forEach((r) => {
+      const list = byCourse.get(r.courseCode) ?? []
+      list.push(r)
+      byCourse.set(r.courseCode, list)
+    })
+    byCourse.forEach((list) => list.sort((a, b) => (a.rating ?? 99) - (b.rating ?? 99)))
+    return byCourse
+  }, [facultyByCourseRows])
+
+  /* Only courses that actually have a faculty row in this scope/role-filter combination, in
+     the same worst-first order the Course table itself defaults to. */
+  const coursesWithFaculty = useMemo(
+    () => [...courseRows].sort((a, b) => (a.courseScore ?? 99) - (b.courseScore ?? 99)).filter((c) => facultyByCourse.has(c.courseCode)),
+    [courseRows, facultyByCourse],
+  )
+
+  const [facultyPage, setFacultyPage] = useState(1)
+  const [facultyPageSize, setFacultyPageSize] = useState(5)
+  const facultyTotalPages = Math.max(1, Math.ceil(coursesWithFaculty.length / facultyPageSize))
+  const facultySafePage = Math.min(facultyPage, facultyTotalPages)
+  const pagedCoursesWithFaculty = coursesWithFaculty.slice(
+    (facultySafePage - 1) * facultyPageSize,
+    facultySafePage * facultyPageSize,
+  )
+
+  const facultyMedianRating = useMemo(
+    () => medianOf(facultyByCourseRows.map((r) => r.rating).filter((v): v is number => v != null)),
+    [facultyByCourseRows],
+  )
+
+  const facultyLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
+    if (!facultyByCourseRows.length) return null
+    const worst = [...facultyByCourseRows].sort((a, b) => (a.rating ?? 99) - (b.rating ?? 99))[0]!
+    const below = facultyByCourseRows.filter((r) => r.belowThreshold)
+    return {
+      headline: `${worst.name} rates lowest at ${worst.rating != null ? fmt2(worst.rating) : '—'} (${worst.courseCode})`,
+      explanation: `${below.length} of ${facultyByCourseRows.length} course-faculty pairings fall below the ${fmt2(facultyMedianRating)} rating median for ${termsLabel}. Sort the Rating column to move between the best and lowest five.`,
+      kind: below.length > 0 ? 'anomaly' : 'trend',
+      delta: { value: worst.rating != null ? fmt2(worst.rating) : '—', label: worst.name },
+      bullets: [
+        `${worst.name} · ${worst.courseCode}: ${worst.rating != null ? fmt2(worst.rating) : '—'} across ${worst.offerings} offering${worst.offerings === 1 ? '' : 's'}.`,
+        `${below.length} of ${facultyByCourseRows.length} course-faculty pairings below the median.`,
+      ],
+    }
+  }, [facultyByCourseRows, facultyMedianRating, termsLabel])
+
+  const ratingTrendLeo: ChartLeoInsight | null = useMemo(() => {
+    const scored = window6.filter((s) => s.courseAvg != null)
     if (scored.length < 2) return null
     const last = scored[scored.length - 1]!
     const prev = scored[scored.length - 2]!
     const d = (last.courseAvg as number) - (prev.courseAvg as number)
-    const lowRate = series.filter((s) => s.responseRate != null && s.responseRate < 80)
     return {
-      headline:
-        d < 0
-          ? `Course scores fell ${fmt2(Math.abs(d))} in ${last.term}`
-          : `Course scores rose ${fmt2(d)} in ${last.term}`,
-      explanation:
-        `The two plots share a term axis on purpose: a score dip that lands in the same term as a response-rate ` +
-        `collapse is usually a sampling artefact, not a quality change. ${lowRate.length} of ${series.length} terms ` +
-        `came in under the 80% response target.`,
+      headline: d < 0 ? `Course rating fell ${fmt2(Math.abs(d))} into ${last.term}` : `Course rating rose ${fmt2(d)} into ${last.term}`,
+      explanation: `Course and faculty ratings, last ${window6.length} terms, ${termsListLabel} highlighted. No program average line — students rate the course and the person separately, and a third blended line would answer neither question.`,
       kind: d < 0 ? 'dip' : 'trend',
       delta: { value: `${d >= 0 ? '+' : ''}${fmt2(d)}`, label: `vs ${prev.term}` },
       bullets: [
-        `${last.term}: course ${fmt2(last.courseAvg as number)}${last.facultyAvg != null ? ` · faculty ${fmt2(last.facultyAvg)}` : ''}.`,
-        `${series.length} terms of history in view.`,
+        `${termsLabel}: course ${kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—'} · faculty ${kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—'}.`,
       ],
       anchor: { xValue: last.short, yDataKeys: ['courseAvg'] },
     }
-  }, [series])
+  }, [window6, termsLabel, termsListLabel, kpis])
 
-  const heatLeo: ChartLeoInsight | null = useMemo(() => {
-    if (!matrix.cells.length) return null
-    const worst = [...matrix.cells].sort((a, b) => a.courseAvg - b.courseAvg)[0]!
-    const filled = matrix.cells.length
-    const possible = matrix.courses.length * matrix.terms.length
-    return {
-      headline: `${worst.courseCode} in ${worst.term} is the weakest cell at ${fmt2(worst.courseAvg)}`,
-      explanation:
-        `Rows are ordered worst to best, so the courses that need work band together at the top rather than ` +
-        `scattering alphabetically. ${filled} of ${possible} course-term cells carry data. The blanks are terms ` +
-        `a course was not offered or not evaluated.`,
-      kind: 'anomaly',
-      delta: { value: fmt2(worst.courseAvg), label: `${worst.courseCode} · ${worst.term}` },
-      bullets: [
-        `${matrix.courses.length} courses × ${matrix.terms.length} terms.`,
-        `${filled} of ${possible} cells populated.`,
-      ],
-      anchor: { xValue: worst.term, yDataKeys: ['courseAvg'] },
-    }
-  }, [matrix])
-
-  const facultyDriftRows: DriftRow[] = useMemo(
-    () => faculty.map((f) => ({ label: f.name, avg1y: f.avg1y, avg3y: f.avg3y, drift: f.drift })),
-    [faculty],
-  )
-  const courseDriftRows: DriftRow[] = useMemo(
-    () => courses.map((c) => ({ label: c.courseCode, avg1y: c.avg1y, avg3y: c.avg3y, drift: c.drift })),
-    [courses],
-  )
-
-  /* The card draws the 5 largest moves; every arrow still exists behind Expand. 34 arrows at
-     32px each was a 1,100px card — §2.1's reference for this rank row is a 5-row list. Null
-     drift is excluded outright: a fake flat arrow reads "no change" when it means "no data". */
-  const driftMovers = useMemo(
-    () =>
-      facultyDriftRows
-        .filter((r): r is DriftRow & { drift: number } => r.drift != null)
-        .sort((a, b) => Math.abs(b.drift) - Math.abs(a.drift))
-        .slice(0, 5),
-    [facultyDriftRows],
-  )
-  const facSeries = useMemo(() => facultyTermSeries(), [])
-
-  const facultyDriftLeo: ChartLeoInsight | null = useMemo(() => {
-    const movers = facultyDriftRows.filter((r) => r.drift != null) as (DriftRow & { drift: number })[]
-    if (!movers.length) return null
-    const worst = [...movers].sort((a, b) => a.drift - b.drift)[0]!
-    const declining = movers.filter((m) => m.drift < 0)
+  const responseTrendLeo: ChartLeoInsight | null = useMemo(() => {
+    if (kpis.responseRate == null) return null
+    const belowTarget = window6.filter((s) => s.responseRate != null && s.responseRate < RESPONSE_TARGET)
     return {
       headline:
-        declining.length > 0
-          ? `${declining.length} of ${movers.length} faculty are rated lower this year than over three`
-          : `Every faculty member is level or improving vs their three-year mean`,
-      explanation:
-        `The arrow runs from a person's 3-year mean to their 1-year mean, so direction and size read in one mark. ` +
-        `A short arrow is stability, not a lack of data. Start with the longest amber arrow. That is the biggest ` +
-        `change in the shortest time.`,
-      kind: declining.length > 0 ? 'dip' : 'trend',
-      delta: { value: `${worst.drift >= 0 ? '+' : ''}${fmt2(worst.drift)}`, label: worst.label },
-      bullets: [
-        `${worst.label}: ${fmt2(worst.avg3y as number)} → ${fmt2(worst.avg1y as number)} over the last year.`,
-        `${movers.length} faculty have enough history for both windows.`,
-      ],
-      anchor: { yValue: worst.avg1y as number },
+        kpis.responseRate < RESPONSE_TARGET
+          ? `${termsLabel}'s response rate sits ${RESPONSE_TARGET - kpis.responseRate}pp under the ${RESPONSE_TARGET}% target`
+          : `${termsLabel}'s response rate clears the ${RESPONSE_TARGET}% target`,
+      explanation: `${belowTarget.length} of ${window6.length} terms shown missed the target. A low rate here should read alongside the ratings above it — a rating on a thin sample is less certain than the same rating on a full one.`,
+      kind: kpis.responseRate < RESPONSE_TARGET ? 'anomaly' : 'trend',
+      delta: { value: `${kpis.responseRate}%`, label: termsLabel },
+      bullets: [`${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} students responded.`],
+      anchor: { xValue: window6.find((s) => terms.includes(s.term))?.short ?? '', yDataKeys: ['responseRate'] },
     }
-  }, [facultyDriftRows])
+  }, [window6, termsLabel, terms, kpis])
 
-  const courseDriftLeo: ChartLeoInsight | null = useMemo(() => {
-    // Pending/na courses have no score to compare against the median — excluded from both
-    // the numerator and the denominator, same principle as `facultyDriftLeo`'s drift filter
-    // above (a course with no score is "no data", not "not below").
-    const scored = courses.filter(
-      (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
-    )
-    const below = scored.filter((c) => c.score.value.weighted < courseMedian)
-    if (!scored.length) return null
-    const worst = scored[scored.length - 1]!
+  const gapLeo: ChartLeoInsight | null = useMemo(() => {
+    if (gaps.length < 3) return null
+    const widest = [...gaps].sort((a, b) => b.facultyAvg - b.courseAvg - (a.facultyAvg - a.courseAvg))[0]!
+    const gap = widest.facultyAvg - widest.courseAvg
+    const bothLow = gaps.filter((g) => g.courseAvg < courseMean && g.facultyAvg < facultyMean)
     return {
-      // Frequency count, not a percentage — Aarti D17 ("8 of 20 questions" beats "40%").
-      headline: `${below.length} of ${scored.length} courses sit below the ${fmt2(courseMedian)} median`,
-      explanation:
-        `${worst.courseCode} is lowest at ${fmt2(worst.score.value.weighted)}. Course scores that fall while faculty ` +
-        `scores hold usually mean content or workload, not teaching. Check the open-text before booking a ` +
-        `conversation with the instructor.`,
-      kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(worst.score.value.weighted), label: worst.courseCode },
+      headline: `${widest.courseCode} scores ${fmt2(Math.abs(gap))} ${gap >= 0 ? 'higher on teaching than on content' : 'higher on content than on teaching'}`,
+      explanation: `Course content and faculty teaching are two different things to fix. ${bothLow.length} course${bothLow.length === 1 ? '' : 's'} sit in the both-need-attention quadrant.`,
+      kind: 'anomaly',
+      delta: { value: `${gap >= 0 ? '+' : ''}${fmt2(gap)}`, label: 'faculty vs course' },
       bullets: [
-        `Lowest: ${worst.courseCode} · ${worst.courseName} at ${fmt2(worst.score.value.weighted)}.`,
-        `Median across ${scored.length} courses: ${fmt2(courseMedian)}.`,
+        `${widest.courseCode} · ${widest.courseName}: course ${fmt2(widest.courseAvg)} vs faculty ${fmt2(widest.facultyAvg)}.`,
+        `${bothLow.length} of ${gaps.length} courses below both quadrant lines.`,
       ],
-      anchor: { yValue: worst.score.value.weighted },
+      anchor: { yValue: widest.facultyAvg },
     }
-  }, [courses, courseMedian])
-
-  /* Memoised — PlotFigure compares leoAnchor by reference in its effect deps, so a fresh
-     object literal each render would re-create the chart SVG every parent render. */
-  const anchorGap = useMemo(() => {
-    if (gaps.length < 3) return undefined
-    const widest = [...gaps].sort(
-      (a, b) => (b.facultyAvg - b.courseAvg) - (a.facultyAvg - a.courseAvg),
-    )[0]!
-    return { x: widest.courseAvg, y: widest.facultyAvg }
-  }, [gaps])
+  }, [gaps, courseMean, facultyMean])
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ChartCard renders its title as an h3. The page h1 is "Analytics", so without a
-          section h2 the document skips a level (axe `heading-order`). The section is real,
-          it just doesn't need to be seen. */}
-      <h2 className="sr-only">Program overview</h2>
+      <h2 className="sr-only">Term overview — {termsListLabel}</h2>
 
-      {/* ── Row 1 — story 1. Three tiles, each a number WITH its trajectory. ── */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* §6 of the walkthrough — "explicit benchmarks on every KPI": the legacy app stated
-            the threshold that produced each percentage (`< 4.00 avg score`), which is the one
-            thing that makes a KPI auditable rather than assertive. Frequency counts, not
-            percentages (Aarti D17: "4 of 6 faculty" beats "67%"). */}
-        <ChartCard
-          variant="kpi-chart"
-          title="Average faculty score"
-          description={`${summary.facultyBelowThreshold} of ${summary.facultyCount} faculty below the ${fmt2(summary.facultyMedian)} median · weighted by class size · simple mean ${fmt2(summary.facultyScore.simple)}`}
-          miniMetrics={[
-            {
-              label: `across ${summary.facultyScore.n} offerings`,
-              value: fmt2(summary.facultyScore.weighted),
-              trend: facultyDelta.trend,
-              trendPolarity: 'informational',
-            },
-          ]}
-        >
-          {/* seriesIndex 1 = --chart-2 = the "Faculty" line in Program trajectory below.
-              One metric, one colour, down the whole tab. */}
-          <KpiSpark points={summary.facultySpark} seriesIndex={1} />
-          {/* Steep's metric-detail shape (Mobbin 2026-07-15): the tile's ONE number, decomposed
-              by its natural segment. This mean is 34 people — the strip IS the breakdown. */}
-          <ChartCardActions
-            title="Average faculty score"
-            description={`The ${fmt2(summary.facultyScore.weighted)} mean, decomposed: every faculty member as a tick against the ${fmt2(summary.facultyMedian)} median.`}
-            detail={faculty.length ? <FacultyScoreStrip faculty={faculty} median={summary.facultyMedian} height={200} /> : <p className="py-8 text-center text-sm text-muted-foreground">No faculty data yet.</p>}
-            table={{
-              headers: ['Faculty', 'Weighted score', 'Offerings'],
-              rows: faculty.map((f) => [f.name, scoreText(f.score, (v) => fmt2(v.weighted)), f.offerings]),
-            }}
-          />
-        </ChartCard>
+      {/* ── KPIs — Course rating, Faculty rating, Response rate, Offerings evaluated. No
+             sparkline: the reference's tiles are a number and a year-over-year delta line,
+             nothing else, and matching it here means dropping VIZ-010's usual "no bare
+             number" spark in favour of that leaner two-line shape. `trendPolarity:
+             'higher_is_better'` (not this file's usual 'informational') so the arrow actually
+             colors green/red — the reference's own delta line is colored, and Overview's
+             below-threshold red is already a confirmed, scoped exception to the amber house
+             rule; the trend arrow follows the same exception rather than reading informational
+             next to a leaderboard that reads alarmed. ── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ChartCard variant="kpi-chart" title="Course rating" description={termsLabel} miniMetrics={[{ label: courseDelta.value ? `${courseDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—', trend: courseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard
-          variant="kpi-chart"
-          title="Average course score"
-          description={`${summary.coursesBelowThreshold} of ${summary.courseCount} courses below the ${fmt2(summary.courseMedian)} median · course content only · simple mean ${fmt2(summary.courseScore.simple)}`}
-          miniMetrics={[
-            {
-              label: `across ${summary.courseScore.n} course-terms`,
-              value: fmt2(summary.courseScore.weighted),
-              trend: courseDelta.trend,
-              trendPolarity: 'informational',
-            },
-          ]}
-        >
-          {/* seriesIndex 0 = --chart-1 = the "Course content" line below. */}
-          <KpiSpark points={summary.courseSpark} seriesIndex={0} />
-          <ChartCardActions
-            title="Average course score"
-            description={`The mean decomposed: all ${courses.length} courses ranked against the ${fmt2(courseMedian)} median.`}
-            detail={courses.length ? <CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} /> : <p className="py-8 text-center text-sm text-muted-foreground">No course data yet.</p>}
-            table={{
-              headers: ['Course', 'Weighted score', 'Terms'],
-              rows: courses.map((c) => [`${c.courseCode} · ${c.courseName}`, scoreText(c.score, (v) => fmt2(v.weighted)), c.terms]),
-            }}
-          />
-        </ChartCard>
+        <ChartCard variant="kpi-chart" title="Faculty rating" description={termsLabel} miniMetrics={[{ label: facultyDelta.value ? `${facultyDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—', trend: facultyDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard
-          variant="kpi-chart"
-          title="Overall response rate"
-          description={`${summary.termsBelowTarget} of ${summary.termCount} terms below the 80% target · ${summary.responded.toLocaleString()} of ${summary.enrolled.toLocaleString()} students responded`}
-          miniMetrics={[
-            {
-              label: `${summary.termCount} terms · target 80%`,
-              value: `${summary.responseRate}%`,
-              trend: responseDelta.trend,
-              trendPolarity: 'informational',
-            },
-          ]}
-        >
-          {/* Response rate keeps the amber/target semantic rather than a series colour:
-              unlike the two scores it has a stated bar (80%), so below-target is a state,
-              not an identity. seriesIndex 2 = --chart-3 = its line in Program trajectory. */}
-          <KpiSpark
-            points={summary.responseSpark}
-            {...(summary.responseRate < 80 ? { tone: 'warn' as const } : { seriesIndex: 2 })}
-          />
-          <ChartCardActions
-            title="Overall response rate"
-            description={`Response rate by term against the ${RESPONSE_TARGET}% target: the trend behind the tile's number.`}
-            detail={series.length ? <ProgramResponseTrend series={series} target={RESPONSE_TARGET} height={420} /> : <p className="py-8 text-center text-sm text-muted-foreground">No term history yet.</p>}
-            table={{
-              headers: ['Term', 'Response rate', 'Responded', 'Enrolled'],
-              rows: series.map((t) => [
-                t.term,
-                t.responseRate != null ? `${t.responseRate}%` : '—',
-                t.responded,
-                t.enrolled,
-              ]),
-            }}
-          />
-        </ChartCard>
+        <ChartCard variant="kpi-chart" title="Response rate" description={termsLabel} miniMetrics={[{ label: responseDelta.value ? `${responseDelta.value}pp vs. previous year · ${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded` : `${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded`, value: kpis.responseRate != null ? `${kpis.responseRate}%` : '—', trend: responseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+
+        <ChartCard variant="kpi-chart" title="Offerings evaluated" description={termsLabel} miniMetrics={[{ label: offeringsDelta.value ? `${offeringsDelta.value}pp coverage vs. previous year` : `${offeringsEval.total > 0 ? Math.round((offeringsEval.evaluated / offeringsEval.total) * 100) : 0}% coverage of ${offeringsEval.total} course offerings`, value: `${offeringsEval.evaluated}`, trend: offeringsDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
       </div>
 
-      {/* RANK comes second, before any pattern chart. §2.1 is explicit that Overview is a
-          deliberate aggregate → rank → pattern → raw funnel, and this row used to sit at the
-          very bottom: the reader got four abstract pattern charts before being told WHO needs
-          attention. Rank is the actionable answer; the patterns below exist to explain it,
-          which only works if you already know who you are explaining. */}
-      {/* ── Stories 2 + 3 — who needs attention.
-             items-start: the two charts have different row counts, and stretching the
-             shorter card to match leaves a block of dead space under its plot. ── */}
-      {/* The two titles name which QUESTION each answers. They used to both read
-          "… needing attention", promising the same thing while the charts answered
-          differently: this pair is drift (who MOVED) and rank (who is LOW). Under parallel
-          titles their amber meant different things — declining on the left, below-median on
-          the right — so a faculty member could be amber-left while comfortably above the
-          median. The doc calls that exact asymmetry a defect in the legacy app (§7: the two
-          leaderboards were "incomplete in OPPOSITE directions"); we had rebuilt a version of
-          it. Each description now also says what its chart does NOT tell you. */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <ChartCard
-          variant="normal"
-          /* NOT "Faculty who are slipping". It listed six people of whom four were RISING
-             (+0.03 to +0.11) — a title that promises slippers and delivers a roster is the
-             same lie "Courses scoring lowest" was telling one card over. The honest framing
-             is the question the chart answers: which way is each person moving. The amber
-             arrow and the Leo do the flagging, and "5 of 6 are holding or improving" is
-             genuinely the news here — filtering to the one faller would hide it. */
-          title="Which way each faculty is moving"
-          description={`The ${driftMovers.length} largest moves of ${facultyDriftRows.length} faculty · 3-year mean → 1-year mean`}
-          leoInsight={facultyDriftLeo}
-        >
-          <ChartFigure
-            label="Faculty needing attention"
-            summary="Arrow chart from each faculty member's three-year mean score to their one-year mean, sorted by change."
-            dataLength={facultyDriftRows.length}
-            leoInsight={facultyDriftLeo}
-          >
-            {() => (
-              <>
-                <DriftDumbbell
-                  rows={driftMovers}
-                  emptyNote="No faculty has offerings in both the 1-year and 3-year windows yet."
-                  /* Leo pins to the biggest FALL's endpoint — a plot annotation, not a header
-                     button (DS OS chart-leo-spotting). */
-                  leoAnchor={(() => {
-                    const worst = driftMovers.find((m) => m.drift < 0) ?? driftMovers[0]
-                    return worst && worst.avg1y != null ? { x: worst.avg1y, y: worst.label } : undefined
-                  })()}
-                />
-                <ChartDataTable
-                  caption="Faculty score change, three-year mean to one-year mean"
-                  headers={['Faculty', '3-year mean', '1-year mean', 'Change']}
-                  rows={facultyDriftRows.map((r) => [
-                    r.label,
-                    r.avg3y != null ? fmt2(r.avg3y) : '—',
-                    r.avg1y != null ? fmt2(r.avg1y) : '—',
-                    r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
-                  ])}
-                />
-                {/* The dialog traces the trend BEHIND the drift — an arrow says a person moved;
-                    the explorer shows the actual trajectory the two windows summarised. */}
-                <ChartCardActions
-                  title="Which way each faculty is moving"
-                  description="Every faculty member's score by term. Select a person to trace the trajectory behind their 1-year vs 3-year change."
-                  detail={
-                    <EntityTrendExplorer
-                      entityNoun="faculty"
-                      entities={faculty.map((f) => ({
-                        id: f.facultyId,
-                        label: f.name,
-                        value: f.drift != null ? `${f.drift >= 0 ? '+' : ''}${fmt2(f.drift)}` : '—',
-                        sortValue: f.drift ?? Number.POSITIVE_INFINITY,
-                        trend: f.drift == null ? null : f.drift < -0.05 ? 'down' : f.drift > 0.05 ? 'up' : 'flat',
-                      }))}
-                      renderChart={(selected) =>
-                        selected ? (
-                          /* Depth: the trajectory BEHIND the selected person's arrow. */
-                          <FacultyCompareLines
-                            mode="shared"
-                            rows={facSeries}
-                            programMean={summary.facultyMedian}
-                            highlight={[selected]}
-                            height={380}
-                          />
-                        ) : (
-                          /* Correlation rule: the dialog leads with the CARD's viz — every
-                             arrow, sorted by drift — not a different chart. Selecting a person
-                             is what earns the deeper trajectory view. */
-                          <DriftDumbbell
-                            rows={facultyDriftRows}
-                            height={Math.max(260, facultyDriftRows.length * 32 + 40)}
-                            emptyNote="No faculty has offerings in both windows yet."
-                          />
-                        )
-                      }
-                      table={{
-                        headers: ['Faculty', '3-year mean', '1-year mean', 'Change'],
-                        rows: facultyDriftRows.map((r) => [
-                          r.label,
-                          r.avg3y != null ? fmt2(r.avg3y) : '—',
-                          r.avg1y != null ? fmt2(r.avg1y) : '—',
-                          r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
-                        ]),
-                      }}
-                    />
-                  }
-                  table={{
-                    headers: ['Faculty', '3-year mean', '1-year mean', 'Change'],
-                    rows: facultyDriftRows.map((r) => [
-                      r.label,
-                      r.avg3y != null ? fmt2(r.avg3y) : '—',
-                      r.avg1y != null ? fmt2(r.avg1y) : '—',
-                      r.drift != null ? `${r.drift >= 0 ? '+' : ''}${fmt2(r.drift)}` : '—',
-                    ]),
-                  }}
-                >
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/analytics?tab=faculty">Open By Faculty</Link>
-                  </Button>
-                </ChartCardActions>
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-
-        <ChartCard
-          variant="normal"
-          title="Courses scoring lowest"
-          description={`The ${lowestCourses.length} weakest of ${coursesScored.length} scored, worst first, vs the program median`}
-          leoInsight={courseDriftLeo}
-        >
-          <ChartFigure
-            label="Courses needing attention"
-            summary="Ranked dot plot of course scores against the program median, with every individual offering drawn behind each course's mean."
-            dataLength={courses.length}
-            leoInsight={courseDriftLeo}
-          >
-            {() => (
-              <>
-                {/* Story 3 asks to flag courses on LOW SCORES, not on drift — so this is the
-                    ranked dot plot against the median, not the 1Y/3Y arrow chart used for
-                    faculty (story 2, which does ask for the two windows). */}
-                <CourseRankDots courses={courses} median={courseMedian} />
-                <ChartDataTable
-                  caption={`The ${lowestCourses.length} lowest-scoring courses against the program median`}
-                  headers={['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate']}
-                  rows={lowestCourses.map((c) => [
-                    `${c.courseCode} · ${c.courseName}`,
-                    fmt2(c.score.value.weighted),
-                    fmt2(c.score.value.simple),
-                    c.terms,
-                    `${c.responseRate}%`,
-                  ])}
-                />
-                <ChartCardActions
-                  title="Courses scoring lowest"
-                  description={`${coursesScored.length} scored courses ranked against the ${fmt2(courseMedian)} program median, every offering behind each mean.${courses.length - coursesScored.length > 0 ? ` ${courses.length - coursesScored.length} pending, not shown.` : ''}`}
-                  detail={<CourseRankDots courses={courses} median={courseMedian} limit={courses.length} height={Math.max(260, courses.length * 32 + 40)} />}
-                  table={{
-                    headers: ['Course', 'Weighted score', 'Simple mean', 'Terms', 'Response rate'],
-                    rows: courses.map((c) => [
-                      `${c.courseCode} · ${c.courseName}`,
-                      scoreText(c.score, (v) => fmt2(v.weighted)),
-                      scoreText(c.score, (v) => fmt2(v.simple)),
-                      c.terms,
-                      `${c.responseRate}%`,
-                    ]),
-                  }}
-                >
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/analytics?tab=course">Open By Course</Link>
-                  </Button>
-                </ChartCardActions>
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      </div>
-
-      {/* ── Row 2 — stories 5/6/7 beside story 8, 50/50.
-             Romit: "line charts don't have to cover 100% width — it doesn't look good."
-             He's right twice over: a line stretched across the full content column flattens
-             its own slope, which is the one thing the chart exists to show; and the scatter
-             beside it WANTS to be square — at full width the x-distance between two dots is
-             visually ~2x the y-distance for the same score difference, which quietly lies
-             about the gap the chart is entirely about. ── */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      <ChartCard
-        variant="normal"
-        title="Program trajectory"
-        description="Scores and response rate by term"
-        leoInsight={trendLeo}
-      >
+      {/* ── Course vs faculty — the innovative piece, positioned right after the KPIs (Romit,
+             2026-09-14: it belongs above the trend charts, not below them). Quadrant labels
+             stay the subtle, non-judgmental wording this chart already used ("Both need
+             attention" / "Course strong · faculty gap", never "Teaching support recommended"
+             — the reference's phrasing the PRD explicitly asks to soften). ── */}
+      <ChartCard variant="normal" title="Course vs faculty" description={`One dot per course, split at this selection's own means`} leoInsight={gapLeo}>
         <ChartFigure
-          label="Program trajectory"
-          summary="Course content and faculty scores by term above; response rate against an 80% target below."
-          dataLength={series.length}
-          leoInsight={trendLeo}
-        >
-          {() => (
-            <>
-              <ProgramTrendStack series={series} />
-
-              <ChartDataTable
-                caption="Program trajectory by term"
-                headers={['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled']}
-                rows={series.map((s) => [
-                  s.term,
-                  s.courseAvg != null ? fmt2(s.courseAvg) : '—',
-                  s.facultyAvg != null ? fmt2(s.facultyAvg) : '—',
-                  s.responseRate != null ? `${s.responseRate}%` : '—',
-                  s.responded,
-                  s.enrolled,
-                ])}
-              />
-              <ChartCardActions
-                title="Program trajectory"
-                description="Scores and response rate by term: every point labelled with its exact value."
-                detail={<ProgramTrendStack series={series} detail />}
-                table={{
-                  headers: ['Term', 'Course score', 'Faculty score', 'Response rate', 'Responded', 'Enrolled'],
-                  rows: series.map((s) => [
-                    s.term,
-                    s.courseAvg != null ? fmt2(s.courseAvg) : '—',
-                    s.facultyAvg != null ? fmt2(s.facultyAvg) : '—',
-                    s.responseRate != null ? `${s.responseRate}%` : '—',
-                    s.responded,
-                    s.enrolled,
-                  ]),
-                }}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
-
-      {/* ── Story 8 — the hero. Marked NEW on the task list; the legacy app had it. ── */}
-      <ChartCard
-        variant="normal"
-        title="Course score vs faculty score"
-        description="One dot per course, split at the program means"
-        leoInsight={gapLeo}
-      >
-        <ChartFigure
-          label="Course score versus faculty score"
-          summary="Scatter plot. Each dot is one course, sized by total enrolment, split into quadrants at the program means, with a fitted trend and 95% confidence band."
+          label="Course rating versus faculty rating"
+          summary="Scatter plot. Each dot is one course, sized by enrolment, split into quadrants at the selection's course and faculty means."
           dataLength={gaps.length}
           leoInsight={gapLeo}
         >
           {() => (
             <>
-              <GapQuadrant
-                points={gaps}
-                courseMean={courseMean}
-                facultyMean={facultyMean}
-                leoAnchor={anchorGap}
-                height={CHART_CARD_PLOT_PX}
-              />
+              {/* Palette toggle retired (Romit, 2026-09-14) — `domain` kept as the fixed
+                  treatment, no longer a reader-facing choice. */}
+              <CourseFacultyQuadrant points={gaps} courseMean={courseMean} facultyMean={facultyMean} height={CHART_CARD_PLOT_PX} palette="domain" />
               <ChartDataTable
-                caption="Course score versus faculty score, by course"
-                headers={['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled']}
-                rows={gaps.map((g) => [
-                  `${g.courseCode} · ${g.courseName}`,
-                  g.terms,
-                  fmt2(g.courseAvg),
-                  fmt2(g.facultyAvg),
-                  g.enrolled,
-                ])}
-              />
-              <ChartCardActions
-                title="Course score vs faculty score"
-                description="Each dot is one course, sized by enrolment, split at the program means. Off-diagonal courses are the finding."
-                detail={
-                  <GapQuadrant
-                    points={gaps}
-                    courseMean={courseMean}
-                    facultyMean={facultyMean}
-                    leoAnchor={anchorGap}
-                    height={480}
-                  />
-                }
-                table={{
-                  headers: ['Course', 'Terms', 'Course score', 'Faculty score', 'Enrolled'],
-                  rows: gaps.map((g) => [
-                    `${g.courseCode} · ${g.courseName}`,
-                    g.terms,
-                    fmt2(g.courseAvg),
-                    fmt2(g.facultyAvg),
-                    g.enrolled,
-                  ]),
-                }}
+                caption="Course rating versus faculty rating"
+                headers={['Course', 'Course rating', 'Faculty rating', 'Enrolled']}
+                rows={gaps.map((g) => [`${g.courseCode} · ${g.courseName}`, fmt2(g.courseAvg), fmt2(g.facultyAvg), g.enrolled])}
               />
             </>
           )}
         </ChartFigure>
       </ChartCard>
 
+      {/* ── Rating trend + Response-rate trend — term only, no AY/Term toggle (the PRD drops
+             it: term is already the anchor and the offering happens at term grain), no
+             program-average line, last 6 terms with every selected term highlighted. ── */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <ChartCard variant="normal" title="Rating trend" description={`Course and faculty rating, last ${window6.length} terms`} leoInsight={ratingTrendLeo}>
+          <ChartFigure
+            label="Rating trend"
+            summary={`Course-content and faculty rating by term, last ${window6.length} terms, with ${termsListLabel} highlighted. No program-average line.`}
+            dataLength={window6.length}
+            leoInsight={ratingTrendLeo}
+          >
+            {() => (
+              <>
+                <TermRatingTrend series={window6} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
+                <ChartDataTable
+                  caption="Rating trend"
+                  headers={['Term', 'Course rating', 'Faculty rating']}
+                  rows={window6.map((s) => [s.term, s.courseAvg != null ? fmt2(s.courseAvg) : '—', s.facultyAvg != null ? fmt2(s.facultyAvg) : '—'])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
+
+        <ChartCard variant="normal" title="Response rate trend" description={`Responded ÷ enrolled, last ${window6.length} terms`} leoInsight={responseTrendLeo}>
+          <ChartFigure
+            label="Response rate trend"
+            summary={`Response rate by term, last ${window6.length} terms, against the ${RESPONSE_TARGET}% target, with ${termsListLabel} highlighted.`}
+            dataLength={window6.length}
+            leoInsight={responseTrendLeo}
+          >
+            {() => (
+              <>
+                <TermResponseTrend series={window6} target={RESPONSE_TARGET} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
+                <ChartDataTable
+                  caption="Response rate trend"
+                  headers={['Term', 'Response rate', 'Responded', 'Enrolled']}
+                  rows={window6.map((s) => [s.term, s.responseRate != null ? `${s.responseRate}%` : '—', s.responded, s.enrolled])}
+                />
+              </>
+            )}
+          </ChartFigure>
+        </ChartCard>
       </div>
 
-      {/* Where the response rate leaks — VIZ-009: "sequential stages with attrition must use
-          flow viz, not separated count cards. Drop-off is the story." The 71% above is four
-          different problems depending on WHERE it fails, and each has a different fix:
-          never opened = deliverability or timing; opened-never-started = the ask looked too
-          long; started-abandoned = it WAS too long. Nothing else on this page can tell them
-          apart. Full width: a sankey needs horizontal room for its stages to breathe. */}
+      {/* ── Leaderboard — ONE card, Course/Faculty entity toggle (Romit, 2026-09-14: "in the
+             faculty toggle, i need to see courses and underneath i will see the list of
+             faculties" — supersedes the prior side-by-side two-card layout). Course mode: the
+             flat, course-only table (no Overall column, no per-question columns — the
+             reference doesn't carry them), every column sortable, below-threshold ratings in
+             red, row → new course tab. Faculty mode: the SAME courses as group headers
+             (`defaultGroupBy="courseCode"`, ordered worst-first to match Course mode's own
+             default sort), faculty nested underneath each — a card-local Role toggle (the
+             reference's own "All Roles/Instructor/Coordinator" split) filters which faculty
+             show, row → By Faculty. Both paginated — Faculty mode defaults to a taller page
+             (10 vs Course's 5) since `DataTablePaginated` groups the PAGED slice, not the full
+             set, so a 5-row page can cut a course's faculty list mid-group. ── */}
       <ChartCard
         variant="normal"
-        title="Where responses are lost"
+        title="Course Leaderboard"
         description={
-          funnel.worst
-            ? `Biggest leak: ${funnel.worst.after === 'Invited' ? 'students who never opened the invitation' : funnel.worst.after === 'Opened' ? 'students who opened it but never started' : 'students who started and abandoned'}, ${funnel.worst.value.toLocaleString()} students, ${funnel.worst.pct}% of everyone invited.`
-            : 'Every invited student completed the survey.'
+          leaderboardEntity === 'course'
+            ? `${courseRows.length} course${courseRows.length === 1 ? '' : 's'} in ${termsLabel}, ranked by rating`
+            : `${facultyByCourseRows.length} faculty-course pairing${facultyByCourseRows.length === 1 ? '' : 's'} in ${termsLabel}, grouped by course`
         }
-        leoInsight={funnelLeo}
+        leoInsight={leaderboardEntity === 'course' ? courseLeaderboardLeo : facultyLeaderboardLeo}
       >
-        <ChartFigure
-          label="Where responses are lost"
-          summary={`Flow diagram of ${funnel.counts.invited.toLocaleString()} invited students through opened, started and completed, with the drop-off at each stage.`}
-          dataLength={4}
-          leoInsight={funnelLeo}
-        >
-          {() => (
-            <>
-              <ResponseFunnelSankey funnel={funnel} />
-              {/* The pattern requires a one-line takeaway naming the largest drop-off.
-                  Frequency counts, not percentages alone — Aarti D17. */}
-              {funnel.worst && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Largest drop-off: after <span className="font-medium text-foreground">{funnel.worst.after}</span>,{' '}
-                  {funnel.worst.value.toLocaleString()} of {funnel.counts.invited.toLocaleString()} students ({funnel.worst.pct}%).
-                </p>
-              )}
-              <ChartDataTable
-                caption="Response funnel"
-                headers={['Stage', 'Students', 'Lost after this stage']}
-                rows={[
-                  ['Invited', funnel.counts.invited, funnel.counts.invited - funnel.counts.opened],
-                  ['Opened', funnel.counts.opened, funnel.counts.opened - funnel.counts.started],
-                  ['Started', funnel.counts.started, funnel.counts.started - funnel.counts.completed],
-                  ['Completed', funnel.counts.completed, 0],
-                ]}
-              />
-              <ChartCardActions
-                title="Where responses are lost"
-                description="The response funnel at full height: stage counts and losses read without hovering."
-                detail={<ResponseFunnelSankey funnel={funnel} height={520} />}
-                table={{
-                  headers: ['Stage', 'Students', 'Lost after this stage'],
-                  rows: [
-                    ['Invited', funnel.counts.invited, funnel.counts.invited - funnel.counts.opened],
-                    ['Opened', funnel.counts.opened, funnel.counts.opened - funnel.counts.started],
-                    ['Started', funnel.counts.started, funnel.counts.started - funnel.counts.completed],
-                    ['Completed', funnel.counts.completed, 0],
-                  ],
-                }}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
-
-      {/* ── Story 4 — heatmap. Stays FULL width: the mark needs its term columns, and a
-             matrix squeezed to half is unreadable. Width is earned per chart, not uniform. ── */}
-      {/* Scope is stated on the card because it genuinely differs from the ranked-courses
-          card below: course-CONTENT scores exist for only some courses, while faculty
-          ratings exist for others. Two cards showing different course counts with no
-          explanation is the "numbers disagree with each other" failure this rebuild is
-          meant to end — so the scope is surfaced rather than smoothed over. */}
-      <ChartCard
-        variant="normal"
-        title="Course quality across terms"
-        description={`The 5 weakest of ${matrix.courses.length} courses × ${matrix.terms.length} terms · blank = not evaluated`}
-        leoInsight={heatLeo}
-      >
-        <ChartFigure
-          label="Course quality across terms"
-          summary="Heatmap of course content score by course and term. Darker cells score higher."
-          dataLength={matrix.cells.length}
-          leoInsight={heatLeo}
-        >
-          {() => (
-            <>
-              {/*
-                The DS OS heatmap (`components/chart-heatmap.tsx`, ECharts), not a hand-rolled
-                Plot one. It was vendored into this app and had ZERO callers while I built
-                `CourseTermHeat` alongside it — the DS shipped the component and I re-made it.
-                Romit, 2026-07-15: use the DS heatmap.
-
-                WIDTH IS THE DESIGN HERE. A heatmap is a grid of squares, and squares have an
-                intrinsic size — stretched across a 1600px card, 5 terms become 300px-wide
-                lozenges and the grid stops reading as a matrix. So the figure is capped at its
-                natural width (cols x cell + row labels) and left-aligned, rather than filling
-                the column because the column exists.
-              */}
-              {/*
-                The tinted DataTable — Romit picked it over the ECharts canvas after seeing both.
-
-                The deciding evidence was not taste. axe on identical data: the canvas reported 0
-                violations and the grid reported 34 serious color-contrast failures — and the
-                canvas's zero was FALSE. axe cannot see inside a canvas; ECharts labels are
-                painted pixels, so both variants had the same failures and only one could say so.
-                A chart that cannot be audited cannot be trusted to be accessible.
-
-                Everything else followed: row labels that cannot be dropped for lack of space, a
-                table that scrolls like a table, sortable columns, selectable text, no
-                aria-label-on-a-div, no pixel overlay covering the worst cell, and no parallel
-                sr-only table to keep in sync — the grid IS the accessible artefact.
-
-                Width still matters here, but the table solves it natively: the course column
-                takes the text it needs and the term columns are fixed, so nothing stretches into
-                lozenges the way a 5-column canvas did across a 1360px card.
-              */}
-              <div className="-mx-4 lg:-mx-6">
-                <CourseTermGrid
-                  courses={heatRows}
-                  terms={matrix.terms}
-                  cells={matrix.cells}
-                  domain={SCORE_HEAT_DOMAIN}
-                />
-              </div>
-
-              <ChartDataTable
-                caption="Course content score by course and term"
-                headers={['Course', 'Term', 'Course score', 'Faculty score']}
-                rows={matrix.cells.map((c) => [
-                  c.courseCode,
-                  c.term,
-                  fmt2(c.courseAvg),
-                  c.facultyAvg != null ? fmt2(c.facultyAvg) : '—',
-                ])}
-              />
-              <ChartCardActions
-                title="Course quality across terms"
-                description={`All ${matrix.courses.length} courses across ${matrix.terms.length} terms, weakest first. The tinted grid IS the accessible artefact: sortable, selectable, screen-readable.`}
-                detail={
-                  /* Deliberately NOT paginated (verification-review flagged the count claim):
-                     this is a matrix, not a register — paginating a heatmap severs the row-to-row
-                     comparison that is its whole point. Density is bounded by the dialog's own
-                     70vh scroll region, and the grid IS the accessible table. */
-                  <div className="-mx-1">
-                    <CourseTermGrid
-                      courses={matrix.courses}
-                      terms={matrix.terms}
-                      cells={matrix.cells}
-                      domain={SCORE_HEAT_DOMAIN}
-                    />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <ToggleGroup type="single" value={leaderboardEntity} onValueChange={(v) => { if (v) { setLeaderboardEntity(v as 'course' | 'faculty'); setFacultyPage(1) } }} variant="outline" size="sm">
+            <ToggleGroupItem value="course" aria-label="Show courses">Course</ToggleGroupItem>
+            <ToggleGroupItem value="faculty" aria-label="Show faculty, grouped by course">Faculty</ToggleGroupItem>
+          </ToggleGroup>
+          <Button asChild variant="link" size="sm" className="h-auto p-0 text-sm">
+            <Link href={leaderboardEntity === 'course' ? '/analytics?tab=course' : '/analytics?tab=faculty'}>
+              {leaderboardEntity === 'course' ? 'View all courses →' : 'View all faculty →'}
+            </Link>
+          </Button>
+        </div>
+        {leaderboardEntity === 'faculty' && (
+          <ToggleGroup type="single" value={roleFilter ?? 'all'} onValueChange={(v) => { if (v) { setRoleFilter(v === 'all' ? undefined : (v as FacultyEvalRoleId)); setFacultyPage(1) } }} variant="outline" size="sm">
+            <ToggleGroupItem value="all" aria-label="All roles">All Roles</ToggleGroupItem>
+            {roleOptions.map((r) => (
+              <ToggleGroupItem key={r.id} value={r.id} aria-label={r.label}>{r.label}</ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        )}
+        <p className="text-sm text-muted-foreground">
+          {leaderboardEntity === 'course' ? 'Distribution of course ratings.' : 'Distribution of faculty ratings.'}
+        </p>
+        {leaderboardEntity === 'course' ? (
+          <>
+            <RatingDistributionHistogram values={courseRows.map((r) => r.courseScore).filter((v): v is number => v != null)} />
+            <DataTablePaginated<CourseLeaderboardRow>
+              key="course"
+              data={courseRows}
+              columns={courseColumns}
+              getRowId={(r) => r.courseCode}
+              selectable={false}
+              searchable={false}
+              showQueryControls={false}
+              edgeInset={false}
+              defaultSort={{ key: 'courseScore', dir: 'asc' }}
+              pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 25] }}
+              emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored courses for {termsLabel} yet.</p>}
+              onRowClick={(row) => {
+                // `tab=course:<code>` + `courseTabs=<code>` — the closable-tab URL scheme
+                // (2026-09-14), not the retired `courseCode=`/`term=` pair: that param is no
+                // longer read anywhere, so a row click here silently landed on the bare course
+                // list instead of the course it named.
+                const code = encodeURIComponent(row.courseCode)
+                window.open(`/analytics?tab=course:${code}&courseTabs=${code}`, '_blank', 'noopener,noreferrer')
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <RatingDistributionHistogram values={facultyByCourseRows.map((r) => r.rating).filter((v): v is number => v != null)} />
+            {coursesWithFaculty.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No scored faculty for {termsLabel} yet.</p>
+            ) : (
+              <div className="flex flex-col rounded-md border border-border">
+                {/* Shared column grid — course rows and faculty rows line up under the same
+                    header, without ever being a `<table>`. */}
+                <div className="grid grid-cols-[1fr_100px_120px_90px] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+                  <span>Course / Faculty</span>
+                  <span className="text-right">Rating</span>
+                  <span className="text-right">Response rate</span>
+                  <span className="text-right">Offerings</span>
+                </div>
+                {pagedCoursesWithFaculty.map((course, i) => (
+                  <div key={course.courseCode} className={i > 0 ? 'border-t border-border' : undefined}>
+                    {/* The course row — course-level stats, same shape as the Course table's
+                        own row, so switching entities doesn't relearn the layout. */}
+                    <div className="grid grid-cols-[1fr_100px_120px_90px] items-center gap-3 bg-muted/20 px-3 py-2">
+                      <span className="truncate">
+                        <span className="font-medium text-foreground">{course.courseCode}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{course.courseName}</span>
+                      </span>
+                      <span className="text-right"><RatingCell value={course.courseScore} below={course.belowThreshold} /></span>
+                      <span className="text-right tabular-nums text-sm">{course.responseRate}%</span>
+                      <span className="text-right tabular-nums text-sm">{course.offerings}</span>
+                    </div>
+                    {/* The faculty who taught it, worst-first, indented under their course. */}
+                    {(facultyByCourse.get(course.courseCode) ?? []).map((f) => (
+                      <div
+                        key={f.facultyId}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onOpenFaculty(f.facultyId)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenFaculty(f.facultyId) } }}
+                        className="grid cursor-pointer grid-cols-[1fr_100px_120px_90px] items-center gap-3 px-3 py-2 pl-6 text-sm hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                      >
+                        <span className="truncate">{f.name}</span>
+                        <span className="text-right"><RatingCell value={f.rating} below={f.belowThreshold} /></span>
+                        <span className="text-right tabular-nums">{f.responseRate}%</span>
+                        <span className="text-right tabular-nums">{f.offerings}</span>
+                      </div>
+                    ))}
                   </div>
-                }
-                table={{
-                  headers: ['Course', 'Term', 'Course score', 'Faculty score'],
-                  rows: matrix.cells.map((c) => [
-                    c.courseCode,
-                    c.term,
-                    fmt2(c.courseAvg),
-                    c.facultyAvg != null ? fmt2(c.facultyAvg) : '—',
-                  ]),
-                }}
+                ))}
+              </div>
+            )}
+            {coursesWithFaculty.length > 0 && (
+              <PaginationBar
+                page={facultySafePage}
+                pageSize={facultyPageSize}
+                total={coursesWithFaculty.length}
+                pageSizeOptions={[5, 10, 25]}
+                onPageChange={setFacultyPage}
+                onPageSizeChange={(n) => { setFacultyPageSize(n); setFacultyPage(1) }}
               />
-            </>
-          )}
-        </ChartFigure>
+            )}
+          </>
+        )}
       </ChartCard>
-
-
-      {/* RAW — the last step of §2.1's aggregate → rank → pattern → raw funnel, and the door
-          to Monil's "final node": the single-survey result. Every chart above explains this
-          table; without it the tab explains something you cannot reach. */}
-      <AnalyticsSurveyDetails />
     </div>
   )
 }

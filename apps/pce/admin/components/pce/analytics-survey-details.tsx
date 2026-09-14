@@ -12,9 +12,9 @@
  * The obvious build was `deriveResults(MOCK_SURVEYS)`: it has result ids, statuses and
  * suppression already. It also disagrees with every chart on this tab, because MOCK_SURVEYS
  * and MOCK_FACULTY_OFFERINGS are two unreconciled universes. Verified:
- *   · DPT-505 is "Biomechanics I" in offerings and "Neuroanatomy" in surveys
- *   · DPT-502 is "Exercise Physiology" vs "Physiology & Pathophysiology"
- *   · DPT-710 / 711 / 801 / 506 exist only in offerings; DPT-504 / 511 / 520 only in surveys
+ *   · NURS-505 is "Fundamentals of Nursing I" in offerings and "Health Assessment" in surveys
+ *   · NURS-502 is "Exercise Physiology" vs "Physiology & Pathophysiology"
+ *   · NURS-710 / 711 / 801 / 506 exist only in offerings; NURS-504 / 511 / 520 only in surveys
  *   · co-taught instructors come back byte-identical (`deriveResultsForSurvey` hands every
  *     instructor on a survey the same avgScore), so the table showed two faculty with the
  *     same 4.20 on the same course

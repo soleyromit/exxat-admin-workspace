@@ -68,7 +68,7 @@ export function deriveTermThemes(
     let occurrences = 0
     // A Set, not an array: callers pass one entry per SURVEY, and a course with several
     // surveys in scope (the By Course tab, a faculty portfolio) repeated its own code —
-    // "came up in DPT-501, DPT-501, DPT-501" — and duplicated React keys on the chips.
+    // "came up in NURS-501, NURS-501, NURS-501" — and duplicated React keys on the chips.
     const courseCodeSet = new Set<string>()
     let hasConcern = false
     let hasPositive = false

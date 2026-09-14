@@ -274,6 +274,12 @@ DOCUMENTED_HAND_ROLLS = {
     # entity hubs, not wizard sub-steps. Intentional until a picker variant is
     # added to ListPageTemplate.
     "app/(app)/templates/new/page.tsx",
+    # pce: surveys/remind/page.tsx — the send-reminders WIZARD (step 1: pick
+    # recipients from every live course in scope). Same rationale as
+    # templates/new/page.tsx above: DataTable here is a step-scoped picker
+    # inside a wizard flow, not a primary entity hub — ListPageTemplate is for
+    # top-level list pages, not wizard sub-steps.
+    "app/(app)/surveys/remind/page.tsx",
     # pce: SurveyStatusBadge — workflow status badges (draft/active/collecting/
     # closed/released) with product-specific CSS variables (--pce-status-*) and
     # dot indicators. DS StatusBadge covers only product-lifecycle states
@@ -362,6 +368,15 @@ LEGITIMATE_NON_CARD_DIVS = {
     # pce: step-survey-design-assign.tsx — inline zero-state strip ("no courses
     # selected") inside a wizard step, not a content Card.
     "components/pce/distribute-wizard/step-survey-design-assign.tsx",
+    # pce: analytics-plots.tsx — Recharts custom `ChartTooltip` content renderers
+    # (`rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md`),
+    # repeated across ~6 charts in this file. A tooltip is an ephemeral, cursor-
+    # following hint rendered inside Recharts' own positioning wrapper, not a
+    # standalone content panel — DS Card assumes static page placement and its
+    # Header/Content slot padding would fight the tooltip's own compact spacing.
+    # Same category as exam-management's scatter-plot hover tooltip (card.md
+    # depth audit 2026-05-11, "9 status/preview tiles" resolution note).
+    "components/pce/analytics-plots.tsx",
     # exam-management: qb-result-detail-panel.tsx — read-only answer renderers.
     # The flagged divs are inline answer-display boxes (model answer highlight for
     # FillBlank; essay area placeholder), not card chrome. These are sub-sentence

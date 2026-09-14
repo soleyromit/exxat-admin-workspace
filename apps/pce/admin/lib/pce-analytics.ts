@@ -20,7 +20,10 @@
  * `courseAvg` and `facultyAvg` stay separate all the way through.
  */
 
-import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES, facultyEvalRole } from '@/lib/pce-mock-data'
+import {
+  MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES, facultyEvalRole,
+  MOCK_SURVEY_QUESTION_DATA, questionTextFor, EVAL_BENCHMARKS,
+} from '@/lib/pce-mock-data'
 import type { FacultyOfferingRecord, FacultyEvalRoleId, PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 
 // Re-exported so analytics consumers (page, leaderboard, export) keep one import path.
@@ -59,6 +62,17 @@ export function shortTerm(term: string): string {
 
 export function compareTerms(a: string, b: string): number {
   return termToYear(a) - termToYear(b)
+}
+
+/** A single term, several terms, or "every term" (undefined/omitted) — the scope shape every
+ *  term-filterable function below now accepts, generalized from the single-term-or-all shape
+ *  they used to take so Overview's Term multi-select can pool across several selected terms
+ *  the same way "all terms" already pools across every term. */
+export type TermScope = string | string[] | undefined
+
+function matchesTerm(rowTerm: string, scope: TermScope): boolean {
+  if (scope == null) return true
+  return Array.isArray(scope) ? scope.includes(rowTerm) : rowTerm === scope
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -116,7 +130,7 @@ export interface OfferingPoint extends FacultyOfferingRecord {
    * any offering whose survey raises the gate would show a score the result page withholds —
    * the anonymity gate answering differently depending on which door you came through.
    *
-   * No offering hits that today: the one override sits on a Fall 2024 survey and DPT-510's
+   * No offering hits that today: the one override sits on a Fall 2024 survey and NURS-510's
    * offerings are Spring 2025 / 2026, so nothing resolves to it. This is a latent leak, not
    * a live one. It is resolved here anyway because the alternative is a privacy gate whose
    * correctness depends on a fixture coincidence.
@@ -159,7 +173,7 @@ export function initialsOf(name: string): string {
  * Resolve an offering to a survey so the raw register can open its result.
  *
  * `MOCK_FACULTY_OFFERINGS` and `MOCK_SURVEYS` are two unreconciled universes — they disagree
- * on course names (DPT-505 is "Biomechanics I" in one and "Neuroanatomy" in the other) and
+ * on course names (NURS-505 is "Fundamentals of Nursing I" in one and "Health Assessment" in the other) and
  * each holds courses the other lacks. Analytics derives from offerings; results live on
  * surveys. Matching on courseCode + term is the only honest bridge available: it links the
  * rows that genuinely refer to the same offering and leaves the rest unlinked rather than
@@ -624,11 +638,11 @@ function windowMean(
  *  `role` scopes to one course-association role — comparing a Lab Assistant's scores
  *  against a Course Coordinator's is a different conversation, so the leaderboard can
  *  compare like with like. Same global-filter grammar as `term` (Monil). */
-export function facultyStats(term?: string, cohort?: string, role?: FacultyEvalRoleId): FacultyStat[] {
+export function facultyStats(term?: TermScope, cohort?: string, role?: FacultyEvalRoleId): FacultyStat[] {
   const all = offeringPoints()
   const now = latestYear(all)
   const points = all.filter(
-    (p) => (!term || p.term === term) && (!cohort || p.cohort === cohort) && (!role || p.evalRole === role),
+    (p) => matchesTerm(p.term, term) && (!cohort || p.cohort === cohort) && (!role || p.evalRole === role),
   )
   const byFaculty = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
@@ -932,10 +946,10 @@ export interface CourseStat {
  * derivation this file promises; a parallel copy is how Overview and By Course came to
  * disagree about the same course in the first place.
  */
-export function courseStats(term?: string, cohort?: string): CourseStat[] {
+export function courseStats(term?: TermScope, cohort?: string): CourseStat[] {
   const all = offeringPoints()
   const now = latestYear(all)
-  const points = all.filter((p) => (!term || p.term === term) && (!cohort || p.cohort === cohort))
+  const points = all.filter((p) => matchesTerm(p.term, term) && (!cohort || p.cohort === cohort))
   const byCourse = new Map<string, OfferingPoint[]>()
   points.forEach((p) => {
     const list = byCourse.get(p.courseCode) ?? []
@@ -1169,11 +1183,11 @@ export interface GapPoint {
  * The legacy app's Gap Analysis was course-level too (§2.1: "8 evaluated" courses).
  */
 /** @param term - scope to one term, or omit for all terms. */
-export function gapPoints(term?: string): GapPoint[] {
+export function gapPoints(term?: TermScope): GapPoint[] {
   const byCourse = new Map<string, CourseTermPoint[]>()
   courseTermPoints()
     .filter((p): p is CourseTermPoint & { facultyAvg: number } => p.facultyAvg != null)
-    .filter((p) => !term || p.term === term)
+    .filter((p) => matchesTerm(p.term, term))
     .forEach((p) => {
       const list = byCourse.get(p.courseCode) ?? []
       list.push(p)
@@ -1182,7 +1196,7 @@ export function gapPoints(term?: string): GapPoint[] {
 
   const enrolledByCourse = new Map<string, number>()
   offeringPoints()
-    .filter((o) => !term || o.term === term)
+    .filter((o) => matchesTerm(o.term, term))
     .forEach((o) => {
       enrolledByCourse.set(o.courseCode, (enrolledByCourse.get(o.courseCode) ?? 0) + o.enrolled)
     })
@@ -1360,3 +1374,394 @@ export function benchmarks(departmentOf?: string): Benchmarks {
     university: allValues.length ? round2(mean(allValues)) : 0,
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Term-scoped Overview (2026-09-14 PRD, Romit) — a relative-comparison landing
+   for ONE selected term, distinct from the whole-program Overview above. "Which
+   are the better courses, which are the worst" only holds still if the courses
+   being compared all sat the same term; pooling terms answers a different
+   question (the historical trend) that the By Term tab already owns.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** "Fall 2025" → 2024 (AY start year), "Spring/Summer 2026" → 2025. Fall opens the
+ *  academic year; Spring/Summer close the one Fall opened the PRIOR calendar year. */
+function academicYearStart(term: string): number {
+  const [season, yearStr] = term.trim().split(/\s+/)
+  const year = Number(yearStr)
+  return season === 'Fall' ? year : year - 1
+}
+
+/** "Fall 2025" / "Spring 2026" → "2025–2026" — the AY label the term belongs to. */
+export function academicYearOf(term: string): string {
+  const start = academicYearStart(term)
+  return `${start}–${start + 1}`
+}
+
+/** Every academic year present in the data, newest first, each with its terms oldest-first —
+ *  the AY/Term selector pair "from above" the PRD's Overview needs. */
+export function academicYears(): { year: string; terms: string[] }[] {
+  const byYear = new Map<string, string[]>()
+  for (const term of allTerms()) {
+    const ay = academicYearOf(term)
+    const list = byYear.get(ay) ?? []
+    list.push(term)
+    byYear.set(ay, list)
+  }
+  return [...byYear.entries()]
+    .sort((a, b) => academicYearStart(b[1][0]!) - academicYearStart(a[1][0]!))
+    .map(([year, terms]) => ({ year, terms }))
+}
+
+/** Trailing window of up to `n` terms ENDING at the LATEST of the selected term(s), all of
+ *  which get highlighted — "last 6 terms with the selected term(s) highlighted." A single term
+ *  is just the one-element case. Short history pads with what exists rather than padding the
+ *  chart with blanks. */
+export function recentTermsWindow(term: string | string[], n = 6): TermSeriesPoint[] {
+  const selected = Array.isArray(term) ? term : [term]
+  const series = termSeries()
+  const idxs = selected.map((t) => series.findIndex((s) => s.term === t)).filter((i) => i >= 0)
+  if (!idxs.length) return series.slice(-n)
+  const maxIdx = Math.max(...idxs)
+  return series.slice(Math.max(0, maxIdx - (n - 1)), maxIdx + 1)
+}
+
+/**
+ * "Course offerings evaluated" KPI — courses in scope whose score has actually landed (every
+ * in-scope offering closed), against the total courses offered. Reuses `courseStats`'s gating
+ * rather than a second closed/archived filter, so this can never disagree with the leaderboard
+ * below about which courses are "in" for the scope. `term` pools across multiple terms the
+ * same way `courseStats` itself does.
+ */
+export function termOfferingsEvaluated(term: TermScope): { evaluated: number; total: number } {
+  const stats = courseStats(term)
+  return { evaluated: stats.filter((c) => c.score.state === 'value').length, total: stats.length }
+}
+
+/** The term exactly one ACADEMIC YEAR before this one, same season — "vs. previous year" on
+ *  the reference's KPI tiles (https://pce-three.vercel.app/analytics-2), which is season-aware
+ *  (Fall compares to the prior Fall) rather than the term-over-term delta `termKpis` already
+ *  computes (which would compare a Fall to the Spring right before it). Null when that year
+ *  has no history on record. */
+export function termOneYearAgo(term: string): string | null {
+  const [season, yearStr] = term.trim().split(/\s+/)
+  const year = Number(yearStr)
+  if (!season || !Number.isFinite(year)) return null
+  const candidate = `${season} ${year - 1}`
+  return allTerms().includes(candidate) ? candidate : null
+}
+
+export interface TermsKpis {
+  terms: string[]
+  courseAvg: number | null
+  facultyAvg: number | null
+  responseRate: number | null
+  responded: number
+  enrolled: number
+}
+
+/** KPI pool across one or several terms — `termKpis` generalized for Overview's Term
+ *  multi-select. Unlike `termKpis`, this never computes a term-over-term delta (multiple terms
+ *  have no single "previous" one); pair it with `termsYoyDelta` for that. */
+export function termsKpis(terms: string[]): TermsKpis {
+  const series = termSeries().filter((s) => terms.includes(s.term))
+  const courseVals = series.map((s) => s.courseAvg).filter((v): v is number => v != null)
+  const facultyVals = series.map((s) => s.facultyAvg).filter((v): v is number => v != null)
+  const enrolled = series.reduce((s, t) => s + t.enrolled, 0)
+  const responded = series.reduce((s, t) => s + t.responded, 0)
+  return {
+    terms,
+    courseAvg: courseVals.length ? round2(mean(courseVals)) : null,
+    facultyAvg: facultyVals.length ? round2(mean(facultyVals)) : null,
+    responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : null,
+    responded,
+    enrolled,
+  }
+}
+
+export interface TermYoyDelta {
+  courseAvg: number | null
+  facultyAvg: number | null
+  responseRate: number | null
+  /** Percentage-point change in offerings-evaluated coverage — the reference's "0pp vs.
+   *  previous year" tile. */
+  offeringsPct: number | null
+}
+
+/** Year-over-year delta for one or several selected terms — each selected term maps to its own
+ *  one-year-ago counterpart (season-matched), and BOTH sides pool through `termsKpis` /
+ *  `termOfferingsEvaluated` the same way the current selection does. A term with no prior-year
+ *  match is simply excluded from the "previous year" pool rather than failing the whole delta. */
+export function termsYoyDelta(terms: string[]): TermYoyDelta {
+  const priorTerms = terms.map(termOneYearAgo).filter((t): t is string => t != null)
+  if (!priorTerms.length) return { courseAvg: null, facultyAvg: null, responseRate: null, offeringsPct: null }
+  const cur = termsKpis(terms)
+  const prev = termsKpis(priorTerms)
+  const d = (a: number | null, b: number | null) => (a != null && b != null ? round2(a - b) : null)
+  const pct = (t: string[]) => {
+    const c = termOfferingsEvaluated(t)
+    return c.total > 0 ? Math.round((c.evaluated / c.total) * 100) : null
+  }
+  const curPct = pct(terms)
+  const prevPct = pct(priorTerms)
+  return {
+    courseAvg: d(cur.courseAvg, prev.courseAvg),
+    facultyAvg: d(cur.facultyAvg, prev.facultyAvg),
+    responseRate: d(cur.responseRate, prev.responseRate),
+    offeringsPct: curPct != null && prevPct != null ? curPct - prevPct : null,
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   By Course rebuild (PRD 2026-09-14) — offering-list landing + closable course tab.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface CourseOfferingListRow extends Record<string, unknown> {
+  id: string
+  courseCode: string
+  courseName: string
+  academicYear: string
+  term: string
+  short: string
+  facultyId: string
+  facultyName: string
+  role: FacultyEvalRoleId
+  courseAvg: number | null
+  facultyAvg: number
+  surveyId?: string
+}
+
+/**
+ * Every course offering — one row per course × term × instructor — across the given
+ * terms. The landing surface for "By Course": browse everything, then drill into one
+ * course. Unscoped (every term on record) when `terms` is omitted.
+ */
+export function courseOfferingListRows(terms?: string[]): CourseOfferingListRow[] {
+  return offeringPoints()
+    .filter((o) => !terms || terms.includes(o.term))
+    .map((o) => ({
+      id: `${o.courseCode}-${o.term}-${o.facultyId}`,
+      courseCode: o.courseCode,
+      courseName: o.courseName,
+      academicYear: academicYearOf(o.term),
+      term: o.term,
+      short: shortTerm(o.term),
+      facultyId: o.facultyId,
+      facultyName: o.facultyName,
+      role: o.evalRole,
+      courseAvg: o.courseAvg ?? null,
+      facultyAvg: o.avgRating,
+      surveyId: o.surveyId,
+    }))
+    .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode))
+}
+
+export interface CourseFacultyHeatCell {
+  facultyId: string
+  facultyName: string
+  role: FacultyEvalRoleId
+  term: string
+  short: string
+  year: number
+  score: number
+  surveyId?: string
+}
+
+/**
+ * One course's faculty × term grid — the By Course mirror of `facultyHeatCells`, rows are
+ * instructors instead of courses. `role` scopes to one course-association role (Instructor,
+ * Course Coordinator, …); omit for every role that has taught this course. Cell value is the
+ * instructor's own teaching score, same reasoning as `facultyHeatCells`: a faculty-scoped
+ * grid answers "how did THIS PERSON do", not the course-content question.
+ */
+export function courseFacultyHeatCells(
+  courseCode: string,
+  role?: FacultyEvalRoleId,
+): { cells: CourseFacultyHeatCell[]; faculty: string[]; terms: string[] } {
+  const offs = offeringPoints().filter((o) => o.courseCode === courseCode && (!role || o.evalRole === role))
+  const cells: CourseFacultyHeatCell[] = offs.map((o) => ({
+    facultyId: o.facultyId,
+    facultyName: o.facultyName,
+    role: o.evalRole,
+    term: o.term,
+    short: shortTerm(o.term),
+    year: o.year,
+    score: o.avgRating,
+    surveyId: o.surveyId,
+  }))
+  const meanByFaculty = new Map<string, number[]>()
+  cells.forEach((c) => meanByFaculty.set(c.facultyId, [...(meanByFaculty.get(c.facultyId) ?? []), c.score]))
+  // Best → worst, so the top scorer's row sits first, same rank direction as
+  // `courseFacultyStats`'s "who taught it" list.
+  const facultyIds = [...meanByFaculty.entries()].sort((a, b) => mean(b[1]) - mean(a[1])).map(([id]) => id)
+  const nameById = new Map(cells.map((c) => [c.facultyId, c.facultyName]))
+  const faculty = facultyIds.map((id) => nameById.get(id)!)
+  const terms = [...new Set(cells.map((c) => c.term))].sort(compareTerms)
+  return { cells, faculty, terms }
+}
+
+/**
+ * One point per OFFERING of this course (term × instructor), not one per course like
+ * `gapPoints`. At single-course scope the offering count is small (≤ ~8, one per term this
+ * course ran) so `gapPoints`'s "52 unreadable bubbles" concern doesn't apply here — the PRD
+ * asks explicitly for "all course offerings" on this quadrant.
+ *
+ * Field reuse: `GapPoint.courseCode`/`courseName` carry the term short-label and instructor
+ * name here instead of a course identity — every point already shares the one real course
+ * code, so the tooltip's "code · name" line reads as "term · instructor" for this scope.
+ */
+export function courseOfferingQuadrantPoints(courseCode: string): GapPoint[] {
+  return offeringPoints()
+    .filter((o) => o.courseCode === courseCode && o.courseAvg != null)
+    .map((o) => ({
+      courseCode: shortTerm(o.term),
+      courseName: o.facultyName,
+      terms: 1,
+      courseAvg: o.courseAvg as number,
+      facultyAvg: o.avgRating,
+      enrolled: o.enrolled,
+    }))
+}
+
+export interface CourseVsProgramPoint {
+  term: string
+  short: string
+  year: number
+  courseAvg: number | null
+  programAvg: number | null
+}
+
+/**
+ * This course's content score against the program's, over the last `n` terms THIS COURSE
+ * ran — "Rating trend by term" (PRD 2026-09-14): term-only axis, no AY/Term toggle (the PRD
+ * drops it — term is already the offering's own anchor).
+ */
+export function courseRatingTrendByTerm(courseCode: string, n = 6): CourseVsProgramPoint[] {
+  const trend = courseTrend(courseCode).slice(-n)
+  const programByTerm = new Map(termSeries().map((s) => [s.term, s.courseAvg]))
+  return trend.map((t) => ({
+    term: t.term,
+    short: t.short,
+    year: t.year,
+    courseAvg: t.courseAvg,
+    programAvg: programByTerm.get(t.term) ?? null,
+  }))
+}
+
+/**
+ * This course's response-rate history, reshaped as `TermSeriesPoint[]` so the already-built
+ * `ProgramResponseTrend` (rate by term, selected term highlighted, target line) renders it
+ * unchanged at course scope — "Response rate trend by term" is a separate chart from rating,
+ * per the PRD's own use-case split ("is the score movement real, or just fewer students
+ * responding" — rating and response need independent axes to answer that).
+ */
+export function courseResponseRateSeries(courseCode: string, n = 6): TermSeriesPoint[] {
+  return courseTrend(courseCode)
+    .slice(-n)
+    .map((t) => ({
+      term: t.term,
+      short: t.short,
+      year: t.year,
+      courseAvg: t.courseAvg,
+      facultyAvg: t.facultyAvg,
+      responseRate: t.responseRate,
+      enrolled: t.enrolled,
+      responded: t.responded,
+      courses: 1,
+    }))
+}
+
+export interface CourseQuestionTrendPoint {
+  short: string
+  avg: number
+}
+
+export interface CourseQuestionTrendRow {
+  questionId: string
+  text: string
+  points: CourseQuestionTrendPoint[]
+  latest: number
+  delta: number | null
+  threshold: number
+}
+
+/** Deterministic string hash (djb2-style) — same jitter approach `pce-mock-data.ts`'s survey
+ *  backfill already uses, kept local since this file doesn't import that generator. */
+function hashStr(s: string): number {
+  let h = 5381
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+/** `tmpl1`'s real course-content likert question ids (`MOCK_TEMPLATES`) — the fallback below
+ *  spreads an offering's own score across these so `questionTextFor` still resolves real
+ *  question text, not a placeholder. */
+const FALLBACK_COURSE_CONTENT_QUESTION_IDS = ['q1', 'q2', 'q3', 'q4', 'q12', 'q13']
+
+/**
+ * Per-question trend for this course's own content section, over its last `n` evaluated
+ * terms — "which question or section is consistently dragging this course down" (PRD
+ * 2026-09-14). Course-content questions only: the faculty section answers a different
+ * question (D27) and is already covered by "Who taught it".
+ *
+ * Second pass (2026-09-14 — Romit: "fix the question trend rendering bug"). The first pass
+ * read survey question data only through the `surveyId` gate `offeringPoints()` resolves
+ * (courseCode + term match against `MOCK_SURVEYS`), on the stated principle that a term with
+ * no resolved survey should contribute no point rather than guess at a join. In practice that
+ * gate returns EMPTY for entire courses, not just occasional terms: `MOCK_FACULTY_OFFERINGS`
+ * and `MOCK_SURVEYS` are two unreconciled fixtures with largely disjoint course/term coverage
+ * (documented on `surveyFor` above), and confirmed live — NURS-710 has 6 offerings, 0 of which
+ * resolve a `surveyId`, so the section rendered nothing for every course checked. The
+ * no-guessing principle produced a feature that never renders, which is worse than the guess
+ * it was avoiding. Every offering DOES carry its own real `courseAvg` regardless of survey
+ * linkage, so when no survey-linked per-question data resolves, this falls back to a small
+ * deterministic jitter around that offering's own `courseAvg`, spread across the program's
+ * real canonical course-content questions (`FALLBACK_COURSE_CONTENT_QUESTION_IDS`) — a
+ * synthetic number, but anchored to a real score this offering actually reported, in the same
+ * spirit as the jitter `pce-mock-data.ts`'s own survey backfill already uses for the identical
+ * problem one layer down.
+ */
+export function courseQuestionTrend(courseCode: string, n = 6): CourseQuestionTrendRow[] {
+  const offs = offeringPoints()
+    .filter((o) => o.courseCode === courseCode)
+    .sort((a, b) => a.year - b.year)
+    .slice(-n)
+
+  const byQuestion = new Map<string, CourseQuestionTrendPoint[]>()
+  offs.forEach((o) => {
+    const data = o.surveyId ? MOCK_SURVEY_QUESTION_DATA.find((d) => d.surveyId === o.surveyId) : undefined
+    const scores = data?.sectionScores.course_content
+    if (scores && scores.length > 0) {
+      scores.forEach((s) => {
+        const list = byQuestion.get(s.questionId) ?? []
+        list.push({ short: shortTerm(o.term), avg: s.avg })
+        byQuestion.set(s.questionId, list)
+      })
+    } else if (o.courseAvg != null) {
+      FALLBACK_COURSE_CONTENT_QUESTION_IDS.forEach((qid) => {
+        const jitter = ((hashStr(qid + o.term + courseCode) % 9) - 4) / 20 // ±0.2
+        const avg = round2(Math.min(5, Math.max(1, o.courseAvg! + jitter)))
+        const list = byQuestion.get(qid) ?? []
+        list.push({ short: shortTerm(o.term), avg })
+        byQuestion.set(qid, list)
+      })
+    }
+  })
+
+  return [...byQuestion.entries()]
+    .filter(([, points]) => points.length >= 2) // a single term is not a trend
+    .map(([questionId, points]) => {
+      const latest = points[points.length - 1]!.avg
+      const first = points[0]!.avg
+      return {
+        questionId,
+        text: questionTextFor(questionId) ?? questionId,
+        points,
+        latest,
+        delta: round2(latest - first),
+        threshold: EVAL_BENCHMARKS.targetCourseScore,
+      }
+    })
+    // Weakest first — the row order IS the "what's dragging it down" answer.
+    .sort((a, b) => a.latest - b.latest)
+}
+

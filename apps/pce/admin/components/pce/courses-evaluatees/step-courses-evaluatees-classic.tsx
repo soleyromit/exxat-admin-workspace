@@ -451,7 +451,7 @@ export function StepCoursesEvaluateesClassic({
       { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
       {
         // Identity is ONE pinned column. Code LEADS the line: programs talk in
-        // codes ("DPT-502"), and the fixed-width mono token keeps rows aligned
+        // codes ("NURS-502"), and the fixed-width mono token keeps rows aligned
         // while the name truncates behind it. Sort follows the code (key).
         key: 'code', label: 'Course', sortable: true, width: 224, defaultPin: 'left',
         cell: r => (

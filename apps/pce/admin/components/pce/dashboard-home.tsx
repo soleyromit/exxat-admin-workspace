@@ -110,7 +110,8 @@ import {
   KeyMetrics,
   LocalBanner,
   wizardMarkerClass, wizardLabelClass,
-  Tabs, TabsList, TabsTrigger, TabsTriggerLabel, TabsCountBadge, TabsContent,
+  Tabs, TabsList, TabsTrigger, TabsTriggerLabel, TabsContent,
+  TableViewMoreFooter,
   type WizardStep,
   type MetricItem,
 } from '@exxatdesignux/ui'
@@ -124,7 +125,7 @@ import { DashboardResponseTrend, dashboardTrendLabel } from '@/components/pce/an
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-core'
 import { termSeries, programSummary, shortTerm, termToYear, type TermSeriesPoint } from '@/lib/pce-analytics'
 
-import { DataTablePaginated } from '@/components/data-table/pagination'
+import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import {
   LIST_HUB_STATUS_TINT_SUCCESS,
@@ -241,6 +242,7 @@ function StatementHero({
   size = 'lg',
   serif = true,
   tip,
+  compareLabel,
 }: {
   label: string
   /** Small mono fact on the label's baseline — e.g. "target 80%". */
@@ -253,7 +255,9 @@ function StatementHero({
    *  alone was the only direction signal before this (A11Y-008: color is
    *  never the only encoding), and the reference pairs every delta with one. */
   annotationIcon?: string
-  size?: 'lg' | 'md'
+  /** `sm` matches the reference's compact 3-stat row (Last-closed term
+   *  card) — 24px/700, not this component's usual "hero" scale. */
+  size?: 'lg' | 'md' | 'sm'
   /** The statement skin's serif display face for the ledger figure — off
    *  for the response-rate hero specifically (Romit, 2026-08-25: "use
    *  Inter font, in the response rate metric instead of serif"), so it
@@ -265,11 +269,23 @@ function StatementHero({
    *  ONE fact big enough to not go through LedgerLine at all, so it needs
    *  its own copy of the same affordance rather than inheriting one. */
   tip?: string
+  /** When set, `annotation` moves inline next to the value (e.g. "78%
+   *  ↗+48%") and this renders as its own muted line below (e.g. "vs Spring
+   *  2026") — the reference's two-line stat anatomy (Romit, 2026-09-11).
+   *  Omit to keep the original single-line-below-the-value layout every
+   *  other `StatementHero` consumer still uses. */
+  compareLabel?: string
 }) {
+  const annotationEl = annotation && (
+    <span className={`inline-flex items-center gap-1 font-medium ${size === 'sm' ? 'text-sm' : 'text-xs'}`} style={{ color: annotationColor ?? 'var(--muted-foreground)' }}>
+      {annotationIcon && <i className={`fa-light ${annotationIcon}`} aria-hidden="true" />}
+      {annotation}
+    </span>
+  )
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        <p className={`flex items-center gap-1 text-muted-foreground ${size === 'sm' ? 'text-sm font-normal' : 'text-xs font-medium'}`}>
           {label}
           {tip && (
             <Tip label={tip} triggerClassName="inline-flex">
@@ -283,19 +299,20 @@ function StatementHero({
       </div>
       <p
         className={
-          (size === 'lg' ? 'text-5xl' : 'text-4xl') +
-          (serif ? ' font-heading' : ' font-sans') +
-          ' font-semibold leading-none tracking-tight text-foreground tabular-nums'
+          (size === 'sm' ? 'flex items-baseline gap-2 text-2xl font-bold' : (size === 'lg' ? 'text-5xl' : 'text-4xl') + (serif ? ' font-heading' : ' font-sans') + ' font-semibold') +
+          ' leading-none tracking-tight text-foreground tabular-nums'
         }
       >
-        {value}
-        {unit && <span className={size === 'lg' ? 'text-2xl' : 'text-xl'}>{unit}</span>}
+        <span>
+          {value}
+          {unit && <span className={size === 'lg' ? 'text-2xl' : size === 'sm' ? 'text-base' : 'text-xl'}>{unit}</span>}
+        </span>
+        {compareLabel ? annotationEl : null}
       </p>
-      {annotation && (
-        <p className="flex items-center gap-1 text-xs font-medium" style={{ color: annotationColor ?? 'var(--muted-foreground)' }}>
-          {annotationIcon && <i className={`fa-light ${annotationIcon}`} aria-hidden="true" />}
-          {annotation}
-        </p>
+      {compareLabel ? (
+        <p className="text-xs text-muted-foreground">{compareLabel}</p>
+      ) : (
+        annotationEl && <p>{annotationEl}</p>
       )}
     </div>
   )
@@ -732,14 +749,14 @@ function LedgerAction({
   const variant = filled ? 'default' : primary ? 'outline' : 'ghost'
   if (onClick) {
     return (
-      <Button variant={variant} size="sm" onClick={onClick}>
+      <Button variant={variant} size="xs" onClick={onClick}>
         {children}
       </Button>
     )
   }
   if (external && href) {
     return (
-      <Button variant={variant} size="sm" asChild>
+      <Button variant={variant} size="xs" asChild>
         <a href={href} target="_blank" rel="noopener noreferrer">
           {children}
         </a>
@@ -747,7 +764,7 @@ function LedgerAction({
     )
   }
   return (
-    <Button variant={variant} size="sm" asChild>
+    <Button variant={variant} size="xs" asChild>
       <Link href={href ?? '#'}>{children}</Link>
     </Button>
   )
@@ -759,15 +776,35 @@ function TermCardShell({
   term,
   position,
   metaTrailing,
+  metaLine,
   children,
   footer,
+  statusBadge,
   className,
 }: {
   term: ProgramTerm
   position: TermPosition
   metaTrailing?: string
+  /** Verbatim override for the whole "AY … · …" line below the title — the
+   *  reference uses the plain, un-abbreviated academic year and full dates
+   *  on both ends ("2025-2026 · Aug 17, 2025 to Dec 11, 2025"), not this
+   *  shell's default "AY 2025–26" shorthand (Romit, 2026-09-11). Only
+   *  `LiveTermCard`/`LastClosedTermCard` pass this; every other consumer
+   *  keeps the default line unchanged. */
+  metaLine?: React.ReactNode
   children: React.ReactNode
-  footer: React.ReactNode
+  /** Optional — a card whose own content already ends in its action row
+   *  (e.g. `LastClosedTermCard`'s 3-button row) renders no `CardFooter` at
+   *  all, matching the reference exactly rather than adding a second,
+   *  redundant action row below it. */
+  footer?: React.ReactNode
+  /** Overrides `POSITION_BADGE`'s generic position label ("Current
+   *  term"/"Last term") with the term's actual STATUS ("Live", "Needs
+   *  attention") — the reference's badge names condition, not position
+   *  (Romit, 2026-09-11). Only `LiveTermCard`/`LastClosedTermCard` pass
+   *  this; every other `TermCardShell` consumer keeps the original
+   *  position-label badge unchanged. */
+  statusBadge?: { label: string; tone: 'success' | 'neutral' | 'info' | 'warning'; icon?: string }
   className?: string
 }) {
   return (
@@ -775,17 +812,17 @@ function TermCardShell({
        CardHeader/CardContent/CardFooter regions (Romit's catch, 2026-08-22:
        "buttons and content aren't matching ds components" — the earlier
        square-corner/hairline-rule/no-shadow skin fought the DS's own Card
-       shape instead of composing it; that skin is retired here). The
-       statement/ledger character now lives entirely in CONTENT choices
-       (serif masthead, dot-leader figures, the gauge, the timeline rail) —
-       none of which require overriding the card or button shapes DS already
-       defines. `border-b` on CardHeader is DS's own supported opt-in
-       separator (see card.tsx's `[.border-b]:pb-(--card-spacing)` hook),
-       not a hand-drawn rule. */
-    <Card className={className}>
+       shape instead of composing it; that skin is retired here). `border-b`
+       on CardHeader is DS's own supported opt-in separator (see card.tsx's
+       `[.border-b]:pb-(--card-spacing)` hook), not a hand-drawn rule.
+       Title/badge/date sizing matches the Design OS reference dashboard
+       (Romit, 2026-09-11, computed-style diff against
+       exxat-surveys-24f.pages.dev/design-os/dashboard) — the earlier serif
+       "masthead" treatment is retired along with it. */
+    <Card className={className} size="sm">
       <CardHeader className="border-b">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <CardTitle className="min-w-0 font-heading text-2xl font-semibold leading-tight tracking-tight">
+          <CardTitle className="min-w-0 font-sans text-sm font-semibold leading-tight">
             <Link
               href={`/course-evaluation/term/${term.id}`}
               aria-label={`Open ${term.name} workspace`}
@@ -794,11 +831,20 @@ function TermCardShell({
               {term.name}
             </Link>
           </CardTitle>
-          <StatusBadge label={POSITION_BADGE[position].label} tone={POSITION_BADGE[position].tone} size="sm" />
+          <StatusBadge
+            label={statusBadge?.label ?? POSITION_BADGE[position].label}
+            tone={statusBadge?.tone ?? POSITION_BADGE[position].tone}
+            icon={statusBadge?.icon}
+            size="md"
+          />
         </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          AY {term.academicYear.replace(/–20(\d\d)$/, '–$1')}
-          {metaTrailing ? ` · ${metaTrailing}` : ''}
+        <p className="text-sm text-muted-foreground">
+          {metaLine ?? (
+            <>
+              AY {term.academicYear.replace(/–20(\d\d)$/, '–$1')}
+              {metaTrailing ? ` · ${metaTrailing}` : ''}
+            </>
+          )}
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">{children}</CardContent>
@@ -808,7 +854,7 @@ function TermCardShell({
           as a gap, but a label long enough to fill its grown box edge-to-edge
           (Upcoming's "Eval window opens Aug 24, 2026") visually touches the
           link with no separation at all (Romit's catch, 2026-08-19). */}
-      <CardFooter className="mt-auto gap-2">{footer}</CardFooter>
+      {footer ? <CardFooter className="mt-auto gap-2">{footer}</CardFooter> : null}
     </Card>
   )
 }
@@ -816,7 +862,9 @@ function TermCardShell({
 /** Footer link. The destination and the label are BOTH per-column: a finished
  *  term's real next step is reading results (analytics), not re-entering the
  *  operational workspace, and Upcoming vs Current shouldn't read as the same
- *  link twice. */
+ *  link twice. Rendered as a `secondary` Button (not a bare text link) —
+ *  matches the reference's pale-filled footer action (Romit, 2026-09-11,
+ *  against exxat-surveys-24f.pages.dev/design-os/dashboard); no icon there. */
 function ViewDetailsLink({
   term,
   label = 'View details',
@@ -827,14 +875,11 @@ function ViewDetailsLink({
   href?: string
 }) {
   return (
-    <Link
-      href={href ?? `/course-evaluation/term/${term.id}`}
-      aria-label={`${label} for ${term.name}`}
-      className="ms-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      {label}
-      <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
-    </Link>
+    <Button variant="secondary" className="text-xs" asChild>
+      <Link href={href ?? `/course-evaluation/term/${term.id}`} aria-label={`${label} for ${term.name}`}>
+        {label}
+      </Link>
+    </Button>
   )
 }
 
@@ -1626,19 +1671,22 @@ function TermHistoryTable({
   const columns: ColumnDef<TermRow>[] = useMemo(
     () => [
       {
+        /* Single line, "{academic year} · {term name}" — matches the
+           reference exactly. Plain text, not a nested link: the whole row
+           is already clickable via `onRowClick` below, so a second,
+           independently-focusable link here was a redundant interactive
+           element for the same destination (Romit, 2026-09-11). */
         key: 'name',
         label: 'Term',
+        /* Explicit width — the single-line "{academic year} · {term name}"
+           text is longer than the old two-line layout's longest line ever
+           was, and without a width DataTable's default sizing let it
+           overflow into the Timeline column's badge (Romit, 2026-09-11). */
+        width: 190,
         cell: (row) => (
-          <div className="flex flex-col">
-            <Link
-              href={`/course-evaluation/term/${row.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-sm text-sm font-medium text-foreground hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {row.name}
-            </Link>
-            <span className="text-xs text-muted-foreground">AY {row.academicYear.replace(/–20(\d\d)$/, '–$1')}</span>
-          </div>
+          <span className="truncate text-sm font-medium text-foreground">
+            {row.academicYear} · {row.name}
+          </span>
         ),
       },
       {
@@ -1730,7 +1778,7 @@ function TermHistoryTable({
         key: 'stage',
         label: 'Evaluation stage',
         width: 130,
-        cell: (row) => <StatusBadge label={STAGE_BADGE[row.stage].label} tone={STAGE_BADGE[row.stage].tone} />,
+        cell: (row) => <StatusBadge label={STAGE_BADGE[row.stage].label} tone={STAGE_BADGE[row.stage].tone} icon={STAGE_BADGE[row.stage].icon} />,
       },
       {
         key: 'actions',
@@ -1765,32 +1813,46 @@ function TermHistoryTable({
 
   /* No per-table heading anymore — this is one tab's content inside the
      single "Other terms (N)" tabbed table now (see `TermHistorySection`),
-     not its own headed section. `label` stays as the table's aria-label. */
+     not its own headed section. `label` stays as the table's aria-label.
+     "View more" (`TableViewMoreFooter`, the real DS component for exactly
+     this), not a page-number pager — matches the reference's footer
+     anatomy (Romit, 2026-09-11). Each mode's own `visibleCount` resets
+     naturally on remount since it's local to this component instance. */
+  const [visibleCount, setVisibleCount] = useState(5)
+  const visibleRows = rows.slice(0, visibleCount)
+
   return (
-    <DataTablePaginated<TermRow>
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      /* showQueryControls=false — DataTable's toolbar row defaults to
-         min-h-10 regardless of content; with search/filters hidden and no
-         toolbarSlot it still reserved that height as dead space (Romit's
-         catch, 2026-08-19). showQueryControls collapses the bar to its slim
-         min-h-0 variant instead (threaded through as a new opt-in prop on
-         DataTable/DataTablePaginated — additive, every other table's
-         default behavior is unchanged). */
-      showQueryControls={false}
-      pagination={{ pageSize: 25 }}
-      edgeInset={false}
-      stickyHeader={false}
-      onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
-      emptyState={
-        <div className="flex flex-col items-center gap-2 py-8">
-          <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-          <p className="text-sm font-medium">{emptyTitle}</p>
-          <p className="text-xs text-muted-foreground">{emptyBody}</p>
-        </div>
-      }
-    />
+    <div className="flex flex-col gap-2">
+      <DataTable<TermRow>
+        data={visibleRows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        /* showQueryControls=false — DataTable's toolbar row defaults to
+           min-h-10 regardless of content; with search/filters hidden and no
+           toolbarSlot it still reserved that height as dead space (Romit's
+           catch, 2026-08-19). showQueryControls collapses the bar to its slim
+           min-h-0 variant instead (threaded through as a new opt-in prop on
+           DataTable — additive, every other table's default behavior is
+           unchanged). */
+        showQueryControls={false}
+        edgeInset={false}
+        stickyHeader={false}
+        onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
+        emptyState={
+          <div className="flex flex-col items-center gap-2 py-8">
+            <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm font-medium">{emptyTitle}</p>
+            <p className="text-xs text-muted-foreground">{emptyBody}</p>
+          </div>
+        }
+      />
+      <TableViewMoreFooter
+        totalCount={rows.length}
+        visibleCount={visibleRows.length}
+        onViewMore={() => setVisibleCount((c) => c + 5)}
+        edgeInset={false}
+      />
+    </div>
   )
 }
 
@@ -1837,21 +1899,18 @@ function TermHistorySection({
 
   return (
     <section className="flex flex-col gap-2" aria-label="Other terms">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Other terms</h2>
-        <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium tabular-nums">
-          {total}
-        </Badge>
-      </div>
+      {/* Count inline in the text ("Other terms (8)"), not a separate badge
+         chip — matches the reference's heading anatomy exactly, same
+         font-sans text-lg/leading-snug treatment as "Live term"/"Last
+         closed term" above it (Romit, 2026-09-11). */}
+      <h2 className="font-sans text-lg font-semibold leading-snug text-foreground">Other terms ({total})</h2>
       <Tabs defaultValue="past" className="flex flex-col gap-3">
         <TabsList variant="line" ariaLabel="Other terms — Past or Future">
           <TabsTrigger value="past">
-            <TabsTriggerLabel>Past</TabsTriggerLabel>
-            <TabsCountBadge count={pastRows.length} />
+            <TabsTriggerLabel>Past ({pastRows.length})</TabsTriggerLabel>
           </TabsTrigger>
           <TabsTrigger value="future">
-            <TabsTriggerLabel>Future</TabsTriggerLabel>
-            <TabsCountBadge count={futureRows.length} />
+            <TabsTriggerLabel>Future ({futureRows.length})</TabsTriggerLabel>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="past">
@@ -2014,8 +2073,6 @@ function LedgerDashboardBody({
  *  design, not a merge of the two. */
 function OperationsRow({
   countLabel,
-  description,
-  courseCodes,
   tint,
   tintLabel,
   icon,
@@ -2030,23 +2087,11 @@ function OperationsRow({
   warningIcon,
   action,
 }: {
-  /** Shown only when `courseCodes` is empty (the two account-level rows,
-   *  "0 course offerings"/"0 templates", which aren't about any specific
-   *  course). Every real row identifies its courses via tags instead. */
+  /** The row's own — and only — line of text: "5 courses" / "3
+   *  evaluations", matching the reference's plain count-then-badge row with
+   *  no secondary description line (Romit, 2026-09-11, against
+   *  exxat-surveys-24f.pages.dev/design-os/dashboard). */
   countLabel: string
-  /** One line under the tags naming what the status badge means for THIS
-   *  row (e.g. "Hasn't been scheduled yet") — the badge alone ("Not set
-   *  up"/"Draft"/"Scheduled") reads as a status word, not an explanation,
-   *  and nothing previously said what action the button actually takes
-   *  (Romit, 2026-09-02: "this is not understood, especially the content"). */
-  description: string
-  /** Real course codes behind the row. Rendered as tags (up to
-   *  `MAX_VISIBLE_COURSE_TAGS`), not a bare "N courses" count — a count
-   *  hides which courses are affected until clicked; tags name them up
-   *  front, with a "+N more" tooltip for the overflow (Romit, 2026-09-02:
-   *  "use tags instead of course count, and later show remaining courses
-   *  with tooltip/popover"). */
-  courseCodes: string[]
   tint: StatusTint
   tintLabel: string
   icon: string
@@ -2054,60 +2099,17 @@ function OperationsRow({
   warningIcon?: string
   action: React.ReactNode
 }) {
-  const visibleCodes = courseCodes.slice(0, MAX_VISIBLE_COURSE_TAGS)
-  const overflowCodes = courseCodes.slice(MAX_VISIBLE_COURSE_TAGS)
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 py-3 first:border-t-0">
-      <div className="flex flex-col gap-1">
-        {courseCodes.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {visibleCodes.map((code) => <CourseCodeTag key={code} code={code} />)}
-            {overflowCodes.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                    aria-label={`${overflowCodes.length} more ${tintLabel} courses: ${overflowCodes.join(', ')}`}
-                  >
-                    +{overflowCodes.length} more
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="font-mono">
-                  {overflowCodes.join(', ')}
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        ) : (
-          <span className="text-sm font-medium text-foreground">{countLabel}</span>
-        )}
-        <span className="text-xs text-muted-foreground">{description}</span>
-      </div>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2 first:border-t-0">
+      <span className="block truncate text-sm font-medium text-foreground">{countLabel}</span>
+      <div className="flex items-center gap-1">
         {warningLabel && (
-          <ListHubStatusBadge label={warningLabel} tint={LIST_HUB_STATUS_TINT_WARNING} icon={warningIcon ?? 'fa-triangle-exclamation'} flat />
+          <ListHubStatusBadge label={warningLabel} tint={LIST_HUB_STATUS_TINT_WARNING} icon={warningIcon ?? 'fa-triangle-exclamation'} flat size="sm" />
         )}
-        <ListHubStatusBadge label={tintLabel} tint={tint} icon={icon} flat />
+        <ListHubStatusBadge label={tintLabel} tint={tint} icon={icon} flat size="sm" />
         {action}
       </div>
     </div>
-  )
-}
-
-const MAX_VISIBLE_COURSE_TAGS = 3
-
-/** A single course-code chip — neutral and monospaced (system-identifier
- *  convention, matching this app's other record-id treatments), deliberately
- *  quieter than both the colored status `ListHubStatusBadge` and the outline
- *  action `Button` beside it, so all three read as three different kinds of
- *  thing at a glance rather than competing pills of the same visual weight. */
-function CourseCodeTag({ code }: { code: string }) {
-  return (
-    <span className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-      {code}
-    </span>
   )
 }
 
@@ -2305,7 +2307,6 @@ function LiveTermCard({
      Split back into their own rows/counts below. */
   const notConfiguredCount = b ? b.notConfiguredCount : 0
   const atRisk = b ? liveAtRiskCodes(b.live) : new Set<string>()
-  const win = evalWindow(term)
   const workspaceHref = (tab: 'active' | 'finished') => `/course-evaluation/term/${term.id}?tab=${tab}`
   /* One shared model decides which row is "the next thing to do" — the same
      `nextTermAction` the Getting Started strip reads, so the two surfaces
@@ -2319,15 +2320,20 @@ function LiveTermCard({
     <TermCardShell
       term={term}
       position="current"
-      metaTrailing={`Eval window ${win.open.replace(/, \d{4}$/, '')} – ${win.close}`}
-      footer={
-        <>
-          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {b ? `${plural(b.totalCourses, 'course')} in this term` : `${snap.total} evaluations`}
-          </p>
-          <ViewDetailsLink term={term} />
-        </>
+      /* The term's own dates, full year on both ends, joined by "to" — not
+         the "Eval window" (+7-day grace) framing or the abbreviated "AY"
+         year, matching the reference's plain meta line exactly (Romit,
+         2026-09-11). The +7-day eval-window concept still drives row-level
+         scheduling below; this line is just how the header states it. */
+      metaLine={
+        term.startDate && term.endDate
+          ? `${term.academicYear} · ${fmtDate(term.startDate)} to ${fmtDate(term.endDate)}`
+          : term.academicYear
       }
+      statusBadge={{ label: 'Live', tone: 'success', icon: 'fa-circle-dot' }}
+      /* Just the button, left-aligned — no "N courses in this term" text,
+         matching the reference exactly (Romit, 2026-09-11). */
+      footer={<ViewDetailsLink term={term} />}
     >
       {/* The merged "what do I do next" section — was a separate floating
           "Getting started" card above this one, disconnected from the row
@@ -2363,8 +2369,6 @@ function LiveTermCard({
           rows={
             <OperationsRow
               countLabel="0 course offerings"
-              description="No courses have been connected from Prism yet."
-              courseCodes={[]}
               tint={LIST_HUB_STATUS_TINT_NEUTRAL}
               tintLabel="Not synced"
               icon="fa-graduation-cap"
@@ -2385,8 +2389,6 @@ function LiveTermCard({
               {!hasTemplates && (
                 <OperationsRow
                   countLabel="0 templates"
-                  description="No survey template exists yet, so nothing can go out to courses."
-                  courseCodes={[]}
                   tint={LIST_HUB_STATUS_TINT_NEUTRAL}
                   tintLabel="No template"
                   icon="fa-file-lines"
@@ -2403,8 +2405,6 @@ function LiveTermCard({
               {notConfiguredCount > 0 && (
                 <OperationsRow
                   countLabel={plural(notConfiguredCount, 'course')}
-                  description="Hasn't been scheduled for evaluation yet."
-                  courseCodes={b.notConfiguredCodes}
                   tint={LIST_HUB_STATUS_TINT_NEUTRAL}
                   tintLabel="Not set up"
                   icon="fa-list-check"
@@ -2414,8 +2414,6 @@ function LiveTermCard({
               {b.draft.length > 0 && (
                 <OperationsRow
                   countLabel={plural(b.draft.length, 'course')}
-                  description="Evaluation started but not yet sent to students or faculty."
-                  courseCodes={b.draft.map((s) => s.courseCode)}
                   tint={LIST_HUB_STATUS_TINT_NEUTRAL}
                   tintLabel="Draft"
                   icon="fa-pen"
@@ -2425,8 +2423,6 @@ function LiveTermCard({
               {b.scheduled.length > 0 && (
                 <OperationsRow
                   countLabel={plural(b.scheduled.length, 'course')}
-                  description="Evaluation window is set but hasn't opened yet."
-                  courseCodes={b.scheduled.map((s) => s.courseCode)}
                   tint={LIST_HUB_STATUS_TINT_PLANNED}
                   tintLabel="Scheduled"
                   icon="fa-calendar"
@@ -2436,8 +2432,6 @@ function LiveTermCard({
               {b.live.length > 0 && (
                 <OperationsRow
                   countLabel={plural(b.live.length, 'course')}
-                  description={atRisk.size > 0 ? 'Collecting now, but response rate is falling behind target.' : 'Currently collecting responses.'}
-                  courseCodes={b.live.map((s) => s.courseCode)}
                   tint={LIST_HUB_STATUS_TINT_SUCCESS}
                   tintLabel="Live"
                   icon="fa-bolt"
@@ -2448,8 +2442,6 @@ function LiveTermCard({
               {b.closed.length > 0 && (
                 <OperationsRow
                   countLabel={plural(b.closed.length, 'course')}
-                  description="Collection has ended — ready for review."
-                  courseCodes={b.closed.map((s) => s.courseCode)}
                   tint={LIST_HUB_STATUS_TINT_COMPLETED}
                   tintLabel="Closed"
                   icon="fa-check"
@@ -2496,12 +2488,19 @@ function LastClosedTermCard({
   const current = idx >= 0 ? series[idx] : null
   const prior = idx > 0 ? series[idx - 1] : null
 
+  /* Split into an inline delta (next to the big value, e.g. "+5") and a
+     separate comparison line below (e.g. "vs Spring 2026") — matches the
+     reference's two-line stat anatomy (Romit, 2026-09-11, against
+     exxat-surveys-24f.pages.dev/design-os/dashboard); the real prior term's
+     own name, not a generic "prior term" label. */
   function deltaOf(curr: number | null | undefined, prev: number | null | undefined) {
-    if (curr == null || prev == null) return null
+    if (curr == null || prev == null || !prior) return null
     const d = Math.round((curr - prev) * 100) / 100
-    if (d === 0) return { text: 'No change vs prior term', color: undefined as string | undefined, icon: undefined as string | undefined }
+    const compareLabel = `vs ${prior.term}`
+    if (d === 0) return { delta: 'No change', compareLabel, color: undefined as string | undefined, icon: undefined as string | undefined }
     return {
-      text: `${d > 0 ? '+' : ''}${d} vs prior term`,
+      delta: `${d > 0 ? '+' : ''}${d}`,
+      compareLabel,
       color: d < 0 ? LIST_HUB_STATUS_TINT_WARNING.fg : undefined,
       icon: d > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down',
     }
@@ -2514,19 +2513,17 @@ function LastClosedTermCard({
     <TermCardShell
       term={term}
       position="last"
-      metaTrailing={term.startDate && term.endDate ? fmtRange(term.startDate, term.endDate) : undefined}
-      footer={
-        <>
-          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {b ? `${plural(b.totalCourses, 'course')} in this term` : `${snap.total} evaluations`}
-          </p>
-          <ViewDetailsLink
-            term={term}
-            label="View analytics"
-            href={`/analytics?tab=term&term=${encodeURIComponent(term.name)}`}
-          />
-        </>
+      metaLine={
+        term.startDate && term.endDate
+          ? `${term.academicYear} · ${fmtDate(term.startDate)} to ${fmtDate(term.endDate)}`
+          : term.academicYear
       }
+      statusBadge={stragglerCount > 0 ? { label: 'Needs attention', tone: 'warning', icon: 'fa-triangle-exclamation' } : undefined}
+      /* Only the empty state needs a footer action — the populated state's
+         own 3-button row already covers "View analytics", so adding a
+         second one there would be the exact redundant row the reference
+         doesn't have. */
+      footer={!b ? <ViewDetailsLink term={term} label="View analytics" href={`/analytics?tab=term&term=${encodeURIComponent(term.name)}`} /> : undefined}
     >
       {!b ? (
         <p className="text-sm text-muted-foreground">No course offerings synced for this term.</p>
@@ -2537,56 +2534,68 @@ function LastClosedTermCard({
               label="Response rate"
               value={closedRate != null ? `${closedRate}` : '—'}
               unit={closedRate != null ? '%' : undefined}
-              annotation={rateDelta?.text}
+              annotation={rateDelta?.delta}
               annotationColor={rateDelta?.color}
               annotationIcon={rateDelta?.icon}
-              size="md"
+              compareLabel={rateDelta?.compareLabel}
+              size="sm"
               serif={false}
             />
             <StatementHero
               label="Course avg"
               value={current?.courseAvg != null ? `${current.courseAvg}` : '—'}
-              annotation={courseDelta?.text}
+              annotation={courseDelta?.delta}
               annotationColor={courseDelta?.color}
               annotationIcon={courseDelta?.icon}
-              size="md"
+              compareLabel={courseDelta?.compareLabel}
+              size="sm"
               serif={false}
             />
             <StatementHero
               label="Faculty avg"
               value={current?.facultyAvg != null ? `${current.facultyAvg}` : '—'}
-              annotation={facultyDelta?.text}
+              annotation={facultyDelta?.delta}
               annotationColor={facultyDelta?.color}
               annotationIcon={facultyDelta?.icon}
-              size="md"
+              compareLabel={facultyDelta?.compareLabel}
+              size="sm"
               serif={false}
             />
           </div>
           {stragglerCount > 0 && (
-            <LocalBanner variant="warning" title="Needs attention">
+            /* No `title` — the card's own status badge above already says
+               "Needs attention"; repeating it here read as redundant next
+               to the reference, which states the plain fact alone
+               (Romit, 2026-09-11). */
+            <LocalBanner variant="warning">
               {[
                 neverWentOut > 0 ? `${plural(neverWentOut, 'course')} never went out` : null,
                 stillLive > 0 ? `${plural(stillLive, 'course')} still collecting` : null,
               ].filter(Boolean).join(' and ')} past this term's end.
             </LocalBanner>
           )}
-          {/* Reference has 3 actions here (View analytics filled, Export
-              summary + View details outline) — this card only had one, a
-              bare text link in the footer (`ViewDetailsLink`, still there
-              below, shared across every term card so left alone). "Export
-              summary" has no existing summary-export feature anywhere in
-              this codebase to link to (the one real export flow, results/
-              [id]'s `ExportDrawer`, is survey-level, not term-level) — wired
-              to the browser print dialog rather than a fabricated route;
-              real backend export is a separate feature to build, not a UI fix. */}
+          {/* "Export summary" has no existing summary-export feature
+              anywhere in this codebase to link to (the one real export
+              flow, results/[id]'s `ExportDrawer`, is survey-level, not
+              term-level) — wired to the browser print dialog rather than a
+              fabricated route; real backend export is a separate feature to
+              build, not a UI fix. `size="default"` (32px, not `sm`'s 28px)
+              matches the reference's footer-button height, but the
+              reference pairs that height with the smaller `xs`/`sm` text
+              size rather than `default`'s own `text-sm` — an explicit
+              `text-xs` override gets the same non-standard combination
+              (Romit, 2026-09-11). The separate `ViewDetailsLink` footer
+              this card used to render below (a second, redundant "View
+              details") is gone — the reference has no second action row
+              here, and this one already covers it. */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="default" size="sm" asChild>
+            <Button variant="default" className="text-xs" asChild>
               <Link href={`/analytics?tab=term&term=${encodeURIComponent(term.name)}`}>View analytics</Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" className="text-xs" onClick={() => window.print()}>
               Export summary
             </Button>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" className="text-xs" asChild>
               <Link href={`/course-evaluation/term/${term.id}`}>View details</Link>
             </Button>
           </div>
@@ -2761,15 +2770,19 @@ function OperationsDashboardBody({
             : currentSnaps.length > 1
               ? `Across ${plural(currentSnaps.length, 'active term')}`
               : 'Courses without a scheduled window',
-      /* No `alert` prop here — the DS's `alert: 'warning'` tile styling fails
-         WCAG contrast (2.99:1 on the tinted background vs the required
-         4.5:1), confirmed live via axe; the value + description already
-         carry the signal without relying on a failing DS affordance. Flag to
-         Himanshu: KeyMetrics' warning-alert text color needs a token fix
-         before any product surface can use it.
+      /* `alert: 'warning'` — knowingly reintroduced (Romit, 2026-09-11,
+         "use it anyway", against exxat-surveys-24f.pages.dev/design-os
+         which tints this tile): the DS's warning-alert label color fails
+         WCAG AA contrast (2.99:1 measured live via axe against the required
+         4.5:1) — a real DS bug, not fixed here, accepted as a deliberate
+         tradeoff for the exact-match request. Flag to Himanshu: KeyMetrics'
+         warning-alert text color needs a token fix. Only alerts when there's
+         actually something to flag — "All courses scheduled" (0 remaining)
+         stays untinted.
          Also flag: `MetricCell` renders no trailing chevron for the `href`
          case (the reference shows one) — link-ness is hover-only today;
          forking the DS component for one affordance isn't worth it here. */
+      alert: primaryBreakdown && needsSetupTotal > 0 ? 'warning' : undefined,
     },
     {
       id: 'response-rate',
@@ -2794,6 +2807,7 @@ function OperationsDashboardBody({
       description: summary
         ? `Of ${summary.courseCount} scored, below the ${summary.courseMedian} median`
         : scoreFailCopy('course'),
+      alert: summary && summary.coursesBelowThreshold > 0 ? 'warning' : undefined,
     },
     {
       id: 'faculty-below',
@@ -2805,6 +2819,7 @@ function OperationsDashboardBody({
       description: summary
         ? `Of ${summary.facultyCount} scored, below the ${summary.facultyMedian} median`
         : scoreFailCopy('faculty'),
+      alert: summary && summary.facultyBelowThreshold > 0 ? 'warning' : undefined,
     },
   ]
 
@@ -2851,16 +2866,18 @@ function OperationsDashboardBody({
           upcoming or has zero courses — they come back, since they start
           reflecting real (if sparse) state at that point. */}
       {ordered.length > 0 && (
-        /* shrink-0: the DS's `KeyMetrics variant="flat"` renders its own
-            `overflow-hidden` section, which — as a flex-column item — gets an
-            automatic min-height of 0 and silently absorbs 100% of any height
-            deficit from this page's outer flex-1 scroll chain, clipping every
-            value/delta/description to nothing (confirmed live 2026-09-02: real
-            height 194px, painted height 87px, `overflow: hidden`). shrink-0
-            here stops the deficit from ever reaching it — flag to Himanshu:
-            the DS component itself should ship this. */
+        /* shrink-0: the DS's `KeyMetrics` renders its own `overflow-hidden`
+            section, which — as a flex-column item — gets an automatic
+            min-height of 0 and silently absorbs 100% of any height deficit
+            from this page's outer flex-1 scroll chain, clipping every
+            value/delta/description to nothing (confirmed live 2026-09-02:
+            real height 194px, painted height 87px, `overflow: hidden`).
+            shrink-0 here stops the deficit from ever reaching it — flag to
+            Himanshu: the DS component itself should ship this.
+            `variant="cards"` (was `"flat"`) — the reference's individually
+            bordered tiles, not a seamless strip (Romit, 2026-09-11). */
         <div className="shrink-0">
-          <KeyMetrics variant="flat" size="md" showHeader={false} metricsSingleRow metrics={kpis} />
+          <KeyMetrics variant="cards" size="md" showHeader={false} metricsSingleRow metrics={kpis} />
         </div>
       )}
 
@@ -2908,9 +2925,9 @@ function OperationsDashboardBody({
           </Card>
         </div>
       ) : (
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-foreground">Live term</h3>
+            <h3 className="font-sans text-lg font-semibold leading-snug text-foreground">Live term</h3>
             {currentSnaps.length > 0 ? (
               currentSnaps.map((s) => (
                 <LiveTermCard
@@ -2930,7 +2947,7 @@ function OperationsDashboardBody({
             )}
           </div>
           <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-foreground">Last closed term</h3>
+            <h3 className="font-sans text-lg font-semibold leading-snug text-foreground">Last closed term</h3>
             {lastSnaps.length > 0 ? (
               lastSnaps.map((s) => (
                 <LastClosedTermCard key={s.term.id} snap={s} breakdown={breakdownForSnap(s)} series={series} />
@@ -3125,13 +3142,13 @@ function DashboardHomeInner() {
 
   return (
     <div className="flex flex-col flex-1">
-      {/* Scope in the title — two dashboards live in this shell (Course
-          Evaluation vs Programmatic Surveys); a bare "Dashboard" gave no
-          orientation (Romit 2026-07-19). Matches the command-menu label. */}
-      <SiteHeader title="Course Evaluation Dashboard" />
+      {/* Plain "Dashboard" — matches the reference (exxat-surveys-24f.pages.dev/
+          design-os/dashboard) exactly (Romit, 2026-09-11), reversing the
+          2026-07-19 "Course Evaluation Dashboard" disambiguation. No subtitle
+          either, matching the same reference. */}
+      <SiteHeader title="Dashboard" />
       <PageHeader
-        title="Course Evaluation Dashboard"
-        subtitle="Set up evaluations, track response rate, and remind"
+        title="Dashboard"
         actions={
           /* Before any term exists, "Set up Evaluations" is premature (there's
              nothing to evaluate) and duplicates the empty state's own CTA — so

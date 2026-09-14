@@ -180,51 +180,51 @@ function buildCaseTermData(term: ProgramTerm, courses: CaseCourseSpec[]): { offe
 }
 
 const CASE3 = buildCaseTermData(CASE3_TERM, [
-  { masterCourseId: 'mc1', code: 'DPT-501', name: 'Human Anatomy & Kinesiology', courseType: 'didactic', status: 'none' },
-  { masterCourseId: 'mc2', code: 'DPT-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'none' },
-  { masterCourseId: 'mc5', code: 'DPT-505', name: 'Biomechanics I', courseType: 'didactic', status: 'none' },
-  { masterCourseId: 'mc9', code: 'DPT-530', name: 'Therapeutic Exercise', courseType: 'didactic', status: 'none' },
+  { masterCourseId: 'mc1', code: 'NURS-501', name: 'Human Anatomy & Physiology', courseType: 'didactic', status: 'none' },
+  { masterCourseId: 'mc2', code: 'NURS-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'none' },
+  { masterCourseId: 'mc5', code: 'NURS-505', name: 'Fundamentals of Nursing I', courseType: 'didactic', status: 'none' },
+  { masterCourseId: 'mc9', code: 'NURS-530', name: 'Maternal-Newborn Nursing', courseType: 'didactic', status: 'none' },
 ])
 
 const CASE4_TERM = caseTerm('case4-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE4 = buildCaseTermData(CASE4_TERM, [
-  { masterCourseId: 'mc1', code: 'DPT-501', name: 'Human Anatomy & Kinesiology', courseType: 'didactic', status: 'none' },
-  { masterCourseId: 'mc2', code: 'DPT-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'draft' },
-  { masterCourseId: 'mc4', code: 'DPT-504', name: 'Neuroanatomy', courseType: 'didactic', status: 'scheduled', openDate: '2026-08-26' },
-  { masterCourseId: 'mc5', code: 'DPT-505', name: 'Biomechanics I', courseType: 'didactic', status: 'active', responseRate: 48, enrollmentCount: 40, responseCount: 19, deadline: 'Aug 30, 2026' },
-  { masterCourseId: 'mc6', code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I', courseType: 'didactic', status: 'collecting', responseRate: 60, enrollmentCount: 45, responseCount: 27, deadline: 'Sep 2, 2026' },
-  { masterCourseId: 'mc7', code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II', courseType: 'didactic', status: 'closed', responseRate: 70, enrollmentCount: 42, responseCount: 29, deadline: 'Aug 5, 2026' },
+  { masterCourseId: 'mc1', code: 'NURS-501', name: 'Human Anatomy & Physiology', courseType: 'didactic', status: 'none' },
+  { masterCourseId: 'mc2', code: 'NURS-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'draft' },
+  { masterCourseId: 'mc4', code: 'NURS-504', name: 'Health Assessment', courseType: 'didactic', status: 'scheduled', openDate: '2026-08-26' },
+  { masterCourseId: 'mc5', code: 'NURS-505', name: 'Fundamentals of Nursing I', courseType: 'didactic', status: 'active', responseRate: 48, enrollmentCount: 40, responseCount: 19, deadline: 'Aug 30, 2026' },
+  { masterCourseId: 'mc6', code: 'NURS-510', name: 'Medical-Surgical Nursing I', courseType: 'didactic', status: 'collecting', responseRate: 60, enrollmentCount: 45, responseCount: 27, deadline: 'Sep 2, 2026' },
+  { masterCourseId: 'mc7', code: 'NURS-511', name: 'Medical-Surgical Nursing II', courseType: 'didactic', status: 'closed', responseRate: 70, enrollmentCount: 42, responseCount: 29, deadline: 'Aug 5, 2026' },
 ])
 
 const CASE5_TERM = caseTerm('case5-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE5 = buildCaseTermData(CASE5_TERM, [
-  { masterCourseId: 'mc8', code: 'DPT-520', name: 'Neurological Physical Therapy', courseType: 'didactic', status: 'draft' },
-  { masterCourseId: 'mc9', code: 'DPT-530', name: 'Therapeutic Exercise', courseType: 'didactic', status: 'scheduled', openDate: '2026-08-22' },
-  { masterCourseId: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis', courseType: 'didactic', status: 'active', responseRate: 55, enrollmentCount: 38, responseCount: 21, deadline: 'Aug 28, 2026' },
-  { masterCourseId: 'mc11', code: 'DPT-610', name: 'Geriatric Physical Therapy', courseType: 'didactic', status: 'collecting', responseRate: 62, enrollmentCount: 40, responseCount: 25, deadline: 'Aug 28, 2026' },
-  { masterCourseId: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy', courseType: 'didactic', status: 'closed', responseRate: 75, enrollmentCount: 36, responseCount: 27, deadline: 'Aug 1, 2026' },
+  { masterCourseId: 'mc8', code: 'NURS-520', name: 'Neurological Nursing', courseType: 'didactic', status: 'draft' },
+  { masterCourseId: 'mc9', code: 'NURS-530', name: 'Maternal-Newborn Nursing', courseType: 'didactic', status: 'scheduled', openDate: '2026-08-22' },
+  { masterCourseId: 'mc10', code: 'NURS-540', name: 'Clinical Reasoning & Diagnostics', courseType: 'didactic', status: 'active', responseRate: 55, enrollmentCount: 38, responseCount: 21, deadline: 'Aug 28, 2026' },
+  { masterCourseId: 'mc11', code: 'NURS-610', name: 'Geriatric Nursing', courseType: 'didactic', status: 'collecting', responseRate: 62, enrollmentCount: 40, responseCount: 25, deadline: 'Aug 28, 2026' },
+  { masterCourseId: 'mc12', code: 'NURS-611', name: 'Pediatric Nursing', courseType: 'didactic', status: 'closed', responseRate: 75, enrollmentCount: 36, responseCount: 27, deadline: 'Aug 1, 2026' },
 ])
 
 const CASE6_TERM = caseTerm('case6-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE6 = buildCaseTermData(CASE6_TERM, [
-  { masterCourseId: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I', courseType: 'clinical', status: 'scheduled', openDate: '2026-08-24' },
-  { masterCourseId: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II', courseType: 'clinical', status: 'active', responseRate: 58, enrollmentCount: 20, responseCount: 12, deadline: 'Aug 27, 2026' },
-  { masterCourseId: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)', courseType: 'clinical', status: 'collecting', responseRate: 66, enrollmentCount: 18, responseCount: 12, deadline: 'Aug 27, 2026' },
-  { masterCourseId: 'mc17', code: 'DPT-506', name: 'Biomechanics II', courseType: 'didactic', status: 'closed', responseRate: 80, enrollmentCount: 44, responseCount: 35, deadline: 'Aug 3, 2026' },
+  { masterCourseId: 'mc14', code: 'NURS-601', name: 'Clinical Practicum I', courseType: 'clinical', status: 'scheduled', openDate: '2026-08-24' },
+  { masterCourseId: 'mc15', code: 'NURS-602', name: 'Clinical Practicum II', courseType: 'clinical', status: 'active', responseRate: 58, enrollmentCount: 20, responseCount: 12, deadline: 'Aug 27, 2026' },
+  { masterCourseId: 'mc16', code: 'NURS-603', name: 'Clinical Practicum III (Full-Time)', courseType: 'clinical', status: 'collecting', responseRate: 66, enrollmentCount: 18, responseCount: 12, deadline: 'Aug 27, 2026' },
+  { masterCourseId: 'mc17', code: 'NURS-506', name: 'Fundamentals of Nursing II', courseType: 'didactic', status: 'closed', responseRate: 80, enrollmentCount: 44, responseCount: 35, deadline: 'Aug 3, 2026' },
 ])
 
 const CASE7_TERM = caseTerm('case7-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE7 = buildCaseTermData(CASE7_TERM, [
-  { masterCourseId: 'mc18', code: 'DPT-515', name: 'Pharmacology for Physical Therapists', courseType: 'didactic', status: 'active', responseRate: 50, enrollmentCount: 50, responseCount: 25, deadline: 'Aug 25, 2026' },
-  { masterCourseId: 'mc19', code: 'DPT-620', name: 'Geriatric Physical Therapy', courseType: 'didactic', status: 'collecting', responseRate: 64, enrollmentCount: 30, responseCount: 19, deadline: 'Sep 1, 2026' },
-  { masterCourseId: 'mc20', code: 'DPT-710', name: 'Neurological Rehab', courseType: 'didactic', status: 'closed', responseRate: 78, enrollmentCount: 25, responseCount: 20, deadline: 'Aug 2, 2026' },
+  { masterCourseId: 'mc18', code: 'NURS-515', name: 'Pharmacology for Nurses', courseType: 'didactic', status: 'active', responseRate: 50, enrollmentCount: 50, responseCount: 25, deadline: 'Aug 25, 2026' },
+  { masterCourseId: 'mc19', code: 'NURS-620', name: 'Geriatric Nursing', courseType: 'didactic', status: 'collecting', responseRate: 64, enrollmentCount: 30, responseCount: 19, deadline: 'Sep 1, 2026' },
+  { masterCourseId: 'mc20', code: 'NURS-710', name: 'Advanced Neurological Nursing', courseType: 'didactic', status: 'closed', responseRate: 78, enrollmentCount: 25, responseCount: 20, deadline: 'Aug 2, 2026' },
 ])
 
 const CASE8_TERM = caseTerm('case8-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE8 = buildCaseTermData(CASE8_TERM, [
-  { masterCourseId: 'mc1', code: 'DPT-501', name: 'Human Anatomy & Kinesiology', courseType: 'didactic', status: 'closed', responseRate: 72, enrollmentCount: 40, responseCount: 29, deadline: 'Jul 28, 2026' },
-  { masterCourseId: 'mc2', code: 'DPT-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'pending_review', responseRate: 68, enrollmentCount: 35, responseCount: 24, deadline: 'Jul 30, 2026' },
-  { masterCourseId: 'mc4', code: 'DPT-504', name: 'Neuroanatomy', courseType: 'didactic', status: 'closed', responseRate: 80, enrollmentCount: 30, responseCount: 24, deadline: 'Aug 1, 2026' },
+  { masterCourseId: 'mc1', code: 'NURS-501', name: 'Human Anatomy & Physiology', courseType: 'didactic', status: 'closed', responseRate: 72, enrollmentCount: 40, responseCount: 29, deadline: 'Jul 28, 2026' },
+  { masterCourseId: 'mc2', code: 'NURS-502', name: 'Physiology & Pathophysiology', courseType: 'didactic', status: 'pending_review', responseRate: 68, enrollmentCount: 35, responseCount: 24, deadline: 'Jul 30, 2026' },
+  { masterCourseId: 'mc4', code: 'NURS-504', name: 'Health Assessment', courseType: 'didactic', status: 'closed', responseRate: 80, enrollmentCount: 30, responseCount: 24, deadline: 'Aug 1, 2026' },
 ])
 
 /* Case 9 — "all courses in published." Feedback: "Solution would be the same
@@ -233,9 +233,9 @@ const CASE8 = buildCaseTermData(CASE8_TERM, [
  * state, not a copy-paste of Case 8's data. */
 const CASE9_TERM = caseTerm('case9-term', 'Fall 2026', '2026–2027', '2026-08-01', '2026-11-15')
 const CASE9 = buildCaseTermData(CASE9_TERM, [
-  { masterCourseId: 'mc5', code: 'DPT-505', name: 'Biomechanics I', courseType: 'didactic', status: 'released', responseRate: 74, enrollmentCount: 42, responseCount: 31, deadline: 'Jul 20, 2026' },
-  { masterCourseId: 'mc6', code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I', courseType: 'didactic', status: 'released', responseRate: 82, enrollmentCount: 45, responseCount: 37, deadline: 'Jul 22, 2026' },
-  { masterCourseId: 'mc7', code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II', courseType: 'didactic', status: 'released', responseRate: 69, enrollmentCount: 40, responseCount: 28, deadline: 'Jul 25, 2026' },
+  { masterCourseId: 'mc5', code: 'NURS-505', name: 'Fundamentals of Nursing I', courseType: 'didactic', status: 'released', responseRate: 74, enrollmentCount: 42, responseCount: 31, deadline: 'Jul 20, 2026' },
+  { masterCourseId: 'mc6', code: 'NURS-510', name: 'Medical-Surgical Nursing I', courseType: 'didactic', status: 'released', responseRate: 82, enrollmentCount: 45, responseCount: 37, deadline: 'Jul 22, 2026' },
+  { masterCourseId: 'mc7', code: 'NURS-511', name: 'Medical-Surgical Nursing II', courseType: 'didactic', status: 'released', responseRate: 69, enrollmentCount: 40, responseCount: 28, deadline: 'Jul 25, 2026' },
 ])
 
 /* ── the scenario accounts ────────────────────────────────────────────────── */

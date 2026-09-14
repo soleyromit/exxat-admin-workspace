@@ -23,12 +23,16 @@ import {
   gridMark,
   type PlotTheme,
 } from '@/components/pce/plot-figure'
-import { ChartContainer, type ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceArea,
+  LineChart, Line, ScatterChart, Scatter, ZAxis, BarChart, Bar, Cell,
+} from 'recharts'
 import { ChartLeoPlotInsightOverlay } from '@/components/charts-core'
 import { heatmapCellColor, heatmapCellUsesLightText } from '@/lib/chart-heatmap-scale'
+import { ChartHeatmap, buildChartHeatmapPoints } from '@/components/chart-heatmap'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
-import { RESPONSE_TARGET } from '@/lib/pce-analytics'
+import { RESPONSE_TARGET, shortTerm } from '@/lib/pce-analytics'
 import type {
   FacultyStat,
   CourseStat,
@@ -644,9 +648,13 @@ const DASHBOARD_TREND_MARGIN = { top: 20, right: 12, left: 34, bottom: 26 }
 
 const DASHBOARD_TREND_CONFIG: ChartConfig = {
   above: { label: 'On target', color: 'var(--chart-2)' },
-  // Amber `--chart-4`, never the reference's literal red — VIZ-004 / Aarti,
-  // applies file-wide (see the house-style block at the top of this file).
-  below: { label: 'Below target', color: 'var(--chart-4)' },
+  /* Literal red (`--destructive`), NOT the file's usual VIZ-004/Aarti amber
+     house rule — a deliberate, scoped exception for this one chart only
+     (Romit, 2026-09-11: "switch", after being shown the Aarti-red conflict
+     and choosing to override it here). Every OTHER chart in this file, and
+     Exam Management, still follows the amber rule — do not propagate this
+     past this one config without the same explicit confirmation. */
+  below: { label: 'Below target', color: 'var(--destructive)' },
 }
 
 // "Spring 2026" -> "Spring '26" - the reference's fuller axis label. Exported
@@ -871,6 +879,534 @@ export function DashboardResponseTrend({
   )
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   Term-scoped Overview (2026-09-14 PRD) — Recharts, not this file's usual Plot.
+
+   Romit, 2026-09-14: "ensure the chart types are matching and use recharts."
+   Checked the https://pce-three.vercel.app/analytics-2 reference's own rendered
+   DOM first (`svg.highcharts-root`) — it's Highcharts, not Recharts, so this
+   isn't a library-for-library match. It's "use this codebase's own Recharts
+   convention" (`DashboardResponseTrend` above, built on the same `ChartContainer`
+   from `@exxatdesignux/ui/components/ui/chart`) rather than Plot for these four
+   — Overview's own components, not the shared `KpiSpark`/`ProgramScoreTrend`/
+   `ProgramResponseTrend`/`GapQuadrant` still used by By Term/By Faculty/By
+   Course, which stay on Plot unchanged (same reasoning `DashboardResponseTrend`'s
+   own comment gives for not becoming a branch in the shared components).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export function TermKpiSpark({
+  points,
+  tone = 'brand',
+  seriesIndex,
+  height = 34,
+}: {
+  points: { x: number; y: number }[]
+  tone?: 'brand' | 'warn' | 'good'
+  /** Pin to a `--chart-N` series colour so a metric keeps one identity across the tab —
+   *  same reasoning as the Plot `KpiSpark` this replaces. */
+  seriesIndex?: number
+  height?: number
+}) {
+  if (points.length < 3) {
+    return (
+      <p className="py-2 text-xs text-muted-foreground">
+        {points.length <= 1 ? 'One term of data. No trend yet.' : 'Two terms of data. Not enough for a trend.'}
+      </p>
+    )
+  }
+  const color =
+    seriesIndex != null
+      ? `var(--chart-${seriesIndex + 1})`
+      : tone === 'warn'
+        ? 'var(--chart-4)'
+        : tone === 'good'
+          ? 'var(--chart-3)'
+          : 'var(--brand-color)'
+  const yVals = points.map((p) => p.y)
+  const domain: [number, number] = [Math.min(...yVals) * 0.96, Math.max(...yVals) * 1.04]
+  return (
+    <ChartContainer config={{ y: { color } }} style={{ height }} className="w-full">
+      <LineChart data={points} margin={{ top: 4, right: 1, bottom: 4, left: 1 }}>
+        <YAxis domain={domain} hide />
+        <Line
+          type="monotone"
+          dataKey="y"
+          stroke="var(--color-y)"
+          strokeWidth={1.5}
+          isAnimationActive={false}
+          dot={(props: { cx?: number; cy?: number; index?: number }) =>
+            props.index === points.length - 1 ? (
+              <circle key={`spark-dot-${props.index}`} cx={props.cx} cy={props.cy} r={2.5} fill={color} />
+            ) : (
+              <React.Fragment key={`spark-empty-${props.index}`} />
+            )
+          }
+        />
+      </LineChart>
+    </ChartContainer>
+  )
+}
+
+const TERM_RATING_TREND_CONFIG: ChartConfig = {
+  courseAvg: { label: 'Course', color: 'var(--chart-1)' },
+  facultyAvg: { label: 'Faculty', color: 'var(--chart-2)' },
+}
+
+/** Course + faculty rating, term only — no program-average line (PRD: students rate two
+ *  distinct things; a third blended line answers neither question, same D27/D7 rule the
+ *  Plot version already followed) and no AY/Term toggle (PRD drops it). `scopedTerms` marks
+ *  every selected term with a fat translucent reference line (Overview's Term filter is a
+ *  multi-select — one selected term highlighted is the one-element case), the same "fake band"
+ *  technique `DashboardResponseTrend`'s reference line and the Plot version's `scopedTerm` use. */
+export function TermRatingTrend({
+  series,
+  scopedTerms,
+  height = 260,
+}: {
+  series: TermSeriesPoint[]
+  scopedTerms?: string[]
+  height?: number
+}) {
+  const rows = React.useMemo(
+    () => series.map((s) => ({ short: s.short, term: s.term, courseAvg: s.courseAvg, facultyAvg: s.facultyAvg })),
+    [series],
+  )
+  const scored = rows.filter((r) => r.courseAvg != null || r.facultyAvg != null)
+  if (!scored.length) return <ChartEmpty note="Not enough term history to show a trend yet." />
+
+  const vals = scored.flatMap((r) => [r.courseAvg, r.facultyAvg]).filter((v): v is number => v != null)
+  const domain: [number, number] = [
+    Math.floor(Math.min(...vals) * 10) / 10 - 0.2,
+    Math.ceil(Math.max(...vals) * 10) / 10 + 0.2,
+  ]
+  const scopedRows = rows.filter((r) => scopedTerms?.includes(r.term))
+
+  return (
+    <div className="relative w-full">
+      <ChartContainer config={TERM_RATING_TREND_CONFIG} style={{ height }} className="w-full">
+        <LineChart data={rows} margin={{ top: 16, right: 12, bottom: 4, left: 4 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+          <XAxis
+            dataKey="short"
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={{ stroke: 'var(--border)' }}
+          />
+          <YAxis
+            domain={domain}
+            tickFormatter={(v: number) => fmt2(v)}
+            tickCount={5}
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={false}
+            width={36}
+          />
+          {scopedRows.map((r) => (
+            <ReferenceLine key={r.term} x={r.short} stroke="var(--border)" strokeWidth={14} strokeOpacity={0.55} ifOverflow="visible" />
+          ))}
+          <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+          <Line
+            dataKey="courseAvg" type="monotone" stroke="var(--color-courseAvg)" strokeWidth={2}
+            dot={{ r: 3, fill: 'var(--color-courseAvg)', strokeWidth: 0 }} connectNulls isAnimationActive={false}
+          />
+          <Line
+            dataKey="facultyAvg" type="monotone" stroke="var(--color-facultyAvg)" strokeWidth={2}
+            dot={{ r: 3, fill: 'var(--color-facultyAvg)', strokeWidth: 0 }} connectNulls isAnimationActive={false}
+          />
+          <ChartLegend content={<ChartLegendContent />} verticalAlign="bottom" />
+        </LineChart>
+      </ChartContainer>
+      <ChartLeoPlotInsightOverlay data={rows} xDataKey="short" chartFamily="line" />
+    </div>
+  )
+}
+
+const TERM_RESPONSE_TREND_CONFIG: ChartConfig = {
+  responseRate: { label: 'Response rate', color: 'var(--chart-3)' },
+}
+
+export function TermResponseTrend({
+  series,
+  target = RESPONSE_TARGET,
+  scopedTerms,
+  height = 260,
+}: {
+  series: TermSeriesPoint[]
+  target?: number
+  scopedTerms?: string[]
+  height?: number
+}) {
+  const rows = React.useMemo(
+    () =>
+      series
+        .filter((s) => s.responseRate != null)
+        .map((s) => ({ short: s.short, term: s.term, responseRate: s.responseRate as number })),
+    [series],
+  )
+  if (!rows.length) return <ChartEmpty note="No response history recorded yet." />
+  const scopedRows = rows.filter((r) => scopedTerms?.includes(r.term))
+
+  return (
+    <div className="relative w-full">
+      <ChartContainer config={TERM_RESPONSE_TREND_CONFIG} style={{ height }} className="w-full">
+        <LineChart data={rows} margin={{ top: 16, right: 12, bottom: 4, left: 4 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+          <XAxis
+            dataKey="short"
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={{ stroke: 'var(--border)' }}
+          />
+          <YAxis
+            domain={[45, 100]}
+            ticks={[50, 80, 100]}
+            tickFormatter={(d: number) => `${d}%`}
+            tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+            tickLine={false}
+            axisLine={false}
+            width={36}
+          />
+          {scopedRows.map((r) => (
+            <ReferenceLine key={r.term} x={r.short} stroke="var(--border)" strokeWidth={14} strokeOpacity={0.55} ifOverflow="visible" />
+          ))}
+          <ReferenceLine
+            y={target}
+            stroke="var(--muted-foreground)"
+            strokeDasharray="4 4"
+            strokeOpacity={0.8}
+            label={{ value: `target ${target}%`, position: 'insideTopRight', fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+          />
+          <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+          <Line
+            dataKey="responseRate" type="monotone" stroke="var(--color-responseRate)" strokeWidth={2}
+            isAnimationActive={false}
+            dot={(props: { cx?: number; cy?: number; index?: number; payload?: { responseRate: number } }) => (
+              <circle
+                key={`resp-dot-${props.index}`} cx={props.cx} cy={props.cy} r={3}
+                fill={(props.payload?.responseRate ?? 0) < target ? 'var(--chart-4)' : 'var(--color-responseRate)'}
+              />
+            )}
+          />
+        </LineChart>
+      </ChartContainer>
+      <ChartLeoPlotInsightOverlay data={rows} xDataKey="short" chartFamily="line" />
+    </div>
+  )
+}
+
+const QUADRANT_CONFIG: ChartConfig = { courseAvg: { label: 'Course rating', color: 'var(--chart-3)' } }
+
+const QUAD_KEYS = ['tl', 'tr', 'bl', 'br'] as const
+type QuadKey = (typeof QUAD_KEYS)[number]
+
+export const QUAD_LABELS: Record<QuadKey, string> = {
+  tl: 'Faculty strong · course gap',
+  tr: 'Both strong',
+  bl: 'Both need attention',
+  br: 'Course strong · faculty gap',
+}
+
+export type QuadrantPalette = 'zone' | 'diverging' | 'marked' | 'domain'
+
+/**
+ * Sixth pass (2026-09-14). Round 5 (Opus) misread "unique creative quad charts" as a request
+ * for three different chart TYPES (scatter/grid/bar) and built all three — Romit corrected
+ * that immediately: "within quadrant map, i want to see color variants. need 3 variants, i
+ * don't need grid or gap tabs, but more interested in color palette options for quad map." The
+ * chart stays a single scatter (`ScatterChart`, dots in XY space, bubble-sized by enrolment —
+ * unchanged since round 1). What toggles is COLOR TREATMENT, same as rounds 2-4, using only
+ * the corrected tokens from round 4's audit (ink `--chart-3`, amber `--chart-5`, the DS's
+ * `--status-badge-warning-fill`/`-fg` pair) plus, in `domain` only, the two series colors this
+ * SAME dashboard already teaches the reader two cards down (`TermRatingTrend`'s own legend:
+ * Course = `--chart-1`, Faculty = `--chart-2`):
+ *   - `zone` — one amber wash on "Both need attention," the other three quadrants bare card.
+ *     Clockwise's Team Habits pattern (single accent on the one risk cell).
+ *   - `diverging` — adds a second, cool wash on "Both strong" using the DS's paired
+ *     `--status-badge-info-fill`/`-fg`. The two "one dimension lags" quadrants stay bare — a
+ *     two-tone good/bad read, not four hues.
+ *   - `marked` — zero zone fill anywhere; color moves onto the marks. Only the dots inside
+ *     "Both need attention" go amber, everything else stays ink. Hume AI's embedding-plot /
+ *     Vanta's colored-count-badge pattern (color spent on marks, not regions).
+ *   - `domain` (2026-09-14, round 7 — Romit: "not sure whether the user would understand just
+ *     2 colors"; corrected same round — Romit: "how can course strong faculty gap be green?
+ *     same goes for faculty strong course gap?"). Zone/Diverging both leave the two "one
+ *     dimension lagging" quadrants identical (bare), so a reader can't tell WHICH dimension is
+ *     short without reading the corner text. The first cut of `domain` tinted each quadrant
+ *     with its LAGGING series' color — `br` ("Course strong · faculty gap") in `--chart-2`,
+ *     because faculty is what's short there. That's backwards: `--chart-2` reads as green, and
+ *     green is a "this is good" color in every reader's head regardless of which series it's
+ *     borrowed from, so painting it on the one cell literally named "gap" contradicts itself.
+ *     Fixed by tinting each quadrant with its STRONG series' color instead — `tl` ("Faculty
+ *     strong · course gap") washes in `--chart-2` (faculty, the strong one there); `br`
+ *     ("Course strong · faculty gap") washes in `--chart-1` (course, the strong one there).
+ *     Green now only ever appears where faculty is actually strong, blue only where course is
+ *     actually strong — the hue's cultural "good" reading and what it's marking finally agree.
+ *     Reusing `TermRatingTrend`'s own legend colors, so the quadrant reads without a second
+ *     color key. "Both need attention" keeps the amber wash and its emphasized label; "Both
+ *     strong" stays bare — there's no single strong domain to credit when both are strong.
+ * Never red (Aarti's standing rule on rating visualizations) in any of the four. */
+const ATTENTION_QUAD: QuadKey = 'bl'
+const GOOD_QUAD: QuadKey = 'tr'
+/** `marked`'s flag dot color — `--chip-4`, not `--chart-5`. Validated (dataviz skill's
+ *  `validate_palette.js`, 2026-09-14): `--chart-5` vs `--chart-4` (the other amber this same
+ *  file already uses) measure ΔE 8.0 under NORMAL vision — the DS's two ambers are nearly
+ *  indistinguishable even with full color vision, floor is 15. `--chip-4` (the saturated,
+ *  mark-weight sibling of the same amber, not the pale fill-weight one) against the ink dot
+ *  color (`--chart-3`) measures ΔE 17.5 normal-vision / 13.9–15.2 CVD — clears the floor. */
+const ATTENTION_FILL = 'var(--chip-4)'
+/** `domain`: each "one dimension lagging" quadrant tinted with its STRONG series' color (not
+ *  the lagging one — see the design-history comment above for why that reads backwards), using
+ *  the same colors `TermRatingTrend`'s legend already carries on this page. */
+const DOMAIN_FILL: Partial<Record<QuadKey, string>> = { tl: 'var(--chart-2)', br: 'var(--chart-1)' }
+const DOMAIN_FILL_OPACITY = 0.14
+
+function zoneFillFor(key: QuadKey, palette: QuadrantPalette): { fill: string; fillOpacity?: number } {
+  if (palette === 'marked') return { fill: 'transparent' }
+  if (key === ATTENTION_QUAD) return { fill: 'var(--status-badge-warning-fill)' }
+  if (palette === 'diverging' && key === GOOD_QUAD) return { fill: 'var(--status-badge-info-fill)' }
+  if (palette === 'domain' && DOMAIN_FILL[key]) return { fill: DOMAIN_FILL[key]!, fillOpacity: DOMAIN_FILL_OPACITY }
+  return { fill: 'transparent' }
+}
+
+function quadrantOf(courseAvg: number, facultyAvg: number, courseMean: number, facultyMean: number): QuadKey {
+  if (courseAvg < courseMean) return facultyAvg >= facultyMean ? 'tl' : 'bl'
+  return facultyAvg >= facultyMean ? 'tr' : 'br'
+}
+
+/** One dot per course, bubble-sized by enrolment, quadrant-split at the term's own means.
+ *  Labels stay the subtle, non-judgmental wording the Plot `GapQuadrant` already used
+ *  ("Both need attention" / "Course strong · faculty gap") — the PRD's ask to soften the
+ *  reference's "Teaching support recommended" tone was already met before this Recharts
+ *  rebuild; only the rendering engine changed here.
+ *
+ *  `palette` toggles between three color treatments of this one chart — see the design-history
+ *  comment on `QuadrantPalette` above for the audit behind each one. */
+export function CourseFacultyQuadrant({
+  points,
+  courseMean,
+  facultyMean,
+  height = 320,
+  palette = 'domain',
+}: {
+  points: GapPoint[]
+  courseMean: number
+  facultyMean: number
+  height?: number
+  palette?: QuadrantPalette
+}) {
+  if (!points.length) return <ChartEmpty note="No courses scored in this term yet." />
+
+  const xs = points.map((p) => p.courseAvg)
+  const ys = points.map((p) => p.facultyAvg)
+  const xDomain: [number, number] = [Math.min(...xs, courseMean) - 0.3, Math.max(...xs, courseMean) + 0.3]
+  const yDomain: [number, number] = [Math.min(...ys, facultyMean) - 0.3, Math.max(...ys, facultyMean) + 0.3]
+  const labelStyle = { fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }
+  const cornerLabelStyle = { fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }
+  const attentionLabelStyle = { fill: 'var(--status-badge-warning-fg)', fontSize: CHART_TICK_FONT_SIZE, fontWeight: 500 }
+  // `diverging` only: "Both strong" picks up the info-fg color to match its cool wash, but
+  // stays regular weight — it's informational, not something to act on, so the hierarchy still
+  // points at "Both need attention" as the one emphasized label.
+  const goodLabelStyle = { fill: 'var(--status-badge-info-fg)', fontSize: CHART_TICK_FONT_SIZE }
+  // `domain` only: the two "one dimension lagging" labels take the lagging series' own color —
+  // same reasoning as `DOMAIN_FILL` above, regular weight (only the true risk quadrant is bold).
+  const domainLabelStyle = (key: QuadKey) => ({ fill: DOMAIN_FILL[key] ?? 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE })
+
+  const labelStyleFor = (key: QuadKey) => {
+    if (key === ATTENTION_QUAD) return attentionLabelStyle
+    if (palette === 'diverging' && key === GOOD_QUAD) return goodLabelStyle
+    if (palette === 'domain' && DOMAIN_FILL[key]) return domainLabelStyle(key)
+    return cornerLabelStyle
+  }
+
+  const zoneRect = (key: QuadKey) => {
+    const isLeft = key === 'tl' || key === 'bl'
+    const isTop = key === 'tl' || key === 'tr'
+    const x1 = isLeft ? xDomain[0] : courseMean
+    const x2 = isLeft ? courseMean : xDomain[1]
+    const y1 = isTop ? facultyMean : yDomain[0]
+    const y2 = isTop ? yDomain[1] : facultyMean
+    const position = `inside${isTop ? 'Top' : 'Bottom'}${isLeft ? 'Left' : 'Right'}` as const
+    return (
+      <ReferenceArea
+        key={key}
+        x1={x1} x2={x2} y1={y1} y2={y2}
+        {...zoneFillFor(key, palette)}
+        label={{ value: QUAD_LABELS[key], position, offset: 12, ...labelStyleFor(key) }}
+      />
+    )
+  }
+
+  return (
+    <div className="relative w-full">
+    <ChartContainer config={QUADRANT_CONFIG} style={{ height }} className="w-full">
+      <ScatterChart margin={{ top: 40, right: 20, bottom: 34, left: 48 }}>
+        <XAxis
+          type="number" dataKey="courseAvg" domain={xDomain} name="Course rating"
+          tickFormatter={(v: number) => fmt2(v)}
+          label={{ value: 'Course content score →', position: 'insideBottom', offset: -10, ...labelStyle }}
+          tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+          tickLine={false} axisLine={{ stroke: 'var(--border)' }}
+        />
+        <YAxis
+          type="number" dataKey="facultyAvg" domain={yDomain} name="Faculty rating"
+          tickFormatter={(v: number) => fmt2(v)}
+          label={{ value: '↑ Faculty score', angle: -90, position: 'insideLeft', ...labelStyle }}
+          tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+          tickLine={false} axisLine={false}
+        />
+        {/* 90–460, not the old 60–260 — enrolment was rendering across a 4.7px radius span,
+            too tight to read as a real encoding rather than noise. */}
+        <ZAxis type="number" dataKey="enrolled" range={[90, 460]} name="Enrolled" />
+        <ReferenceLine
+          x={courseMean} stroke="var(--muted-foreground)" strokeOpacity={0.65} strokeDasharray="4 4"
+          label={{ value: 'Term mean', position: 'top', fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+        />
+        <ReferenceLine
+          y={facultyMean} stroke="var(--muted-foreground)" strokeOpacity={0.65} strokeDasharray="4 4"
+          label={{ value: 'Term mean', position: 'insideBottomRight', fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }}
+        />
+        {QUAD_KEYS.map(zoneRect)}
+        <ChartTooltip
+          cursor={{ strokeDasharray: '3 3' }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null
+            const p = payload[0]!.payload as GapPoint
+            return (
+              <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                <p className="font-medium text-foreground">{p.courseCode} · {p.courseName}</p>
+                <p className="text-muted-foreground">Course {p.courseAvg.toFixed(2)} · Faculty {p.facultyAvg.toFixed(2)}</p>
+                <p className="text-muted-foreground">{p.enrolled} enrolled</p>
+              </div>
+            )
+          }}
+        />
+        {/* Dots are `--chart-3` ink in `zone`/`diverging` — they recede so the wash reads as
+            the flag. `marked` spends no color on the zone at all, so the flag moves onto the
+            marks instead: only dots inside "Both need attention" go amber. */}
+        <Scatter data={points} fillOpacity={0.9} stroke="var(--card)" strokeWidth={1.5} isAnimationActive={false}>
+          {palette === 'marked'
+            ? points.map((p, i) => (
+                <Cell
+                  key={i}
+                  fill={quadrantOf(p.courseAvg, p.facultyAvg, courseMean, facultyMean) === ATTENTION_QUAD ? ATTENTION_FILL : 'var(--chart-3)'}
+                />
+              ))
+            : points.map((_, i) => <Cell key={i} fill="var(--chart-3)" />)}
+        </Scatter>
+      </ScatterChart>
+    </ChartContainer>
+      {/* No `data`/`xDataKey` — a scatter's two free axes don't resolve to one cartesian
+          x-lookup the way a term-axis line chart does. Same data-less call this codebase
+          already uses for other scatter/bubble charts (`components/charts-overview.tsx`). */}
+      <ChartLeoPlotInsightOverlay chartFamily="scatter" />
+    </div>
+  )
+}
+
+/**
+ * Faculty × term grid for one course — the By Course "Faculty heat map" (PRD 2026-09-14).
+ * Rows are this course's instructors (best → worst, from `courseFacultyHeatCells`), columns
+ * are terms, cell = that instructor's own teaching score for that term. Built on the ECharts
+ * DS heatmap primitive (`ChartHeatmap`) rather than the vendored table variant
+ * (`course-term-grid.tsx`) — this file's other charts already wire into `ChartHeatmap`'s Leo-
+ * spotting convention, and a course×term-shaped chart neither of those two orphaned
+ * implementations is currently wired to a screen means there is no established winner to
+ * defer to either way.
+ */
+export function CourseFacultyHeatmap({
+  faculty,
+  terms,
+  cells,
+  programAvgByTerm,
+  height,
+}: {
+  faculty: string[]
+  terms: string[]
+  cells: { facultyName: string; term: string; score: number }[]
+  /** Program-average row appended below the instructors, for comparison (PRD: "show faculty
+   *  program average in each term for easy comparison"). Omit terms with no program value. */
+  programAvgByTerm?: Map<string, number>
+  height?: number
+}) {
+  const rows = programAvgByTerm ? [...faculty, 'Program average'] : faculty
+  const scoreByCell = React.useMemo(() => {
+    const m = new Map<string, number>()
+    cells.forEach((c) => m.set(`${c.facultyName}::${c.term}`, c.score))
+    return m
+  }, [cells])
+
+  const matrix = React.useMemo(
+    () =>
+      rows.map((row) =>
+        terms.map((term) =>
+          row === 'Program average'
+            ? (programAvgByTerm?.get(term) ?? null)
+            : (scoreByCell.get(`${row}::${term}`) ?? null),
+        ),
+      ),
+    [rows, terms, scoreByCell, programAvgByTerm],
+  )
+
+  const points = React.useMemo(
+    () => buildChartHeatmapPoints(rows, terms.map(shortTerm), matrix),
+    [rows, terms, matrix],
+  )
+
+  if (!faculty.length || !terms.length) {
+    return <ChartEmpty note="No instructors scored for this course yet." />
+  }
+
+  const peakCellIndex = points.reduce(
+    (best, p, i) => (p.value != null && p.value > (points[best]?.value ?? Number.NEGATIVE_INFINITY) ? i : best),
+    0,
+  )
+
+  return (
+    <ChartHeatmap
+      rows={rows}
+      cols={terms.map(shortTerm)}
+      points={points}
+      config={{}}
+      peakCellIndex={peakCellIndex}
+      valueLabel="Score"
+      domain={[1, 5]}
+      valueFormatter={fmt2}
+      height={height}
+      maxVisibleRows={8}
+    />
+  )
+}
+
+const RATING_BINS = [
+  { label: '3.0–3.5', min: 3.0, max: 3.5 },
+  { label: '3.5–4.0', min: 3.5, max: 4.0 },
+  { label: '4.0–4.5', min: 4.0, max: 4.5 },
+  { label: '4.5–5.0', min: 4.5, max: 5.01 },
+] as const
+
+const HISTOGRAM_CONFIG: ChartConfig = { count: { label: 'Count', color: 'var(--chart-1)' } }
+
+/** Distribution of a leaderboard's own rating column, four fixed bins — the small bar chart
+ *  the reference sits above both leaderboard tables (Course and Faculty). */
+export function RatingDistributionHistogram({ values, height = 140 }: { values: number[]; height?: number }) {
+  const data = React.useMemo(
+    () => RATING_BINS.map((b) => ({ label: b.label, count: values.filter((v) => v >= b.min && v < b.max).length })),
+    [values],
+  )
+  if (!values.length) return <ChartEmpty note="No scored rows yet." />
+  return (
+    <ChartContainer config={HISTOGRAM_CONFIG} style={{ height }} className="w-full">
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
+        <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+        <XAxis dataKey="label" tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }} tickLine={false} axisLine={{ stroke: 'var(--border)' }} />
+        <YAxis allowDecimals={false} tick={{ fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }} tickLine={false} axisLine={false} width={24} />
+        <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+        <Bar dataKey="count" fill="var(--color-count)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+      </BarChart>
+    </ChartContainer>
+  )
+}
+
 /**
  * The cohort's STUDENTS, one cell each — the dimension every other chart here aggregates away.
  *
@@ -1059,6 +1595,7 @@ export function ProgramScoreTrend({
   series,
   detail = false,
   height,
+  scopedTerm,
 }: {
   series: TermSeriesPoint[]
   /**
@@ -1070,6 +1607,10 @@ export function ProgramScoreTrend({
   detail?: boolean
   /** Caller-specific sizing — the Overview stack and a standalone score card size differently. */
   height?: number
+  /** The term the tab is scoped to, marked so the trend reads as context around it — same
+   *  mechanism and prop name as `ProgramResponseTrend`'s `scopedTerm`, so the two trend cards
+   *  in the term-scoped Overview (2026-09-14 PRD) highlight the same term identically. */
+  scopedTerm?: string
 }) {
   const scoreRows = React.useMemo(
     () =>
@@ -1081,6 +1622,10 @@ export function ProgramScoreTrend({
   )
 
   const termOrder = React.useMemo(() => series.map((s) => s.short), [series])
+  const scopedShort = React.useMemo(
+    () => series.find((s) => s.term === scopedTerm)?.short,
+    [series, scopedTerm],
+  )
 
   /** 0.6 keeps a quiet programme from looking like a rollercoaster. */
   const scoreDomain = React.useMemo(
@@ -1104,6 +1649,11 @@ export function ProgramScoreTrend({
       marginRight: 92,
       marks: [
         gridMark(theme),
+        // Same highlight band as `ProgramResponseTrend`'s `scopedTerm` — drawn before the
+        // lines so it reads as ground, not figure.
+        ...(scopedShort
+          ? [Plot.ruleX([scopedShort], { stroke: theme.border, strokeWidth: 12, strokeOpacity: 0.55 })]
+          : []),
         Plot.line(scoreRows, { x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x' }),
         // Course and faculty scores track each other closely by nature, so their end-labels
         // land on top of each other. A fixed opposing offset guarantees separation without
@@ -1155,7 +1705,7 @@ export function ProgramScoreTrend({
           : []),
       ],
     }),
-    [scoreRows, termOrder, scoreDomain, detail],
+    [scoreRows, termOrder, scoreDomain, detail, scopedShort],
   )
 
   // Blank axes read as a rendering failure, not as an empty state — guard like every other
@@ -1165,6 +1715,108 @@ export function ProgramScoreTrend({
   }
 
   return <PlotFigure spec={scoreSpec} height={height ?? (detail ? 340 : 196)} />
+}
+
+/**
+ * One entity's score against the program's, over a term axis — the By Course "Rating trend
+ * by term" (PRD 2026-09-14): this course vs the program average, term-only (no AY toggle),
+ * selected term highlighted. Same direct-labelled two-line grammar as `ProgramScoreTrend`
+ * (course content vs faculty) — a sibling, not a new chart species, just a different pair of
+ * series over the same term axis.
+ */
+export function CourseVsProgramTrend({
+  points,
+  detail = false,
+  height,
+  scopedTerm,
+  entityLabel = 'This course',
+}: {
+  points: { term: string; short: string; courseAvg: number | null; programAvg: number | null }[]
+  detail?: boolean
+  height?: number
+  scopedTerm?: string
+  entityLabel?: string
+}) {
+  const rows = React.useMemo(
+    () =>
+      points.flatMap((p) => [
+        ...(p.courseAvg != null ? [{ term: p.short, metric: entityLabel, value: p.courseAvg }] : []),
+        ...(p.programAvg != null ? [{ term: p.short, metric: 'Program average', value: p.programAvg }] : []),
+      ]),
+    [points, entityLabel],
+  )
+
+  const termOrder = React.useMemo(() => points.map((p) => p.short), [points])
+  const scopedShort = React.useMemo(
+    () => points.find((p) => p.term === scopedTerm)?.short,
+    [points, scopedTerm],
+  )
+  const domain = React.useMemo(() => paddedDomain(rows.map((r) => r.value), 0.6), [rows])
+
+  const spec = React.useCallback(
+    (theme: PlotTheme) => ({
+      marginLeft: 36,
+      marginTop: 16,
+      marginBottom: 24,
+      x: { domain: termOrder, label: null, ...axisDefaults(theme) },
+      y: { domain, label: null, ticks: 4, ...axisDefaults(theme) },
+      // `theme.series[2]` (--chart-3), not `mutedForeground` — this is a real second DATA
+      // series (its own dots + end-label), not a static reference line, so it earns a real
+      // chart color like every other two-series chart in this file (content/faculty pairs on
+      // chart-1/chart-2); a muted-gray series read as "greyed out" next to a colored one
+      // (Romit, 2026-09-14: "colors used in this tab are all different"). Dashed stroke still
+      // carries the "benchmark, not a second course" meaning (VIZ-002).
+      color: { domain: [entityLabel, 'Program average'], range: [theme.content, theme.series[2]!], legend: false },
+      marginRight: 100,
+      marks: [
+        gridMark(theme),
+        ...(scopedShort
+          ? [Plot.ruleX([scopedShort], { stroke: theme.border, strokeWidth: 12, strokeOpacity: 0.55 })]
+          : []),
+        // Two marks, not one dasharray-per-datum callback (Plot's line-mark types don't accept
+        // a data-driven `strokeDasharray` function) — program average reads as a benchmark,
+        // not a second course, so its own line is dashed per this file's own convention for
+        // reference lines (VIZ-002).
+        Plot.line(rows.filter((r) => r.metric === entityLabel), {
+          x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x',
+        }),
+        Plot.line(rows.filter((r) => r.metric === 'Program average'), {
+          x: 'term', y: 'value', stroke: 'metric', strokeWidth: 2, curve: 'monotone-x', strokeDasharray: '4,3',
+        }),
+        ...([entityLabel, 'Program average'] as const).map((metric) =>
+          Plot.text(
+            [[...rows].reverse().find((r) => r.metric === metric)].filter(
+              (r): r is (typeof rows)[number] => !!r,
+            ),
+            {
+              x: 'term', y: 'value', text: 'metric', fill: 'metric', textAnchor: 'start',
+              dx: 8, dy: metric === entityLabel ? -9 : 9, fontSize: CHART_TICK_FONT_SIZE,
+            },
+          ),
+        ),
+        Plot.dot(rows, {
+          x: 'term', y: 'value', fill: 'metric', r: 3,
+          channels: { Term: 'term', Series: 'metric', Score: (d: { value: number }) => fmt2(d.value) },
+          tip: { format: { x: false, y: false, fill: false } },
+        }),
+        ...(detail
+          ? ([entityLabel, 'Program average'] as const).map((metric) =>
+              Plot.text(rows.filter((r) => r.metric === metric), {
+                x: 'term', y: 'value', text: (d: { value: number }) => fmt2(d.value),
+                fill: 'metric', dy: metric === entityLabel ? -12 : 14, fontSize: CHART_TICK_FONT_SIZE,
+              }),
+            )
+          : []),
+      ],
+    }),
+    [rows, termOrder, domain, detail, scopedShort, entityLabel],
+  )
+
+  if (!points.length || !rows.length) {
+    return <ChartEmpty note="Not enough term history to show a trend yet." />
+  }
+
+  return <PlotFigure spec={spec} height={height ?? (detail ? 340 : 196)} />
 }
 
 /**
@@ -2165,7 +2817,7 @@ export function CourseRankDots({
    * (story 3) is to flag low courses.
    *
    * It used to take whatever order it was handed and render all 15, best first, so the top
-   * row of "Courses scoring lowest" was DPT-510 at 4.38 — the highest course in the program,
+   * row of "Courses scoring lowest" was NURS-510 at 4.38 — the highest course in the program,
    * above the median. A card that promises the worst and opens with the best is not a ranking
    * problem, it's a truthfulness one. The screenshot caught it; no test could.
    *

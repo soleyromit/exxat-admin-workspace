@@ -20,11 +20,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -78,7 +73,6 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
      visible affordance there. */
   const parentActive = !isAnyChildActive && (isPrefixActive || isNavActive(pathname, item.url, allNavUrls))
 
-  const [open, setOpen] = React.useState(isAnyChildActive)
   const [flyoutOpen, setFlyoutOpen] = React.useState(false)
   const flyoutTitleId = React.useId()
 
@@ -95,8 +89,6 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
     return () => clearTimeout(t)
   }, [targetIconRail])
 
-  // Sync open state with active child on navigation
-  React.useEffect(() => { setOpen(isAnyChildActive) }, [pathname, isAnyChildActive])
   React.useEffect(() => { setFlyoutOpen(false) }, [pathname])
 
   if (!item.children?.length) return null
@@ -160,60 +152,40 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
     )
   }
 
-  // Expanded: inline collapsible with animated sub-list
+  // Expanded: static group header + always-visible sub-list. No collapse
+  // toggle, no chevron — `item.url` is "#" for these (pure grouping rows,
+  // never a real destination), so the header renders as a non-interactive
+  // label rather than a fake button that does nothing.
   return (
-    <Collapsible open={open} onOpenChange={setOpen} asChild>
-      <SidebarMenuItem className="group/collapsible">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton isActive={parentActive}>
-                <span
-                  key={parentActive ? "active" : "idle"}
-                  className={cn(
-                    "size-4 shrink-0 flex items-center justify-center",
-                    parentActive && "[animation:sidebar-icon-pop_380ms_cubic-bezier(0.34,1.56,0.64,1)_both]",
-                  )}
-                  aria-hidden="true"
-                >
-                  {triggerIcon}
-                </span>
-                <SidebarNavLabel>{item.title}</SidebarNavLabel>
-                <span className="ms-auto flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-                  <i
-                    className="fa-light fa-chevron-right text-xs text-current transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none"
-                    aria-hidden="true"
-                  />
-                </span>
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile}>
-            {item.title}
-          </TooltipContent>
-        </Tooltip>
-        {/* overflow-hidden safe — floating uses Radix Portal */}
-        <CollapsibleContent className="overflow-hidden group-data-[collapsible=icon]:hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
-          <SidebarMenuSub>
-            {item.children.map(child => {
-              const childActive = childIsActive(child)
-              return (
-                <SidebarMenuSubItem key={child.key}>
-                  <SidebarMenuSubButton asChild isActive={childActive}>
-                    <Link href={child.url} aria-current={childActive ? "page" : undefined}>
-                      <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
-                        {childActive && child.iconActive ? child.iconActive : child.icon}
-                      </span>
-                      <SidebarNavLabel>{child.title}</SidebarNavLabel>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              )
-            })}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </SidebarMenuItem>
-    </Collapsible>
+    <SidebarMenuItem>
+      <div
+        className="flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-start text-sm text-sidebar-foreground"
+        role="heading"
+        aria-level={3}
+      >
+        <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
+          {triggerIcon}
+        </span>
+        <SidebarNavLabel>{item.title}</SidebarNavLabel>
+      </div>
+      <SidebarMenuSub>
+        {item.children.map(child => {
+          const childActive = childIsActive(child)
+          return (
+            <SidebarMenuSubItem key={child.key}>
+              <SidebarMenuSubButton asChild isActive={childActive}>
+                <Link href={child.url} aria-current={childActive ? "page" : undefined}>
+                  <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
+                    {childActive && child.iconActive ? child.iconActive : child.icon}
+                  </span>
+                  <SidebarNavLabel>{child.title}</SidebarNavLabel>
+                </Link>
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          )
+        })}
+      </SidebarMenuSub>
+    </SidebarMenuItem>
   )
 }
 

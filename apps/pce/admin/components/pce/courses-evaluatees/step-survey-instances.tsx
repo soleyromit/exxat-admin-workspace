@@ -883,7 +883,7 @@ function EvaluateeRoster({
   }
   const deselectedKeys = new Set(deselectedFresh.map(i => i.key))
 
-  // 2026-08-13 fix (Romit, live click-test against DPT-510 caught this):
+  // 2026-08-13 fix (Romit, live click-test against NURS-510 caught this):
   // the ONE real multi-instructor row in the fixture (co13 — Chen already
   // covered by a Live survey, Gomez still free) has a FRESH count of 1, not
   // 2 — Chen lives in `dups`, a completely separate list, so the new
@@ -925,7 +925,7 @@ function EvaluateeRoster({
     else readyGroups.push({ key: groupKey, roleLabel: i.roleLabel, scope: i.scope, instances: [i] })
   }
   // Every non-course role now folds its dups into its own card (roleDups,
-  // below) — dropped from the standalone list here so Chen-on-DPT-510
+  // below) — dropped from the standalone list here so Chen-on-NURS-510
   // renders once, not twice. A role with ONLY dups (no fresh person at
   // all) has no readyGroups entry to fold into, so it correctly falls
   // through to the standalone list unchanged.
@@ -942,7 +942,7 @@ function EvaluateeRoster({
       {readyGroups.map(group => {
         const keys = group.instances.map(i => i.key)
         const allIn = keys.every(k => included.has(k))
-        // Folds in this role's dups (see dupsByRole above) — DPT-510's
+        // Folds in this role's dups (see dupsByRole above) — NURS-510's
         // Instructor role is 1 fresh (Gomez) + 1 locked (Chen); rendering
         // Chen alongside Gomez needs the role's TOTAL headcount, not just
         // the fresh one.
@@ -959,7 +959,7 @@ function EvaluateeRoster({
         // (same day) gated this on `count > 1` to minimize the diff against
         // the shipped single-person ToggleSwitch path; wrong call — most
         // courses in the fixture have exactly 1 person per role, so that
-        // gate meant the change was invisible on everything except DPT-510.
+        // gate meant the change was invisible on everything except NURS-510.
         // Reversed: every non-course role uses the checklist now, one
         // control for identity + add/remove regardless of count, matching
         // what was actually demoed and picked. Course material keeps its
@@ -984,7 +984,7 @@ function EvaluateeRoster({
                 </span>
                 {/* Select-all, only when the card actually has 2+ people to
                     select (Romit, 2026-08-13 follow-up) — a role with one
-                    free person plus a locked dup (DPT-510) gets no master
+                    free person plus a locked dup (NURS-510) gets no master
                     toggle, since toggling "all" would be identical to that
                     person's own checkbox. Reuses onToggleUnits exactly as
                     the pre-2026-08-13 role-level toggle did — same call,

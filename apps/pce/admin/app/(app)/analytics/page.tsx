@@ -4,19 +4,15 @@ import { useState, useMemo, useEffect, Suspense, lazy } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  ToggleGroup, ToggleGroupItem,
   Tabs, TabsList, TabsTrigger, TabsContent,
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
   Avatar, AvatarFallback, Skeleton,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
-import { usePce } from '@/components/pce/pce-state'
-import { MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
-import type { NudgeTarget } from '@/components/pce/analytics-panels'
+import { MOCK_FACULTY, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
-import { facultyStats, allTerms, type FacultyEvalRoleId } from '@/lib/pce-analytics'
+import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
+import { facultyStats, allTerms, academicYears, termOfferingsEvaluated, type FacultyEvalRoleId } from '@/lib/pce-analytics'
 
 /**
  * By Term / By Faculty / By Course code-split from Overview's initial bundle.
@@ -31,14 +27,14 @@ import { facultyStats, allTerms, type FacultyEvalRoleId } from '@/lib/pce-analyt
  * to a single chunk request — opening any one of the three loads the whole
  * analytics-panels module once, not three times.
  */
-const ByTermPanel = lazy(() =>
-  import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByTermPanel })),
-)
 const ByFacultyPanel = lazy(() =>
   import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByFacultyPanel })),
 )
 const ByCoursePanel = lazy(() =>
   import('@/components/pce/analytics-panels').then((m) => ({ default: m.ByCoursePanel })),
+)
+const CourseOfferingList = lazy(() =>
+  import('@/components/pce/course-offering-list').then((m) => ({ default: m.CourseOfferingList })),
 )
 const FacultyLeaderboardSection = lazy(() =>
   import('@/components/pce/faculty-leaderboard-section').then((m) => ({ default: m.FacultyLeaderboardSection })),
@@ -66,6 +62,7 @@ function prefetchAnalyticsTabs() {
   import('@/components/pce/analytics-panels')
   import('@/components/pce/faculty-leaderboard-section')
   import('@/components/pce/faculty-portfolio-charts')
+  import('@/components/pce/course-offering-list')
 }
 
 function AnalyticsTabSkeleton({ label }: { label: string }) {
@@ -80,21 +77,20 @@ function AnalyticsTabSkeleton({ label }: { label: string }) {
   )
 }
 
-type Axis = 'term' | 'cohort'
 /**
  * 'overview' was retired Jul 2026 on the premise that "the monitoring layer moved to the
  * Dashboard home" — but it never did: `dashboard-home.tsx` is a response-collection ops
  * surface with no charts, so 8 of the 20 ADMIN analytics stories had no home at all.
- * Restored 2026-07-14 per Monil's accepted model (2026-07-13): "three tabs, in fact four:
- * overview, by faculty, by course and by term", tabs on top rather than in the sidebar.
+ * Restored 2026-07-14 per Monil's accepted model (2026-07-13). By Term retired 2026-09-14
+ * (Romit) — three fixed tabs now: Overview, Faculty, Course, plus one dynamic tab per open
+ * course. `activeTab` is a plain `string`, not a fixed union — an open course is
+ * `course:<code>`, a dynamic value a union can't express.
  */
-type AnalyticsTab = 'overview' | 'term' | 'faculty' | 'course'
 
 function AnalyticsInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const { sendSurveyReminder } = usePce()
 
   useEffect(() => {
     const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 200)
@@ -132,13 +128,35 @@ function AnalyticsInner() {
    */
   const param = (key: string) => searchParams?.get(key) ?? null
 
-  const activeTab: AnalyticsTab = (() => {
-    const requested = param('tab')
-    return requested === 'faculty' || requested === 'course' || requested === 'term'
-      ? requested
-      : 'overview'
-  })()
+  /**
+   * Closable course tabs (Romit, 2026-09-14: "shown besides the remaining tabs") — real
+   * `Tabs.Trigger`s, direct children of the page's own `<TabsList>`, next to Overview/Faculty/
+   * Course, each with its own highlight state.
+   *
+   * `openCourseTabs` is the open set; `tab` (below) says which one, if any, is active —
+   * `course:<code>`. A prior pass tried a close BUTTON as a sibling `<div>` next to the
+   * trigger, still inside `<TabsList>` — axe's dev overlay caught it live: CRITICAL
+   * `aria-required-children`, because a tablist's only allowed children are `tab`-role
+   * elements, and that wrapper div wasn't one. The close control here is nested INSIDE the
+   * trigger instead (so the tablist's direct child is still the trigger, satisfying that
+   * rule) and is a `<span role="button">`, not a real `<button>` — Radix's `Tabs.Trigger`
+   * renders a native `<button>`, and a `<button>` inside a `<button>` is invalid HTML axe
+   * would flag as nested-interactive. Re-checked live after this change: 0 findings.
+   */
+  const openCourseTabsParam = param('courseTabs')
+  const openCourseTabs = useMemo(
+    () => (openCourseTabsParam ? openCourseTabsParam.split(',').filter(Boolean) : []),
+    [openCourseTabsParam],
+  )
 
+  const activeTab: string = (() => {
+    const requested = param('tab')
+    if (requested === 'faculty' || requested === 'course' || requested === 'overview') return requested
+    if (requested?.startsWith('course:') && openCourseTabs.includes(requested.slice('course:'.length))) {
+      return requested
+    }
+    return 'overview'
+  })()
   /**
    * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
    * drill: person AND tab) lands as ONE history entry — two pushes would make Back a
@@ -153,18 +171,41 @@ function AnalyticsInner() {
     router.push(`${pathname}?${next.toString()}`, { scroll: false })
   }
 
-  const setActiveTab = (tab: AnalyticsTab) => setScope({ tab })
-  const [axis, setAxis]                             = useState<Axis>('term')
-  const term = param('term') || 'Spring 2026'
-  const setTerm = (t: string) => setScope({ term: t })
-  const [cohort, setCohort]                         = useState('Class of 2026')
-  const [nudgeTarget, setNudgeTarget]               = useState<NudgeTarget | null>(null)
+  const setActiveTab = (tab: string) => setScope({ tab })
+
+  /** Open a course (or activate it if already open) — one push for both, same reasoning as
+   *  every other combined-change writer in this file. */
+  const openCourseTab = (code: string) => {
+    const next = openCourseTabs.includes(code) ? openCourseTabs : [...openCourseTabs, code]
+    setScope({ tab: `course:${code}`, courseTabs: next.join(',') })
+  }
+  /** Close a course. If it was the active one, fall back to the offering list; if it wasn't,
+   *  leave `tab` untouched so closing a background tab doesn't move the reader. */
+  const closeCourseTab = (code: string) => {
+    const next = openCourseTabs.filter((c) => c !== code)
+    setScope({
+      courseTabs: next.length ? next.join(',') : null,
+      ...(activeTab === `course:${code}` ? { tab: 'course' } : {}),
+    })
+  }
+
+  /** Default term — the newest FULLY-evaluated term, one back from the newest when the
+   *  newest is still short of full coverage. Was a bare 'Spring 2026' literal, which is this
+   *  fixture's current/still-collecting term: Overview's leaderboards landed on it with 2 of
+   *  12 courses and 1 of ~16 faculty scored (everything else Pending), which reads as broken
+   *  rather than as a term still in progress. Same "Live" vs "Last closed" distinction the
+   *  Dashboard already draws for this fixture — Overview's job is retrospective comparison,
+   *  so it should land one term back from a still-collecting one, not on it. */
+  const defaultTerm = useMemo(() => {
+    const newestFirst = [...allTerms()].reverse()
+    const newest = newestFirst[0]
+    if (!newest) return 'Spring 2026'
+    const coverage = termOfferingsEvaluated(newest)
+    return coverage.total > 0 && coverage.evaluated < coverage.total ? (newestFirst[1] ?? newest) : newest
+  }, [])
   const [selectedSurveyId, setSelectedSurveyId]     = useState<string | null>(null)
   const selectedFacultyId = param('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
   const setSelectedFacultyId = (id: string) => setScope({ facultyId: id })
-
-  const selectedCourseCode = param('courseCode') || ''
-  const setSelectedCourseCode = (code: string) => setScope({ courseCode: code })
 
   /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
   const facultyTerm = param('facultyTerm') ?? undefined
@@ -181,7 +222,40 @@ function AnalyticsInner() {
   /** Terms that HAVE evaluation history, newest first — the By Term axis. */
   const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
 
-  const scopeLabel = axis === 'term' ? term : cohort
+  /** Overview's own AY/Term pair — Overview's ONLY filters per the 2026-09-14 PRD ("Filters:
+   *  None except the term and AY from above"). AY narrows the term list, same UX as the
+   *  https://pce-three.vercel.app/analytics-2 reference. Term is a MULTI-select (Romit,
+   *  2026-09-14) — `overviewTerms` is always one or more terms, never a bare string, so every
+   *  Overview stat pools across the full selection the same way "all terms" already pools
+   *  elsewhere in this file. Deliberately its OWN state, not the `term`/`setTerm` above: those
+   *  drive By Term's single-term axis, a different question ("browse one term's history") than
+   *  Overview's ("compare within this scope"), and forcing them to share one value would make
+   *  a multi-select on one tab silently narrow a single-select on another. */
+  const overviewAcademicYears = useMemo(() => academicYears(), [])
+  const overviewAcademicYear = param('ay') || overviewAcademicYears.find((ay) => ay.terms.includes(defaultTerm))?.year || overviewAcademicYears[0]?.year || ''
+  const overviewTermsForYear = overviewAcademicYears.find((ay) => ay.year === overviewAcademicYear)?.terms ?? analyticsTerms
+  const overviewTermsParam = param('terms')
+  const overviewTerms = useMemo(() => {
+    const fromUrl = overviewTermsParam
+      ? overviewTermsParam.split(',').filter((t) => overviewTermsForYear.includes(t))
+      : []
+    if (fromUrl.length) return fromUrl
+    return [overviewTermsForYear.includes(defaultTerm) ? defaultTerm : (overviewTermsForYear[0] ?? defaultTerm)]
+  }, [overviewTermsParam, overviewTermsForYear, defaultTerm])
+  const setOverviewAcademicYear = (ay: string) => {
+    const firstTerm = overviewAcademicYears.find((a) => a.year === ay)?.terms[0]
+    setScope({ ay, terms: firstTerm ?? null })
+  }
+  const toggleOverviewTerm = (t: string) => {
+    const next = overviewTerms.includes(t) ? overviewTerms.filter((x) => x !== t) : [...overviewTerms, t]
+    // Guard rather than `TokenSelect`'s `minOne` prop: `minOne` disables the last chip's
+    // remove button, and that disabled state's styling dimmed the WHOLE chip's text below
+    // AA contrast (axe: 3.66:1, needs 4.5:1) — a real, pre-existing gap in the shared
+    // component surfaced by Overview defaulting to exactly one term. Same guarantee ("can't
+    // empty the selection") enforced here instead: a toggle that would empty it is a no-op.
+    if (next.length) setScope({ terms: next.join(',') })
+  }
+
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
 
   /** The selected faculty member's class-size-weighted mean — the portfolio's anchor value.
@@ -198,16 +272,6 @@ function AnalyticsInner() {
     return stat && stat.score.state === 'value' ? stat.score.value.weighted : null
   }, [selectedFacultyId])
 
-  const distinctCourses = useMemo(() => {
-    const seen = new Set<string>()
-    const list: { code: string; name: string }[] = []
-    MOCK_FACULTY_OFFERINGS.forEach(o => {
-      if (!seen.has(o.courseCode)) { seen.add(o.courseCode); list.push({ code: o.courseCode, name: o.courseName }) }
-    })
-    return list.sort((a, b) => a.code.localeCompare(b.code))
-  }, [])
-  const effectiveCourseCode = selectedCourseCode || distinctCourses[0]?.code || ''
-
   return (
     <>
       <SiteHeader title="Analytics" />
@@ -216,66 +280,83 @@ function AnalyticsInner() {
         <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnalyticsTab)} className="flex flex-col flex-1 min-h-0">
+      {/* AY/Term filter row — OUTSIDE the Tabs component entirely (not a sibling of
+          TabsContent inside <Tabs>, which the prior two passes both still got wrong: first
+          nested in the Overview panel, then moved only as far as beside the tab bar but still
+          inside <Tabs>). This row renders BEFORE <Tabs> starts, between the page title and the
+          tab strip, so it cannot read as "part of" any tab or the tab bar. */}
+      <div className="shrink-0 flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 24px' }}>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground" htmlFor="overview-ay">Academic year</label>
+          <Select value={overviewAcademicYear} onValueChange={setOverviewAcademicYear}>
+            <SelectTrigger id="overview-ay" className="h-8 w-32 text-sm" aria-label="Select academic year"><SelectValue /></SelectTrigger>
+            <SelectContent>{overviewAcademicYears.map((ay) => <SelectItem key={ay.year} value={ay.year}>{ay.year}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label id="overview-term-label" className="text-xs font-medium text-muted-foreground">Terms</label>
+          <TokenSelect
+            labelId="overview-term-label"
+            contentLabel="Select terms"
+            placeholder="Select terms"
+            options={overviewTermsForYear.map((t) => ({ value: t, label: t }))}
+            selected={overviewTerms}
+            onToggle={toggleOverviewTerm}
+          />
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
         <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="faculty">By Faculty</TabsTrigger>
-            <TabsTrigger value="course">By Course</TabsTrigger>
-            <TabsTrigger value="term">By Term</TabsTrigger>
+            <TabsTrigger value="faculty">Faculty</TabsTrigger>
+            <TabsTrigger value="course">Course</TabsTrigger>
+            {/* One real Tabs.Trigger per open course — a direct child of TabsList, same as the
+                three fixed tabs above (see the state comment on `openCourseTabs`). Romit,
+                2026-09-14: keep this inline × (a first correction removed it and dropped the
+                separate "Close {code}" button from the panel below instead — the × is now the
+                ONLY close control). It stays MOUSE-ONLY chrome, not an accessible one: a first
+                pass made it `role="button" tabIndex={0}`, and axe's dev overlay caught it live —
+                SERIOUS `nested-interactive`, "Interactive controls must not be nested" (a
+                `role="tab"` trigger with a focusable descendant). ARIA gives no clean way to
+                nest a REAL focusable close control inside a tab, so `aria-hidden` removes this
+                one from the accessibility tree entirely — screen readers never see it, the click
+                handler still fires for a mouse. Known gap: a keyboard/screen-reader user
+                currently has no way to close a course tab; flag to Romit before shipping if
+                that matters here. */}
+            {openCourseTabs.map((code) => (
+              <TabsTrigger key={code} value={`course:${code}`} className="pr-1.5">
+                {code}
+                <span
+                  aria-hidden="true"
+                  className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                  onClick={(e) => { e.stopPropagation(); closeCourseTab(code) }}
+                >
+                  <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
-        {/* ───── Overview — the program brief. No entity selector by design: this is the
-                 one tab whose scope is "everything", so a filter here would be a
-                 different question. ───── */}
+        {/* ───── Overview — the term brief (2026-09-14 PRD; supersedes the whole-program
+                 version this tab held since 2026-07). "Filters: None except the term and AY
+                 from above" — these two selectors (AY select + Term multi-select, now rendered
+                 above, outside this panel) are the ENTIRE filter surface, unlike the
+                 reference's Course / Faculty & Role dropdowns, which the PRD drops. ───── */}
         <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6">
-            <AnalyticsOverviewPanel />
-          </div>
+          <AnalyticsOverviewPanel
+            terms={overviewTerms}
+            onOpenFaculty={(id) => {
+              setScope({ tab: 'faculty', facultyId: id, facultyTerm: overviewTerms[0] })
+              requestAnimationFrame(() =>
+                document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              )
+            }}
+          />
         </TabsContent>
 
-        {/* ───── By Term ───── */}
-        <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-3">
-              <ToggleGroup type="single" value={axis} onValueChange={(v) => v && setAxis(v as Axis)} variant="outline" size="sm">
-                <ToggleGroupItem value="term"   aria-label="View by term">Term</ToggleGroupItem>
-                <ToggleGroupItem value="cohort" aria-label="View by cohort">Cohort</ToggleGroupItem>
-              </ToggleGroup>
-
-              {axis === 'term' ? (
-                /* analyticsTerms, not MOCK_TERMS. MOCK_TERMS is the set of terms you can PUSH
-                   an evaluation to (used by my-surveys, the push modal, the surveys table) —
-                   it lists 3 while offerings span 5, so Spring 2024 and Fall 2024 had real
-                   data that this dropdown could not reach. Operational terms and historical
-                   terms are different questions; this tab asks the historical one. That is the
-                   same class of bug the legacy app shipped (§4.7 "Term dropdown ≠ Term table"). */
-                <Select value={term} onValueChange={setTerm}>
-                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Select term"><SelectValue /></SelectTrigger>
-                  <SelectContent>{analyticsTerms.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              ) : (
-                <Select value={cohort} onValueChange={setCohort}>
-                  <SelectTrigger className="h-8 w-44 text-sm" aria-label="Select cohort"><SelectValue /></SelectTrigger>
-                  <SelectContent>{MOCK_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <Suspense fallback={<AnalyticsTabSkeleton label="Loading term analytics" />}>
-              <ByTermPanel
-                axis={axis}
-                value={scopeLabel}
-                onOpenSurvey={setSelectedSurveyId}
-                onNudge={setNudgeTarget}
-                /* The attention table names courses; naming without a door was the last dead-end
-                   on the tab. Row → By Course, scoped to that course. */
-                onSelectCourse={(code) => setScope({ tab: 'course', courseCode: code })}
-              />
-            </Suspense>
-          </div>
-        </TabsContent>
 
         {/* ───── By Faculty — the most important tab (accepted 2026-07-13).
                  Order follows the flow Monil described: land on the leaderboard of all
@@ -360,66 +441,46 @@ function AnalyticsInner() {
           </div>
         </TabsContent>
 
-        {/* ───── By Course ───── */}
+        {/* ───── Course — the offering-list landing. Opening a course renders it as its own
+                 TabsContent below, matched to the Tabs.Trigger of the same value in the
+                 tablist above. ───── */}
         <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">Course</label>
-              <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>
-                <SelectTrigger id="course-select" className="h-8 w-64 text-sm" aria-label="Select course"><SelectValue /></SelectTrigger>
-                <SelectContent>{distinctCourses.map(c => <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-
-            {/* The round trip: By Faculty could always reach a course (the portfolio ranks
-                them), but By Course could not reach a person — so "is this the course or the
-                instructor?" was only pursuable in one direction. Selecting the faculty member
-                AND switching tabs in one click, because landing on the faculty tab still
-                showing someone else would be a worse lie than not linking at all. */}
-            <Suspense fallback={<AnalyticsTabSkeleton label="Loading course analytics" />}>
-              <ByCoursePanel
-                courseCode={effectiveCourseCode}
-                onOpenSurvey={setSelectedSurveyId}
-                // ONE push, both changes — see setScope. Two calls would race on the same
-                // searchParams snapshot and the second would clobber the first.
-                onSelectFaculty={(facultyId) => setScope({ facultyId, tab: 'faculty' })}
-              />
-            </Suspense>
-          </div>
+          <Suspense fallback={<AnalyticsTabSkeleton label="Loading course offerings" />}>
+            <CourseOfferingList
+              terms={analyticsTerms}
+              onOpenCourse={openCourseTab}
+              onOpenFaculty={(id) => {
+                setScope({ tab: 'faculty', facultyId: id, facultyTerm: analyticsTerms[0] })
+                requestAnimationFrame(() =>
+                  document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                )
+              }}
+            />
+          </Suspense>
         </TabsContent>
+
+        {/* ───── One TabsContent per open course — Course analytics (PRD 2026-09-14). ───── */}
+        {openCourseTabs.map((code) => (
+          <TabsContent
+            key={code}
+            value={`course:${code}`}
+            className="flex-1 overflow-auto m-0"
+            style={{ padding: '20px 28px 28px' }}
+          >
+            <div className="flex flex-col gap-4">
+              {/* Romit, 2026-09-14: removed the separate "Close {code}" button — the tab strip's
+                  own × (see the state comment on `openCourseTabs`) is the only close control
+                  now. */}
+              <Suspense fallback={<AnalyticsTabSkeleton label={`Loading ${code}`} />}>
+                <ByCoursePanel courseCode={code} onOpenSurvey={setSelectedSurveyId} />
+              </Suspense>
+            </div>
+          </TabsContent>
+        ))}
       </Tabs>
 
       {/* ───── Evaluation Card ───── */}
       <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />
-
-      {/* ───── Nudge confirmation ───── */}
-      <AlertDialog open={!!nudgeTarget} onOpenChange={(open) => !open && setNudgeTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send ad-hoc reminder</AlertDialogTitle>
-            <AlertDialogDescription>
-              {nudgeTarget && (
-                <>
-                  Send an immediate reminder to{' '}
-                  <strong>{nudgeTarget.nonResponders} non-responder{nudgeTarget.nonResponders !== 1 ? 's' : ''}</strong>{' '}
-                  in <strong>{nudgeTarget.courseCode} · {nudgeTarget.courseName}</strong>. This is an out-of-schedule nudge.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (nudgeTarget) sendSurveyReminder([nudgeTarget.id])
-                setNudgeTarget(null)
-              }}
-            >
-              Send reminder
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   )
 }

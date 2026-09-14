@@ -554,7 +554,7 @@ export const MOCK_CURRENT_USER: PceUser = {
   initials: 'AP',
   role: 'admin',
   facultyId: 'f1',
-  program: 'Doctor of Physical Therapy',
+  program: 'Bachelor of Science in Nursing',
 }
 
 export const MOCK_SUBJECTS: PceSubject[] = [
@@ -624,14 +624,14 @@ export const MOCK_SUBJECTS: PceSubject[] = [
 ]
 
 export const MOCK_PROGRAMS: PceProgram[] = [
-  { id: 'prog1', name: 'Doctor of Physical Therapy', code: 'DPT' },
+  { id: 'prog1', name: 'Bachelor of Science in Nursing', code: 'BSN' },
   { id: 'prog2', name: 'Master of Science in Nursing', code: 'MSN' },
   { id: 'prog3', name: 'Doctor of Pharmacy', code: 'PharmD' },
   { id: 'prog4', name: 'Physician Assistant Studies', code: 'PA' },
 ]
 
 export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
-  // mon2 — DPT-611 midpoint check-in (backs freeTextCounts.q11 = 6; the
+  // mon2 — NURS-611 midpoint check-in (backs freeTextCounts.q11 = 6; the
   // per-question sheet must be able to show every response it counts)
   {
     id: 'otr-mon2-1',
@@ -673,7 +673,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr-mon2-5',
     surveyId: 'mon2',
     questionText: 'Any concerns to share at the midpoint?',
-    text: 'Nothing blocking. The pediatric gait analysis lab was excellent.',
+    text: 'Nothing blocking. The pediatric assessment simulation lab was excellent.',
     sectionSubject: 'faculty',
     flagged: false,
     sentiment: 'positive',
@@ -687,7 +687,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     flagged: false,
     sentiment: 'neutral',
   },
-  // mon1 — DPT-510 live (backs freeTextCounts q5/q8)
+  // mon1 — NURS-510 live (backs freeTextCounts q5/q8)
   {
     id: 'otr-mon1-1',
     surveyId: 'mon1',
@@ -878,7 +878,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     flagged: false,
     sentiment: 'concern',
   },
-  // s3 (DPT-602, released) — feeds the post-release Qualitative Feedback view.
+  // s3 (NURS-602, released) — feeds the post-release Qualitative Feedback view.
   {
     id: 'otr-s3-1',
     surveyId: 's3',
@@ -933,7 +933,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     flagged: false,
     sentiment: 'concern',
   },
-  // s4 (DPT-504, closed) — smaller set, includes one moderated-out response.
+  // s4 (NURS-504, closed) — smaller set, includes one moderated-out response.
   {
     id: 'otr-s4-1',
     surveyId: 's4',
@@ -1250,8 +1250,8 @@ export function representativeSurveyByKey(surveys: PceSurvey[]): Map<string, Pce
 export const MOCK_SURVEYS: PceSurvey[] = [
   {
     id: 's1',
-    courseCode: 'DPT-501',
-    courseName: 'Human Anatomy & Kinesiology',
+    courseCode: 'NURS-501',
+    courseName: 'Human Anatomy & Physiology',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -1263,7 +1263,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
         facultyAvg: 4.2,
         actionItems: [
           { text: 'Spread the cadaver-lab units across two weeks', priority: 'high' },
-          { text: 'Refresh the kinesiology reading packet links', priority: 'medium' },
+          { text: 'Refresh the physiology reading packet links', priority: 'medium' },
           { text: 'Add a second weekly office-hour slot', priority: 'low' },
         ],
         concerns: ['Pacing', 'Course materials', 'Office hours'],
@@ -1285,7 +1285,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's2',
-    courseCode: 'DPT-601',
+    courseCode: 'NURS-601',
     courseName: 'Clinical Practicum I',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
@@ -1312,7 +1312,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's3',
-    courseCode: 'DPT-602',
+    courseCode: 'NURS-602',
     courseName: 'Clinical Practicum II',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
@@ -1339,8 +1339,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's4',
-    courseCode: 'DPT-504',
-    courseName: 'Neuroanatomy',
+    courseCode: 'NURS-504',
+    courseName: 'Health Assessment',
     term: 'Fall 2025',
     cohort: 'Class of 2028',
     courseType: 'didactic',
@@ -1369,7 +1369,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's5',
-    courseCode: 'DPT-502',
+    courseCode: 'NURS-502',
     courseName: 'Physiology & Pathophysiology',
     term: 'Spring 2026',
     cohort: 'Class of 2028',
@@ -1396,8 +1396,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's6',
-    courseCode: 'DPT-520',
-    courseName: 'Neurological Physical Therapy',
+    courseCode: 'NURS-520',
+    courseName: 'Neurological Nursing',
     term: 'Summer 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -1418,11 +1418,11 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   {
     // 2026-08-13 — offeringId added: this record had none, so the push
     // wizard's resume link (`/surveys/push?...&offerings=${offeringId}`)
-    // had nothing to point at. co7 is DPT-511 in Spring 2026 (pt1) — see
+    // had nothing to point at. co7 is NURS-511 in Spring 2026 (pt1) — see
     // MOCK_COURSE_OFFERINGS.
     id: 's7',
-    courseCode: 'DPT-511',
-    courseName: 'Musculoskeletal Physical Therapy II',
+    courseCode: 'NURS-511',
+    courseName: 'Medical-Surgical Nursing II',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -1507,23 +1507,23 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   //    this she taught no LIVE course and the faculty home had no live group at
   //    all. Co-taught offerings are the norm, and guest instructors were an
   //    explicit design topic (Apr 21), so this is realistic, not a fixture hack.
-  { id: 'mon1',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.kim, role: 'guest' }], responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Aug 21, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-15', nextScheduledReminderAt: '2026-08-20', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 90, responseCount: 36, enrollmentCount: 40, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon3',  courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon4',  courseCode: 'DPT-505', courseName: 'Biomechanics I',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon5',  courseCode: 'DPT-504', courseName: 'Neuroanatomy',                 term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released',   instructors: [INSTRUCTORS.chen, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 88, responseCount: 57, enrollmentCount: 65, deadline: 'May 15, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-10', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon6',  courseCode: 'DPT-530', courseName: 'Therapeutic Exercise',                term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.hassan, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 73, responseCount: 37, enrollmentCount: 50, deadline: 'Aug 22, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon7',  courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'active',     instructors: [INSTRUCTORS.kim],      responseRate: 62, responseCount: 24, enrollmentCount: 38, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-17', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon8',  courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 58, responseCount: 28, enrollmentCount: 48, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon1',  courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.kim, role: 'guest' }], responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Aug 21, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-15', nextScheduledReminderAt: '2026-08-20', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon2',  courseCode: 'NURS-611', courseName: 'Pediatric Nursing',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 90, responseCount: 36, enrollmentCount: 40, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon3',  courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon4',  courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon5',  courseCode: 'NURS-504', courseName: 'Health Assessment',                 term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released',   instructors: [INSTRUCTORS.chen, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 88, responseCount: 57, enrollmentCount: 65, deadline: 'May 15, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-10', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon6',  courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing',                term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.hassan, { ...INSTRUCTORS.patel, role: 'guest' }], responseRate: 73, responseCount: 37, enrollmentCount: 50, deadline: 'Aug 22, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon7',  courseCode: 'NURS-620', courseName: 'Geriatric Nursing',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'active',     instructors: [INSTRUCTORS.kim],      responseRate: 62, responseCount: 24, enrollmentCount: 38, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-17', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon8',  courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 58, responseCount: 28, enrollmentCount: 48, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
 
   // history (for the response-rate trend)
-  { id: 'mon9',  courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology',         term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 71, responseCount: 37, enrollmentCount: 52, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon10', courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 80, responseCount: 40, enrollmentCount: 50, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon11', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology',         term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 75, responseCount: 38, enrollmentCount: 50, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'mon12', courseCode: 'DPT-505', courseName: 'Biomechanics I',                        term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 82, responseCount: 49, enrollmentCount: 60, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon9',  courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',         term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 71, responseCount: 37, enrollmentCount: 52, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon10', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 80, responseCount: 40, enrollmentCount: 50, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon11', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',         term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 75, responseCount: 38, enrollmentCount: 50, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon12', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I',                        term: 'Spring 2025', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 82, responseCount: 49, enrollmentCount: 60, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
   // minimumThreshold above responseCount = gate demo (ST-15): suppressed "Draft" result.
-  { id: 'mon13', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I',  term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 68, responseCount: 37, enrollmentCount: 55, minimumThreshold: 40, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'mon14', courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 37, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon13', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I',  term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 68, responseCount: 37, enrollmentCount: 55, minimumThreshold: 40, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'mon14', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Fall 2024',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 37, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 15, 2024', surveyType: 'course_evaluation', academicYear: '2024–2025', programId: 'prog1' },
 
   // Programmatic (institutional) surveys with real response data — feed the
   // Programmatic dashboard's rate chart + survey list (mirror the General Surveys set).
@@ -1537,30 +1537,30 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // different evaluatee: `offeringId` ties the flows to the course, `evalScope`
   // + `instructors` say WHO each one evaluates. The push wizard's Status column
   // reads these, so setting up a second flow shows what's already out.
-  //   co13 (DPT-510) — separate flows per evaluatee (course + Patel + Chen);
+  //   co13 (NURS-510) — separate flows per evaluatee (course + Patel + Chen);
   //     ONE survey window for all: the template setup assigns a single
   //     start/end to Course/Faculty/General together (Romit, Jul 22), so
   //     every flow born from a push shares its batch window.
-  //   co17 (DPT-601) — the course-material flow is out; faculty flow is not.
+  //   co17 (NURS-601) — the course-material flow is out; faculty flow is not.
   // pf0–pf3 are all 'scheduled': a flow born from THIS batch push STARTS at
   // scheduled — drafting happens at the template / wizard-composition level
   // for all evaluatees at once, never per-faculty (Romit, Jul 22) — and the
   // term starts Aug 24 so nothing born from a Fall 2026 batch push can be
   // live yet.
-  // Third co13 flow (course-material, early term) — makes DPT-510 the >2-flows
+  // Third co13 flow (course-material, early term) — makes NURS-510 the >2-flows
   // row, exercising the Status cell's "+N more" overflow popover.
   //
   // pf4 is the ONE exception, and deliberately outside that batch-push
-  // pattern: an admin pushed ONE early survey for co19 (DPT-610) outside the
+  // pattern: an admin pushed ONE early survey for co19 (NURS-610) outside the
   // wizard (e.g. a pilot), so it's already Live. Added 2026-08-03 because
   // ST-02's role-overlap hard block had NO real, verifiable example anywhere
   // in the fixture set — roleOverlapConflicts() requires offeringId, which
   // none of the pre-ST-02 mon*/pg* surveys below carry (they predate the
   // offeringId model), and every offeringId-bearing Fall 2026 survey above
-  // was 'scheduled' (ST-02-exempt). Push DPT-610 again in the wizard to see
+  // was 'scheduled' (ST-02-exempt). Push NURS-610 again in the wizard to see
   // a genuine Blocked row, not a demo-only one.
-  { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
-  { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf0', offeringId: 'co13', evalScope: 'course', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf1', offeringId: 'co13', evalScope: 'instructor', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'scheduled', instructors: [INSTRUCTORS.patel], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 18, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-04', academicYear: '2026–2027', programId: 'prog1' },
   // Kevin's flow runs its OWN window + cadence — the wizard surfaces must show
   // per-survey rules diverging, not one uniform Dec 4 story. Live + evalRole
   // 'instructor' (2026-08-05): the demo fixture for the person-grain
@@ -1569,62 +1569,81 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // only, Gomez resolves 'new' with lateAddedRelativeTo set, surfacing the
   // "different template" affordance — without this, that whole feature has
   // no reachable trigger anywhere in the mock dataset.
-  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', evalRole: 'instructor', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
+  { id: 'pf2', offeringId: 'co13', evalScope: 'instructor', evalRole: 'instructor', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2026', cohort: 'Year 2 – Section A', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [{ ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 0, responseCount: 0, enrollmentCount: 44, deadline: 'Dec 16, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-06', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'daily', anchor: 'survey_close', startDaysBefore: 5 } },
   // instructors: [] — a course-scope flow evaluates no PERSON; listing one
   // would seed a ghost row in that instructor's faculty analytics
   // (lib/pce-analytics.ts facultySurveys keys off instructors[0]).
   // The practicum closes later and nudges weekly — a second distinct rule set.
-  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 22, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-08', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'every_7_days', anchor: 'survey_close', startDaysBefore: 14 } },
-  { id: 'pf4', offeringId: 'co19', evalScope: 'instructor', courseCode: 'DPT-610', courseName: 'Geriatric Physical Therapy', term: 'Fall 2026', cohort: 'Year 3 – Section C', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [INSTRUCTORS.williams], responseRate: 12, responseCount: 5, enrollmentCount: 44, deadline: 'Sep 15, 2026', createdAt: 'Jul 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-25', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf3', offeringId: 'co17', evalScope: 'course', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Year 3 – Section A', courseType: 'clinical', templateId: 'tmpl1', status: 'scheduled', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 14, deadline: 'Dec 22, 2026', createdAt: 'Jul 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-12-08', academicYear: '2026–2027', programId: 'prog1', reminderCadence: { frequency: 'every_7_days', anchor: 'survey_close', startDaysBefore: 14 } },
+  { id: 'pf4', offeringId: 'co19', evalScope: 'instructor', courseCode: 'NURS-610', courseName: 'Geriatric Nursing', term: 'Fall 2026', cohort: 'Year 3 – Section C', courseType: 'didactic', templateId: 'tmpl2', status: 'active', instructors: [INSTRUCTORS.williams], responseRate: 12, responseCount: 5, enrollmentCount: 44, deadline: 'Sep 15, 2026', createdAt: 'Jul 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-25', academicYear: '2026–2027', programId: 'prog1' },
+  /* pf5/pf6 — Fall 2026's "Draft" and "Closed" bucket rows had zero courses
+     in them, so the Live-term card's row list only ever showed 3 of its 5
+     possible states (Not set up/Scheduled/Live, never Draft/Closed) — not a
+     rendering bug, `LiveTermCard`'s `OperationsRow`s for all 5 buckets
+     already existed (Romit, 2026-09-11, against the reference's 5-row Live
+     term card). co9/co10 were otherwise "Not set up"; giving them real
+     draft/released surveys demonstrates every state instead. */
+  { id: 'pf5', offeringId: 'co9',  evalScope: 'course', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Fall 2026', cohort: 'Year 1 – Section A', courseType: 'didactic', templateId: 'tmpl1', status: 'draft', instructors: [], responseRate: 0, responseCount: 0, enrollmentCount: 48, deadline: 'Dec 10, 2026', createdAt: 'Oct 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-15', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf6', offeringId: 'co10', evalScope: 'course', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2026', cohort: 'Year 1 – Section B', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 68, responseCount: 33, enrollmentCount: 48, deadline: 'Oct 15, 2026', createdAt: 'Aug 20, 2026', createdBy: 'Dr. Anita Patel', releasedAt: 'Oct 20, 2026', surveyType: 'course_evaluation', openDate: '2026-09-15', academicYear: '2026–2027', programId: 'prog1' },
+  /* pf7–pf9 — the Live bucket had exactly one course (NURS-610); after
+     pushing surveys in the wizard and landing on "View dashboard", the Live
+     term card read as nearly empty rather than showing real collection
+     activity (Romit, 2026-09-11). Same three previously-"Not set up"
+     offerings pattern as pf5/pf6, now `collecting`/`active` — a mix of
+     healthy, on-target, and a second at-risk course alongside NURS-610's
+     existing one, not all identical. */
+  { id: 'pf7', offeringId: 'co11', evalScope: 'course', courseCode: 'NURS-503', courseName: 'Pharmacology for Nurses', term: 'Fall 2026', cohort: 'Year 1 – Section C', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 72, responseCount: 33, enrollmentCount: 46, deadline: 'Dec 5, 2026', createdAt: 'Sep 10, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-01', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf8', offeringId: 'co14', evalScope: 'course', courseCode: 'NURS-520', courseName: 'Neurological Nursing', term: 'Fall 2026', cohort: 'Year 2 – Section B', courseType: 'didactic', templateId: 'tmpl1', status: 'active', instructors: [INSTRUCTORS.kim], responseRate: 65, responseCount: 29, enrollmentCount: 44, deadline: 'Dec 8, 2026', createdAt: 'Sep 10, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-01', academicYear: '2026–2027', programId: 'prog1' },
+  { id: 'pf9', offeringId: 'co15', evalScope: 'course', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Fall 2026', cohort: 'Year 2 – Section C', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.hassan], responseRate: 25, responseCount: 11, enrollmentCount: 42, deadline: 'Dec 3, 2026', createdAt: 'Sep 10, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-10-15', academicYear: '2026–2027', programId: 'prog1' },
 
   // ── Spring 2026 (pt1) — one new Setup-bucket Draft survey (co41) ──────────
-  { id: 'mon23', offeringId: 'co41', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'draft', instructors: [INSTRUCTORS.williams], responseRate: 0, responseCount: 0, enrollmentCount: 32, deadline: 'Aug 28, 2026', createdAt: 'Jun 10, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon23', offeringId: 'co41', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'draft', instructors: [INSTRUCTORS.williams], responseRate: 0, responseCount: 0, enrollmentCount: 32, deadline: 'Aug 28, 2026', createdAt: 'Jun 10, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-20', academicYear: '2025–2026', programId: 'prog1' },
 
   // ── Fall 2025 (pt2) — closed-term evaluation history (co26–co33) ──────────
   // co24/co25 are already covered by mon9/mon10 above; co34/co35 stay
   // deliberately unmatched (never evaluated — the Last-term needsAttention story).
-  { id: 'mon15', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology',        term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 35, enrollmentCount: 45, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 20, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon16', courseCode: 'DPT-503', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 65, responseCount: 27, enrollmentCount: 42, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 22, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon17', courseCode: 'DPT-505', courseName: 'Biomechanics I',                       term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.gomez],    responseRate: 90, responseCount: 43, enrollmentCount: 48, deadline: 'Dec 15, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 19, 2025', surveyType: 'course_evaluation', openDate: '2025-08-21', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon18', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I',   term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 84, responseCount: 39, enrollmentCount: 46, deadline: 'Dec 14, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 21, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon19', courseCode: 'DPT-511', courseName: 'Musculoskeletal Physical Therapy II',  term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 72, responseCount: 32, enrollmentCount: 44, deadline: 'Dec 14, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 23, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon20', courseCode: 'DPT-520', courseName: 'Neurological Physical Therapy',        term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 95, responseCount: 38, enrollmentCount: 40, deadline: 'Dec 13, 2025', createdAt: 'Aug 19, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 18, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon21', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise',                 term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',   gradesSubmitted: false, instructors: [INSTRUCTORS.kim], responseRate: 58, responseCount: 29, enrollmentCount: 50, deadline: 'Dec 16, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', closedAt: 'Dec 20, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon22', courseCode: 'DPT-601', courseName: 'Clinical Practicum I',                 term: 'Fall 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.hassan, role: 'guest' }], responseRate: 68, responseCount: 11, enrollmentCount: 16, deadline: 'Dec 18, 2025', createdAt: 'Aug 22, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 24, 2025', surveyType: 'course_evaluation', openDate: '2025-08-28', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon15', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology',        term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 78, responseCount: 35, enrollmentCount: 45, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 20, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon16', courseCode: 'NURS-503', courseName: 'Pharmacology for Nurses', term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 65, responseCount: 27, enrollmentCount: 42, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 22, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon17', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I',                       term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.gomez],    responseRate: 90, responseCount: 43, enrollmentCount: 48, deadline: 'Dec 15, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 19, 2025', surveyType: 'course_evaluation', openDate: '2025-08-21', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon18', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I',   term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.chen, role: 'guest' }], responseRate: 84, responseCount: 39, enrollmentCount: 46, deadline: 'Dec 14, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 21, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon19', courseCode: 'NURS-511', courseName: 'Medical-Surgical Nursing II',  term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 72, responseCount: 32, enrollmentCount: 44, deadline: 'Dec 14, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 23, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon20', courseCode: 'NURS-520', courseName: 'Neurological Nursing',        term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 95, responseCount: 38, enrollmentCount: 40, deadline: 'Dec 13, 2025', createdAt: 'Aug 19, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 18, 2025', surveyType: 'course_evaluation', openDate: '2025-08-25', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon21', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing',                 term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',   gradesSubmitted: false, instructors: [INSTRUCTORS.kim], responseRate: 58, responseCount: 29, enrollmentCount: 50, deadline: 'Dec 16, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', closedAt: 'Dec 20, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon22', courseCode: 'NURS-601', courseName: 'Clinical Practicum I',                 term: 'Fall 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.hassan, role: 'guest' }], responseRate: 68, responseCount: 11, enrollmentCount: 16, deadline: 'Dec 18, 2025', createdAt: 'Aug 22, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 24, 2025', surveyType: 'course_evaluation', openDate: '2025-08-28', academicYear: '2025–2026', programId: 'prog1' },
   // mon24/mon25 (2026-08-19/20) — Romit's catch: "since the term is done why
-  // would there be a warning and again need a setup?" DPT-506 (co34) and
-  // DPT-620 (co35) were the term's only two offerings with no survey at all,
+  // would there be a warning and again need a setup?" NURS-506 (co34) and
+  // NURS-620 (co35) were the term's only two offerings with no survey at all,
   // which is what triggered LastTermCard's "2 courses never collected"
   // callout. A closed, archived term realistically has ALL its courses
   // evaluated — these complete the set to 13 of 13 released.
-  { id: 'mon24', courseCode: 'DPT-506', courseName: 'Biomechanics II',             term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],    responseRate: 74, responseCount: 28, enrollmentCount: 38, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 21, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon25', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan], responseRate: 81, responseCount: 34, enrollmentCount: 42, deadline: 'Dec 15, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 23, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon24', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II',             term: 'Fall 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],    responseRate: 74, responseCount: 28, enrollmentCount: 38, deadline: 'Dec 12, 2025', createdAt: 'Aug 18, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 21, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon25', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan], responseRate: 81, responseCount: 34, enrollmentCount: 42, deadline: 'Dec 15, 2025', createdAt: 'Aug 20, 2025', createdBy: 'Dr. Anita Patel', releasedAt: 'Dec 23, 2025', surveyType: 'course_evaluation', openDate: '2025-08-26', academicYear: '2025–2026', programId: 'prog1' },
 
   // ── Spring 2025 (pt3) — further-past term, fully closed history ───────────
   // sp25-1..sp25-10 (co42/co43 above are already covered by mon11/mon12).
-  { id: 'sp25-1',  courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology',        term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 40, responseCount: 18, enrollmentCount: 46, deadline: 'Apr 28, 2025', createdAt: 'Jan 16, 2025', releasedAt: 'May 12, 2025', surveyType: 'course_evaluation', openDate: '2025-01-20', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-2',  courseCode: 'DPT-503', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 55, responseCount: 24, enrollmentCount: 44, deadline: 'Apr 28, 2025', createdAt: 'Jan 16, 2025', releasedAt: 'May 14, 2025', surveyType: 'course_evaluation', openDate: '2025-01-20', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-3',  courseCode: 'DPT-504', courseName: 'Neuroanatomy',                        term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 79, responseCount: 40, enrollmentCount: 50, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', releasedAt: 'May 10, 2025', surveyType: 'course_evaluation', openDate: '2025-01-16', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-4',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I',  term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 40, responseCount: 19, enrollmentCount: 48, deadline: 'May 2, 2025',  createdAt: 'Jan 18, 2025', releasedAt: 'May 16, 2025', surveyType: 'course_evaluation', openDate: '2025-01-22', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-5',  courseCode: 'DPT-511', courseName: 'Musculoskeletal Physical Therapy II', term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 63, responseCount: 29, enrollmentCount: 46, deadline: 'May 2, 2025',  createdAt: 'Jan 18, 2025', releasedAt: 'May 18, 2025', surveyType: 'course_evaluation', openDate: '2025-01-22', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-6',  courseCode: 'DPT-520', courseName: 'Neurological Physical Therapy',       term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 72, responseCount: 30, enrollmentCount: 42, deadline: 'May 3, 2025',  createdAt: 'Jan 19, 2025', releasedAt: 'May 15, 2025', surveyType: 'course_evaluation', openDate: '2025-01-23', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-7',  courseCode: 'DPT-530', courseName: 'Therapeutic Exercise',                term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 48, responseCount: 24, enrollmentCount: 50, deadline: 'May 3, 2025',  createdAt: 'Jan 19, 2025', releasedAt: 'May 19, 2025', surveyType: 'course_evaluation', openDate: '2025-01-23', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-8',  courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 40, responseCount: 21, enrollmentCount: 52, deadline: 'May 1, 2025',  createdAt: 'Jan 17, 2025', releasedAt: 'May 13, 2025', surveyType: 'course_evaluation', openDate: '2025-01-21', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-9',  courseCode: 'DPT-601', courseName: 'Clinical Practicum I',                term: 'Spring 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 95, responseCount: 17, enrollmentCount: 18, deadline: 'May 5, 2025',  createdAt: 'Jan 20, 2025', releasedAt: 'May 20, 2025', surveyType: 'course_evaluation', openDate: '2025-01-24', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'sp25-10', courseCode: 'DPT-602', courseName: 'Clinical Practicum II',               term: 'Spring 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 60, responseCount: 10, enrollmentCount: 16, deadline: 'May 5, 2025',  createdAt: 'Jan 20, 2025', releasedAt: 'May 21, 2025', surveyType: 'course_evaluation', openDate: '2025-01-24', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-1',  courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology',        term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 40, responseCount: 18, enrollmentCount: 46, deadline: 'Apr 28, 2025', createdAt: 'Jan 16, 2025', releasedAt: 'May 12, 2025', surveyType: 'course_evaluation', openDate: '2025-01-20', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-2',  courseCode: 'NURS-503', courseName: 'Pharmacology for Nurses', term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 55, responseCount: 24, enrollmentCount: 44, deadline: 'Apr 28, 2025', createdAt: 'Jan 16, 2025', releasedAt: 'May 14, 2025', surveyType: 'course_evaluation', openDate: '2025-01-20', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-3',  courseCode: 'NURS-504', courseName: 'Health Assessment',                        term: 'Spring 2025', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 79, responseCount: 40, enrollmentCount: 50, deadline: 'Apr 30, 2025', createdAt: 'Jan 15, 2025', releasedAt: 'May 10, 2025', surveyType: 'course_evaluation', openDate: '2025-01-16', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-4',  courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I',  term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 40, responseCount: 19, enrollmentCount: 48, deadline: 'May 2, 2025',  createdAt: 'Jan 18, 2025', releasedAt: 'May 16, 2025', surveyType: 'course_evaluation', openDate: '2025-01-22', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-5',  courseCode: 'NURS-511', courseName: 'Medical-Surgical Nursing II', term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 63, responseCount: 29, enrollmentCount: 46, deadline: 'May 2, 2025',  createdAt: 'Jan 18, 2025', releasedAt: 'May 18, 2025', surveyType: 'course_evaluation', openDate: '2025-01-22', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-6',  courseCode: 'NURS-520', courseName: 'Neurological Nursing',       term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 72, responseCount: 30, enrollmentCount: 42, deadline: 'May 3, 2025',  createdAt: 'Jan 19, 2025', releasedAt: 'May 15, 2025', surveyType: 'course_evaluation', openDate: '2025-01-23', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-7',  courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing',                term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 48, responseCount: 24, enrollmentCount: 50, deadline: 'May 3, 2025',  createdAt: 'Jan 19, 2025', releasedAt: 'May 19, 2025', surveyType: 'course_evaluation', openDate: '2025-01-23', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-8',  courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Spring 2025', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 40, responseCount: 21, enrollmentCount: 52, deadline: 'May 1, 2025',  createdAt: 'Jan 17, 2025', releasedAt: 'May 13, 2025', surveyType: 'course_evaluation', openDate: '2025-01-21', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-9',  courseCode: 'NURS-601', courseName: 'Clinical Practicum I',                term: 'Spring 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 95, responseCount: 17, enrollmentCount: 18, deadline: 'May 5, 2025',  createdAt: 'Jan 20, 2025', releasedAt: 'May 20, 2025', surveyType: 'course_evaluation', openDate: '2025-01-24', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'sp25-10', courseCode: 'NURS-602', courseName: 'Clinical Practicum II',               term: 'Spring 2025', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 60, responseCount: 10, enrollmentCount: 16, deadline: 'May 5, 2025',  createdAt: 'Jan 20, 2025', releasedAt: 'May 21, 2025', surveyType: 'course_evaluation', openDate: '2025-01-24', academicYear: '2024–2025', programId: 'prog1' },
 
   // ── Fall 2024 (pt4) — furthest-past term, fully closed history ────────────
   // fa24-1..fa24-10 (co54/co55 above are already covered by mon13/mon14).
-  { id: 'fa24-1',  courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology',         term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 70, responseCount: 34, enrollmentCount: 48, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Dec 30, 2024', surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-2',  courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology',        term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 82, responseCount: 36, enrollmentCount: 44, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Jan 2, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-3',  courseCode: 'DPT-503', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 59, responseCount: 25, enrollmentCount: 42, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Jan 4, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-4',  courseCode: 'DPT-504', courseName: 'Neuroanatomy',                        term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 90, responseCount: 45, enrollmentCount: 50, deadline: 'Dec 10, 2024', createdAt: 'Aug 15, 2024', releasedAt: 'Dec 28, 2024', surveyType: 'course_evaluation', openDate: '2024-08-20', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-5',  courseCode: 'DPT-505', courseName: 'Biomechanics I',                      term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.gomez],    responseRate: 66, responseCount: 30, enrollmentCount: 46, deadline: 'Dec 13, 2024', createdAt: 'Aug 17, 2024', releasedAt: 'Jan 3, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-23', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-6',  courseCode: 'DPT-511', courseName: 'Musculoskeletal Physical Therapy II', term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 45, responseCount: 20, enrollmentCount: 44, deadline: 'Dec 14, 2024', createdAt: 'Aug 18, 2024', releasedAt: 'Jan 6, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-24', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-7',  courseCode: 'DPT-520', courseName: 'Neurological Physical Therapy',       term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 77, responseCount: 31, enrollmentCount: 40, deadline: 'Dec 14, 2024', createdAt: 'Aug 18, 2024', releasedAt: 'Jan 5, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-24', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-8',  courseCode: 'DPT-530', courseName: 'Therapeutic Exercise',                term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 88, responseCount: 42, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 19, 2024', releasedAt: 'Dec 29, 2024', surveyType: 'course_evaluation', openDate: '2024-08-25', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-9',  courseCode: 'DPT-601', courseName: 'Clinical Practicum I',                term: 'Fall 2024', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 52, responseCount: 8,  enrollmentCount: 16, deadline: 'Dec 18, 2024', createdAt: 'Aug 22, 2024', releasedAt: 'Jan 8, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-28', academicYear: '2024–2025', programId: 'prog1' },
-  { id: 'fa24-10', courseCode: 'DPT-602', courseName: 'Clinical Practicum II',               term: 'Fall 2024', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 74, responseCount: 10, enrollmentCount: 14, deadline: 'Dec 18, 2024', createdAt: 'Aug 22, 2024', releasedAt: 'Jan 7, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-28', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-1',  courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',         term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 70, responseCount: 34, enrollmentCount: 48, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Dec 30, 2024', surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-2',  courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology',        term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 82, responseCount: 36, enrollmentCount: 44, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Jan 2, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-3',  courseCode: 'NURS-503', courseName: 'Pharmacology for Nurses', term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 59, responseCount: 25, enrollmentCount: 42, deadline: 'Dec 12, 2024', createdAt: 'Aug 16, 2024', releasedAt: 'Jan 4, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-22', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-4',  courseCode: 'NURS-504', courseName: 'Health Assessment',                        term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 90, responseCount: 45, enrollmentCount: 50, deadline: 'Dec 10, 2024', createdAt: 'Aug 15, 2024', releasedAt: 'Dec 28, 2024', surveyType: 'course_evaluation', openDate: '2024-08-20', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-5',  courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I',                      term: 'Fall 2024', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.gomez],    responseRate: 66, responseCount: 30, enrollmentCount: 46, deadline: 'Dec 13, 2024', createdAt: 'Aug 17, 2024', releasedAt: 'Jan 3, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-23', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-6',  courseCode: 'NURS-511', courseName: 'Medical-Surgical Nursing II', term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 45, responseCount: 20, enrollmentCount: 44, deadline: 'Dec 14, 2024', createdAt: 'Aug 18, 2024', releasedAt: 'Jan 6, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-24', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-7',  courseCode: 'NURS-520', courseName: 'Neurological Nursing',       term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 77, responseCount: 31, enrollmentCount: 40, deadline: 'Dec 14, 2024', createdAt: 'Aug 18, 2024', releasedAt: 'Jan 5, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-24', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-8',  courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing',                term: 'Fall 2024', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 88, responseCount: 42, enrollmentCount: 48, deadline: 'Dec 15, 2024', createdAt: 'Aug 19, 2024', releasedAt: 'Dec 29, 2024', surveyType: 'course_evaluation', openDate: '2024-08-25', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-9',  courseCode: 'NURS-601', courseName: 'Clinical Practicum I',                term: 'Fall 2024', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 52, responseCount: 8,  enrollmentCount: 16, deadline: 'Dec 18, 2024', createdAt: 'Aug 22, 2024', releasedAt: 'Jan 8, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-28', academicYear: '2024–2025', programId: 'prog1' },
+  { id: 'fa24-10', courseCode: 'NURS-602', courseName: 'Clinical Practicum II',               term: 'Fall 2024', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 74, responseCount: 10, enrollmentCount: 14, deadline: 'Dec 18, 2024', createdAt: 'Aug 22, 2024', releasedAt: 'Jan 7, 2025',  surveyType: 'course_evaluation', openDate: '2024-08-28', academicYear: '2024–2025', programId: 'prog1' },
 ]
 
 export const MOCK_RESPONSES: PceResponse[] = [
@@ -1810,34 +1829,34 @@ export interface ProgramTerm {
 
 export const MOCK_MASTER_COURSES: MasterCourse[] = [
   // Year 1 — Foundations (Didactic)
-  { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
-  { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
-  { id: 'mc3',  code: 'DPT-503', name: 'Pharmacology for Physical Therapists', department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Williams' },
-  { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
-  { id: 'mc5',  code: 'DPT-505', name: 'Biomechanics I', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
+  { id: 'mc1',  code: 'NURS-501', name: 'Human Anatomy & Physiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
+  { id: 'mc2',  code: 'NURS-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc3',  code: 'NURS-503', name: 'Pharmacology for Nurses', department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Williams' },
+  { id: 'mc4',  code: 'NURS-504', name: 'Health Assessment',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
+  { id: 'mc5',  code: 'NURS-505', name: 'Fundamentals of Nursing I', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
   // Year 2 — Clinical Sciences (Didactic)
-  { id: 'mc6',  code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I',   department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-20', editedBy: 'Dr. Patel'    },
-  { id: 'mc7',  code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II',  department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Patel'    },
-  { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
-  { id: 'mc9',  code: 'DPT-530', name: 'Therapeutic Exercise',     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
-  { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
-  { id: 'mc11', code: 'DPT-610', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-12', editedBy: 'Dr. Gomez'    },
+  { id: 'mc6',  code: 'NURS-510', name: 'Medical-Surgical Nursing I',   department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc7',  code: 'NURS-511', name: 'Medical-Surgical Nursing II',  department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc8',  code: 'NURS-520', name: 'Neurological Nursing',        department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
+  { id: 'mc9',  code: 'NURS-530', name: 'Maternal-Newborn Nursing',     department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
+  { id: 'mc10', code: 'NURS-540', name: 'Clinical Reasoning & Diagnostics',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
+  { id: 'mc11', code: 'NURS-610', name: 'Geriatric Nursing',           department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-12', editedBy: 'Dr. Gomez'    },
   // Specialty Electives (Didactic)
-  { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
+  { id: 'mc12', code: 'NURS-611', name: 'Pediatric Nursing',           department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
   // Clinical Education (Clinical)
-  { id: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Patel'    },
-  { id: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II',                department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Hassan'   },
-  { id: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2025-12-10', editedBy: 'Dr. Patel'    },
+  { id: 'mc14', code: 'NURS-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Patel'    },
+  { id: 'mc15', code: 'NURS-602', name: 'Clinical Practicum II',                department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Hassan'   },
+  { id: 'mc16', code: 'NURS-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2025-12-10', editedBy: 'Dr. Patel'    },
   // ── Offered but previously uncatalogued ──────────────────────────────────────
   // These six had offerings and surveys but no master entry, so the catalogue and the data
   // disagreed about what the program even teaches. Added here rather than deleted from the
   // offerings: they carry real evaluation history, which makes them real courses.
-  { id: 'mc17', code: 'DPT-506', name: 'Biomechanics II',                     department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
-  { id: 'mc18', code: 'DPT-515', name: 'Pharmacology for Physical Therapists', department: 'Clinical Sciences', type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
-  { id: 'mc19', code: 'DPT-620', name: 'Geriatric Physical Therapy',          department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'   },
-  { id: 'mc20', code: 'DPT-710', name: 'Neurological Rehab',                  department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Kim'      },
-  { id: 'mc21', code: 'DPT-711', name: 'Pediatric Rehab',                     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Williams' },
-  { id: 'mc22', code: 'DPT-801', name: 'Evidence-Based Practice',             department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
+  { id: 'mc17', code: 'NURS-506', name: 'Fundamentals of Nursing II',                     department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
+  { id: 'mc18', code: 'NURS-515', name: 'Pharmacology for Nurses', department: 'Clinical Sciences', type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
+  { id: 'mc19', code: 'NURS-620', name: 'Geriatric Nursing',          department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'   },
+  { id: 'mc20', code: 'NURS-710', name: 'Advanced Neurological Nursing',                  department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Kim'      },
+  { id: 'mc21', code: 'NURS-711', name: 'Advanced Pediatric Nursing',                     department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Williams' },
+  { id: 'mc22', code: 'NURS-801', name: 'Evidence-Based Practice',             department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
@@ -2255,58 +2274,58 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   // co36/co37/co38 activate existing mon2/mon4/mon5 surveys (no matching
   // offering existed for those course codes before); co39/co40 are genuinely
   // unconfigured (Setup bucket); co41 carries a new Draft survey (mon23).
-  { id: 'co36', masterCourseId: 'mc12', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 40, status: 'active', courseType: 'clinical' }, // DPT-611 — mon2
-  { id: 'co37', masterCourseId: 'mc5',  termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 70, status: 'active', courseType: 'didactic' }, // DPT-505 — mon4
-  { id: 'co38', masterCourseId: 'mc4',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 65, status: 'active', courseType: 'didactic' }, // DPT-504 — mon5
-  { id: 'co39', masterCourseId: 'mc17', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 44, status: 'active', courseType: 'didactic' }, // DPT-506 — not configured
-  { id: 'co40', masterCourseId: 'mc16', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 15, status: 'active', courseType: 'clinical' }, // DPT-603 — not configured
-  { id: 'co41', masterCourseId: 'mc22', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 32, status: 'active', courseType: 'didactic' }, // DPT-801 — mon23 (draft)
+  { id: 'co36', masterCourseId: 'mc12', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 40, status: 'active', courseType: 'clinical' }, // NURS-611 — mon2
+  { id: 'co37', masterCourseId: 'mc5',  termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 70, status: 'active', courseType: 'didactic' }, // NURS-505 — mon4
+  { id: 'co38', masterCourseId: 'mc4',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 65, status: 'active', courseType: 'didactic' }, // NURS-504 — mon5
+  { id: 'co39', masterCourseId: 'mc17', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 44, status: 'active', courseType: 'didactic' }, // NURS-506 — not configured
+  { id: 'co40', masterCourseId: 'mc16', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 15, status: 'active', courseType: 'clinical' }, // NURS-603 — not configured
+  { id: 'co41', masterCourseId: 'mc22', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 32, status: 'active', courseType: 'didactic' }, // NURS-801 — mon23 (draft)
 
   // ── Fall 2025 (pt2) — closed term, full evaluation history ────────────────
   // co34/co35 deliberately carry NO matching survey — the "never evaluated"
   // story the Last-term card's needsAttention flag surfaces.
-  { id: 'co24', masterCourseId: 'mc1',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 52, status: 'archived', courseType: 'didactic' }, // DPT-501 — mon9
-  { id: 'co25', masterCourseId: 'mc10', termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-540 — mon10
-  { id: 'co26', masterCourseId: 'mc2',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 45, status: 'archived', courseType: 'didactic' }, // DPT-502 — mon15
-  { id: 'co27', masterCourseId: 'mc3',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // DPT-503 — mon16
-  { id: 'co28', masterCourseId: 'mc5',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // DPT-505 — mon17
-  { id: 'co29', masterCourseId: 'mc6',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // DPT-510 — mon18
-  { id: 'co30', masterCourseId: 'mc7',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // DPT-511 — mon19
-  { id: 'co31', masterCourseId: 'mc8',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 40, status: 'archived', courseType: 'didactic' }, // DPT-520 — mon20
-  { id: 'co32', masterCourseId: 'mc9',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-530 — mon21
-  { id: 'co33', masterCourseId: 'mc14', termId: 'pt2', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // DPT-601 — mon22
-  { id: 'co34', masterCourseId: 'mc17', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 38, status: 'archived', courseType: 'didactic' }, // DPT-506 — never evaluated
-  { id: 'co35', masterCourseId: 'mc19', termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // DPT-620 — never evaluated
+  { id: 'co24', masterCourseId: 'mc1',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 52, status: 'archived', courseType: 'didactic' }, // NURS-501 — mon9
+  { id: 'co25', masterCourseId: 'mc10', termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-540 — mon10
+  { id: 'co26', masterCourseId: 'mc2',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 45, status: 'archived', courseType: 'didactic' }, // NURS-502 — mon15
+  { id: 'co27', masterCourseId: 'mc3',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // NURS-503 — mon16
+  { id: 'co28', masterCourseId: 'mc5',  termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // NURS-505 — mon17
+  { id: 'co29', masterCourseId: 'mc6',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // NURS-510 — mon18
+  { id: 'co30', masterCourseId: 'mc7',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // NURS-511 — mon19
+  { id: 'co31', masterCourseId: 'mc8',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 40, status: 'archived', courseType: 'didactic' }, // NURS-520 — mon20
+  { id: 'co32', masterCourseId: 'mc9',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-530 — mon21
+  { id: 'co33', masterCourseId: 'mc14', termId: 'pt2', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // NURS-601 — mon22
+  { id: 'co34', masterCourseId: 'mc17', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 38, status: 'archived', courseType: 'didactic' }, // NURS-506 — never evaluated
+  { id: 'co35', masterCourseId: 'mc19', termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // NURS-620 — never evaluated
 
   // ── Spring 2025 (pt3) — past term, fully closed history ────────────────────
   // co42/co43 activate existing mon11/mon12; the rest carry new sp25-* surveys.
-  { id: 'co42', masterCourseId: 'mc1',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-501 — mon11
-  { id: 'co43', masterCourseId: 'mc5',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 60, status: 'archived', courseType: 'didactic' }, // DPT-505 — mon12
-  { id: 'co44', masterCourseId: 'mc2',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // DPT-502 — sp25-1
-  { id: 'co45', masterCourseId: 'mc3',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // DPT-503 — sp25-2
-  { id: 'co46', masterCourseId: 'mc4',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-504 — sp25-3
-  { id: 'co47', masterCourseId: 'mc6',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // DPT-510 — sp25-4
-  { id: 'co48', masterCourseId: 'mc7',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // DPT-511 — sp25-5
-  { id: 'co49', masterCourseId: 'mc8',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // DPT-520 — sp25-6
-  { id: 'co50', masterCourseId: 'mc9',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-530 — sp25-7
-  { id: 'co51', masterCourseId: 'mc10', termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 52, status: 'archived', courseType: 'didactic' }, // DPT-540 — sp25-8
-  { id: 'co52', masterCourseId: 'mc14', termId: 'pt3', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 18, status: 'archived', courseType: 'clinical' }, // DPT-601 — sp25-9
-  { id: 'co53', masterCourseId: 'mc15', termId: 'pt3', cohort: 'Class of 2026', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // DPT-602 — sp25-10
+  { id: 'co42', masterCourseId: 'mc1',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-501 — mon11
+  { id: 'co43', masterCourseId: 'mc5',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 60, status: 'archived', courseType: 'didactic' }, // NURS-505 — mon12
+  { id: 'co44', masterCourseId: 'mc2',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // NURS-502 — sp25-1
+  { id: 'co45', masterCourseId: 'mc3',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // NURS-503 — sp25-2
+  { id: 'co46', masterCourseId: 'mc4',  termId: 'pt3', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-504 — sp25-3
+  { id: 'co47', masterCourseId: 'mc6',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // NURS-510 — sp25-4
+  { id: 'co48', masterCourseId: 'mc7',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // NURS-511 — sp25-5
+  { id: 'co49', masterCourseId: 'mc8',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // NURS-520 — sp25-6
+  { id: 'co50', masterCourseId: 'mc9',  termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-530 — sp25-7
+  { id: 'co51', masterCourseId: 'mc10', termId: 'pt3', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 52, status: 'archived', courseType: 'didactic' }, // NURS-540 — sp25-8
+  { id: 'co52', masterCourseId: 'mc14', termId: 'pt3', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 18, status: 'archived', courseType: 'clinical' }, // NURS-601 — sp25-9
+  { id: 'co53', masterCourseId: 'mc15', termId: 'pt3', cohort: 'Class of 2026', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // NURS-602 — sp25-10
 
   // ── Fall 2024 (pt4) — furthest-past term, fully closed history ────────────
   // co54/co55 activate existing mon13/mon14; the rest carry new fa24-* surveys.
-  { id: 'co54', masterCourseId: 'mc6',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 55, status: 'archived', courseType: 'didactic' }, // DPT-510 — mon13
-  { id: 'co55', masterCourseId: 'mc10', termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // DPT-540 — mon14
-  { id: 'co56', masterCourseId: 'mc1',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // DPT-501 — fa24-1
-  { id: 'co57', masterCourseId: 'mc2',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // DPT-502 — fa24-2
-  { id: 'co58', masterCourseId: 'mc3',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // DPT-503 — fa24-3
-  { id: 'co59', masterCourseId: 'mc4',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // DPT-504 — fa24-4
-  { id: 'co60', masterCourseId: 'mc5',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // DPT-505 — fa24-5
-  { id: 'co61', masterCourseId: 'mc7',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // DPT-511 — fa24-6
-  { id: 'co62', masterCourseId: 'mc8',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 40, status: 'archived', courseType: 'didactic' }, // DPT-520 — fa24-7
-  { id: 'co63', masterCourseId: 'mc9',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // DPT-530 — fa24-8
-  { id: 'co64', masterCourseId: 'mc14', termId: 'pt4', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // DPT-601 — fa24-9
-  { id: 'co65', masterCourseId: 'mc15', termId: 'pt4', cohort: 'Class of 2026', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 14, status: 'archived', courseType: 'clinical' }, // DPT-602 — fa24-10
+  { id: 'co54', masterCourseId: 'mc6',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 55, status: 'archived', courseType: 'didactic' }, // NURS-510 — mon13
+  { id: 'co55', masterCourseId: 'mc10', termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // NURS-540 — mon14
+  { id: 'co56', masterCourseId: 'mc1',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // NURS-501 — fa24-1
+  { id: 'co57', masterCourseId: 'mc2',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // NURS-502 — fa24-2
+  { id: 'co58', masterCourseId: 'mc3',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 42, status: 'archived', courseType: 'didactic' }, // NURS-503 — fa24-3
+  { id: 'co59', masterCourseId: 'mc4',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived', courseType: 'didactic' }, // NURS-504 — fa24-4
+  { id: 'co60', masterCourseId: 'mc5',  termId: 'pt4', cohort: 'Class of 2028', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 46, status: 'archived', courseType: 'didactic' }, // NURS-505 — fa24-5
+  { id: 'co61', masterCourseId: 'mc7',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 44, status: 'archived', courseType: 'didactic' }, // NURS-511 — fa24-6
+  { id: 'co62', masterCourseId: 'mc8',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 40, status: 'archived', courseType: 'didactic' }, // NURS-520 — fa24-7
+  { id: 'co63', masterCourseId: 'mc9',  termId: 'pt4', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 48, status: 'archived', courseType: 'didactic' }, // NURS-530 — fa24-8
+  { id: 'co64', masterCourseId: 'mc14', termId: 'pt4', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     enrolledCount: 16, status: 'archived', courseType: 'clinical' }, // NURS-601 — fa24-9
+  { id: 'co65', masterCourseId: 'mc15', termId: 'pt4', cohort: 'Class of 2026', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 14, status: 'archived', courseType: 'clinical' }, // NURS-602 — fa24-10
 
   // ── Spring 2027 (pt6) — new future term, nothing scheduled yet ─────────────
   { id: 'co66', masterCourseId: 'mc1',  termId: 'pt6', cohort: 'Year 1 – Section A', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 46, status: 'planned', courseType: 'didactic' },
@@ -2327,28 +2346,28 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
 // The real system enrolledCount may be higher — shown as "X of N enrolled in demo".
 export const MOCK_COURSE_ENROLLMENTS: Record<string, string[]> = {
   // Spring 2026 (pt1)
-  co1: ['st6', 'st7', 'st8', 'st9'],                  // DPT-501, Class of 2027
-  co2: ['st1', 'st2', 'st3', 'st4'],                  // DPT-601, Class of 2026
-  co3: ['st1', 'st2', 'st3', 'st4'],                  // DPT-602, Class of 2026
-  co5: ['st11', 'st12', 'st13', 'st14', 'st15'],      // DPT-502, Class of 2028
-  co6: ['st6', 'st7', 'st8', 'st9'],                  // DPT-510, Class of 2027
-  co7: ['st6', 'st7', 'st8', 'st9'],                  // DPT-511, Class of 2027
-  co8: ['st1', 'st2', 'st3', 'st4'],                  // DPT-520, Class of 2026
+  co1: ['st6', 'st7', 'st8', 'st9'],                  // NURS-501, Class of 2027
+  co2: ['st1', 'st2', 'st3', 'st4'],                  // NURS-601, Class of 2026
+  co3: ['st1', 'st2', 'st3', 'st4'],                  // NURS-602, Class of 2026
+  co5: ['st11', 'st12', 'st13', 'st14', 'st15'],      // NURS-502, Class of 2028
+  co6: ['st6', 'st7', 'st8', 'st9'],                  // NURS-510, Class of 2027
+  co7: ['st6', 'st7', 'st8', 'st9'],                  // NURS-511, Class of 2027
+  co8: ['st1', 'st2', 'st3', 'st4'],                  // NURS-520, Class of 2026
   // Fall 2026 (pt5) — Year 1 (new cohort)
-  co9:  ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-501
-  co10: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-502
-  co11: ['st18', 'st19', 'st20', 'st21'],              // DPT-503
-  co12: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-505
-  co21: ['st19', 'st20', 'st21', 'st22', 'st23'],     // DPT-530 (lab)
+  co9:  ['st18', 'st19', 'st20', 'st21', 'st22'],     // NURS-501
+  co10: ['st18', 'st19', 'st20', 'st21', 'st22'],     // NURS-502
+  co11: ['st18', 'st19', 'st20', 'st21'],              // NURS-503
+  co12: ['st18', 'st19', 'st20', 'st21', 'st22'],     // NURS-505
+  co21: ['st19', 'st20', 'st21', 'st22', 'st23'],     // NURS-530 (lab)
   // Fall 2026 (pt5) — Year 2, Class of 2028
-  co13: ['st11', 'st12', 'st13', 'st14', 'st15'],     // DPT-510
-  co14: ['st11', 'st12', 'st13', 'st14'],             // DPT-520
-  co15: ['st11', 'st12', 'st13'],                     // DPT-530
-  co16: ['st11', 'st12', 'st13', 'st14'],             // DPT-611 (unassigned faculty demo)
+  co13: ['st11', 'st12', 'st13', 'st14', 'st15'],     // NURS-510
+  co14: ['st11', 'st12', 'st13', 'st14'],             // NURS-520
+  co15: ['st11', 'st12', 'st13'],                     // NURS-530
+  co16: ['st11', 'st12', 'st13', 'st14'],             // NURS-611 (unassigned faculty demo)
   // Fall 2026 (pt5) — Year 3, Class of 2027
-  co17: ['st6', 'st7', 'st8'],                        // DPT-601
-  co18: ['st6', 'st7', 'st8', 'st9'],                 // DPT-602
-  co19: ['st6', 'st7', 'st8', 'st9'],                 // DPT-550
+  co17: ['st6', 'st7', 'st8'],                        // NURS-601
+  co18: ['st6', 'st7', 'st8', 'st9'],                 // NURS-602
+  co19: ['st6', 'st7', 'st8', 'st9'],                 // NURS-550
 }
 
 export interface Personnel {
@@ -2361,7 +2380,7 @@ export interface Personnel {
 }
 
 export const MOCK_PERSONNEL: Personnel[] = [
-  { id: 'p1',  name: 'Sandra Torres',    email: 'storres@school.edu',     role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p1',  name: 'Sandra Torres',    email: 'storres@school.edu',     role: 'Program Coordinator',          department: 'Nursing',   status: 'Active'   },
   { id: 'p2',  name: 'James Whitfield',  email: 'jwhitfield@school.edu',  role: 'Clinical Education Director',  department: 'Clinical Affairs',   status: 'Active'   },
   { id: 'p3',  name: 'Mei-Lin Cheng',    email: 'mcheng@school.edu',      role: 'Administrative Coordinator',   department: 'Student Services',   status: 'Active'   },
   { id: 'p4',  name: 'Derek Okafor',     email: 'dokafor@school.edu',     role: 'Accreditation Specialist',     department: 'Academic Affairs',   status: 'Active'   },
@@ -2369,7 +2388,7 @@ export const MOCK_PERSONNEL: Personnel[] = [
   { id: 'p6',  name: 'Tom Harrington',   email: 'tharrington@school.edu', role: 'IT Support Specialist',        department: 'Technology',         status: 'Active'   },
   { id: 'p7',  name: 'Aisha Mukherjee',  email: 'amukherjee@school.edu',  role: 'Student Affairs Coordinator',  department: 'Student Services',   status: 'Active'   },
   { id: 'p8',  name: 'Carlos Reyes',     email: 'creyes@school.edu',      role: 'Research Coordinator',         department: 'Research',           status: 'Inactive' },
-  { id: 'p9',  name: 'Laura Kwan',       email: 'lkwan@school.edu',       role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p9',  name: 'Laura Kwan',       email: 'lkwan@school.edu',       role: 'Program Coordinator',          department: 'Nursing',   status: 'Active'   },
   { id: 'p10', name: 'Nathan Brooks',    email: 'nbrooks@school.edu',     role: 'Financial Aid Advisor',        department: 'Student Services',   status: 'Active'   },
 ]
 
@@ -2417,7 +2436,7 @@ export interface SurveyQuestionData {
 }
 
 export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
-  // mon1 — DPT-510 live · tmpl1 · Dr. Kim (f4) · 23 partial responses
+  // mon1 — NURS-510 live · tmpl1 · Dr. Kim (f4) · 23 partial responses
   {
     surveyId: 'mon1',
     sectionScores: {
@@ -2439,7 +2458,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     ],
     freeTextCounts: { q5: 2, q8: 2 },
   },
-  // mon2 — DPT-611 live · tmpl2 · Dr. Gomez (f5) · mid-collection, 18 of 40
+  // mon2 — NURS-611 live · tmpl2 · Dr. Gomez (f5) · mid-collection, 18 of 40
   {
     surveyId: 'mon2',
     sectionScores: {},
@@ -2500,7 +2519,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     ],
     freeTextCounts: { c7: 4, i6: 4, l5: 3 },
   },
-  // s2 — DPT-601 Clinical Practicum I · Dr. Williams (f3) primary + Dr. Chen (f2) guest · 21 responses
+  // s2 — NURS-601 Clinical Practicum I · Dr. Williams (f3) primary + Dr. Chen (f2) guest · 21 responses
   {
     surveyId: 's2',
     sectionScores: {
@@ -2529,7 +2548,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     ],
     freeTextCounts: { q5: 2, q8: 2 },
   },
-  // s3 — DPT-602 Clinical Practicum II · Dr. Maria Williams (f3) · 46 responses
+  // s3 — NURS-602 Clinical Practicum II · Dr. Maria Williams (f3) · 46 responses
   {
     surveyId: 's3',
     sectionScores: {
@@ -2551,7 +2570,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     ],
     freeTextCounts: { q5: 3, q8: 3 },
   },
-  // s4 — DPT-504 Neuroanatomy · Dr. James Kim (f4) · 44 responses
+  // s4 — NURS-504 Health Assessment · Dr. James Kim (f4) · 44 responses
   {
     surveyId: 's4',
     sectionScores: {
@@ -2573,7 +2592,7 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     ],
     freeTextCounts: { q5: 1, q8: 2 },
   },
-  // s5 — DPT-502 Physiology & Pathophysiology · Dr. James Kim (f4) · 22 responses
+  // s5 — NURS-502 Physiology & Pathophysiology · Dr. James Kim (f4) · 22 responses
   {
     surveyId: 's5',
     sectionScores: {
@@ -2610,11 +2629,11 @@ export const MOCK_COURSES = [
 ]
 
 export const MOCK_FACULTY: PceInstructor[] = [
-  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', avatarUrl: '/portraits/anita-patel.jpg',    role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Department Chair',     email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
-  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', avatarUrl: '/portraits/kevin-chen.jpg',     role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core',       rank: 'Associate Professor', position: 'Course Director',      email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
-  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', avatarUrl: '/portraits/maria-williams.jpg', role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Program Director',     email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
+  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', avatarUrl: '/portraits/anita-patel.jpg',    role: 'primary', department: 'Nursing',        facultyType: 'core',       rank: 'Professor',           position: 'Department Chair',     email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
+  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', avatarUrl: '/portraits/kevin-chen.jpg',     role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core',       rank: 'Associate Professor', position: 'Course Director',      email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
+  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', avatarUrl: '/portraits/maria-williams.jpg', role: 'primary', department: 'Nursing',        facultyType: 'core',       rank: 'Professor',           position: 'Program Director',     email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
   { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', avatarUrl: '/portraits/james-kim.jpg',      role: 'primary', department: 'Clinical Education',      facultyType: 'core',       rank: 'Assistant Professor', position: 'Clinical Coordinator', email: 'james.kim@university.edu',      phone: '+1 (555) 101-1004', employmentStatus: 'active'   },
-  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', avatarUrl: '/portraits/rachel-gomez.jpg',   role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Associate Professor', position: 'Core Faculty',         email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
+  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', avatarUrl: '/portraits/rachel-gomez.jpg',   role: 'primary', department: 'Nursing',        facultyType: 'core',       rank: 'Associate Professor', position: 'Core Faculty',         email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', avatarUrl: '/portraits/omar-hassan.jpg',    role: 'primary', department: 'Clinical Education',      facultyType: 'associated', rank: 'Lecturer',            position: 'Lab Instructor',       email: 'omar.hassan@university.edu',    phone: '+1 (555) 101-1006', employmentStatus: 'inactive' },
   /* ── Scale cohort ─────────────────────────────────────────────────────────────
      Romit, design review 2026-07-15 (Granola 1e018244): a real university or cohort
@@ -2623,34 +2642,34 @@ export const MOCK_FACULTY: PceInstructor[] = [
      size and would have shipped that way. These 28 exist so the scale is REAL in dev:
      N=34 is what the expand pattern and the N>30 mark switch are exercised against.
      f1–f6 keep their exact numbers so no existing demo scenario moves. ─────────── */
-  { id: 'f7', name: 'Dr. Priya Raman',       initials: 'PR', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'priya.raman@university.edu', phone: '+1 (555) 101-1007', employmentStatus: 'active' },
-  { id: 'f8', name: 'Dr. Daniel Okafor',     initials: 'DO', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'daniel.okafor@university.edu', phone: '+1 (555) 101-1008', employmentStatus: 'active' },
-  { id: 'f9', name: 'Dr. Elena Petrova',     initials: 'EP', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'elena.petrova@university.edu', phone: '+1 (555) 101-1009', employmentStatus: 'active' },
+  { id: 'f7', name: 'Dr. Priya Raman',       initials: 'PR', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'priya.raman@university.edu', phone: '+1 (555) 101-1007', employmentStatus: 'active' },
+  { id: 'f8', name: 'Dr. Daniel Okafor',     initials: 'DO', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'daniel.okafor@university.edu', phone: '+1 (555) 101-1008', employmentStatus: 'active' },
+  { id: 'f9', name: 'Dr. Elena Petrova',     initials: 'EP', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'elena.petrova@university.edu', phone: '+1 (555) 101-1009', employmentStatus: 'active' },
   { id: 'f10', name: 'Dr. Marcus Bell',       initials: 'MB', role: 'primary', department: 'Clinical Education', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'marcus.bell@university.edu', phone: '+1 (555) 101-1010', employmentStatus: 'active' },
-  { id: 'f11', name: 'Dr. Sofia Marino',      initials: 'SM', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'sofia.marino@university.edu', phone: '+1 (555) 101-1011', employmentStatus: 'active' },
-  { id: 'f12', name: 'Dr. Henry Adjei',       initials: 'HA', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'henry.adjei@university.edu', phone: '+1 (555) 101-1012', employmentStatus: 'active' },
-  { id: 'f13', name: 'Dr. Naomi Feldman',     initials: 'NF', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'naomi.feldman@university.edu', phone: '+1 (555) 101-1013', employmentStatus: 'active' },
+  { id: 'f11', name: 'Dr. Sofia Marino',      initials: 'SM', role: 'primary', department: 'Psychiatric-Mental Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'sofia.marino@university.edu', phone: '+1 (555) 101-1011', employmentStatus: 'active' },
+  { id: 'f12', name: 'Dr. Henry Adjei',       initials: 'HA', role: 'primary', department: 'Nursing', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'henry.adjei@university.edu', phone: '+1 (555) 101-1012', employmentStatus: 'active' },
+  { id: 'f13', name: 'Dr. Naomi Feldman',     initials: 'NF', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'naomi.feldman@university.edu', phone: '+1 (555) 101-1013', employmentStatus: 'active' },
   { id: 'f14', name: 'Dr. Victor Ruiz',       initials: 'VR', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Associate Professor', position: 'Clinical Coordinator', email: 'victor.ruiz@university.edu', phone: '+1 (555) 101-1014', employmentStatus: 'active' },
-  { id: 'f15', name: 'Dr. Grace Lin',         initials: 'GL', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'grace.lin@university.edu', phone: '+1 (555) 101-1015', employmentStatus: 'active' },
-  { id: 'f16', name: 'Dr. Samuel Osei',       initials: 'SO', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'associated', rank: 'Lecturer', position: 'Teaching Assistant', email: 'samuel.osei@university.edu', phone: '+1 (555) 101-1016', employmentStatus: 'active' },
-  { id: 'f17', name: 'Dr. Hana Suzuki',       initials: 'HS', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'hana.suzuki@university.edu', phone: '+1 (555) 101-1017', employmentStatus: 'active' },
-  { id: 'f18', name: 'Dr. Liam Doherty',      initials: 'LD', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'liam.doherty@university.edu', phone: '+1 (555) 101-1018', employmentStatus: 'active' },
+  { id: 'f15', name: 'Dr. Grace Lin',         initials: 'GL', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'grace.lin@university.edu', phone: '+1 (555) 101-1015', employmentStatus: 'active' },
+  { id: 'f16', name: 'Dr. Samuel Osei',       initials: 'SO', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'associated', rank: 'Lecturer', position: 'Teaching Assistant', email: 'samuel.osei@university.edu', phone: '+1 (555) 101-1016', employmentStatus: 'active' },
+  { id: 'f17', name: 'Dr. Hana Suzuki',       initials: 'HS', role: 'primary', department: 'Psychiatric-Mental Health Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'hana.suzuki@university.edu', phone: '+1 (555) 101-1017', employmentStatus: 'active' },
+  { id: 'f18', name: 'Dr. Liam Doherty',      initials: 'LD', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'liam.doherty@university.edu', phone: '+1 (555) 101-1018', employmentStatus: 'active' },
   { id: 'f19', name: 'Dr. Amara Nwosu',       initials: 'AN', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'amara.nwosu@university.edu', phone: '+1 (555) 101-1019', employmentStatus: 'active' },
-  { id: 'f20', name: 'Dr. Tomas Novak',       initials: 'TN', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Professor', position: 'Course Director', email: 'tomas.novak@university.edu', phone: '+1 (555) 101-1020', employmentStatus: 'active' },
-  { id: 'f21', name: 'Dr. Yuki Tanaka',       initials: 'YT', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'yuki.tanaka@university.edu', phone: '+1 (555) 101-1021', employmentStatus: 'active' },
-  { id: 'f22', name: 'Dr. Rosa Delgado',      initials: 'RD', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'rosa.delgado@university.edu', phone: '+1 (555) 101-1022', employmentStatus: 'active' },
-  { id: 'f23', name: 'Dr. Ethan Brooks',      initials: 'EB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'ethan.brooks@university.edu', phone: '+1 (555) 101-1023', employmentStatus: 'active' },
-  { id: 'f24', name: 'Dr. Ingrid Larsen',     initials: 'IL', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'ingrid.larsen@university.edu', phone: '+1 (555) 101-1024', employmentStatus: 'active' },
+  { id: 'f20', name: 'Dr. Tomas Novak',       initials: 'TN', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Professor', position: 'Course Director', email: 'tomas.novak@university.edu', phone: '+1 (555) 101-1020', employmentStatus: 'active' },
+  { id: 'f21', name: 'Dr. Yuki Tanaka',       initials: 'YT', role: 'primary', department: 'Nursing', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'yuki.tanaka@university.edu', phone: '+1 (555) 101-1021', employmentStatus: 'active' },
+  { id: 'f22', name: 'Dr. Rosa Delgado',      initials: 'RD', role: 'primary', department: 'Psychiatric-Mental Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'rosa.delgado@university.edu', phone: '+1 (555) 101-1022', employmentStatus: 'active' },
+  { id: 'f23', name: 'Dr. Ethan Brooks',      initials: 'EB', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'ethan.brooks@university.edu', phone: '+1 (555) 101-1023', employmentStatus: 'active' },
+  { id: 'f24', name: 'Dr. Ingrid Larsen',     initials: 'IL', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'ingrid.larsen@university.edu', phone: '+1 (555) 101-1024', employmentStatus: 'active' },
   { id: 'f25', name: 'Dr. Paulo Ferreira',    initials: 'PF', role: 'primary', department: 'Clinical Education', facultyType: 'associated', rank: 'Lecturer', position: 'Teaching Assistant', email: 'paulo.ferreira@university.edu', phone: '+1 (555) 101-1025', employmentStatus: 'active' },
-  { id: 'f26', name: 'Dr. Mei Zhang',         initials: 'MZ', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'mei.zhang@university.edu', phone: '+1 (555) 101-1026', employmentStatus: 'active' },
-  { id: 'f27', name: 'Dr. Andre Dubois',      initials: 'AD', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'andre.dubois@university.edu', phone: '+1 (555) 101-1027', employmentStatus: 'active' },
-  { id: 'f28', name: 'Dr. Fatima Rahimi',     initials: 'FR', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'fatima.rahimi@university.edu', phone: '+1 (555) 101-1028', employmentStatus: 'active' },
-  { id: 'f29', name: 'Dr. Caleb Morrison',    initials: 'CM', role: 'primary', department: 'Physical Therapy', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'caleb.morrison@university.edu', phone: '+1 (555) 101-1029', employmentStatus: 'active' },
+  { id: 'f26', name: 'Dr. Mei Zhang',         initials: 'MZ', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'mei.zhang@university.edu', phone: '+1 (555) 101-1026', employmentStatus: 'active' },
+  { id: 'f27', name: 'Dr. Andre Dubois',      initials: 'AD', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'andre.dubois@university.edu', phone: '+1 (555) 101-1027', employmentStatus: 'active' },
+  { id: 'f28', name: 'Dr. Fatima Rahimi',     initials: 'FR', role: 'primary', department: 'Psychiatric-Mental Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'fatima.rahimi@university.edu', phone: '+1 (555) 101-1028', employmentStatus: 'active' },
+  { id: 'f29', name: 'Dr. Caleb Morrison',    initials: 'CM', role: 'primary', department: 'Nursing', facultyType: 'associated', rank: 'Lecturer', position: 'Lab Instructor', email: 'caleb.morrison@university.edu', phone: '+1 (555) 101-1029', employmentStatus: 'active' },
   { id: 'f30', name: 'Dr. Nadia Haddad',      initials: 'NH', role: 'primary', department: 'Clinical Education', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'nadia.haddad@university.edu', phone: '+1 (555) 101-1030', employmentStatus: 'active' },
-  { id: 'f31', name: 'Dr. Oscar Lindqvist',   initials: 'OL', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'oscar.lindqvist@university.edu', phone: '+1 (555) 101-1031', employmentStatus: 'active' },
-  { id: 'f32', name: 'Dr. Talia Bergman',     initials: 'TB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'talia.bergman@university.edu', phone: '+1 (555) 101-1032', employmentStatus: 'active' },
-  { id: 'f33', name: 'Dr. Rohan Mehta',       initials: 'RM', role: 'primary', department: 'Occupational Therapy', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'rohan.mehta@university.edu', phone: '+1 (555) 101-1033', employmentStatus: 'active' },
-  { id: 'f34', name: 'Dr. Claire Beaumont',   initials: 'CB', role: 'primary', department: 'Physical Therapy', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'claire.beaumont@university.edu', phone: '+1 (555) 101-1034', employmentStatus: 'active' },
+  { id: 'f31', name: 'Dr. Oscar Lindqvist',   initials: 'OL', role: 'primary', department: 'Community & Public Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Core Faculty', email: 'oscar.lindqvist@university.edu', phone: '+1 (555) 101-1031', employmentStatus: 'active' },
+  { id: 'f32', name: 'Dr. Talia Bergman',     initials: 'TB', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Assistant Professor', position: 'Core Faculty', email: 'talia.bergman@university.edu', phone: '+1 (555) 101-1032', employmentStatus: 'active' },
+  { id: 'f33', name: 'Dr. Rohan Mehta',       initials: 'RM', role: 'primary', department: 'Psychiatric-Mental Health Nursing', facultyType: 'core', rank: 'Associate Professor', position: 'Course Director', email: 'rohan.mehta@university.edu', phone: '+1 (555) 101-1033', employmentStatus: 'active' },
+  { id: 'f34', name: 'Dr. Claire Beaumont',   initials: 'CB', role: 'primary', department: 'Nursing', facultyType: 'core', rank: 'Professor', position: 'Core Faculty', email: 'claire.beaumont@university.edu', phone: '+1 (555) 101-1034', employmentStatus: 'active' },
 ]
 
 export interface FacultyOfferingRecord {
@@ -2689,117 +2708,120 @@ export const MOCK_FACULTY_OFFERINGS: FacultyOfferingRecord[] = [
   //   f4 Kim     — VOLATILE (mean 4.15, spread 1.40) .......... the distribution behind the dot
   //   f5 Gomez   — below median; course strong / faculty gap ... gap quadrant SE
   //   f6 Hassan  — faculty strong / course gap ................ gap quadrant NW
-  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 72, avgRating: 4.40, courseAvg: 4.20 },
-  { facultyId: 'f1', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 42, responseRate: 68, avgRating: 4.30, courseAvg: 4.10 },
-  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 66, avgRating: 4.30, courseAvg: 4.15 },
-  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 78, avgRating: 4.45, courseAvg: 4.30 },
-  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 60, avgRating: 3.80, courseAvg: 3.75 },
-  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 20, responseRate: 90, avgRating: 4.80, courseAvg: 4.50 },
-  { facultyId: 'f5', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 60, avgRating: 3.70, courseAvg: 4.35 },
-  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 56, avgRating: 3.60, courseAvg: 4.50 },
-  { facultyId: 'f6', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 22, responseRate: 84, avgRating: 4.55, courseAvg: 3.70 },
-  { facultyId: 'f1', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 44, responseRate: 70, avgRating: 4.35, courseAvg: 4.15 },
-  { facultyId: 'f2', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 74, avgRating: 4.35, courseAvg: 4.20 },
-  { facultyId: 'f3', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 46, responseRate: 64, avgRating: 3.90, courseAvg: 3.85 },
-  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 28, responseRate: 68, avgRating: 3.85, courseAvg: 3.80 },
-  { facultyId: 'f4', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 76, avgRating: 4.60, courseAvg: 4.30 },
-  { facultyId: 'f4', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 16, responseRate: 50, avgRating: 3.40, courseAvg: 3.60 },
-  { facultyId: 'f5', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 26, responseRate: 58, avgRating: 3.50, courseAvg: 4.40 },
-  { facultyId: 'f6', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 80, avgRating: 4.60, courseAvg: 3.60 },
-  { facultyId: 'f6', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 78, avgRating: 4.70, courseAvg: 3.65 },
-  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 74, avgRating: 4.45, courseAvg: 4.25 },
-  { facultyId: 'f1', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 82, avgRating: 4.50, courseAvg: 4.35 },
-  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 58, avgRating: 4.00, courseAvg: 3.95 },
-  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 34, responseRate: 70, avgRating: 4.10, courseAvg: 4.05 },
-  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 60, responseRate: 70, avgRating: 4.15, courseAvg: 4.05 },
-  { facultyId: 'f3', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 86, avgRating: 4.20, courseAvg: 4.10 },
-  { facultyId: 'f4', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 54, avgRating: 3.50, courseAvg: 3.70 },
-  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 18, responseRate: 55, avgRating: 3.50, courseAvg: 3.70 },
-  { facultyId: 'f5', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 62, avgRating: 3.65, courseAvg: 4.35 },
-  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 32, responseRate: 52, avgRating: 3.55, courseAvg: 4.45 },
-  { facultyId: 'f6', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 76, avgRating: 4.50, courseAvg: 3.75 },
-  { facultyId: 'f1', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 73, avgRating: 4.40, courseAvg: 4.20 },
-  { facultyId: 'f1', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 44, responseRate: 76, avgRating: 4.40, courseAvg: 4.25 },
-  { facultyId: 'f2', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 64, avgRating: 3.95, courseAvg: 3.85 },
-  { facultyId: 'f2', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 28, responseRate: 60, avgRating: 3.85, courseAvg: 3.90 },
-  { facultyId: 'f3', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 76, avgRating: 4.35, courseAvg: 4.20 },
-  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 78, avgRating: 4.20, courseAvg: 4.15 },
-  { facultyId: 'f4', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 58, avgRating: 3.60, courseAvg: 3.80 },
-  { facultyId: 'f4', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 86, avgRating: 4.70, courseAvg: 4.45 },
-  { facultyId: 'f6', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 54, responseRate: 82, avgRating: 4.65, courseAvg: 3.55 },
-  { facultyId: 'f6', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 86, avgRating: 4.60, courseAvg: 3.65 },
-  { facultyId: 'f6', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Fall 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 35, responseRate: 84, avgRating: 4.75, courseAvg: 3.70 },
-  { facultyId: 'f1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 78, avgRating: 4.50, courseAvg: 4.30 },
-  { facultyId: 'f1', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 84, avgRating: 4.55, courseAvg: 4.40 },
-  { facultyId: 'f2', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 50, responseRate: 54, avgRating: 3.70, courseAvg: 3.75 },
-  { facultyId: 'f2', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 58, avgRating: 3.80, courseAvg: 3.70 },
-  { facultyId: 'f2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 62, avgRating: 3.75, courseAvg: 3.80 },
-  { facultyId: 'f3', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 62, responseRate: 80, avgRating: 4.50, courseAvg: 4.35 },
-  { facultyId: 'f3', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 92, avgRating: 4.55, courseAvg: 4.40 },
-  { facultyId: 'f3', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 84, avgRating: 4.45, courseAvg: 4.30 },
-  { facultyId: 'f4', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 42, responseRate: 82, avgRating: 4.65, courseAvg: 4.35 },
-  { facultyId: 'f4', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 88, avgRating: 4.60, courseAvg: 4.40 },
-  { facultyId: 'f5', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 64, avgRating: 3.80, courseAvg: 4.40 },
-  { facultyId: 'f5', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 60, avgRating: 3.70, courseAvg: 4.55 },
-  { facultyId: 'f6', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 47, responseRate: 80, avgRating: 4.60, courseAvg: 3.80 },
+  { facultyId: 'f1', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 72, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f1', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 42, responseRate: 68, avgRating: 4.30, courseAvg: 4.10 },
+  { facultyId: 'f2', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 66, avgRating: 4.30, courseAvg: 4.15 },
+  { facultyId: 'f2', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 78, avgRating: 4.45, courseAvg: 4.30 },
+  { facultyId: 'f3', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 60, avgRating: 3.80, courseAvg: 3.75 },
+  { facultyId: 'f4', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 20, responseRate: 90, avgRating: 4.80, courseAvg: 4.50 },
+  { facultyId: 'f5', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 60, avgRating: 3.70, courseAvg: 4.35 },
+  { facultyId: 'f5', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 56, avgRating: 3.60, courseAvg: 4.50 },
+  { facultyId: 'f6', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 22, responseRate: 84, avgRating: 4.55, courseAvg: 3.70 },
+  { facultyId: 'f1', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 44, responseRate: 70, avgRating: 4.35, courseAvg: 4.15 },
+  // 4th instructor (Spring 2024) — the faculty heatmap needs ≥4 distinct instructors per
+  // course, incl. a clear top scorer (Ruiz, 4.55, above f1's 4.40 max) and bottom (f26, 3.63).
+  { facultyId: 'f14', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 40, responseRate: 71, avgRating: 4.55, courseAvg: 4.05 },
+  { facultyId: 'f2', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 30, responseRate: 74, avgRating: 4.35, courseAvg: 4.20 },
+  { facultyId: 'f3', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 46, responseRate: 64, avgRating: 3.90, courseAvg: 3.85 },
+  { facultyId: 'f3', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 28, responseRate: 68, avgRating: 3.85, courseAvg: 3.80 },
+  { facultyId: 'f4', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 76, avgRating: 4.60, courseAvg: 4.30 },
+  { facultyId: 'f4', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 16, responseRate: 50, avgRating: 3.40, courseAvg: 3.60 },
+  { facultyId: 'f5', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 26, responseRate: 58, avgRating: 3.50, courseAvg: 4.40 },
+  { facultyId: 'f6', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 80, avgRating: 4.60, courseAvg: 3.60 },
+  { facultyId: 'f6', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Fall 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 34, responseRate: 78, avgRating: 4.70, courseAvg: 3.65 },
+  { facultyId: 'f1', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 74, avgRating: 4.45, courseAvg: 4.25 },
+  { facultyId: 'f1', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 82, avgRating: 4.50, courseAvg: 4.35 },
+  { facultyId: 'f2', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 58, avgRating: 4.00, courseAvg: 3.95 },
+  { facultyId: 'f2', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 34, responseRate: 70, avgRating: 4.10, courseAvg: 4.05 },
+  { facultyId: 'f3', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 60, responseRate: 70, avgRating: 4.15, courseAvg: 4.05 },
+  { facultyId: 'f3', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 86, avgRating: 4.20, courseAvg: 4.10 },
+  { facultyId: 'f4', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 54, avgRating: 3.50, courseAvg: 3.70 },
+  { facultyId: 'f4', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 18, responseRate: 55, avgRating: 3.50, courseAvg: 3.70 },
+  { facultyId: 'f5', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 62, avgRating: 3.65, courseAvg: 4.35 },
+  { facultyId: 'f5', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 32, responseRate: 52, avgRating: 3.55, courseAvg: 4.45 },
+  { facultyId: 'f6', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Spring 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 76, avgRating: 4.50, courseAvg: 3.75 },
+  { facultyId: 'f1', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 73, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f1', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 44, responseRate: 76, avgRating: 4.40, courseAvg: 4.25 },
+  { facultyId: 'f2', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 64, avgRating: 3.95, courseAvg: 3.85 },
+  { facultyId: 'f2', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 28, responseRate: 60, avgRating: 3.85, courseAvg: 3.90 },
+  { facultyId: 'f3', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 76, avgRating: 4.35, courseAvg: 4.20 },
+  { facultyId: 'f3', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 78, avgRating: 4.20, courseAvg: 4.15 },
+  { facultyId: 'f4', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 48, responseRate: 58, avgRating: 3.60, courseAvg: 3.80 },
+  { facultyId: 'f4', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 86, avgRating: 4.70, courseAvg: 4.45 },
+  { facultyId: 'f6', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 54, responseRate: 82, avgRating: 4.65, courseAvg: 3.55 },
+  { facultyId: 'f6', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Fall 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 86, avgRating: 4.60, courseAvg: 3.65 },
+  { facultyId: 'f6', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Fall 2025', cohort: 'Class of 2026', role: 'primary', enrolled: 35, responseRate: 84, avgRating: 4.75, courseAvg: 3.70 },
+  { facultyId: 'f1', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 52, responseRate: 78, avgRating: 4.50, courseAvg: 4.30 },
+  { facultyId: 'f1', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 84, avgRating: 4.55, courseAvg: 4.40 },
+  { facultyId: 'f2', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 50, responseRate: 54, avgRating: 3.70, courseAvg: 3.75 },
+  { facultyId: 'f2', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 58, avgRating: 3.80, courseAvg: 3.70 },
+  { facultyId: 'f2', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 62, avgRating: 3.75, courseAvg: 3.80 },
+  { facultyId: 'f3', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 62, responseRate: 80, avgRating: 4.50, courseAvg: 4.35 },
+  { facultyId: 'f3', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 24, responseRate: 92, avgRating: 4.55, courseAvg: 4.40 },
+  { facultyId: 'f3', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 84, avgRating: 4.45, courseAvg: 4.30 },
+  { facultyId: 'f4', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 42, responseRate: 82, avgRating: 4.65, courseAvg: 4.35 },
+  { facultyId: 'f4', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 88, avgRating: 4.60, courseAvg: 4.40 },
+  { facultyId: 'f5', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 64, avgRating: 3.80, courseAvg: 4.40 },
+  { facultyId: 'f5', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 60, avgRating: 3.70, courseAvg: 4.55 },
+  { facultyId: 'f6', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 47, responseRate: 80, avgRating: 4.60, courseAvg: 3.80 },
   /* ── Scale cohort offerings (f7–f34) ─────────────────────────────────────────
      Without these the 28 new faculty exist in the directory but never reach
      offeringPoints(), so the leaderboard would still draw six and the scale fix
      would look done while proving nothing. Deterministic LCG, never Math.random —
      a fixture that shifts per run makes every visual diff noise. ──────────────── */
-  { facultyId: 'f7', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 20, responseRate: 73, avgRating: 3.42, courseAvg: 4.21 },
-  { facultyId: 'f7', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
-  { facultyId: 'f8', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 62, responseRate: 69, avgRating: 3.32, courseAvg: 4.11 },
-  { facultyId: 'f9', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 66, avgRating: 4.71, courseAvg: 4.02 },
-  { facultyId: 'f9', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
-  { facultyId: 'f9', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
-  { facultyId: 'f10', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 62, avgRating: 4.61, courseAvg: 3.92 },
-  { facultyId: 'f11', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 52, responseRate: 59, avgRating: 4.50, courseAvg: 3.83 },
-  { facultyId: 'f11', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
-  { facultyId: 'f11', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
-  { facultyId: 'f12', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 49, responseRate: 55, avgRating: 4.40, courseAvg: 3.73 },
-  { facultyId: 'f12', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
-  { facultyId: 'f13', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 46, responseRate: 51, avgRating: 4.29, courseAvg: 3.64 },
-  { facultyId: 'f14', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 43, responseRate: 48, avgRating: 4.19, courseAvg: 3.54 },
-  { facultyId: 'f14', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
-  { facultyId: 'f14', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.39, courseAvg: 4.18 },
-  { facultyId: 'f15', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 44, avgRating: 4.08, courseAvg: 3.45 },
-  { facultyId: 'f16', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 92, avgRating: 3.98, courseAvg: 4.70 },
-  { facultyId: 'f16', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
-  { facultyId: 'f16', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
-  { facultyId: 'f17', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 33, responseRate: 89, avgRating: 3.87, courseAvg: 4.61 },
-  { facultyId: 'f17', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 75, avgRating: 3.48, courseAvg: 4.25 },
-  { facultyId: 'f18', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 30, responseRate: 85, avgRating: 3.77, courseAvg: 4.51 },
-  { facultyId: 'f19', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 27, responseRate: 81, avgRating: 3.66, courseAvg: 4.42 },
-  { facultyId: 'f19', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 60, responseRate: 68, avgRating: 4.76, courseAvg: 4.06 },
-  { facultyId: 'f19', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 48, responseRate: 54, avgRating: 4.37, courseAvg: 3.71 },
-  { facultyId: 'f20', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 78, avgRating: 3.56, courseAvg: 4.32 },
-  { facultyId: 'f21', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 21, responseRate: 74, avgRating: 3.45, courseAvg: 4.23 },
-  { facultyId: 'f21', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 54, responseRate: 60, avgRating: 4.55, courseAvg: 3.87 },
-  { facultyId: 'f21', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 42, responseRate: 47, avgRating: 4.16, courseAvg: 3.52 },
-  { facultyId: 'f22', courseCode: 'DPT-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 70, avgRating: 3.35, courseAvg: 4.13 },
-  { facultyId: 'f22', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 51, responseRate: 57, avgRating: 4.45, courseAvg: 3.78 },
-  { facultyId: 'f23', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 67, avgRating: 4.74, courseAvg: 4.04 },
-  { facultyId: 'f24', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 63, avgRating: 4.63, courseAvg: 3.94 },
-  { facultyId: 'f24', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 49, avgRating: 4.24, courseAvg: 3.59 },
-  { facultyId: 'f25', courseCode: 'DPT-620', courseName: 'Geriatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
-  { facultyId: 'f26', courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 56, avgRating: 4.42, courseAvg: 3.76 },
-  { facultyId: 'f26', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 94, avgRating: 4.03, courseAvg: 4.75 },
-  { facultyId: 'f26', courseCode: 'DPT-505', courseName: 'Biomechanics I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 80, avgRating: 3.63, courseAvg: 4.39 },
-  { facultyId: 'f27', courseCode: 'DPT-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
-  { facultyId: 'f27', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
-  { facultyId: 'f28', courseCode: 'DPT-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 48, avgRating: 4.21, courseAvg: 3.57 },
-  { facultyId: 'f29', courseCode: 'DPT-540', courseName: 'Differential Diagnosis', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
-  { facultyId: 'f29', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
-  { facultyId: 'f30', courseCode: 'DPT-530', courseName: 'Therapeutic Exercise', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
-  { facultyId: 'f31', courseCode: 'DPT-515', courseName: 'Pharmacology for Physical Therapists', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 34, responseRate: 89, avgRating: 3.90, courseAvg: 4.63 },
-  { facultyId: 'f31', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 76, avgRating: 3.50, courseAvg: 4.27 },
-  { facultyId: 'f31', courseCode: 'DPT-710', courseName: 'Neurological Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 62, avgRating: 4.60, courseAvg: 3.92 },
-  { facultyId: 'f32', courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
-  { facultyId: 'f32', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.40, courseAvg: 4.18 },
-  { facultyId: 'f33', courseCode: 'DPT-506', courseName: 'Biomechanics II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 82, avgRating: 3.69, courseAvg: 4.44 },
-  { facultyId: 'f34', courseCode: 'DPT-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
-  { facultyId: 'f34', courseCode: 'DPT-711', courseName: 'Pediatric Rehab', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
+  { facultyId: 'f7', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 20, responseRate: 73, avgRating: 3.42, courseAvg: 4.21 },
+  { facultyId: 'f7', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
+  { facultyId: 'f8', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 62, responseRate: 69, avgRating: 3.32, courseAvg: 4.11 },
+  { facultyId: 'f9', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 66, avgRating: 4.71, courseAvg: 4.02 },
+  { facultyId: 'f9', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
+  { facultyId: 'f9', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
+  { facultyId: 'f10', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 62, avgRating: 4.61, courseAvg: 3.92 },
+  { facultyId: 'f11', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 52, responseRate: 59, avgRating: 4.50, courseAvg: 3.83 },
+  { facultyId: 'f11', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
+  { facultyId: 'f11', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
+  { facultyId: 'f12', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 49, responseRate: 55, avgRating: 4.40, courseAvg: 3.73 },
+  { facultyId: 'f12', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
+  { facultyId: 'f13', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 46, responseRate: 51, avgRating: 4.29, courseAvg: 3.64 },
+  { facultyId: 'f14', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 43, responseRate: 48, avgRating: 4.19, courseAvg: 3.54 },
+  { facultyId: 'f14', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
+  { facultyId: 'f14', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.39, courseAvg: 4.18 },
+  { facultyId: 'f15', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 44, avgRating: 4.08, courseAvg: 3.45 },
+  { facultyId: 'f16', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 92, avgRating: 3.98, courseAvg: 4.70 },
+  { facultyId: 'f16', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
+  { facultyId: 'f16', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
+  { facultyId: 'f17', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 33, responseRate: 89, avgRating: 3.87, courseAvg: 4.61 },
+  { facultyId: 'f17', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 75, avgRating: 3.48, courseAvg: 4.25 },
+  { facultyId: 'f18', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 30, responseRate: 85, avgRating: 3.77, courseAvg: 4.51 },
+  { facultyId: 'f19', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 27, responseRate: 81, avgRating: 3.66, courseAvg: 4.42 },
+  { facultyId: 'f19', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 60, responseRate: 68, avgRating: 4.76, courseAvg: 4.06 },
+  { facultyId: 'f19', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 48, responseRate: 54, avgRating: 4.37, courseAvg: 3.71 },
+  { facultyId: 'f20', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 24, responseRate: 78, avgRating: 3.56, courseAvg: 4.32 },
+  { facultyId: 'f21', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 21, responseRate: 74, avgRating: 3.45, courseAvg: 4.23 },
+  { facultyId: 'f21', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 54, responseRate: 60, avgRating: 4.55, courseAvg: 3.87 },
+  { facultyId: 'f21', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 42, responseRate: 47, avgRating: 4.16, courseAvg: 3.52 },
+  { facultyId: 'f22', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 18, responseRate: 70, avgRating: 3.35, courseAvg: 4.13 },
+  { facultyId: 'f22', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 51, responseRate: 57, avgRating: 4.45, courseAvg: 3.78 },
+  { facultyId: 'f23', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 59, responseRate: 67, avgRating: 4.74, courseAvg: 4.04 },
+  { facultyId: 'f24', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 56, responseRate: 63, avgRating: 4.63, courseAvg: 3.94 },
+  { facultyId: 'f24', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 49, avgRating: 4.24, courseAvg: 3.59 },
+  { facultyId: 'f25', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 53, responseRate: 59, avgRating: 4.53, courseAvg: 3.85 },
+  { facultyId: 'f26', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 50, responseRate: 56, avgRating: 4.42, courseAvg: 3.76 },
+  { facultyId: 'f26', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 94, avgRating: 4.03, courseAvg: 4.75 },
+  { facultyId: 'f26', courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 26, responseRate: 80, avgRating: 3.63, courseAvg: 4.39 },
+  { facultyId: 'f27', courseCode: 'NURS-602', courseName: 'Clinical Practicum II', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 47, responseRate: 52, avgRating: 4.32, courseAvg: 3.66 },
+  { facultyId: 'f27', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 35, responseRate: 90, avgRating: 3.92, courseAvg: 4.65 },
+  { facultyId: 'f28', courseCode: 'NURS-601', courseName: 'Clinical Practicum I', term: 'Spring 2024', cohort: 'Class of 2026', role: 'primary', enrolled: 44, responseRate: 48, avgRating: 4.21, courseAvg: 3.57 },
+  { facultyId: 'f29', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 40, responseRate: 45, avgRating: 4.11, courseAvg: 3.47 },
+  { facultyId: 'f29', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 29, responseRate: 83, avgRating: 3.71, courseAvg: 4.46 },
+  { facultyId: 'f30', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 37, responseRate: 93, avgRating: 4.00, courseAvg: 4.73 },
+  { facultyId: 'f31', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 34, responseRate: 89, avgRating: 3.90, courseAvg: 4.63 },
+  { facultyId: 'f31', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 22, responseRate: 76, avgRating: 3.50, courseAvg: 4.27 },
+  { facultyId: 'f31', courseCode: 'NURS-710', courseName: 'Advanced Neurological Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 55, responseRate: 62, avgRating: 4.60, courseAvg: 3.92 },
+  { facultyId: 'f32', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 31, responseRate: 86, avgRating: 3.79, courseAvg: 4.54 },
+  { facultyId: 'f32', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Spring 2025', cohort: 'Class of 2027', role: 'primary', enrolled: 19, responseRate: 72, avgRating: 3.40, courseAvg: 4.18 },
+  { facultyId: 'f33', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 82, avgRating: 3.69, courseAvg: 4.44 },
+  { facultyId: 'f34', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
+  { facultyId: 'f34', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
 ]
 
 /** Question-level scores for programmatic surveys (gen-s1 = collecting). */
@@ -3034,4 +3056,24 @@ export function programAvgForQuestion(questionId: string): number | null {
     avg = Math.min(5, Math.max(1, avg))
   }
   return Math.round(avg * 10) / 10
+}
+
+/** Question text keyed by id, scanned once from every template's own bank.
+ *  Question ids (q1, c1, l1, …) are stable across templates — the same id
+ *  always carries the same wording (verified: `q1` is "The course objectives
+ *  were clearly stated." everywhere it appears) — so first-occurrence wins. */
+let questionTextCache: Map<string, string> | null = null
+
+export function questionTextFor(questionId: string): string | undefined {
+  if (!questionTextCache) {
+    questionTextCache = new Map()
+    for (const tmpl of MOCK_TEMPLATES) {
+      for (const list of Object.values(tmpl.questions)) {
+        for (const q of list) {
+          if (!questionTextCache.has(q.id)) questionTextCache.set(q.id, q.text)
+        }
+      }
+    }
+  }
+  return questionTextCache.get(questionId)
 }

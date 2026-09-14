@@ -146,6 +146,7 @@ The audit script's `LEGITIMATE_NON_CARD_DIVS` set skips card-shape-masquerade sc
 | `apps/pce/admin/app/(app)/admin/setup/_view-countdown.tsx` | Countdown hero — `border-l-4` accent status strip (banner anatomy), not Card. Added 2026-07-11. |
 | `apps/pce/admin/components/pce/distribute-wizard/step-review.tsx` | Acknowledgement-gates group container wrapping AckGroup checkbox rows (settled push-wizard design) — fieldset-style wrapper like pce-modals.tsx. Added 2026-07-11. |
 | `apps/pce/admin/components/pce/distribute-wizard/step-survey-design-assign.tsx` | Inline "no courses selected" zero-state strip inside a wizard step. Added 2026-07-11. |
+| `apps/pce/admin/components/pce/analytics-plots.tsx` | Recharts custom `ChartTooltip` content renderers (repeated ~6× in this file) — an ephemeral, cursor-following hint inside Recharts' own positioning wrapper, not a static content panel; DS Card's slot padding would fight the tooltip's compact spacing. Same category as exam-management's scatter-plot hover tooltip (card.md depth audit 2026-05-11). Added 2026-09-14. |
 
 **Tracked follow-up (2026-07-11):** the dashed empty-state anatomy (icon + title + sub + CTA, `border-dashed bg-muted/25`) now repeats ~7× across PCE. Extract a shared PCE `EmptyState` molecule (mirroring `apps/exam-management/admin/components/empty-state.tsx`) and remove these whole-file skips once the sites migrate.
 

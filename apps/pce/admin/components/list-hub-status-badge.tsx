@@ -18,13 +18,19 @@ export interface ListHubStatusBadgeProps {
    *  considering the tags are loud" — the bordered, semibold badge was the
    *  same visual weight as the outline button next to it). */
   flat?: boolean
+  /** `md` (default) is this component's original size — unchanged for every
+   *  existing call site. `sm` matches the DS's own semantic-badge "sm" shell
+   *  (`px-2.5` instead of `px-3`) for contexts sized against it directly,
+   *  e.g. the Operations dashboard rows (Romit, 2026-09-11, against
+   *  exxat-surveys-24f.pages.dev/design-os/dashboard). */
+  size?: 'sm' | 'md'
 }
 
-export function ListHubStatusBadge({ label, tint, icon, className, flat }: ListHubStatusBadgeProps) {
+export function ListHubStatusBadge({ label, tint, icon, className, flat, size = 'md' }: ListHubStatusBadgeProps) {
   return (
     <Badge
       variant="secondary"
-      className={`rounded-full gap-1.5 px-3 py-1 text-xs whitespace-nowrap normal-case tracking-normal ${flat ? 'border-0 font-medium' : 'border font-semibold'} ${className ?? ''}`}
+      className={`rounded-full gap-1.5 text-xs whitespace-nowrap normal-case tracking-normal ${size === 'sm' ? 'px-2.5 py-0.5' : 'px-3 py-1'} ${flat ? 'border-0 font-medium' : 'border font-semibold'} ${className ?? ''}`}
       style={flat ? { backgroundColor: tint.bg, color: tint.fg } : { backgroundColor: tint.bg, color: tint.fg, borderColor: tint.border }}
     >
       <i className={`fa-light ${icon}`} aria-hidden="true" />

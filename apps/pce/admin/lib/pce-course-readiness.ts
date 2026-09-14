@@ -208,7 +208,7 @@ export interface CellReadiness {
 export interface CourseReadiness {
   offering: CourseOffering
   deliveryMode: DeliveryMode
-  /** Course label "DPT-510 – Neuroanatomy" (from master course). */
+  /** Course label "NURS-510 – Health Assessment" (from master course). */
   courseLabel: string
   /** Only the selected criteria are present. */
   cells: Partial<Record<Criterion, CellReadiness>>

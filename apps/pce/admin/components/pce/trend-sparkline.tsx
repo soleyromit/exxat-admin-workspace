@@ -39,6 +39,9 @@ interface Props {
   /** Y-axis range; defaults to 0–5 score scale. */
   min?: number
   max?: number
+  /** Reference value (e.g. the program's target score) drawn as a faint dashed line —
+   *  passthrough to `MicroTrend`'s `referenceLine`. */
+  thresholdValue?: number
 }
 
 export function TrendSparkline({
@@ -49,6 +52,7 @@ export function TrendSparkline({
   height = 20,
   min = 0,
   max = 5,
+  thresholdValue,
 }: Props) {
   const points: Point[] = currentValue !== undefined
     ? [...history, { label: currentLabel, value: currentValue }]
@@ -98,6 +102,7 @@ export function TrendSparkline({
         lastPointFill={toneVar}
         min={min}
         max={max}
+        referenceLine={thresholdValue}
         sizing="fixed"
         width={width}
         height={height}

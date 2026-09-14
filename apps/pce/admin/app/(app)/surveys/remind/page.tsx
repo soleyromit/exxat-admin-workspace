@@ -28,6 +28,8 @@ import {
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { TruncatedText } from '@/components/truncated-text'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { EmailThumbnail } from '@/components/pce/distribute-wizard/step-communication'
 import { EmailTemplateSheet } from '@/components/pce/distribute-wizard/email-template-sheet'
@@ -47,6 +49,12 @@ const STEPS = [
 ]
 
 type WizardStep = 1 | 2 | 3 | 'success'
+
+/* `DataTable`'s generic requires `Record<string, unknown>` — same pattern as
+   `TemplateRow`/`GrantRow` elsewhere in this codebase (templates-hub.tsx,
+   role-access-grid.tsx), just an intersection instead of an `extends` since
+   `PceSurvey` is already declared elsewhere. */
+type RemindRow = PceSurvey & Record<string, unknown>
 
 /* Legacy survey courseType → display label (push-wizard type vocabulary). */
 const COURSE_TYPE_LABEL: Record<string, string> = {
@@ -168,6 +176,83 @@ function RemindWizardInner() {
     setAckRecent(false)
   }
 
+  /* Real `DataTable` columns — matches the push wizard's course-cell anatomy
+     (code/name/date, same font treatment) exactly (Romit, 2026-09-11).
+     `selectable={false}` on the table below: selection UI is this own
+     hand-rolled `select` column reading/writing the existing
+     `excludedIds`/`toggle` state, not `DataTable`'s built-in
+     `useTableState`-driven selection — that state model is threaded through
+     Steps 2/3 (guardrail, ack gate, per-course review sections) and
+     swapping it for `useTableState` would be a much larger, riskier rewrite
+     than what was asked; the table CHROME is what needed to match. */
+  const columns = useMemo<ColumnDef<RemindRow>[]>(() => [
+    {
+      /* NOT `key: 'select'` — that's a reserved key `DataTable` special-cases
+         internally (tied to the `selectable` prop's own built-in checkbox
+         rendering), which silently swallowed this column's custom `cell`
+         when `selectable={false}` (Romit's catch, 2026-09-11: checkboxes
+         were missing entirely, not just mis-styled). */
+      key: 'include', label: '', width: 40,
+      cell: (s) => (
+        <Checkbox
+          checked={!excludedIds.has(s.id)}
+          onCheckedChange={() => toggle(s.id)}
+          aria-label={`Include ${s.courseCode}`}
+        />
+      ),
+    },
+    {
+      key: 'courseCode', label: 'Course', width: 260,
+      cell: (s) => (
+        <div className="flex flex-col py-0.5 min-w-0">
+          <span className="font-mono text-xs tabular-nums">{s.courseCode}</span>
+          <TruncatedText className="text-sm font-medium">{s.courseName}</TruncatedText>
+          <span className="text-xs tabular-nums whitespace-nowrap text-muted-foreground">
+            Closes {s.deadline}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'courseType', label: 'Type', width: 110,
+      cell: (s) => s.courseType ? (
+        <Badge variant="outline" className="font-normal whitespace-nowrap shrink-0">
+          {COURSE_TYPE_LABEL[s.courseType] ?? s.courseType}
+        </Badge>
+      ) : null,
+    },
+    {
+      key: 'status', label: 'Status', width: 110,
+      cell: (s) => <SurveyStatusBadgeOS status={s.status} />,
+    },
+    {
+      key: 'responseRate', label: 'Response', width: 170,
+      cell: (s) => (
+        <ResponseProgressCell
+          rate={s.responseRate}
+          responseCount={s.responseCount}
+          enrollmentCount={s.enrollmentCount}
+          target={RESPONSE_TARGET}
+          detail="pct"
+        />
+      ),
+    },
+    {
+      key: 'pending', label: 'Pending', width: 150,
+      cell: (s) => {
+        const lastDays = daysSinceIso(s.lastReminderSentAt)
+        return (
+          <div className="text-right">
+            <p className="text-sm tabular-nums font-medium">{pendingFor(s)} pending</p>
+            <p className="text-xs text-muted-foreground">
+              {lastDays != null ? `Reminded ${dayPhrase(lastDays)}` : 'Never reminded'}
+            </p>
+          </div>
+        )
+      },
+    },
+  ], [excludedIds])
+
   function handleSend() {
     sendSurveyReminder(selected.map(s => s.id))
     setSentSummary({ students: totalPending, courses: selected.length })
@@ -213,7 +298,7 @@ function RemindWizardInner() {
           {step === 1 && (
             <>
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h2 className="text-xl font-semibold">
                   Recipients
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -255,9 +340,9 @@ function RemindWizardInner() {
                   </div>
                 )
               ) : (
-                <div className="rounded-lg border border-border overflow-hidden">
+                <div className="flex flex-col gap-2">
                   {/* Master row — select / clear every course at once */}
-                  <div className="flex items-center gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
+                  <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg bg-muted/40">
                     <Checkbox
                       id="remind-all"
                       checked={masterState}
@@ -271,49 +356,16 @@ function RemindWizardInner() {
                       {totalPending} student{totalPending !== 1 ? 's' : ''} will be emailed
                     </span>
                   </div>
-                  {candidates.map((s, i) => {
-                    const checked = !excludedIds.has(s.id)
-                    const pending = pendingFor(s)
-                    const lastDays = daysSinceIso(s.lastReminderSentAt)
-                    return (
-                      <div
-                        key={s.id}
-                        className={`flex items-center gap-4 px-4 py-3 ${i === candidates.length - 1 ? '' : 'border-b border-border'}`}
-                      >
-                        <Checkbox
-                          id={`remind-${s.id}`}
-                          checked={checked}
-                          onCheckedChange={() => toggle(s.id)}
-                          aria-label={`Include ${s.courseCode}`}
-                        />
-                        <Label htmlFor={`remind-${s.id}`} className="flex-1 min-w-0 flex flex-col items-start gap-0.5 font-normal cursor-pointer">
-                          <span className="text-sm font-medium">{s.courseCode}</span>
-                          <TruncatedText className="text-xs text-muted-foreground">{s.courseName}</TruncatedText>
-                        </Label>
-                        {s.courseType && (
-                          <Badge variant="outline" className="font-normal whitespace-nowrap shrink-0">
-                            {COURSE_TYPE_LABEL[s.courseType] ?? s.courseType}
-                          </Badge>
-                        )}
-                        <SurveyStatusBadgeOS status={s.status} />
-                        <div style={{ width: 170 }} className="shrink-0">
-                          <ResponseProgressCell
-                            rate={s.responseRate}
-                            responseCount={s.responseCount}
-                            enrollmentCount={s.enrollmentCount}
-                            target={RESPONSE_TARGET}
-                            detail="pct"
-                          />
-                        </div>
-                        <div className="w-36 shrink-0 text-right">
-                          <p className="text-sm tabular-nums font-medium">{pending} pending</p>
-                          <p className="text-xs text-muted-foreground">
-                            {lastDays != null ? `Reminded ${dayPhrase(lastDays)}` : 'Never reminded'}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  <DataTable<RemindRow>
+                    data={candidates as RemindRow[]}
+                    columns={columns}
+                    getRowId={(s) => s.id}
+                    selectable={false}
+                    searchable={false}
+                    showQueryControls={false}
+                    edgeInset={false}
+                    stickyHeader={false}
+                  />
                 </div>
               )}
 
@@ -343,7 +395,7 @@ function RemindWizardInner() {
           {step === 2 && (
             <>
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h2 className="text-xl font-semibold">
                   Email
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -435,7 +487,7 @@ function RemindWizardInner() {
             <>
               {/* Headline — push-review anatomy: reach sentence, guardrail under it */}
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h2 className="text-xl font-semibold">
                   Review &amp; send
                 </h2>
                 <p className="text-sm text-muted-foreground">
