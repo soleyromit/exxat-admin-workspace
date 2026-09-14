@@ -1939,6 +1939,20 @@
                 "P2": 17,
                 "P3": 30
             }
+        },
+        {
+            "id": "2026-09-14-granola-intake-001",
+            "date": "2026-09-14",
+            "product": "workspace",
+            "type": "decision-extracted",
+            "title": "Weekly Granola intake — 0 new decisions, 0 conflicts (Sep 8–14 window)",
+            "what": "Fetched 4 meetings from Sep 8–14. Screened against filter keywords (PCE, Post Course Evaluation, Survey, Exam Management, Question Bank, Assessment, Aarti/Adi, Vishaka, Monil, Nipun). 0 meetings matched. Transcripts reviewed: (1) 'Design requirements and acceptance criteria for product dashboards' (Sep 8) — screened; confirmed as a mentorship/process conversation between Romit and a mentor about design acceptance criteria workflows; no stakeholder product directives extracted. (2–4) 'Pharmacy content strategy and emerging domains roadmap with Ruchi' (Sep 10), 'Go-to-market strategy and pharmacy research planning' (Sep 11), 'Exact pharmacy domain — competitive analysis, accreditation gaps, and product roadmap' (Sep 12) — pharmacy domain; out of scope for active product filter. 0 new decisions added to stakeholder-decisions.json. 0 conflicts flagged.",
+            "source": "Granola MCP — list_meetings last_week (2026-09-08 to 2026-09-14)",
+            "meetingsFetched": 4,
+            "meetingsRelevant": 0,
+            "newDecisions": 0,
+            "conflictsFlagged": 0,
+            "meetingsWithNoTranscript": 0
         }
     ]
 }
