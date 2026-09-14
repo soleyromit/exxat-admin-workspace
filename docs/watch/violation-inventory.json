@@ -5,11 +5,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/data-table/index.tsx",
-      "lines": [336],
+      "lines": [
+        336
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -18,11 +20,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/key-metrics/index.tsx",
-      "lines": [225],
+      "lines": [
+        225
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining instance; lines 414/618/662 fixed)."
     },
@@ -31,11 +35,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/table-properties/drawer.tsx",
-      "lines": [642],
+      "lines": [
+        642
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -44,11 +50,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/pce/ai-insight-card.tsx",
-      "lines": [53],
+      "lines": [
+        53
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -57,11 +65,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/admin/page.tsx",
-      "lines": [110],
+      "lines": [
+        110
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; line 120 fixed)."
     },
@@ -70,11 +80,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/moderation/page.tsx",
-      "lines": [148],
+      "lines": [
+        148
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -83,11 +95,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/page.tsx",
-      "lines": [64],
+      "lines": [
+        64
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; line 76 fixed)."
     },
@@ -96,11 +110,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/templates/page.tsx",
-      "lines": [210],
+      "lines": [
+        210
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -109,11 +125,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/my-surveys/[id]/results/page.tsx",
-      "lines": [160],
+      "lines": [
+        160
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -122,11 +140,14 @@
       "product": "pce",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/pce/admin/app/(app)/templates/[id]/page.tsx",
-      "lines": [197, 315],
+      "lines": [
+        197,
+        315
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -135,11 +156,13 @@
       "product": "pce",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/pce/admin/app/(app)/surveys/push/page.tsx",
-      "lines": [240],
+      "lines": [
+        240
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -148,11 +171,17 @@
       "product": "pce",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/pce/admin/components/data-table/pagination.tsx",
-      "lines": [78, 108, 119, 133, 144],
+      "lines": [
+        78,
+        108,
+        119,
+        133,
+        144
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace pagination controls with DS <Button> using appropriate variant and size."
     },
@@ -161,11 +190,28 @@
       "product": "pce",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/pce/admin/components/data-table/index.tsx",
-      "lines": [195, 211, 246, 255, 276, 303, 350, 482, 502, 539, 554, 580, 597, 856, 889, 919],
+      "lines": [
+        195,
+        211,
+        246,
+        255,
+        276,
+        303,
+        350,
+        482,
+        502,
+        539,
+        554,
+        580,
+        597,
+        856,
+        889,
+        919
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\" pattern."
     },
@@ -174,11 +220,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/site-header.tsx",
-      "lines": [34],
+      "lines": [
+        34
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -187,11 +235,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/data-table/index.tsx",
-      "lines": [336],
+      "lines": [
+        336
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -200,11 +250,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/key-metrics/index.tsx",
-      "lines": [225],
+      "lines": [
+        225
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; lines 414/618/662 fixed)."
     },
@@ -213,11 +265,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/app-sidebar.tsx",
-      "lines": [98, 206],
+      "lines": [
+        98,
+        206
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 remaining; line 402 fixed)."
     },
@@ -226,11 +281,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/search-input.tsx",
-      "lines": [241, 277],
+      "lines": [
+        241,
+        277
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 remaining; line 232 fixed)."
     },
@@ -239,11 +297,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/persona-switcher.tsx",
-      "lines": [99, 188],
+      "lines": [
+        99,
+        188
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -252,11 +313,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-manage-access.tsx",
-      "lines": [132],
+      "lines": [
+        132
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -265,11 +328,15 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [711, 748, 3369],
+      "lines": [
+        711,
+        748,
+        3369
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 remaining; lines 210/686/2597/3436 fixed)."
     },
@@ -278,11 +345,18 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-sidebar.tsx",
-      "lines": [147, 189, 226, 625, 958, 1398],
+      "lines": [
+        147,
+        189,
+        226,
+        625,
+        958,
+        1398
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to decorative <i> elements (6 remaining; lines 417/550/984/1312 fixed). Line 958 uses aria-label — confirm role."
     },
@@ -291,11 +365,15 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/course-catalog/catalog-client.tsx",
-      "lines": [272, 317, 362],
+      "lines": [
+        272,
+        317,
+        362
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -304,11 +382,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/assessments/[id]/assessment-landing-client.tsx",
-      "lines": [848],
+      "lines": [
+        848
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -317,11 +397,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/assessments/[id]/monitor/live-monitor-client.tsx",
-      "lines": [113],
+      "lines": [
+        113
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -330,11 +412,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/assessments/[id]/analytics/analytics-client.tsx",
-      "lines": [356],
+      "lines": [
+        356
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -343,11 +427,15 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/faculty-tab.tsx",
-      "lines": [280, 302, 460],
+      "lines": [
+        280,
+        302,
+        460
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -356,11 +444,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/questions-tab.tsx",
-      "lines": [78],
+      "lines": [
+        78
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -369,11 +459,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/students-tab.tsx",
-      "lines": [101, 123],
+      "lines": [
+        101,
+        123
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -382,11 +475,15 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/overview-tab.tsx",
-      "lines": [95, 159, 375],
+      "lines": [
+        95,
+        159,
+        375
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -395,11 +492,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/terms/terms-client.tsx",
-      "lines": [446, 475],
+      "lines": [
+        446,
+        475
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -408,11 +508,15 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/faculty/[id]/faculty-detail-client.tsx",
-      "lines": [126, 331, 353],
+      "lines": [
+        126,
+        331,
+        353
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -421,11 +525,17 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-dropdown-modal",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [1137, 1798, 2528, 3990, 4257],
+      "lines": [
+        1137,
+        1798,
+        2528,
+        3990,
+        4257
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Without modal={false}, Radix DropdownMenu locks body scroll on open — breaks scroll inside nested drawers/dialogs and causes layout shift on mobile.",
       "fixLevel": "Add modal={false} to each <DropdownMenu> root in qb-table.tsx (5 instances)."
     },
@@ -434,11 +544,14 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [76, 960],
+      "lines": [
+        76,
+        960
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or a role=\"button\" div for drag handles."
     },
@@ -447,11 +560,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-title.tsx",
-      "lines": [43],
+      "lines": [
+        43
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -460,11 +575,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/app/(app)/course-catalog/catalog-client.tsx",
-      "lines": [96],
+      "lines": [
+        96
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -473,11 +590,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/app/(app)/students/students-client.tsx",
-      "lines": [455],
+      "lines": [
+        455
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -486,11 +605,14 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/app/(app)/questions/new/add-question-client.tsx",
-      "lines": [138, 211],
+      "lines": [
+        138,
+        211
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -499,11 +621,17 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/components/data-table/pagination.tsx",
-      "lines": [77, 107, 118, 132, 143],
+      "lines": [
+        77,
+        107,
+        118,
+        132,
+        143
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace pagination controls with DS <Button>."
     },
@@ -512,11 +640,28 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/components/data-table/index.tsx",
-      "lines": [195, 211, 246, 255, 276, 303, 350, 479, 499, 536, 551, 577, 593, 856, 888, 918],
+      "lines": [
+        195,
+        211,
+        246,
+        255,
+        276,
+        303,
+        350,
+        479,
+        499,
+        536,
+        551,
+        577,
+        593,
+        856,
+        888,
+        918
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\"."
     },
@@ -525,11 +670,15 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/components/search-input.tsx",
-      "lines": [209, 259, 282],
+      "lines": [
+        209,
+        259,
+        282
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or Button asChild pattern."
     },
@@ -538,11 +687,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/components/qb/toggle.tsx",
-      "lines": [26],
+      "lines": [
+        26
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using appropriate variant and size."
     },
@@ -551,11 +702,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-toast",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-sidebar.tsx",
-      "lines": [26],
+      "lines": [
+        26
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "toast() is banned for product feedback; expected pattern is LocalBanner. QB undo exception only covers qb-table.tsx.",
       "fixLevel": "Move sidebar folder-action feedback to LocalBanner, or extend QB undo exception to cover qb-sidebar in the sweep rule."
     },
@@ -564,11 +717,14 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-opacity-60",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [990, 1122],
+      "lines": [
+        990,
+        1122
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "opacity-60 on hover/idle states can drop text contrast below 4.5:1 WCAG AA threshold — risk for low-vision users.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground or text-foreground/60 token to avoid compounding opacity on already-muted text."
     },
@@ -577,11 +733,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-opacity-60",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/questions-tab.tsx",
-      "lines": [238],
+      "lines": [
+        238
+      ],
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "opacity-60 applied to container element by default (not just hover) — text inside at ~2.57:1 vs WCAG AA 4.5:1 minimum.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground and group-hover:text-foreground pattern to avoid blanket opacity on text containers."
     },
@@ -590,11 +748,13 @@
       "product": "pce",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/pce/admin/components/key-metrics/index.tsx",
-      "lines": [289],
+      "lines": [
+        289
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -603,11 +763,13 @@
       "product": "exam-management",
       "rule": "GUARDRAIL-raw-button",
       "file": "apps/exam-management/admin/components/key-metrics/index.tsx",
-      "lines": [289],
+      "lines": [
+        289
+      ],
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -616,7 +778,9 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/components/app-sidebar.tsx",
-      "lines": [216],
+      "lines": [
+        216
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -629,7 +793,10 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/surveys/[id]/responses/page.tsx",
-      "lines": [163, 189],
+      "lines": [
+        163,
+        189
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -642,7 +809,9 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/pce/admin/app/(app)/analytics/page.tsx",
-      "lines": [619],
+      "lines": [
+        619
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -655,7 +824,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/action-items-panel.tsx",
-      "lines": [257],
+      "lines": [
+        257
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -668,7 +839,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/empty-state.tsx",
-      "lines": [79],
+      "lines": [
+        79
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -681,7 +854,11 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/components/faculty-ui-kit.tsx",
-      "lines": [76, 110, 243],
+      "lines": [
+        76,
+        110,
+        243
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -694,7 +871,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/competency/competency-client.tsx",
-      "lines": [174],
+      "lines": [
+        174
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -707,7 +886,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/accommodations-tab.tsx",
-      "lines": [152],
+      "lines": [
+        152
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -720,7 +901,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/assessments-tab.tsx",
-      "lines": [261],
+      "lines": [
+        261
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -733,7 +916,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/courses/offerings/[id]/course-offering-detail-client.tsx",
-      "lines": [825],
+      "lines": [
+        825
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -746,7 +931,9 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-fa-aria-hidden",
       "file": "apps/exam-management/admin/app/(app)/students/[id]/student-detail-client.tsx",
-      "lines": [249],
+      "lines": [
+        249
+      ],
       "severity": "P3",
       "status": "fixed",
       "firstSeen": "2026-08-24",
@@ -759,11 +946,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/components/data-table/row-actions.tsx",
-      "lines": [75],
+      "lines": [
+        75
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose; WCAG 4.1.2 failure blocks keyboard and AT users.",
       "fixLevel": "Add aria-label describing the button action (e.g., aria-label=\"Row actions\")."
     },
@@ -772,11 +961,18 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/components/table-properties/drawer.tsx",
-      "lines": [234, 299, 328, 584, 596, 779],
+      "lines": [
+        234,
+        299,
+        328,
+        584,
+        596,
+        779
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only buttons with no accessible name — screen reader users cannot determine button purposes; 6 instances in drawer.",
       "fixLevel": "Add aria-label to each icon-only Button (size=\"icon-sm\") describing its action."
     },
@@ -785,11 +981,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/admin/competencies/page.tsx",
-      "lines": [301],
+      "lines": [
+        301
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -798,11 +996,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/admin/content-areas/page.tsx",
-      "lines": [270],
+      "lines": [
+        270
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -811,11 +1011,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/admin/standards/page.tsx",
-      "lines": [292],
+      "lines": [
+        292
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -824,11 +1026,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/admin/courses/page.tsx",
-      "lines": [336],
+      "lines": [
+        336
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -837,11 +1041,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/admin/students/page.tsx",
-      "lines": [269],
+      "lines": [
+        269
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -850,11 +1056,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/templates/[id]/page.tsx",
-      "lines": [273],
+      "lines": [
+        273
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -863,11 +1071,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/templates/page.tsx",
-      "lines": [179],
+      "lines": [
+        179
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -876,11 +1086,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/surveys/[id]/responses/page.tsx",
-      "lines": [182],
+      "lines": [
+        182
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -889,11 +1101,13 @@
       "product": "pce",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/pce/admin/app/(app)/surveys/page.tsx",
-      "lines": [276],
+      "lines": [
+        276
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -902,11 +1116,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/components/data-table/row-actions.tsx",
-      "lines": [70],
+      "lines": [
+        70
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action (e.g., aria-label=\"Row actions\")."
     },
@@ -915,11 +1131,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/components/question-editor/question-editor.tsx",
-      "lines": [470],
+      "lines": [
+        470
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -928,11 +1146,26 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
-      "lines": [1081, 1261, 1269, 1982, 1999, 3317, 3410, 3425, 3446, 3461, 4004, 4012, 4021, 4033],
+      "lines": [
+        1081,
+        1261,
+        1269,
+        1982,
+        1999,
+        3317,
+        3410,
+        3425,
+        3446,
+        3461,
+        4004,
+        4012,
+        4021,
+        4033
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "14 icon-only buttons without accessible names in QB table — screen reader users cannot use QB action controls.",
       "fixLevel": "Add aria-label to each icon-only Button (size=\"icon-sm\") describing its action."
     },
@@ -941,11 +1174,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/question-bank/qb-header.tsx",
-      "lines": [170, 186],
+      "lines": [
+        170,
+        186
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only buttons with no accessible names in QB header.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -954,11 +1190,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/course-catalog/catalog-client.tsx",
-      "lines": [163],
+      "lines": [
+        163
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -967,11 +1205,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/access/page.tsx",
-      "lines": [149],
+      "lines": [
+        149
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -980,11 +1220,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/faculty-tab.tsx",
-      "lines": [180, 188],
+      "lines": [
+        180,
+        188
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only buttons with no accessible names in faculty tab.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -993,11 +1236,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/courses/[id]/tabs/students-tab.tsx",
-      "lines": [451],
+      "lines": [
+        451
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name in students tab.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1006,11 +1251,14 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/courses/courses-client.tsx",
-      "lines": [147, 496],
+      "lines": [
+        147,
+        496
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only buttons with no accessible names in courses list.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -1019,11 +1267,13 @@
       "product": "exam-management",
       "rule": "WCAG-4.1.2-icon-button-aria-label",
       "file": "apps/exam-management/admin/app/(app)/terms/terms-client.tsx",
-      "lines": [171],
+      "lines": [
+        171
+      ],
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-07",
+      "lastSeen": "2026-09-14",
       "consequence": "Icon-only button with no accessible name in terms list.",
       "fixLevel": "Add aria-label describing the button action."
     }
