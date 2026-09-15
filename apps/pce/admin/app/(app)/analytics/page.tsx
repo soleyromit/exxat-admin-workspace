@@ -440,14 +440,16 @@ function AnalyticsInner() {
             className="flex-1 overflow-visible m-0"
             style={{ padding: '20px 28px 28px' }}
           >
-            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty analytics" />}>
-              <ByFacultyPanel
-                facultyId={id}
-                onOpenSurvey={setSelectedSurveyId}
-                scopedTerms={overviewTerms}
-                hideAskLeo
-              />
-            </Suspense>
+            <div className="flex flex-col gap-4">
+              <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty analytics" />}>
+                <ByFacultyPanel
+                  facultyId={id}
+                  onOpenSurvey={setSelectedSurveyId}
+                  scopedTerms={overviewTerms}
+                  hideAskLeo
+                />
+              </Suspense>
+            </div>
           </TabsContent>
         ))}
 
