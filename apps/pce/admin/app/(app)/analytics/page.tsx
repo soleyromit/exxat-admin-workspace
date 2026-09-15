@@ -178,6 +178,13 @@ function AnalyticsInner() {
    * ever needs to be hidden/shown by which course tab (if any) is currently active.
    */
   const [facultyFilterSlot, setFacultyFilterSlot] = useState<HTMLDivElement | null>(null)
+  /** Portal target for the Faculty tab's own Course/Faculty/Role filters (Romit, 2026-09-15:
+   *  "migrate these filter to the sticky filter... whenever I am at the faculty tab, there
+   *  shouldn't be any filter" elsewhere) — the exact mirror of `facultyFilterSlot` above, one
+   *  tab over. Visible only while the Faculty LANDING tab is active — the individual
+   *  `faculty:<id>` drill-down tabs have no such filter to show, same as Course's own slot
+   *  hides itself outside `course:<code>`. */
+  const [facultyListFilterSlot, setFacultyListFilterSlot] = useState<HTMLDivElement | null>(null)
 
   /**
    * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
@@ -337,6 +344,7 @@ function AnalyticsInner() {
             page's own reset rule for this. Only visible while a course tab is active — Overview/
             Course/Faculty have no Faculty filter to show here. */}
         <div ref={setFacultyFilterSlot} hidden={!activeTab.startsWith('course:')} />
+        <div ref={setFacultyListFilterSlot} hidden={activeTab !== 'faculty'} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
@@ -419,7 +427,7 @@ function AnalyticsInner() {
                  courses. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
           <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty offerings" />}>
-            <FacultyOfferingList terms={overviewTerms} onOpenFaculty={openFacultyTab} />
+            <FacultyOfferingList terms={overviewTerms} onOpenFaculty={openFacultyTab} filterSlot={facultyListFilterSlot} />
           </Suspense>
         </TabsContent>
 

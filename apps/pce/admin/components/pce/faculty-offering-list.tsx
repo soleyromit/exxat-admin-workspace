@@ -39,6 +39,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Button, DataTable, TableViewMoreFooter,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
@@ -78,6 +79,7 @@ function RatingCell({ value, below }: { value: number; below: boolean }) {
 export function FacultyOfferingList({
   terms,
   onOpenFaculty,
+  filterSlot,
 }: {
   /** AY/term scope from the page's own selector above the tabs — "offered in the selected
    *  AY/terms" (PRD), the same rows every other Analytics tab reads for this scope. */
@@ -85,6 +87,16 @@ export function FacultyOfferingList({
   /** Faculty NAME click → the faculty's own Faculty Analytics, as a new tab in this browser
    *  tab (the `tab=faculty:<id>` scheme). */
   onOpenFaculty: (facultyId: string) => void
+  /**
+   * Portals the Course/Faculty/Role filter row into this DOM node instead of rendering it
+   * inline above the table — Romit, 2026-09-15: "migrate these filter to the sticky filter...
+   * whenever I am at the faculty tab, there shouldn't be any filter [below the tab strip]."
+   * Same mechanism `ByCoursePanel`'s own Faculty filter already uses (`facultyFilterSlot` in
+   * `app/(app)/analytics/page.tsx`) — the slot lives in the page's sticky AY/Term row, visible
+   * only while this tab is active. Omit to render the row inline (e.g. a future standalone
+   * usage with no such slot to join).
+   */
+  filterSlot?: HTMLElement | null
 }) {
   const termsLabel = terms.length === 1 ? terms[0]! : `${terms.length} terms`
   const roleLabelById = useMemo(() => new Map(facultyEvalRoleOptions().map((r) => [r.id, r.label])), [])
@@ -242,48 +254,52 @@ export function FacultyOfferingList({
     }
   }, [filteredRows, facultyMedian, termsLabel])
 
+  const filterRow = (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-1">
+        <label id="faculty-list-course-label" className="text-xs font-medium text-muted-foreground">Course</label>
+        <TokenSelect
+          labelId="faculty-list-course-label"
+          contentLabel="Filter by course"
+          placeholder="All courses"
+          options={courseOptions}
+          selected={courseFilter}
+          onToggle={toggleCourse}
+          onClear={() => setCourseFilter([])}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-list-faculty">Faculty</label>
+        <Select value={facultyFilter ?? ALL_FACULTY} onValueChange={(v) => setFacultyFilter(v === ALL_FACULTY ? undefined : v)}>
+          <SelectTrigger id="faculty-list-faculty" className="h-8 w-48 text-sm" aria-label="Filter by faculty"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_FACULTY}>All faculty</SelectItem>
+            {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-list-role">Role</label>
+        <Select
+          value={roleFilter ?? ALL_ROLES}
+          onValueChange={(v) => setRoleFilter(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
+          disabled={roleOptions.length === 0}
+        >
+          <SelectTrigger id="faculty-list-role" className="h-8 w-44 text-sm" aria-label="Filter by role"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_ROLES}>All roles</SelectItem>
+            {roleOptions.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="sr-only">Faculty offerings</h2>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label id="faculty-list-course-label" className="text-xs font-medium text-muted-foreground">Course</label>
-          <TokenSelect
-            labelId="faculty-list-course-label"
-            contentLabel="Filter by course"
-            placeholder="All courses"
-            options={courseOptions}
-            selected={courseFilter}
-            onToggle={toggleCourse}
-            onClear={() => setCourseFilter([])}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-list-faculty">Faculty</label>
-          <Select value={facultyFilter ?? ALL_FACULTY} onValueChange={(v) => setFacultyFilter(v === ALL_FACULTY ? undefined : v)}>
-            <SelectTrigger id="faculty-list-faculty" className="h-8 w-48 text-sm" aria-label="Filter by faculty"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_FACULTY}>All faculty</SelectItem>
-              {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-list-role">Role</label>
-          <Select
-            value={roleFilter ?? ALL_ROLES}
-            onValueChange={(v) => setRoleFilter(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
-            disabled={roleOptions.length === 0}
-          >
-            <SelectTrigger id="faculty-list-role" className="h-8 w-44 text-sm" aria-label="Filter by role"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_ROLES}>All roles</SelectItem>
-              {roleOptions.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {filterSlot ? createPortal(filterRow, filterSlot) : filterRow}
 
       <ChartCard hideAskLeo variant="normal" title="Faculty offerings" leoInsight={leo}>
         <DataTable<CourseOfferingListRow>

@@ -37,12 +37,11 @@ import type { ColumnDef } from '@/components/data-table/types'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { scoreText } from '@/components/pce/score-cell'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
-import { StudentVoice } from '@/components/pce/student-voice'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_BENCHMARKS } from '@/lib/pce-mock-data'
 import {
   termKpis, cohortKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
-  courseTrend, courseFacultyStats, courseStats, facultyStats, facultySurveys, termSlope,
+  courseTrend, courseFacultyStats, courseStats, facultyStats, termSlope,
   shortTerm, RESPONSE_TARGET, RATING_THRESHOLD, facultyEvalRoleOptions,
   courseFacultyHeatCells, courseOfferingQuadrantPoints, courseRatingTrendByTerm,
   courseResponseRateSeries, courseQuestionTrend, courseOfferingListRows,
@@ -1245,9 +1244,6 @@ export function ByFacultyPanel({
 }) {
   const faculty = MOCK_FACULTY.find(f => f.id === facultyId) ?? null
 
-  /* Surveys this faculty member is the PRIMARY instructor on — story 17's corpus. */
-  const facultyThemeSurveys = useMemo(() => facultySurveys(facultyId), [facultyId])
-
   /* This person's own offering history (OfferingPoint grain) — the role filter's option list
      and the term-highlight fallback both read off it directly, rather than off the row shapes
      built for the charts/table below. */
@@ -1726,24 +1722,6 @@ export function ByFacultyPanel({
           }
         />
       </div>
-
-      {/* Story 18 — the verbatims, cut on the PERSON axis. §2.2 calls this "the payload":
-          the scores say a 3.58 happened, these say why. AI insight last, matching the Course
-          tab's own ordering (Romit, D14: AI summaries first WITHIN a section, but the
-          quantitative sections come before the AI/qualitative ones on the page as a whole). */}
-      {/*
-        Story 17 — the theme breakdown on the FACULTY axis. I had this logged as not
-        derivable: "sectionScores is keyed by surveyId with no facultyId". The premise was
-        true and the conclusion was wrong — surveyId → survey → primary instructor is a JOIN,
-        not a data-model change. The blocker I actually feared was ambiguity (two co-teachers,
-        whose teaching score is it?) and that case has zero instances: every survey resolves
-        to exactly one primary, guests excluded. See `facultySurveys`.
-      */}
-      {facultyThemeSurveys.length > 0 && (
-        <TermThemesInsight surveys={facultyThemeSurveys} scopeLabel={faculty.name} />
-      )}
-
-      <StudentVoice axis="faculty" facultyId={faculty.id} scopeLabel={faculty.name} />
     </>
   )
 }
