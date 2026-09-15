@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tabs, TabsList, TabsTrigger, TabsContent,
-  Avatar, AvatarFallback, Skeleton,
+  Skeleton,
   PageHeader,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -36,6 +36,9 @@ const ByCoursePanel = lazy(() =>
 )
 const CourseOfferingList = lazy(() =>
   import('@/components/pce/course-offering-list').then((m) => ({ default: m.CourseOfferingList })),
+)
+const FacultyOfferingList = lazy(() =>
+  import('@/components/pce/faculty-offering-list').then((m) => ({ default: m.FacultyOfferingList })),
 )
 const FacultyLeaderboardSection = lazy(() =>
   import('@/components/pce/faculty-leaderboard-section').then((m) => ({ default: m.FacultyLeaderboardSection })),
@@ -146,11 +149,22 @@ function AnalyticsInner() {
     () => (openCourseTabsParam ? openCourseTabsParam.split(',').filter(Boolean) : []),
     [openCourseTabsParam],
   )
+  /** Closable faculty tabs — the exact mirror of `openCourseTabs` above, one call value later
+   *  (PRD 2026-09-15: faculty name click → "open faculty analytics as new analytics tab inside
+   *  the same browser tab"). Same `tab=faculty:<id>` / `?facultyTabs=` scheme. */
+  const openFacultyTabsParam = param('facultyTabs')
+  const openFacultyTabs = useMemo(
+    () => (openFacultyTabsParam ? openFacultyTabsParam.split(',').filter(Boolean) : []),
+    [openFacultyTabsParam],
+  )
 
   const activeTab: string = (() => {
     const requested = param('tab')
     if (requested === 'faculty' || requested === 'course' || requested === 'overview') return requested
     if (requested?.startsWith('course:') && openCourseTabs.includes(requested.slice('course:'.length))) {
+      return requested
+    }
+    if (requested?.startsWith('faculty:') && openFacultyTabs.includes(requested.slice('faculty:'.length))) {
       return requested
     }
     return 'overview'
@@ -200,6 +214,20 @@ function AnalyticsInner() {
     })
   }
 
+  /** Open a faculty member (or activate if already open) — exact mirror of `openCourseTab`. */
+  const openFacultyTab = (id: string) => {
+    const next = openFacultyTabs.includes(id) ? openFacultyTabs : [...openFacultyTabs, id]
+    setScope({ tab: `faculty:${id}`, facultyTabs: next.join(',') })
+  }
+  /** Close a faculty tab — exact mirror of `closeCourseTab`. */
+  const closeFacultyTab = (id: string) => {
+    const next = openFacultyTabs.filter((f) => f !== id)
+    setScope({
+      facultyTabs: next.length ? next.join(',') : null,
+      ...(activeTab === `faculty:${id}` ? { tab: 'faculty' } : {}),
+    })
+  }
+
   /** Default term — the newest FULLY-evaluated term, one back from the newest when the
    *  newest is still short of full coverage. Was a bare 'Spring 2026' literal, which is this
    *  fixture's current/still-collecting term: Overview's leaderboards landed on it with 2 of
@@ -215,8 +243,6 @@ function AnalyticsInner() {
     return coverage.total > 0 && coverage.evaluated < coverage.total ? (newestFirst[1] ?? newest) : newest
   }, [])
   const [selectedSurveyId, setSelectedSurveyId]     = useState<string | null>(null)
-  const selectedFacultyId = param('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
-  const setSelectedFacultyId = (id: string) => setScope({ facultyId: id })
 
   /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
   const facultyTerm = param('facultyTerm') ?? undefined
@@ -266,8 +292,6 @@ function AnalyticsInner() {
     // empty the selection") enforced here instead: a toggle that would empty it is a no-op.
     if (next.length) setScope({ terms: next.join(',') })
   }
-
-  const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
 
   return (
     <>
@@ -365,6 +389,23 @@ function AnalyticsInner() {
                 </span>
               </TabsTrigger>
             ))}
+            {/* One real Tabs.Trigger per open faculty member — exact mirror of the course tabs
+                above, same reasoning throughout (see that block's own doc comment). */}
+            {openFacultyTabs.map((id) => {
+              const name = MOCK_FACULTY.find((f) => f.id === id)?.name ?? id
+              return (
+                <TabsTrigger key={id} value={`faculty:${id}`} className="pr-1.5">
+                  {name}
+                  <span
+                    aria-hidden="true"
+                    className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                    onClick={(e) => { e.stopPropagation(); closeFacultyTab(id) }}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                  </span>
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
         </div>
 
@@ -377,21 +418,17 @@ function AnalyticsInner() {
           <AnalyticsOverviewPanel
             terms={overviewTerms}
             onOpenCourse={openCourseTab}
-            onOpenFaculty={(id) => {
-              setScope({ tab: 'faculty', facultyId: id, facultyTerm: overviewTerms[0] })
-              requestAnimationFrame(() =>
-                document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-              )
-            }}
+            onOpenFaculty={openFacultyTab}
           />
         </TabsContent>
 
 
         {/* ───── By Faculty — the most important tab (accepted 2026-07-13).
-                 Order follows the flow Monil described: land on the leaderboard of all
-                 faculty, then drill into one. The selector below is the drill-down, which
-                 is also what VIZ-007 asks for — the all-faculty view is the default and the
-                 dropdown is the optional narrowing, not the other way round. ───── */}
+                 Landing = the ranking leaderboard, then the full offering list beneath it
+                 (PRD 2026-09-15). Drill-down into one person is a closable tab now — the old
+                 inline `<Select>` + scroll-to-portfolio section is retired; it's superseded by
+                 the SAME faculty-name → new-tab mechanism the Course tab already established
+                 for courses, so the two drill-down axes behave identically. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
           <div className="flex flex-col gap-6">
             {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
@@ -402,69 +439,36 @@ function AnalyticsInner() {
                 onTermChange={setFacultyTerm}
                 role={facultyRole}
                 onRoleChange={setFacultyRole}
-                onSelectFaculty={(id) => {
-                  // "view insights → the entire view opens only for Dr. Sandra" (Monil). The
-                  // drill-down is the same tab scrolled to the portfolio, not a new route —
-                  // the portfolio is a filtered state of By Faculty, not a surface of its own.
-                  setSelectedFacultyId(id)
-                  requestAnimationFrame(() =>
-                    document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                  )
-                }}
+                onSelectFaculty={openFacultyTab}
               />
             </Suspense>
 
-            <div id="individual-faculty" className="border-t border-border pt-6">
-              <h2 className="text-sm font-semibold">Individual faculty</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Their portfolio: how they perform per term and per course, and every survey behind it.
-              </p>
+            <div className="border-t border-border pt-6">
+              <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty offerings" />}>
+                <FacultyOfferingList terms={overviewTerms} onOpenFaculty={openFacultyTab} />
+              </Suspense>
             </div>
+          </div>
+        </TabsContent>
 
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground shrink-0" htmlFor="faculty-select">Faculty</label>
-              <Select value={selectedFacultyId} onValueChange={setSelectedFacultyId}>
-                <SelectTrigger id="faculty-select" className="h-8 w-56 text-sm" aria-label="Select faculty"><SelectValue /></SelectTrigger>
-                <SelectContent>{MOCK_FACULTY.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-
-            {selectedFaculty && (
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 shrink-0" aria-hidden="true">
-                  <AvatarFallback
-                    className="text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-                  >
-                    {selectedFaculty.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{selectedFaculty.name}</p>
-                  <p className="text-xs text-muted-foreground">{selectedFaculty.department}</p>
-                </div>
-              </div>
-            )}
-
-            {/* `extraCharts` (Standing vs benchmarks / Courses taught, from
-                `FacultyPortfolioCharts`) removed 2026-09-15 — neither card maps to any of the
-                PRD's Faculty Analytics use cases; the questions they answered are now answered
-                by cards the PRD DOES ask for ("where does this faculty stand" → the rating
-                trend's program line + range band and the heat map's program-average row;
-                "which courses, how did each trend" → the heat map itself). Two cards answering
-                a question a PRD card already answers is the exact duplication the By Course
-                tab's own 2026-07-14 "comparative context" removal cited. `FacultyPortfolioCharts`
-                stays in use on `/my-dashboard` and the Directory profile — out of this PRD's
-                scope, not touched. */}
-            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty portfolio" />}>
+        {/* ───── One TabsContent per open faculty member — Faculty Analytics (PRD
+                 2026-09-15), exact mirror of the per-course tabs below. ───── */}
+        {openFacultyTabs.map((id) => (
+          <TabsContent
+            key={id}
+            value={`faculty:${id}`}
+            className="flex-1 overflow-visible m-0"
+            style={{ padding: '20px 28px 28px' }}
+          >
+            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty analytics" />}>
               <ByFacultyPanel
-                facultyId={selectedFacultyId}
+                facultyId={id}
                 onOpenSurvey={setSelectedSurveyId}
                 scopedTerms={overviewTerms}
               />
             </Suspense>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        ))}
 
         {/* ───── Course — the offering-list landing. Opening a course renders it as its own
                  TabsContent below, matched to the Tabs.Trigger of the same value in the
