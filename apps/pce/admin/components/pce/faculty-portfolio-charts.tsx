@@ -26,12 +26,11 @@ import {
 import {
   BenchmarkDistribution,
   CourseRankSpark,
-  ResponseCompareLines,
 } from '@/components/pce/analytics-plots'
 import {
-  benchmarks, facultyCourseStats, facultyCourseResponseTrend, medianOf, RESPONSE_TARGET,
+  benchmarks, facultyCourseStats, medianOf,
 } from '@/lib/pce-analytics'
-import { ChartCardActions, CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
+import { ChartCardActions } from '@/components/pce/chart-card-actions'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
@@ -53,7 +52,6 @@ export function FacultyPortfolioCharts({
   const bench = useMemo(() => benchmarks(facultyId), [facultyId])
   const courseRank = useMemo(() => facultyCourseStats(facultyId), [facultyId])
   const courseMedian = useMemo(() => medianOf(courseRank.map((c) => c.score.weighted)), [courseRank])
-  const courseResponse = useMemo(() => facultyCourseResponseTrend(facultyId), [facultyId])
 
   const benchLeo: ChartLeoInsight | null = avgRating != null
     ? {
@@ -285,89 +283,15 @@ export function FacultyPortfolioCharts({
       </div>
 
       {/*
-        Story 19's response half, BY COURSE — this card used to draw ONE aggregate line for
-        the whole portfolio, which is the same "average hides the problem" mistake the
-        leaderboard's spread dots exist to prevent, one level down.
-
-        The old `facultyResponseTrend` (deleted with this change) summed enrolled/responded
-        across ALL of a person's courses, so a course collecting 45% and a course collecting
-        95% averaged to a reassuring line and neither was visible. Measured on the real data
-        before deleting it: every faculty member's per-course means span ~11 points that the
-        aggregate flattened. Patel's aggregate reads [71,70,78,74,82]
-        while her courses sit at 72–83 — a calm line over a spread.
-
-        Course is the right unit because response is a property of the OFFERING, not the
-        person: students skip a survey over timing and workload, not over who is teaching.
-        Story 19 asks for trends "by course" and this is the half that wasn't.
-
-        Own data on both lenses, so no RBAC gate. RUBRIC Q4's ❌ is "single % delta with arrow
-        — hides the path"; the path is now per course.
+        Story 19's response half, BY COURSE, moved 2026-09-15 into `ByFacultyPanel`'s own
+        "Response rate trend" card (`analytics-panels.tsx`) as that card's `ChartCardActions`
+        detail — the PRD's new faculty-scoped AGGREGATE response trend became the primary
+        card there, and this per-course view is demoted one level down rather than deleted:
+        it is real evidence an aggregate line can flatten (Patel's aggregate used to read
+        [71,70,78,74,82] while her courses actually sat at 72–83). Removed from here so the
+        analytics drill-down (which renders this file via `extraCharts`) doesn't show the
+        same fact as two separate top-level cards on one page.
       */}
-      {courseResponse.length > 1 && (
-        <ChartCard
-          variant="normal"
-          title="Response rate by course"
-          /* Shared axis, not facets — the sibling-coverage miss the verification review caught:
-             every other ResponseCompareLines call site was converted to the card contract and
-             this one still grew 76px per course. One faculty member's courses are ≤5 series,
-             exactly the ≤5-series shape the small-multiples pattern excludes anyway. */
-          description={`Response rate per course · target ${RESPONSE_TARGET}% · lowest labelled`}
-        >
-          <ChartFigure
-            label="Response rate by course"
-            summary={`All of this faculty member's courses' response rates by term on one shared axis against a ${RESPONSE_TARGET}% target; the lowest course is highlighted.`}
-            dataLength={courseResponse.length}
-          >
-            {() => {
-              const byCourse = new Map<string, number>()
-              for (const r of courseResponse) {
-                const prev = byCourse.get(r.courseCode)
-                if (prev == null || r.responseRate < prev) byCourse.set(r.courseCode, r.responseRate)
-              }
-              const lowest = [...byCourse.entries()].sort((a, b) => a[1] - b[1]).slice(0, 2).map(([c]) => c)
-              const rows = courseResponse.map((r) => ({ ...r, label: r.courseCode }))
-              const table = {
-                headers: ['Course', 'Term', 'Response rate'],
-                rows: courseResponse.map((r) => [
-                  `${r.courseCode} · ${r.courseName}`, r.term, `${r.responseRate}%`,
-                ] as (string | number)[]),
-              }
-              return (
-                <>
-                  <ResponseCompareLines
-                    mode="shared"
-                    rows={rows}
-                    target={RESPONSE_TARGET}
-                    highlight={lowest}
-                    height={CHART_CARD_PLOT_PX}
-                  />
-                  <ChartDataTable
-                    caption="Response rate by course and term"
-                    headers={['Course', 'Term', 'Response rate']}
-                    rows={courseResponse.map((r) => [
-                      `${r.courseCode} · ${r.courseName}`, r.term, `${r.responseRate}%`,
-                    ])}
-                  />
-                  <ChartCardActions
-                    title="Response rate by course"
-                    description={`Response rate by term for each course, against the ${RESPONSE_TARGET}% target.`}
-                    detail={
-                      <ResponseCompareLines
-                        mode="shared"
-                        rows={rows}
-                        target={RESPONSE_TARGET}
-                        highlight={lowest}
-                        height={380}
-                      />
-                    }
-                    table={table}
-                  />
-                </>
-              )
-            }}
-          </ChartFigure>
-        </ChartCard>
-      )}
     </>
   )
 }

@@ -23,6 +23,8 @@ import { ChartLeoPixelPlotInsightOverlay } from "@/components/chart-leo-spotting
 import {
   heatmapCellColor,
   heatmapCellUsesLightText,
+  heatmapDivergingColor,
+  heatmapDivergingUsesLightText,
   readChartToken,
 } from "@/lib/chart-heatmap-scale"
 import { cn } from "@/lib/utils"
@@ -102,6 +104,8 @@ function useHeatmapTheme() {
     primaryForeground: "#ffffff",
     mutedForeground: "#6b7280",
     card: "#ffffff",
+    red: "#dc2626",
+    green: "#15803d",
   }))
 
   React.useEffect(() => {
@@ -115,6 +119,10 @@ function useHeatmapTheme() {
         primaryForeground: readChartToken("--primary-foreground", "#ffffff"),
         mutedForeground: readChartToken("--muted-foreground", "#6b7280"),
         card: readChartToken("--card", "#ffffff"),
+        red: readChartToken("--destructive", "#dc2626"),
+        // `--status-badge-success-fg`, not `--chart-2` (a categorical series colour that
+        // resolves to teal, not green) — see `heatmapDivergingColor`'s doc comment.
+        green: readChartToken("--status-badge-success-fg", "#15803d"),
       })
     }
     sync()
@@ -142,6 +150,8 @@ function buildHeatmapOption({
   domain,
   valueFormatter,
   maxVisibleRows,
+  threshold,
+  highlightedCols,
 }: {
   rows: readonly string[]
   cols: readonly string[]
@@ -154,10 +164,22 @@ function buildHeatmapOption({
   domain?: readonly [number, number]
   valueFormatter?: (v: number) => string
   maxVisibleRows?: number
+  /** Pass-through of `ChartHeatmap`'s own `threshold` — see that prop's doc comment. */
+  threshold?: number
+  /** Pass-through of `ChartHeatmap`'s own `highlightedCols` — see that prop's doc comment. */
+  highlightedCols?: readonly string[]
 }): EChartsOption {
   // Default reproduces the original 0→max ramp exactly, so existing callers are untouched.
   const lo = domain?.[0] ?? 0
   const hi = domain?.[1] ?? maxValue
+
+  // Actual lowest/highest cell VALUES on either side of the bar — not `lo`/`hi` (the fixed
+  // rating domain) — see `heatmapDivergingColor`'s doc comment for why.
+  const realValues = points.map((p) => p.value).filter((v): v is number => v !== null)
+  const belowValues = threshold != null ? realValues.filter((v) => v < threshold) : []
+  const aboveValues = threshold != null ? realValues.filter((v) => v >= threshold) : []
+  const belowMin = belowValues.length ? Math.min(...belowValues) : (threshold ?? lo)
+  const aboveMax = aboveValues.length ? Math.max(...aboveValues) : (threshold ?? hi)
 
   /**
    * A real scrollbar, inside the plot — not an overflow container around it.
@@ -208,7 +230,8 @@ function buildHeatmapOption({
     grid: {
       left: 52,
       // The slider needs its own lane when it exists; without it the bar lands on the cells.
-      right: scrolls ? 96 : 72,
+      // Threshold mode hides the visualMap legend bar (see above), so it needs no lane either.
+      right: scrolls ? 96 : threshold != null ? 16 : 72,
       top: GRID_TOP,
       bottom: GRID_BOTTOM,
       containLabel: false,
@@ -219,7 +242,19 @@ function buildHeatmapOption({
       position: "top",
       axisLine: { lineStyle: { color: theme.border, width: 1 } },
       axisTick: { show: false },
-      axisLabel: { color: theme.mutedForeground, fontSize: 12 },
+      // Selected term/AY highlighted (PRD 2026-09-15) — same fact the Plot-based line charts
+      // in this codebase mark with a `Plot.ruleX` band; ECharts' category axis has no rule
+      // primitive, so the column header itself carries the signal instead, via rich-text
+      // formatter (per-label style needs `rich`, not a plain style object — ECharts has no
+      // per-tick callback for `fontWeight`/`color` directly on `axisLabel`).
+      axisLabel: highlightedCols?.length
+        ? {
+            color: theme.mutedForeground,
+            fontSize: 12,
+            formatter: (value: string) => (highlightedCols.includes(value) ? `{sel|${value}}` : value),
+            rich: { sel: { color: theme.foreground, fontWeight: 700 } },
+          }
+        : { color: theme.mutedForeground, fontSize: 12 },
       splitArea: { show: false },
     },
     yAxis: {
@@ -231,7 +266,13 @@ function buildHeatmapOption({
       axisLabel: { color: theme.mutedForeground, fontSize: 12 },
       splitArea: { show: false },
     },
+    // Threshold mode's cells are coloured by a hand-computed diverging ramp (see the `data`
+    // mapper below), not by ECharts' own continuous scale — a single-gradient legend bar would
+    // describe a scale the cells aren't actually drawn on. Its real, text legend
+    // (`CourseFacultyHeatmap`'s caption) sits beside the chart instead (A11Y-008: colour is
+    // never the only encoding).
     visualMap: {
+      show: threshold == null,
       min: 0,
       max: maxValue,
       dimension: 2,
@@ -295,13 +336,24 @@ function buildHeatmapOption({
           // the original 0→max behaviour byte for byte.
           const norm = p.value - lo
           const span = hi - lo
-          const labelColor = heatmapCellUsesLightText(norm, span)
+          const cellColor =
+            threshold != null
+              ? heatmapDivergingColor(p.value, threshold, belowMin, aboveMax, theme.red, theme.green, theme.card)
+              : heatmapCellColor(norm, span, theme.brand, theme.card)
+          const labelColor = (
+            threshold != null
+              ? heatmapDivergingUsesLightText(
+                  p.value, threshold, belowMin, aboveMax,
+                  theme.red, theme.green, theme.card, theme.foreground, theme.primaryForeground,
+                )
+              : heatmapCellUsesLightText(norm, span)
+          )
             ? theme.primaryForeground
             : theme.foreground
           return {
             value: [p.x, p.y, p.value],
             itemStyle: {
-              color: heatmapCellColor(norm, span, theme.brand, theme.card),
+              color: cellColor,
               borderColor: isPeak
                 ? theme.brand
                 : isActive
@@ -356,6 +408,8 @@ export function ChartHeatmap({
   valueFormatter,
   height,
   maxVisibleRows,
+  threshold,
+  highlightedCols,
 }: {
   rows: readonly string[]
   cols: readonly string[]
@@ -365,12 +419,24 @@ export function ChartHeatmap({
   peakCellIndex: number
   valueLabel?: string
   className?: string
+  /** Column(s) to mark as the page's selected term/AY (PRD 2026-09-15) — bolds that column's
+   *  header. Pass the same `cols`-formatted (short-term) strings the column axis itself uses.
+   *  Omit for no highlight. */
+  highlightedCols?: readonly string[]
   /**
    * Colour-ramp range. Omit for count data (0→max, the original behaviour). Pass it when the
    * values sit in a narrow band away from zero — a 1–5 score against a 0-based ramp renders
    * every cell the same shade.
    */
   domain?: readonly [number, number]
+  /**
+   * Pass/fail bar. When set, cells switch from the single-brand intensity ramp to a diverging
+   * red/green one split at this value — below tints red (the lowest cell reddest), at-or-above
+   * tints green (the highest cell greenest). See `heatmapDivergingColor`'s doc comment for why
+   * this is a scoped exception to the file's amber-only house rule. Omit to keep the original
+   * single-ramp behaviour untouched.
+   */
+  threshold?: number
   /** Cell label formatter — scores need 2dp; counts want the bare integer. */
   valueFormatter?: (v: number) => string
   /**
@@ -416,8 +482,10 @@ export function ChartHeatmap({
         domain,
         valueFormatter,
         maxVisibleRows,
+        threshold,
+        highlightedCols,
       }),
-    [rows, cols, points, maxValue, theme, activeIndex, peakCellIndex, valueLabel, domain, valueFormatter, maxVisibleRows],
+    [rows, cols, points, maxValue, theme, activeIndex, peakCellIndex, valueLabel, domain, valueFormatter, maxVisibleRows, threshold, highlightedCols],
   )
 
   const updateLeoPosition = React.useCallback(() => {

@@ -6,6 +6,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Avatar, AvatarFallback, Skeleton,
+  PageHeader,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
@@ -157,6 +158,19 @@ function AnalyticsInner() {
     }
     return 'overview'
   })()
+
+  /**
+   * Portal target for a course tab's Faculty filter (Romit, 2026-09-15: "should be shown
+   * beside the Terms dropdown, instead of showing in a tab when I am scrolling") — a callback
+   * ref, not `useRef`, because a plain ref doesn't trigger the re-render `ByCoursePanel` needs
+   * to actually portal into it once it exists (the DOM node isn't there yet on the render that
+   * creates it). Rendered unconditionally in the filter row below so it's always the same DOM
+   * node across tab switches — conditionally rendering the `<div>` itself would tear the portal
+   * target down and rebuild it every time, which is unnecessary churn for something that only
+   * ever needs to be hidden/shown by which course tab (if any) is currently active.
+   */
+  const [facultyFilterSlot, setFacultyFilterSlot] = useState<HTMLDivElement | null>(null)
+
   /**
    * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
    * drill: person AND tab) lands as ONE history entry — two pushes would make Back a
@@ -276,16 +290,36 @@ function AnalyticsInner() {
     <>
       <SiteHeader title="Analytics" />
 
-      <div className="flex items-center gap-2 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-2xl font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-      </div>
+      {/* Was a hand-rolled `<h1>` (`font-normal` + a bare `var(--font-heading)`
+          inline style) — same serif face as `PageHeader`'s own title but the
+          wrong weight, so it read as visibly lighter/different next to every
+          other page's title (Vishal, 2026-09-14: "title of the page seems to
+          be of different style"). Swapped for the real `PageHeader` Dashboard
+          already uses, so the two titles come from one component instead of
+          two hand-tuned copies that can drift again. */}
+      <PageHeader title="Analytics" />
 
       {/* AY/Term filter row — OUTSIDE the Tabs component entirely (not a sibling of
           TabsContent inside <Tabs>, which the prior two passes both still got wrong: first
           nested in the Overview panel, then moved only as far as beside the tab bar but still
           inside <Tabs>). This row renders BEFORE <Tabs> starts, between the page title and the
           tab strip, so it cannot read as "part of" any tab or the tab bar. */}
-      <div className="shrink-0 flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 24px' }}>
+      {/* sticky, not the page's SiteHeader/PageHeader above it — literally what
+          was asked ("lock the filters and tab heading on scroll"). z-20 keeps
+          it above the tabs-bar sticking right beneath it (z-10) and above
+          scrolled panel content; bg-background so content doesn't show
+          through the gap padding creates.
+          `top: var(--shell-utility-bar-height)`, NOT `top: 0` (Romit's catch,
+          2026-09-15, screenshot: the AY/Term selects render with their top
+          edge clipped) — the app shell's own utility bar (`<nav>` in
+          app/(app)/layout.tsx, the "Clinical Education" bar) is ALSO
+          `position: sticky; top: 0` in this same single page-level scroll
+          (confirmed live: real height 42px, z-index 50 — well above this
+          row's z-20). Two sticky siblings both pinned at `top: 0` overlap at
+          the exact same viewport band instead of stacking; the higher
+          z-index one (the shell bar) paints over this row's top ~42px. This
+          row's own `top` has to start where the shell bar's box ends. */}
+      <div className="shrink-0 sticky z-20 bg-background flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 14px', top: 'var(--shell-utility-bar-height)' }}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground" htmlFor="overview-ay">Academic year</label>
           <Select value={overviewAcademicYear} onValueChange={setOverviewAcademicYear}>
@@ -304,10 +338,21 @@ function AnalyticsInner() {
             onToggle={toggleOverviewTerm}
           />
         </div>
+        {/* Faculty filter portal target (see `facultyFilterSlot` state above) — always mounted
+            so the ref stays the SAME node across tab switches (ByCoursePanel portals into it,
+            not into a freshly-created element each time); `hidden` (not conditional rendering)
+            just toggles its visibility, since `[hidden]{display:none!important}` is already the
+            page's own reset rule for this. Only visible while a course tab is active — Overview/
+            Course/Faculty have no Faculty filter to show here. */}
+        <div ref={setFacultyFilterSlot} hidden={!activeTab.startsWith('course:')} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-        <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
+        {/* Sticks directly beneath the filter row above (same ask — "lock the
+            ... tab heading on scroll"); `top` adds that row's own 76px
+            rendered height ON TOP of the shell utility bar's own height, so
+            all three stack with no gap or overlap. */}
+        <div className="border-b border-border shrink-0 sticky z-10 bg-background" style={{ padding: '0 28px', top: 'calc(var(--shell-utility-bar-height) + 76px)' }}>
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="course">Course</TabsTrigger>
@@ -348,6 +393,7 @@ function AnalyticsInner() {
         <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
           <AnalyticsOverviewPanel
             terms={overviewTerms}
+            onOpenCourse={openCourseTab}
             onOpenFaculty={(id) => {
               setScope({ tab: 'faculty', facultyId: id, facultyTerm: overviewTerms[0] })
               requestAnimationFrame(() =>
@@ -425,6 +471,7 @@ function AnalyticsInner() {
               <ByFacultyPanel
                 facultyId={selectedFacultyId}
                 onOpenSurvey={setSelectedSurveyId}
+                scopedTerms={overviewTerms}
                 extraCharts={
                   selectedFacultyId ? (
                     <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
@@ -446,15 +493,13 @@ function AnalyticsInner() {
                  tablist above. ───── */}
         <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
           <Suspense fallback={<AnalyticsTabSkeleton label="Loading course offerings" />}>
+            {/* Faculty-ranking toggle removed from this card (Vishal, 2026-09-15: "remove rank
+                by as user can sort the respective column") — `onOpenFaculty` no longer has a
+                consumer inside `CourseOfferingList`; the page's own "Faculty" tab still owns
+                faculty ranking. */}
             <CourseOfferingList
               terms={analyticsTerms}
               onOpenCourse={openCourseTab}
-              onOpenFaculty={(id) => {
-                setScope({ tab: 'faculty', facultyId: id, facultyTerm: analyticsTerms[0] })
-                requestAnimationFrame(() =>
-                  document.getElementById('individual-faculty')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                )
-              }}
             />
           </Suspense>
         </TabsContent>
@@ -464,7 +509,18 @@ function AnalyticsInner() {
           <TabsContent
             key={code}
             value={`course:${code}`}
-            className="flex-1 overflow-auto m-0"
+            // `overflow-visible`, not `overflow-auto` (Romit's follow-up catch, 2026-09-15) —
+            // this page's real scrolling happens at the document level (nothing above `<Tabs>`
+            // actually bounds its height, confirmed live: every ancestor up to `<main>` is
+            // `overflow: visible`), so `overflow-auto` here never triggers a real internal
+            // scrollbar. It DID silently break `ByCoursePanel`'s new sticky Faculty filter
+            // though: `position: sticky`'s containing block is the nearest ancestor with
+            // `overflow` != `visible`, REGARDLESS of whether that ancestor ever actually
+            // scrolls — with `overflow-auto` here, the sticky filter row anchored to THIS
+            // TabsContent's own (never-scrolling) box instead of the document, landing at a
+            // fixed offset that had nothing to do with the real page scroll (caught live:
+            // rendered ~160px down, overlapping the KPI cards, instead of tracking scroll).
+            className="flex-1 overflow-visible m-0"
             style={{ padding: '20px 28px 28px' }}
           >
             <div className="flex flex-col gap-4">
@@ -472,7 +528,15 @@ function AnalyticsInner() {
                   own × (see the state comment on `openCourseTabs`) is the only close control
                   now. */}
               <Suspense fallback={<AnalyticsTabSkeleton label={`Loading ${code}`} />}>
-                <ByCoursePanel courseCode={code} hideAskLeo />
+                <ByCoursePanel
+                  courseCode={code}
+                  hideAskLeo
+                  scopedTerms={overviewTerms}
+                  // Only the ACTIVE course tab's panel gets the real slot — every other open-
+                  // but-inactive course tab stays mounted (Radix keeps closed `TabsContent`s in
+                  // the DOM) and would otherwise all try to portal into the SAME node at once.
+                  facultyFilterSlot={activeTab === `course:${code}` ? facultyFilterSlot : null}
+                />
               </Suspense>
             </div>
           </TabsContent>

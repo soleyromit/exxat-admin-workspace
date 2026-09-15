@@ -111,6 +111,44 @@ const round2 = (v: number) => Math.round(v * 100) / 100
  */
 export const RESPONSE_TARGET = 80
 
+/**
+ * The course/faculty rating below which a score reads as "below threshold" on
+ * the program-level dashboard KPI band. Unlike `RESPONSE_TARGET`, this IS a
+ * fixed constant, not the pattern-default median `medianOf()` still computes
+ * for every other rating surface (course-offering-list, analytics-overview-
+ * panel, analytics-panels, faculty-portfolio-charts, analytics-survey-
+ * details) — those stay relative-to-program per the D4-with-Aarti note above
+ * `medianOf`. This constant exists ONLY because Vishal's 2026-09-14 dashboard
+ * feedback asked for the KPI subtext to read "below the 4.0 threshold"
+ * literally, which a moving median can't honestly state. Scope this to the
+ * dashboard KPI band; don't thread it into the median-based surfaces without
+ * a real decision from Aarti reconciling the two.
+ */
+export const RATING_THRESHOLD = 4.0
+
+/**
+ * How many of ONE term's courses/faculty scored below `RATING_THRESHOLD` —
+ * the Dashboard's "Last closed term" card banner (Vishal, 2026-09-14: replace
+ * the straggler count with "N courses and M faculty rated below the
+ * threshold"). Scoped to a single term, unlike `ProgramSummary`'s program-
+ * wide counts — averages each distinct course code / faculty id's rows
+ * within this term only, straight off `MOCK_FACULTY_OFFERINGS` (the same
+ * score dataset `programSummary()` reads), not the workflow-status
+ * `PceSurvey` data `breakdownFor` uses.
+ */
+export function termBelowThreshold(term: string): { courses: number; faculty: number } {
+  const rows = MOCK_FACULTY_OFFERINGS.filter((o) => o.term === term && o.courseAvg != null)
+  const courseAvgs = new Map<string, number[]>()
+  const facultyAvgs = new Map<string, number[]>()
+  for (const r of rows) {
+    courseAvgs.set(r.courseCode, [...(courseAvgs.get(r.courseCode) ?? []), r.courseAvg as number])
+    facultyAvgs.set(r.facultyId, [...(facultyAvgs.get(r.facultyId) ?? []), r.avgRating])
+  }
+  const below = (m: Map<string, number[]>) =>
+    [...m.values()].filter((vals) => mean(vals) < RATING_THRESHOLD).length
+  return { courses: below(courseAvgs), faculty: below(facultyAvgs) }
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
    Grain 1 — faculty × course × term (the finest grain the model carries)
    ──────────────────────────────────────────────────────────────────────────── */
@@ -788,21 +826,56 @@ export function facultyResponseSeries(role?: FacultyEvalRoleId): { facultyId: st
     .sort((a, b) => a.year - b.year)
 }
 
-/** One faculty member's course × term grid — §2.2's heatmap, scoped to a person. */
-export function facultyHeatCells(facultyId: string): { cells: HeatCell[]; courses: string[]; terms: string[] } {
-  const offs = offeringPoints().filter((o) => o.facultyId === facultyId)
-  const cells: HeatCell[] = offs.map((o) => ({
-    courseCode: o.courseCode,
-    courseName: o.courseName,
-    term: o.term,
-    short: shortTerm(o.term),
-    year: o.year,
-    // The person's own teaching score is the cell value here — a faculty-scoped grid asking
-    // about course content would be answering the By Course question in the wrong place.
-    courseAvg: o.avgRating,
-    facultyAvg: o.avgRating,
-    surveyId: o.surveyId,
-  }))
+/**
+ * One faculty member's course × term grid — §2.2's heatmap, scoped to a person. The By Faculty
+ * mirror of `courseFacultyHeatCells` (that function's own doc comment names this one its
+ * origin); this was the half never wired to a screen.
+ *
+ * `role` scopes to one course-association role, same grammar as `courseFacultyHeatCells`'s
+ * `role` param — omit for every role this person has held. `n` caps the column axis to the
+ * last N terms this person has ANY offering in (PRD 2026-09-15: "show last 6 terms"), not
+ * their entire history — the same windowing every other 6-term chart in this file already
+ * does (`courseRatingTrendByTerm`, `courseFacultyHeatCells`).
+ *
+ * A course taught more than once in a term is aggregated into one enrollment-weighted cell
+ * (PRD: "if a course was taught more than once in a term, they should be aggregated") — the
+ * grid has one slot per course × term, not per offering. When 2+ offerings collapse into one
+ * cell there is no single survey to link the cell to, so `surveyId` is left undefined rather
+ * than pointing at one of several results arbitrarily.
+ */
+export function facultyHeatCells(
+  facultyId: string,
+  role?: FacultyEvalRoleId,
+  n = 6,
+): { cells: HeatCell[]; courses: string[]; terms: string[] } {
+  const allTermsForFaculty = [...new Set(offeringPoints().filter((o) => o.facultyId === facultyId).map((o) => o.term))]
+    .sort(compareTerms)
+  const windowedTerms = new Set(allTermsForFaculty.slice(-n))
+
+  const offs = offeringPoints().filter(
+    (o) => o.facultyId === facultyId && (!role || o.evalRole === role) && windowedTerms.has(o.term),
+  )
+  const byCell = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => {
+    const key = `${o.courseCode}::${o.term}`
+    byCell.set(key, [...(byCell.get(key) ?? []), o])
+  })
+  const cells: HeatCell[] = [...byCell.values()].map((rows) => {
+    const first = rows[0]!
+    const score = dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)).weighted
+    return {
+      courseCode: first.courseCode,
+      courseName: first.courseName,
+      term: first.term,
+      short: shortTerm(first.term),
+      year: first.year,
+      // The person's own teaching score is the cell value here — a faculty-scoped grid asking
+      // about course content would be answering the By Course question in the wrong place.
+      courseAvg: score,
+      facultyAvg: score,
+      surveyId: rows.length === 1 ? first.surveyId : undefined,
+    }
+  })
   const meanByCourse = new Map<string, number[]>()
   cells.forEach((c) => meanByCourse.set(c.courseCode, [...(meanByCourse.get(c.courseCode) ?? []), c.courseAvg]))
   const courses = [...meanByCourse.entries()]
@@ -1168,6 +1241,10 @@ export interface GapPoint {
   facultyAvg: number
   /** Bubble weight — total enrolled students behind the course. */
   enrolled: number
+  /** Students who actually responded — omitted on `gapPoints()` (a per-course, multi-term
+   *  roll-up with no single response count worth bubbling), present on
+   *  `courseOfferingQuadrantPoints()` (one real offering, one real response count). */
+  responded?: number
 }
 
 /**
@@ -1230,6 +1307,11 @@ export interface ProgramSummary {
   /** The thresholds those counts were measured against — §6: state the bar, don't imply it. */
   facultyMedian: number
   courseMedian: number
+  /** Same population as `facultyBelowThreshold`/`coursesBelowThreshold`, counted
+   *  against the fixed `RATING_THRESHOLD` instead of the median — dashboard KPI
+   *  band only, see the constant's own doc comment. */
+  facultyBelowRatingThreshold: number
+  coursesBelowRatingThreshold: number
   /** Terms that missed the 80% response target. */
   termsBelowTarget: number
   /** Sparkline series for the KPI tiles (VIZ-010 forbids a bare number). */
@@ -1308,6 +1390,8 @@ export function programSummary(): ProgramSummary {
     coursesBelowThreshold: coursesScored.filter((c) => c.score.value.weighted < courseMedian).length,
     facultyMedian,
     courseMedian,
+    facultyBelowRatingThreshold: facScored.filter((f) => f.score.value.weighted < RATING_THRESHOLD).length,
+    coursesBelowRatingThreshold: coursesScored.filter((c) => c.score.value.weighted < RATING_THRESHOLD).length,
     termsBelowTarget: series.filter((s) => s.responseRate != null && s.responseRate < RESPONSE_TARGET).length,
     facultySpark: scored
       .filter((s) => s.facultyAvg != null)
@@ -1437,19 +1521,6 @@ export function termOfferingsEvaluated(term: TermScope): { evaluated: number; to
   return { evaluated: stats.filter((c) => c.score.state === 'value').length, total: stats.length }
 }
 
-/** The term exactly one ACADEMIC YEAR before this one, same season — "vs. previous year" on
- *  the reference's KPI tiles (https://pce-three.vercel.app/analytics-2), which is season-aware
- *  (Fall compares to the prior Fall) rather than the term-over-term delta `termKpis` already
- *  computes (which would compare a Fall to the Spring right before it). Null when that year
- *  has no history on record. */
-export function termOneYearAgo(term: string): string | null {
-  const [season, yearStr] = term.trim().split(/\s+/)
-  const year = Number(yearStr)
-  if (!season || !Number.isFinite(year)) return null
-  const candidate = `${season} ${year - 1}`
-  return allTerms().includes(candidate) ? candidate : null
-}
-
 export interface TermsKpis {
   terms: string[]
   courseAvg: number | null
@@ -1478,36 +1549,51 @@ export function termsKpis(terms: string[]): TermsKpis {
   }
 }
 
-export interface TermYoyDelta {
+export interface TermsPrevTermDelta {
   courseAvg: number | null
   facultyAvg: number | null
   responseRate: number | null
-  /** Percentage-point change in offerings-evaluated coverage — the reference's "0pp vs.
-   *  previous year" tile. */
+  /** Percentage-point change in offerings-evaluated coverage. */
   offeringsPct: number | null
+  /** The real term name the delta is against — e.g. "Spring 2026" — so the KPI label can read
+   *  "vs Spring 2026" instead of a generic "vs. previous year." Null when the earliest selected
+   *  term has no term before it in `termSeries()` (the very first term on record). */
+  prevTerm: string | null
 }
 
-/** Year-over-year delta for one or several selected terms — each selected term maps to its own
- *  one-year-ago counterpart (season-matched), and BOTH sides pool through `termsKpis` /
- *  `termOfferingsEvaluated` the same way the current selection does. A term with no prior-year
- *  match is simply excluded from the "previous year" pool rather than failing the whole delta. */
-export function termsYoyDelta(terms: string[]): TermYoyDelta {
-  const priorTerms = terms.map(termOneYearAgo).filter((t): t is string => t != null)
-  if (!priorTerms.length) return { courseAvg: null, facultyAvg: null, responseRate: null, offeringsPct: null }
+/**
+ * Delta against the term immediately BEFORE the earliest selected term — supersedes the former
+ * `termsYoyDelta`/`termOneYearAgo` pair (Vishal, 2026-09-15: "comparisons should always be with
+ * the previous term... if more than one term is selected, then the previous term of the
+ * earliest selected term"), which compared season-to-season one academic year back instead.
+ * "Previous" is positional in `termSeries()`'s own chronological order, not season-matched — a
+ * Fall term's previous term is whatever closed right before it (Summer, Spring, or another
+ * Fall), not necessarily the same season a year prior.
+ */
+export function termsPrevTermDelta(terms: string[]): TermsPrevTermDelta {
+  const none: TermsPrevTermDelta = { courseAvg: null, facultyAvg: null, responseRate: null, offeringsPct: null, prevTerm: null }
+  if (!terms.length) return none
+  const series = termSeries()
+  const idxs = terms.map((t) => series.findIndex((s) => s.term === t)).filter((i) => i >= 0)
+  if (!idxs.length) return none
+  const earliestIdx = Math.min(...idxs)
+  if (earliestIdx <= 0) return none
+  const prevTerm = series[earliestIdx - 1]!.term
   const cur = termsKpis(terms)
-  const prev = termsKpis(priorTerms)
+  const prev = termsKpis([prevTerm])
   const d = (a: number | null, b: number | null) => (a != null && b != null ? round2(a - b) : null)
   const pct = (t: string[]) => {
     const c = termOfferingsEvaluated(t)
     return c.total > 0 ? Math.round((c.evaluated / c.total) * 100) : null
   }
   const curPct = pct(terms)
-  const prevPct = pct(priorTerms)
+  const prevPct = pct([prevTerm])
   return {
     courseAvg: d(cur.courseAvg, prev.courseAvg),
     facultyAvg: d(cur.facultyAvg, prev.facultyAvg),
     responseRate: d(cur.responseRate, prev.responseRate),
     offeringsPct: curPct != null && prevPct != null ? curPct - prevPct : null,
+    prevTerm,
   }
 }
 
@@ -1527,6 +1613,7 @@ export interface CourseOfferingListRow extends Record<string, unknown> {
   role: FacultyEvalRoleId
   courseAvg: number | null
   facultyAvg: number
+  responseRate: number
   surveyId?: string
 }
 
@@ -1550,6 +1637,7 @@ export function courseOfferingListRows(terms?: string[]): CourseOfferingListRow[
       role: o.evalRole,
       courseAvg: o.courseAvg ?? null,
       facultyAvg: o.avgRating,
+      responseRate: o.responseRate,
       surveyId: o.surveyId,
     }))
     .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode))
@@ -1572,12 +1660,24 @@ export interface CourseFacultyHeatCell {
  * Course Coordinator, …); omit for every role that has taught this course. Cell value is the
  * instructor's own teaching score, same reasoning as `facultyHeatCells`: a faculty-scoped
  * grid answers "how did THIS PERSON do", not the course-content question.
+ *
+ * `n` caps the column axis to the last N terms this course ran (PRD 2026-09-14: "show last 6
+ * terms") — every other By Course trend in this file already windows to 6 (`courseTrend`,
+ * `courseRatingTrendByTerm`, `courseQuestionTrend`); this heat map was the one holdout still
+ * plotting the course's ENTIRE term history, which grows a wider grid every term forever.
  */
 export function courseFacultyHeatCells(
   courseCode: string,
   role?: FacultyEvalRoleId,
+  n = 6,
 ): { cells: CourseFacultyHeatCell[]; faculty: string[]; terms: string[] } {
-  const offs = offeringPoints().filter((o) => o.courseCode === courseCode && (!role || o.evalRole === role))
+  const allTermsForCourse = [...new Set(offeringPoints().filter((o) => o.courseCode === courseCode).map((o) => o.term))]
+    .sort(compareTerms)
+  const windowedTerms = new Set(allTermsForCourse.slice(-n))
+
+  const offs = offeringPoints().filter(
+    (o) => o.courseCode === courseCode && (!role || o.evalRole === role) && windowedTerms.has(o.term),
+  )
   const cells: CourseFacultyHeatCell[] = offs.map((o) => ({
     facultyId: o.facultyId,
     facultyName: o.facultyName,
@@ -1619,6 +1719,7 @@ export function courseOfferingQuadrantPoints(courseCode: string): GapPoint[] {
       courseAvg: o.courseAvg as number,
       facultyAvg: o.avgRating,
       enrolled: o.enrolled,
+      responded: o.responded,
     }))
 }
 
@@ -1668,6 +1769,101 @@ export function courseResponseRateSeries(courseCode: string, n = 6): TermSeriesP
       responded: t.responded,
       courses: 1,
     }))
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   By Faculty rebuild (PRD 2026-09-15) — mirrors the By Course block above,
+   one faculty member instead of one course.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * "Course average" KPI for one faculty member — the content score of the courses they
+ * teach, kept apart from their own "Faculty average" (D27: never one number). Mirrors
+ * `CourseStat.score`'s content-vs-teaching split, one level down at the faculty scope.
+ * `term` scopes the same way `facultyStats`'s own `term` param does, so the KPI strip
+ * stays "scoped to the filters selected" (PRD) instead of always reading all-time.
+ */
+export function facultyContentAvg(facultyId: string, term?: TermScope): number | null {
+  const offs = offeringPoints().filter(
+    (o) => o.facultyId === facultyId && matchesTerm(o.term, term) && o.courseAvg != null,
+  )
+  if (!offs.length) return null
+  return dualMean(offs.map((o) => o.courseAvg as number), offs.map((o) => o.enrolled)).weighted
+}
+
+/**
+ * This faculty member's own teaching score against the program's faculty average, over the
+ * last `n` terms they taught — "Rating trend by term" (PRD 2026-09-15): term-only axis, no
+ * AY/Term toggle, mirroring `courseRatingTrendByTerm`. Reuses `CourseVsProgramTrend`'s point
+ * shape (`courseAvg`/`programAvg` field names) so the same chart component renders it
+ * unchanged — here `courseAvg` carries the faculty member's OWN rating, not course content;
+ * the card's `entityLabel` prop is what tells the two apart on screen.
+ */
+export function facultyRatingTrendByTerm(facultyId: string, n = 6): CourseVsProgramPoint[] {
+  const own = facultyTermSeries().filter((r) => r.facultyId === facultyId).slice(-n)
+  const programByTerm = new Map(termSeries().map((s) => [s.term, s.facultyAvg]))
+  return own.map((t) => ({
+    term: t.term,
+    short: t.short,
+    year: t.year,
+    courseAvg: t.rating,
+    programAvg: programByTerm.get(t.term) ?? null,
+  }))
+}
+
+/** Lowest and highest rating among this faculty member's own courses, per term — PRD 2026-09-15:
+ *  "show lowest rating and highest rating in each term across courses." A rule (min↔max), not a
+ *  filled band: the spread is across DIFFERENT courses, not a confidence interval on one value. */
+export function facultyRatingRangeByTerm(
+  facultyId: string,
+  n = 6,
+): { term: string; short: string; min: number; max: number }[] {
+  const offs = facultyOfferings(facultyId)
+  const byTerm = new Map<string, number[]>()
+  offs.forEach((o) => byTerm.set(o.term, [...(byTerm.get(o.term) ?? []), o.avgRating]))
+  return [...byTerm.entries()]
+    .map(([term, ratings]) => ({ term, short: shortTerm(term), min: Math.min(...ratings), max: Math.max(...ratings) }))
+    .sort((a, b) => compareTerms(a.term, b.term))
+    .slice(-n)
+}
+
+/**
+ * This faculty member's response-rate history, reshaped as `TermSeriesPoint[]` so the
+ * already-built `ProgramResponseTrend` renders it unchanged at faculty scope — mirrors
+ * `courseResponseRateSeries`.
+ *
+ * This is a REBUILD of the `facultyResponseTrend` deleted 2026-07: that one summed
+ * enrolled/responded across ALL of a person's courses and was removed because the aggregate
+ * flattened a real ~11-point per-course spread (Patel's example: aggregate read [71,70,78,
+ * 74,82] while her courses sat at 72–83). PRD 2026-09-15 asks for the aggregate back — see the
+ * design brief's recommendation: it ships as the PRIMARY card, and the per-course view
+ * (`ResponseCompareLines` in `faculty-portfolio-charts.tsx`) is demoted into that card's
+ * `ChartCardActions` detail rather than deleted, so the 2026-07 evidence stays visible one
+ * level down instead of being silently overwritten.
+ */
+export function facultyResponseRateSeries(facultyId: string, n = 6): TermSeriesPoint[] {
+  const offs = facultyOfferings(facultyId)
+  const byTerm = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => byTerm.set(o.term, [...(byTerm.get(o.term) ?? []), o]))
+  return [...byTerm.values()]
+    .map((rows) => {
+      const first = rows[0]!
+      const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
+      const responded = rows.reduce((s, r) => s + r.responded, 0)
+      return {
+        term: first.term,
+        short: shortTerm(first.term),
+        year: first.year,
+        courseAvg: null,
+        facultyAvg: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)).weighted,
+        responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : null,
+        enrolled,
+        responded,
+        courses: new Set(rows.map((r) => r.courseCode)).size,
+      }
+    })
+    .sort((a, b) => a.year - b.year)
+    .slice(-n)
 }
 
 export interface CourseQuestionTrendPoint {
@@ -1721,35 +1917,54 @@ const FALLBACK_COURSE_CONTENT_QUESTION_IDS = ['q1', 'q2', 'q3', 'q4', 'q12', 'q1
  * problem one layer down.
  */
 export function courseQuestionTrend(courseCode: string, n = 6): CourseQuestionTrendRow[] {
-  const offs = offeringPoints()
-    .filter((o) => o.courseCode === courseCode)
-    .sort((a, b) => a.year - b.year)
-    .slice(-n)
+  // Last N TERMS, not last N offerings — a term with two faculty (Sp26 on several courses
+  // routinely has 4-5) used to slice(-n) on the raw offering list, so a 6-offering window could
+  // hold a single term five times over and every other row's `points` carried several entries
+  // stamped with the SAME `short` label. Plot's categorical x-scale places same-label points on
+  // one shared tick and connects them in array order — drawn live, that's a vertical zigzag
+  // spearing the term's tick rather than a trend, on the very chart Romit asked to replace the
+  // sparklines because the old one "couldn't make out the trend."
+  const allTermsForCourse = [...new Set(offeringPoints().filter((o) => o.courseCode === courseCode).map((o) => o.term))]
+    .sort(compareTerms)
+  const windowedTerms = allTermsForCourse.slice(-n)
+  const windowedTermSet = new Set(windowedTerms)
 
-  const byQuestion = new Map<string, CourseQuestionTrendPoint[]>()
+  const offs = offeringPoints()
+    .filter((o) => o.courseCode === courseCode && windowedTermSet.has(o.term))
+    .sort((a, b) => a.year - b.year)
+
+  // question -> term -> every offering's score that term, averaged into ONE point per term
+  // below (a term's several faculty each answer the course-content section independently; the
+  // question's real per-term value is their mean, the same "one point per term" contract every
+  // other By Course trend in this file already keeps).
+  const byQuestionByTerm = new Map<string, Map<string, number[]>>()
+  const pushScore = (qid: string, term: string, val: number) => {
+    const byTerm = byQuestionByTerm.get(qid) ?? new Map<string, number[]>()
+    byTerm.set(term, [...(byTerm.get(term) ?? []), val])
+    byQuestionByTerm.set(qid, byTerm)
+  }
   offs.forEach((o) => {
     const data = o.surveyId ? MOCK_SURVEY_QUESTION_DATA.find((d) => d.surveyId === o.surveyId) : undefined
     const scores = data?.sectionScores.course_content
     if (scores && scores.length > 0) {
-      scores.forEach((s) => {
-        const list = byQuestion.get(s.questionId) ?? []
-        list.push({ short: shortTerm(o.term), avg: s.avg })
-        byQuestion.set(s.questionId, list)
-      })
+      scores.forEach((s) => pushScore(s.questionId, o.term, s.avg))
     } else if (o.courseAvg != null) {
       FALLBACK_COURSE_CONTENT_QUESTION_IDS.forEach((qid) => {
         const jitter = ((hashStr(qid + o.term + courseCode) % 9) - 4) / 20 // ±0.2
-        const avg = round2(Math.min(5, Math.max(1, o.courseAvg! + jitter)))
-        const list = byQuestion.get(qid) ?? []
-        list.push({ short: shortTerm(o.term), avg })
-        byQuestion.set(qid, list)
+        pushScore(qid, o.term, round2(Math.min(5, Math.max(1, o.courseAvg! + jitter))))
       })
     }
   })
 
-  return [...byQuestion.entries()]
-    .filter(([, points]) => points.length >= 2) // a single term is not a trend
-    .map(([questionId, points]) => {
+  return [...byQuestionByTerm.entries()]
+    .map(([questionId, byTerm]) => ({
+      questionId,
+      points: windowedTerms
+        .filter((t) => byTerm.has(t))
+        .map((t) => ({ short: shortTerm(t), avg: round2(mean(byTerm.get(t)!)) })),
+    }))
+    .filter(({ points }) => points.length >= 2) // a single term is not a trend
+    .map(({ questionId, points }) => {
       const latest = points[points.length - 1]!.avg
       const first = points[0]!.avg
       return {

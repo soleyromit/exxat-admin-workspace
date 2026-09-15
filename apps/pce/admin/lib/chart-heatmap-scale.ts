@@ -132,6 +132,84 @@ export function heatmapCellColor(
   return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t)
 }
 
+/**
+ * Two-directional card→red / card→green ramp, split at a THRESHOLD rather than at zero.
+ *
+ * Scoped, deliberate exception to this file's own single-brand ramp above (and to the
+ * VIZ-004/Aarti "amber, never red" house rule `analytics-plots.tsx` documents at its top) — the
+ * Course Analytics faculty heat map is the one surface Romit asked to read as pass/fail against
+ * a bar rather than as a continuous intensity (2026-09-15: "cells less than threshold should be
+ * in red shade... more than threshold should be in green"), the same kind of one-chart, named
+ * override this codebase already carries once (`DASHBOARD_TREND_CONFIG` in
+ * `analytics-plots.tsx`). Do not propagate this off the heat map without the same explicit ask.
+ *
+ * `belowMin`/`aboveMax` are the ACTUAL lowest/highest values present below/above the threshold
+ * in the cells being drawn (not the fixed 1–5 rating domain) — "lowest gets the brightest red,
+ * highest gets the brightest green" is a statement about the data on screen, and anchoring to
+ * the theoretical domain ends would leave every real cell pastel when scores cluster near 4.
+ */
+export function heatmapDivergingColor(
+  value: number,
+  threshold: number,
+  belowMin: number,
+  aboveMax: number,
+  redHex?: string,
+  greenHex?: string,
+  cardHex?: string,
+  maxMix = HEATMAP_AA_MAX_MIX,
+  // A 3.95/4.05 spread (one side has almost no real range) used to hit the same t=1 "brightest"
+  // saturation as a genuine 1.0-point spread — full alarm colour for a trivial difference.
+  // Flagged live (state-review, 2026-09-15). 0.5 is half a Likert point: the smallest gap this
+  // 1-5 scale treats as a real difference elsewhere in the app (RATING_BINS buckets in 0.5s).
+  minSpan = 0.5,
+): string {
+  const red = redHex ?? readChartToken("--destructive", "#dc2626")
+  // `--status-badge-success-fg` (a real green, hue ~136), NOT `--chart-2` — `--chart-2` is this
+  // theme's SECOND CATEGORICAL SERIES colour, which resolves to teal (hue ~185), not green.
+  // Caught live (ds-conformance-reviewer + verification-reviewer, 2026-09-15): the caption text
+  // says "Green" and a hardcoded `#16a34a` SSR/canvas fallback IS true green, so the ramp
+  // visibly shifted hue between first paint and hydration while also mismatching its own label.
+  // `--status-badge-success-fg` is the DS's actual semantic "this is good" green, which is the
+  // fact this ramp's positive pole is trying to state.
+  const green = greenHex ?? readChartToken("--status-badge-success-fg", "#15803d")
+  const card = cardHex ?? readChartToken("--card", "#ffffff")
+  const [cr, cg, cb] = hexToRgb(card)
+  const isAbove = value >= threshold
+  const span = Math.max(isAbove ? aboveMax - threshold : threshold - belowMin, minSpan)
+  const t = 0.12 + Math.min(1, Math.abs(value - threshold) / span) * (maxMix - 0.12)
+  const [tr, tg, tb] = hexToRgb(isAbove ? green : red)
+  return rgbToHex(cr + (tr - cr) * t, cg + (tg - cg) * t, cb + (tb - cb) * t)
+}
+
+/**
+ * Text colour for a `heatmapDivergingColor` cell — measured via `contrastRatio`, NOT the
+ * mix-percentage heuristic `heatmapCellUsesLightText` uses (state-review, 2026-09-15: that
+ * heuristic is this file's OWN documented example of a broken proxy — see `HEATMAP_AA_MAX_MIX`'s
+ * comment above, "a whole band where light text measures 2.4:1" — and its `maxMix` cap was
+ * measured against the brand ramp on `--card`, never re-validated for `--destructive`/`--chart-2`
+ * against their own light/dark text options). Computing the actual fill once and picking
+ * whichever of dark/light text wins on IT, rather than assuming a mix percentage predicts
+ * contrast, is correct by construction for any hue pair passed in.
+ */
+export function heatmapDivergingUsesLightText(
+  value: number,
+  threshold: number,
+  belowMin: number,
+  aboveMax: number,
+  redHex?: string,
+  greenHex?: string,
+  cardHex?: string,
+  foregroundHex?: string,
+  primaryForegroundHex?: string,
+  maxMix = HEATMAP_AA_MAX_MIX,
+  minSpan = 0.5,
+): boolean {
+  const fill = heatmapDivergingColor(value, threshold, belowMin, aboveMax, redHex, greenHex, cardHex, maxMix, minSpan)
+  const dark = foregroundHex ?? readChartToken("--foreground", "#111827")
+  const light = primaryForegroundHex ?? readChartToken("--primary-foreground", "#ffffff")
+  return contrastRatio(fill, light) >= contrastRatio(fill, dark)
+}
+
 /** Brand-mixed heatmap cell fill — 12–88% mix like Highcharts colorAxis min/max. */
 export function heatmapCellFill(value: number, max: number, brandVar = "var(--brand-color)") {
   const mix = max > 0 ? 12 + Math.round((value / max) * 76) : 12
