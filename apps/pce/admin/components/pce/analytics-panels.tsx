@@ -1226,7 +1226,7 @@ export function ByTermPanel({
 
 /* ════════════════════ By Faculty panel ════════════════════ */
 export function ByFacultyPanel({
-  facultyId, onOpenSurvey, extraCharts, heroCarriesRating = false, scopedTerms,
+  facultyId, onOpenSurvey, extraCharts, heroCarriesRating = false, scopedTerms, hideAskLeo = false,
 }: {
   facultyId: string
   onOpenSurvey: (surveyId: string) => void
@@ -1241,6 +1241,10 @@ export function ByFacultyPanel({
    * profile, self-dashboard) fall back to this faculty member's own latest term.
    */
   scopedTerms?: string[]
+  /** Shared with the offerings/[code] Directory profile page and `/my-dashboard`, which keep
+   *  Ask Leo — only the `/analytics` tab opts out (Romit, 2026-09-15: "remove ask leo from
+   *  each card"), same asymmetry `ByCoursePanel`'s own `hideAskLeo` already draws. */
+  hideAskLeo?: boolean
 }) {
   const faculty = MOCK_FACULTY.find(f => f.id === facultyId) ?? null
 
@@ -1436,6 +1440,7 @@ export function ByFacultyPanel({
         <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${heroCarriesRating ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
           {!heroCarriesRating && (
             <ChartCard
+            hideAskLeo={hideAskLeo}
               variant="kpi-chart"
               title="Faculty average"
               miniMetrics={[{
@@ -1451,6 +1456,7 @@ export function ByFacultyPanel({
           )}
 
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Course average"
             miniMetrics={[{
@@ -1461,6 +1467,7 @@ export function ByFacultyPanel({
           >{null}</ChartCard>
 
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Response rate"
             miniMetrics={[{
@@ -1472,6 +1479,7 @@ export function ByFacultyPanel({
           >{null}</ChartCard>
 
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Courses offered"
             miniMetrics={[{ label: 'All terms', value: `${facultyKpiData.offerings}`, trend: 'neutral' }]}
@@ -1490,6 +1498,7 @@ export function ByFacultyPanel({
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         {allFacultyHeat.courses.length > 0 && (
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="normal"
             title={`Course heat map · ${faculty.name}`}
             description={`Last ${facultyHeat.terms.length} terms · red below the ${RATING_THRESHOLD.toFixed(1)} threshold, green at or above`}
@@ -1574,6 +1583,7 @@ export function ByFacultyPanel({
         <div className="flex flex-col gap-4">
         {facultyRatingTrend.length >= 2 && (
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="normal"
             title="Rating trend"
             description={`Faculty average vs program average, last ${facultyRatingTrend.length} terms`}
@@ -1630,6 +1640,7 @@ export function ByFacultyPanel({
 
         {facultyResponseTrendSeries.length >= 2 && (
           <ChartCard
+          hideAskLeo={hideAskLeo}
             variant="normal"
             title="Response rate trend"
             description={`Against the ${RESPONSE_TARGET}% target, last ${facultyResponseTrendSeries.length} terms`}

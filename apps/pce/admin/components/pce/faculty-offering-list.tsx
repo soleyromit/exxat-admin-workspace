@@ -115,10 +115,6 @@ export function FacultyOfferingList({
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([value, name]) => ({ value, label: `${value} · ${name}` }))
   }, [allRows])
-  const facultyOptions = useMemo(() => {
-    const byId = new Map(allRows.map((r) => [r.facultyId, r.facultyName]))
-    return [...byId.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => ({ id, name }))
-  }, [allRows])
   const roleOptions = useMemo(() => {
     const present = new Set(allRows.map((r) => r.role))
     return facultyEvalRoleOptions().filter((r) => present.has(r.id))
@@ -129,6 +125,18 @@ export function FacultyOfferingList({
   const [roleFilter, setRoleFilter] = useState<FacultyEvalRoleId | undefined>(undefined)
   const toggleCourse = (v: string) =>
     setCourseFilter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
+
+  /** Faculty dropdown is dependent on Role (Romit, 2026-09-15) — its option list narrows to
+   *  only faculty who hold the selected role, not every faculty in scope. A stale selection
+   *  left over from a wider role is cleared rather than silently kept selected-but-hidden. */
+  const facultyOptions = useMemo(() => {
+    const rows = roleFilter ? allRows.filter((r) => r.role === roleFilter) : allRows
+    const byId = new Map(rows.map((r) => [r.facultyId, r.facultyName]))
+    return [...byId.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => ({ id, name }))
+  }, [allRows, roleFilter])
+  useEffect(() => {
+    if (facultyFilter && !facultyOptions.some((f) => f.id === facultyFilter)) setFacultyFilter(undefined)
+  }, [facultyOptions, facultyFilter])
 
   const filteredRows = useMemo(
     () =>

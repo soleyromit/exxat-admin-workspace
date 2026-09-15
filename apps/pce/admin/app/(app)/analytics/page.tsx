@@ -445,6 +445,7 @@ function AnalyticsInner() {
                 facultyId={id}
                 onOpenSurvey={setSelectedSurveyId}
                 scopedTerms={overviewTerms}
+                hideAskLeo
               />
             </Suspense>
           </TabsContent>
