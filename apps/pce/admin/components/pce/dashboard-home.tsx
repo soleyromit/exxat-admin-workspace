@@ -285,7 +285,11 @@ function StatementHero({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className={`flex items-center gap-1 text-muted-foreground ${size === 'sm' ? 'text-sm font-normal' : 'text-xs font-medium'}`}>
+        {/* `size==='sm'` only consumer is the "Last closed term" 3-stat row (Romit,
+            2026-09-15: match the same 26px value / 11.5px title analytics-2 reference
+            already applied to `ChartCard`'s `kpi-chart` variant — verified the other 5
+            `StatementHero` call sites all pass `size="lg"`/`"md"`, untouched here). */}
+        <p className={`flex items-center gap-1 text-muted-foreground ${size === 'sm' ? 'text-[11.5px] font-normal' : 'text-xs font-medium'}`}>
           {label}
           {tip && (
             <Tip label={tip} triggerClassName="inline-flex">
@@ -299,7 +303,7 @@ function StatementHero({
       </div>
       <p
         className={
-          (size === 'sm' ? 'flex items-baseline gap-2 text-2xl font-bold' : (size === 'lg' ? 'text-5xl' : 'text-4xl') + (serif ? ' font-heading' : ' font-sans') + ' font-semibold') +
+          (size === 'sm' ? 'flex items-baseline gap-2 text-[26px] font-bold' : (size === 'lg' ? 'text-5xl' : 'text-4xl') + (serif ? ' font-heading' : ' font-sans') + ' font-semibold') +
           ' leading-none tracking-tight text-foreground tabular-nums'
         }
       >
