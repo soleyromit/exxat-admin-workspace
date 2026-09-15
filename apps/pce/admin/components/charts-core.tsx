@@ -249,8 +249,10 @@ function ChartCardHeader({
   filter?: string
   onFilter?: (v: string) => void
   /** Surfaces where the per-chart Ask Leo affordance is out of scope (Romit, 2026-09-14:
-   *  "remove ask leo buttons from each card from analytics"). Card-level, not global — other
-   *  ChartCard consumers (Directory profile pages, /results) keep the button. */
+   *  "remove ask leo buttons from each card from analytics"; 2026-09-15: "remove ask leo
+   *  buttons from cards" extended this to /results too — every ChartCard on the survey
+   *  results detail page now passes this). Card-level, not global — other ChartCard
+   *  consumers (Directory profile pages) still keep the button. */
   hideAskLeo?: boolean
   /** A card-level action (e.g. "View all →") that belongs to the WHOLE card, not to whatever
    *  chart sits in the body (2026-09-14 — the Overview leaderboards had this same link floating

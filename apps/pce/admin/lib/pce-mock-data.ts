@@ -502,6 +502,11 @@ export interface PriorOffering {
   courseAvg: number
   /** Faculty performance avg, 1–5 scale. */
   facultyAvg: number
+  /** Response rate for that prior instance, 0–100. Optional — absent on most
+   *  fixture rows today; the KPI strip's "change from previous instance"
+   *  delta simply omits itself (like every other missing-comparator case on
+   *  this page) rather than fabricating a number when this is undefined. */
+  responseRate?: number
   /** Action items logged for that term — ST-15 score-card tooltip, by priority. */
   actionItems?: { text: string; priority: 'high' | 'medium' | 'low' }[]
   /** Theme labels (lib/pce-themes.ts vocabulary) logged as concerns that term —
