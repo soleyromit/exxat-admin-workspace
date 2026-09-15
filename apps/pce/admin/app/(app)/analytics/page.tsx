@@ -13,7 +13,7 @@ import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { MOCK_FACULTY, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
-import { facultyStats, allTerms, academicYears, termOfferingsEvaluated, type FacultyEvalRoleId } from '@/lib/pce-analytics'
+import { allTerms, academicYears, termOfferingsEvaluated, type FacultyEvalRoleId } from '@/lib/pce-analytics'
 
 /**
  * By Term / By Faculty / By Course code-split from Overview's initial bundle.
@@ -39,9 +39,6 @@ const CourseOfferingList = lazy(() =>
 )
 const FacultyLeaderboardSection = lazy(() =>
   import('@/components/pce/faculty-leaderboard-section').then((m) => ({ default: m.FacultyLeaderboardSection })),
-)
-const FacultyPortfolioCharts = lazy(() =>
-  import('@/components/pce/faculty-portfolio-charts').then((m) => ({ default: m.FacultyPortfolioCharts })),
 )
 
 /**
@@ -272,20 +269,6 @@ function AnalyticsInner() {
 
   const selectedFaculty = useMemo(() => MOCK_FACULTY.find(f => f.id === selectedFacultyId) ?? null, [selectedFacultyId])
 
-  /** The selected faculty member's class-size-weighted mean — the portfolio's anchor value.
-   *  Derived from the canonical dataset so it cannot drift from the leaderboard above.
-   *
-   *  Deliberately NOT scoped by `facultyRole`: the role filter's boundary is the "All
-   *  faculty" section above the portfolio. The portfolio charts this value anchors are the
-   *  person's FULL history (per the ask: role filtering is for comparing multiple faculty,
-   *  apart from single-faculty analytics) — a role-scoped anchor on an all-role portfolio
-   *  would disagree with every chart around it, which is worse than differing from the
-   *  role-filtered leaderboard number the reader drilled in from. */
-  const selectedFacultyAvg = useMemo(() => {
-    const stat = facultyStats().find(f => f.facultyId === selectedFacultyId)
-    return stat && stat.score.state === 'value' ? stat.score.value.weighted : null
-  }, [selectedFacultyId])
-
   return (
     <>
       <SiteHeader title="Analytics" />
@@ -463,26 +446,21 @@ function AnalyticsInner() {
               </div>
             )}
 
-            {/* extraCharts is what makes this tab's "their portfolio" copy true. Without it
-                the tab rendered a KPI strip and a table while /admin/faculty/[id] showed the
-                full portfolio — two doors to the same faculty member, different contents.
-                lens="admin": this tab is admin-only, so the peer distribution is allowed. */}
+            {/* `extraCharts` (Standing vs benchmarks / Courses taught, from
+                `FacultyPortfolioCharts`) removed 2026-09-15 — neither card maps to any of the
+                PRD's Faculty Analytics use cases; the questions they answered are now answered
+                by cards the PRD DOES ask for ("where does this faculty stand" → the rating
+                trend's program line + range band and the heat map's program-average row;
+                "which courses, how did each trend" → the heat map itself). Two cards answering
+                a question a PRD card already answers is the exact duplication the By Course
+                tab's own 2026-07-14 "comparative context" removal cited. `FacultyPortfolioCharts`
+                stays in use on `/my-dashboard` and the Directory profile — out of this PRD's
+                scope, not touched. */}
             <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty portfolio" />}>
               <ByFacultyPanel
                 facultyId={selectedFacultyId}
                 onOpenSurvey={setSelectedSurveyId}
                 scopedTerms={overviewTerms}
-                extraCharts={
-                  selectedFacultyId ? (
-                    <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
-                      <FacultyPortfolioCharts
-                        facultyId={selectedFacultyId}
-                        avgRating={selectedFacultyAvg}
-                        lens="admin"
-                      />
-                    </Suspense>
-                  ) : null
-                }
               />
             </Suspense>
           </div>

@@ -1483,10 +1483,99 @@ export function ByFacultyPanel({
         </div>
       )}
 
-      {/* Rating trend + Response rate trend — split into two charts (PRD splits them
-          explicitly, same "is the score movement real, or just fewer students responding"
-          reasoning as the Course tab). */}
+      {/* Course heat map beside Rating trend + Response rate trend, stacked — same row shape
+          the Course tab uses for its quadrant + trend pair (`analytics-panels.tsx`'s
+          `ByCoursePanel`, "Course vs faculty" quadrant left, Rating/Response trend stacked
+          right): one big chart left, two term-trend cards stacked right, so the two drill-down
+          tabs read as the same layout system rather than each inventing its own (Romit,
+          2026-09-15: "layout aligned with other pages"). Rating + Response trend split into two
+          charts, same "is the score movement real, or just fewer students responding"
+          reasoning as the Course tab. */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        {allFacultyHeat.courses.length > 0 && (
+          <ChartCard
+            variant="normal"
+            title={`Course heat map · ${faculty.name}`}
+            description={`Last ${facultyHeat.terms.length} terms · red below the ${RATING_THRESHOLD.toFixed(1)} threshold, green at or above`}
+          >
+            {facultyRoleOptions.length > 1 && (
+              <div className="flex flex-wrap items-end gap-3 pb-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-heatmap-role">Role</label>
+                  <Select
+                    value={heatmapRole ?? ALL_ROLES}
+                    onValueChange={(v) => setHeatmapRole(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
+                  >
+                    <SelectTrigger id="faculty-heatmap-role" className="h-8 w-44 text-sm" aria-label="Filter the heat map by role"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_ROLES}>All roles</SelectItem>
+                      {facultyRoleOptions.map(r => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <ChartFigure
+              label={`Course heat map for ${faculty.name}`}
+              summary={`Rating by course and term for ${faculty.name}, ${facultyHeat.courses.length} course${facultyHeat.courses.length === 1 ? '' : 's'}.`}
+              dataLength={facultyHeat.courses.length}
+            >
+              {() => (
+                <>
+                  <CourseFacultyHeatmap
+                    rows={facultyHeat.courses}
+                    terms={facultyHeat.terms}
+                    cells={heatCells}
+                    programAvgByTerm={programFacultyAvgByTerm}
+                    threshold={RATING_THRESHOLD}
+                    highlightedCols={highlightedFacultyShorts}
+                    emptyNote={heatmapEmptyNote}
+                    height={420}
+                  />
+                  <ChartDataTable
+                    caption={`Course heat map for ${faculty.name}`}
+                    headers={['Course', ...facultyHeat.terms.map(shortTerm)]}
+                    rows={facultyHeat.courses.map(code => [
+                      code,
+                      ...facultyHeat.terms.map(t => {
+                        const cell = facultyHeat.cells.find(c => c.courseCode === code && c.term === t)
+                        return cell ? cell.courseAvg.toFixed(2) : '—'
+                      }),
+                    ])}
+                  />
+                  <ChartCardActions
+                    title={`Course heat map · ${faculty.name}`}
+                    description={`Last ${facultyHeat.terms.length} terms · red below the ${RATING_THRESHOLD.toFixed(1)} threshold, green at or above`}
+                    detail={
+                      <CourseFacultyHeatmap
+                        rows={facultyHeat.courses}
+                        terms={facultyHeat.terms}
+                        cells={heatCells}
+                        programAvgByTerm={programFacultyAvgByTerm}
+                        threshold={RATING_THRESHOLD}
+                        highlightedCols={highlightedFacultyShorts}
+                        emptyNote={heatmapEmptyNote}
+                        height={420}
+                      />
+                    }
+                    table={{
+                      headers: ['Course', ...facultyHeat.terms.map(shortTerm)],
+                      rows: facultyHeat.courses.map(code => [
+                        code,
+                        ...facultyHeat.terms.map(t => {
+                          const cell = facultyHeat.cells.find(c => c.courseCode === code && c.term === t)
+                          return cell ? cell.courseAvg.toFixed(2) : '—'
+                        }),
+                      ]),
+                    }}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+        )}
+
+        <div className="flex flex-col gap-4">
         {facultyRatingTrend.length >= 2 && (
           <ChartCard
             variant="normal"
@@ -1583,92 +1672,8 @@ export function ByFacultyPanel({
             </ChartFigure>
           </ChartCard>
         )}
+        </div>
       </div>
-
-      {/* Course heat map — PRD 2026-09-15: courses × terms for one faculty, red below /
-          green above the RATING_THRESHOLD, program average as the last row, role filter
-          default all. */}
-      {allFacultyHeat.courses.length > 0 && (
-        <ChartCard
-          variant="normal"
-          title={`Course heat map · ${faculty.name}`}
-          description={`Last ${facultyHeat.terms.length} terms · red below the ${RATING_THRESHOLD.toFixed(1)} threshold, green at or above`}
-        >
-          {facultyRoleOptions.length > 1 && (
-            <div className="flex flex-wrap items-end gap-3 pb-2">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-muted-foreground" htmlFor="faculty-heatmap-role">Role</label>
-                <Select
-                  value={heatmapRole ?? ALL_ROLES}
-                  onValueChange={(v) => setHeatmapRole(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
-                >
-                  <SelectTrigger id="faculty-heatmap-role" className="h-8 w-44 text-sm" aria-label="Filter the heat map by role"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_ROLES}>All roles</SelectItem>
-                    {facultyRoleOptions.map(r => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <ChartFigure
-            label={`Course heat map for ${faculty.name}`}
-            summary={`Rating by course and term for ${faculty.name}, ${facultyHeat.courses.length} course${facultyHeat.courses.length === 1 ? '' : 's'}.`}
-            dataLength={facultyHeat.courses.length}
-          >
-            {() => (
-              <>
-                <CourseFacultyHeatmap
-                  rows={facultyHeat.courses}
-                  terms={facultyHeat.terms}
-                  cells={heatCells}
-                  programAvgByTerm={programFacultyAvgByTerm}
-                  threshold={RATING_THRESHOLD}
-                  highlightedCols={highlightedFacultyShorts}
-                  emptyNote={heatmapEmptyNote}
-                />
-                <ChartDataTable
-                  caption={`Course heat map for ${faculty.name}`}
-                  headers={['Course', ...facultyHeat.terms.map(shortTerm)]}
-                  rows={facultyHeat.courses.map(code => [
-                    code,
-                    ...facultyHeat.terms.map(t => {
-                      const cell = facultyHeat.cells.find(c => c.courseCode === code && c.term === t)
-                      return cell ? cell.courseAvg.toFixed(2) : '—'
-                    }),
-                  ])}
-                />
-                <ChartCardActions
-                  title={`Course heat map · ${faculty.name}`}
-                  description={`Last ${facultyHeat.terms.length} terms · red below the ${RATING_THRESHOLD.toFixed(1)} threshold, green at or above`}
-                  detail={
-                    <CourseFacultyHeatmap
-                      rows={facultyHeat.courses}
-                      terms={facultyHeat.terms}
-                      cells={heatCells}
-                      programAvgByTerm={programFacultyAvgByTerm}
-                      threshold={RATING_THRESHOLD}
-                      highlightedCols={highlightedFacultyShorts}
-                      emptyNote={heatmapEmptyNote}
-                      height={420}
-                    />
-                  }
-                  table={{
-                    headers: ['Course', ...facultyHeat.terms.map(shortTerm)],
-                    rows: facultyHeat.courses.map(code => [
-                      code,
-                      ...facultyHeat.terms.map(t => {
-                        const cell = facultyHeat.cells.find(c => c.courseCode === code && c.term === t)
-                        return cell ? cell.courseAvg.toFixed(2) : '—'
-                      }),
-                    ]),
-                  }}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
-      )}
 
       {extraCharts}
 
