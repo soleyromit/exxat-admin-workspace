@@ -1953,6 +1953,22 @@
             "newDecisions": 0,
             "conflictsFlagged": 0,
             "meetingsWithNoTranscript": 0
+        },
+        {
+            "id": "2026-09-15-transcript-prd-diff-001",
+            "date": "2026-09-15",
+            "product": "pce",
+            "type": "prd-flagged",
+            "title": "Transcript→PRD diff — 2026-09-15 — 4 conflicts found",
+            "what": "Processed 4 product-relevant meetings from Sep 1–14, 2026. Sep 14 meeting ('Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal') contained 4 new Aarti-confirmed/Aarti-reviewed directives conflicting with current PCE design spec: (1) Sidebar must be expanded by default — collapsible accordion removed (Aarti confirmed); (2) Analytics AY+term filters move above all 3 tabs (Overview/Course/Faculty) with terms as multi-select and AY as single-select; (3) Course and Faculty filters removed from longitudinal analytics view — only AY and term remain; (4) Rating trend AY-vs-term toggle removed — trend always by term, 6 terms shown by default. Sep 1 transcript was already processed by the 2026-09-07 run (pce-decision-160–164 extracted, 0 conflicts). Sep 4 pharmacy meeting: no PCE/Exam product directives. Sep 8 dashboard/process meeting: no PRD-level directives. Exam Management: no new conflicts.",
+            "source": "Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal — Sep 14, 2026",
+            "severity": "P1",
+            "meetingsProcessed": 4,
+            "conflictsFlagged": 4,
+            "files": [
+                "docs/watch/flags/pce.md",
+                "docs/watch/updates-log.json"
+            ]
         }
     ]
 }

@@ -562,3 +562,43 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Update PRD title and all §4 terminology from "Post Course Evaluation" / "PCE" to "Course Surveys." Update sidebar label, dashboard card labels, wizard step names, and template-creation headings. Confirm with Monil whether the sidebar top-level entry (currently "Surveys → Course Evaluations") should read "Surveys → Course Surveys."
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-15
+**Meeting:** Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal — Sep 14, 2026
+**Speaker:** Aarti Vaishnav (confirmed by Vishal)
+**What they said:** "Arthi saw these designs. So she's also under the same opinion that let's expand course evaluations and programmatic surveys by default. This open-close is not required."
+**What the PRD says:** PRD §13a General Layout shows sidebar with "Course Evaluations" and "General Surveys" as nested nav sections. No open/close state is specified, but current design implements collapsible accordion for both sections.
+**Conflict:** Aarti confirmed sidebar sections for Course Evaluations and Programmatic Surveys must be expanded by default. The collapsible accordion (open-close toggle) is removed entirely.
+**Suggested action:** Update PRD §13a OR confirm with Vishal that the sidebar spec now mandates always-expanded sections with no collapse toggle. Update prototype design accordingly.
+
+---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-15
+**Meeting:** Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal — Sep 14, 2026
+**Speaker:** Vishal (referencing Aarti-reviewed design)
+**What they said:** "currently this academic year term filters are under Overview tab. We need to move this up, right? So we will have academic year and term selection on top, and under that you have 3 tabs: Overview, Course, and Faculty." / "Academic year is always single select, terms are multi-select."
+**What the PRD says:** PCE PRD Step 5 Analytics delegates to external analytics PRD. pce-decision-049 describes 3-layer structure per sub-tab but places no filters outside the tab structure. Current design has AY/term filters inside the Overview tab only.
+**Conflict:** Analytics global filter position changed — AY and term filters move from inside the Overview tab to above all 3 analytics tabs. Terms are now explicitly multi-select; academic year is single-select. This changes the filter scope from tab-specific to cross-tab global.
+**Suggested action:** Update PCE analytics design spec to document: (1) AY=single-select, Term=multi-select above all tabs; (2) filters apply globally to Overview, Course, and Faculty sub-tabs. Update prototype.
+
+---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-15
+**Meeting:** Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal — Sep 14, 2026
+**Speaker:** Vishal
+**What they said:** "we are removing course and faculty [from the filters]. There are no other filters [in the analytics overview]."
+**What the PRD says:** PRD §5 Analytics references an external analytics PRD. The current design includes course and faculty as additional filters on the longitudinal analytics page.
+**Conflict:** Course and Faculty filter controls are explicitly removed from the PCE longitudinal analytics page. Only academic year and term remain as filters.
+**Suggested action:** Update the analytics design spec to remove Course and Faculty filter fields from the longitudinal analytics view. Update prototype.
+
+---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-09-15
+**Meeting:** Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal — Sep 14, 2026
+**Speaker:** Vishal
+**What they said:** "The time scale is always by term. We don't— we can remove this trend view, academic year versus term. It's only term."
+**What the PRD says:** PRD §5 Analytics / pce-decision-049 describes trend graphs as "longitudinal view across all terms." The current design has a toggle between academic year view and term view for the rating trend chart.
+**Conflict:** The academic year vs term toggle in the rating trend graph is removed. Trend view is always by term (6 terms by default, selected term highlighted). No academic year granularity view.
+**Suggested action:** Remove the AY/term view toggle from the rating trend chart in the analytics spec and prototype. Confirm 6-term default with Vishal.
+
+---
