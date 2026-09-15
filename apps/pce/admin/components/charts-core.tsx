@@ -57,6 +57,10 @@ export type MiniMetric = {
   trend?: "up" | "down" | "neutral"
   /** Same semantics as `MetricItem.trendPolarity` on `KeyMetrics`. */
   trendPolarity?: MetricTrendPolarity
+  /** `kpi-chart` only — the delta text (e.g. "-0.19") rendered inline next to the trend
+   *  arrow, matching exxat-surveys-24f.pages.dev/surveys/analytics/summer-2025's KPI tiles
+   *  (Vishal, 2026-09-15). When omitted, `label` alone renders below as before. */
+  trendDelta?: string
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -232,9 +236,14 @@ function ChartCardHeader({
   onFilter,
   hideAskLeo,
   headerAction,
+  compact,
 }: {
   title: string
-  description: string
+  /** Optional — omit for a bare title with no subtext (Vishal, 2026-09-15: Overview's KPI
+   *  tiles and two leaderboards drop the term/count subtext entirely rather than repeat what
+   *  the filter row above already states). No `<CardDescription>` renders at all when omitted,
+   *  not an empty one — an empty string still occupies its line-height + `mt-0.5` margin. */
+  description?: string
   variant: ChartCardVariant
   filterOptions?: { value: string; label: string }[]
   filter?: string
@@ -250,18 +259,31 @@ function ChartCardHeader({
    *  own right-side cluster, same row as the Select filter, so both card-level controls live in
    *  one place and the body is left for content that's actually about the chart. */
   headerAction?: React.ReactNode
+  /** `kpi-chart` only (Romit, 2026-09-15: match https://pce-three.vercel.app/analytics-2's
+   *  compact KPI tiles — measured live: 14px/12px padding, an 11.5px title, not this shared
+   *  header's usual `text-sm` + default `Card`-spacing padding). Scoped to this one prop rather
+   *  than changing `CardHeader`'s shared padding, which every other `ChartCard` variant + every
+   *  other `Card` consumer in the app also relies on. */
+  compact?: boolean
 }) {
   const isSelector = variant === "selector" && Array.isArray(filterOptions) && filterOptions.length > 0
   return (
-    <CardHeader className="shrink-0 pb-2">
+    <CardHeader className={compact ? 'shrink-0 px-3.5 pt-3.5 pb-0' : 'shrink-0 pb-2'}>
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <CardTitle className="text-sm font-semibold leading-tight">{title}</CardTitle>
+          {/* `!text-[11.5px]` (Romit, 2026-09-15, screenshot: kpi-chart titles rendering at
+              14px, not 11.5px) — the DS `CardTitle` component's own base class ends in
+              `group-data-[size=sm]/card:text-sm`, which wins the cascade over this plain
+              `text-[11.5px]` override whenever the ancestor `Card` has `size="sm"` (every
+              kpi-chart tile does). `!` forces `!important` so this compact override always
+              wins regardless of Tailwind's internal declaration order — a real CSS
+              specificity bug, not a Tailwind arbitrary-value quirk. */}
+          <CardTitle className={compact ? '!text-[11.5px] font-semibold leading-tight' : 'text-sm font-semibold leading-tight'}>{title}</CardTitle>
           {/* `leading-tight` matches CardTitle's own line-height (17.5px vs the DS default
               text-sm's 20px) — the true margin here was already just 2px, but the description's
               taller line box added ~3px of invisible padding above its glyphs on top of that,
               so the block read as loose even though the CSS gap was tight. */}
-          <CardDescription className="mt-0.5 leading-tight">{description}</CardDescription>
+          {description && <CardDescription className="mt-0.5 leading-tight">{description}</CardDescription>}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {!hideAskLeo && (
@@ -340,7 +362,7 @@ export function ChartCard({
   headerAction,
 }: {
   title: string
-  description: string
+  description?: string
   children: React.ReactNode | ((filter: string) => React.ReactNode)
   className?: string
   variant?: ChartCardVariant
@@ -561,45 +583,67 @@ export function ChartCard({
     const isUp   = kpi?.trend === "up"
     const isDown = kpi?.trend === "down"
     const tone = metricTrendTone(kpi?.trend ?? "neutral", kpi?.trendPolarity)
+    // Aarti dislikes red in score/rating viz (VIZ-004) — an unfavorable trend on a KPI
+    // tile is amber, matching analytics-panels.tsx's own Course-detail KPI cards and the
+    // exxat-surveys-24f.pages.dev reference, which keeps the arrow itself neutral-toned.
+    // `--qb-status-draft-fg` (not `text-amber-600`, which axe flagged at 3.19:1 on white —
+    // below the 4.5:1 small-text threshold) is this app's own AA-checked amber-on-white
+    // foreground, already relied on by every warning-tint badge in pce-badges.tsx.
     const trendClass =
       tone === "positive"
         ? "text-emerald-600"
         : tone === "negative"
-          ? "text-destructive-ink"
+          ? "text-[var(--qb-status-draft-fg)]"
           : "text-muted-foreground"
 
     return (
-      <Card className={chartCardShellClass} role="figure" aria-label={title}>
-        <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} />
+      <Card size="sm" className={chartCardShellClass} role="figure" aria-label={title}>
+        <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} compact />
 
+        {/* Sizing matched live against https://pce-three.vercel.app/analytics-2 (Romit,
+            2026-09-15: "the kpi card size is small [there]... do the same") — that reference's
+            tile is `p-3.5` (14px) all round, a 26px value (not this DS's usual `text-4xl`/36px),
+            and its own delta line right under it with no extra vertical padding between them.
+            The outer `<Card size="sm">` matters too (2026-09-15 follow-up: "kpi card size isn't
+            small") — the DS Card's default spacing token is 16px/side; only `size="sm"` drops it
+            to 12px, which is what actually closes the remaining ~12px height gap vs the
+            reference's 128px tile once the header/number padding above already matched. */}
         {kpi && (
-          <div className="px-6 pb-2 shrink-0">
+          <div className="px-3.5 pb-3.5 pt-1 shrink-0">
             <div className="flex items-baseline gap-2.5">
-              <span className="text-4xl font-bold tabular-nums tracking-tight text-foreground">
+              <span className="text-[26px] font-semibold tabular-nums tracking-tight text-foreground leading-none">
                 {kpi.value}
               </span>
               {isUp && (
                 <span className={cn("flex items-center gap-1 text-sm font-medium", trendClass)}>
                   <i className="fa-light fa-arrow-trend-up" aria-hidden="true" />
                   <span className="sr-only">trending up</span>
+                  {kpi.trendDelta}
                 </span>
               )}
               {isDown && (
                 <span className={cn("flex items-center gap-1 text-sm font-medium", trendClass)}>
                   <i className="fa-light fa-arrow-trend-down" aria-hidden="true" />
                   <span className="sr-only">trending down</span>
+                  {kpi.trendDelta}
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{kpi.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
           </div>
         )}
 
-        <CardContent className="flex-1 flex flex-col min-h-0 pb-4 pt-0">
-          <ChartLeoInsightOverlay leoInsight={leoInsight} chartTitle={title}>
-            {resolvedChildren}
-          </ChartLeoInsightOverlay>
-        </CardContent>
+        {/* Skipped entirely when there's no chart under the number (Romit, 2026-09-15: "the
+            KPI card is too big, needs to be compact") — Overview's 4 KPI tiles pass `{null}`
+            children (number + delta only, no chart), and this block's own `pb-4` bottom padding
+            was adding empty trailing space under the delta line even with nothing to show. */}
+        {resolvedChildren != null && (
+          <CardContent className="flex-1 flex flex-col min-h-0 pb-4 pt-0">
+            <ChartLeoInsightOverlay leoInsight={leoInsight} chartTitle={title}>
+              {resolvedChildren}
+            </ChartLeoInsightOverlay>
+          </CardContent>
+        )}
       </Card>
     )
   }
