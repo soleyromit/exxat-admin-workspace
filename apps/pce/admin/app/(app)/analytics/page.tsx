@@ -304,8 +304,8 @@ function AnalyticsInner() {
           inside <Tabs>). This row renders BEFORE <Tabs> starts, between the page title and the
           tab strip, so it cannot read as "part of" any tab or the tab bar. */}
       {/* sticky, not the page's SiteHeader/PageHeader above it — literally what
-          was asked ("lock the filters and tab heading on scroll"). z-20 keeps
-          it above the tabs-bar sticking right beneath it (z-10) and above
+          was asked ("lock the filters and tab heading on scroll"). z-[45] keeps
+          it above the tabs-bar sticking right beneath it (z-[41]) and above
           scrolled panel content; bg-background so content doesn't show
           through the gap padding creates.
           `top: var(--shell-utility-bar-height)`, NOT `top: 0` (Romit's catch,
@@ -314,11 +314,27 @@ function AnalyticsInner() {
           app/(app)/layout.tsx, the "Clinical Education" bar) is ALSO
           `position: sticky; top: 0` in this same single page-level scroll
           (confirmed live: real height 42px, z-index 50 — well above this
-          row's z-20). Two sticky siblings both pinned at `top: 0` overlap at
+          row). Two sticky siblings both pinned at `top: 0` overlap at
           the exact same viewport band instead of stacking; the higher
           z-index one (the shell bar) paints over this row's top ~42px. This
-          row's own `top` has to start where the shell bar's box ends. */}
-      <div className="shrink-0 sticky z-20 bg-background flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 14px', top: 'var(--shell-utility-bar-height)' }}>
+          row's own `top` has to start where the shell bar's box ends.
+
+          z-[45]/z-[41] (Romit, 2026-09-15, screenshot: download/expand icons and table
+          column headers rendering ON TOP of these tab/filter bars while scrolling) —
+          were z-20/z-10 until this fix. Root cause, confirmed live via computed styles:
+          the DS `TabsList` component (`variant="line"`) bakes in its OWN internal
+          `position: sticky; z-index: 40` (and `DataTablePaginated`'s bottom pagination
+          footer independently reuses the same z-40 token) — both assume they're the
+          outermost sticky chrome sitting directly under the z-50 shell nav bar. This
+          page nests TabsList inside an ADDITIONAL page-level sticky wrapper, so that
+          internal z-40 was invisible to outside comparisons; what actually mattered was
+          this wrapper's own z-10/z-20, which lost stacking ties (later DOM wins) against
+          absolute-positioned, non-sticky content inside each tab (e.g. a ChartCard's
+          download/expand button wrapper, `position:absolute; z-index:10`) once that
+          content scrolled to the same screen band. Bumped both page-level bars past every
+          known DS-internal z-40 usage, still under the shell's z-50 — affects every tab
+          uniformly, this wasn't Faculty-specific. */}
+      <div className="shrink-0 sticky z-[45] bg-background flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 14px', top: 'var(--shell-utility-bar-height)' }}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground" htmlFor="overview-ay">Academic year</label>
           <Select value={overviewAcademicYear} onValueChange={setOverviewAcademicYear}>
@@ -352,7 +368,7 @@ function AnalyticsInner() {
             ... tab heading on scroll"); `top` adds that row's own 76px
             rendered height ON TOP of the shell utility bar's own height, so
             all three stack with no gap or overlap. */}
-        <div className="border-b border-border shrink-0 sticky z-10 bg-background" style={{ padding: '0 28px', top: 'calc(var(--shell-utility-bar-height) + 76px)' }}>
+        <div className="border-b border-border shrink-0 sticky z-[41] bg-background" style={{ padding: '0 28px', top: 'calc(var(--shell-utility-bar-height) + 76px)' }}>
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="course">Course</TabsTrigger>
