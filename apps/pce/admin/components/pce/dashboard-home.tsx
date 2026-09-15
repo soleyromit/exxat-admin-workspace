@@ -2876,7 +2876,46 @@ function OperationsDashboardBody({
             Himanshu: the DS component itself should ship this.
             `variant="cards"` (was `"flat"`) — the reference's individually
             bordered tiles, not a seamless strip (Romit, 2026-09-11). */
-        <div className="shrink-0">
+        <div
+          className="shrink-0 -mx-4 lg:-mx-6 [&_.text-3xl.tabular-nums]:!text-[26px] [&_.text-sm.line-clamp-2]:!text-[11.5px]"
+        >
+          {/* KeyMetrics' own SECTION bakes in `px-4 lg:px-6` (its scroll-strip
+              gutter) on top of this page's own `px-7` — the two stacked
+              insets pushed the first card ~24px right of the "Dashboard"
+              title above it (Vishal, 2026-09-14 feedback: "align the cards
+              with the title"). Same `-mx-4 lg:-mx-6` counter-margin this
+              codebase already uses around KeyMetrics elsewhere (e.g.
+              analytics-panels.tsx, admin-hub-client.tsx) — not a DS fork,
+              just canceling the component's own gutter back out.
+
+              The two `[&_...]` overrides (Romit, 2026-09-15: match the same
+              26px value / 11.5px title analytics-2 reference already applied
+              to `ChartCard`'s `kpi-chart` variant, see `charts-core.tsx`) —
+              `KeyMetrics` has no per-item className hook on `MetricItem` (checked
+              the type: label/value/delta/description/alert/href/onClick, no
+              className field) and only a fixed `size: "sm"|"md"|"lg"` preset
+              scale, none of which resolve to exactly 26px/11.5px. Swapping to
+              `ChartCard`'s `kpi-chart` variant instead was considered and
+              rejected: these tiles carry real `href` navigation (a genuine
+              `<a>`, confirmed live) and `alert: "warning"` background tinting
+              that `kpi-chart` doesn't support, and porting both features would
+              be a bigger, riskier change than this file's own established
+              precedent for DS gaps (see the `shrink-0` comment above, and the
+              `alert: 'warning'`/chevron comments on `kpis` below) — document
+              the workaround, flag it, don't fork.
+              Targets `KeyMetrics`' actual rendered classes (verified live via
+              computed styles, not guessed): the value span is
+              `font-bold tabular-nums text-foreground text-3xl tracking-tight
+              sm:text-4xl`; label AND description both render as
+              `text-sm line-clamp-2` (KeyMetrics doesn't size them
+              differently at any preset), so this can't distinguish the two —
+              both land at 11.5px, a harmless ~0.5px difference from
+              `kpi-chart`'s own 12px description. `!important` because plain
+              utility-class specificity ties resolve by source order, not by
+              which one a consumer "meant" — the same reason `charts-core.tsx`
+              needed it. Flag to Himanshu: `MetricItem` needs either a
+              `className`/`valueClassName` escape hatch or a `size="xs"`
+              preset that actually hits this reference's numbers. */}
           <KeyMetrics variant="cards" size="md" showHeader={false} metricsSingleRow metrics={kpis} />
         </div>
       )}
