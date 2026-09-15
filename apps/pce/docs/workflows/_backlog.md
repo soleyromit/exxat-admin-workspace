@@ -844,6 +844,41 @@ Source: `docs/research/meetings/2026-08-26-single-server-analytics-export-strate
 
 ---
 
+## Phase 1 design tasks — added 2026-09-14 (Cohere demo prep — Vishal)
+
+Source: `docs/research/meetings/2026-09-14-distribution-analytics-design-sync-vishal.md` (Granola `8152353a`)
+
+> Vishal + Romit Cohere-prep sync (Sep 14 8:30 AM EDT). Daily cadence begins. Two demo focus areas: (1) distribution workflow with nursing program data, (2) term analytics overview redesign. Font / DS coherence between exam management and PCE also addressed.
+
+### Updates to existing tasks (Sep 14)
+
+| # | Update |
+|---|---|
+| T72 | **UPDATED tab names + structure.** Previous (Jul 13): "Overview / By Faculty / By Course / By Term." New (Sep 14): 3 tabs — **Overview** (term analytics), **Course** (course analytics), **Faculty** (faculty analytics). Academic year (single-select) + term (multi-select) filters sit ABOVE all tabs — not inside a tab. Filters apply globally across all 3 tabs. Course + faculty dropdown filters removed from overview. D_PCE_0914_02, D_PCE_0914_03, D_PCE_0914_04. |
+| T91 | **Reconfirmed** (Sep 14) — left nav: Course Evaluations + Programmatic Surveys sections always expanded by default; no open/close toggle. Vishal: "This open-close is not required on the left." Aarti confirmed. D_PCE_0914_01. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T262 | Term analytics tabs + filter architecture | Admin | Analytics | P0 — DESIGN-REVIEW | 3 tabs: Overview, Course, Faculty. Academic year (single-select) + term (multi-select) filters sit above all tabs (not inside a tab). Remove course/faculty dropdown filters from overview. Default: most recent academic year + most recent term. Updates T72. D_PCE_0914_02, D_PCE_0914_03, D_PCE_0914_04. |
+| T263 | Quadrant XY scatter chart — placement + neutral labels | Admin | Analytics → Overview tab | P1 — DESIGN-REVIEW | X-axis = course rating, Y-axis = faculty rating. Dotted lines mark threshold boundaries. Positioned right after rating trend cards. Quadrant labels: neutral tone, not judgmental ("teaching support recommended" = wrong). Coordinate with David for copy. D_PCE_0914_06, D_PCE_0914_07. |
+| T264 | Term analytics leaderboard — column structure + navigation | Admin | Analytics → Overview tab | P1 — DESIGN-REVIEW | Columns: # offerings, course avg, faculty avg, response rate ONLY (remove "overall"). All columns clickable/sortable (asc/desc). Row/link click → course offering analytics. "View All Courses" → by course analytics. "View All Faculty" → by faculty analytics. Faculty leaderboard: instructor + coordinator roles only in prototype. D_PCE_0914_08, D_PCE_0914_09, D_PCE_0914_11. |
+| T265 | Left nav — Course Eval + Programmatic Survey sections always expanded | Admin | `app-sidebar.tsx` | P1 — forward-looking constraint | When Course Evaluations + Programmatic Surveys nav sections are built, they must be expanded by default with no collapse toggle. Vishal: "Let's expand course evaluations and programmatic surveys by default. This open-close is not required on the left." Aarti confirmed. Updates T91. D_PCE_0914_01. |
+| T266 | Demo data — nursing program domain | Admin | `lib/pce-mock-data.ts` | P1 | Replace current program/course names in mock data with nursing program context for Cohere demo screens. Vishal: "We are going to use nursing as a domain. And all our data should be based on that." D_PCE_0914_12. |
+| T267 | ⚠️ FLAG: at-risk highlight color — resolve design rule conflict | Admin | Analytics → leaderboard | P0 — ALIGNMENT NEEDED | Vishal requested red highlight (threshold 4.0) for below-threshold cells: "any course which has less than the threshold needs to be highlighted in red." Design rules prohibit --destructive/red in performance viz — use --chart-4 (amber). Resolve with Vishal before applying color. D_PCE_0914_10. |
+| T268 | Program trend: update to 6 terms — ✅ APPLIED | Admin | `analytics/page.tsx` | P1 | Vishal: "We show 6 terms always by default." Added Fa 23 to programTrendHistory (4 → 5 prior terms + current = 6 total). Updated CardDescription from "Last 5 terms" to "Last 6 terms." D_PCE_0914_05. |
+
+### Deferred / killed items from Sep 14
+
+| Decision | Reason | Source |
+|---|---|---|
+| Single survey analytics | Deferred — "you can ignore single survey analytics for now." Not part of Cohere demo scope. | Sep 14 Cohere prep sync |
+| Course analytics + faculty analytics detailed spec | Deferred — "we can discuss tomorrow." Daily cadence scheduled. | Sep 14 Cohere prep sync |
+| Custom quadrant label wording | Pending David — "I would rather recommend David to come up with something." | Sep 14 Cohere prep sync |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.

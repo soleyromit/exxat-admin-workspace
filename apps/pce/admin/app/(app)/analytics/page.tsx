@@ -257,6 +257,7 @@ export default function AnalyticsPage() {
 
   /* Program trend — last 4 terms hardcoded as historical baseline; current is programAvg */
   const programTrendHistory: { label: string; value: number }[] = [
+    { label: 'Fa 23', value: 3.92 },
     { label: 'Sp 24', value: 3.95 },
     { label: 'Fa 24', value: 4.00 },
     { label: 'Sp 25', value: 4.02 },
@@ -588,7 +589,7 @@ export default function AnalyticsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Program trend</CardTitle>
-                  <CardDescription>Last 5 terms, current highlighted.</CardDescription>
+                  <CardDescription>Last 6 terms, current highlighted.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <TrendSparkline
