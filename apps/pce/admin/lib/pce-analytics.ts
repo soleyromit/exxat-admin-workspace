@@ -1765,3 +1765,60 @@ export function courseQuestionTrend(courseCode: string, n = 6): CourseQuestionTr
     .sort((a, b) => a.latest - b.latest)
 }
 
+export interface CourseQuestionExtreme {
+  questionId: string
+  text: string
+  avg: number
+}
+
+/**
+ * The single lowest- and highest-rated course-content question for one course, pooled across
+ * the SELECTED terms — the Overview Course Leaderboard's "lowest rated question & highest
+ * rating question" columns (Romit's 2026-09-14 PRD).
+ *
+ * Deliberately a sibling of `courseQuestionTrend` rather than a wrapper around it: that
+ * function slices to the last `n` offerings and drops any question with fewer than two points
+ * (a single term is not a trend), neither of which is right here — Overview scopes by the
+ * user's explicit term multi-select, and a one-term scope is a legitimate, common case. The
+ * per-question grouping and the fallback-jitter path are kept byte-for-byte identical to that
+ * function so the two surfaces never disagree on the same course's numbers.
+ */
+export function courseQuestionExtremes(
+  courseCode: string,
+  terms: string[],
+): { lowest: CourseQuestionExtreme | null; highest: CourseQuestionExtreme | null } {
+  const offs = offeringPoints().filter((o) => o.courseCode === courseCode && terms.includes(o.term))
+
+  const byQuestion = new Map<string, number[]>()
+  offs.forEach((o) => {
+    const data = o.surveyId ? MOCK_SURVEY_QUESTION_DATA.find((d) => d.surveyId === o.surveyId) : undefined
+    const scores = data?.sectionScores.course_content
+    if (scores && scores.length > 0) {
+      scores.forEach((s) => {
+        const list = byQuestion.get(s.questionId) ?? []
+        list.push(s.avg)
+        byQuestion.set(s.questionId, list)
+      })
+    } else if (o.courseAvg != null) {
+      FALLBACK_COURSE_CONTENT_QUESTION_IDS.forEach((qid) => {
+        const jitter = ((hashStr(qid + o.term + courseCode) % 9) - 4) / 20 // ±0.2 — parity with courseQuestionTrend
+        const avg = round2(Math.min(5, Math.max(1, o.courseAvg! + jitter)))
+        const list = byQuestion.get(qid) ?? []
+        list.push(avg)
+        byQuestion.set(qid, list)
+      })
+    }
+  })
+
+  const ranked = [...byQuestion.entries()]
+    .map(([questionId, values]) => ({
+      questionId,
+      text: questionTextFor(questionId) ?? questionId,
+      avg: round2(values.reduce((s, v) => s + v, 0) / values.length),
+    }))
+    .sort((a, b) => a.avg - b.avg)
+
+  if (ranked.length === 0) return { lowest: null, highest: null }
+  return { lowest: ranked[0]!, highest: ranked[ranked.length - 1]! }
+}
+

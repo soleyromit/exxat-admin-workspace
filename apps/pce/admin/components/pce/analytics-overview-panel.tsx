@@ -38,15 +38,15 @@ import {
   TermResponseTrend,
   RatingDistributionHistogram,
 } from '@/components/pce/analytics-plots'
-import { DataTablePaginated, PaginationBar } from '@/components/data-table/pagination'
+import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
-import { ToggleGroup, ToggleGroupItem } from '@exxatdesignux/ui'
 import {
   termsKpis,
   termOfferingsEvaluated,
   termsYoyDelta,
   recentTermsWindow,
   courseStats,
+  courseQuestionExtremes,
   facultyEvalRoleOptions,
   offeringPoints,
   gapPoints,
@@ -74,18 +74,39 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
   courseCode: string
   courseName: string
   offerings: number
+  /** Course + faculty averaged (equal weight; whichever exists when only one does) — a single
+   *  triage number ahead of the split, same as the reference's own "Overall" column. Additive,
+   *  not a replacement: Course and Faculty stay their own columns right beside it (D27 — the
+   *  two entities are never merged into the ONLY number shown). */
+  overallScore: number | null
   courseScore: number | null
   facultyScore: number | null
   responseRate: number
-  belowThreshold: boolean
+  /* Each rating column flags against ITS OWN median, independently — a course can be weak on
+     content and fine on teaching (or vice versa), and a single shared flag painted both cells
+     red together whenever either one dipped. Flat fields, not nested — DataTable's sort
+     comparator reads one top-level property via `sortKey`. */
+  overallBelow: boolean
+  courseBelow: boolean
+  facultyBelow: boolean
+  lowestQuestionAvg: number | null
+  lowestQuestionText: string | null
+  highestQuestionAvg: number | null
+  highestQuestionText: string | null
 }
 
-/** One row per (course, faculty) pair — the grain the Faculty entity toggle groups by course. */
-interface FacultyByCourseRow extends Record<string, unknown> {
-  courseCode: string
-  courseName: string
+/** One row per (faculty, role) pair — a person holding two roles is counted twice, same as the
+ *  reference's own Faculty Leaderboard. Flat and role-scoped rather than nested under course:
+ *  "which individual is rated lowest, in which role" is a different question from "who taught
+ *  this underperforming course" (the Course card's own Faculty column already answers that
+ *  one), and a real DataTable here (sortable, paginated) replaces the earlier hand-rolled
+ *  `<div>` grid this file used only because DataTable's own grouping read as a table-inside-a-
+ *  table — that objection doesn't apply to a flat, ungrouped list. */
+interface FacultyRoleRow extends Record<string, unknown> {
   facultyId: string
   name: string
+  role: FacultyEvalRoleId
+  roleLabel: string
   rating: number | null
   responseRate: number
   offerings: number
@@ -114,6 +135,24 @@ function RatingCell({ value, below }: { value: number | null; below: boolean }) 
       style={{ background: 'var(--conditional-rule-red)', padding: '2px 8px' }}
     >
       {fmt2(value)}
+    </span>
+  )
+}
+
+/** The course's weakest / strongest single course-content question (PRD 2026-09-14: "add a
+ *  column for lowest rated question & highest rating question"). Two-line cell, same shape as
+ *  the Course column's code-over-name — the score is the sortable fact, the question text is
+ *  the label under it. Deliberately NOT `RatingCell`: the PRD asks for the red below-threshold
+ *  treatment on the course/faculty rating columns only, and flagging a "lowest question" red
+ *  in every row would make the flag meaningless. */
+function QuestionExtremeCell({ avg, text }: { avg: number | null; text: string | null }) {
+  if (avg == null || text == null) return <span className="text-muted-foreground">—</span>
+  return (
+    <span className="block truncate">
+      <span className="font-medium tabular-nums text-foreground">{fmt2(avg)}</span>
+      <span className="block truncate text-xs text-muted-foreground" title={text}>
+        {text}
+      </span>
     </span>
   )
 }
@@ -159,16 +198,20 @@ export function AnalyticsOverviewPanel({
     () => (gaps.length ? gaps.reduce((s, g) => s + g.facultyAvg, 0) / gaps.length : 0),
     [gaps],
   )
-  /* ── Course Leaderboard — course-only (PRD drops the Course/Faculty toggle), no Overall
-        column, + the two question-extreme columns the PRD adds. Sorted lowest-first by
-        default (Monil's "order by the lowest one" decision), every column sortable so the
-        reader can flip to descending for the "five best" half of the same requirement. ── */
+  /* ── Course Leaderboard — every course in scope, not just scored ones (reference: "Distribution
+        of every course in scope... plus the full ranked list"). An unscored course (0 responses
+        yet) still gets a row with its offering count and dashes, rather than silently
+        disappearing — hiding it would hide a real course, not a non-event. Sorted lowest-first
+        by default (Monil's "order by the lowest one" decision) on the new Overall column, every
+        column sortable so the reader can flip to descending for the "five best" half of the
+        same requirement. ── */
+  const allCourseStats = useMemo(() => courseStats(terms), [terms])
   const scoredCourses = useMemo(
     () =>
-      courseStats(terms).filter(
+      allCourseStats.filter(
         (c): c is typeof c & { score: { state: 'value'; value: DualMean } } => c.score.state === 'value',
       ),
-    [terms],
+    [allCourseStats],
   )
   const courseMedian = useMemo(
     () => medianOf(scoredCourses.map((c) => c.score.value.weighted)),
@@ -183,23 +226,42 @@ export function AnalyticsOverviewPanel({
       ),
     [scoredCourses],
   )
+  const overallMedian = useMemo(
+    () =>
+      medianOf(
+        scoredCourses.map((c) => {
+          const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
+          return facultyVal != null ? (c.score.value.weighted + facultyVal) / 2 : c.score.value.weighted
+        }),
+      ),
+    [scoredCourses],
+  )
   const courseRows: CourseLeaderboardRow[] = useMemo(
     () =>
-      scoredCourses.map((c) => {
+      allCourseStats.map((c) => {
+        const courseVal = c.score.state === 'value' ? c.score.value.weighted : null
         const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
-        const below = c.score.value.weighted < courseMedian || (facultyVal != null && facultyVal < courseFacultyMedian)
+        const overallVal = courseVal != null ? (facultyVal != null ? (courseVal + facultyVal) / 2 : courseVal) : null
         const offerings = offeringPoints().filter((o) => o.courseCode === c.courseCode && terms.includes(o.term)).length
+        const extremes = courseQuestionExtremes(c.courseCode, terms)
         return {
           courseCode: c.courseCode,
           courseName: c.courseName,
           offerings,
-          courseScore: c.score.value.weighted,
+          overallScore: overallVal,
+          courseScore: courseVal,
           facultyScore: facultyVal,
           responseRate: c.responseRate,
-          belowThreshold: below,
+          overallBelow: overallVal != null && overallVal < overallMedian,
+          courseBelow: courseVal != null && courseVal < courseMedian,
+          facultyBelow: facultyVal != null && facultyVal < courseFacultyMedian,
+          lowestQuestionAvg: extremes.lowest?.avg ?? null,
+          lowestQuestionText: extremes.lowest?.text ?? null,
+          highestQuestionAvg: extremes.highest?.avg ?? null,
+          highestQuestionText: extremes.highest?.text ?? null,
         }
       }),
-    [scoredCourses, courseMedian, courseFacultyMedian, terms],
+    [allCourseStats, overallMedian, courseMedian, courseFacultyMedian, terms],
   )
 
   const courseColumns: ColumnDef<CourseLeaderboardRow>[] = useMemo(
@@ -230,12 +292,20 @@ export function AnalyticsOverviewPanel({
         cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
       },
       {
+        key: 'overallScore',
+        label: 'Overall',
+        sortable: true,
+        sortKey: 'overallScore',
+        width: 100,
+        cell: (row) => <RatingCell value={row.overallScore} below={row.overallBelow} />,
+      },
+      {
         key: 'courseScore',
         label: 'Course rating',
         sortable: true,
         sortKey: 'courseScore',
         width: 120,
-        cell: (row) => <RatingCell value={row.courseScore} below={row.belowThreshold} />,
+        cell: (row) => <RatingCell value={row.courseScore} below={row.courseBelow} />,
       },
       {
         key: 'facultyScore',
@@ -243,7 +313,7 @@ export function AnalyticsOverviewPanel({
         sortable: true,
         sortKey: 'facultyScore',
         width: 120,
-        cell: (row) => <RatingCell value={row.facultyScore} below={row.belowThreshold} />,
+        cell: (row) => <RatingCell value={row.facultyScore} below={row.facultyBelow} />,
       },
       {
         key: 'responseRate',
@@ -253,43 +323,60 @@ export function AnalyticsOverviewPanel({
         width: 120,
         cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
       },
+      {
+        key: 'lowestQuestionAvg',
+        label: 'Lowest-rated question',
+        sortable: true,
+        sortKey: 'lowestQuestionAvg',
+        width: 220,
+        cell: (row) => <QuestionExtremeCell avg={row.lowestQuestionAvg} text={row.lowestQuestionText} />,
+      },
+      {
+        key: 'highestQuestionAvg',
+        label: 'Highest-rated question',
+        sortable: true,
+        sortKey: 'highestQuestionAvg',
+        width: 220,
+        cell: (row) => <QuestionExtremeCell avg={row.highestQuestionAvg} text={row.highestQuestionText} />,
+      },
     ],
     [],
   )
 
   const courseLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
-    if (!courseRows.length) return null
-    const worst = [...courseRows].sort((a, b) => (a.courseScore ?? 99) - (b.courseScore ?? 99))[0]!
-    const below = courseRows.filter((r) => r.belowThreshold)
+    const scoredRows = courseRows.filter((r) => r.overallScore != null)
+    if (!scoredRows.length) return null
+    const worst = [...scoredRows].sort((a, b) => (a.overallScore as number) - (b.overallScore as number))[0]!
+    const below = scoredRows.filter((r) => r.overallBelow)
     return {
-      headline: `${worst.courseCode} rates lowest at ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'}`,
-      explanation: `${below.length} of ${courseRows.length} courses fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(courseFacultyMedian)} faculty-rating median for ${termsLabel}. Sort by either rating column to see the full spread.`,
+      headline: `${worst.courseCode} rates lowest overall at ${fmt2(worst.overallScore as number)}`,
+      explanation: `${below.length} of ${scoredRows.length} scored courses fall below the ${fmt2(overallMedian)} overall median for ${termsLabel}. Sort by any rating column to see the full spread.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: worst.courseScore != null ? fmt2(worst.courseScore) : '—', label: worst.courseCode },
+      delta: { value: fmt2(worst.overallScore as number), label: worst.courseCode },
       bullets: [
         `${worst.courseCode} · ${worst.courseName}: ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'} course, ${worst.facultyScore != null ? fmt2(worst.facultyScore) : '—'} faculty.`,
-        `${below.length} of ${courseRows.length} courses below threshold.`,
+        `${below.length} of ${scoredRows.length} scored courses below the overall median.`,
       ],
     }
-  }, [courseRows, courseMedian, courseFacultyMedian, termsLabel])
+  }, [courseRows, overallMedian, termsLabel])
 
-  /* ── Faculty, grouped by course (Romit, 2026-09-14: "in the faculty toggle, i need to see
-        courses and underneath i will see the list of faculties" — a single leaderboard card
-        with a Course/Faculty entity toggle, matching the reference's own layout, rather than
-        the two side-by-side cards this session had shipped. Faculty mode needs one row per
-        (course, faculty) pair, not one row per faculty pooled across every course — `facultyStats`
-        gives the latter, so this reads `offeringPoints()` directly at its finest grain (faculty ×
-        course × term) and aggregates per course instead. Role stays a card-local toggle (the
-        reference's own "All Roles/Instructor/Coordinator" split), now shown only in Faculty
-        mode since it has no meaning against the flat Course table. ── */
+  /* ── Faculty Leaderboard — flat Faculty × Role rows (reference: "a person holding two roles
+        is counted twice"), not nested under course. This answers a different question than the
+        Course card's own Faculty column: "which individual, in which role, rates lowest" rather
+        than "who taught this underperforming course". A real, sortable, paginated DataTable —
+        same component the Course card uses — since a flat list has no grouping to fight with
+        (the earlier nested `<div>` list existed only to avoid DataTable's own group-banding
+        look, which doesn't apply once course is dropped from the grain entirely). Role stays a
+        card-local filter (the reference's own "All Roles/Instructor/Coordinator" split) — it
+        has no meaning against the flat Course table, so it lives only on this card. ── */
   const roleOptions = useMemo(() => facultyEvalRoleOptions(), [])
   const [roleFilter, setRoleFilter] = useState<FacultyEvalRoleId | undefined>(undefined)
-  const [leaderboardEntity, setLeaderboardEntity] = useState<'course' | 'faculty'>('course')
-  const facultyByCourseRows: FacultyByCourseRow[] = useMemo(() => {
+  const facultyRoleRows: FacultyRoleRow[] = useMemo(() => {
+    const roleLabelById = new Map(roleOptions.map((r) => [r.id, r.label]))
     const offs = offeringPoints().filter((o) => terms.includes(o.term) && (!roleFilter || o.evalRole === roleFilter))
     const byKey = new Map<string, typeof offs>()
     offs.forEach((o) => {
-      const k = `${o.courseCode}::${o.facultyId}`
+      const k = `${o.facultyId}::${o.evalRole}`
       const list = byKey.get(k) ?? []
       list.push(o)
       byKey.set(k, list)
@@ -297,11 +384,12 @@ export function AnalyticsOverviewPanel({
     const unranked = [...byKey.values()].map((rows) => {
       const enrolled = rows.reduce((s, r) => s + r.enrolled, 0)
       const responded = rows.reduce((s, r) => s + r.responded, 0)
+      const role = rows[0]!.evalRole
       return {
-        courseCode: rows[0]!.courseCode,
-        courseName: rows[0]!.courseName,
         facultyId: rows[0]!.facultyId,
         name: rows[0]!.facultyName,
+        role,
+        roleLabel: roleLabelById.get(role) ?? role,
         rating: dualMean(rows.map((r) => r.avgRating), rows.map((r) => r.enrolled)).weighted,
         responseRate: enrolled > 0 ? Math.round((responded / enrolled) * 100) : 0,
         offerings: rows.length,
@@ -310,63 +398,75 @@ export function AnalyticsOverviewPanel({
     })
     const median = medianOf(unranked.map((r) => r.rating).filter((v): v is number => v != null))
     return unranked.map((r) => ({ ...r, belowThreshold: r.rating != null && r.rating < median }))
-  }, [terms, roleFilter])
+  }, [terms, roleFilter, roleOptions])
 
-  /* Faculty mode (2026-09-14, second correction — Romit: "don't show grouped based rows in a
-     table. make it a course row, and below that show the list of faculties.") — DataTable's
-     own grouping (round 1 of this feature) rendered the band-inside-a-table look he explicitly
-     rejected. This is a real nested list instead: one course block per course (its own row of
-     stats), the faculty who taught it listed underneath, no `<table>` anywhere. Paginated by
-     COURSE COUNT, not row count — pagination-by-row-count was what caused a course's faculty to
-     split across pages in the DataTable version; paginating the outer list of course blocks
-     means a page always shows whole blocks. */
-  const facultyByCourse = useMemo(() => {
-    const byCourse = new Map<string, FacultyByCourseRow[]>()
-    facultyByCourseRows.forEach((r) => {
-      const list = byCourse.get(r.courseCode) ?? []
-      list.push(r)
-      byCourse.set(r.courseCode, list)
-    })
-    byCourse.forEach((list) => list.sort((a, b) => (a.rating ?? 99) - (b.rating ?? 99)))
-    return byCourse
-  }, [facultyByCourseRows])
-
-  /* Only courses that actually have a faculty row in this scope/role-filter combination, in
-     the same worst-first order the Course table itself defaults to. */
-  const coursesWithFaculty = useMemo(
-    () => [...courseRows].sort((a, b) => (a.courseScore ?? 99) - (b.courseScore ?? 99)).filter((c) => facultyByCourse.has(c.courseCode)),
-    [courseRows, facultyByCourse],
-  )
-
-  const [facultyPage, setFacultyPage] = useState(1)
-  const [facultyPageSize, setFacultyPageSize] = useState(5)
-  const facultyTotalPages = Math.max(1, Math.ceil(coursesWithFaculty.length / facultyPageSize))
-  const facultySafePage = Math.min(facultyPage, facultyTotalPages)
-  const pagedCoursesWithFaculty = coursesWithFaculty.slice(
-    (facultySafePage - 1) * facultyPageSize,
-    facultySafePage * facultyPageSize,
+  const facultyRoleColumns: ColumnDef<FacultyRoleRow>[] = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Faculty',
+        sortable: true,
+        sortKey: 'name',
+        width: 200,
+        cell: (row) => <span className="block truncate font-medium text-foreground">{row.name}</span>,
+      },
+      {
+        key: 'roleLabel',
+        label: 'Role',
+        sortable: true,
+        sortKey: 'roleLabel',
+        width: 140,
+        cell: (row) => <span className="text-sm text-muted-foreground">{row.roleLabel}</span>,
+      },
+      {
+        key: 'responseRate',
+        label: 'Response rate',
+        sortable: true,
+        sortKey: 'responseRate',
+        width: 120,
+        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+      },
+      {
+        key: 'offerings',
+        label: 'Offerings',
+        sortable: true,
+        sortKey: 'offerings',
+        width: 100,
+        cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
+      },
+      {
+        key: 'rating',
+        label: 'Rating',
+        sortable: true,
+        sortKey: 'rating',
+        width: 100,
+        cell: (row) => <RatingCell value={row.rating} below={row.belowThreshold} />,
+      },
+    ],
+    [],
   )
 
   const facultyMedianRating = useMemo(
-    () => medianOf(facultyByCourseRows.map((r) => r.rating).filter((v): v is number => v != null)),
-    [facultyByCourseRows],
+    () => medianOf(facultyRoleRows.map((r) => r.rating).filter((v): v is number => v != null)),
+    [facultyRoleRows],
   )
 
   const facultyLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
-    if (!facultyByCourseRows.length) return null
-    const worst = [...facultyByCourseRows].sort((a, b) => (a.rating ?? 99) - (b.rating ?? 99))[0]!
-    const below = facultyByCourseRows.filter((r) => r.belowThreshold)
+    const scoredRows = facultyRoleRows.filter((r) => r.rating != null)
+    if (!scoredRows.length) return null
+    const worst = [...scoredRows].sort((a, b) => (a.rating as number) - (b.rating as number))[0]!
+    const below = scoredRows.filter((r) => r.belowThreshold)
     return {
-      headline: `${worst.name} rates lowest at ${worst.rating != null ? fmt2(worst.rating) : '—'} (${worst.courseCode})`,
-      explanation: `${below.length} of ${facultyByCourseRows.length} course-faculty pairings fall below the ${fmt2(facultyMedianRating)} rating median for ${termsLabel}. Sort the Rating column to move between the best and lowest five.`,
+      headline: `${worst.name} rates lowest at ${fmt2(worst.rating as number)} (${worst.roleLabel})`,
+      explanation: `${below.length} of ${scoredRows.length} faculty-role pairings fall below the ${fmt2(facultyMedianRating)} rating median for ${termsLabel}. Sort the Rating column to move between the best and lowest five.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: worst.rating != null ? fmt2(worst.rating) : '—', label: worst.name },
+      delta: { value: fmt2(worst.rating as number), label: worst.name },
       bullets: [
-        `${worst.name} · ${worst.courseCode}: ${worst.rating != null ? fmt2(worst.rating) : '—'} across ${worst.offerings} offering${worst.offerings === 1 ? '' : 's'}.`,
-        `${below.length} of ${facultyByCourseRows.length} course-faculty pairings below the median.`,
+        `${worst.name} · ${worst.roleLabel}: ${fmt2(worst.rating as number)} across ${worst.offerings} offering${worst.offerings === 1 ? '' : 's'}.`,
+        `${below.length} of ${scoredRows.length} faculty-role pairings below the median.`,
       ],
     }
-  }, [facultyByCourseRows, facultyMedianRating, termsLabel])
+  }, [facultyRoleRows, facultyMedianRating, termsLabel])
 
   const ratingTrendLeo: ChartLeoInsight | null = useMemo(() => {
     const scored = window6.filter((s) => s.courseAvg != null)
@@ -434,13 +534,13 @@ export function AnalyticsOverviewPanel({
              rule; the trend arrow follows the same exception rather than reading informational
              next to a leaderboard that reads alarmed. ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ChartCard variant="kpi-chart" title="Course rating" description={termsLabel} miniMetrics={[{ label: courseDelta.value ? `${courseDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—', trend: courseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Course rating" description={termsLabel} miniMetrics={[{ label: courseDelta.value ? `${courseDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—', trend: courseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard variant="kpi-chart" title="Faculty rating" description={termsLabel} miniMetrics={[{ label: facultyDelta.value ? `${facultyDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—', trend: facultyDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Faculty rating" description={termsLabel} miniMetrics={[{ label: facultyDelta.value ? `${facultyDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—', trend: facultyDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard variant="kpi-chart" title="Response rate" description={termsLabel} miniMetrics={[{ label: responseDelta.value ? `${responseDelta.value}pp vs. previous year · ${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded` : `${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded`, value: kpis.responseRate != null ? `${kpis.responseRate}%` : '—', trend: responseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Response rate" description={termsLabel} miniMetrics={[{ label: responseDelta.value ? `${responseDelta.value}pp vs. previous year · ${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded` : `${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded`, value: kpis.responseRate != null ? `${kpis.responseRate}%` : '—', trend: responseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard variant="kpi-chart" title="Offerings evaluated" description={termsLabel} miniMetrics={[{ label: offeringsDelta.value ? `${offeringsDelta.value}pp coverage vs. previous year` : `${offeringsEval.total > 0 ? Math.round((offeringsEval.evaluated / offeringsEval.total) * 100) : 0}% coverage of ${offeringsEval.total} course offerings`, value: `${offeringsEval.evaluated}`, trend: offeringsDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Offerings evaluated" description={termsLabel} miniMetrics={[{ label: offeringsDelta.value ? `${offeringsDelta.value}pp coverage vs. previous year` : `${offeringsEval.total > 0 ? Math.round((offeringsEval.evaluated / offeringsEval.total) * 100) : 0}% coverage of ${offeringsEval.total} course offerings`, value: `${offeringsEval.evaluated}`, trend: offeringsDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
       </div>
 
       {/* ── Course vs faculty — the innovative piece, positioned right after the KPIs (Romit,
@@ -448,7 +548,7 @@ export function AnalyticsOverviewPanel({
              stay the subtle, non-judgmental wording this chart already used ("Both need
              attention" / "Course strong · faculty gap", never "Teaching support recommended"
              — the reference's phrasing the PRD explicitly asks to soften). ── */}
-      <ChartCard variant="normal" title="Course vs faculty" description={`One dot per course, split at this selection's own means`} leoInsight={gapLeo}>
+      <ChartCard hideAskLeo variant="normal" title="Course vs faculty" description={`One dot per course, split at this selection's own means`} leoInsight={gapLeo}>
         <ChartFigure
           label="Course rating versus faculty rating"
           summary="Scatter plot. Each dot is one course, sized by enrolment, split into quadrants at the selection's course and faculty means."
@@ -474,7 +574,7 @@ export function AnalyticsOverviewPanel({
              it: term is already the anchor and the offering happens at term grain), no
              program-average line, last 6 terms with every selected term highlighted. ── */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <ChartCard variant="normal" title="Rating trend" description={`Course and faculty rating, last ${window6.length} terms`} leoInsight={ratingTrendLeo}>
+        <ChartCard hideAskLeo variant="normal" title="Rating trend" description={`Course and faculty rating, last ${window6.length} terms`} leoInsight={ratingTrendLeo}>
           <ChartFigure
             label="Rating trend"
             summary={`Course-content and faculty rating by term, last ${window6.length} terms, with ${termsListLabel} highlighted. No program-average line.`}
@@ -494,7 +594,7 @@ export function AnalyticsOverviewPanel({
           </ChartFigure>
         </ChartCard>
 
-        <ChartCard variant="normal" title="Response rate trend" description={`Responded ÷ enrolled, last ${window6.length} terms`} leoInsight={responseTrendLeo}>
+        <ChartCard hideAskLeo variant="normal" title="Response rate trend" description={`Responded ÷ enrolled, last ${window6.length} terms`} leoInsight={responseTrendLeo}>
           <ChartFigure
             label="Response rate trend"
             summary={`Response rate by term, last ${window6.length} terms, against the ${RESPONSE_TARGET}% target, with ${termsListLabel} highlighted.`}
@@ -515,136 +615,98 @@ export function AnalyticsOverviewPanel({
         </ChartCard>
       </div>
 
-      {/* ── Leaderboard — ONE card, Course/Faculty entity toggle (Romit, 2026-09-14: "in the
-             faculty toggle, i need to see courses and underneath i will see the list of
-             faculties" — supersedes the prior side-by-side two-card layout). Course mode: the
-             flat, course-only table (no Overall column, no per-question columns — the
-             reference doesn't carry them), every column sortable, below-threshold ratings in
-             red, row → new course tab. Faculty mode: the SAME courses as group headers
-             (`defaultGroupBy="courseCode"`, ordered worst-first to match Course mode's own
-             default sort), faculty nested underneath each — a card-local Role toggle (the
-             reference's own "All Roles/Instructor/Coordinator" split) filters which faculty
-             show, row → By Faculty. Both paginated — Faculty mode defaults to a taller page
-             (10 vs Course's 5) since `DataTablePaginated` groups the PAGED slice, not the full
-             set, so a 5-row page can cut a course's faculty list mid-group. ── */}
+      {/* ── Leaderboards — TWO side-by-side cards, each a real sortable/paginated DataTable
+             (Romit, 2026-09-14, reference screenshot: dedicated "Overall" column + per-column
+             below-median highlighting on Course; flat Faculty × Role rows, no course grouping,
+             on Faculty — "a person holding two roles is counted twice"). Course: every course
+             in scope, including unscored ones (dashes, not hidden), ranked by the new Overall
+             column with Course/Faculty still broken out beside it (D27 — never the only number
+             shown), row → new course tab. Faculty: one row per (faculty, role) pair — a
+             different question from the Course card's own Faculty column ("who taught this
+             underperforming course" vs "which individual, in which role, rates lowest") — with
+             a card-local Role filter, row → By Faculty. Both cards use `headerAction` /
+             `variant="selector"` to put "View all" and the Role filter in the actual card
+             header, not floating above an unrelated chart. */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <ChartCard
+        hideAskLeo
         variant="normal"
         title="Course Leaderboard"
-        description={
-          leaderboardEntity === 'course'
-            ? `${courseRows.length} course${courseRows.length === 1 ? '' : 's'} in ${termsLabel}, ranked by rating`
-            : `${facultyByCourseRows.length} faculty-course pairing${facultyByCourseRows.length === 1 ? '' : 's'} in ${termsLabel}, grouped by course`
-        }
-        leoInsight={leaderboardEntity === 'course' ? courseLeaderboardLeo : facultyLeaderboardLeo}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <ToggleGroup type="single" value={leaderboardEntity} onValueChange={(v) => { if (v) { setLeaderboardEntity(v as 'course' | 'faculty'); setFacultyPage(1) } }} variant="outline" size="sm">
-            <ToggleGroupItem value="course" aria-label="Show courses">Course</ToggleGroupItem>
-            <ToggleGroupItem value="faculty" aria-label="Show faculty, grouped by course">Faculty</ToggleGroupItem>
-          </ToggleGroup>
-          <Button asChild variant="link" size="sm" className="h-auto p-0 text-sm">
-            <Link href={leaderboardEntity === 'course' ? '/analytics?tab=course' : '/analytics?tab=faculty'}>
-              {leaderboardEntity === 'course' ? 'View all courses →' : 'View all faculty →'}
-            </Link>
+        description={`${courseRows.length} course${courseRows.length === 1 ? '' : 's'} in ${termsLabel}, ranked by rating`}
+        leoInsight={courseLeaderboardLeo}
+        // "View all courses →" is a card-level exit, not a control on the histogram below it —
+        // it belongs in the header next to the title (Romit, 2026-09-14: the link floating
+        // alone above an unrelated chart read as if it controlled that chart). Same fix as the
+        // Faculty card's role filter, which also moved into the header for the same reason.
+        headerAction={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/analytics?tab=course">View all courses →</Link>
           </Button>
-        </div>
-        {leaderboardEntity === 'faculty' && (
-          <ToggleGroup type="single" value={roleFilter ?? 'all'} onValueChange={(v) => { if (v) { setRoleFilter(v === 'all' ? undefined : (v as FacultyEvalRoleId)); setFacultyPage(1) } }} variant="outline" size="sm">
-            <ToggleGroupItem value="all" aria-label="All roles">All Roles</ToggleGroupItem>
-            {roleOptions.map((r) => (
-              <ToggleGroupItem key={r.id} value={r.id} aria-label={r.label}>{r.label}</ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        )}
-        <p className="text-sm text-muted-foreground">
-          {leaderboardEntity === 'course' ? 'Distribution of course ratings.' : 'Distribution of faculty ratings.'}
-        </p>
-        {leaderboardEntity === 'course' ? (
-          <>
-            <RatingDistributionHistogram values={courseRows.map((r) => r.courseScore).filter((v): v is number => v != null)} />
-            <DataTablePaginated<CourseLeaderboardRow>
-              key="course"
-              data={courseRows}
-              columns={courseColumns}
-              getRowId={(r) => r.courseCode}
-              selectable={false}
-              searchable={false}
-              showQueryControls={false}
-              edgeInset={false}
-              defaultSort={{ key: 'courseScore', dir: 'asc' }}
-              pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 25] }}
-              emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored courses for {termsLabel} yet.</p>}
-              onRowClick={(row) => {
-                // `tab=course:<code>` + `courseTabs=<code>` — the closable-tab URL scheme
-                // (2026-09-14), not the retired `courseCode=`/`term=` pair: that param is no
-                // longer read anywhere, so a row click here silently landed on the bare course
-                // list instead of the course it named.
-                const code = encodeURIComponent(row.courseCode)
-                window.open(`/analytics?tab=course:${code}&courseTabs=${code}`, '_blank', 'noopener,noreferrer')
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <RatingDistributionHistogram values={facultyByCourseRows.map((r) => r.rating).filter((v): v is number => v != null)} />
-            {coursesWithFaculty.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No scored faculty for {termsLabel} yet.</p>
-            ) : (
-              <div className="flex flex-col rounded-md border border-border">
-                {/* Shared column grid — course rows and faculty rows line up under the same
-                    header, without ever being a `<table>`. */}
-                <div className="grid grid-cols-[1fr_100px_120px_90px] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <span>Course / Faculty</span>
-                  <span className="text-right">Rating</span>
-                  <span className="text-right">Response rate</span>
-                  <span className="text-right">Offerings</span>
-                </div>
-                {pagedCoursesWithFaculty.map((course, i) => (
-                  <div key={course.courseCode} className={i > 0 ? 'border-t border-border' : undefined}>
-                    {/* The course row — course-level stats, same shape as the Course table's
-                        own row, so switching entities doesn't relearn the layout. */}
-                    <div className="grid grid-cols-[1fr_100px_120px_90px] items-center gap-3 bg-muted/20 px-3 py-2">
-                      <span className="truncate">
-                        <span className="font-medium text-foreground">{course.courseCode}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{course.courseName}</span>
-                      </span>
-                      <span className="text-right"><RatingCell value={course.courseScore} below={course.belowThreshold} /></span>
-                      <span className="text-right tabular-nums text-sm">{course.responseRate}%</span>
-                      <span className="text-right tabular-nums text-sm">{course.offerings}</span>
-                    </div>
-                    {/* The faculty who taught it, worst-first, indented under their course. */}
-                    {(facultyByCourse.get(course.courseCode) ?? []).map((f) => (
-                      <div
-                        key={f.facultyId}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onOpenFaculty(f.facultyId)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenFaculty(f.facultyId) } }}
-                        className="grid cursor-pointer grid-cols-[1fr_100px_120px_90px] items-center gap-3 px-3 py-2 pl-6 text-sm hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                      >
-                        <span className="truncate">{f.name}</span>
-                        <span className="text-right"><RatingCell value={f.rating} below={f.belowThreshold} /></span>
-                        <span className="text-right tabular-nums">{f.responseRate}%</span>
-                        <span className="text-right tabular-nums">{f.offerings}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-            {coursesWithFaculty.length > 0 && (
-              <PaginationBar
-                page={facultySafePage}
-                pageSize={facultyPageSize}
-                total={coursesWithFaculty.length}
-                pageSizeOptions={[5, 10, 25]}
-                onPageChange={setFacultyPage}
-                onPageSizeChange={(n) => { setFacultyPageSize(n); setFacultyPage(1) }}
-              />
-            )}
-          </>
-        )}
+        }
+      >
+        <p className="text-xs font-medium text-muted-foreground">Rating distribution</p>
+        <RatingDistributionHistogram values={courseRows.map((r) => r.overallScore).filter((v): v is number => v != null)} />
+        <DataTablePaginated<CourseLeaderboardRow>
+          key="course"
+          data={courseRows}
+          columns={courseColumns}
+          getRowId={(r) => r.courseCode}
+          selectable={false}
+          searchable={false}
+          showQueryControls={false}
+          edgeInset={false}
+          defaultSort={{ key: 'overallScore', dir: 'asc' }}
+          pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 25] }}
+          emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No courses for {termsLabel} yet.</p>}
+          onRowClick={(row) => {
+            // `tab=course:<code>` + `courseTabs=<code>` — the closable-tab URL scheme
+            // (2026-09-14), not the retired `courseCode=`/`term=` pair: that param is no
+            // longer read anywhere, so a row click here silently landed on the bare course
+            // list instead of the course it named.
+            const code = encodeURIComponent(row.courseCode)
+            window.open(`/analytics?tab=course:${code}&courseTabs=${code}`, '_blank', 'noopener,noreferrer')
+          }}
+        />
       </ChartCard>
+
+      <ChartCard
+        hideAskLeo
+        // The role filter scopes the WHOLE card (table + histogram below), so it belongs in
+        // the header next to the title, not floating in the body above a chart it also isn't
+        // about (Romit, 2026-09-14). `variant="selector"` is this DS's own header-filter slot
+        // — the same mechanism the KPI/metrics cards elsewhere in this codebase already use for
+        // a card-scoped Select, so this isn't a one-off pattern invented for this card.
+        variant="selector"
+        title="Faculty Leaderboard"
+        description={`${facultyRoleRows.length} faculty-role pairing${facultyRoleRows.length === 1 ? '' : 's'} in ${termsLabel} — a person holding two roles is counted twice`}
+        leoInsight={facultyLeaderboardLeo}
+        filterOptions={[{ value: 'all', label: 'All roles' }, ...roleOptions.map((r) => ({ value: r.id, label: r.label }))]}
+        defaultFilter={roleFilter ?? 'all'}
+        onFilterChange={(v) => setRoleFilter(v === 'all' ? undefined : (v as FacultyEvalRoleId))}
+        headerAction={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/analytics?tab=faculty">View all faculty →</Link>
+          </Button>
+        }
+      >
+        <p className="text-xs font-medium text-muted-foreground">Rating distribution</p>
+        <RatingDistributionHistogram values={facultyRoleRows.map((r) => r.rating).filter((v): v is number => v != null)} />
+        <DataTablePaginated<FacultyRoleRow>
+          key="faculty"
+          data={facultyRoleRows}
+          columns={facultyRoleColumns}
+          getRowId={(r) => `${r.facultyId}::${r.role}`}
+          selectable={false}
+          searchable={false}
+          showQueryControls={false}
+          edgeInset={false}
+          defaultSort={{ key: 'rating', dir: 'asc' }}
+          pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 25] }}
+          emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored faculty for {termsLabel} yet.</p>}
+          onRowClick={(row) => onOpenFaculty(row.facultyId)}
+        />
+      </ChartCard>
+      </div>
     </div>
   )
 }

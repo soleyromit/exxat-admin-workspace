@@ -230,6 +230,8 @@ function ChartCardHeader({
   filterOptions,
   filter,
   onFilter,
+  hideAskLeo,
+  headerAction,
 }: {
   title: string
   description: string
@@ -237,6 +239,17 @@ function ChartCardHeader({
   filterOptions?: { value: string; label: string }[]
   filter?: string
   onFilter?: (v: string) => void
+  /** Surfaces where the per-chart Ask Leo affordance is out of scope (Romit, 2026-09-14:
+   *  "remove ask leo buttons from each card from analytics"). Card-level, not global — other
+   *  ChartCard consumers (Directory profile pages, /results) keep the button. */
+  hideAskLeo?: boolean
+  /** A card-level action (e.g. "View all →") that belongs to the WHOLE card, not to whatever
+   *  chart sits in the body (2026-09-14 — the Overview leaderboards had this same link floating
+   *  in the card body, above the chart it has nothing to do with, reading as if it controlled
+   *  the chart rather than navigating away from the card entirely). Rendered in the header's
+   *  own right-side cluster, same row as the Select filter, so both card-level controls live in
+   *  one place and the body is left for content that's actually about the chart. */
+  headerAction?: React.ReactNode
 }) {
   const isSelector = variant === "selector" && Array.isArray(filterOptions) && filterOptions.length > 0
   return (
@@ -244,16 +257,22 @@ function ChartCardHeader({
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <CardTitle className="text-sm font-semibold leading-tight">{title}</CardTitle>
-          <CardDescription className="mt-0.5">{description}</CardDescription>
+          {/* `leading-tight` matches CardTitle's own line-height (17.5px vs the DS default
+              text-sm's 20px) — the true margin here was already just 2px, but the description's
+              taller line box added ~3px of invisible padding above its glyphs on top of that,
+              so the block read as loose even though the CSS gap was tight. */}
+          <CardDescription className="mt-0.5 leading-tight">{description}</CardDescription>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Reveal on card hover/focus — pointer-events guarded so the hidden button is not reachable */}
-          <span className="pointer-events-none opacity-0 transition-opacity duration-150 group-hover/card:pointer-events-auto group-hover/card:opacity-100 group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 inline-flex">
-            <AskLeoButton
-              iconOnly={isSelector}
-              ariaLabel="Ask Leo about this chart"
-            />
-          </span>
+          {!hideAskLeo && (
+            /* Reveal on card hover/focus — pointer-events guarded so the hidden button is not reachable */
+            <span className="pointer-events-none opacity-0 transition-opacity duration-150 group-hover/card:pointer-events-auto group-hover/card:opacity-100 group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 inline-flex">
+              <AskLeoButton
+                iconOnly={isSelector}
+                ariaLabel="Ask Leo about this chart"
+              />
+            </span>
+          )}
           {isSelector && filterOptions && onFilter && (
             <Select value={filter || filterOptions[0]?.value} onValueChange={(v) => onFilter(v)}>
               <SelectTrigger
@@ -271,6 +290,7 @@ function ChartCardHeader({
               </SelectContent>
             </Select>
           )}
+          {headerAction}
         </div>
       </div>
     </CardHeader>
@@ -316,6 +336,8 @@ export function ChartCard({
   miniMetrics,
   tabOptions,
   leoInsight,
+  hideAskLeo,
+  headerAction,
 }: {
   title: string
   description: string
@@ -347,6 +369,11 @@ export function ChartCard({
    * With `anchor`, mount `ChartLeoPlotInsightOverlay` beside `ChartContainer` for on-plot guide + marker.
    */
   leoInsight?: ChartLeoInsight | null
+  /** Hide the per-chart "Ask Leo about this chart" affordance on this card. */
+  hideAskLeo?: boolean
+  /** A card-level action ("View all →") rendered in the header, not the body — see
+   *  `ChartCardHeader`'s own doc comment for why this exists. */
+  headerAction?: React.ReactNode
 }) {
   const [filter, setFilter] = React.useState(() =>
     resolveChartCardFilter(variant, defaultFilter, filterOptions, miniMetrics, tabOptions),
@@ -414,7 +441,7 @@ export function ChartCard({
       const selectedTab = filter || tabOptions[0].value
       return (
         <Card className={chartCardShellClass} role="figure" aria-label={title}>
-          <ChartCardHeader title={title} description={description} variant="normal" />
+          <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} />
           <Tabs defaultValue={tabOptions[0].value} value={selectedTab} onValueChange={handleFilter} className="flex flex-col flex-1 min-h-0">
             <div className="shrink-0 px-2">
               {/* Caller-supplied labels of unknown length in a card that is
@@ -452,7 +479,7 @@ export function ChartCard({
 
     return (
       <Card className={chartCardShellClass} role="figure" aria-label={title}>
-        <ChartCardHeader title={title} description={description} variant="normal" />
+        <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} />
         {defaultTabsBlock}
       </Card>
     )
@@ -464,7 +491,7 @@ export function ChartCard({
 
     return (
       <Card className={chartCardShellClass} role="figure" aria-label={title}>
-        <ChartCardHeader title={title} description={description} variant="normal" />
+        <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} />
 
         {metrics ? (
           /* Metrics ARE the tabs — each metric cell is a clickable TabsTrigger */
@@ -543,7 +570,7 @@ export function ChartCard({
 
     return (
       <Card className={chartCardShellClass} role="figure" aria-label={title}>
-        <ChartCardHeader title={title} description={description} variant="normal" />
+        <ChartCardHeader title={title} description={description} variant="normal" hideAskLeo={hideAskLeo} headerAction={headerAction} />
 
         {kpi && (
           <div className="px-6 pb-2 shrink-0">
@@ -586,6 +613,8 @@ export function ChartCard({
         filterOptions={filterOptions}
         filter={filter}
         onFilter={handleFilter}
+        hideAskLeo={hideAskLeo}
+        headerAction={headerAction}
       />
       <CardContent className="flex-1 flex flex-col min-h-0 pb-4">
         <ChartLeoInsightOverlay leoInsight={leoInsight} chartTitle={title}>

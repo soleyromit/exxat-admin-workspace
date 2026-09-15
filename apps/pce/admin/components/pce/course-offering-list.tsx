@@ -9,6 +9,25 @@
  * the whole landing surface, with a Course/Faculty toggle added so it covers both rankings the
  * flat table used to split across its own filter row.
  *
+ * The toggle was pulled once (2026-09-14) on the theory that the page-level "Faculty" tab
+ * already owns faculty ranking and a second, thinner one behind this toggle was a confusing
+ * duplicate — Romit put it back the same day ("i need that toggle"): the in-place peek at
+ * faculty ranking without leaving the Course tab is wanted after all, even with the fuller
+ * Faculty tab existing separately. Keep both.
+ *
+ * Went through two other controls the same day before landing on a `Select`:
+ * `ChartCard`'s `variant="tabs"` underline strip — reverted, same visual language as the
+ * page's own Overview/Course/Faculty tabs sitting right above it, read as a second level of
+ * page navigation rather than a mode switch scoped to this one card; then a segmented
+ * `ToggleGroup` "pill" — also reverted (Romit: "the pill design doesn't work"), and checked
+ * live via `node tools/ds/source.mjs Toggle`: this DS's `toggleVariants` only has
+ * `default`/`outline`/`bare`, no pill/capsule variant exists to reach for, so `outline` was
+ * never actually a pill, just bordered segmented buttons. `Select` sidesteps chasing a shape
+ * the DS doesn't have — compact, unambiguous, and the same control Overview's Faculty card
+ * already uses for its own role filter. DataTablePaginated keeps the `key=` remount trick
+ * (see the comment above it) since a ternary doesn't give each mode its own isolated mount
+ * the way `ChartCard`'s per-tab `TabsContent` would have.
+ *
  * Course Leaderboard: same histogram + ranked-table composition Overview's own Course
  * Leaderboard uses (`analytics-overview-panel.tsx`), duplicated rather than extracted into a
  * shared component — Overview's version has no toggle (a deliberate, separate PRD decision:
@@ -19,7 +38,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { DataTablePaginated, ToggleGroup, ToggleGroupItem } from '@exxatdesignux/ui'
+import { DataTablePaginated } from '@exxatdesignux/ui'
 import type { ColumnDef } from '@exxatdesignux/ui'
 import { ChartCard, type ChartLeoInsight } from '@/components/charts-core'
 import { RatingDistributionHistogram } from '@/components/pce/analytics-plots'
@@ -34,7 +53,13 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
   courseScore: number | null
   facultyScore: number | null
   responseRate: number
-  belowThreshold: boolean
+  /* Each rating column flags against ITS OWN median, independently (same fix as Overview's
+     Course Leaderboard, analytics-overview-panel.tsx) — a single shared flag painted a healthy
+     Course rating red whenever that course's UNRELATED Faculty rating dipped, and vice versa
+     (caught live: a 4.21 course rating shown red because its faculty score was the one below
+     median). */
+  courseBelow: boolean
+  facultyBelow: boolean
 }
 
 interface FacultyLeaderboardRow extends Record<string, unknown> {
@@ -99,7 +124,6 @@ export function CourseOfferingList({
     () =>
       scoredCourses.map((c) => {
         const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
-        const below = c.score.value.weighted < courseMedian || (facultyVal != null && facultyVal < courseFacultyMedian)
         const count = offeringPoints().filter((o) => o.courseCode === c.courseCode && terms.includes(o.term)).length
         return {
           courseCode: c.courseCode,
@@ -108,7 +132,8 @@ export function CourseOfferingList({
           courseScore: c.score.value.weighted,
           facultyScore: facultyVal,
           responseRate: c.responseRate,
-          belowThreshold: below,
+          courseBelow: c.score.value.weighted < courseMedian,
+          facultyBelow: facultyVal != null && facultyVal < courseFacultyMedian,
         }
       }),
     [scoredCourses, courseMedian, courseFacultyMedian, terms],
@@ -125,8 +150,8 @@ export function CourseOfferingList({
         ),
       },
       { key: 'offerings', label: '# of Offerings', sortable: true, sortKey: 'offerings', width: 120, cell: (row) => <span className="tabular-nums">{row.offerings}</span> },
-      { key: 'courseScore', label: 'Course rating', sortable: true, sortKey: 'courseScore', width: 120, cell: (row) => <RatingCell value={row.courseScore} below={row.belowThreshold} /> },
-      { key: 'facultyScore', label: 'Faculty rating', sortable: true, sortKey: 'facultyScore', width: 120, cell: (row) => <RatingCell value={row.facultyScore} below={row.belowThreshold} /> },
+      { key: 'courseScore', label: 'Course rating', sortable: true, sortKey: 'courseScore', width: 120, cell: (row) => <RatingCell value={row.courseScore} below={row.courseBelow} /> },
+      { key: 'facultyScore', label: 'Faculty rating', sortable: true, sortKey: 'facultyScore', width: 120, cell: (row) => <RatingCell value={row.facultyScore} below={row.facultyBelow} /> },
       { key: 'responseRate', label: 'Response rate', sortable: true, sortKey: 'responseRate', width: 120, cell: (row) => <span className="tabular-nums">{row.responseRate}%</span> },
     ],
     [],
@@ -134,7 +159,7 @@ export function CourseOfferingList({
   const courseLeo: ChartLeoInsight | null = useMemo(() => {
     if (!courseRows.length) return null
     const worst = [...courseRows].sort((a, b) => (a.courseScore ?? 99) - (b.courseScore ?? 99))[0]!
-    const below = courseRows.filter((r) => r.belowThreshold)
+    const below = courseRows.filter((r) => r.courseBelow || r.facultyBelow)
     return {
       headline: `${worst.courseCode} rates lowest at ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'}`,
       explanation: `${below.length} of ${courseRows.length} courses fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(courseFacultyMedian)} faculty-rating median for ${termsLabel}.`,
@@ -204,68 +229,77 @@ export function CourseOfferingList({
       <h2 className="sr-only">Course offerings</h2>
 
       <ChartCard
-        variant="normal"
+        hideAskLeo
+        // `variant="selector"` puts the Select in the HEADER, next to the title — same DS
+        // mechanism as Overview's Faculty role filter, and the same fix already applied to
+        // Overview's own leaderboards (card-level controls belong in the header, not floating
+        // in the body above content they aren't about). Labels are "Rank by course"/"Rank by
+        // faculty" rather than bare "Course"/"Faculty" — a closed Select showing just "Course"
+        // doesn't say what selecting it DOES; the verb makes the collapsed value self-explanatory.
+        variant="selector"
         title="Course Leaderboard"
         description={isCourse
           ? `${courseRows.length} course${courseRows.length === 1 ? '' : 's'} in ${termsLabel}, ranked by rating`
           : `${facultyRows.length} faculty in ${termsLabel}, ranked by rating`}
         leoInsight={isCourse ? courseLeo : facultyLeo}
+        filterOptions={[
+          { value: 'course', label: 'Rank by course' },
+          { value: 'faculty', label: 'Rank by faculty' },
+        ]}
+        defaultFilter={view}
+        onFilterChange={(v) => setView(v as 'course' | 'faculty')}
       >
-        <div className="flex items-center justify-between gap-3">
-          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as 'course' | 'faculty')} variant="outline" size="sm">
-            <ToggleGroupItem value="course" aria-label="Rank by course">Course</ToggleGroupItem>
-            <ToggleGroupItem value="faculty" aria-label="Rank by faculty">Faculty</ToggleGroupItem>
-          </ToggleGroup>
-          <p className="text-sm text-muted-foreground">
-            Distribution of {isCourse ? 'course' : 'faculty'} ratings.
-          </p>
+        {/* `gap-4` — ChartCard's own CardContent has no gap, so these were flush against each
+            other with zero spacing. */}
+        <div className="flex flex-col gap-4">
+          {isCourse ? (
+            <>
+              <p className="text-xs font-medium text-muted-foreground -mb-2">Rating distribution</p>
+              <RatingDistributionHistogram values={courseRows.map((r) => r.courseScore).filter((v): v is number => v != null)} />
+              {/* `key` forces a full remount on toggle — without it, React reuses the same
+                  DataTablePaginated instance across the Course/Faculty switch (same JSX
+                  position, same component type), so its INTERNAL column-order/sort state
+                  (initialized once from the first mount's columns) survives the `columns`/
+                  `defaultSort` prop change instead of resetting. Caught live: toggling to
+                  Faculty rendered a shuffled column order and descending sort even though
+                  `defaultSort` said ascending — the mounted instance was still carrying course
+                  columns' internal order state. */}
+              <DataTablePaginated<CourseLeaderboardRow>
+                key="course"
+                data={courseRows}
+                columns={courseColumns}
+                getRowId={(r) => r.courseCode}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                edgeInset={false}
+                defaultSort={{ key: 'courseScore', dir: 'asc' }}
+                pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
+                emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored courses for {termsLabel} yet.</p>}
+                onRowClick={(row) => onOpenCourse(row.courseCode)}
+              />
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-medium text-muted-foreground -mb-2">Rating distribution</p>
+              <RatingDistributionHistogram values={facultyRows.map((r) => r.rating).filter((v): v is number => v != null)} />
+              <DataTablePaginated<FacultyLeaderboardRow>
+                key="faculty"
+                data={facultyRows}
+                columns={facultyColumns}
+                getRowId={(r) => r.facultyId}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                edgeInset={false}
+                defaultSort={{ key: 'rating', dir: 'asc' }}
+                pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
+                emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored faculty for {termsLabel} yet.</p>}
+                onRowClick={(row) => onOpenFaculty(row.facultyId)}
+              />
+            </>
+          )}
         </div>
-
-        {isCourse ? (
-          <>
-            <RatingDistributionHistogram values={courseRows.map((r) => r.courseScore).filter((v): v is number => v != null)} />
-            {/* `key` forces a full remount on toggle — without it, React reuses the same
-                DataTablePaginated instance across the Course/Faculty switch (same JSX
-                position, same component type), so its INTERNAL column-order/sort state
-                (initialized once from the first mount's columns) survives the `columns`/
-                `defaultSort` prop change instead of resetting. Caught live: toggling to
-                Faculty rendered a shuffled column order and descending sort even though
-                `defaultSort` said ascending — the mounted instance was still carrying course
-                columns' internal order state. */}
-            <DataTablePaginated<CourseLeaderboardRow>
-              key="course"
-              data={courseRows}
-              columns={courseColumns}
-              getRowId={(r) => r.courseCode}
-              selectable={false}
-              searchable={false}
-              showQueryControls={false}
-              edgeInset={false}
-              defaultSort={{ key: 'courseScore', dir: 'asc' }}
-              pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
-              emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored courses for {termsLabel} yet.</p>}
-              onRowClick={(row) => onOpenCourse(row.courseCode)}
-            />
-          </>
-        ) : (
-          <>
-            <RatingDistributionHistogram values={facultyRows.map((r) => r.rating).filter((v): v is number => v != null)} />
-            <DataTablePaginated<FacultyLeaderboardRow>
-              key="faculty"
-              data={facultyRows}
-              columns={facultyColumns}
-              getRowId={(r) => r.facultyId}
-              selectable={false}
-              searchable={false}
-              showQueryControls={false}
-              edgeInset={false}
-              defaultSort={{ key: 'rating', dir: 'asc' }}
-              pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
-              emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No scored faculty for {termsLabel} yet.</p>}
-              onRowClick={(row) => onOpenFaculty(row.facultyId)}
-            />
-          </>
-        )}
       </ChartCard>
     </div>
   )

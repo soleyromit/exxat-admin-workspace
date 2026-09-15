@@ -310,8 +310,8 @@ function AnalyticsInner() {
         <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="faculty">Faculty</TabsTrigger>
             <TabsTrigger value="course">Course</TabsTrigger>
+            <TabsTrigger value="faculty">Faculty</TabsTrigger>
             {/* One real Tabs.Trigger per open course — a direct child of TabsList, same as the
                 three fixed tabs above (see the state comment on `openCourseTabs`). Romit,
                 2026-09-14: keep this inline × (a first correction removed it and dropped the
@@ -472,7 +472,7 @@ function AnalyticsInner() {
                   own × (see the state comment on `openCourseTabs`) is the only close control
                   now. */}
               <Suspense fallback={<AnalyticsTabSkeleton label={`Loading ${code}`} />}>
-                <ByCoursePanel courseCode={code} onOpenSurvey={setSelectedSurveyId} />
+                <ByCoursePanel courseCode={code} hideAskLeo />
               </Suspense>
             </div>
           </TabsContent>

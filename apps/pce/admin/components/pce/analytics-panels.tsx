@@ -129,7 +129,6 @@ type CourseTermRow = {
   enrolled: number; completion: number
   status: string; isReleased: boolean
 } & Record<string, unknown>
-type CourseOfferingRow = FacultyOfferingRecord & { facultyName: string } & Record<string, unknown>
 type TermBreakdownRow = TermCourseRow & Record<string, unknown>
 
 export type NudgeTarget = { id: string; courseCode: string; courseName: string; nonResponders: number }
@@ -292,51 +291,6 @@ const facultyOfferingColumnsFor = (facultyMedian: number): ColumnDef<FacultyOffe
   },
 ]
 
-/* ── By Course offering columns ── */
-/* Same as facultyOfferingColumnsFor — Rating is the instructor's score for the offering. */
-const courseOfferingColumnsFor = (facultyMedian: number): ColumnDef<CourseOfferingRow>[] => [
-  { key: 'term', label: 'Term', sortable: true, cell: (row) => <span className="text-sm">{row.term}</span> },
-  {
-    key: 'facultyName', label: 'Faculty', sortable: true, width: 200,
-    cell: (row) => (
-      <div className="flex items-center gap-1.5 w-fit">
-        <Avatar className="h-6 w-6 shrink-0">
-          <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
-            {initialsOf(row.facultyName)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <p className="text-sm truncate max-w-32">{row.facultyName}</p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: 'enrolled', label: 'Enrolled', sortable: true,
-    header: () => <span className="block text-right">Enrolled</span>,
-    cell: (row) => <div className="text-right tabular-nums text-sm">{row.enrolled}</div>,
-  },
-  {
-    key: 'avgRating', label: 'Rating', sortable: true,
-    header: () => <span className="block text-right">Rating</span>,
-    cell: (row) => (
-      <div className="text-right tabular-nums text-sm font-semibold" style={{ color: belowMedianColor(row.avgRating, facultyMedian) }}>
-        {row.avgRating.toFixed(2)}
-      </div>
-    ),
-  },
-  {
-    key: 'responseRate', label: 'Completion', sortable: true,
-    header: () => <span className="block text-right">Completion</span>,
-    cell: (row) => <div className="text-right tabular-nums text-sm">{row.responseRate}%</div>,
-  },
-  {
-    key: 'drill', label: '', width: 32,
-    cell: (row) => row.surveyId ? (
-      <div className="text-center"><i className="fa-light fa-chevron-right text-muted-foreground text-xs" aria-hidden="true" /></div>
-    ) : null,
-  },
-]
 
 /* ════════════════════ By Term panel ════════════════════ */
 export function ByTermPanel({
@@ -1400,8 +1354,7 @@ export function ByFacultyPanel({
         Aarti's D14 puts AI summaries first at every aggregation level.
       */}
       {facultyThemeSurveys.length > 0 && (
-        <TermThemesInsight surveys={facultyThemeSurveys}
-            minComments={10} scopeLabel={faculty.name} />
+        <TermThemesInsight surveys={facultyThemeSurveys} scopeLabel={faculty.name} />
       )}
 
       <StudentVoice axis="faculty" facultyId={faculty.id} scopeLabel={faculty.name} />
@@ -1451,31 +1404,34 @@ export function ByFacultyPanel({
 
 /* ════════════════════ By Course panel ════════════════════ */
 export function ByCoursePanel({
-  courseCode, onOpenSurvey,
+  courseCode,
+  hideAskLeo = false,
 }: {
   courseCode: string
-  onOpenSurvey: (surveyId: string) => void
+  /** Shared with the offerings/[code] Directory profile page, which keeps Ask Leo — only the
+   *  /analytics tab opts out (Romit, 2026-09-14: "remove ask leo buttons from each card from
+   *  analytics"). Card-level prop, not a global change. */
+  hideAskLeo?: boolean
 }) {
   /**
    * Filters (PRD 2026-09-14): "Faculty & role" for the course tab. Faculty narrows the
-   * offerings table + quadrant + heatmap to one instructor's story; role is scoped to the
-   * heatmap specifically — the PRD places "show all faculty roles by default with an option
-   * to select a specific faculty role" under the heat map bullet, not as a tab-wide filter.
-   * Local state, not URL scope: these only narrow what this ONE open course tab shows, the
-   * same boundary `facultyRole` draws on the By Faculty leaderboard (Monil: "role filtering
-   * is for comparing multiple faculty").
+   * quadrant + heatmap to one instructor's story; role is scoped to the heatmap specifically —
+   * the PRD places "show all faculty roles by default with an option to select a specific
+   * faculty role" under the heat map bullet, not as a tab-wide filter. Local state, not URL
+   * scope: these only narrow what this ONE open course tab shows, the same boundary
+   * `facultyRole` draws on the By Faculty leaderboard (Monil: "role filtering is for comparing
+   * multiple faculty").
    */
   const [facultyFilter, setFacultyFilter] = useState<string | undefined>(undefined)
   const [heatmapRole, setHeatmapRole] = useState<FacultyEvalRoleId | undefined>(undefined)
 
-  const courseOfferings = useMemo((): CourseOfferingRow[] => {
-    if (!courseCode) return []
-    return MOCK_FACULTY_OFFERINGS
-      .filter(o => o.courseCode === courseCode)
-      .filter(o => !facultyFilter || o.facultyId === facultyFilter)
-      .map(o => ({ ...o, facultyName: MOCK_FACULTY.find(f => f.id === o.facultyId)?.name ?? '—' }) as CourseOfferingRow)
-      .sort((a, b) => b.term.localeCompare(a.term))
-  }, [courseCode, facultyFilter])
+  /** This course's CE surveys — the AI theme card's scope (story 12). Restored 2026-09-14
+   *  (Romit: "ai insights card is missing") after an earlier pass retired it as out of the
+   *  written PRD's scope. */
+  const courseSurveys = useMemo(
+    () => MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic' && s.courseCode === courseCode),
+    [courseCode],
+  )
 
   /* By Course row 2 — both rated entities + the instructor comparison. Deliberately NOT
      scoped by `facultyFilter` — this ranks every instructor against each other, so narrowing
@@ -1504,10 +1460,6 @@ export function ByCoursePanel({
    * # of course offerings — 'Instructors' (a count) is retired in favor of 'Faculty average'
    * (a score), the number the PRD actually asks for.
    */
-  const courseOfferingCols = useMemo(
-    () => courseOfferingColumnsFor(medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted))),
-    [],
-  )
 
   /** Course-wide, deliberately UNFILTERED by `facultyFilter` — the guard below decides whether
    *  this course has any history at all, independent of which instructor is spotlighted. */
@@ -1616,6 +1568,15 @@ export function ByCoursePanel({
   const courseResponseTrendSeries = useMemo(() => courseResponseRateSeries(courseCode), [courseCode])
   const latestTermForCourse = courseRatingTrend[courseRatingTrend.length - 1]?.term
 
+  /* "Where does this course stand" (PRD) — only the program-average LINE answered this; lowest/
+     highest across the course's own recent history did not exist anywhere on the tab. Derived
+     from the same trend rows the chart already plots, so the range can never disagree with the
+     line above it. */
+  const courseRatingRange = useMemo(() => {
+    const vals = courseRatingTrend.map(p => p.courseAvg).filter((v): v is number => v != null)
+    return vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : null
+  }, [courseRatingTrend])
+
   /* ── Question trend — which question is dragging this course down ── */
   const questionTrendRows = useMemo(() => courseQuestionTrend(courseCode), [courseCode])
 
@@ -1660,6 +1621,7 @@ export function ByCoursePanel({
       {courseKpiData && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Course average"
             description="Weighted by class size"
@@ -1676,6 +1638,7 @@ export function ByCoursePanel({
           >{null}</ChartCard>
 
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Faculty average"
             description="Teaching score, this course only"
@@ -1687,6 +1650,7 @@ export function ByCoursePanel({
           >{null}</ChartCard>
 
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Response rate"
             description={`Target ${RESPONSE_TARGET}%`}
@@ -1699,6 +1663,7 @@ export function ByCoursePanel({
           >{null}</ChartCard>
 
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="kpi-chart"
             title="Course offerings"
             description="All terms"
@@ -1713,6 +1678,7 @@ export function ByCoursePanel({
           design from Overview"). */}
       {courseQuadrantAllPoints.length >= 3 && (
         <ChartCard
+          hideAskLeo={hideAskLeo}
           variant="normal"
           title={`Course vs faculty · ${courseCode}`}
           description="Each dot is one offering — course rating vs faculty rating for that term/instructor."
@@ -1734,6 +1700,22 @@ export function ByCoursePanel({
                   headers={['Term', 'Faculty', 'Course rating', 'Faculty rating', 'Enrolled']}
                   rows={courseQuadrantPoints.map(p => [p.courseCode, p.courseName, p.courseAvg.toFixed(2), p.facultyAvg.toFixed(2), p.enrolled])}
                 />
+                <ChartCardActions
+                  title={`Course vs faculty · ${courseCode}`}
+                  description="Each dot is one offering — course rating vs faculty rating for that term/instructor."
+                  detail={
+                    <CourseFacultyQuadrant
+                      points={courseQuadrantPoints}
+                      courseMean={courseQuadrantMeans.courseMean}
+                      facultyMean={courseQuadrantMeans.facultyMean}
+                      height={420}
+                    />
+                  }
+                  table={{
+                    headers: ['Term', 'Faculty', 'Course rating', 'Faculty rating', 'Enrolled'],
+                    rows: courseQuadrantPoints.map(p => [p.courseCode, p.courseName, p.courseAvg.toFixed(2), p.facultyAvg.toFixed(2), p.enrolled]),
+                  }}
+                />
               </>
             )}
           </ChartFigure>
@@ -1749,9 +1731,14 @@ export function ByCoursePanel({
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         {courseRatingTrend.length >= 2 && (
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="normal"
             title={`Rating trend · ${courseCode}`}
-            description={`Course average vs program average, last ${courseRatingTrend.length} terms`}
+            description={
+              courseRatingRange
+                ? `Course average vs program average, last ${courseRatingTrend.length} terms · range ${courseRatingRange.min.toFixed(2)}–${courseRatingRange.max.toFixed(2)}`
+                : `Course average vs program average, last ${courseRatingTrend.length} terms`
+            }
           >
             <ChartFigure
               label={`Rating trend for ${courseCode}`}
@@ -1791,6 +1778,7 @@ export function ByCoursePanel({
 
         {courseResponseTrendSeries.length >= 2 && (
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="normal"
             title={`Response rate trend · ${courseCode}`}
             description={`Against the ${RESPONSE_TARGET}% target, last ${courseResponseTrendSeries.length} terms`}
@@ -1808,6 +1796,22 @@ export function ByCoursePanel({
                     headers={['Term', 'Response rate']}
                     rows={courseResponseTrendSeries.map(s => [s.term, s.responseRate != null ? `${s.responseRate}%` : '—'])}
                   />
+                  <ChartCardActions
+                    title={`Response rate trend · ${courseCode}`}
+                    description={`Against the ${RESPONSE_TARGET}% target, last ${courseResponseTrendSeries.length} terms`}
+                    detail={
+                      <ProgramResponseTrend
+                        series={courseResponseTrendSeries}
+                        target={RESPONSE_TARGET}
+                        scopedTerm={latestTermForCourse}
+                        height={420}
+                      />
+                    }
+                    table={{
+                      headers: ['Term', 'Response rate'],
+                      rows: courseResponseTrendSeries.map(s => [s.term, s.responseRate != null ? `${s.responseRate}%` : '—']),
+                    }}
+                  />
                 </>
               )}
             </ChartFigure>
@@ -1821,6 +1825,7 @@ export function ByCoursePanel({
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         {courseHeat.faculty.length > 0 && (
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="normal"
             title={`Faculty heat map · ${courseCode}`}
             description="Each instructor's teaching score by term, against the program's own faculty average."
@@ -1865,6 +1870,29 @@ export function ByCoursePanel({
                       }),
                     ])}
                   />
+                  <ChartCardActions
+                    title={`Faculty heat map · ${courseCode}`}
+                    description="Each instructor's teaching score by term, against the program's own faculty average."
+                    detail={
+                      <CourseFacultyHeatmap
+                        faculty={heatFaculty}
+                        terms={courseHeat.terms}
+                        cells={courseHeat.cells}
+                        programAvgByTerm={programFacultyAvgByTerm}
+                        height={420}
+                      />
+                    }
+                    table={{
+                      headers: ['Faculty', ...courseHeat.terms.map(shortTerm)],
+                      rows: heatFaculty.map(name => [
+                        name,
+                        ...courseHeat.terms.map(t => {
+                          const cell = courseHeat.cells.find(c => c.facultyName === name && c.term === t)
+                          return cell ? cell.score.toFixed(2) : '—'
+                        }),
+                      ]),
+                    }}
+                  />
                 </>
               )}
             </ChartFigure>
@@ -1873,6 +1901,7 @@ export function ByCoursePanel({
 
         {questionTrendRows.length > 0 && (
           <ChartCard
+            hideAskLeo={hideAskLeo}
             variant="normal"
             title={`Question trend · ${courseCode}`}
             description={`Course-content questions, last ${Math.max(...questionTrendRows.map(r => r.points.length))} terms — dashed line marks the ${EVAL_BENCHMARKS.targetCourseScore.toFixed(1)} target`}
@@ -1893,32 +1922,37 @@ export function ByCoursePanel({
                 </li>
               ))}
             </ul>
+            {/* Multiple sparklines, no single plot to render bigger — export-only (no `detail`),
+                and PNG is skipped (ChartExportMenu's own text-card convention) since there is no
+                one SVG that represents the whole card. */}
+            <ChartCardActions
+              title={`Question trend · ${courseCode}`}
+              formats={['pdf', 'excel', 'csv']}
+              table={{
+                headers: ['Question', 'Latest', 'Change vs prior term', 'Target'],
+                rows: questionTrendRows.map(row => [
+                  row.text,
+                  row.latest.toFixed(1),
+                  row.delta != null ? `${row.delta >= 0 ? '+' : ''}${row.delta.toFixed(1)}` : '—',
+                  row.threshold.toFixed(1),
+                ]),
+              }}
+            />
           </ChartCard>
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Offerings of {courseCode}</h2>
-        <p className="text-xs text-muted-foreground">Click any row to open the Evaluation Card for that term.</p>
-        <div className="-mx-4 lg:-mx-6">
-          <DataTablePaginated<CourseOfferingRow>
-            pagination={{ pageSize: 10 }}
-            data={courseOfferings}
-            columns={courseOfferingCols}
-            getRowId={(row) => `${row.courseCode}-${row.term}-${row.facultyId}`}
-            selectable={false}
-            searchable={false}
-            onRowClick={(row) => { if (row.surveyId) onOpenSurvey(row.surveyId) }}
-            emptyState={
-              <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-book-open text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">No offerings for this course</p>
-                <p className="text-xs text-muted-foreground">Term offerings appear here once this course is scheduled.</p>
-              </div>
-            }
-          />
-        </div>
-      </div>
+      {/* AI insight — restored 2026-09-14 (Romit: "ai insights card is missing"). Themes are
+          the AI lane, NOT a chart — `ai-vs-pulled-lane.md` puts "themes, insights, action
+          plans, summaries (LLM-extracted from open-text)" on the AI side and "trends,
+          averages, distributions" on the pulled side, so it sits after the quantitative
+          sections above rather than interleaved with them. Reuses the existing AiInsightCard
+          composition, scoped to the course rather than the term.
+          ⚠️ Monil treats themes as conditional — "if we are capturing the theme" — so this
+          renders only where comments exist and cites its own source count. */}
+      {courseSurveys.length > 0 && (
+        <TermThemesInsight surveys={courseSurveys} scopeLabel={courseCode} />
+      )}
     </>
   )
 }
