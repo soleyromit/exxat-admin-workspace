@@ -10,10 +10,10 @@ import {
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
-import { MOCK_FACULTY, EVAL_FACULTY_ROLES } from '@/lib/pce-mock-data'
+import { MOCK_FACULTY } from '@/lib/pce-mock-data'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
-import { allTerms, academicYears, termOfferingsEvaluated, type FacultyEvalRoleId } from '@/lib/pce-analytics'
+import { allTerms, academicYears, termOfferingsEvaluated } from '@/lib/pce-analytics'
 
 /**
  * By Term / By Faculty / By Course code-split from Overview's initial bundle.
@@ -40,9 +40,6 @@ const CourseOfferingList = lazy(() =>
 const FacultyOfferingList = lazy(() =>
   import('@/components/pce/faculty-offering-list').then((m) => ({ default: m.FacultyOfferingList })),
 )
-const FacultyLeaderboardSection = lazy(() =>
-  import('@/components/pce/faculty-leaderboard-section').then((m) => ({ default: m.FacultyLeaderboardSection })),
-)
 
 /**
  * Warms the three lazy tabs' chunks in the background once Overview is idle, so the FIRST
@@ -61,7 +58,7 @@ const FacultyLeaderboardSection = lazy(() =>
  */
 function prefetchAnalyticsTabs() {
   import('@/components/pce/analytics-panels')
-  import('@/components/pce/faculty-leaderboard-section')
+  import('@/components/pce/faculty-offering-list')
   import('@/components/pce/faculty-portfolio-charts')
   import('@/components/pce/course-offering-list')
 }
@@ -244,18 +241,6 @@ function AnalyticsInner() {
   }, [])
   const [selectedSurveyId, setSelectedSurveyId]     = useState<string | null>(null)
 
-  /** Global term scope for the By Faculty tables — undefined = all terms (Monil). */
-  const facultyTerm = param('facultyTerm') ?? undefined
-  const setFacultyTerm = (t: string | undefined) => setScope({ facultyTerm: t ?? null })
-
-  /** Global role scope for the same tables — undefined = all roles. Validated like `tab`:
-   *  a hand-edited ?facultyRole=zzz must fall back to all roles, not silently empty the board. */
-  const facultyRoleParam = param('facultyRole')
-  const facultyRole = EVAL_FACULTY_ROLES.some((r) => r.id === facultyRoleParam)
-    ? (facultyRoleParam as FacultyEvalRoleId)
-    : undefined
-  const setFacultyRole = (r: FacultyEvalRoleId | undefined) => setScope({ facultyRole: r ?? null })
-
   /** Terms that HAVE evaluation history, newest first — the By Term axis. */
   const analyticsTerms = useMemo(() => [...allTerms()].reverse(), [])
 
@@ -423,32 +408,19 @@ function AnalyticsInner() {
         </TabsContent>
 
 
-        {/* ───── By Faculty — the most important tab (accepted 2026-07-13).
-                 Landing = the ranking leaderboard, then the full offering list beneath it
-                 (PRD 2026-09-15). Drill-down into one person is a closable tab now — the old
-                 inline `<Select>` + scroll-to-portfolio section is retired; it's superseded by
-                 the SAME faculty-name → new-tab mechanism the Course tab already established
-                 for courses, so the two drill-down axes behave identically. ───── */}
+        {/* ───── By Faculty — the offering-list landing (PRD 2026-09-15). The aggregated
+                 leaderboard + "Scores over time" / "Response rate over time" charts
+                 (`FacultyLeaderboardSection`) are retired 2026-09-15 (Romit) — none of the
+                 three map to the PRD's Faculty Analytics use cases (the leaderboard's own
+                 ranking question is answered by this list's sortable Rating column; the two
+                 trend charts were multi-faculty COMPARISONS, a different question than any
+                 PRD card asks). Drill-down into one person is a closable tab, the same
+                 faculty-name → new-tab mechanism the Course tab already established for
+                 courses. ───── */}
         <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
-          <div className="flex flex-col gap-6">
-            {/* ADMIN-ONLY. Never move this into ByFacultyPanel — that panel is shared with
-                /my-dashboard, the faculty self-view, where §7.3 bans peer leaderboards. */}
-            <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty leaderboard" />}>
-              <FacultyLeaderboardSection
-                term={facultyTerm}
-                onTermChange={setFacultyTerm}
-                role={facultyRole}
-                onRoleChange={setFacultyRole}
-                onSelectFaculty={openFacultyTab}
-              />
-            </Suspense>
-
-            <div className="border-t border-border pt-6">
-              <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty offerings" />}>
-                <FacultyOfferingList terms={overviewTerms} onOpenFaculty={openFacultyTab} />
-              </Suspense>
-            </div>
-          </div>
+          <Suspense fallback={<AnalyticsTabSkeleton label="Loading faculty offerings" />}>
+            <FacultyOfferingList terms={overviewTerms} onOpenFaculty={openFacultyTab} />
+          </Suspense>
         </TabsContent>
 
         {/* ───── One TabsContent per open faculty member — Faculty Analytics (PRD
