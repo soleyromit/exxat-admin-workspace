@@ -3136,6 +3136,35 @@ export function programAvgForQuestion(questionId: string): number | null {
   return Math.round(avg * 10) / 10
 }
 
+/** Term-scoped average for a question (2026-09-15 Question Breakdown
+ *  requirement: "term average" alongside avg/range/median, distinct from
+ *  `programAvgForQuestion`'s all-time pool) — same response-weighted math,
+ *  filtered to surveys sharing the given term via `MOCK_SURVEYS`. No
+ *  single-contributor synthetic offset here (unlike `programAvgForQuestion`)
+ *  — a term-scoped stat legitimately can equal the sole contributor's own
+ *  value; faking variance would misrepresent it as cross-offering. Returns
+ *  null when no survey in that term asked the question. */
+export function termAvgForQuestion(questionId: string, term: string): number | null {
+  const surveyIdsInTerm = new Set(MOCK_SURVEYS.filter((s) => s.term === term).map((s) => s.id))
+  let weightedSum = 0
+  let responseTotal = 0
+  for (const data of MOCK_SURVEY_QUESTION_DATA) {
+    if (!surveyIdsInTerm.has(data.surveyId)) continue
+    const scores = [
+      ...Object.values(data.sectionScores).flat(),
+      ...(data.instructorBlocks ?? []).flatMap(b => b.scores),
+    ]
+    for (const s of scores) {
+      if (s.questionId === questionId) {
+        weightedSum += s.avg * s.count
+        responseTotal += s.count
+      }
+    }
+  }
+  if (responseTotal === 0) return null
+  return Math.round((weightedSum / responseTotal) * 10) / 10
+}
+
 /** Question text keyed by id, scanned once from every template's own bank.
  *  Question ids (q1, c1, l1, …) are stable across templates — the same id
  *  always carries the same wording (verified: `q1` is "The course objectives

@@ -122,6 +122,7 @@ import {
   MOCK_OPEN_TEXT_RESPONSES,
   medianFromDistribution,
   programAvgForQuestion,
+  termAvgForQuestion,
   EVALUATION_TYPE_LABEL,
   EVALUATION_TYPE_ICON,
   EVALUATION_TYPE_ORDER,
@@ -1062,6 +1063,16 @@ function SectionBoxplotChart({
                               { id: 'course', label: 'This course', value: s.avg.toFixed(1), delta: '', trend: 'neutral' },
                               { id: 'program', label: 'Program', value: s.programAvg != null ? s.programAvg.toFixed(1) : '—', delta: '', trend: 'neutral' },
                               { id: 'median', label: 'Median', value: median != null ? median.toFixed(1) : '—', delta: '', trend: 'neutral' },
+                              {
+                                id: 'range',
+                                label: 'Range',
+                                value: (() => {
+                                  const r = distRange(s.dist)
+                                  return r ? `${r.lo}–${r.hi}` : '—'
+                                })(),
+                                delta: '',
+                                trend: 'neutral',
+                              },
                             ]}
                           />
                         </div>
@@ -1216,6 +1227,12 @@ interface BreakdownRow {
   avg?: number
   median?: number
   programAvg?: number | null
+  /** Term-scoped average (2026-09-15 requirement, distinct from `programAvg`'s
+   *  all-time pool) — `lib/pce-mock-data.ts`'s `termAvgForQuestion`. */
+  termAvg?: number | null
+  /** Lowest↔highest RATED value actually present (2026-09-15 requirement) —
+   *  `distRange(counts)`, same derivation ScaleTrackPlot's whiskers use. */
+  range?: { lo: number; hi: number } | null
   counts?: number[]
   total?: number
   /** Faculty rows: the named identities (1–3) scored on this question — each
@@ -1319,6 +1336,72 @@ function ratingQuantile(counts: number[], total: number, q: number): number {
 
 /** 1–5 score → % along the track. */
 const scaleX = (v: number) => ((Math.min(5, Math.max(1, v)) - 1) / 4) * 100
+
+/** Lowest ↔ highest RATED value actually present in a 1–5 distribution
+ *  (2026-09-15 requirement: explicit printed "Range" alongside avg/median,
+ *  at both the section and question level — was previously only implicit in
+ *  ScaleTrackPlot's whiskers, never printed as text). Same lowest/highest
+ *  derivation ScaleTrackPlot already computes internally for its whiskers,
+ *  extracted here so both that plot and the KeyMetrics/BreakdownRow text
+ *  readouts share one implementation. */
+/** Real client-side Excel download (2026-09-15 — replaces the placeholder
+ *  that silently opened the same simulated CSV drawer as "Export Excel").
+ *  `ExportDrawer` (@exxatdesignux/ui) has no file-generation logic anywhere
+ *  and no format prop — it's a shared progress-simulation shell used
+ *  identically for every "export" in this mock-data app, so routing
+ *  "Export Excel" through it would still not produce a file. This generates
+ *  an HTML table with a `.xls` extension + `application/vnd.ms-excel` MIME
+ *  type — the well-supported, dependency-free way Excel opens a real
+ *  multi-sheet-equivalent workbook from a browser without a zip/XLSX
+ *  library (adding one for a single export button was judged out of
+ *  proportion to the rest of this fixture-driven app). Excel may show a
+ *  "format doesn't match extension" warning before opening it — it still
+ *  opens correctly. */
+function downloadResultsExcel(courseCode: string, sectionRows: SectionRowDatum[], breakdownRows: BreakdownRow[]) {
+  const esc = (v: string | number) =>
+    String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const sectionTable = `
+    <table border="1">
+      <caption>Section-wise distribution</caption>
+      <tr><th>Section</th><th>Avg</th><th>Program avg</th><th>Questions</th></tr>
+      ${sectionRows
+        .map(
+          (s) =>
+            `<tr><td>${esc(s.title)}</td><td>${s.avg.toFixed(1)}</td><td>${s.programAvg != null ? s.programAvg.toFixed(1) : ''}</td><td>${s.questions}</td></tr>`,
+        )
+        .join('')}
+    </table>`
+  const questionTable = `
+    <table border="1">
+      <caption>Question breakdown</caption>
+      <tr><th>Question</th><th>Group</th><th>Avg</th><th>Median</th><th>Range</th><th>Program avg</th><th>Term avg</th></tr>
+      ${breakdownRows
+        .filter((r) => r.kind === 'rated')
+        .map(
+          (r) =>
+            `<tr><td>${esc(r.label)}</td><td>${esc(r.group)}</td><td>${r.avg != null ? r.avg.toFixed(1) : ''}</td><td>${r.median != null ? r.median.toFixed(1) : ''}</td><td>${r.range ? `${r.range.lo}-${r.range.hi}` : ''}</td><td>${r.programAvg != null ? r.programAvg.toFixed(1) : ''}</td><td>${r.termAvg != null ? r.termAvg.toFixed(1) : ''}</td></tr>`,
+        )
+        .join('')}
+    </table>`
+  const html = `<html><head><meta charset="utf-8" /></head><body>${sectionTable}<br />${questionTable}</body></html>`
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${courseCode.replace(/\s+/g, '-')}-results.xls`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function distRange(counts: number[]): { lo: number; hi: number } | null {
+  const total = counts.reduce((a, n) => a + n, 0)
+  if (total <= 0) return null
+  const lo = counts.findIndex((c) => c > 0) + 1
+  const hi = 5 - [...counts].reverse().findIndex((c) => c > 0)
+  return { lo, hi }
+}
 
 /** Small downward triangle — the program benchmark mark. */
 function ProgramTriangle() {
@@ -1669,26 +1752,81 @@ function WrittenResponsesRow({
     f === 'all' ? count : responses.filter((x) => (x.sentiment ?? 'neutral') === f).length
   const positives = countFor('positive')
   const concerns = countFor('concern')
+  const neutrals = countFor('neutral')
   /* Flagged responses were in the data but invisible — a moderator's queue
      signal, so it rides the meta line and marks the row in the sheet. */
   const flaggedCount = responses.filter((x) => x.flagged).length
+  /* Per-question Highlights / Scope for improvement / Neutral (2026-09-15
+   * requirement: "summary of all the comments broken into highlights, scope
+   * for improvements and neutral" — same THEME_PATTERNS clustering the
+   * course/faculty-tab ThemeHighlightCard uses, just scoped to THIS
+   * question's own response pool instead of every comment in the tab).
+   * Neutral has no theme to name — a plain count, same as the other two
+   * buckets read as "n comments" when nothing clustered. Each pill jumps
+   * into the same drawer + sentiment filter the "View all" button opens. */
+  const rowThemes = deriveThemes(visibleToRole)
+  const rowHighlights = rowThemes.filter((t) => t.sentiment === 'positive').sort((a, b) => b.occurrences - a.occurrences)
+  const rowConcerns = rowThemes.filter((t) => t.sentiment === 'concern').sort((a, b) => b.occurrences - a.occurrences)
+  const openFiltered = (f: SentimentFilter) => {
+    setFilter(f)
+    setOpen(true)
+  }
   return (
     <div
       id={`question-${row.id}`}
       className="scroll-mt-16 flex flex-col gap-2 py-3 border-b border-border last:border-0"
     >
       <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0 flex flex-col gap-0.5">
+        <div className="min-w-0 flex flex-col gap-1.5">
           <p className="text-sm">{row.label}</p>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {count === 0
-              ? 'Written responses · none yet'
-              : `${count} written response${count !== 1 ? 's' : ''}`}
-            {positives > 0 && <> · {positives} positive</>}
-            {concerns > 0 && <> · {concerns} constructive</>}
-            {flaggedCount > 0 && <> · {flaggedCount} flagged for review</>}
-            {canModerate && hiddenCount > 0 && <> · {hiddenCount} hidden from faculty</>}
-          </p>
+          {count === 0 ? (
+            <p className="text-xs text-muted-foreground tabular-nums">Written responses · none yet</p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {rowHighlights.slice(0, 2).map((t) => (
+                <Button
+                  key={`h-${t.label}`}
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => openFiltered('positive')}
+                  className="h-auto gap-1 rounded-full px-2 py-0.5 font-normal text-muted-foreground"
+                >
+                  <i className="fa-light fa-thumbs-up text-[10px]" aria-hidden="true" />
+                  {t.label} ({t.occurrences})
+                </Button>
+              ))}
+              {rowConcerns.slice(0, 2).map((t) => (
+                <Button
+                  key={`c-${t.label}`}
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => openFiltered('concern')}
+                  className="h-auto gap-1 rounded-full px-2 py-0.5 font-normal text-muted-foreground"
+                >
+                  <i className="fa-light fa-arrow-trend-up text-[10px]" aria-hidden="true" />
+                  {t.label} ({t.occurrences})
+                </Button>
+              ))}
+              {neutrals > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => openFiltered('neutral')}
+                  className="h-auto gap-1 rounded-full px-2 py-0.5 font-normal text-muted-foreground"
+                >
+                  {neutrals} neutral
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {count} written response{count !== 1 ? 's' : ''}
+                {flaggedCount > 0 && <> · {flaggedCount} flagged for review</>}
+                {canModerate && hiddenCount > 0 && <> · {hiddenCount} hidden from faculty</>}
+              </span>
+            </div>
+          )}
         </div>
         {count > 0 && (
           <Button variant="outline" size="sm" className="shrink-0" onClick={() => setOpen(true)}>
@@ -1916,7 +2054,24 @@ function QuestionBreakdownTable({
                           rate distribution, similar to section wise
                           distribution"). */}
                       <AccordionContent className="pb-3">
-                        <RatingBreakdownRows counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
+                        <div className="grid grid-cols-[26rem_minmax(18rem,1fr)] gap-6">
+                          {/* Median / Range / Term avg (2026-09-15 Question
+                              Breakdown requirement) — same compact KeyMetrics
+                              strip Section-wise distribution's own expanded
+                              rows already use. */}
+                          <KeyMetrics
+                            variant="compact"
+                            size="sm"
+                            metricsSingleRow
+                            className="h-auto"
+                            metrics={[
+                              { id: 'median', label: 'Median', value: r.median != null ? r.median.toFixed(1) : '—', delta: '', trend: 'neutral' },
+                              { id: 'range', label: 'Range', value: r.range ? `${r.range.lo}–${r.range.hi}` : '—', delta: '', trend: 'neutral' },
+                              { id: 'term', label: 'Term avg', value: r.termAvg != null ? r.termAvg.toFixed(1) : '—', delta: '', trend: 'neutral' },
+                            ]}
+                          />
+                          <RatingBreakdownRows counts={r.counts ?? [0, 0, 0, 0, 0]} total={r.total ?? 0} />
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
                   ) : (
@@ -2479,26 +2634,30 @@ function ResultDetail({
    * "All faculty" chip at all (spec: "a chip for each faculty + role — no
    * chip for all faculty") — `facultyScope` now always resolves to a REAL
    * instructor id once on the Faculty tab, defaulting to the first one;
-   * 'all' survives only as the KPI strip's own always-everyone aggregate
-   * (computed independently, below) and as the initial value before the
-   * survey's instructor list is known. */
+   * 'all' survives only as isPD's own always-everyone aggregate (computed
+   * independently, below) and as the initial value before the survey's
+   * instructor list is known. Faculty isolation (2026-09-15 requirement:
+   * "faculty should see their own rating versus program average, but not
+   * other faculty data") — a non-PD viewer's scope is FORCED to their own
+   * `result.facultyId` from the start, never `instructors[0]` (which can be
+   * a co-instructor on a co-taught offering); every downstream computation
+   * keyed on `facultyScope`/`inFacultyScope` inherits this for free. */
   const [facultyScope, setFacultyScope] = useState<'all' | 'course' | string>(
-    () => survey.instructors[0]?.id ?? 'all',
+    () => (isPD ? survey.instructors[0]?.id ?? 'all' : result.facultyId),
   )
 
   /* Page tab — Overview / Course / Faculty / Reports / My Logs (2026-09-15:
    * Overview reinstated as its own tab — spec explicitly asks for a
    * dedicated Overview with the response-collection trend; it carries no
    * `facultyScope` of its own). Switching TO Course always sets scope to
-   * 'course'; switching TO Faculty resets to the first instructor ONLY when
-   * coming from Course — matches the reset behavior the old Course/Faculty
-   * toggle already had, just with a real id instead of 'all'. */
+   * 'course'; switching TO Faculty resets to the first instructor (PD) or
+   * back to the viewer's own id (non-PD) ONLY when coming from Course. */
   const [pageTab, setPageTabRaw] = useState<'overview' | 'course' | 'faculty' | 'reports' | 'mylogs'>('overview')
   const setPageTab = (v: string) => {
     if (v !== 'overview' && v !== 'course' && v !== 'faculty' && v !== 'reports' && v !== 'mylogs') return
     if (v === 'course') setFacultyScope('course')
     else if (v === 'faculty' && facultyScope === 'course') {
-      setFacultyScope(survey.instructors[0]?.id ?? 'all')
+      setFacultyScope(isPD ? survey.instructors[0]?.id ?? 'all' : result.facultyId)
     }
     setPageTabRaw(v)
   }
@@ -2608,23 +2767,33 @@ function ResultDetail({
     )
     return all.length ? all.reduce((a, b) => a + b, 0) / all.length : null
   }, [survey.term])
-  /* KPI-strip Faculty Performance — ALWAYS the whole-course blend, regardless
-   * of which single instructor is picked in the Faculty tab below (2026-09-15:
-   * the KPI header is now hoisted above the tabs and shared by all three, so
-   * it can't follow a tab-local selection). Same math as `facultyAvg` above,
-   * just with an "everyone" predicate instead of `inFacultyScope`. */
+  /* KPI-strip Faculty Performance — the whole-course blend for a PD viewer
+   * (regardless of which single instructor is picked in the Faculty tab
+   * below — the KPI header is shared by all three tabs, so it can't follow
+   * a tab-local selection). For a NON-PD (faculty) viewer this blend would
+   * leak a co-instructor's score into the number they see — the Granola
+   * requirement is explicit: "faculty should see their own rating versus
+   * program average, but not other faculty data" — so a faculty viewer's
+   * tile is scoped to ONLY their own instructor blocks, same predicate
+   * `inFacultyScope` already uses now that `facultyScope` is locked to
+   * `result.facultyId` for them (see the `facultyScope` init above). */
   const kpiFacultyAvg = useMemo(() => {
     if (!qData) return sectionFacultyAvg
-    const blocks = (qData.instructorBlocks ?? []).filter((b) =>
-      survey.instructors.some((i) => i.id === b.instructorId),
+    const blocks = (qData.instructorBlocks ?? []).filter(
+      (b) =>
+        survey.instructors.some((i) => i.id === b.instructorId) &&
+        (isPD || b.instructorId === result.facultyId),
     )
     const avgs = blocks.flatMap((b) => b.scores.map((q) => q.avg))
     if (avgs.length === 0) return sectionFacultyAvg
     return avgs.reduce((a, b) => a + b, 0) / avgs.length
-  }, [qData, survey.instructors, sectionFacultyAvg])
+  }, [qData, survey.instructors, sectionFacultyAvg, isPD, result.facultyId])
   /** Count of faculty evaluated (2026-09-15 KPI) — distinct instructors on
-   *  this offering, same idiom as the terms page's facultyCount. */
-  const facultyEvaluatedCount = new Set(survey.instructors.map((i) => i.id)).size
+   *  this offering for a PD; locked to 1 ("you") for a non-PD viewer, same
+   *  isolation reasoning as `kpiFacultyAvg` above — the count itself is
+   *  harmless, but showing "2 instructors" beside a blended-looking average
+   *  invites reading a colleague's score into it. */
+  const facultyEvaluatedCount = isPD ? new Set(survey.instructors.map((i) => i.id)).size : 1
   /** How many KPI tiles actually render — a faculty-only or course-only
    *  template drops to 2-3 tiles, and a FIXED 4-column grid left the missing
    *  tile(s) as a blank grid track instead of the remaining tiles filling
@@ -2648,7 +2817,11 @@ function ResultDetail({
     : []
   const facultyQuestionAvgs = qData
     ? (qData.instructorBlocks ?? [])
-        .filter((b) => survey.instructors.some((i) => i.id === b.instructorId))
+        .filter(
+          (b) =>
+            survey.instructors.some((i) => i.id === b.instructorId) &&
+            (isPD || b.instructorId === result.facultyId),
+        )
         .flatMap((b) => b.scores.map((q) => q.avg))
     : []
   const courseRange = courseQuestionAvgs.length
@@ -2658,6 +2831,25 @@ function ResultDetail({
     ? { lo: Math.min(...facultyQuestionAvgs), hi: Math.max(...facultyQuestionAvgs) }
     : null
   const prior = survey.priorOfferings?.at(-1) ?? null
+  /* Prior-instance response rate for the KPI delta (2026-09-15) —
+   * `PriorOffering.responseRate` is optional and unbacked across the mock
+   * dataset today (no fixture has ever set it), so the delta silently never
+   * rendered anywhere. Falls back to a DETERMINISTIC estimate — same
+   * synthetic-offset convention lib/pce-mock-data.ts's programAvgForQuestion
+   * already uses for sparse mock data (stable per term string, not random)
+   * — clamped to a plausible response-rate band, so the feature is visibly
+   * exercisable. Swap this out the moment real prior response-rate data
+   * lands in the fixtures; real data always wins (checked first). */
+  const priorResponseRate =
+    prior == null
+      ? null
+      : prior.responseRate ??
+        (() => {
+          let h = 0
+          for (const c of prior.term) h = (h * 31 + c.charCodeAt(0)) | 0
+          const offset = (Math.abs(h) % 11) - 5 // -5..+5
+          return Math.max(40, Math.min(95, result.responseRate - offset))
+        })()
 
   /* Per-type lifecycle — each evaluation type runs on its own clock; its
      status + collection count ride the matching score card header. */
@@ -2893,6 +3085,10 @@ function ResultDetail({
      expand first, then scroll on the next frames. */
   const [qbOpen, setQbOpen] = useState(false)
   const [qualOpen, setQualOpen] = useState(false)
+  /** Combined-report print in flight (`printFullReport`) — reveals the
+   *  force-mounted Overview chart alongside whichever tab is active, so the
+   *  KPI strip + Overview + Course/Faculty content all land in one PDF. */
+  const [isPrintingFull, setIsPrintingFull] = useState(false)
   /* Section-wise distribution's own accordion open-state, lifted here (not
    * local to SectionBoxplotChart) so "Export as PDF" can force every section
    * open before printing — a closed AccordionContent is fully unmounted by
@@ -2983,6 +3179,59 @@ function ResultDetail({
     window.addEventListener('afterprint', restore)
     window.setTimeout(() => window.print(), 350)
   }
+  /* Combined "KPIs + all tabs" export (2026-09-15 page-level Actions
+   * requirement, distinct from `printCurrentView`'s tab-scoped export used
+   * by the Course/Faculty-local Export PDF buttons) — the header ⋯ menu's
+   * "Export as PDF" and the Reports tab's "Full Survey Report" card both
+   * mean the COMPLETE picture, not whichever tab happens to be open.
+   *
+   * Reusing `printCurrentView`'s force-open-then-print approach for BOTH the
+   * Course and Faculty tab bodies at once isn't safe here: they render the
+   * SAME `overviewContent` tree, whose section/question ids come straight
+   * from data (e.g. a section titled "Teaching Effectiveness" can appear in
+   * both the course-only view and the faculty view) — mounting both
+   * simultaneously would duplicate `id` attributes in the DOM, which is
+   * invalid HTML and breaks the very `getElementById` anchors `goTo` relies
+   * on. Since the Faculty tab's own content ALREADY includes the course
+   * content alongside it whenever `facultyScope` isn't narrowed to
+   * 'course' (Question Breakdown's Course/Faculty group bands both render
+   * together — see `breakdownRows`), the combined report is: the Overview
+   * chart (force-mounted, no repeating ids of its own — safe to show
+   * alongside) stacked above the Faculty tab's un-narrowed view, with every
+   * accordion open. On a co-taught offering this covers the
+   * CURRENTLY-SELECTED instructor's faculty content, not every instructor
+   * stacked in one document — printing every instructor's full breakdown
+   * in one pass would need the same id-namespacing work, not attempted
+   * here. */
+  function printFullReport() {
+    const prevSections = openSections
+    const prevQuestions = openQuestions
+    const prevQb = qbOpen
+    const prevQual = qualOpen
+    const prevTab = pageTab
+    const prevScope = facultyScope
+    setIsPrintingFull(true)
+    if (facultyScope === 'course') {
+      setFacultyScope(isPD ? survey.instructors[0]?.id ?? 'all' : result.facultyId)
+    }
+    setPageTab('faculty')
+    setOpenSections(sectionRows.map((s) => s.id))
+    setOpenQuestions(breakdownRows.filter((r) => r.kind === 'rated').map((r) => r.id))
+    setQbOpen(true)
+    setQualOpen(true)
+    const restore = () => {
+      setIsPrintingFull(false)
+      setOpenSections(prevSections)
+      setOpenQuestions(prevQuestions)
+      setQbOpen(prevQb)
+      setQualOpen(prevQual)
+      setFacultyScope(prevScope)
+      setPageTabRaw(prevTab)
+      window.removeEventListener('afterprint', restore)
+    }
+    window.addEventListener('afterprint', restore)
+    window.setTimeout(() => window.print(), 350)
+  }
   /* Rail index mirrors the table's provenance: questions nested under their
      evaluation-type group, numbering restarting per group. */
   const questionIndexGroups = useMemo(
@@ -3067,6 +3316,8 @@ function ResultDetail({
             avg: score.avg,
             median: medianFromDistribution(counts),
             programAvg: programAvgForQuestion(q.id),
+            termAvg: termAvgForQuestion(q.id, survey.term),
+            range: distRange(counts),
             counts,
             total: counts.reduce((a, b) => a + b, 0),
             perFaculty,
@@ -3562,7 +3813,7 @@ function ResultDetail({
                         Preview form
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={printCurrentView}>
+                    <DropdownMenuItem onSelect={printFullReport}>
                       <i className="fa-light fa-file-arrow-down" aria-hidden="true" />
                       Export as PDF
                     </DropdownMenuItem>
@@ -3638,7 +3889,7 @@ function ResultDetail({
                           </Link>
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onSelect={printCurrentView}>
+                      <DropdownMenuItem onSelect={printFullReport}>
                         <i className="fa-light fa-file-arrow-down" aria-hidden="true" />
                         Export as PDF
                       </DropdownMenuItem>
@@ -3773,12 +4024,12 @@ function ResultDetail({
                 {
                   value: `${result.responseRate}%`,
                   label:
-                    prior?.responseRate != null
-                      ? `vs ${prior.term}`
+                    priorResponseRate != null
+                      ? `vs ${prior!.term}`
                       : `${result.responses} of ${result.enrolled} responded`,
-                  ...(prior?.responseRate != null
+                  ...(priorResponseRate != null
                     ? (() => {
-                        const d = result.responseRate - prior.responseRate
+                        const d = result.responseRate - priorResponseRate
                         const trend: 'up' | 'down' | 'neutral' = d > 0 ? 'up' : d < 0 ? 'down' : 'neutral'
                         return { trendDelta: `${d >= 0 ? '+' : ''}${d}pp`, trend }
                       })()
@@ -3827,12 +4078,11 @@ function ResultDetail({
               {/* Export PDF / Excel — beside the tab row, not inside the tab
                   content (Romit, 2026-09-15), visible only where there's
                   something to export (Course/Faculty; Reports has its own
-                  dedicated export cards, Overview/My Logs have none). Same
-                  underlying flows as the header ⋯ menu / Reports tab —
-                  "Export Excel" opens the same spreadsheet drawer as
-                  "Download CSV" elsewhere on this page; there's no separate
-                  .xlsx generator in this codebase yet, CSV opens directly in
-                  Excel. */}
+                  dedicated export cards, Overview/My Logs have none). PDF
+                  reuses the header ⋯ menu's tab-scoped flow; "Export Excel"
+                  is a REAL client-side download (see downloadResultsExcel) —
+                  not the shared ExportDrawer, which has no file-generation
+                  logic anywhere in this codebase. */}
               {(pageTab === 'course' || pageTab === 'faculty') && (
                 <div className="flex shrink-0 items-center gap-2 pb-2">
                   <Button variant="outline" size="sm" onClick={printCurrentView}>
@@ -3842,10 +4092,7 @@ function ResultDetail({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setExportKind('csv')
-                      setExportOpen(true)
-                    }}
+                    onClick={() => downloadResultsExcel(result.courseCode, sectionRows, breakdownRows)}
                   >
                     <i className="fa-light fa-file-export" aria-hidden="true" />
                     Export Excel
@@ -3854,8 +4101,13 @@ function ResultDetail({
               )}
             </div>
 
-            {/* ── Overview (2026-09-15: reinstated) ── */}
-            <TabsContent value="overview" className="m-0">
+            {/* ── Overview (2026-09-15: reinstated) — forceMount + `hidden`
+                (not Radix's own conditional unmount) so `printFullReport`
+                can reveal it alongside whichever tab is active without a
+                duplicate-id risk (ResponseCollectionTrend has no
+                data-driven repeating ids, unlike Course/Faculty's shared
+                overviewContent — see printFullReport's own comment). ── */}
+            <TabsContent value="overview" className="m-0" forceMount hidden={pageTab !== 'overview' && !isPrintingFull}>
               <ResponseCollectionTrend survey={survey} rate={result.responseRate} />
             </TabsContent>
 
@@ -3889,8 +4141,12 @@ function ResultDetail({
                   <CardContent>
                     {/* Real print, not the ExportDrawer placeholder (2026-08-26:
                         "I should be able to export this course section...
-                        as PDF") — same printCurrentView() as the header ⋯ menu. */}
-                    <Button variant="outline" size="sm" onClick={printCurrentView}>
+                        as PDF") — printFullReport(), same as the header ⋯
+                        menu: this card's own description promises "complete
+                        results," which is the combined KPIs+all-tabs export,
+                        not the current-tab-only one the Course/Faculty
+                        tab-local buttons use. */}
+                    <Button variant="outline" size="sm" onClick={printFullReport}>
                       Download PDF
                     </Button>
                   </CardContent>
