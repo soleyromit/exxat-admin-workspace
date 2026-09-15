@@ -43,10 +43,9 @@ import type { ColumnDef } from '@/components/data-table/types'
 import {
   termsKpis,
   termOfferingsEvaluated,
-  termsYoyDelta,
+  termsPrevTermDelta,
   recentTermsWindow,
   courseStats,
-  courseQuestionExtremes,
   facultyEvalRoleOptions,
   offeringPoints,
   gapPoints,
@@ -60,9 +59,8 @@ import { CHART_CARD_PLOT_PX } from '@/components/pce/chart-card-actions'
 
 const fmt2 = (v: number) => v.toFixed(2)
 
-/** "▲ 0.21 vs. previous year" style KPI trend, from a year-over-year delta rather than the
- *  window's last-vs-prior-term step. */
-function yoyTrend(delta: number | null): { value: string; trend: 'up' | 'down' | 'neutral' } {
+/** "+0.21" style KPI trend against the previous term (see `termsPrevTermDelta`). */
+function prevTermTrend(delta: number | null): { value: string; trend: 'up' | 'down' | 'neutral' } {
   if (delta == null) return { value: '', trend: 'neutral' }
   return {
     value: `${delta >= 0 ? '+' : ''}${fmt2(delta)}`,
@@ -74,11 +72,6 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
   courseCode: string
   courseName: string
   offerings: number
-  /** Course + faculty averaged (equal weight; whichever exists when only one does) — a single
-   *  triage number ahead of the split, same as the reference's own "Overall" column. Additive,
-   *  not a replacement: Course and Faculty stay their own columns right beside it (D27 — the
-   *  two entities are never merged into the ONLY number shown). */
-  overallScore: number | null
   courseScore: number | null
   facultyScore: number | null
   responseRate: number
@@ -86,13 +79,8 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
      content and fine on teaching (or vice versa), and a single shared flag painted both cells
      red together whenever either one dipped. Flat fields, not nested — DataTable's sort
      comparator reads one top-level property via `sortKey`. */
-  overallBelow: boolean
   courseBelow: boolean
   facultyBelow: boolean
-  lowestQuestionAvg: number | null
-  lowestQuestionText: string | null
-  highestQuestionAvg: number | null
-  highestQuestionText: string | null
 }
 
 /** One row per (faculty, role) pair — a person holding two roles is counted twice, same as the
@@ -128,44 +116,32 @@ interface FacultyRoleRow extends Record<string, unknown> {
  *  flag, the text stays legible. */
 function RatingCell({ value, below }: { value: number | null; below: boolean }) {
   if (value == null) return <span className="text-muted-foreground">—</span>
-  if (!below) return <span className="font-semibold tabular-nums">{fmt2(value)}</span>
+  // Same padding whether or not the tint applies (Romit's catch, 2026-09-15) — the un-tinted
+  // branch used to render with NO padding at all, so a tinted number's digits started 8px
+  // further right than a plain one in the same column, misaligning every row that mixed both.
   return (
     <span
       className="inline-block rounded font-semibold tabular-nums text-foreground"
-      style={{ background: 'var(--conditional-rule-red)', padding: '2px 8px' }}
+      style={{ background: below ? 'var(--conditional-rule-red)' : 'transparent', padding: '2px 8px' }}
     >
       {fmt2(value)}
     </span>
   )
 }
 
-/** The course's weakest / strongest single course-content question (PRD 2026-09-14: "add a
- *  column for lowest rated question & highest rating question"). Two-line cell, same shape as
- *  the Course column's code-over-name — the score is the sortable fact, the question text is
- *  the label under it. Deliberately NOT `RatingCell`: the PRD asks for the red below-threshold
- *  treatment on the course/faculty rating columns only, and flagging a "lowest question" red
- *  in every row would make the flag meaningless. */
-function QuestionExtremeCell({ avg, text }: { avg: number | null; text: string | null }) {
-  if (avg == null || text == null) return <span className="text-muted-foreground">—</span>
-  return (
-    <span className="block truncate">
-      <span className="font-medium tabular-nums text-foreground">{fmt2(avg)}</span>
-      <span className="block truncate text-xs text-muted-foreground" title={text}>
-        {text}
-      </span>
-    </span>
-  )
-}
-
 export function AnalyticsOverviewPanel({
   terms,
+  onOpenCourse,
   onOpenFaculty,
 }: {
   /** One or more selected terms — Term is a multi-select; every stat below pools across all
    *  of them, same rule "all terms" (omitted term) already follows elsewhere in this file. */
   terms: string[]
-  /** Faculty rows open the SAME tab's By Faculty scroll target (existing pattern) — course
-   *  rows open a new tab instead, per PRD, so no callback is needed for those. */
+  /** Course rows open the SAME browser tab's course analytics tab now (Vishal, 2026-09-15) —
+   *  was a `window.open(...'_blank'...)` new tab; reuses the same `openCourseTab` mechanism
+   *  `CourseOfferingList` already receives, wired from `app/(app)/analytics/page.tsx`. */
+  onOpenCourse: (courseCode: string) => void
+  /** Faculty rows open the SAME tab's By Faculty scroll target (existing pattern). */
   onOpenFaculty: (facultyId: string) => void
 }) {
   /** "Fall 2025" for one term, "3 terms" for several — every card description below reads off
@@ -178,14 +154,12 @@ export function AnalyticsOverviewPanel({
   const window6 = useMemo(() => recentTermsWindow(terms, 6), [terms])
   const gaps = useMemo(() => gapPoints(terms), [terms])
 
-  /* "▲ 0.21 vs. previous year" — the reference's KPI delta. Year-over-year (same season, one
-     AY back per selected term), so a Fall term compares to the Fall before it rather than to
-     the Spring right next to it in the trend window. */
-  const yoy = useMemo(() => termsYoyDelta(terms), [terms])
-  const courseDelta = yoyTrend(yoy.courseAvg)
-  const facultyDelta = yoyTrend(yoy.facultyAvg)
-  const responseDelta = yoyTrend(yoy.responseRate)
-  const offeringsDelta = yoyTrend(yoy.offeringsPct)
+  /* "+0.21 vs Spring 2026" — always the term immediately before the EARLIEST selected term
+     (Vishal, 2026-09-15), not a season-matched year-over-year comparison. */
+  const prevDelta = useMemo(() => termsPrevTermDelta(terms), [terms])
+  const courseDelta = prevTermTrend(prevDelta.courseAvg)
+  const facultyDelta = prevTermTrend(prevDelta.facultyAvg)
+  const responseDelta = prevTermTrend(prevDelta.responseRate)
 
   /* Quadrant split at the plotted courses' OWN mean, scoped to this selection — same rule the
      whole-program version used, so a split line that matches its own dots isn't lost in the
@@ -226,42 +200,24 @@ export function AnalyticsOverviewPanel({
       ),
     [scoredCourses],
   )
-  const overallMedian = useMemo(
-    () =>
-      medianOf(
-        scoredCourses.map((c) => {
-          const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
-          return facultyVal != null ? (c.score.value.weighted + facultyVal) / 2 : c.score.value.weighted
-        }),
-      ),
-    [scoredCourses],
-  )
   const courseRows: CourseLeaderboardRow[] = useMemo(
     () =>
       allCourseStats.map((c) => {
         const courseVal = c.score.state === 'value' ? c.score.value.weighted : null
         const facultyVal = c.facultyScore.state === 'value' ? c.facultyScore.value.weighted : null
-        const overallVal = courseVal != null ? (facultyVal != null ? (courseVal + facultyVal) / 2 : courseVal) : null
         const offerings = offeringPoints().filter((o) => o.courseCode === c.courseCode && terms.includes(o.term)).length
-        const extremes = courseQuestionExtremes(c.courseCode, terms)
         return {
           courseCode: c.courseCode,
           courseName: c.courseName,
           offerings,
-          overallScore: overallVal,
           courseScore: courseVal,
           facultyScore: facultyVal,
           responseRate: c.responseRate,
-          overallBelow: overallVal != null && overallVal < overallMedian,
           courseBelow: courseVal != null && courseVal < courseMedian,
           facultyBelow: facultyVal != null && facultyVal < courseFacultyMedian,
-          lowestQuestionAvg: extremes.lowest?.avg ?? null,
-          lowestQuestionText: extremes.lowest?.text ?? null,
-          highestQuestionAvg: extremes.highest?.avg ?? null,
-          highestQuestionText: extremes.highest?.text ?? null,
         }
       }),
-    [allCourseStats, overallMedian, courseMedian, courseFacultyMedian, terms],
+    [allCourseStats, courseMedian, courseFacultyMedian, terms],
   )
 
   const courseColumns: ColumnDef<CourseLeaderboardRow>[] = useMemo(
@@ -292,14 +248,6 @@ export function AnalyticsOverviewPanel({
         cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
       },
       {
-        key: 'overallScore',
-        label: 'Overall',
-        sortable: true,
-        sortKey: 'overallScore',
-        width: 100,
-        cell: (row) => <RatingCell value={row.overallScore} below={row.overallBelow} />,
-      },
-      {
         key: 'courseScore',
         label: 'Course rating',
         sortable: true,
@@ -323,42 +271,26 @@ export function AnalyticsOverviewPanel({
         width: 120,
         cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
       },
-      {
-        key: 'lowestQuestionAvg',
-        label: 'Lowest-rated question',
-        sortable: true,
-        sortKey: 'lowestQuestionAvg',
-        width: 220,
-        cell: (row) => <QuestionExtremeCell avg={row.lowestQuestionAvg} text={row.lowestQuestionText} />,
-      },
-      {
-        key: 'highestQuestionAvg',
-        label: 'Highest-rated question',
-        sortable: true,
-        sortKey: 'highestQuestionAvg',
-        width: 220,
-        cell: (row) => <QuestionExtremeCell avg={row.highestQuestionAvg} text={row.highestQuestionText} />,
-      },
     ],
     [],
   )
 
   const courseLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
-    const scoredRows = courseRows.filter((r) => r.overallScore != null)
+    const scoredRows = courseRows.filter((r) => r.courseScore != null)
     if (!scoredRows.length) return null
-    const worst = [...scoredRows].sort((a, b) => (a.overallScore as number) - (b.overallScore as number))[0]!
-    const below = scoredRows.filter((r) => r.overallBelow)
+    const worst = [...scoredRows].sort((a, b) => (a.courseScore as number) - (b.courseScore as number))[0]!
+    const below = scoredRows.filter((r) => r.courseBelow || r.facultyBelow)
     return {
-      headline: `${worst.courseCode} rates lowest overall at ${fmt2(worst.overallScore as number)}`,
-      explanation: `${below.length} of ${scoredRows.length} scored courses fall below the ${fmt2(overallMedian)} overall median for ${termsLabel}. Sort by any rating column to see the full spread.`,
+      headline: `${worst.courseCode} rates lowest at ${fmt2(worst.courseScore as number)}`,
+      explanation: `${below.length} of ${scoredRows.length} scored courses fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(courseFacultyMedian)} faculty-rating median for ${termsLabel}. Sort by any rating column to see the full spread.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(worst.overallScore as number), label: worst.courseCode },
+      delta: { value: fmt2(worst.courseScore as number), label: worst.courseCode },
       bullets: [
         `${worst.courseCode} · ${worst.courseName}: ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'} course, ${worst.facultyScore != null ? fmt2(worst.facultyScore) : '—'} faculty.`,
-        `${below.length} of ${scoredRows.length} scored courses below the overall median.`,
+        `${below.length} of ${scoredRows.length} scored courses below either median.`,
       ],
     }
-  }, [courseRows, overallMedian, termsLabel])
+  }, [courseRows, courseMedian, courseFacultyMedian, termsLabel])
 
   /* ── Faculty Leaderboard — flat Faculty × Role rows (reference: "a person holding two roles
         is counted twice"), not nested under course. This answers a different question than the
@@ -419,12 +351,14 @@ export function AnalyticsOverviewPanel({
         cell: (row) => <span className="text-sm text-muted-foreground">{row.roleLabel}</span>,
       },
       {
-        key: 'responseRate',
-        label: 'Response rate',
+        // Rating 3rd, Offerings 4th (Vishal, 2026-09-15) — was Response rate/Offerings/Rating;
+        // Response rate moves to last.
+        key: 'rating',
+        label: 'Rating',
         sortable: true,
-        sortKey: 'responseRate',
-        width: 120,
-        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+        sortKey: 'rating',
+        width: 100,
+        cell: (row) => <RatingCell value={row.rating} below={row.belowThreshold} />,
       },
       {
         key: 'offerings',
@@ -435,12 +369,12 @@ export function AnalyticsOverviewPanel({
         cell: (row) => <span className="tabular-nums">{row.offerings}</span>,
       },
       {
-        key: 'rating',
-        label: 'Rating',
+        key: 'responseRate',
+        label: 'Response rate',
         sortable: true,
-        sortKey: 'rating',
-        width: 100,
-        cell: (row) => <RatingCell value={row.rating} below={row.belowThreshold} />,
+        sortKey: 'responseRate',
+        width: 120,
+        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
       },
     ],
     [],
@@ -524,95 +458,110 @@ export function AnalyticsOverviewPanel({
     <div className="flex flex-col gap-4">
       <h2 className="sr-only">Term overview — {termsListLabel}</h2>
 
-      {/* ── KPIs — Course rating, Faculty rating, Response rate, Offerings evaluated. No
-             sparkline: the reference's tiles are a number and a year-over-year delta line,
-             nothing else, and matching it here means dropping VIZ-010's usual "no bare
-             number" spark in favour of that leaner two-line shape. `trendPolarity:
-             'higher_is_better'` (not this file's usual 'informational') so the arrow actually
-             colors green/red — the reference's own delta line is colored, and Overview's
-             below-threshold red is already a confirmed, scoped exception to the amber house
-             rule; the trend arrow follows the same exception rather than reading informational
-             next to a leaderboard that reads alarmed. ── */}
+      {/* ── KPIs — Course avg, Faculty avg, Response rate, Offerings evaluated. No `description`
+             (Vishal, 2026-09-15: "remove 'Spring 2026' as it already shows in the filter" — the
+             term is stated once, in the filter row above this whole panel). No sparkline: the
+             https://exxat-surveys-24f.pages.dev/surveys/analytics/summer-2025 reference's tiles
+             are a label, a number + delta, and a comparison line — nothing else — and matching
+             that means dropping VIZ-010's usual "no bare number" spark for this leaner shape.
+             The reference also puts the delta value INLINE next to the trend arrow (`trendDelta`)
+             and leaves the caption below as just "vs Term" — verified live against the reference
+             page, this file previously ran both together as one caption string.
+             `trendPolarity: 'higher_is_better'` (not this file's usual 'informational') so the
+             arrow tone (green/amber, never red — Aarti VIZ-004) matches metricTrendTone. ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ChartCard hideAskLeo variant="kpi-chart" title="Course rating" description={termsLabel} miniMetrics={[{ label: courseDelta.value ? `${courseDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—', trend: courseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Course avg" miniMetrics={[{ label: prevDelta.prevTerm ? `vs ${prevDelta.prevTerm}` : 'No prior term to compare', trendDelta: prevDelta.prevTerm ? courseDelta.value : undefined, value: kpis.courseAvg != null ? fmt2(kpis.courseAvg) : '—', trend: courseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard hideAskLeo variant="kpi-chart" title="Faculty rating" description={termsLabel} miniMetrics={[{ label: facultyDelta.value ? `${facultyDelta.value} vs. previous year` : 'No prior-year comparison yet', value: kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—', trend: facultyDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        <ChartCard hideAskLeo variant="kpi-chart" title="Faculty avg" miniMetrics={[{ label: prevDelta.prevTerm ? `vs ${prevDelta.prevTerm}` : 'No prior term to compare', trendDelta: prevDelta.prevTerm ? facultyDelta.value : undefined, value: kpis.facultyAvg != null ? fmt2(kpis.facultyAvg) : '—', trend: facultyDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard hideAskLeo variant="kpi-chart" title="Response rate" description={termsLabel} miniMetrics={[{ label: responseDelta.value ? `${responseDelta.value}pp vs. previous year · ${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded` : `${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded`, value: kpis.responseRate != null ? `${kpis.responseRate}%` : '—', trend: responseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        {/* One line, same shape as the other three tiles (Romit, 2026-09-15: match
+            https://pce-three.vercel.app/analytics-2's compact cards) — used to append
+            "· N of M responded" onto this same label, which wrapped to a second line and, via
+            this grid row's default `items-stretch`, forced all four tiles to that taller
+            height. The raw response count still exists, just not spliced into this line. */}
+        <ChartCard hideAskLeo variant="kpi-chart" title="Response rate" miniMetrics={[{ label: prevDelta.prevTerm ? `vs ${prevDelta.prevTerm}` : `${kpis.responded.toLocaleString()} of ${kpis.enrolled.toLocaleString()} responded`, trendDelta: prevDelta.prevTerm ? `${responseDelta.value}pp` : undefined, value: kpis.responseRate != null ? `${kpis.responseRate}%` : '—', trend: responseDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
 
-        <ChartCard hideAskLeo variant="kpi-chart" title="Offerings evaluated" description={termsLabel} miniMetrics={[{ label: offeringsDelta.value ? `${offeringsDelta.value}pp coverage vs. previous year` : `${offeringsEval.total > 0 ? Math.round((offeringsEval.evaluated / offeringsEval.total) * 100) : 0}% coverage of ${offeringsEval.total} course offerings`, value: `${offeringsEval.evaluated}`, trend: offeringsDelta.trend, trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
+        {/* Subtext is always the coverage sentence, never a prev-term delta (Vishal, 2026-09-15:
+            "subtext should be '100% coverage of 7 offerings'") — unlike the three rating/rate
+            tiles above, this one states the current fact, not a comparison. */}
+        <ChartCard hideAskLeo variant="kpi-chart" title="Offerings evaluated" miniMetrics={[{ label: `${offeringsEval.total > 0 ? Math.round((offeringsEval.evaluated / offeringsEval.total) * 100) : 0}% coverage of ${offeringsEval.total} offering${offeringsEval.total === 1 ? '' : 's'}`, value: `${offeringsEval.evaluated}`, trend: 'neutral', trendPolarity: 'higher_is_better' }]}>{null}</ChartCard>
       </div>
 
-      {/* ── Course vs faculty — the innovative piece, positioned right after the KPIs (Romit,
-             2026-09-14: it belongs above the trend charts, not below them). Quadrant labels
-             stay the subtle, non-judgmental wording this chart already used ("Both need
-             attention" / "Course strong · faculty gap", never "Teaching support recommended"
-             — the reference's phrasing the PRD explicitly asks to soften). ── */}
-      <ChartCard hideAskLeo variant="normal" title="Course vs faculty" description={`One dot per course, split at this selection's own means`} leoInsight={gapLeo}>
-        <ChartFigure
-          label="Course rating versus faculty rating"
-          summary="Scatter plot. Each dot is one course, sized by enrolment, split into quadrants at the selection's course and faculty means."
-          dataLength={gaps.length}
-          leoInsight={gapLeo}
-        >
-          {() => (
-            <>
-              {/* Palette toggle retired (Romit, 2026-09-14) — `domain` kept as the fixed
-                  treatment, no longer a reader-facing choice. */}
-              <CourseFacultyQuadrant points={gaps} courseMean={courseMean} facultyMean={facultyMean} height={CHART_CARD_PLOT_PX} palette="domain" />
-              <ChartDataTable
-                caption="Course rating versus faculty rating"
-                headers={['Course', 'Course rating', 'Faculty rating', 'Enrolled']}
-                rows={gaps.map((g) => [`${g.courseCode} · ${g.courseName}`, fmt2(g.courseAvg), fmt2(g.facultyAvg), g.enrolled])}
-              />
-            </>
-          )}
-        </ChartFigure>
-      </ChartCard>
-
-      {/* ── Rating trend + Response-rate trend — term only, no AY/Term toggle (the PRD drops
-             it: term is already the anchor and the offering happens at term grain), no
-             program-average line, last 6 terms with every selected term highlighted. ── */}
+      {/* ── Course vs faculty (square) beside Rating trend + Response-rate trend, stacked
+             (Romit, 2026-09-15: "make [Course vs faculty] a square... and accommodate rating
+             and response rate trend for the space that is left" — was three separate full-width
+             rows; the two trend cards now share this one row with the quadrant instead of a
+             second row below it). Quadrant labels stay the subtle, non-judgmental wording this
+             chart already used ("Both need attention" / "Course strong · faculty gap", never
+             "Teaching support recommended" — the reference's phrasing the PRD explicitly asks
+             to soften). Trend cards: term only, no AY/Term toggle (the PRD drops it — term is
+             already the anchor), no program-average line, last 6 terms with every selected term
+             highlighted. `items-start` so the shorter trend-card column doesn't stretch to
+             match the taller square card's height. */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <ChartCard hideAskLeo variant="normal" title="Rating trend" description={`Course and faculty rating, last ${window6.length} terms`} leoInsight={ratingTrendLeo}>
+        <ChartCard hideAskLeo variant="normal" title="Course vs faculty" description={`One dot per course, split at this selection's own means`} leoInsight={gapLeo}>
           <ChartFigure
-            label="Rating trend"
-            summary={`Course-content and faculty rating by term, last ${window6.length} terms, with ${termsListLabel} highlighted. No program-average line.`}
-            dataLength={window6.length}
-            leoInsight={ratingTrendLeo}
+            label="Course rating versus faculty rating"
+            summary="Scatter plot. Each dot is one course, sized by enrolment, split into quadrants at the selection's course and faculty means."
+            dataLength={gaps.length}
+            leoInsight={gapLeo}
           >
             {() => (
               <>
-                <TermRatingTrend series={window6} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
+                {/* Palette toggle retired (Romit, 2026-09-14) — `domain` kept as the fixed
+                    treatment, no longer a reader-facing choice. */}
+                <CourseFacultyQuadrant points={gaps} courseMean={courseMean} facultyMean={facultyMean} palette="domain" square />
                 <ChartDataTable
-                  caption="Rating trend"
-                  headers={['Term', 'Course rating', 'Faculty rating']}
-                  rows={window6.map((s) => [s.term, s.courseAvg != null ? fmt2(s.courseAvg) : '—', s.facultyAvg != null ? fmt2(s.facultyAvg) : '—'])}
+                  caption="Course rating versus faculty rating"
+                  headers={['Course', 'Course rating', 'Faculty rating', 'Enrolled']}
+                  rows={gaps.map((g) => [`${g.courseCode} · ${g.courseName}`, fmt2(g.courseAvg), fmt2(g.facultyAvg), g.enrolled])}
                 />
               </>
             )}
           </ChartFigure>
         </ChartCard>
 
-        <ChartCard hideAskLeo variant="normal" title="Response rate trend" description={`Responded ÷ enrolled, last ${window6.length} terms`} leoInsight={responseTrendLeo}>
-          <ChartFigure
-            label="Response rate trend"
-            summary={`Response rate by term, last ${window6.length} terms, against the ${RESPONSE_TARGET}% target, with ${termsListLabel} highlighted.`}
-            dataLength={window6.length}
-            leoInsight={responseTrendLeo}
-          >
-            {() => (
-              <>
-                <TermResponseTrend series={window6} target={RESPONSE_TARGET} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
-                <ChartDataTable
-                  caption="Response rate trend"
-                  headers={['Term', 'Response rate', 'Responded', 'Enrolled']}
-                  rows={window6.map((s) => [s.term, s.responseRate != null ? `${s.responseRate}%` : '—', s.responded, s.enrolled])}
-                />
-              </>
-            )}
-          </ChartFigure>
-        </ChartCard>
+        <div className="flex flex-col gap-4">
+          <ChartCard hideAskLeo variant="normal" title="Rating trend" description={`Course and faculty rating, last ${window6.length} terms`} leoInsight={ratingTrendLeo}>
+            <ChartFigure
+              label="Rating trend"
+              summary={`Course-content and faculty rating by term, last ${window6.length} terms, with ${termsListLabel} highlighted. No program-average line.`}
+              dataLength={window6.length}
+              leoInsight={ratingTrendLeo}
+            >
+              {() => (
+                <>
+                  <TermRatingTrend series={window6} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
+                  <ChartDataTable
+                    caption="Rating trend"
+                    headers={['Term', 'Course rating', 'Faculty rating']}
+                    rows={window6.map((s) => [s.term, s.courseAvg != null ? fmt2(s.courseAvg) : '—', s.facultyAvg != null ? fmt2(s.facultyAvg) : '—'])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+
+          <ChartCard hideAskLeo variant="normal" title="Response rate trend" description={`Responded ÷ enrolled, last ${window6.length} terms`} leoInsight={responseTrendLeo}>
+            <ChartFigure
+              label="Response rate trend"
+              summary={`Response rate by term, last ${window6.length} terms, against the ${RESPONSE_TARGET}% target, with ${termsListLabel} highlighted.`}
+              dataLength={window6.length}
+              leoInsight={responseTrendLeo}
+            >
+              {() => (
+                <>
+                  <TermResponseTrend series={window6} target={RESPONSE_TARGET} scopedTerms={terms} height={CHART_CARD_PLOT_PX} />
+                  <ChartDataTable
+                    caption="Response rate trend"
+                    headers={['Term', 'Response rate', 'Responded', 'Enrolled']}
+                    rows={window6.map((s) => [s.term, s.responseRate != null ? `${s.responseRate}%` : '—', s.responded, s.enrolled])}
+                  />
+                </>
+              )}
+            </ChartFigure>
+          </ChartCard>
+        </div>
       </div>
 
       {/* ── Leaderboards — TWO side-by-side cards, each a real sortable/paginated DataTable
@@ -632,7 +581,6 @@ export function AnalyticsOverviewPanel({
         hideAskLeo
         variant="normal"
         title="Course Leaderboard"
-        description={`${courseRows.length} course${courseRows.length === 1 ? '' : 's'} in ${termsLabel}, ranked by rating`}
         leoInsight={courseLeaderboardLeo}
         // "View all courses →" is a card-level exit, not a control on the histogram below it —
         // it belongs in the header next to the title (Romit, 2026-09-14: the link floating
@@ -645,7 +593,7 @@ export function AnalyticsOverviewPanel({
         }
       >
         <p className="text-xs font-medium text-muted-foreground">Rating distribution</p>
-        <RatingDistributionHistogram values={courseRows.map((r) => r.overallScore).filter((v): v is number => v != null)} />
+        <RatingDistributionHistogram values={courseRows.map((r) => r.courseScore).filter((v): v is number => v != null)} />
         <DataTablePaginated<CourseLeaderboardRow>
           key="course"
           data={courseRows}
@@ -655,17 +603,14 @@ export function AnalyticsOverviewPanel({
           searchable={false}
           showQueryControls={false}
           edgeInset={false}
-          defaultSort={{ key: 'overallScore', dir: 'asc' }}
+          defaultSort={{ key: 'courseScore', dir: 'asc' }}
           pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 25] }}
           emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No courses for {termsLabel} yet.</p>}
-          onRowClick={(row) => {
-            // `tab=course:<code>` + `courseTabs=<code>` — the closable-tab URL scheme
-            // (2026-09-14), not the retired `courseCode=`/`term=` pair: that param is no
-            // longer read anywhere, so a row click here silently landed on the bare course
-            // list instead of the course it named.
-            const code = encodeURIComponent(row.courseCode)
-            window.open(`/analytics?tab=course:${code}&courseTabs=${code}`, '_blank', 'noopener,noreferrer')
-          }}
+          // Same-tab now (Vishal, 2026-09-15) — was `window.open(...'_blank'...)`. Reuses the
+          // page's own `openCourseTab` mechanism via the `onOpenCourse` prop, same as
+          // `CourseOfferingList` already does; still the `tab=course:<code>` + `courseTabs=`
+          // closable-tab scheme underneath.
+          onRowClick={(row) => onOpenCourse(row.courseCode)}
         />
       </ChartCard>
 
@@ -678,7 +623,6 @@ export function AnalyticsOverviewPanel({
         // a card-scoped Select, so this isn't a one-off pattern invented for this card.
         variant="selector"
         title="Faculty Leaderboard"
-        description={`${facultyRoleRows.length} faculty-role pairing${facultyRoleRows.length === 1 ? '' : 's'} in ${termsLabel} — a person holding two roles is counted twice`}
         leoInsight={facultyLeaderboardLeo}
         filterOptions={[{ value: 'all', label: 'All roles' }, ...roleOptions.map((r) => ({ value: r.id, label: r.label }))]}
         defaultFilter={roleFilter ?? 'all'}

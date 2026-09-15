@@ -1516,6 +1516,19 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   { id: 'mon7',  courseCode: 'NURS-620', courseName: 'Geriatric Nursing',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'active',     instructors: [INSTRUCTORS.kim],      responseRate: 62, responseCount: 24, enrollmentCount: 38, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-17', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon8',  courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 58, responseCount: 28, enrollmentCount: 48, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
 
+  // Summer 2026 (pt9) — fully closed and reviewed, real scores in MOCK_FACULTY_OFFERINGS.
+  // Response rates + ratings intentionally mixed (see that array's own comment) so the
+  // "Last closed term" card's below-threshold banner has real courses/faculty to count.
+  { id: 'mon26', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',   term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 82, responseCount: 41, enrollmentCount: 50, deadline: 'Aug 12, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon27', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I',   term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 80, responseCount: 34, enrollmentCount: 42, deadline: 'Aug 12, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon28', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses',      term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.chen],     responseRate: 70, responseCount: 32, enrollmentCount: 46, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon29', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.chen],     responseRate: 68, responseCount: 26, enrollmentCount: 38, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon30', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 88, responseCount: 48, enrollmentCount: 54, deadline: 'Aug 16, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon31', courseCode: 'NURS-611', courseName: 'Pediatric Nursing',            term: 'Summer 2026', cohort: 'Class of 2027', courseType: 'clinical', templateId: 'tmpl2', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 85, responseCount: 26, enrollmentCount: 30, deadline: 'Aug 16, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon32', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing',     term: 'Summer 2026', cohort: 'Class of 2027', courseType: 'clinical', templateId: 'tmpl2', status: 'released', instructors: [INSTRUCTORS.kim],      responseRate: 60, responseCount: 26, enrollmentCount: 44, deadline: 'Aug 18, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon33', courseCode: 'NURS-620', courseName: 'Geriatric Nursing',            term: 'Summer 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.gomez],    responseRate: 65, responseCount: 22, enrollmentCount: 34, deadline: 'Aug 18, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon34', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice',      term: 'Summer 2026', cohort: 'Class of 2026', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.hassan],   responseRate: 78, responseCount: 25, enrollmentCount: 32, deadline: 'Aug 20, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+
   // history (for the response-rate trend)
   { id: 'mon9',  courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',         term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 71, responseCount: 37, enrollmentCount: 52, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon10', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Fall 2025',   courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 80, responseCount: 40, enrollmentCount: 50, deadline: 'Dec 15, 2025', createdAt: 'Aug 15, 2025', surveyType: 'course_evaluation', academicYear: '2025–2026', programId: 'prog1' },
@@ -1865,6 +1878,15 @@ export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
   // (was Jul 15 — drifted stale once "today" passed Jul 22, breaking every
   // demo scenario and the real default dashboard's Current-term card).
   { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-08-16', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
+  // A real, independently-scored term — added for the Sep 14 2026 dashboard/analytics
+  // feedback ("Last closed term should be Summer 2026, dates between May and August").
+  // endDate (Aug 20) lands one bit later than pt1's own Aug 16 so it — not pt1 — wins
+  // the "most recent Last term" slot in `resolveTermPositions`; pt1 still surfaces in
+  // the Past-terms history table and stays independently selectable everywhere else
+  // (Analytics' term filter keeps Spring 2026 as its own option, per the same feedback:
+  // "option to also select Spring 2026 and Fall 2026" — this is an ADDED term, not a
+  // rename of pt1, so nothing that already reads 'Spring 2026' breaks).
+  { id: 'pt9', name: 'Summer 2026', season: 'Summer', academicYear: '2025–2026', startDate: '2026-05-18', endDate: '2026-08-20', status: 'active',   enabledForEval: true  },
   { id: 'pt2', name: 'Fall 2025',   season: 'Fall',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
   { id: 'pt3', name: 'Spring 2025', season: 'Spring', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
   { id: 'pt4', name: 'Fall 2024',   season: 'Fall',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
@@ -2233,6 +2255,17 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co6',  masterCourseId: 'mc6',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 50, status: 'active',    courseType: 'didactic' },
   { id: 'co7',  masterCourseId: 'mc7',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 50, status: 'active',    courseType: 'didactic' },
   { id: 'co8',  masterCourseId: 'mc8',  termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+
+  // ── Summer 2026 (pt9) — closed term, real scored data (see MOCK_FACULTY_OFFERINGS) ──
+  { id: 'co78', masterCourseId: 'mc1',  termId: 'pt9', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [], enrolledCount: 50, status: 'completed', courseType: 'didactic' },
+  { id: 'co79', masterCourseId: 'mc6',  termId: 'pt9', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: [], enrolledCount: 42, status: 'completed', courseType: 'didactic' },
+  { id: 'co80', masterCourseId: 'mc18', termId: 'pt9', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: [], enrolledCount: 46, status: 'completed', courseType: 'didactic' },
+  { id: 'co81', masterCourseId: 'mc10', termId: 'pt9', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: [], enrolledCount: 38, status: 'completed', courseType: 'didactic' },
+  { id: 'co82', masterCourseId: 'mc2',  termId: 'pt9', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [], enrolledCount: 54, status: 'completed', courseType: 'didactic' },
+  { id: 'co83', masterCourseId: 'mc12', termId: 'pt9', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [], enrolledCount: 30, status: 'completed', courseType: 'clinical' },
+  { id: 'co84', masterCourseId: 'mc9',  termId: 'pt9', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [], enrolledCount: 44, status: 'completed', courseType: 'clinical' },
+  { id: 'co85', masterCourseId: 'mc19', termId: 'pt9', cohort: 'Class of 2027', primaryFacultyId: 'f5', collaboratorIds: [], enrolledCount: 34, status: 'completed', courseType: 'didactic' },
+  { id: 'co86', masterCourseId: 'mc22', termId: 'pt9', cohort: 'Class of 2026', primaryFacultyId: 'f6', collaboratorIds: [], enrolledCount: 32, status: 'completed', courseType: 'didactic' },
 
   // ── Fall 2026 (pt5) — full term ──────────────────────────────────────────
   // Year 1 — Foundations
@@ -2764,6 +2797,23 @@ export const MOCK_FACULTY_OFFERINGS: FacultyOfferingRecord[] = [
   { facultyId: 'f5', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Spring 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 32, responseRate: 64, avgRating: 3.80, courseAvg: 4.40 },
   { facultyId: 'f5', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Spring 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 36, responseRate: 60, avgRating: 3.70, courseAvg: 4.55 },
   { facultyId: 'f6', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Spring 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 47, responseRate: 80, avgRating: 4.60, courseAvg: 3.80 },
+  /* ── Summer 2026 (pt9) — the Dashboard's "Last closed term" card. Mixed on purpose:
+     f1 Patel and f3 Williams (the file's own high/steady faculty above) stay above
+     4.0 on both axes; f2 Chen, f4 Kim land below on both; f5 Gomez (already "below
+     median" per this file's header) is below on faculty only, f6 Hassan below on
+     course only — 4 of 9 courses and 3 of 6 faculty read below the 4.0
+     RATING_THRESHOLD (pce-analytics.ts), close to but not a scripted match of
+     Vishal's illustrative "4 courses and 5 faculty" (per house style: PRD numbers
+     are illustrative, not verbatim — feedback_professional_microcopy_standard). */
+  { facultyId: 'f1', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Summer 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 50, responseRate: 82, avgRating: 4.50, courseAvg: 4.30 },
+  { facultyId: 'f1', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Summer 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 42, responseRate: 80, avgRating: 4.45, courseAvg: 4.25 },
+  { facultyId: 'f2', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Summer 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 70, avgRating: 3.75, courseAvg: 3.70 },
+  { facultyId: 'f2', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Summer 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 68, avgRating: 3.85, courseAvg: 3.90 },
+  { facultyId: 'f3', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Summer 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 54, responseRate: 88, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f3', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Summer 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 85, avgRating: 4.35, courseAvg: 4.15 },
+  { facultyId: 'f4', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Summer 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 44, responseRate: 60, avgRating: 3.60, courseAvg: 3.80 },
+  { facultyId: 'f5', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Summer 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 34, responseRate: 65, avgRating: 3.70, courseAvg: 4.35 },
+  { facultyId: 'f6', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Summer 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 32, responseRate: 78, avgRating: 4.55, courseAvg: 3.75 },
   /* ── Scale cohort offerings (f7–f34) ─────────────────────────────────────────
      Without these the 28 new faculty exist in the directory but never reach
      offeringPoints(), so the leaderboard would still draw six and the scale fix
@@ -2822,6 +2872,29 @@ export const MOCK_FACULTY_OFFERINGS: FacultyOfferingRecord[] = [
   { facultyId: 'f33', courseCode: 'NURS-506', courseName: 'Fundamentals of Nursing II', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 28, responseRate: 82, avgRating: 3.69, courseAvg: 4.44 },
   { facultyId: 'f34', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2025', cohort: 'Class of 2028', role: 'primary', enrolled: 25, responseRate: 79, avgRating: 3.58, courseAvg: 4.35 },
   { facultyId: 'f34', courseCode: 'NURS-711', courseName: 'Advanced Pediatric Nursing', term: 'Fall 2024', cohort: 'Class of 2027', role: 'primary', enrolled: 58, responseRate: 65, avgRating: 4.68, courseAvg: 3.99 },
+
+  /* ── Fall 2026 (the live/current term) — EARLY-STAGE read, not a closed term (Romit,
+     2026-09-15: "By default, select Summer 2026. With an option to also select Spring 2026
+     and Fall 2026" on the Analytics Terms picker). This term had ZERO rows here before —
+     `allTerms()`/`termSeries()` derive their term list from this table (via
+     `offeringPoints()`/`courseTermPoints()`), so a still-collecting term needs SOME rows to be
+     selectable in Analytics at all, the same way the Dashboard's `MOCK_SURVEYS` "Live term"
+     card already carries Fall 2026 rows in various in-flight states.
+     Deliberately LOW `responseRate` (12–25%, vs Summer 2026's 60–88%) — this is a partial,
+     in-flight snapshot a few weeks into the term, not a settled average; `avgRating`/
+     `courseAvg` are still real numbers (the type has no "not enough data yet" state — see the
+     field's own doc comment), so they read as an early, lower-confidence trend point rather
+     than a blank one. Same six-faculty/course pairing as Summer 2026 immediately above, for a
+     continuous story across the two most recent terms rather than an unrelated one-off. */
+  { facultyId: 'f1', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology', term: 'Fall 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 50, responseRate: 22, avgRating: 4.45, courseAvg: 4.25 },
+  { facultyId: 'f1', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 42, responseRate: 19, avgRating: 4.40, courseAvg: 4.20 },
+  { facultyId: 'f2', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses', term: 'Fall 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 46, responseRate: 15, avgRating: 3.70, courseAvg: 3.65 },
+  { facultyId: 'f2', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Fall 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 38, responseRate: 13, avgRating: 3.80, courseAvg: 3.85 },
+  { facultyId: 'f3', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Fall 2026', cohort: 'Class of 2028', role: 'primary', enrolled: 54, responseRate: 25, avgRating: 4.35, courseAvg: 4.15 },
+  { facultyId: 'f3', courseCode: 'NURS-611', courseName: 'Pediatric Nursing', term: 'Fall 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 30, responseRate: 20, avgRating: 4.30, courseAvg: 4.10 },
+  { facultyId: 'f4', courseCode: 'NURS-530', courseName: 'Maternal-Newborn Nursing', term: 'Fall 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 44, responseRate: 16, avgRating: 3.55, courseAvg: 3.75 },
+  { facultyId: 'f5', courseCode: 'NURS-620', courseName: 'Geriatric Nursing', term: 'Fall 2026', cohort: 'Class of 2027', role: 'primary', enrolled: 34, responseRate: 18, avgRating: 3.65, courseAvg: 4.30 },
+  { facultyId: 'f6', courseCode: 'NURS-801', courseName: 'Evidence-Based Practice', term: 'Fall 2026', cohort: 'Class of 2026', role: 'primary', enrolled: 32, responseRate: 12, avgRating: 4.50, courseAvg: 3.70 },
 ]
 
 /** Question-level scores for programmatic surveys (gen-s1 = collecting). */

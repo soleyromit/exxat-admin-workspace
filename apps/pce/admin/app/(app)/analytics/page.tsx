@@ -185,6 +185,11 @@ function AnalyticsInner() {
    *  `faculty:<id>` drill-down tabs have no such filter to show, same as Course's own slot
    *  hides itself outside `course:<code>`. */
   const [facultyListFilterSlot, setFacultyListFilterSlot] = useState<HTMLDivElement | null>(null)
+  /** Portal target for the Course tab's own Course/Faculty/Role filters — exact mirror of
+   *  `facultyListFilterSlot` above, one tab over. Visible only while the Course LANDING tab is
+   *  active (2026-09-15 compliance pass: `CourseOfferingList` had no filters at all until this
+   *  slot was added — the Faculty tab's own three filters were the reference). */
+  const [courseListFilterSlot, setCourseListFilterSlot] = useState<HTMLDivElement | null>(null)
 
   /**
    * Write scope to the URL. Takes a patch so a single interaction that moves two things (the
@@ -262,7 +267,23 @@ function AnalyticsInner() {
    *  a multi-select on one tab silently narrow a single-select on another. */
   const overviewAcademicYears = useMemo(() => academicYears(), [])
   const overviewAcademicYear = param('ay') || overviewAcademicYears.find((ay) => ay.terms.includes(defaultTerm))?.year || overviewAcademicYears[0]?.year || ''
-  const overviewTermsForYear = overviewAcademicYears.find((ay) => ay.year === overviewAcademicYear)?.terms ?? analyticsTerms
+  /** Term options for the picker — the selected AY's terms PLUS its immediate neighbor AYs, not
+   *  just the selected AY alone (Vishal, 2026-09-15: "By default, select Summer 2026. With an
+   *  option to also select Spring 2026 and Fall 2026"). Fall opens the NEXT academic year
+   *  (`academicYearOf`), so Fall 2026 sits in AY 2026–2027 while Spring/Summer 2026 sit in
+   *  2025–2026 — a strict single-AY gate would hide Fall 2026 from Summer 2026's default view.
+   *  `overviewAcademicYears` is sorted newest-first, so idx-1 is the newer neighbor AY, idx+1
+   *  the older one. */
+  const overviewTermsForYear = useMemo(() => {
+    const idx = overviewAcademicYears.findIndex((ay) => ay.year === overviewAcademicYear)
+    if (idx === -1) return analyticsTerms
+    const neighborTerms = new Set([
+      ...(overviewAcademicYears[idx - 1]?.terms ?? []),
+      ...(overviewAcademicYears[idx]?.terms ?? []),
+      ...(overviewAcademicYears[idx + 1]?.terms ?? []),
+    ])
+    return analyticsTerms.filter((t) => neighborTerms.has(t))
+  }, [overviewAcademicYear, overviewAcademicYears, analyticsTerms])
   const overviewTermsParam = param('terms')
   const overviewTerms = useMemo(() => {
     const fromUrl = overviewTermsParam
@@ -361,6 +382,7 @@ function AnalyticsInner() {
             Course/Faculty have no Faculty filter to show here. */}
         <div ref={setFacultyFilterSlot} hidden={!activeTab.startsWith('course:')} />
         <div ref={setFacultyListFilterSlot} hidden={activeTab !== 'faculty'} />
+        <div ref={setCourseListFilterSlot} hidden={activeTab !== 'course'} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
@@ -479,8 +501,9 @@ function AnalyticsInner() {
                 consumer inside `CourseOfferingList`; the page's own "Faculty" tab still owns
                 faculty ranking. */}
             <CourseOfferingList
-              terms={analyticsTerms}
+              terms={overviewTerms}
               onOpenCourse={openCourseTab}
+              filterSlot={courseListFilterSlot}
             />
           </Suspense>
         </TabsContent>

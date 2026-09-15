@@ -1881,6 +1881,7 @@ export function CourseVsProgramTrend({
   scopedTerm,
   entityLabel = 'This course',
   band,
+  threshold = RATING_THRESHOLD,
 }: {
   points: { term: string; short: string; courseAvg: number | null; programAvg: number | null }[]
   detail?: boolean
@@ -1897,6 +1898,11 @@ export function CourseVsProgramTrend({
    * By Course caller omits it (that axis has no equivalent "across courses" spread to show).
    */
   band?: { short: string; min: number; max: number }[]
+  /** Dotted reference line (Vishal, 2026-09-15: Course/Faculty rating trend is "same UX
+   *  feedback as in overview" — Overview's own `TermRatingTrend` draws this same dotted
+   *  threshold, default 4.0). Same `Plot.ruleY` + dashed-stroke convention every other threshold
+   *  line in this file uses (e.g. the Question trend chart below). Pass `null` to omit it. */
+  threshold?: number | null
 }) {
   const rows = React.useMemo(
     () =>
@@ -1917,8 +1923,12 @@ export function CourseVsProgramTrend({
     [points, scopedTerms],
   )
   const domain = React.useMemo(
-    () => paddedDomain([...rows.map((r) => r.value), ...(band?.flatMap((b) => [b.min, b.max]) ?? [])], 0.6),
-    [rows, band],
+    () =>
+      paddedDomain(
+        [...rows.map((r) => r.value), ...(band?.flatMap((b) => [b.min, b.max]) ?? []), ...(threshold != null ? [threshold] : [])],
+        0.6,
+      ),
+    [rows, band, threshold],
   )
 
   const spec = React.useCallback(
@@ -1948,6 +1958,7 @@ export function CourseVsProgramTrend({
         ...(band?.length
           ? [Plot.ruleX(band, { x: 'short', y1: 'min', y2: 'max', stroke: theme.mutedForeground, strokeWidth: 1.5, strokeOpacity: 0.5 })]
           : []),
+        ...(threshold != null ? [Plot.ruleY([threshold], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 })] : []),
         // Two marks, not one dasharray-per-datum callback (Plot's line-mark types don't accept
         // a data-driven `strokeDasharray` function) — program average reads as a benchmark,
         // not a second course, so its own line is dashed per this file's own convention for
@@ -1984,7 +1995,7 @@ export function CourseVsProgramTrend({
           : []),
       ],
     }),
-    [rows, termOrder, domain, detail, scopedShorts, entityLabel, band],
+    [rows, termOrder, domain, detail, scopedShorts, entityLabel, band, threshold],
   )
 
   if (!points.length || !rows.length) {

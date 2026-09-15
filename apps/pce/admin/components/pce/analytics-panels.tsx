@@ -1295,7 +1295,12 @@ export function ByFacultyPanel({
    * already applied on the Course side).
    */
   const facultyKpiData = useMemo(() => {
-    const stat = facultyStats().find(f => f.facultyId === facultyId)
+    // Scoped to the selected AY/Term filter, not an all-time aggregate (PRD 2026-09-15: KPIs
+    // "scoped to the filters selected") — `effectiveScopedTerms` is the same page-level scope
+    // (falling back to this faculty's own latest term) every other chart on this tab already
+    // highlights against.
+    const term = effectiveScopedTerms.length ? effectiveScopedTerms : undefined
+    const stat = facultyStats(term).find(f => f.facultyId === facultyId)
     if (!stat) return null
     const last = facultyRatingTrend[facultyRatingTrend.length - 1]
     const prev = facultyRatingTrend.length >= 2 ? facultyRatingTrend[facultyRatingTrend.length - 2] : undefined
@@ -1311,11 +1316,11 @@ export function ByFacultyPanel({
       // "Course average" — the content score of the courses this person teaches, kept apart
       // from their own teaching score (D27) — the faculty-axis mirror of the Course tab's
       // own inverse "Faculty average" tile.
-      courseAvg: facultyContentAvg(facultyId),
+      courseAvg: facultyContentAvg(facultyId, term),
       responseRate: stat.responseRate,
       offerings: stat.offerings,
     }
-  }, [facultyId, facultyRatingTrend])
+  }, [facultyId, facultyRatingTrend, effectiveScopedTerms])
 
   /* ── Course heat map (PRD 2026-09-15: courses × terms, one faculty; role filter default
      all, instructor/coordinator in prototypes) ── */
@@ -1826,6 +1831,24 @@ export function ByCoursePanel({
     [courseCode],
   )
 
+  /* Rating-trend scope — computed here (rather than beside the trend chart below) so
+     `courseKpiData` can also scope by it (PRD 2026-09-15: KPIs "scoped to the filters
+     selected"), not just the charts further down the tab. */
+  const courseRatingTrend = useMemo(() => courseRatingTrendByTerm(courseCode), [courseCode])
+  const latestTermForCourse = courseRatingTrend[courseRatingTrend.length - 1]?.term
+  /**
+   * The page-level AY/Term selection, falling back to this course's own latest term when the
+   * host renders this panel with no such scope (the Directory profile page — see `scopedTerms`'
+   * own doc comment). "Same UX feedback as in overview" (Romit, 2026-09-15) for the quadrant,
+   * rating trend and response trend means highlighting what the reader actually picked at the
+   * top of the page, not a value this tab silently computed on its own — that silent fallback
+   * is now the exception, not the rule.
+   */
+  const effectiveScopedTerms = useMemo(
+    () => (scopedTerms?.length ? scopedTerms : latestTermForCourse ? [latestTermForCourse] : []),
+    [scopedTerms, latestTermForCourse],
+  )
+
   /**
    * KPI cards — rebuilt to match Overview's own `kpi-chart` grid (Romit, 2026-09-14 feedback:
    * "you could have just used the same layout and design from Overview and filled the content
@@ -1836,7 +1859,10 @@ export function ByCoursePanel({
    */
   const courseKpiData = useMemo(() => {
     if (!allCourseOfferings.length) return null
-    const stat = courseStats().find(c => c.courseCode === courseCode)
+    // Scoped to the selected AY/Term filter, not an all-time aggregate — same fix as the
+    // Faculty tab's own `facultyKpiData` (2026-09-15 compliance pass).
+    const term = effectiveScopedTerms.length ? effectiveScopedTerms : undefined
+    const stat = courseStats(term).find(c => c.courseCode === courseCode)
     if (!stat) return null
     const trend = courseTrendRows
     const last  = trend[trend.length - 1]
@@ -1867,7 +1893,7 @@ export function ByCoursePanel({
       responseRate: stat.responseRate,
       offerings: stat.terms,
     }
-  }, [allCourseOfferings, courseCode, courseTrendRows, courseFaculty])
+  }, [allCourseOfferings, courseCode, courseTrendRows, courseFaculty, effectiveScopedTerms])
 
   const facultyFilterOptions = useMemo(
     () => courseFaculty.map(f => ({ id: f.facultyId, name: f.name })),
@@ -1938,22 +1964,7 @@ export function ByCoursePanel({
   /* ── Rating trend / Response rate trend — separate charts (PRD splits them explicitly:
      "is the score movement real, or just fewer students responding"). Term-only axis, no
      AY toggle (PRD drops it — term is already the offering's own anchor). ── */
-  const courseRatingTrend = useMemo(() => courseRatingTrendByTerm(courseCode), [courseCode])
   const courseResponseTrendSeries = useMemo(() => courseResponseRateSeries(courseCode), [courseCode])
-  const latestTermForCourse = courseRatingTrend[courseRatingTrend.length - 1]?.term
-
-  /**
-   * The page-level AY/Term selection, falling back to this course's own latest term when the
-   * host renders this panel with no such scope (the Directory profile page — see `scopedTerms`'
-   * own doc comment). "Same UX feedback as in overview" (Romit, 2026-09-15) for the quadrant,
-   * rating trend and response trend means highlighting what the reader actually picked at the
-   * top of the page, not a value this tab silently computed on its own — that silent fallback
-   * is now the exception, not the rule.
-   */
-  const effectiveScopedTerms = useMemo(
-    () => (scopedTerms?.length ? scopedTerms : latestTermForCourse ? [latestTermForCourse] : []),
-    [scopedTerms, latestTermForCourse],
-  )
   /* Quadrant points key off the TERM's short label, not the term string (see
      `courseOfferingQuadrantPoints`'s field-reuse comment) — highlight by the same short form. */
   const highlightedOfferingShorts = useMemo(

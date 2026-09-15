@@ -243,10 +243,19 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     id: 'acc-healthy',
     name: 'Johns Hopkins DPT',
-    blurb: 'Steady-state default — realistic mixed history, not tied to one case',
+    blurb: 'Steady-state — realistic mixed history, every bucket occupied at once',
     terms: MOCK_PROGRAM_TERMS,
     offerings: MOCK_COURSE_OFFERINGS,
     surveys: MOCK_SURVEYS,
+  },
+  {
+    id: 'acc-demo-default',
+    name: 'Johns Hopkins DPT — Demo',
+    blurb:
+      'Default — Vishal, 2026-09-14: "by default, show all the courses in not setup state... keep one demo account to show courses in all states but for demo let\'s keep it simple." Same real courses/history as Johns Hopkins DPT — only the Live term\'s own surveys are stripped, so every course there starts Not set up. Last closed term (Summer 2026) is untouched real data.',
+    terms: MOCK_PROGRAM_TERMS,
+    offerings: MOCK_COURSE_OFFERINGS,
+    surveys: MOCK_SURVEYS.filter((s) => s.term !== 'Fall 2026'),
   },
   {
     id: 'acc-fresh',
@@ -340,7 +349,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ]
 
-export const DEFAULT_ACCOUNT_ID = 'acc-healthy'
+export const DEFAULT_ACCOUNT_ID = 'acc-demo-default'
 
 /* ── module-level active-account register (read by the term helpers) ──────── */
 let _activeId = DEFAULT_ACCOUNT_ID

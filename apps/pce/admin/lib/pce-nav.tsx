@@ -99,7 +99,7 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
 export const NAV_ADMIN: NavLinkItem[] = [
   {
     key: "course-evaluation",
-    title: "Course Evaluation",
+    title: "Course Surveys",
     url: "#",
     icon:       <i className="fa-light fa-star" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-star" aria-hidden="true" />,

@@ -123,7 +123,7 @@ import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { DashboardResponseTrend, dashboardTrendLabel } from '@/components/pce/analytics-plots'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-core'
-import { termSeries, programSummary, shortTerm, termToYear, type TermSeriesPoint } from '@/lib/pce-analytics'
+import { termSeries, programSummary, shortTerm, termToYear, RATING_THRESHOLD, termBelowThreshold, type TermSeriesPoint } from '@/lib/pce-analytics'
 
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -178,6 +178,13 @@ const POSITION_BADGE: Record<TermPosition, { label: string; tone: 'success' | 'n
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/** Cosmetic-only "Fall 2027" relabel for whatever term is really 'Fall 2026'
+ *  — see `TermCardShell`'s `displayName` prop doc comment for why this is a
+ *  display swap, not a rename of the underlying term data. Shared here so
+ *  the Live-term card and the KPI band's own "Fall 2026 · vs last closed
+ *  term" description can't drift out of sync with each other. */
+const displayTermName = (name: string) => (name === 'Fall 2026' ? 'Fall 2027' : name)
 
 const fmtDate = (d: string) =>
   parseDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -785,6 +792,7 @@ function TermCardShell({
   footer,
   statusBadge,
   className,
+  displayName,
 }: {
   term: ProgramTerm
   position: TermPosition
@@ -810,6 +818,17 @@ function TermCardShell({
    *  position-label badge unchanged. */
   statusBadge?: { label: string; tone: 'success' | 'neutral' | 'info' | 'warning'; icon?: string }
   className?: string
+  /** Cosmetic title override — ONLY `LiveTermCard` passes this (Vishal,
+   *  2026-09-14: "Live term ... should be Fall 2027, US generally refers AY
+   *  with closing year"). Deliberately NOT a rename of the real term object:
+   *  MOCK_PROGRAM_TERMS already has a genuinely different 'Fall 2027' term
+   *  (pt7, dated 2027) — renaming pt5 in place would collide with it and
+   *  cascade into renumbering every future term to keep the Fall/Spring AY
+   *  pairing consistent. This changes only what's rendered here; `term.id`/
+   *  `term.name` underneath stay real, so breakdown/score lookups, the term
+   *  workspace link, and Analytics' term filter (which keeps this term as
+   *  real 'Fall 2026', per the same feedback) are all unaffected. */
+  displayName?: string
 }) {
   return (
     /* A genuine DS Card — default rounded-xl shape, ring-1 border, standard
@@ -829,10 +848,10 @@ function TermCardShell({
           <CardTitle className="min-w-0 font-sans text-sm font-semibold leading-tight">
             <Link
               href={`/course-evaluation/term/${term.id}`}
-              aria-label={`Open ${term.name} workspace`}
+              aria-label={`Open ${displayName ?? term.name} workspace`}
               className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              {term.name}
+              {displayName ?? term.name}
             </Link>
           </CardTitle>
           <StatusBadge
@@ -1181,6 +1200,15 @@ function LastTermCard({
         ? `${plural(stillLive, 'course')} still collecting responses.`
         : `${plural(neverWentOut, 'course')} never collected.`
 
+  /* Below-threshold quality signal — same fix `LastClosedTermCard` (the Operations layout's
+     own last-closed-term card) already carries (Vishal, 2026-09-14: the old banner reported
+     stale "never went out"/"still collecting" housekeeping instead of the term's quality
+     signal). This card's own "Still open" row above still tracks that housekeeping fact — a
+     real, distinct thing from rating quality — so it stays; this banner is additive, not a
+     replacement, and keeps the Ledger layout's last-closed card in parity with Operations'. */
+  const below = termBelowThreshold(term.name)
+  const hasBelowThreshold = below.courses > 0 || below.faculty > 0
+
   /* The final response rate is the statement's ledger figure (hero); it only
      falls back to a fact line when there is no closed rate to certify. No
      progress bar here — a finished term's figure is a balance, not something
@@ -1341,6 +1369,14 @@ function LastTermCard({
               </>
             }
           />
+          {hasBelowThreshold && (
+            <LocalBanner variant="warning">
+              {[
+                below.courses > 0 ? plural(below.courses, 'course') : null,
+                below.faculty > 0 ? `${below.faculty} faculty` : null,
+              ].filter(Boolean).join(' and ')} rated below the {RATING_THRESHOLD.toFixed(1)} threshold.
+            </LocalBanner>
+          )}
         </>
       )}
     </TermCardShell>
@@ -2324,6 +2360,7 @@ function LiveTermCard({
     <TermCardShell
       term={term}
       position="current"
+      displayName={displayTermName(term.name)}
       /* The term's own dates, full year on both ends, joined by "to" — not
          the "Eval window" (+7-day grace) framing or the abbreviated "AY"
          year, matching the reference's plain meta line exactly (Romit,
@@ -2484,9 +2521,15 @@ function LastClosedTermCard({
   const { term } = snap
   const b = breakdown
   const closedRate = b ? weightedRate(b.closed) : null
-  const neverWentOut = b ? b.notConfiguredCount + b.draft.length + b.scheduled.length : 0
-  const stillLive = b ? b.live.length : 0
-  const stragglerCount = neverWentOut + stillLive
+  /* Below-threshold counts, not stragglers (Vishal, 2026-09-14: the banner
+     used to report "N courses never went out and M courses still collecting
+     past this term's end" — for a genuinely CLOSED term that's stale
+     housekeeping trivia; what a stakeholder actually wants to see here is
+     the term's quality signal). Real per-term data, not the program-wide
+     `programSummary()` numbers the KPI band above uses — see
+     `termBelowThreshold`'s own doc comment. */
+  const below = termBelowThreshold(term.name)
+  const hasBelowThreshold = below.courses > 0 || below.faculty > 0
 
   const idx = series.findIndex((s) => s.term === term.name)
   const current = idx >= 0 ? series[idx] : null
@@ -2522,7 +2565,7 @@ function LastClosedTermCard({
           ? `${term.academicYear} · ${fmtDate(term.startDate)} to ${fmtDate(term.endDate)}`
           : term.academicYear
       }
-      statusBadge={stragglerCount > 0 ? { label: 'Needs attention', tone: 'warning', icon: 'fa-triangle-exclamation' } : undefined}
+      statusBadge={hasBelowThreshold ? { label: 'Needs attention', tone: 'warning', icon: 'fa-triangle-exclamation' } : undefined}
       /* Only the empty state needs a footer action — the populated state's
          own 3-button row already covers "View analytics", so adding a
          second one there would be the exact redundant row the reference
@@ -2566,16 +2609,16 @@ function LastClosedTermCard({
               serif={false}
             />
           </div>
-          {stragglerCount > 0 && (
+          {hasBelowThreshold && (
             /* No `title` — the card's own status badge above already says
                "Needs attention"; repeating it here read as redundant next
                to the reference, which states the plain fact alone
                (Romit, 2026-09-11). */
             <LocalBanner variant="warning">
               {[
-                neverWentOut > 0 ? `${plural(neverWentOut, 'course')} never went out` : null,
-                stillLive > 0 ? `${plural(stillLive, 'course')} still collecting` : null,
-              ].filter(Boolean).join(' and ')} past this term's end.
+                below.courses > 0 ? plural(below.courses, 'course') : null,
+                below.faculty > 0 ? `${below.faculty} faculty` : null,
+              ].filter(Boolean).join(' and ')} rated below the {RATING_THRESHOLD.toFixed(1)} threshold.
             </LocalBanner>
           )}
           {/* "Export summary" has no existing summary-export feature
@@ -2773,7 +2816,7 @@ function OperationsDashboardBody({
             ? 'All courses scheduled'
             : currentSnaps.length > 1
               ? `Across ${plural(currentSnaps.length, 'active term')}`
-              : 'Courses without a scheduled window',
+              : 'Courses without a survey scheduled',
       /* `alert: 'warning'` — knowingly reintroduced (Romit, 2026-09-11,
          "use it anyway", against exxat-surveys-24f.pages.dev/design-os
          which tints this tile): the DS's warning-alert label color fails
@@ -2798,32 +2841,32 @@ function OperationsDashboardBody({
       description: !primaryCurrent
         ? 'No live term right now'
         : hasOpened
-          ? `${primaryCurrent.term.name} · vs last closed term`
-          : `${primaryCurrent.term.name} · nothing collecting yet`,
+          ? `${displayTermName(primaryCurrent.term.name)} · vs last closed term`
+          : `${displayTermName(primaryCurrent.term.name)} · nothing collecting yet`,
     },
     {
       id: 'courses-below',
       label: 'Courses below threshold',
-      value: summary ? summary.coursesBelowThreshold : '—',
+      value: summary ? summary.coursesBelowRatingThreshold : '—',
       href: summary ? '/analytics?tab=course' : undefined,
       delta: '',
       trend: 'neutral',
       description: summary
-        ? `Of ${summary.courseCount} scored, below the ${summary.courseMedian} median`
+        ? `Of ${summary.courseCount} rated, below the ${RATING_THRESHOLD.toFixed(1)} threshold`
         : scoreFailCopy('course'),
-      alert: summary && summary.coursesBelowThreshold > 0 ? 'warning' : undefined,
+      alert: summary && summary.coursesBelowRatingThreshold > 0 ? 'warning' : undefined,
     },
     {
       id: 'faculty-below',
       label: 'Faculty below threshold',
-      value: summary ? summary.facultyBelowThreshold : '—',
+      value: summary ? summary.facultyBelowRatingThreshold : '—',
       href: summary ? '/analytics?tab=faculty' : undefined,
       delta: '',
       trend: 'neutral',
       description: summary
-        ? `Of ${summary.facultyCount} scored, below the ${summary.facultyMedian} median`
+        ? `Of ${summary.facultyCount} rated, below the ${RATING_THRESHOLD.toFixed(1)} threshold`
         : scoreFailCopy('faculty'),
-      alert: summary && summary.facultyBelowThreshold > 0 ? 'warning' : undefined,
+      alert: summary && summary.facultyBelowRatingThreshold > 0 ? 'warning' : undefined,
     },
   ]
 

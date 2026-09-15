@@ -199,11 +199,54 @@ interface PceState {
 
 const PceContext = createContext<PceState | null>(null)
 
+/** Vishal, 2026-09-15: a demo distribution pushes every offering with one
+ *  global open date, so the dashboard came back showing an all-scheduled or
+ *  all-live monolith instead of the realistic mix a real term produces.
+ *  Every other pushed offering (odd index) is pulled a few days into the
+ *  past so it reads as already live with a trickle of responses; the rest
+ *  keep exactly the date the admin chose (typically a future date, so they
+ *  land Scheduled) — no per-course date UI required. */
+function staggeredPushOutcome(
+  index: number,
+  requestedOpenYmd: string,
+  todayYmd: string,
+  enrollmentCount: number,
+): { openDate: string; status: SurveyStatus; responseCount: number; responseRate: number } {
+  if (index % 2 === 0) {
+    return {
+      openDate: requestedOpenYmd,
+      status: requestedOpenYmd > todayYmd ? 'scheduled' : 'collecting',
+      responseCount: 0,
+      responseRate: 0,
+    }
+  }
+  const pastDate = new Date(todayYmd)
+  pastDate.setDate(pastDate.getDate() - 4)
+  const staggeredYmd = pastDate.toISOString().split('T')[0]
+  const openDate = staggeredYmd < requestedOpenYmd ? staggeredYmd : requestedOpenYmd
+  const responseCount = enrollmentCount > 0 ? Math.max(1, Math.round(enrollmentCount * 0.1)) : 1
+  const responseRate = enrollmentCount > 0 ? Math.round((responseCount / enrollmentCount) * 100) : 0
+  return { openDate, status: 'collecting', responseCount, responseRate }
+}
+
 export function PceProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PceUser>(MOCK_CURRENT_USER)
-  const [surveys, setSurveys] = useState<PceSurvey[]>(MOCK_SURVEYS)
-  const [templates, setTemplates] = useState<PceTemplate[]>(MOCK_TEMPLATES)
-  const [programTerms, setProgramTerms] = useState<ProgramTerm[]>(MOCK_PROGRAM_TERMS)
+  /* Seeded from the DEFAULT ACCOUNT's own data, not the raw MOCK_* constants
+   * directly — those two only happened to agree by coincidence while
+   * `acc-healthy` (whose `surveys`/`terms` ARE the raw constants verbatim)
+   * was also `DEFAULT_ACCOUNT_ID`. `switchAccount` below only fires when a
+   * DIFFERENT account was persisted (`stored !== DEFAULT_ACCOUNT_ID`), so
+   * the true default path never called it — any default account whose data
+   * actually differs from the bare MOCK_* exports (e.g. `acc-demo-default`,
+   * added 2026-09-14) silently rendered the wrong data until this changed.
+   * The module-level `setActiveAccountId` register already defaults to
+   * `DEFAULT_ACCOUNT_ID` on its own (pce-demo-accounts.ts) — this just makes
+   * the React state seed agree with it, so SSR and the first client render
+   * stay in sync exactly like the existing account-switch effect assumes. */
+  const defaultAccountData = accountById(DEFAULT_ACCOUNT_ID)
+  const [surveys, setSurveys] = useState<PceSurvey[]>(defaultAccountData.surveys)
+  const [templates, setTemplates] = useState<PceTemplate[]>(defaultAccountData.templates ?? MOCK_TEMPLATES)
+  const [programTerms, setProgramTerms] = useState<ProgramTerm[]>(defaultAccountData.terms)
   const addProgramTerm = useCallback((term: ProgramTerm) => {
     setProgramTerms(ts =>
       ts.some(t => t.id === term.id || t.name === term.name) ? ts : [...ts, term],
@@ -696,7 +739,6 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const pushSurveyBatch = useCallback((config: PushWizardConfig) => {
     const { courseOfferingIds, templateAssignments, openDate, closeDate, surveyType, termId, academicYear, programId } = config
     const today = new Date().toISOString().split('T')[0]
-    const status: SurveyStatus = openDate > today ? 'scheduled' : 'collecting'
 
     const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
 
@@ -719,10 +761,13 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
         }
         let next = [...ss]
         let seq = 0
+        let offeringIndex = 0
         for (const [offeringId, group] of byOffering) {
           const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
           const masterCourse = offering ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId) : null
           const existing = offering ? draftOrScheduledMatch(offering, next) : null
+          const outcome = staggeredPushOutcome(offeringIndex++, openDate, today, offering?.enrolledCount ?? 0)
+          const { status, openDate: offeringOpenDate, responseCount, responseRate } = outcome
           if (existing && group) {
             // Update-in-place: the Draft/Scheduled record BECOMES the pushed
             // survey. Combined flow (evalScope per what the instances cover);
@@ -736,12 +781,12 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
             const evaluations = [
               ...(hasCourse ? [{
                 type: 'course_material' as const, status,
-                responseRate: 0, responseCount: 0,
+                responseRate, responseCount,
                 enrollmentCount: offering?.enrolledCount ?? 0, deadline: closeDate,
               }] : []),
               ...(hasFaculty ? [{
                 type: 'faculty_roles' as const, status,
-                responseRate: 0, responseCount: 0,
+                responseRate, responseCount,
                 enrollmentCount: offering?.enrolledCount ?? 0, deadline: closeDate,
               }] : []),
             ]
@@ -749,7 +794,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
               ...s,
               status,
               surveyType,
-              openDate,
+              openDate: offeringOpenDate,
               academicYear,
               programId,
               term: term?.name ?? academicYear,
@@ -760,8 +805,8 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
               evalRole: hasFaculty && !hasCourse && roles.length === 1 ? roles[0] : undefined,
               instructors: persons.map(p => ({ id: p.id, name: p.name, initials: p.initials, role: 'primary' as const })),
               evaluations,
-              responseRate: 0,
-              responseCount: 0,
+              responseRate,
+              responseCount,
               enrollmentCount: offering?.enrolledCount ?? s.enrollmentCount,
               deadline: closeDate,
               wizardDraft: undefined,
@@ -780,7 +825,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
               term: term?.name ?? academicYear,
               cohort: offering?.cohort,
               surveyType,
-              openDate,
+              openDate: offeringOpenDate,
               academicYear,
               programId,
               templateId: templateAssignments[inst.offeringId] ?? '',
@@ -797,13 +842,13 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
               evaluations: [{
                 type: inst.scope === 'course' ? 'course_material' as const : 'faculty_roles' as const,
                 status,
-                responseRate: 0,
-                responseCount: 0,
+                responseRate,
+                responseCount,
                 enrollmentCount: offering?.enrolledCount ?? 0,
                 deadline: closeDate,
               }],
-              responseRate: 0,
-              responseCount: 0,
+              responseRate,
+              responseCount,
               enrollmentCount: offering?.enrolledCount ?? 0,
               deadline: closeDate,
               createdAt: today,
@@ -816,11 +861,13 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     }
 
     setSurveys(ss => {
-      const newSurveys: PceSurvey[] = courseOfferingIds.map(offeringId => {
+      const newSurveys: PceSurvey[] = courseOfferingIds.map((offeringId, offeringIndex) => {
         const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
         const masterCourse = offering ? MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId) : null
         const faculty = offering ? MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId) : null
         const templateId = templateAssignments[offeringId] ?? ''
+        const { status, openDate: offeringOpenDate, responseCount, responseRate } =
+          staggeredPushOutcome(offeringIndex, openDate, today, offering?.enrolledCount ?? 0)
 
         // Scope from what the assigned template evaluates: course-only /
         // faculty-only templates make a single-evaluatee flow; a template that
@@ -844,7 +891,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
           term: term?.name ?? academicYear,
           cohort: offering?.cohort,
           surveyType,
-          openDate,
+          openDate: offeringOpenDate,
           academicYear,
           programId,
           templateId,
@@ -852,8 +899,8 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
           instructors: faculty
             ? [{ id: faculty.id, name: faculty.name, initials: faculty.initials, role: 'primary' as const }]
             : [],
-          responseRate: 0,
-          responseCount: 0,
+          responseRate,
+          responseCount,
           enrollmentCount: offering?.enrolledCount ?? 0,
           deadline: closeDate,
           createdAt: today,

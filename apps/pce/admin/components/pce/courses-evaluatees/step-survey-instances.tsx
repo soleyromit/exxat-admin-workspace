@@ -97,12 +97,12 @@
 // selection changes up — the page pushes exactly the selected set (minus
 // gaps, guarded there).
 
-import { Fragment, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import {
   AvatarGroup, AvatarInitials,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectSeparator,
   Button, Checkbox, CheckboxLabel, LocalBanner, ToggleSwitch, Badge, Tip,
-  Card, CardContent, Input, Textarea, FieldLabel, Separator,
+  Card, CardContent, Input, Separator,
   FloatingSheetPanel, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelBody,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -125,7 +125,7 @@ import { CreateBlankTemplate } from '@/components/pce/create-blank-template'
 import { TemplateEditor } from '@/components/pce/template-editor'
 import { SurveyPreviewDialog } from '@/components/pce/distribute-wizard/survey-preview-dialog'
 import {
-  COURSE_TYPE_FULL_LABEL, deliveryModeOf, MOCK_MASTER_COURSES,
+  COURSE_TYPE_FULL_LABEL, deliveryModeOf,
   type CourseOffering, type PceTemplate, type DeliveryMode,
 } from '@/lib/pce-mock-data'
 import { courseLabelOf, templateCriteria, CRITERION_BY_TYPE, type Criterion } from '@/lib/pce-course-readiness'
@@ -1595,40 +1595,6 @@ export function StepSurveyInstances({
     setSubView('assign')
   }
 
-  // ── Survey details — title/instructions merge-field preview (moved from
-  //    Step 3, 2026-08-17). Same resolveMerge() logic as step-communication.tsx
-  //    minus close_date, which isn't chosen until Step 3 — it always falls
-  //    back to "the close date" here. ─────────────────────────────────────
-  const previewCourseName = useMemo(() => {
-    const first = selectedOfferings[0]
-    const course = first ? MOCK_MASTER_COURSES.find(c => c.id === first.masterCourseId) : null
-    return course?.name || 'your course'
-  }, [selectedOfferings])
-  function resolveMerge(text: string) {
-    return text
-      .replace(/\{\{course_name\}\}/g, previewCourseName)
-      .replace(/\{\{academic_year\}\}/g, academicYear || 'this year')
-      .replace(/\{\{close_date\}\}/g, 'the close date')
-      .replace(/\{\{term_name\}\}/g, 'this term')
-  }
-  const TITLE_MERGE_FIELDS: { token: string; label: string }[] = [
-    { token: '{{course_name}}', label: 'Course name' },
-    { token: '{{academic_year}}', label: 'Academic year' },
-    { token: '{{term_name}}', label: 'Term name' },
-  ]
-  const titleInputRef = useRef<HTMLInputElement>(null)
-  function insertTitleField(token: string) {
-    const el = titleInputRef.current
-    const start = el?.selectionStart ?? surveyTitleTemplate.length
-    const end = el?.selectionEnd ?? surveyTitleTemplate.length
-    const next = surveyTitleTemplate.slice(0, start) + token + surveyTitleTemplate.slice(end)
-    onSurveyTitleTemplateChange(next)
-    requestAnimationFrame(() => {
-      el?.focus()
-      el?.setSelectionRange(start + token.length, start + token.length)
-    })
-  }
-
   // ── Inclusion (ST-02): projection of the page-owned sticky selection map ──
   // A unit the admin touched keeps its state across plan recomputes; only the
   // page's template-change reset, course deselection, or a manual Refresh may
@@ -2108,65 +2074,14 @@ export function StepSurveyInstances({
         <EmptyHint heading="No courses selected" sub="Go back and select at least one course." />
       ) : (
         <div className="flex flex-col gap-5 w-full">
-          {/* Survey details — moved here from Step 3 (2026-08-17, Romit's
-              call): the title/instructions the admin is setting up belong
-              beside the courses they apply to, not two steps later. Step 3
-              keeps owning survey window/email/reminders, which genuinely
-              depend on scheduling and stay there. Title uses the same h2
-              treatment as "Course assignments" below (not Step 3's small
-              FieldLegend convention) so the two read as peer sections of
-              the same step, not a caption over a card. font-heading (Ivy
-              Presto) was tried and reverted (2026-08-17) — DS reserves it
-              for PageHeader's h1 only. */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-semibold">Survey details</h2>
-              <p className="text-sm text-muted-foreground">The title and instructions students see when the survey opens.</p>
-            </div>
-            <Card className="shadow-none">
-              <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel id="label-survey-title">
-                    Survey title <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
-                    <span className="sr-only">(required)</span>
-                  </FieldLabel>
-                  <Input
-                    ref={titleInputRef}
-                    aria-labelledby="label-survey-title"
-                    value={surveyTitleTemplate}
-                    onChange={e => onSurveyTitleTemplateChange(e.target.value)}
-                    placeholder="e.g. {{course_name}} – {{academic_year}} – EOT Eval"
-                  />
-                  <div className="flex flex-wrap items-center gap-1.5" aria-label="Insert a merge field">
-                    {TITLE_MERGE_FIELDS.map(f => (
-                      <Badge key={f.token} asChild variant="outline" className="cursor-pointer font-normal">
-                        <button type="button" className="inline-flex items-center gap-1" onClick={() => insertTitleField(f.token)}>
-                          <i className="fa-light fa-plus text-[10px]" aria-hidden="true" />
-                          {f.label}
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-md text-xs w-fit max-w-full mt-1" style={{ padding: '6px 10px', background: 'var(--muted)' }}>
-                    <span className="text-muted-foreground shrink-0">Per-course preview</span>
-                    <span className="font-medium text-foreground truncate">{resolveMerge(surveyTitleTemplate) || 'Untitled survey'}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <p id="label-survey-instructions" className="text-sm font-medium">Survey instructions</p>
-                  <Textarea
-                    aria-labelledby="label-survey-instructions"
-                    value={surveyInstructions}
-                    onChange={e => onSurveyInstructionsChange(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Separator />
+          {/* Survey title/instructions editor REMOVED from this step (Vishal,
+              2026-09-14 Cohere-demo feedback: "on click of scheduled, in the
+              second step – remove survey title and instructions"). Every
+              pushed survey still gets a real title — `surveyTitleTemplate`/
+              `surveyInstructions` keep their `DEFAULT_SURVEY_TITLE_TEMPLATE`/
+              `DEFAULT_SURVEY_INSTRUCTIONS` values (push/page.tsx) and are
+              still threaded through to survey creation; only the admin-
+              facing editor is gone. */}
 
           {/* Course assignments — renamed from the former "You're setting up
               N evaluations..." headline (2026-08-17): that sentence now reads
