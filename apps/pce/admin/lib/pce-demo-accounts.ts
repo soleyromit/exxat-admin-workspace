@@ -33,6 +33,7 @@ import {
   type PceTemplate,
   type SurveyStatus,
 } from '@/lib/pce-mock-data'
+import { UON_OFFERINGS, UON_SURVEYS } from '@/lib/pce-university-of-nursing-data'
 
 export interface DemoAccount {
   id: string
@@ -51,6 +52,7 @@ export interface DemoAccount {
 /* ── reusable terms pulled from the full mock ─────────────────────────────── */
 const SPRING26 = MOCK_PROGRAM_TERMS.find((t) => t.id === 'pt1')! // current, window open
 const FALL26 = MOCK_PROGRAM_TERMS.find((t) => t.id === 'pt5')! // upcoming (dated)
+const SUMMER26 = MOCK_PROGRAM_TERMS.find((t) => t.id === 'pt9')! // last closed term
 
 /** `acc-upcoming-only`'s whole purpose is demoing the Upcoming card, so its
  *  term dates are computed relative to `new Date()` instead of reusing
@@ -250,7 +252,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
   {
     id: 'acc-demo-default',
-    name: 'Johns Hopkins DPT — Demo',
+    name: 'Johns Hopkins DPT',
     blurb:
       'Default — Vishal, 2026-09-14: "by default, show all the courses in not setup state... keep one demo account to show courses in all states but for demo let\'s keep it simple." Same real courses/history as Johns Hopkins DPT — only the Live term\'s own surveys are stripped, so every course there starts Not set up. Last closed term (Summer 2026) is untouched real data.',
     terms: MOCK_PROGRAM_TERMS,
@@ -346,6 +348,15 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     // No surveys: without a template there is nothing to push.
     surveys: [],
     templates: [],
+  },
+  {
+    id: 'acc-university-of-nursing',
+    name: 'University of Nursing',
+    blurb:
+      'BSN/MSN dummy-data scenario — 10 Fall 2026 (current) + 5 Summer 2026 (last closed) course+instructor evaluations, 5-term score history, realistic student comments, one polarized/controversial course (BSN-210) and one stellar course (BSN-401 Clinical Practicum I).',
+    terms: [FALL26, SUMMER26],
+    offerings: UON_OFFERINGS,
+    surveys: UON_SURVEYS,
   },
 ]
 

@@ -1643,6 +1643,87 @@ export function courseOfferingListRows(terms?: string[]): CourseOfferingListRow[
     .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode))
 }
 
+export interface CourseOfferingFacultyLine {
+  facultyId: string
+  facultyName: string
+  role: FacultyEvalRoleId
+  courseAvg: number | null
+  facultyAvg: number
+  responseRate: number
+  surveyId?: string
+}
+
+export interface CourseOfferingGroupRow extends Record<string, unknown> {
+  id: string
+  courseCode: string
+  courseName: string
+  academicYear: string
+  term: string
+  short: string
+  cohort?: string
+  faculty: CourseOfferingFacultyLine[]
+  /** Mean across this row's own faculty/sections — DataTable's sort comparator reads one flat
+   *  top-level number per `sortKey`, and a multi-section row has no single "the" course/faculty/
+   *  response value once sections genuinely differ (confirmed against `MOCK_FACULTY_OFFERINGS`:
+   *  rows sharing course+term+cohort carry DIFFERENT enrolled/responseRate/courseAvg per row —
+   *  these are parallel SECTIONS, each with its own instructor and roster, not one section with
+   *  two co-teachers). Mean, not min/max, matches how a reader eyeballs "roughly where this row
+   *  sits" when sorting the column.
+   */
+  courseAvgSort: number | null
+  facultyAvgSort: number
+  responseRateSort: number
+}
+
+/**
+ * Course-scoped grouping of `offeringPoints()` — one row per (course × term × cohort), carrying
+ * every faculty member/section that ran under it as a `faculty[]` list, instead of
+ * `courseOfferingListRows()`'s one-row-per-instructor grain. Built for `CourseOfferingList`
+ * (Course Analytics > List) specifically — Vishal, 2026-09-16: "a row can have more than one
+ * faculty... show role along with faculty name."
+ *
+ * The two FACULTY-scoped consumers of the flat rows (`FacultyOfferingList`, the By Faculty
+ * detail page's own offering list) stay on `courseOfferingListRows()` unchanged — viewed from
+ * one faculty member's own perspective, folding in a co-listed section's OTHER instructor would
+ * misattribute someone else's section to them, not just go unrequested.
+ */
+export function courseOfferingGroupedRows(terms?: string[]): CourseOfferingGroupRow[] {
+  const offs = offeringPoints().filter((o) => !terms || terms.includes(o.term))
+  const byKey = new Map<string, OfferingPoint[]>()
+  offs.forEach((o) => {
+    const key = `${o.courseCode}|${o.term}|${o.cohort ?? ''}`
+    byKey.set(key, [...(byKey.get(key) ?? []), o])
+  })
+  return [...byKey.entries()]
+    .map(([key, group]): CourseOfferingGroupRow => {
+      const first = group[0]!
+      const faculty: CourseOfferingFacultyLine[] = group.map((o) => ({
+        facultyId: o.facultyId,
+        facultyName: o.facultyName,
+        role: o.evalRole,
+        courseAvg: o.courseAvg ?? null,
+        facultyAvg: o.avgRating,
+        responseRate: o.responseRate,
+        surveyId: o.surveyId,
+      }))
+      const courseVals = faculty.map((f) => f.courseAvg).filter((v): v is number => v != null)
+      return {
+        id: key,
+        courseCode: first.courseCode,
+        courseName: first.courseName,
+        academicYear: academicYearOf(first.term),
+        term: first.term,
+        short: shortTerm(first.term),
+        cohort: first.cohort,
+        faculty,
+        courseAvgSort: courseVals.length ? mean(courseVals) : null,
+        facultyAvgSort: mean(faculty.map((f) => f.facultyAvg)),
+        responseRateSort: Math.round(mean(faculty.map((f) => f.responseRate))),
+      }
+    })
+    .sort((a, b) => compareTerms(b.term, a.term) || a.courseCode.localeCompare(b.courseCode))
+}
+
 export interface CourseFacultyHeatCell {
   facultyId: string
   facultyName: string
@@ -1746,6 +1827,25 @@ export function courseRatingTrendByTerm(courseCode: string, n = 6): CourseVsProg
     courseAvg: t.courseAvg,
     programAvg: programByTerm.get(t.term) ?? null,
   }))
+}
+
+/** Lowest and highest CONTENT rating among this course's own offerings, per term — parity fix
+ *  for the gap Vishal flagged 2026-09-16: this card baked one whole-window min/max into its
+ *  title text while the identical Faculty card already drew a real per-term band (see
+ *  `facultyRatingRangeByTerm` above — same rule, "across this course's own sections" instead of
+ *  "across this faculty's own courses"). A term with a single offering collapses to a
+ *  zero-length rule (min === max) — honest, not hidden: no spread that term, so none drawn. */
+export function courseRatingRangeByTerm(
+  courseCode: string,
+  n = 6,
+): { term: string; short: string; min: number; max: number }[] {
+  const offs = offeringPoints().filter((o) => o.courseCode === courseCode && o.courseAvg != null)
+  const byTerm = new Map<string, number[]>()
+  offs.forEach((o) => byTerm.set(o.term, [...(byTerm.get(o.term) ?? []), o.courseAvg as number]))
+  return [...byTerm.entries()]
+    .map(([term, ratings]) => ({ term, short: shortTerm(term), min: Math.min(...ratings), max: Math.max(...ratings) }))
+    .sort((a, b) => compareTerms(a.term, b.term))
+    .slice(-n)
 }
 
 /**

@@ -27,6 +27,37 @@
    redundantly compensate for. */
 html {
   scrollbar-gutter: stable;
+  /* The shell has exactly ONE intended scroll region on every page: the
+     content pane's own `flex-1 min-h-0 overflow-y-auto` div inside `<main>`.
+     That inner pane already reaches 100% of its own content on its own
+     (verified live, both /analytics and /course-evaluation/dashboard:
+     driving its `scrollTop` straight to `scrollHeight` reaches the true
+     bottom with zero help from the outer document). But `<html>`/`<body>`
+     were never capped to the viewport, so they pick up their own SEPARATE,
+     redundant scroll room too — confirmed live as ~140–610px of outer
+     `document.documentElement.scrollHeight` beyond `window.innerHeight`,
+     varying by page/content. Two independent scroll contexts answering the
+     same wheel/trackpad gesture is what Romit hit — "two different
+     scrolls," scrolling reading as "limited," page titles reading as stuck,
+     a lavender gap opening at the bottom of the viewport: `<main>` is a
+     fixed-height flex child, so once the OUTER document scrolls even
+     slightly, `<main>` slides upward with it while its own height stays
+     viewport-sized, uncovering `--background` (lavender) below its
+     now-short-of-the-viewport bottom edge. `overflow: hidden` here makes
+     outer-document scroll structurally impossible, so every wheel/trackpad
+     gesture can only ever reach the one inner pane already designed to
+     handle it. (An earlier attempt at this same fix was reverted after
+     testing showed dashboard-home.tsx's page as unscrollable — that test
+     ran before the page's inner pane had finished hydrating/mounting, so it
+     looked like there was no inner pane to fall back on; there is one, on
+     every page, confirmed by driving its scrollTop directly.) */
+  overflow: hidden;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  height: 100%;
 }
 
 /* `scrollbar-gutter: stable` above makes react-remove-scroll's own width

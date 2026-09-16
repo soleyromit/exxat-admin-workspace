@@ -58,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             // SidebarTrigger (⌘B) in UtilityBarSlot still lets a
                             // user expand it for the session if they want labels.
                             defaultOpen={false}
-                            wrapperClassName="flex min-h-svh flex-col"
+                            wrapperClassName="flex h-dvh flex-col"
                           >
                             <CommandMenu />
                             <SystemBannerSlot />
@@ -72,7 +72,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 <AppSidebar variant="sidebar" />
                                 <SecondaryPanel />
                                 <SidebarInset aria-label="Main content">
-                                  {children}
+                                  {/* The shell's ONE scroll owner. The DS contract
+                                      (`SidebarInset` ships `overflow: visible`; a
+                                      `[data-page-scroll]` element scrolls) assumed
+                                      every page provides its own scrollport — 34 PCE
+                                      pages never did. With `<html>/<body>` locked to
+                                      `overflow: hidden` (globals.css) and the wrapper
+                                      capped at `h-dvh`, those pages' content spilled
+                                      past the main landmark's viewport-tall white box onto
+                                      `<body>`'s `--sidebar` tint and was unreachable
+                                      (Romit, 2026-09-16: "background color is getting
+                                      switched halfway", every page). Owning the
+                                      scrollport here fixes all of them at once; pages
+                                      with an inner `flex-1 overflow-auto` still scroll
+                                      internally since this div is height-bounded. */}
+                                  <div
+                                    data-page-scroll
+                                    className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+                                  >
+                                    {children}
+                                  </div>
                                 </SidebarInset>
                               </SecondaryPanelProvider>
                               <AskLeoSidebar />

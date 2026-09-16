@@ -43,7 +43,7 @@ import {
   termKpis, cohortKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
   courseTrend, courseFacultyStats, courseStats, facultyStats, termSlope,
   shortTerm, RESPONSE_TARGET, RATING_THRESHOLD, facultyEvalRoleOptions,
-  courseFacultyHeatCells, courseOfferingQuadrantPoints, courseRatingTrendByTerm,
+  courseFacultyHeatCells, courseOfferingQuadrantPoints, courseRatingTrendByTerm, courseRatingRangeByTerm,
   courseResponseRateSeries, courseQuestionTrend, courseOfferingListRows,
   facultyHeatCells, facultyRatingTrendByTerm, facultyRatingRangeByTerm,
   facultyResponseRateSeries, facultyContentAvg, facultyCourseStats, facultyCourseResponseTrend,
@@ -1707,14 +1707,16 @@ export function ByFacultyPanel({
           offerings list — see `facultyOfferingRows`'s doc comment. Replaces the old vendored
           `DataTablePaginated` table (no AY/Role columns, unwindowed, same-tab sheet click),
           which had none of the PRD's asks. */}
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Offerings</h2>
-        {facultyOfferingRows.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Last {new Set(facultyOfferingRows.map(r => r.term)).size} terms.
-            {effectiveScopedTerms.length > 0 && ' Selected term/AY highlighted.'}
-          </p>
-        )}
+      <ChartCard
+        hideAskLeo
+        variant="normal"
+        title="Offerings"
+        description={
+          facultyOfferingRows.length > 0
+            ? `Last ${new Set(facultyOfferingRows.map(r => r.term)).size} terms.${effectiveScopedTerms.length > 0 ? ' Selected term/AY highlighted.' : ''}`
+            : undefined
+        }
+      >
         <DsDataTablePaginated<CourseOfferingListRow>
           data={facultyOfferingRows}
           columns={facultyOfferingColumns}
@@ -1737,7 +1739,7 @@ export function ByFacultyPanel({
             </div>
           }
         />
-      </div>
+      </ChartCard>
     </>
   )
 }
@@ -1972,14 +1974,12 @@ export function ByCoursePanel({
     [effectiveScopedTerms],
   )
 
-  /* "Where does this course stand" (PRD) — only the program-average LINE answered this; lowest/
-     highest across the course's own recent history did not exist anywhere on the tab. Derived
-     from the same trend rows the chart already plots, so the range can never disagree with the
-     line above it. */
-  const courseRatingRange = useMemo(() => {
-    const vals = courseRatingTrend.map(p => p.courseAvg).filter((v): v is number => v != null)
-    return vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : null
-  }, [courseRatingTrend])
+  /* "Where does this course stand" (PRD) — was one whole-window min/max baked into the card's
+     title text (Vishal, 2026-09-16: "range is term-specific info shown in the title — figure
+     out a way to show that at each term"). Now `courseRatingRangeByTerm` — the same per-term
+     min/max rule the Faculty card's `band` already draws — so the card matches its Faculty
+     sibling instead of the two diverging. */
+  const courseRatingRange = useMemo(() => courseRatingRangeByTerm(courseCode), [courseCode])
 
   /* ── Question trend — which question is dragging this course down ── */
   const questionTrendRows = useMemo(() => courseQuestionTrend(courseCode), [courseCode])
@@ -2251,15 +2251,11 @@ export function ByCoursePanel({
             hideAskLeo={hideAskLeo}
             variant="normal"
             title="Rating trend"
-            description={
-              courseRatingRange
-                ? `Course average vs program average, last ${courseRatingTrend.length} terms · range ${courseRatingRange.min.toFixed(2)}–${courseRatingRange.max.toFixed(2)}`
-                : `Course average vs program average, last ${courseRatingTrend.length} terms`
-            }
+            description={`Course average vs program average, last ${courseRatingTrend.length} terms`}
           >
             <ChartFigure
               label={`Rating trend for ${courseCode}`}
-              summary={`Course average and program average per term for ${courseCode}, over its last ${courseRatingTrend.length} terms.`}
+              summary={`Course average and program average per term for ${courseCode}, over its last ${courseRatingTrend.length} terms. Lowest and highest offering rating each term shown as a range.`}
               dataLength={courseRatingTrend.length}
             >
               {() => (
@@ -2268,7 +2264,7 @@ export function ByCoursePanel({
                       shorter than Overview's `TermRatingTrend` (220), which made this same
                       "Rating trend" card render visibly smaller here than on Overview even
                       though both sit in the identical grid position (Romit, 2026-09-15). */}
-                  <CourseVsProgramTrend points={courseRatingTrend} scopedTerm={effectiveScopedTerms} height={CHART_CARD_PLOT_PX} />
+                  <CourseVsProgramTrend points={courseRatingTrend} scopedTerm={effectiveScopedTerms} band={courseRatingRange} height={CHART_CARD_PLOT_PX} />
                   <ChartDataTable
                     caption={`Rating trend for ${courseCode}`}
                     headers={['Term', 'Course average', 'Program average']}
@@ -2281,7 +2277,7 @@ export function ByCoursePanel({
                   <ChartCardActions
                     title="Rating trend"
                     description="Every point labelled with its exact value."
-                    detail={<CourseVsProgramTrend points={courseRatingTrend} scopedTerm={effectiveScopedTerms} detail />}
+                    detail={<CourseVsProgramTrend points={courseRatingTrend} scopedTerm={effectiveScopedTerms} band={courseRatingRange} detail />}
                     table={{
                       headers: ['Term', 'Course average', 'Program average'],
                       rows: courseRatingTrend.map(p => [
@@ -2507,18 +2503,21 @@ export function ByCoursePanel({
           Course Analytics section with no indication it exists. Same shape as the sibling
           `ByFacultyPanel` offerings table above (`selectable`/`searchable` false, ungated,
           `emptyState` doing the empty-state work), not a special case. */}
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Offerings</h2>
-        {courseOfferingRows.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Last {new Set(courseOfferingRows.map(r => r.term)).size} terms.
-            {effectiveScopedTerms.length > 0 && ' Selected term/AY highlighted.'}
-          </p>
-        )}
-        {/* `@exxatdesignux/ui`'s DataTablePaginated — the DS canonical source (Romit,
-            2026-09-15), matching `CourseOfferingList`'s own wiring (`showQueryControls={false}
-            edgeInset={false}`, no wrapper div — `edgeInset` handles the full-bleed layout the
-            vendored table needed a manual `-mx-4 lg:-mx-6` div for). */}
+      {/* `@exxatdesignux/ui`'s DataTablePaginated — the DS canonical source (Romit,
+          2026-09-15), matching `CourseOfferingList`'s own wiring (`showQueryControls={false}
+          edgeInset={false}`) — `edgeInset={false}` omits the table's own `mx-4 lg:mx-6` inset
+          since `ChartCard`'s `CardContent` already supplies that padding, same as `CourseOfferingList`'s
+          `ChartCard`-wrapped Course Leaderboard table. */}
+      <ChartCard
+        hideAskLeo
+        variant="normal"
+        title="Offerings"
+        description={
+          courseOfferingRows.length > 0
+            ? `Last ${new Set(courseOfferingRows.map(r => r.term)).size} terms.${effectiveScopedTerms.length > 0 ? ' Selected term/AY highlighted.' : ''}`
+            : undefined
+        }
+      >
         <DsDataTablePaginated<CourseOfferingListRow>
           data={courseOfferingRows}
           columns={courseOfferingColumns}
@@ -2548,7 +2547,7 @@ export function ByCoursePanel({
             </div>
           }
         />
-      </div>
+      </ChartCard>
 
       {/* AI insight — restored 2026-09-14 (Romit: "ai insights card is missing"). Themes are
           the AI lane, NOT a chart — `ai-vs-pulled-lane.md` puts "themes, insights, action

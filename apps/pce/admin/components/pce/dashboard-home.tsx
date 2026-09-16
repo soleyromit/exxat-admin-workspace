@@ -1862,37 +1862,39 @@ function TermHistoryTable({
   const visibleRows = rows.slice(0, visibleCount)
 
   return (
-    <div className="flex flex-col gap-2">
-      <DataTable<TermRow>
-        data={visibleRows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        /* showQueryControls=false — DataTable's toolbar row defaults to
-           min-h-10 regardless of content; with search/filters hidden and no
-           toolbarSlot it still reserved that height as dead space (Romit's
-           catch, 2026-08-19). showQueryControls collapses the bar to its slim
-           min-h-0 variant instead (threaded through as a new opt-in prop on
-           DataTable — additive, every other table's default behavior is
-           unchanged). */
-        showQueryControls={false}
-        edgeInset={false}
-        stickyHeader={false}
-        onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
-        emptyState={
-          <div className="flex flex-col items-center gap-2 py-8">
-            <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
-            <p className="text-sm font-medium">{emptyTitle}</p>
-            <p className="text-xs text-muted-foreground">{emptyBody}</p>
-          </div>
-        }
-      />
-      <TableViewMoreFooter
-        totalCount={rows.length}
-        visibleCount={visibleRows.length}
-        onViewMore={() => setVisibleCount((c) => c + 5)}
-        edgeInset={false}
-      />
-    </div>
+    <Card>
+      <CardContent className="flex flex-col gap-2">
+        <DataTable<TermRow>
+          data={visibleRows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          /* showQueryControls=false — DataTable's toolbar row defaults to
+             min-h-10 regardless of content; with search/filters hidden and no
+             toolbarSlot it still reserved that height as dead space (Romit's
+             catch, 2026-08-19). showQueryControls collapses the bar to its slim
+             min-h-0 variant instead (threaded through as a new opt-in prop on
+             DataTable — additive, every other table's default behavior is
+             unchanged). */
+          showQueryControls={false}
+          edgeInset={false}
+          stickyHeader={false}
+          onRowClick={(row) => router.push(`/course-evaluation/term/${row.id}`)}
+          emptyState={
+            <div className="flex flex-col items-center gap-2 py-8">
+              <i className="fa-light fa-calendar-xmark text-2xl text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm font-medium">{emptyTitle}</p>
+              <p className="text-xs text-muted-foreground">{emptyBody}</p>
+            </div>
+          }
+        />
+        <TableViewMoreFooter
+          totalCount={rows.length}
+          visibleCount={visibleRows.length}
+          onViewMore={() => setVisibleCount((c) => c + 5)}
+          edgeInset={false}
+        />
+      </CardContent>
+    </Card>
   )
 }
 

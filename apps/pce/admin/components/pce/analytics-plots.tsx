@@ -24,6 +24,7 @@ import {
   type PlotTheme,
 } from '@/components/pce/plot-figure'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@exxatdesignux/ui/components/ui/chart'
+import { Button } from '@exxatdesignux/ui'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceArea,
   LineChart, Line, ScatterChart, Scatter, ZAxis, BarChart, Bar, Cell,
@@ -631,7 +632,12 @@ export function ProgramResponseTrend({
           frameAnchor: 'left', y: target, dy: -7, dx: 4,
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
         }),
-        Plot.line(rows, { x: 'short', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
+        // `clip: true` — the y domain is truncated to [45, 100] (see above); PlotFigure sets
+        // `overflow: visible` on the SVG for legitimate cases (axis labels, Leo overlays), so
+        // without an explicit per-mark clip a value below 45 (a real, now-possible response
+        // rate — see the University of Nursing demo account) draws its line/dot past the plot
+        // frame and visibly bleeds out of the ChartCard underneath it.
+        Plot.line(rows, { x: 'short', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x', clip: true }),
         Plot.dot(rows, {
           x: 'short', y: 'value', r: 3,
           // Colour is never the only encoding (A11Y-008) — the target rule carries the same
@@ -639,6 +645,7 @@ export function ProgramResponseTrend({
           fill: (d: { value: number }) => (d.value < target ? theme.warn : theme.rate),
           channels: { Term: 'term', 'Response rate': (d: { value: number }) => `${d.value}%` },
           tip: { format: { x: false, y: false, fill: false, r: false } },
+          clip: true,
         }),
       ],
     }),
@@ -1279,12 +1286,24 @@ export function CourseFacultyQuadrant({
 }) {
   if (!points.length) return <ChartEmpty note="No courses scored in this term yet." />
 
-  // Fixed 0–5 on both axes (Vishal, 2026-09-15) — ratings are always a 1–5 Likert scale in this
-  // product, so a domain that shrinks to a tight window around the actual points (the prior
-  // `min/max ± 0.3` calculation) visually exaggerated small differences; 0–5 is the real,
-  // consistent scale every reader already knows from every other rating viz in this app.
-  const xDomain: [number, number] = [0, 5]
-  const yDomain: [number, number] = [0, 5]
+  /* Floor moved off 0 (Vishal, 2026-09-16: "scale is not making it easy to spot as dots are
+   * crowding... have the scale start from the lowest point; for demo data start from 3 on both
+   * axes"). The prior round's fixed 0–5 (2026-09-15) fixed a DIFFERENT problem — a
+   * min/max-fitted window that zoomed tight around the actual points and exaggerated small
+   * differences — by pinning both ends to the full scale. This isn't that fix reverted: the
+   * CEILING stays fixed at 5 (the scale's real, unpadded max — nothing zooms in up there), only
+   * the empty LOW end below the lowest plotted value gets trimmed, floored to the nearest 0.5 so
+   * dots stop huddling in the frame's top-right fifth. Data-driven, not a hardcoded 3 — it lands
+   * on 3 for today's demo set (course/faculty scores cluster ~3.4–4.8) because that's where the
+   * real data floors, and adapts if the dataset ever drifts. Shared by both axes rather than
+   * floored independently — an uneven start would read as two different zoom levels on what's
+   * meant to be one square, one-scale comparison. */
+  const domainFloor = Math.max(
+    0,
+    Math.min(4.5, Math.floor(Math.min(...points.flatMap((p) => [p.courseAvg, p.facultyAvg]), courseMean, facultyMean) * 2) / 2),
+  )
+  const xDomain: [number, number] = [domainFloor, 5]
+  const yDomain: [number, number] = [domainFloor, 5]
   const labelStyle = { fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }
   const cornerLabelStyle = { fill: 'var(--muted-foreground)', fontSize: CHART_TICK_FONT_SIZE }
   const attentionLabelStyle = { fill: 'var(--status-badge-warning-fg)', fontSize: CHART_TICK_FONT_SIZE, fontWeight: 500 }
@@ -1893,9 +1912,11 @@ export function CourseVsProgramTrend({
   /**
    * Per-term min↔max rule (By Faculty PRD 2026-09-15: "show lowest rating and highest rating
    * in each term across courses"). Rendered as `Plot.ruleY`, NOT a filled area — the spread is
-   * across this entity's different COURSES in that term, not a confidence interval on one
-   * value, and a filled band would falsely imply continuity between terms. Optional; the
-   * By Course caller omits it (that axis has no equivalent "across courses" spread to show).
+   * across this entity's different COURSES (or, on the By Course caller, different OFFERINGS/
+   * sections of the one course) in that term, not a confidence interval on one value, and a
+   * filled band would falsely imply continuity between terms. By Course now passes this too
+   * (2026-09-16, `courseRatingRangeByTerm` — parity fix, this card used to bake one whole-window
+   * min/max into its title instead); a term with a single offering renders as a zero-length rule.
    */
   band?: { short: string; min: number; max: number }[]
   /** Dotted reference line (Vishal, 2026-09-15: Course/Faculty rating trend is "same UX
@@ -2042,10 +2063,40 @@ export function CourseQuestionTrendLines({
     return fullest ? fullest.points.map((p) => p.short) : []
   }, [rows])
 
+  /** Question selection (Vishal, 2026-09-16: "not easy to follow each question's trend... some
+   *  kind of question selection so that only the selected ones are on the graph. Default select
+   *  all"). Local to this component, not lifted to the panel — the card view and its
+   *  `ChartCardActions` expansion render two independent instances of this component, and there
+   *  is no shared reason a selection made in one should carry into the other. Legend entries
+   *  below double as the picker (click to toggle) rather than adding a second control, since the
+   *  legend already names every question this chart can show. */
+  const idsKey = React.useMemo(() => rows.map((r) => r.questionId).join('|'), [rows])
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set(rows.map((r) => r.questionId)))
+  React.useEffect(() => {
+    setSelectedIds(new Set(idsKey ? idsKey.split('|') : []))
+  }, [idsKey])
+  const toggleQuestion = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const visibleRows = React.useMemo(() => rows.filter((r) => selectedIds.has(r.questionId)), [rows, selectedIds])
+
+  /** Legend-hover emphasis (Romit, 2026-09-16: "hovering on each question row should highlight
+   *  the line chart"). Kept separate from `selectedIds` — hover is transient emphasis on an
+   *  already-visible line, selection is what's on the chart at all; hovering a deselected
+   *  question's (now-hidden) legend row has nothing to emphasize, so this only affects lines
+   *  already drawn. `onFocus`/`onBlur` mirror the same state so keyboard users get the same
+   *  highlight a mouse hover gives, not just the click-to-toggle. */
+  const [hoveredId, setHoveredId] = React.useState<string | null>(null)
+
   const flat = React.useMemo(
     () =>
-      rows.flatMap((r) => r.points.map((p) => ({ term: p.short, questionId: r.questionId, text: r.text, value: p.avg }))),
-    [rows],
+      visibleRows.flatMap((r) => r.points.map((p) => ({ term: p.short, questionId: r.questionId, text: r.text, value: p.avg }))),
+    [visibleRows],
   )
 
   const domain = React.useMemo(() => paddedDomain([...flat.map((r) => r.value), threshold], 0.6), [flat, threshold])
@@ -2081,19 +2132,29 @@ export function CourseQuestionTrendLines({
             frameAnchor: 'left', y: threshold, dy: -7, dx: 4,
             fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'start',
           }),
-          Plot.line(solidRows, { x: 'term', y: 'value', stroke: 'questionId', strokeWidth: 2, curve: 'monotone-x' }),
+          Plot.line(solidRows, {
+            x: 'term', y: 'value', stroke: 'questionId', curve: 'monotone-x',
+            strokeWidth: (d: { questionId: string }) => (hoveredId && d.questionId === hoveredId ? 3.5 : 2),
+            strokeOpacity: (d: { questionId: string }) => (hoveredId && d.questionId !== hoveredId ? 0.25 : 1),
+          }),
           ...(dashedRows.length
-            ? [Plot.line(dashedRows, { x: 'term', y: 'value', stroke: 'questionId', strokeWidth: 2, curve: 'monotone-x', strokeDasharray: '5,3' })]
+            ? [Plot.line(dashedRows, {
+                x: 'term', y: 'value', stroke: 'questionId', curve: 'monotone-x', strokeDasharray: '5,3',
+                strokeWidth: (d: { questionId: string }) => (hoveredId && d.questionId === hoveredId ? 3.5 : 2),
+                strokeOpacity: (d: { questionId: string }) => (hoveredId && d.questionId !== hoveredId ? 0.25 : 1),
+              })]
             : []),
           Plot.dot(flat, {
-            x: 'term', y: 'value', fill: 'questionId', r: 2.5,
+            x: 'term', y: 'value', fill: 'questionId',
+            r: (d: { questionId: string }) => (hoveredId && d.questionId === hoveredId ? 4 : 2.5),
+            fillOpacity: (d: { questionId: string }) => (hoveredId && d.questionId !== hoveredId ? 0.25 : 1),
             channels: { Question: 'text', Term: 'term', Average: (d: { value: number }) => fmt2(d.value) },
             tip: { format: { x: false, y: false, fill: false, r: false } },
           }),
         ],
       }
     },
-    [flat, termOrder, domain, rows, threshold],
+    [flat, termOrder, domain, rows, threshold, hoveredId],
   )
 
   // Defensive, not reachable from `ByCoursePanel` today — that call site gates the whole card
@@ -2104,23 +2165,46 @@ export function CourseQuestionTrendLines({
 
   return (
     <div className="flex flex-col gap-3">
-      <PlotFigure spec={spec} height={height} />
-      {/* Text legend, ranked weakest-first (the row order already answers "what's dragging
-          this course down") — colour is not the only encoding (A11Y-008): each swatch pairs a
-          fixed identity with the line's exact latest value, which N lines of pure hue cannot
+      {visibleRows.length > 0 ? (
+        <PlotFigure spec={spec} height={height} />
+      ) : (
+        <ChartEmpty note="No questions selected — pick one or more below." />
+      )}
+      {/* Clickable legend, ranked weakest-first (the row order already answers "what's dragging
+          this course down") — doubles as the question picker (Vishal, 2026-09-16: "some kind of
+          question selection so that only the selected ones are on the graph"), default all
+          selected. Colour is not the only encoding (A11Y-008): each swatch pairs a fixed
+          identity with the line's exact latest value, which N lines of pure hue cannot
           carry past 4-5 series. */}
       <ul className="flex flex-col">
-        {rows.map((r, i) => (
-          <li key={r.questionId} className="flex items-center gap-2 border-b border-border py-1.5 text-xs last:border-b-0">
-            <span
-              aria-hidden="true"
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ background: `var(--chart-${(i % 5) + 1})` }}
-            />
-            <span className="truncate text-muted-foreground">{r.text}</span>
-            <span className="ml-auto shrink-0 tabular-nums font-medium text-foreground">{r.latest.toFixed(1)}</span>
+        {rows.map((r, i) => {
+          const on = selectedIds.has(r.questionId)
+          return (
+          <li key={r.questionId} className="border-b border-border last:border-b-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              aria-pressed={on}
+              onClick={() => toggleQuestion(r.questionId)}
+              onMouseEnter={() => setHoveredId(r.questionId)}
+              onMouseLeave={() => setHoveredId((cur) => (cur === r.questionId ? null : cur))}
+              onFocus={() => setHoveredId(r.questionId)}
+              onBlur={() => setHoveredId((cur) => (cur === r.questionId ? null : cur))}
+              className="flex h-auto w-full items-center justify-start gap-2 py-1.5 text-xs font-normal text-left rounded"
+              style={{ opacity: on ? 1 : 0.45 }}
+            >
+              <span
+                aria-hidden="true"
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ background: `var(--chart-${(i % 5) + 1})` }}
+              />
+              <span className="truncate text-muted-foreground">{r.text}</span>
+              <span className="ml-auto shrink-0 tabular-nums font-medium text-foreground">{r.latest.toFixed(1)}</span>
+            </Button>
           </li>
-        ))}
+          )
+        })}
       </ul>
     </div>
   )
@@ -2179,7 +2263,10 @@ export function ProgramTrendStack({
         // the x-axis tick labels as a grey slab. Clipping it would only hide the deeper
         // problem: area encodes ACCUMULATION, and a response rate does not accumulate. The
         // line carries the shape and the target rule carries the meaning.
-        Plot.line(rateRows, { x: 'term', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
+        // `clip: true` — the y domain is truncated to [40, 100]; PlotFigure's SVG is
+        // `overflow: visible` (for legitimate cases like axis labels), so a response rate
+        // under 40 would otherwise draw its line/dot past the frame and bleed out of the card.
+        Plot.line(rateRows, { x: 'term', y: 'value', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x', clip: true }),
         Plot.dot(rateRows, {
           x: 'term',
           y: 'value',
@@ -2187,6 +2274,7 @@ export function ProgramTrendStack({
           r: 3,
           channels: { Term: 'term', 'Response rate': (d: { value: number }) => `${d.value}%` },
           tip: { format: { x: false, y: false, fill: false } },
+          clip: true,
         }),
         ...(detail
           ? [
@@ -2438,13 +2526,15 @@ export function CourseTrendStack({
           fill: theme.mutedForeground, fontSize: CHART_TICK_FONT_SIZE, textAnchor: 'end',
         }),
         // No areaY — same reason as ProgramTrendStack: fills to y=0 outside a [40,100] domain,
-        // and a rate doesn't accumulate.
-        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x' }),
+        // and a rate doesn't accumulate. `clip: true` — same overflow risk as ProgramTrendStack's
+        // rateSpec: without it, a response rate under 40 bleeds its line/dot out of the card.
+        Plot.line(rows, { x: 'short', y: 'responseRate', stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x', clip: true }),
         Plot.dot(rows, {
           x: 'short', y: 'responseRate', r: 3,
           fill: (d: { responseRate: number }) => (d.responseRate < responseTarget ? theme.warn : theme.rate),
           channels: { Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
           tip: { format: { x: false, y: false, fill: false, r: false } },
+          clip: true,
         }),
         ...(detail
           ? [
@@ -2739,19 +2829,25 @@ export function ResponseCompareLines({
       y: { domain: [45, 100], label: null, ticks: [50, 80], tickFormat: (d: number) => `${d}%`, ...axisDefaults(theme) },
       marks: [
         gridMark(theme),
+        // `clip: true` on every mark below — see the note above `ProgramResponseTrend`'s own
+        // [45, 100]-domain line mark: without it, a response rate under 45 draws past the
+        // plot frame and bleeds out of the ChartCard (PlotFigure's SVG is `overflow: visible`).
         Plot.line(rows, {
           x: 'short', y: 'responseRate', z: 'label',
           stroke: theme.border, strokeWidth: 1, strokeOpacity: 0.7, curve: 'monotone-x',
+          clip: true,
         }),
         // The target IS the chart — a rate without its bar means nothing.
         Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
         Plot.line(hlRows, {
           x: 'short', y: 'responseRate', z: 'label',
           stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x',
+          clip: true,
         }),
         Plot.dot(hlEnds, {
           x: 'short', y: 'responseRate', r: 3,
           fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
+          clip: true,
         }),
         Plot.text(dodgeLabelY(hlEnds, (d) => d.responseRate, [45, 100], height ?? 220), {
           x: 'short', y: 'labelY',
@@ -2778,21 +2874,25 @@ export function ResponseCompareLines({
       fy: { domain: names, label: null, ...axisDefaults(theme) },
       marks: [
         gridMark(theme),
+        // `clip: true` on every mark below — same overflow risk as sharedSpec above.
         Plot.line(ghost, {
           fy: 'panel', x: 'short', y: 'responseRate', z: 'series',
           stroke: theme.border, strokeWidth: 1, curve: 'monotone-x',
+          clip: true,
         }),
         // The target IS the chart — a rate without its bar means nothing.
         Plot.ruleY([target], { stroke: theme.rule, strokeDasharray: '4,4', strokeOpacity: 0.8 }),
         Plot.line(rows, {
           fy: 'label', x: 'short', y: 'responseRate', z: 'label',
           stroke: theme.rate, strokeWidth: 2, curve: 'monotone-x',
+          clip: true,
         }),
         Plot.dot(rows, {
           fy: 'label', x: 'short', y: 'responseRate', r: 2.5,
           fill: (d: { responseRate: number }) => (d.responseRate < target ? theme.warn : theme.rate),
           channels: { Panel: 'label', Term: 'short', 'Response rate': (d: { responseRate: number }) => `${d.responseRate}%` },
           tip: { format: { x: false, y: false, fill: false, r: false, fy: false } },
+          clip: true,
         }),
       ],
     }),

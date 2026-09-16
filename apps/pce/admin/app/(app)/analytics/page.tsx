@@ -177,6 +177,36 @@ function AnalyticsInner() {
    * target down and rebuild it every time, which is unnecessary churn for something that only
    * ever needs to be hidden/shown by which course tab (if any) is currently active.
    */
+  /**
+   * Measures the sticky AY/Term filter row's OWN rendered height so the tabs
+   * row below can stick immediately under it, no matter how many lines the
+   * filter row wraps to (Romit, 2026-09-17: "sticky header gets hidden when
+   * I scroll further down the page"). A `ResizeObserver`, not a hardcoded
+   * pixel offset — the filter row's `flex-wrap` means its real height
+   * changes with viewport width (confirmed live: 76px at wide desktop,
+   * ~140px once "Faculty & role"/"Course" filter slots wrap to a second
+   * line at ~870px), and the OLD fixed `+76px` offset silently overlapped
+   * the tabs row under the filter row's wrapped second line at any narrower
+   * width — a real, separate bug from the "hidden" one, caught while fixing
+   * it (see the scrollport comment below for that one). 76 is only the
+   * pre-measurement fallback for the first paint. */
+  const [filterRowEl, setFilterRowEl] = useState<HTMLDivElement | null>(null)
+  const [filterRowHeight, setFilterRowHeight] = useState(76)
+  useEffect(() => {
+    if (!filterRowEl) return
+    const ro = new ResizeObserver((entries) => {
+      // borderBoxSize, NOT contentRect: contentRect excludes the row's own
+      // vertical padding (10px + 14px), so the tabs row stuck 24px too high
+      // and its labels slid under the filter row (Romit, 2026-09-16,
+      // screenshot: "Overview / Course / Faculty" clipped at the top).
+      const h =
+        entries[0]?.borderBoxSize?.[0]?.blockSize ??
+        entries[0]?.target.getBoundingClientRect().height
+      if (h) setFilterRowHeight(h)
+    })
+    ro.observe(filterRowEl)
+    return () => ro.disconnect()
+  }, [filterRowEl])
   const [facultyFilterSlot, setFacultyFilterSlot] = useState<HTMLDivElement | null>(null)
   /** Portal target for the Faculty tab's own Course/Faculty/Role filters (Romit, 2026-09-15:
    *  "migrate these filter to the sticky filter... whenever I am at the faculty tab, there
@@ -310,6 +340,20 @@ function AnalyticsInner() {
     <>
       <SiteHeader title="Analytics" />
 
+      {/* Sticky containing block (Romit, 2026-09-17: "sticky header gets
+       * hidden when I scroll further down the page"). The bounded
+       * `[data-page-scroll]` scrollport this page needs is now owned by the
+       * shell — `app/(app)/layout.tsx` wraps every page's children in it, so
+       * ALL pages get a viewport-bounded scroll owner (2026-09-16: 34 pages
+       * without one spilled past `<main>` onto `<body>`'s tint). This div
+       * must NOT carry `data-page-scroll`/`overflow-y-auto` itself: the DS
+       * helpers (`page-scroll-port.ts`) find the scrollport via
+       * `querySelector`, so a nested duplicate would make them bind to the
+       * outer, never-scrolling one and break floating table headers here.
+       * `top: 0` offsets below are relative to the shell scrollport, whose
+       * top edge sits right under the utility bar `SiteHeader` portals into. */}
+      <div className="flex flex-col">
+
       {/* Was a hand-rolled `<h1>` (`font-normal` + a bare `var(--font-heading)`
           inline style) — same serif face as `PageHeader`'s own title but the
           wrong weight, so it read as visibly lighter/different next to every
@@ -328,17 +372,9 @@ function AnalyticsInner() {
           was asked ("lock the filters and tab heading on scroll"). z-[45] keeps
           it above the tabs-bar sticking right beneath it (z-[41]) and above
           scrolled panel content; bg-background so content doesn't show
-          through the gap padding creates.
-          `top: var(--shell-utility-bar-height)`, NOT `top: 0` (Romit's catch,
-          2026-09-15, screenshot: the AY/Term selects render with their top
-          edge clipped) — the app shell's own utility bar (`<nav>` in
-          app/(app)/layout.tsx, the "Clinical Education" bar) is ALSO
-          `position: sticky; top: 0` in this same single page-level scroll
-          (confirmed live: real height 42px, z-index 50 — well above this
-          row). Two sticky siblings both pinned at `top: 0` overlap at
-          the exact same viewport band instead of stacking; the higher
-          z-index one (the shell bar) paints over this row's top ~42px. This
-          row's own `top` has to start where the shell bar's box ends.
+          through the gap padding creates. `top: 0` — relative to the
+          `data-page-scroll` scrollport above, not the document, so no
+          shell-bar offset math is needed here any more (see that comment).
 
           z-[45]/z-[41] (Romit, 2026-09-15, screenshot: download/expand icons and table
           column headers rendering ON TOP of these tab/filter bars while scrolling) —
@@ -355,7 +391,7 @@ function AnalyticsInner() {
           content scrolled to the same screen band. Bumped both page-level bars past every
           known DS-internal z-40 usage, still under the shell's z-50 — affects every tab
           uniformly, this wasn't Faculty-specific. */}
-      <div className="shrink-0 sticky z-[45] bg-background flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 14px', top: 'var(--shell-utility-bar-height)' }}>
+      <div ref={setFilterRowEl} className="shrink-0 sticky z-[45] bg-background flex flex-wrap items-end gap-3" style={{ padding: '10px 28px 14px', top: 0 }}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground" htmlFor="overview-ay">Academic year</label>
           <Select value={overviewAcademicYear} onValueChange={setOverviewAcademicYear}>
@@ -385,12 +421,27 @@ function AnalyticsInner() {
         <div ref={setCourseListFilterSlot} hidden={activeTab !== 'course'} />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+      {/* `flex flex-col` only, NOT `flex-1 min-h-0` — that combination used to
+       * mean "fill remaining viewport space, TabsContent scrolls its own
+       * overflow" (the pre-scrollport architecture). Inside `data-page-scroll`
+       * now, `<Tabs>` should size to its OWN natural content height and let
+       * that one ancestor's scrollbar handle everything — `flex-1 min-h-0`
+       * instead capped `<Tabs>` to "whatever space is left after PageHeader +
+       * the filter row" (confirmed live: 604px, while its real content ran
+       * far taller), which broke the tabs row's OWN sticky positioning the
+       * exact same way `<main>`'s short box broke the outer rows (see the
+       * scrollport comment above) — same failure, one level deeper. */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
         {/* Sticks directly beneath the filter row above (same ask — "lock the
-            ... tab heading on scroll"); `top` adds that row's own 76px
-            rendered height ON TOP of the shell utility bar's own height, so
-            all three stack with no gap or overlap. */}
-        <div className="border-b border-border shrink-0 sticky z-[41] bg-background" style={{ padding: '0 28px', top: 'calc(var(--shell-utility-bar-height) + 76px)' }}>
+            ... tab heading on scroll"); `top` is `filterRowHeight`, measured
+            live off the filter row via `ResizeObserver` (see that state's own
+            comment) rather than a hardcoded pixel guess — the filter row's
+            `flex-wrap` means its real height changes with viewport width
+            (confirmed live: 76px at wide desktop, ~140px once its filter
+            slots wrap to a second line at ~870px), and the OLD hardcoded
+            `+76px` silently overlapped this row under the filter row's
+            wrapped second line at any narrower width. */}
+        <div className="border-b border-border shrink-0 sticky z-[41] bg-background" style={{ padding: '0 28px', top: filterRowHeight }}>
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="course">Course</TabsTrigger>
@@ -546,6 +597,8 @@ function AnalyticsInner() {
           </TabsContent>
         ))}
       </Tabs>
+
+      </div>
 
       {/* ───── Evaluation Card ───── */}
       <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />

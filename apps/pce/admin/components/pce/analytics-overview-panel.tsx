@@ -81,6 +81,13 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
      comparator reads one top-level property via `sortKey`. */
   courseBelow: boolean
   facultyBelow: boolean
+  /** Lowest/highest CONTENT rating across this course's own offerings in scope — Vishal,
+   *  2026-09-16: "add a column for the lowest rating and highest rating, no question detail,
+   *  just the rating." Distinct from the per-QUESTION extreme columns (`QuestionExtremeCell`)
+   *  removed from this same card 2026-09-15 — those drilled into one question's low/high; this
+   *  is the offering-level rating spread, already sitting on `CourseStat.ratings`. */
+  lowestRating: number | null
+  highestRating: number | null
 }
 
 /** One row per (faculty, role) pair — a person holding two roles is counted twice, same as the
@@ -125,6 +132,23 @@ function RatingCell({ value, below }: { value: number | null; below: boolean }) 
       style={{ background: below ? 'var(--conditional-rule-red)' : 'transparent', padding: '2px 8px' }}
     >
       {fmt2(value)}
+    </span>
+  )
+}
+
+/** Below-target response-rate cell — same pale red tint as `RatingCell` above (Vishal,
+ *  2026-09-16: "highlight the response rate cells with less than threshold in red"), reusing
+ *  the same scoped VIZ-004/Aarti-amber override this card's rating columns already carry rather
+ *  than inventing a second red treatment. Threshold is `RESPONSE_TARGET`, not a rating median —
+ *  a response rate has no "median" to flag against, it has the program's real coverage target. */
+function ResponseRateCell({ value }: { value: number }) {
+  const below = value < RESPONSE_TARGET
+  return (
+    <span
+      className="inline-block rounded font-semibold tabular-nums text-foreground"
+      style={{ background: below ? 'var(--conditional-rule-red)' : 'transparent', padding: '2px 8px' }}
+    >
+      {value}%
     </span>
   )
 }
@@ -215,6 +239,8 @@ export function AnalyticsOverviewPanel({
           responseRate: c.responseRate,
           courseBelow: courseVal != null && courseVal < courseMedian,
           facultyBelow: facultyVal != null && facultyVal < courseFacultyMedian,
+          lowestRating: c.ratings.length ? Math.min(...c.ratings) : null,
+          highestRating: c.ratings.length ? Math.max(...c.ratings) : null,
         }
       }),
     [allCourseStats, courseMedian, courseFacultyMedian, terms],
@@ -269,7 +295,23 @@ export function AnalyticsOverviewPanel({
         sortable: true,
         sortKey: 'responseRate',
         width: 120,
-        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+        cell: (row) => <ResponseRateCell value={row.responseRate} />,
+      },
+      {
+        key: 'lowestRating',
+        label: 'Lowest rating',
+        sortable: true,
+        sortKey: 'lowestRating',
+        width: 110,
+        cell: (row) => (row.lowestRating != null ? <span className="tabular-nums">{fmt2(row.lowestRating)}</span> : <span className="text-muted-foreground">—</span>),
+      },
+      {
+        key: 'highestRating',
+        label: 'Highest rating',
+        sortable: true,
+        sortKey: 'highestRating',
+        width: 110,
+        cell: (row) => (row.highestRating != null ? <span className="tabular-nums">{fmt2(row.highestRating)}</span> : <span className="text-muted-foreground">—</span>),
       },
     ],
     [],

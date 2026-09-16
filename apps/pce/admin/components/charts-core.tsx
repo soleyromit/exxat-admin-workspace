@@ -532,15 +532,18 @@ export function ChartCard({
                   const isUp   = m.trend === "up"
                   const isDown = m.trend === "down"
                   const tone = metricTrendTone(m.trend ?? "neutral", m.trendPolarity)
+                  /* `--qb-status-saved-fg`, not `text-emerald-600` — same
+                   * 3.65:1-on-white axe failure as the kpi-chart variant
+                   * below (2026-09-17), same fix. */
                   const upClass =
                     tone === "positive"
-                      ? "text-emerald-600"
+                      ? "text-[var(--qb-status-saved-fg)]"
                       : tone === "negative"
                         ? "text-destructive-ink"
                         : "text-muted-foreground"
                   const downClass =
                     tone === "positive"
-                      ? "text-emerald-600"
+                      ? "text-[var(--qb-status-saved-fg)]"
                       : tone === "negative"
                         ? "text-destructive-ink"
                         : "text-muted-foreground"
@@ -591,9 +594,12 @@ export function ChartCard({
     // `--qb-status-draft-fg` (not `text-amber-600`, which axe flagged at 3.19:1 on white —
     // below the 4.5:1 small-text threshold) is this app's own AA-checked amber-on-white
     // foreground, already relied on by every warning-tint badge in pce-badges.tsx.
+    // `--qb-status-saved-fg` (not `text-emerald-600`, 2026-09-17: axe flagged the SAME
+    // 3.65:1-on-white failure on results/[id]'s new Faculty Score tile, below 4.5:1) is
+    // this app's own AA-checked green-on-white foreground, mirroring the amber fix above.
     const trendClass =
       tone === "positive"
-        ? "text-emerald-600"
+        ? "text-[var(--qb-status-saved-fg)]"
         : tone === "negative"
           ? "text-[var(--qb-status-draft-fg)]"
           : "text-muted-foreground"

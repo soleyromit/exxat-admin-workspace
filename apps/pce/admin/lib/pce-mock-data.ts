@@ -696,7 +696,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
   {
     id: 'otr-mon1-1',
     surveyId: 'mon1',
-    questionText: 'What would you change about this course?',
+    questionText: 'What would you take away from your experience in this course?',
     text: 'Spread the heavy readings out. The middle weeks stack up against the MSK labs.',
     sectionSubject: 'course_content',
     flagged: false,
@@ -705,7 +705,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
   {
     id: 'otr-mon1-2',
     surveyId: 'mon1',
-    questionText: 'What would you change about this course?',
+    questionText: 'What would you take away from your experience in this course?',
     text: 'Keep the lab progression as is. Each session builds on the last one really well.',
     sectionSubject: 'course_content',
     flagged: false,
@@ -714,8 +714,8 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
   {
     id: 'otr-mon1-3',
     surveyId: 'mon1',
-    questionText: 'What feedback do you have for the instructor?',
-    text: 'Dr. Kim explains palpation techniques clearly and checks in with every table.',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor explains palpation techniques clearly and checks in with every table.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'positive',
@@ -723,8 +723,75 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
   {
     id: 'otr-mon1-4',
     surveyId: 'mon1',
-    questionText: 'What feedback do you have for the instructor?',
+    questionText: 'What would you like to tell future students about this instructor?',
     text: 'More practice time before the graded skills check would take the pressure off.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  /* Added 2026-09-17 (Romit: "pick some of the responses from this document
+   * and update the free-text, summary, charts") — sourced from a real
+   * Marquette University PHTH 7504 course-evaluation report Romit shared
+   * (~/Downloads/Spring 2025 MOCES PHTH 7504 1 (2).pdf), a genuine survey
+   * with 32 course comments + 35 instructor comments at n=53. Reworded to
+   * fit NURS-510's own question wording and de-identified — the source
+   * names a real instructor and institution, neither of which belongs in
+   * this product's demo data (same convention as the mon28 fix: "the
+   * instructor," never a real or invented full name tied to a real person).
+   * These widen mon1's free-text pool from 2→5 responses per question (see
+   * `freeTextCounts` below) and their sentiment mix feeds the per-question
+   * sentiment donut in `WrittenResponsesRow` — no separate chart edit
+   * needed, it derives straight from these tags. */
+  {
+    id: 'otr-mon1-5',
+    surveyId: 'mon1',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Grading felt inconsistent between different graders on the skills check — a shared rubric would help.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon1-6',
+    surveyId: 'mon1',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'I wish we spent a little more time in class on documentation and charting requirements.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon1-7',
+    surveyId: 'mon1',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'The case studies during lecture were my favorite part of the course — more of those would be great.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-8',
+    surveyId: 'mon1',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor keeps a dense subject engaging and clearly knows the material inside out.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-9',
+    surveyId: 'mon1',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'Offered a retake after I struggled on an assessment and helped me understand what went wrong — really appreciated that.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon1-10',
+    surveyId: 'mon1',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'Explanations can run a little long at times — being more concise would help keep pace.',
     sectionSubject: 'course_instructor',
     flagged: false,
     sentiment: 'concern',
@@ -966,7 +1033,221 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     flagged: true,
     sentiment: 'concern',
   },
+
+  /* ── mon28 — NURS-515 Pharmacology for Nurses · Summer 2026 · LEAD DEMO ──
+     Backs MOCK_SURVEY_QUESTION_DATA.mon28.freeTextCounts exactly: q5 = 7 rows,
+     q8 = 8 rows. Both the per-question "View responses" sheet and the
+     per-question AI summary match on `questionText`, so these strings must stay
+     character-identical to tmpl1's q5 / q8 wording. ─────────────────────── */
+  {
+    id: 'otr-mon28-q5-1',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Spread the cardiac and anticoagulant units out. Those two weeks carry most of the workload.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q5-2',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Keep the drug-class case studies. They are the reason the mechanisms stuck.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon28-q5-3',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Return the dosage calculation practice sets before the unit exam, not after it.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q5-4',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'A one-page summary sheet per drug class would make revision for the final far easier.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-mon28-q5-5',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'More medication safety scenarios drawn from real charts, fewer textbook examples.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-mon28-q5-6',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Pairing this with pathophysiology worked well. I would keep the two courses in the same term.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon28-q5-7',
+    surveyId: 'mon28',
+    questionText: 'What would you take away from your experience in this course?',
+    text: 'Post the lecture slides before class so we can annotate during the session.',
+    sectionSubject: 'course_content',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q8-1',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor is clearly an expert, but the calculation examples go by too fast to follow.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q8-2',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor is well prepared every session and the structure of the lectures is easy to follow.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon28-q8-3',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'Clearer expectations for the case write-up would help. The rubric came out late.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q8-4',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor checks that we understand the adverse-effect profiles before moving on. That helps a lot.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon28-q8-5',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'The instructor gives specific feedback on every medication administration write-up. The most useful part of the course.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+  {
+    id: 'otr-mon28-q8-6',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'A short recap at the start of each session would connect the drug classes week to week.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'neutral',
+  },
+  {
+    id: 'otr-mon28-q8-7',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'Grading felt inconsistent between the two sections on the same assignment.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'concern',
+  },
+  {
+    id: 'otr-mon28-q8-8',
+    surveyId: 'mon28',
+    questionText: 'What would you like to tell future students about this instructor?',
+    text: 'Both instructors are approachable in office hours. No question was ever treated as too basic.',
+    sectionSubject: 'faculty',
+    flagged: false,
+    sentiment: 'positive',
+  },
+
+  // ── University of Nursing demo account (BSN/MSN dummy-data scenario) ────
+  { id: 'otr-uon-f1-1', surveyId: 'uon-f1', questionText: 'What would you change about this course?', text: 'Give us the care-plan rubric earlier in the week instead of two days before it is due.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f1-2', surveyId: 'uon-f1', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Patel checks in with every table during skills lab and remembers where each of us struggled last time.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-f2-1', surveyId: 'uon-f2', questionText: 'What would you change about this course?', text: 'Spread the systems review across two labs instead of cramming it into one.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f2-2', surveyId: 'uon-f2', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Kim is knowledgeable but could slow down during the cardiac auscultation demo.', sectionSubject: 'faculty', sentiment: 'concern' },
+
+  { id: 'otr-uon-f3-1', surveyId: 'uon-f3', questionText: 'What would you change about this course?', text: 'Update the slides, some of the terminology is from an older edition of the textbook.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f3-2', surveyId: 'uon-f3', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Williams knows the material cold, but please slow down during the harder mechanisms.', sectionSubject: 'faculty', sentiment: 'concern' },
+
+  { id: 'otr-uon-f4-1', surveyId: 'uon-f4', questionText: 'What would you change about this course?', text: 'Warn us further ahead before changing the exam format and grading rubric.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f4-2', surveyId: 'uon-f4', questionText: 'What would you change about this course?', text: 'Keep the case-based drug-class grouping, it is a huge improvement over memorizing lists.', sectionSubject: 'course_content', sentiment: 'positive' },
+  { id: 'otr-uon-f4-3', surveyId: 'uon-f4', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Chen is one of the most engaging lecturers in the program, but the office-hours crunch after the format change was rough.', sectionSubject: 'faculty', sentiment: 'concern' },
+  { id: 'otr-uon-f4-4', surveyId: 'uon-f4', questionText: 'What feedback do you have for the instructor?', text: "Would not have made it through pharmacology without Dr. Gomez's guest session on antibiotics.", sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-f5-1', surveyId: 'uon-f5', questionText: 'What would you change about this course?', text: 'Give the wound-care lab a full session instead of splitting it.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f5-2', surveyId: 'uon-f5', questionText: 'What feedback do you have for the instructor?', text: "Dr. Patel's feedback on write-ups is detailed and comes back fast.", sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-f6-1', surveyId: 'uon-f6', questionText: 'What would you change about this course?', text: 'Add a second office-hour slot that does not overlap with clinical.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f6-2', surveyId: 'uon-f6', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Gomez is engaging in lecture, the newborn assessment simulation was great.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-f7-1', surveyId: 'uon-f7', questionText: 'What would you change about this course?', text: 'Slow down the growth-and-development unit until after our first peds clinical day.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f7-2', surveyId: 'uon-f7', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Williams is well organized, more worked dosage examples would help.', sectionSubject: 'faculty', sentiment: 'neutral' },
+
+  { id: 'otr-uon-f8-1', surveyId: 'uon-f8', questionText: 'What would you change about this course?', text: 'Genuinely cannot think of anything to change, maybe one more simulation day before the first shift.', sectionSubject: 'course_content', sentiment: 'neutral' },
+  { id: 'otr-uon-f8-2', surveyId: 'uon-f8', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Hassan and Dr. Kim make an incredible clinical team, approachable, available, and clearly invested in every student.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-f9-1', surveyId: 'uon-f9', questionText: 'What would you change about this course?', text: 'Give personality disorders the same amount of time as mood disorders.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f9-2', surveyId: 'uon-f9', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Chen is engaging in discussion, feedback turnaround on process recordings could be faster.', sectionSubject: 'faculty', sentiment: 'concern' },
+
+  { id: 'otr-uon-f10-1', surveyId: 'uon-f10', questionText: 'What would you change about this course?', text: "Slow the pace down or split this into two courses, it's a lot for one term.", sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-f10-2', surveyId: 'uon-f10', questionText: 'What feedback do you have for the instructor?', text: "Dr. Williams's expertise is obvious, more worked examples before graded work would help.", sectionSubject: 'faculty', sentiment: 'neutral' },
+
+  { id: 'otr-uon-s1-1', surveyId: 'uon-s1', questionText: 'What would you change about this course?', text: 'Some of the assigned readings are outdated and reference equipment we do not use anymore.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-s1-2', surveyId: 'uon-s1', questionText: 'What feedback do you have for the instructor?', text: 'Very approachable, answers emails quickly.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-s2-1', surveyId: 'uon-s2', questionText: 'What would you change about this course?', text: 'Give us a difficulty-matched practice exam, not just easy quizzes.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-s2-2', surveyId: 'uon-s2', questionText: 'What feedback do you have for the instructor?', text: 'More structure to the lecture sequence would help a lot.', sectionSubject: 'faculty', sentiment: 'concern' },
+
+  { id: 'otr-uon-s3-1', surveyId: 'uon-s3', questionText: 'What would you change about this course?', text: 'Add a practice exam at the new difficulty level before the real one.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-s3-2', surveyId: 'uon-s3', questionText: 'What feedback do you have for the instructor?', text: 'The structure by mechanism instead of by drug name made studying way more efficient.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-s4-1', surveyId: 'uon-s4', questionText: 'What would you change about this course?', text: 'Compress the wound-care lab less, it was hard to keep up in eight weeks.', sectionSubject: 'course_content', sentiment: 'concern' },
+  { id: 'otr-uon-s4-2', surveyId: 'uon-s4', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Gomez replied to emails within a day even during the compressed schedule.', sectionSubject: 'faculty', sentiment: 'positive' },
+
+  { id: 'otr-uon-s5-1', surveyId: 'uon-s5', questionText: 'What would you change about this course?', text: 'Nothing major, maybe post office hours further in advance.', sectionSubject: 'course_content', sentiment: 'neutral' },
+  { id: 'otr-uon-s5-2', surveyId: 'uon-s5', questionText: 'What feedback do you have for the instructor?', text: 'Dr. Hassan turns office hours into real case-consult sessions, extremely valuable for a small cohort.', sectionSubject: 'faculty', sentiment: 'positive' },
 ]
+
+/* ── per-question AI summaries ────────────────────────────────────────────────
+   Hand-authored stand-ins for the summariser the results page would call in
+   production, keyed `${surveyId}:${questionId}`. Each string is a synthesis of
+   the ACTUAL response strings above for that question — nothing is asserted
+   here that the underlying responses don't say. Questions without an entry get
+   a derived summary (counts + clustered themes + a representative quote) at
+   render time, so the surface never shows an empty Summary block. */
+/* 2026-09-17: reframed from "what would you change" phrasing to match the
+ * new question wording (Vishal's Harvard-form prompts, swapped in on
+ * `tmpl1`'s q5/q8 — "What would you take away from your experience..." /
+ * "What would you like to tell future students..."). Same underlying signal
+ * from the same response set, just narrated as a takeaway/heads-up rather
+ * than a change-request — nothing asserted here that the responses (above,
+ * in `MOCK_OPEN_TEXT_RESPONSES`) don't say. */
+export const MOCK_QUESTION_AI_SUMMARY: Record<string, string> = {
+  'mon28:q5':
+    "What stands out from students' experience is mostly pacing and timing rather than content: the cardiac and anticoagulant units stack too close together, the dosage calculation practice sets land after the unit exam instead of before it, and slides sometimes post after class instead of ahead of it. What they'd tell a future student to expect and value is the drug-class case studies and running this course alongside pathophysiology in the same term.",
+  'mon28:q8':
+    "What students would tell future students about these instructors: both are well prepared and approachable, and checking understanding of adverse-effect profiles before moving on plus specific feedback on every medication administration write-up stood out as especially useful. The heads-up they'd give: calculation examples move fast, the case write-up rubric can arrive late, and grading has felt inconsistent between sections on the same assignment — so ask questions early and keep pace.",
+  'mon1:q5':
+    "What stands out from students' experience is mostly pacing and structure rather than content: the heavier reading weeks stack against the MSK labs, grading on the skills check felt inconsistent across graders, and a few wanted more class time on documentation and charting requirements. What they'd tell a future student to expect and value is the lab progression and the lecture case studies — several call those out as the strongest part of the course.",
+  'mon1:q8':
+    "What students would tell future students about this instructor: clear, engaging, and willing to go the extra mile — checking in with every table during labs and offering a retake after a rough assessment rather than letting a bad grade stand. The one heads-up they'd give: the pace picks up before graded skills checks, so ask for practice time early.",
+}
 
 export const MOCK_TEMPLATES: PceTemplate[] = [
   {
@@ -975,7 +1256,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
-    questionCount: 12,
+    questionCount: 14,
     usedBySurveyCount: 3,
     lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
@@ -984,20 +1265,22 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     surveyType: 'course_evaluation',
     questions: {
       course_content: [
-        { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
-        { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
-        { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
-        { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
-        { id: 'q12', text: 'Feedback on assignments was communicated in a timely manner.', answerType: 'likert', order: 4 },
-        { id: 'q13', text: 'The grading rubric for exams was fair and transparent.', answerType: 'likert', order: 5 },
-        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
+        { id: 'q1', text: 'Evaluate the course overall.', answerType: 'likert', order: 0 },
+        { id: 'q2', text: 'Course materials (readings, audio-visual materials, textbooks, lab manuals, website, etc.)', answerType: 'likert', order: 1 },
+        { id: 'q3', text: 'Assignments (exams, essays, problem sets, language homework, etc.)', answerType: 'likert', order: 2 },
+        { id: 'q4', text: 'Feedback you received on work you produced in this course', answerType: 'likert', order: 3 },
+        { id: 'q12', text: 'Section component of the course', answerType: 'likert', order: 4 },
+        { id: 'q13', text: 'How difficult did you find this course?', answerType: 'likert', order: 5 },
+        { id: 'q5', text: 'What would you take away from your experience in this course?', answerType: 'free_text', order: 6 },
       ],
       faculty_performance: [
-        { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
-        { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
-        { id: 'q14', text: "The instructor's grading of assignments was fair and consistent.", answerType: 'likert', order: 2 },
-        { id: 'q15', text: 'The instructor explains complex concepts clearly and engages the class.', answerType: 'likert', order: 3 },
-        { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 4 },
+        { id: 'q6', text: 'Evaluate your Instructor overall.', answerType: 'likert', order: 0 },
+        { id: 'q15', text: 'Gives effective lectures or presentations, if applicable', answerType: 'likert', order: 1 },
+        { id: 'q7', text: 'Is accessible outside of class (including after class, office hours, e-mail, etc.)', answerType: 'likert', order: 2 },
+        { id: 'q16', text: 'Generates enthusiasm for the subject matter', answerType: 'likert', order: 3 },
+        { id: 'q14', text: 'Gives useful feedback on assignments', answerType: 'likert', order: 4 },
+        { id: 'q17', text: 'Returns assignments in a timely fashion', answerType: 'likert', order: 5 },
+        { id: 'q8', text: 'What would you like to tell future students about this instructor?', answerType: 'free_text', order: 6 },
       ],
       course_director: [],
     },
@@ -1008,27 +1291,57 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         title: 'Course Content',
         order: 0,
         questions: [
-          { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
-          { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
-          { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
-          { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
-          { id: 'q12', text: 'Feedback on assignments was communicated in a timely manner.', answerType: 'likert', order: 4 },
-          { id: 'q13', text: 'The grading rubric for exams was fair and transparent.', answerType: 'likert', order: 5 },
-          { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 6 },
+          { id: 'q1', text: 'Evaluate the course overall.', answerType: 'likert', order: 0 },
+          { id: 'q2', text: 'Course materials (readings, audio-visual materials, textbooks, lab manuals, website, etc.)', answerType: 'likert', order: 1 },
+          { id: 'q3', text: 'Assignments (exams, essays, problem sets, language homework, etc.)', answerType: 'likert', order: 2 },
+          { id: 'q4', text: 'Feedback you received on work you produced in this course', answerType: 'likert', order: 3 },
+          { id: 'q12', text: 'Section component of the course', answerType: 'likert', order: 4 },
+          { id: 'q13', text: 'How difficult did you find this course?', answerType: 'likert', order: 5 },
+          { id: 'q5', text: 'What would you take away from your experience in this course?', answerType: 'free_text', order: 6 },
         ],
       },
+      /* Faculty aspect split into three topical sections (stakeholder bar,
+       * 2026-09-16: a lead demo evaluation shows 2–3 faculty sections, not one
+       * undifferentiated "Faculty Performance" block). All three keep
+       * subjectKey 'faculty' and roleSetId 'rs1-a' — the subject is still the
+       * same person under the same role set; only the TOPIC differs. Keeping
+       * the key means every subjectKey consumer (preview, evaluation card,
+       * course readiness, report access) behaves exactly as before, and
+       * per-instructor scores still resolve by questionId through
+       * `instructorBlocks`, so surveys with hand-authored question data that
+       * predate the split (mon1, s1, s3, s4, s5) are unaffected. */
       {
         id: 'ts1-2',
         subjectKey: 'faculty',
-        title: 'Faculty Performance',
+        title: 'Teaching Effectiveness',
         order: 1,
         roleSetId: 'rs1-a',
         questions: [
-          { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
-          { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
-          { id: 'q14', text: "The instructor's grading of assignments was fair and consistent.", answerType: 'likert', order: 2 },
-          { id: 'q15', text: 'The instructor explains complex concepts clearly and engages the class.', answerType: 'likert', order: 3 },
-          { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 4 },
+          { id: 'q6', text: 'Evaluate your Instructor overall.', answerType: 'likert', order: 0 },
+          { id: 'q15', text: 'Gives effective lectures or presentations, if applicable', answerType: 'likert', order: 1 },
+        ],
+      },
+      {
+        id: 'ts1-3',
+        subjectKey: 'faculty',
+        title: 'Communication',
+        order: 2,
+        roleSetId: 'rs1-a',
+        questions: [
+          { id: 'q7', text: 'Is accessible outside of class (including after class, office hours, e-mail, etc.)', answerType: 'likert', order: 0 },
+          { id: 'q16', text: 'Generates enthusiasm for the subject matter', answerType: 'likert', order: 1 },
+        ],
+      },
+      {
+        id: 'ts1-4',
+        subjectKey: 'faculty',
+        title: 'Assessment Practices',
+        order: 3,
+        roleSetId: 'rs1-a',
+        questions: [
+          { id: 'q14', text: 'Gives useful feedback on assignments', answerType: 'likert', order: 0 },
+          { id: 'q17', text: 'Returns assignments in a timely fashion', answerType: 'likert', order: 1 },
+          { id: 'q8', text: 'What would you like to tell future students about this instructor?', answerType: 'free_text', order: 2 },
         ],
       },
     ],
@@ -1512,7 +1825,18 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   //    this she taught no LIVE course and the faculty home had no live group at
   //    all. Co-taught offerings are the norm, and guest instructors were an
   //    explicit design topic (Apr 21), so this is realistic, not a fixture hack.
-  { id: 'mon1',  courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.kim, role: 'guest' }], responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Aug 21, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-15', nextScheduledReminderAt: '2026-08-20', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
+  /* Second instructor is Gomez (f5, position 'Core Faculty' → "Instructor"),
+   * NOT Kim — Kim's own directory `position` ('Clinical Coordinator')
+   * resolves through facultyEvalRole() to "Course Coordinator" the same as
+   * Patel, so pairing him here read as TWO course coordinators once his
+   * `role: 'guest'` override (which rendered "Guest Lecturer") was found to
+   * violate 2026-09-16's explicit "no guest lecturer, so instructor and
+   * coordinator or 2 instructors." Gomez as a plain 'primary' pairing gives
+   * the exact "coordinator + instructor" shape asked for, without touching
+   * Kim's shared directory `position` (used by every other survey he's on)
+   * to force a different label. Swapped 2026-09-17 during a full
+   * requirements re-check against the raw meeting transcript. */
+  { id: 'mon1',  courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.patel, INSTRUCTORS.gomez], responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Aug 21, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-15', nextScheduledReminderAt: '2026-08-20', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon2',  courseCode: 'NURS-611', courseName: 'Pediatric Nursing',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 90, responseCount: 36, enrollmentCount: 40, deadline: 'Aug 20, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon3',  courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Aug 23, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-06-16', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon4',  courseCode: 'NURS-505', courseName: 'Fundamentals of Nursing I',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
@@ -1526,7 +1850,15 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   // "Last closed term" card's below-threshold banner has real courses/faculty to count.
   { id: 'mon26', courseCode: 'NURS-501', courseName: 'Human Anatomy & Physiology',   term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 82, responseCount: 41, enrollmentCount: 50, deadline: 'Aug 12, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon27', courseCode: 'NURS-510', courseName: 'Medical-Surgical Nursing I',   term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.patel],    responseRate: 80, responseCount: 34, enrollmentCount: 42, deadline: 'Aug 12, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon28', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses',      term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.chen],     responseRate: 70, responseCount: 32, enrollmentCount: 46, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
+  /* LEAD DEMO RECORD (stakeholder bar, 2026-09-16) — the one fully hand-wired
+   * single-survey result: two instructors whose roles resolve to Course
+   * Coordinator (Chen, position 'Course Director') and Instructor (Gomez,
+   * position 'Core Faculty') via facultyEvalRole(), real per-question scores
+   * in MOCK_SURVEY_QUESTION_DATA, real comments in MOCK_RESPONSES, and real
+   * per-question open text in MOCK_OPEN_TEXT_RESPONSES. Chen's shared
+   * INSTRUCTORS entry carries role 'guest' (which resolves to Guest Lecturer);
+   * overridden to 'primary' HERE only, so no other survey moves. */
+  { id: 'mon28', courseCode: 'NURS-515', courseName: 'Pharmacology for Nurses',      term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [{ ...INSTRUCTORS.chen, role: 'primary' }, INSTRUCTORS.gomez], responseRate: 70, responseCount: 32, enrollmentCount: 46, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon29', courseCode: 'NURS-540', courseName: 'Clinical Reasoning & Diagnostics', term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.chen],     responseRate: 68, responseCount: 26, enrollmentCount: 38, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon30', courseCode: 'NURS-502', courseName: 'Physiology & Pathophysiology', term: 'Summer 2026', cohort: 'Class of 2028', courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 88, responseCount: 48, enrollmentCount: 54, deadline: 'Aug 16, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon31', courseCode: 'NURS-611', courseName: 'Pediatric Nursing',            term: 'Summer 2026', cohort: 'Class of 2027', courseType: 'clinical', templateId: 'tmpl2', status: 'released', instructors: [INSTRUCTORS.williams], responseRate: 85, responseCount: 26, enrollmentCount: 30, deadline: 'Aug 16, 2026', createdAt: 'May 20, 2026', createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1' },
@@ -1675,7 +2007,18 @@ export const MOCK_RESPONSES: PceResponse[] = [
     comments: [
       { section: 'course_content', text: 'The msk labs build on each other really well so far.', sentiment: 'positive' },
       { section: 'course_content', text: 'Reading load feels heavy for the middle weeks.', sentiment: 'concern' },
-      { section: 'faculty_performance', text: 'Dr. Kim explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f4' },
+      { section: 'faculty_performance', text: 'The instructor explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f5' },
+      /* Added 2026-09-17 (Romit: "can't show empty placeholders for score or
+       * highlights") — the ORIGINAL single comment above and any Patel
+       * comment matched none of THEME_PATTERNS' keywords (lib/pce-themes.ts),
+       * so deriveThemes() produced zero positive themes for EITHER
+       * instructor's Faculty-tab scope, even though both now have real
+       * scored questions. These two hit the 'Faculty engagement' keyword set
+       * cleanly (approachable/organized, communicates) with no concurrent
+       * concern comment on that theme, so each instructor's scope gets one
+       * real Highlight instead of the empty state. */
+      { section: 'faculty_performance', text: 'The instructor is approachable and keeps every session well organized.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'The instructor communicates expectations clearly before each skills check.', sentiment: 'positive', facultyId: 'f5' },
     ],
   },
   {
@@ -1798,6 +2141,150 @@ export const MOCK_RESPONSES: PceResponse[] = [
     ],
     comments: [],
   },
+  /* mon28 — NURS-515 Pharmacology for Nurses · Summer 2026. THE LEAD DEMO
+   * RECORD (2026-09-16). Section averages are the means of the per-question
+   * scores in MOCK_SURVEY_QUESTION_DATA (course 3.67 → 3.7; faculty is the
+   * blend of Chen 3.75 and Gomez 4.15 → 4.0), so the KPI strip, the section
+   * cards and the question breakdown all agree. Sentiment is a deliberate
+   * positive/constructive mix on BOTH sections so the sentiment split reads as
+   * real data rather than a one-sided fixture; 'concern' renders as
+   * "Constructive", never red. Faculty comments carry facultyId because this
+   * offering has two instructors — an unattributed one stays unattributed. */
+  {
+    surveyId: 'mon28',
+    sectionScores: [
+      { section: 'course_content', avg: 3.7, count: 32 },
+      { section: 'faculty_performance', avg: 4.0, count: 32 },
+    ],
+    comments: [
+      { section: 'course_content', text: 'The drug-class case studies made the mechanisms much easier to remember.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Linking pharmacokinetics to the clinical scenarios was the strongest part of the course.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The workload in the cardiac and anticoagulant weeks is heavier than the credit hours suggest.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Dosage calculation practice sets came back too late to help before the unit exam.', sentiment: 'concern' },
+      { section: 'course_content', text: 'The medication safety module was practical and I used it directly in clinical.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The reading list was useful, though some chapters overlapped with pathophysiology.', sentiment: 'neutral' },
+      { section: 'faculty_performance', text: 'Dr. Chen is well prepared for every session and the structure of the lectures is easy to follow.', sentiment: 'positive', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Dr. Chen knows the material well, but the lectures move quickly through the calculation examples.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Grading on the case write-ups felt inconsistent between the two sections.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Dr. Gomez explains adverse-effect profiles clearly and checks that we follow before moving on.', sentiment: 'positive', facultyId: 'f5' },
+      { section: 'faculty_performance', text: 'Dr. Gomez gave specific, usable feedback on every medication administration write-up.', sentiment: 'positive', facultyId: 'f5' },
+      { section: 'faculty_performance', text: 'Dr. Gomez covers a lot of ground each session; a short recap at the start would help.', sentiment: 'neutral', facultyId: 'f5' },
+      { section: 'faculty_performance', text: 'More worked examples during class would help before we attempt the practice sets.', sentiment: 'concern' },
+    ],
+  },
+
+  // ── University of Nursing demo account (BSN/MSN dummy-data scenario) ────
+  { surveyId: 'uon-f1', sectionScores: [{ section: 'course_content', avg: 4.3, count: 59 }, { section: 'faculty_performance', avg: 4.4, count: 59 }],
+    comments: [
+      { section: 'course_content', text: 'The skills lab progression builds really well, vitals, then hygiene care, then medication administration basics, each week stacking on the last.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The care-plan writing assignment felt rushed right before the midterm.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Patel is incredibly organized and responsive to messages, usually within a day.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'She holds office hours every week and actually walks you through the dosage math instead of just giving the answer.', sentiment: 'positive', facultyId: 'f1' },
+    ] },
+  { surveyId: 'uon-f2', sectionScores: [{ section: 'course_content', avg: 3.2, count: 34 }, { section: 'faculty_performance', avg: 3.6, count: 34 }],
+    comments: [
+      { section: 'course_content', text: 'The head-to-toe assessment checklist is long, and getting through all the systems in one lab session felt rushed.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Some of the practice videos are low resolution and hard to follow for auscultation technique.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Kim gives clear, worked examples when demonstrating percussion technique.', sentiment: 'positive', facultyId: 'f4' },
+      { section: 'faculty_performance', text: 'Office hours conflict with our clinical rotation block on Wednesdays, so it is hard to get one-on-one time.', sentiment: 'concern', facultyId: 'f4' },
+    ] },
+  { surveyId: 'uon-f3', sectionScores: [{ section: 'course_content', avg: 2.8, count: 22 }, { section: 'faculty_performance', avg: 3.1, count: 22 }],
+    comments: [
+      { section: 'course_content', text: 'The lecture slides have not been updated and still reference the old disease-classification system.', sentiment: 'concern' },
+      { section: 'course_content', text: 'The exams are much harder than the practice quizzes, there is a real gap in difficulty.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Would help to have more structure, right now it feels like a wall of content with no roadmap.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Williams is knowledgeable but lectures move very fast through the compensatory-mechanisms sections.', sentiment: 'concern', facultyId: 'f3' },
+      { section: 'faculty_performance', text: 'When she does slow down for questions, the explanations are excellent.', sentiment: 'positive', facultyId: 'f3' },
+    ] },
+  // Edge case: controversial — comments split cleanly on the SAME aspects
+  // (dosage exams, pacing, office hours) after the mid-term format change.
+  { surveyId: 'uon-f4', sectionScores: [{ section: 'course_content', avg: 3.9, count: 62 }, { section: 'faculty_performance', avg: 3.8, count: 62 }],
+    comments: [
+      { section: 'course_content', text: 'The worked examples in the new case-based drug-class studies made dosage calculation finally click for me.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The switch to the new case-based dosage format happened without enough warm-up, the exam jumped in difficulty overnight and a lot of the class failed the first attempt.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Loved the structure this term, grouping drugs by mechanism instead of memorizing a list one by one.', sentiment: 'positive' },
+      { section: 'course_content', text: 'A new grading rubric was added two weeks before the midterm without much notice.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Chen is incredibly engaging and clearly loves pharmacology, his drug-classification framework made the mechanisms click.', sentiment: 'positive', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'The pace through the cardiac and renal drug units was too fast for how dense the dosage math is.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Office hours were packed after the format change, it was hard to get help before the exam.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'faculty_performance', text: "Dr. Gomez's guest lecture on antibiotic stewardship was one of the most engaging and well-organized sessions all semester.", sentiment: 'positive', facultyId: 'f5' },
+    ] },
+  { surveyId: 'uon-f5', sectionScores: [{ section: 'course_content', avg: 4.2, count: 40 }, { section: 'faculty_performance', avg: 4.4, count: 40 }],
+    comments: [
+      { section: 'course_content', text: 'The case-study material is realistic and genuinely prepared me for what I saw on the floor during clinical.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The wound-care skills lab felt rushed, we only got through half the stations.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Assignments were challenging but fair, and matched the exam difficulty well.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Patel is approachable and gives detailed feedback on our SBAR write-ups.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'faculty_performance', text: "Office hours are available and she'll walk through a whole case with you if you're stuck.", sentiment: 'positive', facultyId: 'f1' },
+    ] },
+  { surveyId: 'uon-f6', sectionScores: [{ section: 'course_content', avg: 3.8, count: 11 }, { section: 'faculty_performance', avg: 4.0, count: 11 }],
+    comments: [
+      { section: 'course_content', text: 'The newborn assessment simulation lab was one of the best hands-on sessions so far.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Only a few weeks in, but the reading load already feels heavy relative to other courses this term.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Gomez is approachable and clearly passionate about maternal health.', sentiment: 'positive', facultyId: 'f5' },
+      { section: 'faculty_performance', text: 'Her posted office hours overlap with our clinical rotation, more availability outside that block would help.', sentiment: 'concern', facultyId: 'f5' },
+    ] },
+  { surveyId: 'uon-f7', sectionScores: [{ section: 'course_content', avg: 3.6, count: 9 }, { section: 'faculty_performance', avg: 3.9, count: 9 }],
+    comments: [
+      { section: 'course_content', text: 'Hard to say much yet, but the growth-and-development unit moved fast before we had even seen a pediatric patient in clinical.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Would help to have more worked examples for the pediatric weight-based dosage calculations.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Williams is organized and posts materials well ahead of each session.', sentiment: 'positive', facultyId: 'f3' },
+    ] },
+  // Edge case: stellar/perfect — no real complaints, one mild suggestion.
+  { surveyId: 'uon-f8', sectionScores: [{ section: 'course_content', avg: 4.8, count: 19 }, { section: 'faculty_performance', avg: 4.9, count: 19 }],
+    comments: [
+      { section: 'course_content', text: 'Best clinical placement experience in the program so far, the preceptor match and unit orientation were excellent.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Pairing simulation lab practice before the first hospital shift made me feel prepared instead of thrown in.', sentiment: 'positive' },
+      { section: 'course_content', text: 'One more simulation day before the first shift would help students who have not done IV starts yet.', sentiment: 'neutral' },
+      { section: 'faculty_performance', text: 'Dr. Hassan is incredibly responsive, he answers a clinical question within the hour even outside office hours.', sentiment: 'positive', facultyId: 'f6' },
+      { section: 'faculty_performance', text: 'Dr. Hassan gave the most useful, specific feedback on my clinical documentation of any instructor I have had.', sentiment: 'positive', facultyId: 'f6' },
+      { section: 'faculty_performance', text: "Dr. Kim's post-clinical debrief sessions are the most helpful part of my week, he is engaging and makes you comfortable admitting what you did not know.", sentiment: 'positive', facultyId: 'f4' },
+    ] },
+  { surveyId: 'uon-f9', sectionScores: [{ section: 'course_content', avg: 3.4, count: 21 }, { section: 'faculty_performance', avg: 3.7, count: 21 }],
+    comments: [
+      { section: 'course_content', text: 'The therapeutic-communication role-plays were uncomfortable at first but genuinely useful practice.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The unit on personality disorders felt rushed compared to how much time we spent on mood disorders.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Chen is engaging and creates a safe space to discuss difficult case material.', sentiment: 'positive', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Feedback on our process recordings takes a while to come back, usually over two weeks.', sentiment: 'concern', facultyId: 'f2' },
+    ] },
+  { surveyId: 'uon-f10', sectionScores: [{ section: 'course_content', avg: 3.7, count: 8 }, { section: 'faculty_performance', avg: 4.1, count: 8 }],
+    comments: [
+      { section: 'course_content', text: "The graduate-level pace is intense, we're covering two undergrad units' worth of content per week.", sentiment: 'concern' },
+      { section: 'course_content', text: 'Would help to have example problems worked through in class before the graded case analyses.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Williams brings in relevant recent research and is clearly an expert.', sentiment: 'positive', facultyId: 'f3' },
+    ] },
+  { surveyId: 'uon-s1', sectionScores: [{ section: 'course_content', avg: 4.3, count: 36 }, { section: 'faculty_performance', avg: 4.4, count: 36 }],
+    comments: [
+      { section: 'course_content', text: 'Same well-paced structure as always, the lab sequence makes fundamentals finally click.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Some of the assigned readings are outdated and reference equipment we do not use anymore.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: "Dr. Patel's feedback on our care plans came back fast and was genuinely useful.", sentiment: 'positive', facultyId: 'f1' },
+    ] },
+  { surveyId: 'uon-s2', sectionScores: [{ section: 'course_content', avg: 3.3, count: 19 }, { section: 'faculty_performance', avg: 3.6, count: 19 }],
+    comments: [
+      { section: 'course_content', text: 'The exams still test different material than what is emphasized in lecture.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Readings are dense and not well organized by system.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: "Office hours were actually really helpful once I started going, she'll work through a whole case with you.", sentiment: 'positive', facultyId: 'f3' },
+    ] },
+  { surveyId: 'uon-s3', sectionScores: [{ section: 'course_content', avg: 4.1, count: 44 }, { section: 'faculty_performance', avg: 4.3, count: 44 }],
+    comments: [
+      { section: 'course_content', text: 'The case-based dosage modules are much smoother now that there is a practice set before each graded case.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Still a heavy workload for a summer term, the pace felt fast for eight weeks.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: "Dr. Chen's drug-classification approach makes so much more sense than straight memorization.", sentiment: 'positive', facultyId: 'f2' },
+      { section: 'faculty_performance', text: 'Office hours were easy to get into this term, no more crowding.', sentiment: 'positive', facultyId: 'f2' },
+    ] },
+  { surveyId: 'uon-s4', sectionScores: [{ section: 'course_content', avg: 3.9, count: 10 }, { section: 'faculty_performance', avg: 4.1, count: 10 }],
+    comments: [
+      { section: 'course_content', text: 'Compressed into an eight-week summer format, the pacing was tough to keep up with.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Wish there were more structured practice quizzes before the unit exams.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Gomez is responsive over email even during the condensed summer schedule.', sentiment: 'positive', facultyId: 'f5' },
+    ] },
+  { surveyId: 'uon-s5', sectionScores: [{ section: 'course_content', avg: 4.4, count: 23 }, { section: 'faculty_performance', avg: 4.5, count: 23 }],
+    comments: [
+      { section: 'course_content', text: 'The case-analysis structure this term was much better paced than what I had heard from the Fall cohort.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The recommended readings were exactly the right depth for graduate work.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Hassan is extremely responsive and available even though this is a small cohort.', sentiment: 'positive', facultyId: 'f6' },
+      { section: 'faculty_performance', text: 'Office hours turned into informal case-consult sessions, genuinely valuable.', sentiment: 'positive', facultyId: 'f6' },
+    ] },
 ]
 
 export const MOCK_TERMS = ['Spring 2026', 'Fall 2025', 'Spring 2025']
@@ -1875,6 +2362,17 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
   { id: 'mc20', code: 'NURS-710', name: 'Advanced Neurological Nursing',                  department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Kim'      },
   { id: 'mc21', code: 'NURS-711', name: 'Advanced Pediatric Nursing',                     department: 'Nursing',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-02', editedBy: 'Dr. Williams' },
   { id: 'mc22', code: 'NURS-801', name: 'Evidence-Based Practice',             department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
+  // ── University of Nursing demo account (BSN/MSN dummy-data scenario) ────
+  { id: 'mc23', code: 'BSN-101', name: 'Fundamentals of Nursing I',            department: 'Nursing', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Patel' },
+  { id: 'mc24', code: 'BSN-115', name: 'Health Assessment',                   department: 'Nursing', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Kim' },
+  { id: 'mc25', code: 'BSN-201', name: 'Pathophysiology',                     department: 'Core Sciences', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Williams' },
+  { id: 'mc26', code: 'BSN-210', name: 'Pharmacology for Nurses',             department: 'Core Sciences', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Chen' },
+  { id: 'mc27', code: 'BSN-305', name: 'Medical-Surgical Nursing I',          department: 'Nursing', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Patel' },
+  { id: 'mc28', code: 'BSN-315', name: 'Maternal-Newborn Nursing',            department: 'Nursing', type: 'clinical', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Gomez' },
+  { id: 'mc29', code: 'BSN-325', name: 'Pediatric Nursing',                   department: 'Nursing', type: 'clinical', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Williams' },
+  { id: 'mc30', code: 'BSN-401', name: 'Clinical Practicum I',                department: 'Clinical Education', type: 'clinical', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Hassan' },
+  { id: 'mc31', code: 'BSN-415', name: 'Psychiatric-Mental Health Nursing',   department: 'Nursing', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Chen' },
+  { id: 'mc32', code: 'MSN-601', name: 'Advanced Pathophysiology',            department: 'Graduate Nursing', type: 'didactic', status: 'active', lastEdited: '2026-07-01', editedBy: 'Dr. Williams' },
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
@@ -2474,7 +2972,7 @@ export interface SurveyQuestionData {
 }
 
 export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
-  // mon1 — NURS-510 live · tmpl1 · Dr. Kim (f4) · 23 partial responses
+  // mon1 — NURS-510 live · tmpl1 · Dr. Patel (f1) + Dr. Gomez (f5) · 23 partial responses
   {
     surveyId: 'mon1',
     sectionScores: {
@@ -2486,15 +2984,42 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
       ],
     },
     instructorBlocks: [
+      /* Both instructors on this offering scored — Patel (course coordinator)
+       * was missing entirely until 2026-09-17 (Romit, screenshot: "ensure
+       * that the data is filled, can't show empty placeholders for score or
+       * highlights"), which left her Faculty-tab Score card in its
+       * zero-scores empty state even though the survey has real responses.
+       * Widened 2026-09-17 (full requirements re-check vs the raw transcript)
+       * from 2 scored questions (q6/q7) to all 6 faculty Likert questions —
+       * `tmpl1`'s faculty side is split into 3 topical `templateSections`
+       * (Teaching Effectiveness: q6/q15, Communication: q7/q16, Assessment
+       * Practices: q14/q17), and only scoring q6/q7 left Assessment
+       * Practices with ZERO scored questions on this survey, one topical
+       * section entirely empty on the lead demo record. */
       {
-        instructorId: 'f4',
+        instructorId: 'f1',
         scores: [
-          { questionId: 'q6', avg: 4.2, count: 23, distribution: [0, 1, 3, 9, 10] },
-          { questionId: 'q7', avg: 4.0, count: 23, distribution: [0, 2, 4, 9, 8] },
+          { questionId: 'q6',  avg: 4.4, count: 23, distribution: [0, 0, 2, 7, 14] },
+          { questionId: 'q15', avg: 4.3, count: 23, distribution: [0, 1, 2, 9, 11] },
+          { questionId: 'q7',  avg: 4.3, count: 23, distribution: [0, 1, 2, 8, 12] },
+          { questionId: 'q16', avg: 4.2, count: 23, distribution: [0, 1, 3, 9, 10] },
+          { questionId: 'q14', avg: 4.1, count: 23, distribution: [0, 1, 4, 9, 9] },
+          { questionId: 'q17', avg: 3.9, count: 23, distribution: [0, 2, 5, 9, 7] },
+        ],
+      },
+      {
+        instructorId: 'f5',
+        scores: [
+          { questionId: 'q6',  avg: 4.2, count: 23, distribution: [0, 1, 3, 9, 10] },
+          { questionId: 'q15', avg: 4.1, count: 23, distribution: [0, 1, 4, 10, 8] },
+          { questionId: 'q7',  avg: 4.0, count: 23, distribution: [0, 2, 4, 9, 8] },
+          { questionId: 'q16', avg: 4.0, count: 23, distribution: [0, 2, 4, 9, 8] },
+          { questionId: 'q14', avg: 3.9, count: 23, distribution: [0, 2, 5, 9, 7] },
+          { questionId: 'q17', avg: 3.8, count: 23, distribution: [1, 1, 6, 9, 6] },
         ],
       },
     ],
-    freeTextCounts: { q5: 2, q8: 2 },
+    freeTextCounts: { q5: 5, q8: 5 },
   },
   // mon2 — NURS-611 live · tmpl2 · Dr. Gomez (f5) · mid-collection, 18 of 40
   {
@@ -2651,6 +3176,256 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
       },
     ],
     freeTextCounts: { q5: 1, q8: 0 },
+  },
+  /* mon28 — NURS-515 Pharmacology for Nurses · Summer 2026 · tmpl1 · released ·
+   * 32 of 46 responses (70%). THE LEAD DEMO RECORD (2026-09-16): every Likert
+   * question in all four tmpl1 sections is scored, both instructors carry a
+   * full block, and both free-text questions have counts backed 1:1 by
+   * MOCK_OPEN_TEXT_RESPONSES rows so the per-question response sheet and the
+   * AI-summary lane never fall to an empty state.
+   *   Course content mean 3.67 → matches the NURS-515 / Summer 2026 offering's
+   *   courseAvg 3.70. Chen's block mean is exactly 3.75 → the same offering's
+   *   avgRating. Gomez reads higher (4.15) so the two-instructor comparison
+   *   has a real gap to show. Every distribution sums to 32 and reproduces its
+   *   own stated avg to one decimal. */
+  {
+    surveyId: 'mon28',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1',  avg: 4.0, count: 32, distribution: [0, 1,  6, 17,  8] },
+        { questionId: 'q2',  avg: 3.6, count: 32, distribution: [1, 2, 10, 14,  5] },
+        { questionId: 'q3',  avg: 3.3, count: 32, distribution: [2, 5, 10, 11,  4] },
+        { questionId: 'q4',  avg: 3.8, count: 32, distribution: [1, 1,  8, 15,  7] },
+        { questionId: 'q12', avg: 3.6, count: 32, distribution: [1, 3,  9, 14,  5] },
+        { questionId: 'q13', avg: 3.7, count: 32, distribution: [1, 2,  8, 16,  5] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        // f2 Dr. Kevin Chen — Course Coordinator. Solid but uneven: strong
+        // preparation, weaker on pace and grading consistency.
+        instructorId: 'f2',
+        scores: [
+          { questionId: 'q6',  avg: 4.1, count: 32, distribution: [0, 1,  5, 16, 10] },
+          { questionId: 'q15', avg: 3.6, count: 32, distribution: [1, 2, 11, 13,  5] },
+          { questionId: 'q7',  avg: 3.7, count: 32, distribution: [0, 3,  9, 15,  5] },
+          { questionId: 'q16', avg: 3.8, count: 32, distribution: [0, 2,  8, 15,  7] },
+          { questionId: 'q14', avg: 3.5, count: 32, distribution: [1, 2, 12, 13,  4] },
+          { questionId: 'q17', avg: 3.8, count: 32, distribution: [1, 1,  8, 15,  7] },
+        ],
+      },
+      {
+        // f5 Dr. Rachel Gomez — Instructor. Consistently higher, with
+        // assessment practices as her own softest question.
+        instructorId: 'f5',
+        scores: [
+          { questionId: 'q6',  avg: 4.4, count: 32, distribution: [0, 0,  3, 13, 16] },
+          { questionId: 'q15', avg: 4.2, count: 32, distribution: [0, 1,  4, 15, 12] },
+          { questionId: 'q7',  avg: 4.1, count: 32, distribution: [0, 1,  5, 16, 10] },
+          { questionId: 'q16', avg: 4.3, count: 32, distribution: [0, 1,  3, 14, 14] },
+          { questionId: 'q14', avg: 3.9, count: 32, distribution: [0, 2,  7, 15,  8] },
+          { questionId: 'q17', avg: 4.0, count: 32, distribution: [0, 1,  6, 17,  8] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 7, q8: 8 },
+  },
+
+  // ── University of Nursing demo account (BSN/MSN dummy-data scenario) ────
+  {
+    surveyId: 'uon-f1',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.29, count: 59, distribution: [0, 2, 6, 24, 27] },
+      { questionId: 'q2', avg: 4.36, count: 59, distribution: [0, 1, 5, 25, 28] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f1', scores: [
+      { questionId: 'q6', avg: 4.47, count: 59, distribution: [0, 1, 4, 20, 34] },
+      { questionId: 'q7', avg: 4.36, count: 59, distribution: [0, 2, 5, 22, 30] },
+    ] }],
+    freeTextCounts: { q5: 2, q8: 2 },
+  },
+  {
+    surveyId: 'uon-f2',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.24, count: 34, distribution: [2, 6, 12, 10, 4] },
+      { questionId: 'q2', avg: 3.12, count: 34, distribution: [3, 7, 11, 9, 4] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f4', scores: [
+      { questionId: 'q6', avg: 3.62, count: 34, distribution: [1, 3, 10, 14, 6] },
+      { questionId: 'q7', avg: 3.62, count: 34, distribution: [1, 4, 9, 13, 7] },
+    ] }],
+    freeTextCounts: { q5: 2, q8: 2 },
+  },
+  {
+    surveyId: 'uon-f3',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 2.86, count: 22, distribution: [3, 5, 8, 4, 2] },
+      { questionId: 'q2', avg: 2.64, count: 22, distribution: [4, 6, 7, 4, 1] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f3', scores: [
+      { questionId: 'q6', avg: 3.09, count: 22, distribution: [2, 4, 8, 6, 2] },
+      { questionId: 'q7', avg: 3.05, count: 22, distribution: [2, 5, 7, 6, 2] },
+    ] }],
+    freeTextCounts: { q5: 2, q8: 2 },
+  },
+  {
+    // Edge case: controversial — bimodal, heavy at both ends. Mid-term switch
+    // to a new case-based dosage-calculation format split the class.
+    surveyId: 'uon-f4',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.89, count: 62, distribution: [13, 3, 2, 4, 40] },
+      { questionId: 'q2', avg: 3.90, count: 62, distribution: [11, 4, 3, 6, 38] },
+    ] },
+    instructorBlocks: [
+      { instructorId: 'f2', scores: [
+        { questionId: 'q6', avg: 3.84, count: 62, distribution: [12, 4, 3, 6, 37] },
+        { questionId: 'q7', avg: 3.81, count: 62, distribution: [14, 3, 2, 5, 38] },
+      ] },
+      // f5 Dr. Rachel Gomez — one guest lecture (antibiotic stewardship), scored
+      // independently of the split main-instructor sentiment.
+      { instructorId: 'f5', scores: [
+        { questionId: 'q6', avg: 4.52, count: 62, distribution: [1, 2, 4, 12, 43] },
+      ] },
+    ],
+    freeTextCounts: { q5: 3, q8: 2 },
+  },
+  {
+    surveyId: 'uon-f5',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.22, count: 40, distribution: [0, 1, 5, 18, 16] },
+      { questionId: 'q2', avg: 4.20, count: 40, distribution: [0, 1, 6, 17, 16] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f1', scores: [
+      { questionId: 'q6', avg: 4.47, count: 40, distribution: [0, 0, 3, 15, 22] },
+      { questionId: 'q7', avg: 4.33, count: 40, distribution: [0, 1, 4, 16, 19] },
+    ] }],
+    freeTextCounts: { q5: 2, q8: 1 },
+  },
+  {
+    surveyId: 'uon-f6',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.82, count: 11, distribution: [0, 1, 3, 4, 3] },
+      { questionId: 'q2', avg: 3.82, count: 11, distribution: [0, 1, 3, 4, 3] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f5', scores: [
+      { questionId: 'q6', avg: 4.00, count: 11, distribution: [0, 1, 2, 4, 4] },
+      { questionId: 'q7', avg: 3.91, count: 11, distribution: [0, 1, 3, 3, 4] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-f7',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.78, count: 9, distribution: [0, 1, 2, 4, 2] },
+      { questionId: 'q2', avg: 3.33, count: 9, distribution: [0, 2, 3, 3, 1] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f3', scores: [
+      { questionId: 'q6', avg: 4.00, count: 9, distribution: [0, 0, 3, 3, 3] },
+      { questionId: 'q7', avg: 3.78, count: 9, distribution: [0, 1, 2, 4, 2] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    // Edge case: stellar/perfect — near-unanimous "Strongly Agree".
+    surveyId: 'uon-f8',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
+      { questionId: 'q2', avg: 4.74, count: 19, distribution: [0, 0, 1, 3, 15] },
+    ] },
+    instructorBlocks: [
+      { instructorId: 'f6', scores: [
+        { questionId: 'q6', avg: 4.95, count: 19, distribution: [0, 0, 0, 1, 18] },
+        { questionId: 'q7', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
+      ] },
+      { instructorId: 'f4', scores: [
+        { questionId: 'q6', avg: 4.84, count: 19, distribution: [0, 0, 1, 1, 17] },
+      ] },
+    ],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-f9',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.48, count: 21, distribution: [1, 3, 6, 7, 4] },
+      { questionId: 'q2', avg: 3.38, count: 21, distribution: [1, 4, 6, 6, 4] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f2', scores: [
+      { questionId: 'q6', avg: 3.81, count: 21, distribution: [0, 2, 5, 9, 5] },
+      { questionId: 'q7', avg: 3.57, count: 21, distribution: [1, 2, 6, 8, 4] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-f10',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.75, count: 8, distribution: [0, 1, 2, 3, 2] },
+      { questionId: 'q2', avg: 3.63, count: 8, distribution: [0, 1, 3, 2, 2] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f3', scores: [
+      { questionId: 'q6', avg: 4.13, count: 8, distribution: [0, 0, 2, 3, 3] },
+      { questionId: 'q7', avg: 4.00, count: 8, distribution: [0, 1, 1, 3, 3] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-s1',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.28, count: 36, distribution: [0, 1, 4, 15, 16] },
+      { questionId: 'q2', avg: 4.31, count: 36, distribution: [0, 1, 4, 14, 17] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f1', scores: [
+      { questionId: 'q6', avg: 4.44, count: 36, distribution: [0, 0, 3, 14, 19] },
+      { questionId: 'q7', avg: 4.39, count: 36, distribution: [0, 1, 3, 13, 19] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-s2',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.37, count: 19, distribution: [1, 3, 6, 6, 3] },
+      { questionId: 'q2', avg: 3.26, count: 19, distribution: [1, 4, 6, 5, 3] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f3', scores: [
+      { questionId: 'q6', avg: 3.74, count: 19, distribution: [0, 2, 5, 8, 4] },
+      { questionId: 'q7', avg: 3.42, count: 19, distribution: [1, 3, 5, 7, 3] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-s3',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.09, count: 44, distribution: [0, 2, 8, 18, 16] },
+      { questionId: 'q2', avg: 4.16, count: 44, distribution: [0, 2, 7, 17, 18] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f2', scores: [
+      { questionId: 'q6', avg: 4.27, count: 44, distribution: [0, 1, 6, 17, 20] },
+      { questionId: 'q7', avg: 4.30, count: 44, distribution: [0, 1, 5, 18, 20] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-s4',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 3.90, count: 10, distribution: [0, 1, 2, 4, 3] },
+      { questionId: 'q2', avg: 3.80, count: 10, distribution: [0, 1, 3, 3, 3] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f5', scores: [
+      { questionId: 'q6', avg: 4.20, count: 10, distribution: [0, 0, 2, 4, 4] },
+      { questionId: 'q7', avg: 4.00, count: 10, distribution: [0, 0, 3, 4, 3] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
+  },
+  {
+    surveyId: 'uon-s5',
+    sectionScores: { course_content: [
+      { questionId: 'q1', avg: 4.43, count: 23, distribution: [0, 0, 2, 9, 12] },
+      { questionId: 'q2', avg: 4.39, count: 23, distribution: [0, 0, 3, 8, 12] },
+    ] },
+    instructorBlocks: [{ instructorId: 'f6', scores: [
+      { questionId: 'q6', avg: 4.57, count: 23, distribution: [0, 0, 1, 8, 14] },
+      { questionId: 'q7', avg: 4.43, count: 23, distribution: [0, 0, 2, 9, 12] },
+    ] }],
+    freeTextCounts: { q5: 1, q8: 1 },
   },
 ]
 

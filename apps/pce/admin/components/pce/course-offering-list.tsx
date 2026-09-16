@@ -18,41 +18,47 @@
  * terms/instructors collapsed them all into one row). "# of Offerings" is gone because every
  * row IS one offering now — the count would always read 1.
  *
- * Two distinct click targets on the same row (Vishal, 2026-09-15): anywhere on the row opens
- * that offering's own single-survey analytics (`/results/[id]`) in a genuinely NEW browser tab
- * — a real `window.open`, unlike the Overview leaderboards' same-tab fix, because this is a
- * different destination (one specific offering's results, not the course-wide tab). The course
- * NAME specifically opens the course-wide analytics tab in THIS browser tab instead, via
- * `onOpenCourse` (same mechanism `AnalyticsOverviewPanel`'s Course Leaderboard now also uses) —
- * `stopPropagation` keeps that click from also firing the row's own new-tab handler.
+ * The course NAME opens the course-wide analytics tab in THIS browser tab, via `onOpenCourse`
+ * (same mechanism `AnalyticsOverviewPanel`'s Course Leaderboard also uses).
  *
  * Infinite scroll + Course/Faculty/Role filters (Vishal, 2026-09-15 — "Infinite scroll with lazy
  * loading. No pagination." / "Filters: Course, faculty & role") — exact mirror of
- * `faculty-offering-list.tsx`'s own pattern (same shared `courseOfferingListRows()` rows, same
- * `visibleCount`/`CHUNK` + `IntersectionObserver` + `TableViewMoreFooter` lazy-load, same
- * `filterSlot` portal so the row lives in the page's sticky AY/Term bar instead of scrolling away
- * with the table). This file previously used `DataTablePaginated` with no filters at all — a
- * gap the Course-side audit (2026-09-15 compliance pass) caught by diffing against this file's
- * own Faculty sibling, which already had both.
+ * `faculty-offering-list.tsx`'s own pattern (same `visibleCount`/`CHUNK` + `IntersectionObserver`
+ * + `TableViewMoreFooter` lazy-load, same `filterSlot` portal so the row lives in the page's
+ * sticky AY/Term bar instead of scrolling away with the table).
+ *
+ * Row grain regrouped to course × term × cohort (Vishal, 2026-09-16: "a row can have more than
+ * one faculty... show role along with faculty name") — `courseOfferingGroupedRows()`
+ * (`lib/pce-analytics.ts`) folds every section/instructor that ran under the same
+ * course+term+cohort into one row's `faculty[]` list, confirmed against the fixture data as
+ * genuinely DIFFERENT sections (different roster, response rate, and course rating per faculty
+ * line) rather than one section with a co-teacher — so every per-faculty metric stays a stacked
+ * per-line list, never averaged into one shared number. Faculty name + role render together,
+ * avatar-led, one line per section — same stacked anatomy the push wizard's own multi-faculty
+ * cell uses (`step-courses-evaluatees.tsx`'s flow-ledger column: `PersonAvatar` + name +
+ * `· role`), which is the "similar design as in survey distribution" the feedback pointed at.
+ * The Course/Faculty rating and Response rate columns are stacked to match, line-for-line.
+ *
+ * Each faculty LINE is its own click target (opens that section's own `/results/[id]` in a new
+ * tab) — replaces the old whole-row click, which had no single "the" survey once a row can hold
+ * several sections' worth of distinct surveys. The Faculty and Faculty & Role filters were
+ * combined into one `TokenSelect` (Vishal, 2026-09-16: "combine faculty and role filter into
+ * one"), grouped by role heading so the role facet isn't lost, just folded into the one control.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
-import {
-  DataTable, TableViewMoreFooter,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-} from '@exxatdesignux/ui'
+import { Button, DataTable, TableViewMoreFooter } from '@exxatdesignux/ui'
 import type { ColumnDef } from '@exxatdesignux/ui'
 import { ChartCard, type ChartLeoInsight } from '@/components/charts-core'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
+import { PersonAvatar } from '@/components/pce/person-avatar'
 import {
-  courseOfferingListRows, medianOf, facultyEvalRoleOptions,
-  type CourseOfferingListRow, type FacultyEvalRoleId,
+  courseOfferingGroupedRows, medianOf, facultyEvalRoleOptions,
+  type CourseOfferingGroupRow,
 } from '@/lib/pce-analytics'
 
 const fmt2 = (v: number) => v.toFixed(2)
-const ALL_FACULTY = '__all__'
-const ALL_ROLES = '__all__'
 /** Same chunk size as `FacultyOfferingList` — one shared lazy-load rhythm across both landing
  *  lists rather than two independently-tuned numbers for the same interaction. */
 const CHUNK = 20
@@ -93,8 +99,9 @@ export function CourseOfferingList({
 }) {
   const termsLabel = terms.length === 1 ? terms[0]! : `${terms.length} terms`
   const roleLabelById = useMemo(() => new Map(facultyEvalRoleOptions().map((r) => [r.id, r.label])), [])
+  const roleOrder = useMemo(() => facultyEvalRoleOptions().map((r) => r.label), [])
 
-  const allRows = useMemo(() => courseOfferingListRows(terms), [terms])
+  const allRows = useMemo(() => courseOfferingGroupedRows(terms), [terms])
 
   const courseOptions = useMemo(() => {
     const byCode = new Map(allRows.map((r) => [r.courseCode, r.courseName]))
@@ -102,47 +109,50 @@ export function CourseOfferingList({
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([value, name]) => ({ value, label: `${value} · ${name}` }))
   }, [allRows])
-  const roleOptions = useMemo(() => {
-    const present = new Set(allRows.map((r) => r.role))
-    return facultyEvalRoleOptions().filter((r) => present.has(r.id))
-  }, [allRows])
 
   const [courseFilter, setCourseFilter] = useState<string[]>([])
-  const [facultyFilter, setFacultyFilter] = useState<string | undefined>(undefined)
-  const [roleFilter, setRoleFilter] = useState<FacultyEvalRoleId | undefined>(undefined)
   const toggleCourse = (v: string) =>
     setCourseFilter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
 
-  /** Faculty dropdown depends on Role, same as the Faculty tab's own filter row — its options
-   *  narrow to faculty who hold the selected role; a stale selection outside that set is
-   *  cleared rather than left selected-but-hidden. */
-  const facultyOptions = useMemo(() => {
-    const rows = roleFilter ? allRows.filter((r) => r.role === roleFilter) : allRows
-    const byId = new Map(rows.map((r) => [r.facultyId, r.facultyName]))
-    return [...byId.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => ({ id, name }))
-  }, [allRows, roleFilter])
-  useEffect(() => {
-    if (facultyFilter && !facultyOptions.some((f) => f.id === facultyFilter)) setFacultyFilter(undefined)
-  }, [facultyOptions, facultyFilter])
+  /** Faculty and Role, combined into one control (Vishal, 2026-09-16: "combine faculty and role
+   *  filter into one — faculty & role"). One option per distinct faculty member, grouped under
+   *  their role's heading — the role facet isn't lost, just folded into the same picker instead
+   *  of a second dropdown. A person's role is read off their FIRST appearance in scope; the
+   *  fixture data doesn't currently have anyone holding two different roles across offerings, so
+   *  this doesn't need to fork a person into two option rows. */
+  const facultyRoleOptions = useMemo(() => {
+    const byId = new Map<string, { name: string; role: string }>()
+    allRows.forEach((r) => r.faculty.forEach((f) => {
+      if (!byId.has(f.facultyId)) byId.set(f.facultyId, { name: f.facultyName, role: roleLabelById.get(f.role) ?? f.role })
+    }))
+    return [...byId.entries()]
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+      .map(([value, { name, role }]) => ({ value, label: name, group: role }))
+  }, [allRows, roleLabelById])
+  const [facultyRoleFilter, setFacultyRoleFilter] = useState<string[]>([])
+  const toggleFacultyRole = (v: string) =>
+    setFacultyRoleFilter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
 
   const rows = useMemo(
     () =>
       allRows.filter(
         (r) =>
           (!courseFilter.length || courseFilter.includes(r.courseCode)) &&
-          (!facultyFilter || r.facultyId === facultyFilter) &&
-          (!roleFilter || r.role === roleFilter),
+          (!facultyRoleFilter.length || r.faculty.some((f) => facultyRoleFilter.includes(f.facultyId))),
       ),
-    [allRows, courseFilter, facultyFilter, roleFilter],
+    [allRows, courseFilter, facultyRoleFilter],
   )
+  /** Medians computed over every FACULTY LINE in scope, not one per row — a multi-section row
+   *  contributes each of its sections' own values, same as if they'd stayed separate rows. */
+  const allLines = useMemo(() => rows.flatMap((r) => r.faculty), [rows])
   const courseMedian = useMemo(
-    () => medianOf(rows.map((r) => r.courseAvg).filter((v): v is number => v != null)),
-    [rows],
+    () => medianOf(allLines.map((f) => f.courseAvg).filter((v): v is number => v != null)),
+    [allLines],
   )
-  const facultyMedian = useMemo(() => medianOf(rows.map((r) => r.facultyAvg)), [rows])
+  const facultyMedian = useMemo(() => medianOf(allLines.map((f) => f.facultyAvg)), [allLines])
 
   const [visibleCount, setVisibleCount] = useState(CHUNK)
-  useEffect(() => setVisibleCount(CHUNK), [courseFilter, facultyFilter, roleFilter, terms])
+  useEffect(() => setVisibleCount(CHUNK), [courseFilter, facultyRoleFilter, terms])
   const visibleRows = rows.slice(0, visibleCount)
 
   /** Auto-load on scroll, `TableViewMoreFooter`'s click affordance stays rendered underneath it
@@ -161,7 +171,18 @@ export function CourseOfferingList({
     return () => observer.disconnect()
   }, [visibleCount, rows.length])
 
-  const columns: ColumnDef<CourseOfferingListRow>[] = useMemo(
+  /** Per-line row height (avatar row + gap) every stacked column shares, so a Faculty cell's
+   *  N lines and the same row's Course rating/Faculty rating/Response rate cells' N lines stay
+   *  vertically aligned — same person, same rating, same shelf. */
+  const LINE_H = 28
+
+  const openLine = (f: CourseOfferingGroupRow['faculty'][number]) => (e: MouseEvent) => {
+    e.stopPropagation()
+    if (!f.surveyId) return
+    window.open(`/results/${encodeURIComponent(f.surveyId)}?from=analytics`, '_blank', 'noopener,noreferrer')
+  }
+
+  const columns: ColumnDef<CourseOfferingGroupRow>[] = useMemo(
     () => [
       {
         key: 'courseCode',
@@ -170,73 +191,123 @@ export function CourseOfferingList({
         sortKey: 'courseCode',
         width: 220,
         cell: (row) => (
-          <span
-            className="block truncate cursor-pointer hover:underline"
+          <Button
+            type="button"
+            variant="ghost"
+            size="default"
             onClick={(e) => {
-              // Own click target, distinct from the row's new-tab handler below.
               e.stopPropagation()
               onOpenCourse(row.courseCode)
             }}
+            className="flex h-auto w-full flex-col items-start justify-center truncate text-left font-normal hover:underline"
           >
             <span className="font-medium text-foreground">{row.courseCode}</span>
             <span className="block truncate text-xs text-muted-foreground">{row.courseName}</span>
-          </span>
+          </Button>
         ),
       },
       { key: 'academicYear', label: 'AY', sortable: true, sortKey: 'academicYear', width: 110 },
       { key: 'term', label: 'Term', sortable: true, sortKey: 'term', width: 130 },
       {
-        key: 'facultyName',
+        // One line per section/instructor — avatar + name + role, same stacked anatomy as the
+        // push wizard's multi-faculty cell. This line is the row's real click target now: opens
+        // THAT section's own survey results in a new tab (the whole-row click this replaced had
+        // no single "the" survey once a row can hold several sections).
+        key: 'faculty',
         label: 'Faculty',
-        sortable: true,
-        sortKey: 'facultyName',
-        width: 160,
-        cell: (row) => <span className="block truncate">{row.facultyName}</span>,
+        width: 220,
+        cell: (row) => (
+          <div className="flex flex-col gap-1" style={{ minHeight: row.faculty.length * LINE_H }}>
+            {row.faculty.map((f) => (
+              <Button
+                key={f.facultyId}
+                type="button"
+                variant="ghost"
+                size="default"
+                onClick={openLine(f)}
+                disabled={!f.surveyId}
+                className="flex h-auto min-w-0 items-center justify-start gap-1.5 rounded text-left font-normal disabled:cursor-default"
+                style={{ height: LINE_H - 4 }}
+              >
+                <PersonAvatar name={f.facultyName} />
+                <span className={`text-sm truncate ${f.surveyId ? 'hover:underline' : ''}`}>
+                  {f.facultyName}
+                  <span className="text-xs text-muted-foreground"> · {roleLabelById.get(f.role) ?? f.role}</span>
+                </span>
+              </Button>
+            ))}
+          </div>
+        ),
       },
       {
-        key: 'courseAvg',
+        key: 'courseAvgSort',
         label: 'Course rating',
         sortable: true,
-        sortKey: 'courseAvg',
+        sortKey: 'courseAvgSort',
         width: 120,
-        cell: (row) => <RatingCell value={row.courseAvg} below={row.courseAvg != null && row.courseAvg < courseMedian} />,
+        cell: (row) => (
+          <div className="flex flex-col gap-1" style={{ minHeight: row.faculty.length * LINE_H }}>
+            {row.faculty.map((f) => (
+              <span key={f.facultyId} className="flex items-center" style={{ height: LINE_H - 4 }}>
+                <RatingCell value={f.courseAvg} below={f.courseAvg != null && f.courseAvg < courseMedian} />
+              </span>
+            ))}
+          </div>
+        ),
       },
       {
-        key: 'facultyAvg',
+        key: 'facultyAvgSort',
         label: 'Faculty rating',
         sortable: true,
-        sortKey: 'facultyAvg',
+        sortKey: 'facultyAvgSort',
         width: 120,
-        cell: (row) => <RatingCell value={row.facultyAvg} below={row.facultyAvg < facultyMedian} />,
+        cell: (row) => (
+          <div className="flex flex-col gap-1" style={{ minHeight: row.faculty.length * LINE_H }}>
+            {row.faculty.map((f) => (
+              <span key={f.facultyId} className="flex items-center" style={{ height: LINE_H - 4 }}>
+                <RatingCell value={f.facultyAvg} below={f.facultyAvg < facultyMedian} />
+              </span>
+            ))}
+          </div>
+        ),
       },
       {
-        key: 'responseRate',
+        key: 'responseRateSort',
         label: 'Response rate',
         sortable: true,
-        sortKey: 'responseRate',
+        sortKey: 'responseRateSort',
         width: 120,
-        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+        cell: (row) => (
+          <div className="flex flex-col gap-1" style={{ minHeight: row.faculty.length * LINE_H }}>
+            {row.faculty.map((f) => (
+              <span key={f.facultyId} className="tabular-nums flex items-center" style={{ height: LINE_H - 4 }}>
+                {f.responseRate}%
+              </span>
+            ))}
+          </div>
+        ),
       },
     ],
-    [courseMedian, facultyMedian, onOpenCourse],
+    [courseMedian, facultyMedian, onOpenCourse, roleLabelById],
   )
 
   const leo: ChartLeoInsight | null = useMemo(() => {
-    const scored = rows.filter((r) => r.courseAvg != null)
+    const scored = allLines.filter((f) => f.courseAvg != null)
     if (!scored.length) return null
-    const worst = [...scored].sort((a, b) => (a.courseAvg as number) - (b.courseAvg as number))[0]!
-    const below = rows.filter((r) => (r.courseAvg != null && r.courseAvg < courseMedian) || r.facultyAvg < facultyMedian)
+    const worstLine = [...scored].sort((a, b) => (a.courseAvg as number) - (b.courseAvg as number))[0]!
+    const worstRow = rows.find((r) => r.faculty.some((f) => f.facultyId === worstLine.facultyId && f.courseAvg === worstLine.courseAvg))!
+    const below = allLines.filter((f) => (f.courseAvg != null && f.courseAvg < courseMedian) || f.facultyAvg < facultyMedian)
     return {
-      headline: `${worst.courseCode} rates lowest at ${fmt2(worst.courseAvg as number)}`,
-      explanation: `${below.length} of ${rows.length} offerings fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(facultyMedian)} faculty-rating median for ${termsLabel}.`,
+      headline: `${worstRow.courseCode} rates lowest at ${fmt2(worstLine.courseAvg as number)}`,
+      explanation: `${below.length} of ${allLines.length} offerings fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(facultyMedian)} faculty-rating median for ${termsLabel}.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
-      delta: { value: fmt2(worst.courseAvg as number), label: worst.courseCode },
+      delta: { value: fmt2(worstLine.courseAvg as number), label: worstRow.courseCode },
       bullets: [
-        `${worst.courseCode} · ${worst.courseName} · ${worst.term}: ${fmt2(worst.courseAvg as number)} course, ${fmt2(worst.facultyAvg)} faculty.`,
-        `${below.length} of ${rows.length} offerings below either median.`,
+        `${worstRow.courseCode} · ${worstRow.courseName} · ${worstRow.term} · ${worstLine.facultyName}: ${fmt2(worstLine.courseAvg as number)} course, ${fmt2(worstLine.facultyAvg)} faculty.`,
+        `${below.length} of ${allLines.length} offerings below either median.`,
       ],
     }
-  }, [rows, courseMedian, facultyMedian, termsLabel])
+  }, [allLines, rows, courseMedian, facultyMedian, termsLabel])
 
   const filterRow = (
     <div className="flex flex-wrap items-end gap-3">
@@ -253,28 +324,17 @@ export function CourseOfferingList({
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground" htmlFor="course-list-faculty">Faculty</label>
-        <Select value={facultyFilter ?? ALL_FACULTY} onValueChange={(v) => setFacultyFilter(v === ALL_FACULTY ? undefined : v)}>
-          <SelectTrigger id="course-list-faculty" className="h-8 w-48 text-sm" aria-label="Filter by faculty"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_FACULTY}>All faculty</SelectItem>
-            {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground" htmlFor="course-list-role">Role</label>
-        <Select
-          value={roleFilter ?? ALL_ROLES}
-          onValueChange={(v) => setRoleFilter(v === ALL_ROLES ? undefined : (v as FacultyEvalRoleId))}
-          disabled={roleOptions.length === 0}
-        >
-          <SelectTrigger id="course-list-role" className="h-8 w-44 text-sm" aria-label="Filter by role"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_ROLES}>All roles</SelectItem>
-            {roleOptions.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <label id="course-list-faculty-role-label" className="text-xs font-medium text-muted-foreground">Faculty &amp; role</label>
+        <TokenSelect
+          labelId="course-list-faculty-role-label"
+          contentLabel="Filter by faculty and role"
+          placeholder="All faculty"
+          options={facultyRoleOptions}
+          selected={facultyRoleFilter}
+          onToggle={toggleFacultyRole}
+          onClear={() => setFacultyRoleFilter([])}
+          groupOrder={roleOrder}
+        />
       </div>
     </div>
   )
@@ -288,7 +348,7 @@ export function CourseOfferingList({
       {filterSlot ? createPortal(filterRow, filterSlot) : filterRow}
 
       <ChartCard hideAskLeo variant="normal" title="Course Leaderboard" leoInsight={leo}>
-        <DataTable<CourseOfferingListRow>
+        <DataTable<CourseOfferingGroupRow>
           data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -296,16 +356,8 @@ export function CourseOfferingList({
           searchable={false}
           showQueryControls={false}
           edgeInset={false}
-          defaultSort={{ key: 'courseAvg', dir: 'asc' }}
+          defaultSort={{ key: 'courseAvgSort', dir: 'asc' }}
           emptyState={<p className="py-8 text-center text-sm text-muted-foreground">No course offerings for {termsLabel} yet.</p>}
-          onRowClick={(row) => {
-            // Anywhere on the row (except the course-name cell, which stops propagation above)
-            // opens THIS offering's single-survey analytics in a genuinely new tab — a
-            // different destination from the course-wide tab the name click opens, so a real
-            // `window.open`, not the same-tab `onOpenCourse` mechanism.
-            if (!row.surveyId) return
-            window.open(`/results/${encodeURIComponent(row.surveyId)}?from=analytics`, '_blank', 'noopener,noreferrer')
-          }}
         />
         <TableViewMoreFooter
           totalCount={rows.length}
