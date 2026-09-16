@@ -879,6 +879,37 @@ Source: `docs/research/meetings/2026-09-14-distribution-analytics-design-sync-vi
 
 ---
 
+## Phase 1 design tasks — added 2026-09-15 (Course + Faculty analytics spec — Vishal)
+
+Source: `docs/research/meetings/2026-09-15-analytics-solution-course-faculty-specs-vishal.md` (Granola `b8aeb736`)
+
+> Vishal + Romit daily Cohere-prep cadence (Sep 15). Delivers the course analytics and faculty analytics specs deferred from Sep 14 ("we can discuss tomorrow"). Three layout directives for course analytics detail view. Single survey analytics spec incoming from Vishal (today/tomorrow Sep 16).
+
+### Updates to existing tasks (Sep 15)
+
+| # | Update |
+|---|---|
+| T73 | **Structure update.** Faculty analytics is "pretty much similar to course analytics, just that the aspect would change." Same pattern: list of faculty → click → opens closable tab with KPIs + trend charts + faculty-specific heatmap. Aspect differences to be confirmed by Vishal. D_PCE_0915_07. |
+| T74 | **Detail view spec added.** Course analytics Course tab: default = all courses list. Clicking a course → opens in new CLOSABLE TAB showing (for that course only): KPIs, rating trend, response trend, faculty heatmap, course vs faculty, list of last 6 course offerings (table). D_PCE_0915_01, D_PCE_0915_02. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T269 | Course analytics detail view — closable tab spec | Admin | Analytics → Course tab (drill-in) | P1 — NEW PAGE NEEDED | When user clicks a course in the Course analytics tab, it opens in a NEW CLOSABLE TAB. Must show (for that course only): KPIs, rating trend, response trend, faculty heatmap, course vs faculty, list of last 6 course offerings (table). KPI cards must not be oversized. Refines T74. D_PCE_0915_01, D_PCE_0915_02, D_PCE_0915_03. |
+| T270 | Course vs Faculty card — square aspect ratio + centered | Admin | Course analytics detail (T269) | P1 — DESIGN-REVIEW | Vishal: "That should be like a square, and we probably need to keep it at the centre." Currently the card "is not going well." Must be square; must be centered in its container. Applies to the T269 course detail view design. D_PCE_0915_04. |
+| T271 | Merge rating trend + response trend into single card | Admin | Course analytics detail (T269) | P1 — DESIGN-REVIEW | If keeping course vs faculty card as square (T270), merge "Rating trend" and "Response trend" into one combined card to ensure layout works. Romit: "we would have to adjust the layout in a way that that square and these 2 cards are working well together." D_PCE_0915_05. |
+| T272 | Faculty filter in sticky header — course detail tab only | Admin | Analytics sticky header | P1 — DESIGN-REVIEW | Faculty dropdown filter in sticky header appears ONLY when inside a specific course's closable analytics tab (T269). Does NOT appear on the Course tab overview or Overview tab. Romit: "whenever I'm scrolling, the user can actually filter by faculty on the fly. So that they don't have to scroll." D_PCE_0915_06. |
+
+### Deferred / killed items from Sep 15
+
+| Decision | Reason | Source |
+|---|---|---|
+| Single survey analytics spec | Vishal updating Aarti's feedback doc for clarity. Incoming — Vishal: "If I'm able to complete single survey analytics before I close today, I'll let you know. Worst case tomorrow morning." | Sep 15 Analytics sync |
+| Faculty analytics aspect differences | Vishal to confirm exact aspect differences between course analytics and faculty analytics detail views | Sep 15 Analytics sync |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
