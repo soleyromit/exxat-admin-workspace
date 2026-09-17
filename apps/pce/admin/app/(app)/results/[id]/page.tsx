@@ -2767,25 +2767,33 @@ function ResultDetail({
    * a permanent em-dash Course Content card would be noise, so skip it. */
   const templateHasCourse = sections.length === 0 || sections.some((sec) => sectionGroupOf(sec) !== 'Faculty')
   const sectionFacultyAvg = responses?.sectionScores.find((s) => s.section === 'faculty_performance')?.avg ?? null
-  /* Term average (2026-09-15 KPI requirement) — same response-weighted
-   * pooling programAvgForQuestion (lib/pce-mock-data.ts) uses program-wide,
-   * just filtered to surveys sharing this offering's term. The KPI tiles'
-   * headline delta is term-over-term (`priorInstanceTrend`, vs `prior`), not
-   * a program-avg comparison — this feeds only the "Term avg" caption text. */
-  const termCourseAvg = useMemo(() => {
+  /* Term average (2026-09-15 KPI requirement) — pooled over surveys sharing
+   * this offering's term. The KPI tiles' headline delta is term-over-term
+   * (`priorInstanceTrend`, vs `prior`), not a term-avg comparison — this
+   * feeds only the "Term avg" caption text.
+   *
+   * Pool = per-QUESTION averages from `MOCK_SURVEY_QUESTION_DATA` (course =
+   * every `sectionScores` question, faculty = every `instructorBlocks`
+   * question), NOT `MOCK_RESPONSES.sectionScores`. The Section-wise
+   * distribution rows below compute THEIR "Term average" from exactly this
+   * question pool, and the two used to read different numbers for the same
+   * section (e.g. Course Content: KPI 3.89 vs row 3.8) because they drew from
+   * two fixtures that happen to disagree — flagged 2026-09-16, unified here
+   * so one page never shows two "term averages" for one section. */
+  const termQuestionPool = useMemo(() => {
     const surveyIdsInTerm = new Set(MOCK_SURVEYS.filter((s) => s.term === survey.term).map((s) => s.id))
-    const all = MOCK_RESPONSES.filter((r) => surveyIdsInTerm.has(r.surveyId)).flatMap((r) =>
-      r.sectionScores.filter((s) => s.section === 'course_content').map((s) => s.avg),
-    )
-    return all.length ? all.reduce((a, b) => a + b, 0) / all.length : null
+    const course: number[] = []
+    const faculty: number[] = []
+    for (const d of MOCK_SURVEY_QUESTION_DATA) {
+      if (!surveyIdsInTerm.has(d.surveyId)) continue
+      for (const scores of Object.values(d.sectionScores)) for (const q of scores) course.push(q.avg)
+      for (const b of d.instructorBlocks ?? []) for (const q of b.scores) faculty.push(q.avg)
+    }
+    const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
+    return { course: mean(course), faculty: mean(faculty) }
   }, [survey.term])
-  const termFacultyAvg = useMemo(() => {
-    const surveyIdsInTerm = new Set(MOCK_SURVEYS.filter((s) => s.term === survey.term).map((s) => s.id))
-    const all = MOCK_RESPONSES.filter((r) => surveyIdsInTerm.has(r.surveyId)).flatMap((r) =>
-      r.sectionScores.filter((s) => s.section === 'faculty_performance').map((s) => s.avg),
-    )
-    return all.length ? all.reduce((a, b) => a + b, 0) / all.length : null
-  }, [survey.term])
+  const termCourseAvg = termQuestionPool.course
+  const termFacultyAvg = termQuestionPool.faculty
   /* KPI-strip Faculty Performance — the whole-course blend for a PD viewer
    * (regardless of which single instructor is picked in the Faculty tab
    * below — the KPI header is shared by all three tabs, so it can't follow

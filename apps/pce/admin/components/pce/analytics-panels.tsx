@@ -154,8 +154,8 @@ const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', co
  * the number itself so colour is never the only encoding (A11Y-008).
  */
 const termBreakdownColumnsFor = (
-  courseMedian: number,
-  facultyMedian: number,
+  courseThreshold: number,
+  facultyThreshold: number,
 ): ColumnDef<TermBreakdownRow>[] => [
   {
     key: 'courseCode', label: 'Course', sortable: true,
@@ -174,7 +174,7 @@ const termBreakdownColumnsFor = (
     key: 'courseAvg', label: 'Content', sortable: true, width: 110,
     header: () => <span className="block text-right">Content</span>,
     cell: (row) => (
-      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.courseAvg != null ? belowMedianColor(row.courseAvg, courseMedian) : 'var(--muted-foreground)' }}>
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.courseAvg != null ? belowMedianColor(row.courseAvg, courseThreshold) : 'var(--muted-foreground)' }}>
         {row.courseAvg != null ? row.courseAvg.toFixed(2) : '—'}
       </div>
     ),
@@ -183,7 +183,7 @@ const termBreakdownColumnsFor = (
     key: 'facultyAvg', label: 'Teaching', sortable: true, width: 110,
     header: () => <span className="block text-right">Teaching</span>,
     cell: (row) => (
-      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.facultyAvg != null ? belowMedianColor(row.facultyAvg, facultyMedian) : 'var(--muted-foreground)' }}>
+      <div className="text-right text-sm tabular-nums font-semibold" style={{ color: row.facultyAvg != null ? belowMedianColor(row.facultyAvg, facultyThreshold) : 'var(--muted-foreground)' }}>
         {row.facultyAvg != null ? row.facultyAvg.toFixed(2) : '—'}
       </div>
     ),
@@ -343,16 +343,12 @@ export function ByTermPanel({
     () => (axis === 'term' ? (termCourseBreakdown(value) as TermBreakdownRow[]) : []),
     [axis, value],
   )
-  /* Program medians, not this term's — "is this course weak, period" is the useful question.
-     A within-term median would put half the term below it by construction, every term. Same
-     medians the Overview charts split on, so a course flagged here is flagged there. */
-  const breakdownMedians = useMemo(() => ({
-    course: medianOf(courseStats().map(c => c.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
-    faculty: medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
-  }), [])
+  /* Fixed `RATING_THRESHOLD` (4.0), not a program median (2026-09-16 — same rule as the
+     Dashboard KPI band, Overview leaderboards, quadrant and heatmaps; Vishal: "below the 4.0
+     threshold"). "Is this course weak, period" now has one answer everywhere. */
   const termBreakdownColumns = useMemo(
-    () => termBreakdownColumnsFor(breakdownMedians.course, breakdownMedians.faculty),
-    [breakdownMedians],
+    () => termBreakdownColumnsFor(RATING_THRESHOLD, RATING_THRESHOLD),
+    [],
   )
 
   const byTermKpis: MetricItem[] = useMemo(() => {

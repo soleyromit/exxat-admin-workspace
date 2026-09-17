@@ -38,7 +38,10 @@ const WILLIAMS: PceInstructor = { id: 'f3', name: 'Dr. Maria Williams', initials
 const KIM: PceInstructor = { id: 'f4', name: 'Dr. James Kim', initials: 'JK', role: 'primary' }
 const GOMEZ: PceInstructor = { id: 'f5', name: 'Dr. Rachel Gomez', initials: 'RG', role: 'primary' }
 const HASSAN: PceInstructor = { id: 'f6', name: 'Dr. Omar Hassan', initials: 'OH', role: 'primary' }
-const guest = (i: PceInstructor): PceInstructor => ({ ...i, role: 'guest' })
+// No guest-lecturer pairings in this account (Monil/Vishal, 2026-09-16 demo
+// bar: "instructor and coordinator or 2 instructors") — co-taught records
+// pair two `role: 'primary'` instructors and let `facultyEvalRole()` derive
+// Coordinator / Instructor / Lab Assistant from each person's position.
 
 export const UON_OFFERINGS: CourseOffering[] = [
   // ── Fall 2026 (pt5) — current term, 10 courses ──────────────────────────
@@ -66,7 +69,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f1', courseCode: 'BSN-101', courseName: 'Fundamentals of Nursing I', term: 'Fall 2026', cohort: 'Class of 2029',
     courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [PATEL],
     responseRate: 91, responseCount: 59, enrollmentCount: 65, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.1, responseRate: 65 },
       { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2, responseRate: 70 },
@@ -79,7 +82,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f2', courseCode: 'BSN-115', courseName: 'Health Assessment', term: 'Fall 2026', cohort: 'Class of 2029',
     courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [KIM],
     responseRate: 59, responseCount: 34, enrollmentCount: 58, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 3.4, facultyAvg: 3.7, responseRate: 60 },
       { term: 'Spring 2025', courseAvg: 3.3, facultyAvg: 3.6, responseRate: 55 },
@@ -92,7 +95,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f3', courseCode: 'BSN-201', courseName: 'Pathophysiology', term: 'Fall 2026', cohort: 'Class of 2028',
     courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [WILLIAMS],
     responseRate: 31, responseCount: 22, enrollmentCount: 72, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 3.4, facultyAvg: 3.6, responseRate: 55 },
       { term: 'Spring 2025', courseAvg: 3.3, facultyAvg: 3.5, responseRate: 50 },
@@ -107,9 +110,9 @@ export const UON_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'uon-f4', courseCode: 'BSN-210', courseName: 'Pharmacology for Nurses', term: 'Fall 2026', cohort: 'Class of 2028',
-    courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [CHEN, guest(GOMEZ)],
+    courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [CHEN, GOMEZ],
     responseRate: 78, responseCount: 62, enrollmentCount: 80, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     // Edge case: highly controversial — stable-good history, then a mid-term
     // switch to a new case-based dosage-calculation format this term split
     // the class (see the bimodal MOCK_SURVEY_QUESTION_DATA distribution and
@@ -126,7 +129,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f5', courseCode: 'BSN-305', courseName: 'Medical-Surgical Nursing I', term: 'Fall 2026', cohort: 'Class of 2027',
     courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [PATEL],
     responseRate: 91, responseCount: 40, enrollmentCount: 44, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 4.1, facultyAvg: 4.3, responseRate: 70 },
       { term: 'Spring 2025', courseAvg: 4.2, facultyAvg: 4.4, responseRate: 68 },
@@ -143,7 +146,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f6', courseCode: 'BSN-315', courseName: 'Maternal-Newborn Nursing', term: 'Fall 2026', cohort: 'Class of 2027',
     courseType: 'clinical', templateId: 'tmpl1', status: 'collecting', instructors: [GOMEZ],
     responseRate: 31, responseCount: 11, enrollmentCount: 36, deadline: 'Dec 4, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-11', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.1, responseRate: 65 },
       { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2, responseRate: 70 },
@@ -156,7 +159,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f7', courseCode: 'BSN-325', courseName: 'Pediatric Nursing', term: 'Fall 2026', cohort: 'Class of 2027',
     courseType: 'clinical', templateId: 'tmpl1', status: 'collecting', instructors: [WILLIAMS],
     responseRate: 23, responseCount: 9, enrollmentCount: 40, deadline: 'Dec 4, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-11', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 3.8, facultyAvg: 4.0, responseRate: 68 },
       { term: 'Spring 2025', courseAvg: 3.7, facultyAvg: 3.9, responseRate: 60 },
@@ -167,9 +170,9 @@ export const UON_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'uon-f8', courseCode: 'BSN-401', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Class of 2026',
-    courseType: 'clinical', templateId: 'tmpl1', status: 'closed', instructors: [HASSAN, guest(KIM)],
+    courseType: 'clinical', templateId: 'tmpl1', status: 'closed', instructors: [KIM, HASSAN],
     responseRate: 95, responseCount: 19, enrollmentCount: 20, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     // Edge case: stellar/perfect — consistently excellent history, this is a
     // hallmark course, not a one-off (see the near-unanimous distribution).
     priorOfferings: [
@@ -184,7 +187,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f9', courseCode: 'BSN-415', courseName: 'Psychiatric-Mental Health Nursing', term: 'Fall 2026', cohort: 'Class of 2026',
     courseType: 'didactic', templateId: 'tmpl1', status: 'active', instructors: [CHEN],
     responseRate: 42, responseCount: 21, enrollmentCount: 50, deadline: 'Dec 4, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-11', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 3.5, facultyAvg: 3.7, responseRate: 60 },
       { term: 'Spring 2025', courseAvg: 3.4, facultyAvg: 3.6, responseRate: 55 },
@@ -197,7 +200,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-f10', courseCode: 'MSN-601', courseName: 'Advanced Pathophysiology', term: 'Fall 2026', cohort: 'MSN Cohort 2027',
     courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [WILLIAMS],
     responseRate: 27, responseCount: 8, enrollmentCount: 30, deadline: 'Dec 4, 2026', createdAt: 'Aug 1, 2026',
-    createdBy: 'Dr. Anita Patel', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog2',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-11', surveyType: 'course_evaluation', openDate: '2026-11-10', academicYear: '2026–2027', programId: 'prog2',
     priorOfferings: [
       { term: 'Fall 2024', courseAvg: 3.6, facultyAvg: 3.9, responseRate: 60 },
       { term: 'Spring 2025', courseAvg: 3.7, facultyAvg: 4.0, responseRate: 65 },
@@ -213,7 +216,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-s1', courseCode: 'BSN-101', courseName: 'Fundamentals of Nursing I', term: 'Summer 2026', cohort: 'Class of 2029',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [PATEL],
     responseRate: 90, responseCount: 36, enrollmentCount: 40, deadline: 'Aug 12, 2026', createdAt: 'May 20, 2026',
-    createdBy: 'Dr. Anita Patel', releasedAt: 'Aug 18, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-02', releasedAt: 'Aug 18, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.9, facultyAvg: 4.0, responseRate: 55 },
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.1, responseRate: 65 },
@@ -226,7 +229,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-s2', courseCode: 'BSN-201', courseName: 'Pathophysiology', term: 'Summer 2026', cohort: 'Class of 2028',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [WILLIAMS],
     responseRate: 42, responseCount: 19, enrollmentCount: 45, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026',
-    createdBy: 'Dr. Anita Patel', releasedAt: 'Aug 20, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-03', releasedAt: 'Aug 20, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.5, facultyAvg: 3.7, responseRate: 60 },
       { term: 'Fall 2024', courseAvg: 3.4, facultyAvg: 3.6, responseRate: 55 },
@@ -239,7 +242,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-s3', courseCode: 'BSN-210', courseName: 'Pharmacology for Nurses', term: 'Summer 2026', cohort: 'Class of 2028',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [CHEN],
     responseRate: 88, responseCount: 44, enrollmentCount: 50, deadline: 'Aug 14, 2026', createdAt: 'May 20, 2026',
-    createdBy: 'Dr. Anita Patel', releasedAt: 'Aug 20, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-03', releasedAt: 'Aug 20, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.9, facultyAvg: 4.0, responseRate: 65 },
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.1, responseRate: 70 },
@@ -252,7 +255,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-s4', courseCode: 'BSN-305', courseName: 'Medical-Surgical Nursing I', term: 'Summer 2026', cohort: 'Class of 2027',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [GOMEZ],
     responseRate: 29, responseCount: 10, enrollmentCount: 35, deadline: 'Aug 16, 2026', createdAt: 'May 20, 2026',
-    createdBy: 'Dr. Anita Patel', releasedAt: 'Aug 22, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-04', releasedAt: 'Aug 22, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog1',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2, responseRate: 65 },
       { term: 'Fall 2024', courseAvg: 4.1, facultyAvg: 4.3, responseRate: 70 },
@@ -265,7 +268,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     id: 'uon-s5', courseCode: 'MSN-601', courseName: 'Advanced Pathophysiology', term: 'Summer 2026', cohort: 'MSN Cohort 2027',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [HASSAN],
     responseRate: 92, responseCount: 23, enrollmentCount: 25, deadline: 'Aug 18, 2026', createdAt: 'May 20, 2026',
-    createdBy: 'Dr. Anita Patel', releasedAt: 'Aug 24, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog2',
+    createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-05', releasedAt: 'Aug 24, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog2',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.5, facultyAvg: 3.8, responseRate: 55 },
       { term: 'Fall 2024', courseAvg: 3.6, facultyAvg: 3.9, responseRate: 60 },

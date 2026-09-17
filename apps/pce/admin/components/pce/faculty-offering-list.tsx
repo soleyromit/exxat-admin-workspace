@@ -48,7 +48,7 @@ import type { ColumnDef } from '@exxatdesignux/ui'
 import { ChartCard, type ChartLeoInsight } from '@/components/charts-core'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
 import {
-  courseOfferingListRows, medianOf, facultyEvalRoleOptions,
+  courseOfferingListRows, RATING_THRESHOLD, facultyEvalRoleOptions,
   type CourseOfferingListRow, type FacultyEvalRoleId,
 } from '@/lib/pce-analytics'
 
@@ -148,7 +148,9 @@ export function FacultyOfferingList({
       ),
     [allRows, courseFilter, facultyFilter, roleFilter],
   )
-  const facultyMedian = useMemo(() => medianOf(filteredRows.map((r) => r.facultyAvg)), [filteredRows])
+  // Fixed `RATING_THRESHOLD` (4.0), not a per-selection median — same flag rule as every other
+  // list/leaderboard in Analytics and the Dashboard KPI band (2026-09-16).
+  const facultyMedian = RATING_THRESHOLD
 
   const [visibleCount, setVisibleCount] = useState(CHUNK)
   useEffect(() => setVisibleCount(CHUNK), [courseFilter, facultyFilter, roleFilter, terms])
@@ -252,12 +254,12 @@ export function FacultyOfferingList({
     const below = filteredRows.filter((r) => r.facultyAvg < facultyMedian)
     return {
       headline: `${worst.facultyName} rates lowest at ${fmt2(worst.facultyAvg)}`,
-      explanation: `${below.length} of ${filteredRows.length} offerings fall below the ${fmt2(facultyMedian)} faculty-rating median for ${termsLabel}.`,
+      explanation: `${below.length} of ${filteredRows.length} offerings fall below the ${RATING_THRESHOLD.toFixed(1)} faculty-rating threshold for ${termsLabel}.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
       delta: { value: fmt2(worst.facultyAvg), label: worst.facultyName },
       bullets: [
         `${worst.facultyName} · ${worst.courseCode} · ${worst.term}: ${fmt2(worst.facultyAvg)}.`,
-        `${below.length} of ${filteredRows.length} offerings below the median.`,
+        `${below.length} of ${filteredRows.length} offerings below the ${RATING_THRESHOLD.toFixed(1)} threshold.`,
       ],
     }
   }, [filteredRows, facultyMedian, termsLabel])

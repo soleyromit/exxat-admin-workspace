@@ -54,7 +54,7 @@ import { ChartCard, type ChartLeoInsight } from '@/components/charts-core'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
 import { PersonAvatar } from '@/components/pce/person-avatar'
 import {
-  courseOfferingGroupedRows, medianOf, facultyEvalRoleOptions,
+  courseOfferingGroupedRows, RATING_THRESHOLD, facultyEvalRoleOptions,
   type CourseOfferingGroupRow,
 } from '@/lib/pce-analytics'
 
@@ -142,14 +142,13 @@ export function CourseOfferingList({
       ),
     [allRows, courseFilter, facultyRoleFilter],
   )
-  /** Medians computed over every FACULTY LINE in scope, not one per row — a multi-section row
-   *  contributes each of its sections' own values, same as if they'd stayed separate rows. */
+  /** Every FACULTY LINE in scope — a multi-section row contributes each of its sections' own
+   *  values, same as if they'd stayed separate rows. Flags key off the fixed `RATING_THRESHOLD`
+   *  (4.0), not a per-selection median (2026-09-16 — one rule across Dashboard, Overview
+   *  leaderboards and these lists, so a course can't flip red just because the filter changed). */
   const allLines = useMemo(() => rows.flatMap((r) => r.faculty), [rows])
-  const courseMedian = useMemo(
-    () => medianOf(allLines.map((f) => f.courseAvg).filter((v): v is number => v != null)),
-    [allLines],
-  )
-  const facultyMedian = useMemo(() => medianOf(allLines.map((f) => f.facultyAvg)), [allLines])
+  const courseMedian = RATING_THRESHOLD
+  const facultyMedian = RATING_THRESHOLD
 
   const [visibleCount, setVisibleCount] = useState(CHUNK)
   useEffect(() => setVisibleCount(CHUNK), [courseFilter, facultyRoleFilter, terms])
@@ -299,12 +298,12 @@ export function CourseOfferingList({
     const below = allLines.filter((f) => (f.courseAvg != null && f.courseAvg < courseMedian) || f.facultyAvg < facultyMedian)
     return {
       headline: `${worstRow.courseCode} rates lowest at ${fmt2(worstLine.courseAvg as number)}`,
-      explanation: `${below.length} of ${allLines.length} offerings fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(facultyMedian)} faculty-rating median for ${termsLabel}.`,
+      explanation: `${below.length} of ${allLines.length} offerings fall below the ${RATING_THRESHOLD.toFixed(1)} threshold on course or faculty rating for ${termsLabel}.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
       delta: { value: fmt2(worstLine.courseAvg as number), label: worstRow.courseCode },
       bullets: [
         `${worstRow.courseCode} · ${worstRow.courseName} · ${worstRow.term} · ${worstLine.facultyName}: ${fmt2(worstLine.courseAvg as number)} course, ${fmt2(worstLine.facultyAvg)} faculty.`,
-        `${below.length} of ${allLines.length} offerings below either median.`,
+        `${below.length} of ${allLines.length} offerings below the ${RATING_THRESHOLD.toFixed(1)} threshold.`,
       ],
     }
   }, [allLines, rows, courseMedian, facultyMedian, termsLabel])

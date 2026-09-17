@@ -360,7 +360,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ]
 
-export const DEFAULT_ACCOUNT_ID = 'acc-demo-default'
+export const DEFAULT_ACCOUNT_ID = 'acc-healthy'
 
 /* ── module-level active-account register (read by the term helpers) ──────── */
 let _activeId = DEFAULT_ACCOUNT_ID

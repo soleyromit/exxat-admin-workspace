@@ -16,6 +16,7 @@
 
 import {
   EVALUATION_TYPE_ORDER,
+  MOCK_TEMPLATES,
   type EvaluationInstance,
   type EvaluationType,
   type PceSurvey,
@@ -80,14 +81,30 @@ function ordered(list: EvaluationInstance[]): EvaluationInstance[] {
 
 /* When there's no explicit or seeded breakdown, split the offering-level roll-up
  * into the three types. Same lifecycle, mild deterministic response variation so
- * the rows read as real (Faculty tends to lag Course Material). */
+ * the rows read as real (Faculty tends to lag Course Material).
+ *
+ * Guarded on the offering's own TEMPLATE (Romit, 2026-09-17, screenshot: "for
+ * this view result, i am not seeing course tab") — this used to fabricate a
+ * `course_material` instance unconditionally for every offering, regardless of
+ * whether its template asks any course-content questions at all. A
+ * faculty-only template (tmpl2, "Faculty Midterm Check-In" — `sections:
+ * ['faculty_performance']`, no `course_content`) still got a "Course" chip on
+ * the list page's Evaluatees column, promising a Course tab that
+ * `/results/[id]`'s own `templateHasCourse` check (mirrored here) correctly
+ * never renders — the list page over-promised, the detail page was right.
+ * `s.evaluations` (explicit) and `OVERRIDES` (hand-curated) are untouched —
+ * this guard only narrows the BLIND fallback. */
 function derive(s: PceSurvey): EvaluationInstance[] {
   const deadline = s.deadline
   const enroll = s.enrollmentCount
-  return [
-    inst('course_material', s.status, enroll, s.responseRate,     deadline),
-    inst('faculty_roles',   s.status, enroll, s.responseRate - 7, deadline),
-  ]
+  const template = MOCK_TEMPLATES.find((t) => t.id === s.templateId)
+  const templateHasCourse = !template || template.sections.includes('course_content')
+  const instances: EvaluationInstance[] = []
+  if (templateHasCourse) {
+    instances.push(inst('course_material', s.status, enroll, s.responseRate, deadline))
+  }
+  instances.push(inst('faculty_roles', s.status, enroll, s.responseRate - 7, deadline))
+  return instances
 }
 
 /** The 3 evaluation-type instances for an offering, always in canonical order. */

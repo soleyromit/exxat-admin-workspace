@@ -49,9 +49,9 @@ import {
   facultyEvalRoleOptions,
   offeringPoints,
   gapPoints,
-  medianOf,
   dualMean,
   RESPONSE_TARGET,
+  RATING_THRESHOLD,
   type DualMean,
   type FacultyEvalRoleId,
 } from '@/lib/pce-analytics'
@@ -75,10 +75,10 @@ interface CourseLeaderboardRow extends Record<string, unknown> {
   courseScore: number | null
   facultyScore: number | null
   responseRate: number
-  /* Each rating column flags against ITS OWN median, independently — a course can be weak on
-     content and fine on teaching (or vice versa), and a single shared flag painted both cells
-     red together whenever either one dipped. Flat fields, not nested — DataTable's sort
-     comparator reads one top-level property via `sortKey`. */
+  /* Each rating column flags independently against the fixed `RATING_THRESHOLD` — a course can
+     be weak on content and fine on teaching (or vice versa), and a single shared flag painted
+     both cells red together whenever either one dipped. Flat fields, not nested — DataTable's
+     sort comparator reads one top-level property via `sortKey`. */
   courseBelow: boolean
   facultyBelow: boolean
   /** Lowest/highest CONTENT rating across this course's own offerings in scope — Vishal,
@@ -211,19 +211,11 @@ export function AnalyticsOverviewPanel({
       ),
     [allCourseStats],
   )
-  const courseMedian = useMemo(
-    () => medianOf(scoredCourses.map((c) => c.score.value.weighted)),
-    [scoredCourses],
-  )
-  const courseFacultyMedian = useMemo(
-    () =>
-      medianOf(
-        scoredCourses
-          .filter((c): c is typeof c & { facultyScore: { state: 'value'; value: DualMean } } => c.facultyScore.state === 'value')
-          .map((c) => c.facultyScore.value.weighted),
-      ),
-    [scoredCourses],
-  )
+  /* Below-threshold flags key off the fixed `RATING_THRESHOLD` (4.0), not a
+     per-selection median — the same rule the Dashboard KPI band, the quadrant
+     and the heatmaps already use (Vishal, 2026-09-14: "below the 4.0
+     threshold"). A median moved every time the term filter changed, so the
+     same course could flip red/clear with no change in its own score. */
   const courseRows: CourseLeaderboardRow[] = useMemo(
     () =>
       allCourseStats.map((c) => {
@@ -237,13 +229,13 @@ export function AnalyticsOverviewPanel({
           courseScore: courseVal,
           facultyScore: facultyVal,
           responseRate: c.responseRate,
-          courseBelow: courseVal != null && courseVal < courseMedian,
-          facultyBelow: facultyVal != null && facultyVal < courseFacultyMedian,
+          courseBelow: courseVal != null && courseVal < RATING_THRESHOLD,
+          facultyBelow: facultyVal != null && facultyVal < RATING_THRESHOLD,
           lowestRating: c.ratings.length ? Math.min(...c.ratings) : null,
           highestRating: c.ratings.length ? Math.max(...c.ratings) : null,
         }
       }),
-    [allCourseStats, courseMedian, courseFacultyMedian, terms],
+    [allCourseStats, terms],
   )
 
   const courseColumns: ColumnDef<CourseLeaderboardRow>[] = useMemo(
@@ -324,15 +316,15 @@ export function AnalyticsOverviewPanel({
     const below = scoredRows.filter((r) => r.courseBelow || r.facultyBelow)
     return {
       headline: `${worst.courseCode} rates lowest at ${fmt2(worst.courseScore as number)}`,
-      explanation: `${below.length} of ${scoredRows.length} scored courses fall below the ${fmt2(courseMedian)} course-rating median or the ${fmt2(courseFacultyMedian)} faculty-rating median for ${termsLabel}. Sort by any rating column to see the full spread.`,
+      explanation: `${below.length} of ${scoredRows.length} scored courses fall below the ${RATING_THRESHOLD.toFixed(1)} threshold on course or faculty rating for ${termsLabel}. Sort by any rating column to see the full spread.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
       delta: { value: fmt2(worst.courseScore as number), label: worst.courseCode },
       bullets: [
         `${worst.courseCode} · ${worst.courseName}: ${worst.courseScore != null ? fmt2(worst.courseScore) : '—'} course, ${worst.facultyScore != null ? fmt2(worst.facultyScore) : '—'} faculty.`,
-        `${below.length} of ${scoredRows.length} scored courses below either median.`,
+        `${below.length} of ${scoredRows.length} scored courses below the ${RATING_THRESHOLD.toFixed(1)} threshold.`,
       ],
     }
-  }, [courseRows, courseMedian, courseFacultyMedian, termsLabel])
+  }, [courseRows, termsLabel])
 
   /* ── Faculty Leaderboard — flat Faculty × Role rows (reference: "a person holding two roles
         is counted twice"), not nested under course. This answers a different question than the
@@ -370,8 +362,7 @@ export function AnalyticsOverviewPanel({
         belowThreshold: false,
       }
     })
-    const median = medianOf(unranked.map((r) => r.rating).filter((v): v is number => v != null))
-    return unranked.map((r) => ({ ...r, belowThreshold: r.rating != null && r.rating < median }))
+    return unranked.map((r) => ({ ...r, belowThreshold: r.rating != null && r.rating < RATING_THRESHOLD }))
   }, [terms, roleFilter, roleOptions])
 
   const facultyRoleColumns: ColumnDef<FacultyRoleRow>[] = useMemo(
@@ -416,15 +407,11 @@ export function AnalyticsOverviewPanel({
         sortable: true,
         sortKey: 'responseRate',
         width: 120,
-        cell: (row) => <span className="tabular-nums">{row.responseRate}%</span>,
+        // Same below-target red as the Course Leaderboard (parity, 2026-09-16 follow-up).
+        cell: (row) => <ResponseRateCell value={row.responseRate} />,
       },
     ],
     [],
-  )
-
-  const facultyMedianRating = useMemo(
-    () => medianOf(facultyRoleRows.map((r) => r.rating).filter((v): v is number => v != null)),
-    [facultyRoleRows],
   )
 
   const facultyLeaderboardLeo: ChartLeoInsight | null = useMemo(() => {
@@ -434,15 +421,15 @@ export function AnalyticsOverviewPanel({
     const below = scoredRows.filter((r) => r.belowThreshold)
     return {
       headline: `${worst.name} rates lowest at ${fmt2(worst.rating as number)} (${worst.roleLabel})`,
-      explanation: `${below.length} of ${scoredRows.length} faculty-role pairings fall below the ${fmt2(facultyMedianRating)} rating median for ${termsLabel}. Sort the Rating column to move between the best and lowest five.`,
+      explanation: `${below.length} of ${scoredRows.length} faculty-role pairings fall below the ${RATING_THRESHOLD.toFixed(1)} rating threshold for ${termsLabel}. Sort the Rating column to move between the best and lowest five.`,
       kind: below.length > 0 ? 'anomaly' : 'trend',
       delta: { value: fmt2(worst.rating as number), label: worst.name },
       bullets: [
         `${worst.name} · ${worst.roleLabel}: ${fmt2(worst.rating as number)} across ${worst.offerings} offering${worst.offerings === 1 ? '' : 's'}.`,
-        `${below.length} of ${scoredRows.length} faculty-role pairings below the median.`,
+        `${below.length} of ${scoredRows.length} faculty-role pairings below the ${RATING_THRESHOLD.toFixed(1)} threshold.`,
       ],
     }
-  }, [facultyRoleRows, facultyMedianRating, termsLabel])
+  }, [facultyRoleRows, termsLabel])
 
   const ratingTrendLeo: ChartLeoInsight | null = useMemo(() => {
     const scored = window6.filter((s) => s.courseAvg != null)
@@ -608,7 +595,7 @@ export function AnalyticsOverviewPanel({
 
       {/* ── Leaderboards — TWO side-by-side cards, each a real sortable/paginated DataTable
              (Romit, 2026-09-14, reference screenshot: dedicated "Overall" column + per-column
-             below-median highlighting on Course; flat Faculty × Role rows, no course grouping,
+             below-threshold highlighting on Course; flat Faculty × Role rows, no course grouping,
              on Faculty — "a person holding two roles is counted twice"). Course: every course
              in scope, including unscored ones (dashes, not hidden), ranked by the new Overall
              column with Course/Faculty still broken out beside it (D27 — never the only number

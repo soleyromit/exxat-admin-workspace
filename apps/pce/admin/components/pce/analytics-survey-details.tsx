@@ -37,9 +37,8 @@ import type { ColumnDef } from '@exxatdesignux/ui'
 import { TruncatedText } from '@/components/truncated-text'
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
 import {
-  offeringPoints, compareTerms, medianOf, courseStats, facultyStats, RESPONSE_TARGET,
+  offeringPoints, compareTerms, RESPONSE_TARGET, RATING_THRESHOLD,
 } from '@/lib/pce-analytics'
-import type { DualMean } from '@/lib/pce-analytics'
 
 interface Row extends Record<string, unknown> {
   id: string
@@ -75,9 +74,9 @@ const scoreCell = (v: number | null, suppressed: boolean, median: number) => (
   </div>
 )
 
-/* Factory — the score cells need medians to split on, and a module const can't hold them.
-   Program medians, matching the Overview charts, so a row flagged here is flagged there. */
-const columnsFor = (courseMedian: number, facultyMedian: number): ColumnDef<Row>[] => [
+/* Factory — the score cells split on the shared rating threshold (kept as parameters so the
+   two columns can diverge later without touching the cells). */
+const columnsFor = (courseThreshold: number, facultyThreshold: number): ColumnDef<Row>[] => [
   {
     key: 'term', label: 'Term', sortable: true, width: 110,
     cell: (row) => <span className="text-sm text-muted-foreground">{row.term}</span>,
@@ -111,12 +110,12 @@ const columnsFor = (courseMedian: number, facultyMedian: number): ColumnDef<Row>
     // Both rated entities, never merged into one "score" (D7/D27).
     key: 'courseAvg', label: 'Content', sortable: true, width: 92,
     header: () => <span className="block text-right">Content</span>,
-    cell: (row) => scoreCell(row.courseAvg, row.suppressed, courseMedian),
+    cell: (row) => scoreCell(row.courseAvg, row.suppressed, courseThreshold),
   },
   {
     key: 'facultyAvg', label: 'Teaching', sortable: true, width: 92,
     header: () => <span className="block text-right">Teaching</span>,
-    cell: (row) => scoreCell(row.facultyAvg, row.suppressed, facultyMedian),
+    cell: (row) => scoreCell(row.facultyAvg, row.suppressed, facultyThreshold),
   },
   {
     key: 'responseRate', label: 'Response', sortable: true, width: 118,
@@ -147,15 +146,9 @@ const columnsFor = (courseMedian: number, facultyMedian: number): ColumnDef<Row>
 ]
 
 export function AnalyticsSurveyDetails() {
-  /* Program medians — same split the Overview charts use, so the raw register and the charts
-     above it never disagree about which numbers are flagged. */
-  const columns = useMemo(
-    () => columnsFor(
-      medianOf(courseStats().map(c => c.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
-      medianOf(facultyStats().map(f => f.score).filter((s): s is { state: 'value'; value: DualMean } => s.state === 'value').map(s => s.value.weighted)),
-    ),
-    [],
-  )
+  /* Fixed `RATING_THRESHOLD` (4.0) — same flag rule as the Overview leaderboards and the
+     Dashboard KPI band (2026-09-16), so the raw register and the charts never disagree. */
+  const columns = useMemo(() => columnsFor(RATING_THRESHOLD, RATING_THRESHOLD), [])
 
   const router = useRouter()
 
