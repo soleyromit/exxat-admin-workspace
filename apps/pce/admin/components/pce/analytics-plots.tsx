@@ -867,10 +867,15 @@ export function DashboardResponseTrend({
               stroke={run.above ? 'var(--color-above)' : 'var(--color-below)'}
               strokeWidth={2}
               fill={`url(#dashboardTrendFill-${run.above ? 'above' : 'below'})`}
-              dot={(props: { cx?: number; cy?: number; payload?: { crossing?: number } }) =>
-                props.payload?.crossing ? (
-                  // Construction point, not real data — no dot drawn for it.
-                  <g key={`x-${props.cx}`} />
+              dot={(props: { cx?: number; cy?: number; value?: number | null; payload?: { crossing?: number } }) =>
+                props.payload?.crossing || props.value == null || !Number.isFinite(props.cy) ? (
+                  // Construction point, or a row where THIS run has no value
+                  // (every x row carries `null` for the runs that don't pass
+                  // through it) — no dot. Recharts still invokes the renderer
+                  // for null rows with `cy` undefined, and an unguarded
+                  // <circle> then paints at y=0: the half-clipped red/green
+                  // dots along the chart's top edge (Romit, 2026-09-17).
+                  <g key={`x-${props.cx}-${run.key}`} />
                 ) : (
                   <circle
                     key={`d-${props.cx}`}
@@ -1116,12 +1121,18 @@ export function TermResponseTrend({
           <Line
             dataKey="responseRate" type="monotone" stroke="var(--color-responseRate)" strokeWidth={2}
             isAnimationActive={false}
-            dot={(props: { cx?: number; cy?: number; index?: number; payload?: { responseRate: number } }) => (
-              <circle
-                key={`resp-dot-${props.index}`} cx={props.cx} cy={props.cy} r={3}
-                fill={(props.payload?.responseRate ?? 0) < target ? 'var(--chart-4)' : 'var(--color-responseRate)'}
-              />
-            )}
+            dot={(props: { cx?: number; cy?: number; index?: number; payload?: { responseRate: number | null } }) =>
+              // Same null-row guard as `DashboardResponseTrend` — a term with no
+              // response value would otherwise paint a clipped dot at y=0.
+              props.payload?.responseRate == null || !Number.isFinite(props.cy) ? (
+                <g key={`resp-empty-${props.index}`} />
+              ) : (
+                <circle
+                  key={`resp-dot-${props.index}`} cx={props.cx} cy={props.cy} r={3}
+                  fill={props.payload.responseRate < target ? 'var(--chart-4)' : 'var(--color-responseRate)'}
+                />
+              )
+            }
           />
         </LineChart>
       </ChartContainer>
