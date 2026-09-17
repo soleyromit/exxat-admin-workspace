@@ -61,7 +61,7 @@ export interface EvalResult {
 
 /** Display label per split-survey scope. */
 export const EVAL_SCOPE_LABEL: Record<'course' | 'instructor', string> = {
-  course: 'Course evaluation',
+  course: 'Course content evaluation',
   instructor: 'Instructor evaluation',
 }
 

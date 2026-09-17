@@ -29,6 +29,7 @@ import {
   MOCK_RESPONSES,
   MOCK_OPEN_TEXT_RESPONSES,
   MOCK_SURVEY_QUESTION_DATA,
+  instructorEvalRoleLabel,
   type SubjectKey,
   type PceOpenTextResponse,
 } from '@/lib/pce-mock-data'
@@ -549,7 +550,7 @@ export default function SurveyDetailPage() {
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{instructor.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}
+                        {instructorEvalRoleLabel(instructor)}
                       </span>
                     </div>
                   </div>
@@ -628,7 +629,7 @@ export default function SurveyDetailPage() {
                 return blocks.map(block => {
                   const instructor = survey.instructors.find(i => i.id === block.instructorId)
                   const instructorLabel = instructor
-                    ? `${instructor.name} · ${instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}`
+                    ? `${instructor.name} · ${instructorEvalRoleLabel(instructor)}`
                     : null
 
                   return (

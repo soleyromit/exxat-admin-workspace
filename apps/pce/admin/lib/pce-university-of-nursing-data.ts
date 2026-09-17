@@ -40,6 +40,11 @@ import { MOCK_RESPONSES, MOCK_SURVEY_QUESTION_DATA } from '@/lib/pce-mock-data'
 // Coordinator, Lab Instructor…) never surface as Coordinator / Lab Assistant
 // labels on this account. No guest-lecturer pairings either.
 const asInstructor = (i: Omit<PceInstructor, 'evalRole'>): PceInstructor => ({ ...i, evalRole: 'instructor' })
+// 2026-09-17 review (Monil): "keep course coordinator, instructor… but not
+// beyond that" — the lead instructor on each co-taught course is evaluated as
+// its Course Coordinator so the demo shows both roles; solo-taught courses
+// stay Instructor only.
+const asCoordinator = (i: PceInstructor): PceInstructor => ({ ...i, evalRole: 'course-coordinator' })
 const PATEL = asInstructor({ id: 'f1', name: 'Dr. Anita Patel', initials: 'AP', role: 'primary' })
 const CHEN = asInstructor({ id: 'f2', name: 'Dr. Kevin Chen', initials: 'KC', role: 'primary' })
 const WILLIAMS = asInstructor({ id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' })
@@ -115,7 +120,7 @@ export const UON_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'uon-f4', courseCode: 'BSN-210', courseName: 'Pharmacology for Nurses', term: 'Fall 2026', cohort: 'Class of 2028',
-    courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [CHEN, GOMEZ],
+    courseType: 'didactic', templateId: 'tmpl1', status: 'closed', instructors: [asCoordinator(CHEN), GOMEZ],
     responseRate: 78, responseCount: 62, enrollmentCount: 80, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     // Edge case: highly controversial — stable-good history, then a mid-term
@@ -176,7 +181,7 @@ export const UON_SURVEYS: PceSurvey[] = [
   },
   {
     id: 'uon-f8', courseCode: 'BSN-401', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Class of 2026',
-    courseType: 'clinical', templateId: 'tmpl1', status: 'closed', instructors: [KIM, HASSAN],
+    courseType: 'clinical', templateId: 'tmpl1', status: 'closed', instructors: [asCoordinator(KIM), HASSAN],
     responseRate: 94, responseCount: 30, enrollmentCount: 32, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     // Edge case: stellar/perfect — consistently excellent history, this is a

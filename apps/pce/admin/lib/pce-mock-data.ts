@@ -11,7 +11,10 @@ export type SurveyType = 'course_evaluation' | 'programmatic'
 export type EvaluationType = 'course_material' | 'faculty_roles'
 export const EVALUATION_TYPE_ORDER: EvaluationType[] = ['course_material', 'faculty_roles']
 export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
-  course_material: 'Course',
+  /* "Course Content", not "Course" (2026-09-17 review: "rename course to
+   * course content... in the dummy data") — the evaluation type is the
+   * course's content, and the plain word collided with the course entity. */
+  course_material: 'Course Content',
   faculty_roles:   'Faculty',
 }
 export const EVALUATION_TYPE_ICON: Record<EvaluationType, string> = {
@@ -194,16 +197,32 @@ export type FacultyEvalRoleId = (typeof EVAL_FACULTY_ROLES)[number]['id']
  * Vocabulary per 2026-05-19 (Monil): roles derive from course associations, not faculty rank.
  */
 export function facultyEvalRole(pairingRole: 'primary' | 'guest', position?: string): FacultyEvalRoleId {
-  if (pairingRole === 'guest') return 'guest-lecturer'
+  /* Demo data evaluates exactly TWO roles — Course Coordinator and
+   * Instructor — and nothing else (2026-09-17 review, Monil: "I only evaluate
+   * course instructor and course coordinator. No other faculty roles,
+   * replace all the other faculty roles with either instructor or course
+   * coordinator"). The 'guest' pairing, lab and TA positions all resolve to
+   * Instructor rather than to their own role ids. `EVAL_FACULTY_ROLES` keeps
+   * the full Prism directory for the Settings control; this derivation is
+   * what the fixtures actually surface. */
+  if (pairingRole === 'guest') return 'instructor'
   switch (position) {
     case 'Department Chair':
     case 'Program Director':
     case 'Course Director':
     case 'Clinical Coordinator': return 'course-coordinator'
-    case 'Lab Instructor':       return 'lab-assistant'
-    case 'Teaching Assistant':   return 'teaching-assistant'
     default:                     return 'instructor'
   }
+}
+
+/** Display label for a survey instructor's course-association role —
+ *  explicit `evalRole` when the pairing carries one, else derived through
+ *  `facultyEvalRole` from the pairing + directory position. ONE label
+ *  vocabulary for every surface ("Course Coordinator" / "Instructor"), never
+ *  the pairing's own 'primary' / 'guest' words (2026-09-17 review). */
+export function instructorEvalRoleLabel(inst: Pick<PceInstructor, 'id' | 'role' | 'evalRole'>): string {
+  const id = inst.evalRole ?? facultyEvalRole(inst.role, MOCK_FACULTY.find((f) => f.id === inst.id)?.position)
+  return EVAL_FACULTY_ROLES.find((r) => r.id === id)?.label ?? 'Instructor'
 }
 
 /** Benchmark targets used in analytics — source of truth for threshold lines on charts. */
@@ -572,7 +591,7 @@ export const MOCK_CURRENT_USER: PceUser = {
 export const MOCK_SUBJECTS: PceSubject[] = [
   {
     key: 'course_content',
-    label: 'Course',
+    label: 'Course Content',
     description: 'Evaluates the course itself: structure, materials, objectives, workload.',
     isGeneral: true,
     perLabel: 'course',
@@ -2076,7 +2095,21 @@ export const MOCK_RESPONSES: PceResponse[] = [
     comments: [
       { section: 'course_content', text: 'The msk labs build on each other really well so far.', sentiment: 'positive' },
       { section: 'course_content', text: 'Reading load feels heavy for the middle weeks.', sentiment: 'concern' },
+      /* Added 2026-09-17 — once the Course Content tab stopped borrowing
+       * faculty comments (each tab now shows only its own evaluation type),
+       * mon1's two course comments both landed on 'Course materials' with a
+       * concern in the mix, so Highlights rendered empty on the lead demo
+       * record. These hit 'Assessment quality' (worked/exam) and 'Pacing'
+       * (pace) with no concern comment on either theme. */
+      { section: 'course_content', text: 'Worked examples in class made the first exam feel fair.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The pace of the opening unit was right for building confidence.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'The instructor explains palpation techniques clearly.', sentiment: 'positive', facultyId: 'f5' },
+      /* Same round, Faculty side: each instructor had only positive comments,
+       * so Scope for improvement was the empty state on both Faculty scopes.
+       * One concern per instructor — 'Office hours' (available) for f1,
+       * 'Assessment quality' (quiz) for f5. */
+      { section: 'faculty_performance', text: 'Office hours rarely fall at times that fit the clinical schedule.', sentiment: 'concern', facultyId: 'f1' },
+      { section: 'faculty_performance', text: 'Grading turnaround on the weekly quiz could be quicker.', sentiment: 'concern', facultyId: 'f5' },
       /* Added 2026-09-17 (Romit: "can't show empty placeholders for score or
        * highlights") — the ORIGINAL single comment above and any Patel
        * comment matched none of THEME_PATTERNS' keywords (lib/pce-themes.ts),

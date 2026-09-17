@@ -164,6 +164,7 @@ import * as Plot from '@observablehq/plot'
 import { PlotFigure, axisDefaults, gridMark, type PlotTheme } from '@/components/pce/plot-figure'
 import { CHART_TICK_FONT_SIZE } from '@/lib/chart-typography'
 import { ChartCard, ChartDataTable, type ChartLeoInsight } from '@/components/charts-core'
+import { LEO_TOKENS } from '@/components/leo-insight-indicator'
 import { RatingBreakdownRows, RATING_SERIES } from '@/components/pce/rating-viz'
 import { AvatarInitials } from '@/components/ui/avatar'
 import {
@@ -202,6 +203,7 @@ import {
   type PceOpenTextResponse,
 } from '@/lib/pce-mock-data'
 import { evaluationsFor } from '@/lib/pce-evaluations'
+import { termSeason } from '@/lib/pce-analytics'
 
 /* ── shared bits ──────────────────────────────────────────────────────────── */
 
@@ -635,7 +637,7 @@ function StatusResultScreen({
       />
       <PageHeader
         title={`${survey.courseCode} · ${survey.courseName}`}
-        subtitle={`${survey.term}${survey.academicYear ? ` · AY ${survey.academicYear}` : ''}${program ? ` · ${program}` : ''}`}
+        subtitle={`${survey.academicYear ? termSeason(survey.term) : survey.term}${survey.academicYear ? ` · AY ${survey.academicYear}` : ''}${program ? ` · ${program}` : ''}`}
         actions={
           isPD ? (
             <Button variant="outline" size="sm" asChild>
@@ -962,7 +964,7 @@ interface SectionRowDatum {
    *  aggregated across the section's questions — feeds the distribution. */
   dist: [number, number, number, number, number]
   /** Per-instructor average within this section (scope-aware) — photo markers. */
-  instructors: { id: string; initials: string; name: string; avatarUrl?: string; role?: 'primary' | 'guest'; avg: number }[]
+  instructors: { id: string; initials: string; name: string; avatarUrl?: string; roleLabel?: string; avg: number }[]
 }
 
 /* Pedagogical section categories (was THEME_ORDER) — shared by
@@ -994,13 +996,14 @@ function classifySectionFromText(text: string, fromFaculty: boolean): string {
 function SectionBoxplotChart({
   sections,
   partial,
-  courseOnly,
+  scopeLabel,
 }: {
   sections: SectionRowDatum[]
   partial?: boolean
-  /** Page is scoped to the Course pill — says so in the description, same as
-   *  every other section on the page (Romit 2026-08-17). */
-  courseOnly?: boolean
+  /** What the tab is scoped to — "Course content", or "Course Coordinator
+   *  evaluation · Dr. Anita Patel" — said in the description, same as every
+   *  other section on the page (Romit 2026-08-17; role added 2026-09-17). */
+  scopeLabel?: string | null
 }) {
   if (sections.length === 0) return null
   const weakest = [...sections].sort((a, b) => a.avg - b.avg)[0]
@@ -1052,7 +1055,7 @@ function SectionBoxplotChart({
     <ChartCard
       variant="normal"
       title="Section-wise distribution"
-      description={`Score spread per section vs term${partial ? ' · partial data' : ''}${courseOnly ? ' · course only' : ''}`}
+      description={`Score spread per section vs term${partial ? ' · partial data' : ''}${scopeLabel ? ` · ${scopeLabel}` : ''}`}
       leoInsight={sectionLeo}
       hideAskLeo
     >
@@ -1109,7 +1112,7 @@ function SectionBoxplotChart({
                           name: fi.name,
                           initials: fi.initials,
                           avatarUrl: fi.avatarUrl,
-                          role: fi.role,
+                          roleLabel: fi.roleLabel,
                           avg: fi.avg,
                         }))}
                         detailTitle={s.title}
@@ -1173,10 +1176,14 @@ interface PlotPerson {
   name: string
   initials: string
   avatarUrl?: string
-  /** Same 'primary' | 'guest' vocabulary as the Evaluatees column (Romit,
-   *  2026-08-25: "their role isn't defined here" — the per-person popover
-   *  showed name + average with no role at all). */
-  role?: 'primary' | 'guest'
+  /** Course-association role label ("Course Coordinator" / "Instructor") —
+   *  the SAME `EVAL_FACULTY_ROLES` vocabulary the Faculty tab's switcher and
+   *  the Question breakdown band use (2026-09-17 review: "no other faculty
+   *  roles" — the old 'Primary faculty' / 'Guest faculty' pairing labels were
+   *  a third vocabulary on one page). Romit, 2026-08-25: "their role isn't
+   *  defined here" — the per-person popover showed name + average with no
+   *  role at all. */
+  roleLabel?: string
   avg: number
   counts?: number[]
   total?: number
@@ -1625,11 +1632,10 @@ function ScaleTrackPlot({
                     {m.person.name}
                     {/* Role wasn't shown anywhere on this popover at all
                         (Romit, 2026-08-25: "their role isn't defined here")
-                        — same 'Primary faculty' / 'Guest faculty' vocabulary
-                        as the Evaluatees column, not just a "Guest" flag on
-                        the exception case. */}
-                    {m.person.role && (
-                      <span className="text-background/70"> · {m.person.role === 'primary' ? 'Primary faculty' : 'Guest faculty'}</span>
+                        — the course-association role, same label as the
+                        Faculty tab's switcher. */}
+                    {m.person.roleLabel && (
+                      <span className="text-background/70"> · {m.person.roleLabel}</span>
                     )}
                   </p>
                 )}
@@ -2342,15 +2348,89 @@ function ResponseCollectionTrend({ survey, rate }: { survey: PceSurvey; rate: nu
  *  share one affordance instead of two copies that drift apart. Label stays
  *  sentence-cased ("AI generated"), same as every other chip on the page. */
 function AiGeneratedBadge() {
+  /* The DS Leo insight popover's own "kind chip" (leo-insight-indicator.tsx:
+   * rounded-full, `bg-brand/10` fill, `border-brand/50` hairline, brand star,
+   * foreground label) — the ONE brand-coloured element on an AI surface, so
+   * brand ink means "AI" and nothing else on this page. Replaced the grey
+   * `BadgeAi` pill, which fought the lavender Leo wash (Romit, 2026-09-17:
+   * "focus on color choices and placement of icons better"). Label stays
+   * sentence-cased ("AI generated"), same as every other chip on the page. */
   return (
-    <Badge variant="secondary" className="gap-1 font-normal">
-      <i
-        className="fa-light fa-sparkles text-[10px]"
-        style={{ color: 'var(--brand-color)' }}
-        aria-hidden="true"
-      />
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium text-foreground ${LEO_TOKENS.softBgClass} ${LEO_TOKENS.borderClass}`}
+    >
+      <i className={`fa-duotone fa-solid fa-star-christmas text-xs ${LEO_TOKENS.iconClass}`} aria-hidden="true" />
       AI generated
-    </Badge>
+    </span>
+  )
+}
+
+/* ── AI surface shell ────────────────────────────────────────────────────────
+   The three AI-lane cards (Summary · Highlights · Scope for improvement) are
+   the things a reader should notice FIRST on landing; everything below them
+   stays plain (2026-09-17 review, Monil: "when a user lands on this page
+   these 3 things should be very attractive and asking for attention. Rest of
+   them can be dim, rest of them can be vanilla... we'll keep it design
+   compliant"). Every treatment here is the DS's OWN AI vocabulary, read from
+   the package source rather than invented:
+   · Leo surface wash — `--leo-surface-gradient` (globals.css: "Ask Leo panel
+     tints… Use for blobs, cards, etc."), the 4%→8% brand mix every Ask Leo
+     surface sits on. It is what makes the three cards read as one AI lane
+     against the plain white cards beneath.
+   · Ambient brand glow — card.tsx GLOW TREATMENT: "Only two approved uses…
+     1. AI surfaces (Insights card, Ask Leo responses) → opacity 0.12–0.16.
+     Always pair with overflow-hidden on the Card." Same radial the DS's Leo
+     insight popover paints (leo-insight-indicator.tsx), at the top of that
+     approved band so it still reads over the wash.
+   · ONE brand-coloured element per card: the Leo kind chip (`AiGeneratedBadge`,
+     the insight popover's own `bg-brand/10 border-brand/50` chip with the
+     brand star) in the header's `CardAction` slot, right-aligned like the
+     popover's `ms-auto` chip. The title itself stays plain foreground and
+     the row category glyphs stay muted, so brand ink on this page means
+     "AI" and nothing else (2026-09-17: a lavender Leo disc left of the
+     title read as a bullet, and a grey `BadgeAi` pill fought the wash).
+   · Body copy in `text-foreground`, not muted — the insight popover's own
+     body weight; muted prose was half of what read as "dim".
+   Nothing else: DS Card shape, border, radius and shadow are untouched
+   ([[feedback_never_override_ds_card_button_shape]]). */
+function AiSurfaceCard({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string
+  description?: string | null
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <Card
+      className={`relative ${className ?? ''}`}
+      style={{ backgroundImage: 'var(--leo-surface-gradient)' }}
+    >
+      {/* The glow is clipped by ITS OWN wrapper (rounded to the card), not by
+          `overflow-hidden` on the Card — that would also clip the DS Button
+          focus ring on the theme rows inside (state-review, 2026-09-17;
+          [[feedback_inline_style_kills_focus_ring]]). */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] forced-colors:hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 120% 80% at 50% 100%, oklch(from var(--brand-color) l c h / 0.16) 0%, transparent 68%)',
+          }}
+        />
+      </div>
+      <CardHeader className="relative pb-2">
+        <CardTitle className="text-sm" aria-level={2}>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+        <CardAction>
+          <AiGeneratedBadge />
+        </CardAction>
+      </CardHeader>
+      <CardContent className="relative">{children}</CardContent>
+    </Card>
   )
 }
 
@@ -2361,20 +2441,14 @@ function AiGeneratedBadge() {
  *  Text only, deliberately: the sentiment donut belongs to the PER-QUESTION
  *  summary cards in the Question breakdown, and repeating it here would make
  *  two different-scope donuts compete at the top of the page. The prose
- *  itself is composed by the page (see `aiSummaryText`). */
-function ScopeAiSummaryCard({ text }: { text: string }) {
+ *  itself is composed by the page (see `aiSummaryText`). `scopeLabel` names
+ *  WHAT is summarised — "Course content" or "Course Coordinator evaluation ·
+ *  Dr. Anita Patel" (2026-09-17 review: the role must be said on the tab). */
+function ScopeAiSummaryCard({ text, scopeLabel }: { text: string; scopeLabel?: string | null }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2" aria-level={2}>
-          Summary
-          <AiGeneratedBadge />
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-muted-foreground">{text}</p>
-      </CardContent>
-    </Card>
+    <AiSurfaceCard title="Summary" description={scopeLabel}>
+      <p className="text-sm leading-relaxed text-foreground">{text}</p>
+    </AiSurfaceCard>
   )
 }
 
@@ -2394,14 +2468,7 @@ function ThemeHighlightCard({
       : { icon: 'fa-arrow-trend-up', title: 'Scope for improvement', empty: 'No recurring concerns flagged yet.' }
   const openComments = openLabel ? matchedFor(openLabel) : []
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-1.5" aria-level={2}>
-          <i className={`fa-light ${copy.icon} text-xs text-muted-foreground`} aria-hidden="true" />
-          {copy.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <AiSurfaceCard title={copy.title}>
         {themes.length === 0 ? (
           <p className="text-sm text-muted-foreground">{copy.empty}</p>
         ) : (
@@ -2415,7 +2482,14 @@ function ThemeHighlightCard({
                   onClick={() => setOpenLabel(t.label)}
                   className="h-auto w-full justify-between gap-3 py-2.5 font-normal"
                 >
-                  <span className="text-sm text-foreground">{t.label}</span>
+                  {/* Per-row category glyph (thumbs-up / trend) keeps the two
+                      cards tellable apart at a glance now that the header
+                      slot carries the shared Leo mark instead
+                      ([[feedback_pure_typography_loses_storytelling]]). */}
+                  <span className="flex items-center gap-2 min-w-0">
+                    <i className={`fa-light ${copy.icon} text-xs text-muted-foreground shrink-0`} aria-hidden="true" />
+                    <span className="text-sm text-foreground truncate">{t.label}</span>
+                  </span>
                   <span className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
                     {t.occurrences} comment{t.occurrences !== 1 ? 's' : ''}
                     <i className="fa-light fa-chevron-right" aria-hidden="true" />
@@ -2425,7 +2499,6 @@ function ThemeHighlightCard({
             ))}
           </ul>
         )}
-      </CardContent>
       <FloatingSheetPanel open={openLabel != null} onOpenChange={(o) => !o && setOpenLabel(null)}>
         <FloatingSheetPanelContent>
           <FloatingSheetPanelHeader
@@ -2448,7 +2521,7 @@ function ThemeHighlightCard({
           </FloatingSheetPanelBody>
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
-    </Card>
+    </AiSurfaceCard>
   )
 }
 
@@ -2709,6 +2782,22 @@ function ResultDetail({
   const scopedInstructor = hasAnyFacultyFilter && matchedInstructors.length === 1 ? matchedInstructors[0] : null
   const soleInstructor = survey.instructors.length === 1 ? survey.instructors[0] : null
   const scopedFacultyName = scopedInstructor?.name ?? soleInstructor?.name ?? null
+  /** "Course Coordinator" / "Instructor" for whoever the Faculty tab shows —
+   *  the role has to be SAID on the tab body itself, not only on the
+   *  switcher chip (2026-09-17 review: "when you select Course Coordinator...
+   *  somewhere here you have to mention that it is coordinator evaluation.
+   *  Instructor name is there, the role name should be shown"). On a
+   *  solo-instructor offering the switcher doesn't render at all, so this
+   *  is the ONLY place the role appears. */
+  const scopedFacultyRoleLabel = (() => {
+    const who = scopedInstructor ?? soleInstructor
+    return who ? EVAL_FACULTY_ROLES.find((r) => r.id === evalRoleFor(who.id))?.label ?? null : null
+  })()
+  /** "Dr. Anita Patel · Course Coordinator" — one string every faculty-scoped
+   *  band/caption on the page shares, so name and role never drift apart. */
+  const scopedFacultyLabel = scopedFacultyName
+    ? `${scopedFacultyName}${scopedFacultyRoleLabel ? ` · ${scopedFacultyRoleLabel}` : ''}`
+    : null
   const facultyChipLabel =
     scopedFacultyName ??
     (hasAnyFacultyFilter
@@ -2716,6 +2805,18 @@ function ResultDetail({
       : survey.instructors.length > 1
         ? `${survey.instructors.length} instructors`
         : null)
+  /** What the active tab's body is about — the Summary card's caption and the
+   *  Section-wise distribution description both say it, so a reader landing
+   *  on the Faculty tab sees "Course Coordinator evaluation · Dr. Anita
+   *  Patel" before any number (2026-09-17 review). */
+  const tabScopeLabel =
+    facultyScope === 'course'
+      ? 'Course content'
+      : scopedFacultyName
+        ? `${scopedFacultyRoleLabel ? `${scopedFacultyRoleLabel} evaluation` : 'Faculty evaluation'} · ${scopedFacultyName}`
+        : facultyChipLabel
+          ? `Faculty evaluation · ${facultyChipLabel}`
+          : 'Faculty evaluation'
 
   /* Ops actions — the full set from the evaluations table (Romit 2026-07-09) */
   const [remindOpen, setRemindOpen] = useState(false)
@@ -2918,14 +3019,17 @@ function ResultDetail({
         }
       return qs
     }
-    /* Scope follows the faculty selector: 'all' = whole course, else one
-       instructor — and the survey's evalScope on a split offering (a Course
+    /* Scope follows the tab: Course Content shows ONLY course questions,
+       Faculty shows ONLY the picked instructor's questions (2026-09-17
+       review: "since we are having 2 tabs, in Faculty you can skip the
+       course content questions... otherwise what is the purpose of having
+       2 tabs?") — and the survey's evalScope on a split offering (a Course
        survey never shows instructor questions, and vice versa). */
     const mine = collect(
       qData,
       (id) => survey.instructors.some((i) => i.id === id) && inFacultyScope(id),
       {
-        course: result.evalScope !== 'instructor',
+        course: result.evalScope !== 'instructor' && facultyScope === 'course',
         faculty: result.evalScope !== 'course' && facultyScope !== 'course',
       },
     )
@@ -2962,7 +3066,7 @@ function ResultDetail({
             initials: inst.initials,
             name: inst.name,
             avatarUrl: inst.avatarUrl,
-            role: inst.role,
+            roleLabel: EVAL_FACULTY_ROLES.find((r) => r.id === evalRoleFor(inst.id))?.label,
             avg: mineSection.reduce((a, x) => a + x.avg, 0) / mineSection.length,
           }
         })
@@ -3002,7 +3106,7 @@ function ResultDetail({
   const allQuestionScores = qData
     ? [
         ...Object.entries(qData.sectionScores)
-          .filter(([key]) => !(facultyScope === 'course' && facultySubjectKeys.has(key)))
+          .filter(([key]) => (facultyScope === 'course' ? !facultySubjectKeys.has(key) : facultySubjectKeys.has(key)))
           .flatMap(([, v]) => v),
         ...(qData.instructorBlocks ?? [])
           .filter(
@@ -3015,7 +3119,13 @@ function ResultDetail({
     : []
   /* Question breakdown groups — Course / Faculty via the section classifier
      (roleSetId OR subjectKey). */
-  const courseSections = result.evalScope === 'instructor' ? [] : sections.filter((s) => sectionGroupOf(s) === 'Course')
+  /* Course-content sections render on the Course Content tab only — the
+     Faculty tab starts straight at the instructor sections (2026-09-17
+     review), the mirror of the gate below. */
+  const courseSections =
+    result.evalScope === 'instructor' || facultyScope !== 'course'
+      ? []
+      : sections.filter((s) => sectionGroupOf(s) === 'Course')
   /* Course-only scope (the "Course" pill) hides Faculty questions the same
      way a split "Course evaluation" survey does — it's a view, not a
      template change, so it reuses the same empty-array gate. */
@@ -3066,7 +3176,11 @@ function ResultDetail({
      scoped to Course, which excludes every faculty_performance comment
      outright (an unattributed one has no role to match against 'course'). */
   const inCommentScope = (c: IndexedComment) => {
-    if (c.section !== 'faculty_performance') return true
+    /* Course/general comments belong to the Course Content tab only — the
+       Faculty tab's Highlights / Scope for improvement / Summary describe the
+       picked instructor, not the course (2026-09-17 review: Faculty tab skips
+       course content entirely). */
+    if (c.section !== 'faculty_performance') return facultyScope === 'course'
     if (facultyScope === 'course') return false
     const subject = commentSubjectId(c)
     const attributed = subject != null && survey.instructors.some((i) => i.id === subject)
@@ -3198,10 +3312,17 @@ function ResultDetail({
     const prevTab = pageTab
     const prevScope = facultyScope
     setIsPrintingFull(true)
-    if (facultyScope === 'course') {
-      setFacultyScope(isPD ? survey.instructors[0]?.id ?? 'all' : result.facultyId)
+    /* A course-only split survey has no Faculty tab (2026-09-17) — printing
+     * it lands on Course Content instead of activating a tab with no
+     * trigger (state-review catch). */
+    if (result.evalScope === 'course') {
+      setPageTab('course')
+    } else {
+      if (facultyScope === 'course') {
+        setFacultyScope(isPD ? survey.instructors[0]?.id ?? 'all' : result.facultyId)
+      }
+      setPageTab('faculty')
     }
-    setPageTab('faculty')
     setQbOpen(true)
     const restore = () => {
       setIsPrintingFull(false)
@@ -3318,15 +3439,15 @@ function ResultDetail({
   const groupMeta: Record<string, GroupMeta> = {
     Course: {
       icon: EVALUATION_TYPE_ICON.course_material,
-      label: 'Course evaluation',
+      label: 'Course content evaluation',
       anchorId: 'group-course',
-      contextLine: 'Course evaluation',
+      contextLine: 'Course content evaluation',
     },
     Faculty: {
       icon: EVALUATION_TYPE_ICON.faculty_roles,
       label: 'Faculty evaluation',
       sub:
-        scopedFacultyName ??
+        scopedFacultyLabel ??
         (survey.instructors.length > 1
           ? `${matchedInstructors.length} instructors${
               matchedInstructors.length <= 3
@@ -3337,7 +3458,7 @@ function ResultDetail({
             }`
           : undefined),
       anchorId: 'group-faculty',
-      contextLine: `Faculty evaluation${scopedFacultyName ? ` · ${scopedFacultyName}` : ''}`,
+      contextLine: `Faculty evaluation${scopedFacultyLabel ? ` · ${scopedFacultyLabel}` : ''}`,
     },
   }
 
@@ -3540,10 +3661,15 @@ function ResultDetail({
   /* Hand-authored 2-sentence insight per evaluatee wins when one exists
    * (`MOCK_SCOPE_AI_SUMMARY`, Monil's University of Nursing brief, 2026-09-16);
    * the number-templated prose above is the fallback for every other record. */
+  /* The Faculty tab never falls through to the COURSE paragraph (its caption
+   * says "Faculty evaluation" — the body must agree): a blended 2+ instructor
+   * scope gets a faculty-scoped sentence instead (state-review, 2026-09-17). */
   const aiSummaryText =
     MOCK_SCOPE_AI_SUMMARY[scopedInstructor ? `${survey.id}:${scopedInstructor.id}` : survey.id] ??
     facultySummaryText ??
-    courseSummaryText
+    (facultyScope === 'course'
+      ? courseSummaryText
+      : `${matchedInstructors.length} instructors were evaluated on ${survey.courseCode} ${survey.courseName} in ${survey.term}, where ${summaryCohort}. Pick one instructor above to read their own summary.`)
 
   /* `overviewContent` is now a function of what renders as the FIRST item in
    * the left column, ahead of `#scores` (`summaryHeader`). Course tab passes
@@ -3612,11 +3738,15 @@ function ResultDetail({
               </div>
 
               <div id="sections" className="scroll-mt-16">
-                <SectionBoxplotChart
-                  sections={sectionRows}
-                  partial={inCollection}
-                  courseOnly={facultyScope === 'course'}
-                />
+                {sectionRows.length > 0 ? (
+                  <SectionBoxplotChart
+                    sections={sectionRows}
+                    partial={inCollection}
+                    scopeLabel={tabScopeLabel}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No scored sections for this scope yet.</p>
+                )}
               </div>
 
               {/* Question breakdown — open by default (2026-09-16); the
@@ -3646,6 +3776,9 @@ function ResultDetail({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0">
+                        {breakdownRows.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No scored questions for this scope yet.</p>
+                        )}
                         <QuestionBreakdownTable
                           rows={breakdownRows}
                           surveyId={survey.id}
@@ -3744,8 +3877,8 @@ function ResultDetail({
                           />
                           {questionIndexGroups.map((g) => {
                             const label =
-                              g.key === 'Faculty' && scopedFacultyName
-                                ? `Faculty evaluation · ${scopedFacultyName}`
+                              g.key === 'Faculty' && scopedFacultyLabel
+                                ? `Faculty evaluation · ${scopedFacultyLabel}`
                                 : groupMeta[g.key]?.label ?? g.key
                             const open = !!railGroupsOpen[g.key]
                             return (
@@ -3861,7 +3994,7 @@ function ResultDetail({
              window (open–close) added same sync: "what was the start date,
              what was the end date, are we capturing it somewhere?" — it
              wasn't shown anywhere on this page. */
-          `${result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}${survey.openDate ? ` · Eval window ${survey.openDate} – ${survey.deadline}` : ''}`
+          `${result.academicYear ? termSeason(result.term) : result.term}${result.academicYear ? ` · AY ${result.academicYear}` : ''} · ${result.program}${survey.cohort ? ` · ${survey.cohort}` : ''}${survey.courseType ? ` · ${survey.courseType[0].toUpperCase()}${survey.courseType.slice(1)}` : ''}${survey.openDate ? ` · Eval window ${survey.openDate} – ${survey.deadline}` : ''}`
         }
         actions={
           /* Hierarchy: ONE primary per state. Live → Send reminder is the
@@ -4150,10 +4283,15 @@ function ResultDetail({
             <div className="flex items-center justify-between gap-3 border-b border-border">
               <TabsList variant="line">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                {/* "Course Content" / "Faculty" — the two evaluation types by
+                    name (2026-09-17 review: "This tab will be called Course
+                    Content. This tab will be called Faculty"). Each tab now
+                    shows ONLY its own type's sections, so a course-only split
+                    survey has nothing to put on a Faculty tab and drops it. */}
                 {templateHasCourse && result.evalScope !== 'instructor' && (
-                  <TabsTrigger value="course">Course</TabsTrigger>
+                  <TabsTrigger value="course">Course Content</TabsTrigger>
                 )}
-                <TabsTrigger value="faculty">Faculty</TabsTrigger>
+                {result.evalScope !== 'course' && <TabsTrigger value="faculty">Faculty</TabsTrigger>}
               </TabsList>
               {/* One Export split-button, beside the tab row, not inside the
                   tab content (Romit, 2026-09-15), visible only where there's
@@ -4207,7 +4345,7 @@ function ResultDetail({
                 with. Keeps its own Summary card, stacked as the first item
                 (unchanged shape). ── */}
             <TabsContent value="course" className="m-0 flex flex-col gap-4">
-              {renderOverviewContent(<ScopeAiSummaryCard text={aiSummaryText} />)}
+              {renderOverviewContent(<ScopeAiSummaryCard text={aiSummaryText} scopeLabel={tabScopeLabel} />)}
             </TabsContent>
 
             {/* ── Faculty ── segmented Tabs (not the primary row's own
@@ -4235,10 +4373,10 @@ function ResultDetail({
                 scopedFacultyScoreCard ? (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
                     {scopedFacultyScoreCard}
-                    <ScopeAiSummaryCard text={aiSummaryText} />
+                    <ScopeAiSummaryCard text={aiSummaryText} scopeLabel={tabScopeLabel} />
                   </div>
                 ) : (
-                  <ScopeAiSummaryCard text={aiSummaryText} />
+                  <ScopeAiSummaryCard text={aiSummaryText} scopeLabel={tabScopeLabel} />
                 ),
               )}
             </TabsContent>

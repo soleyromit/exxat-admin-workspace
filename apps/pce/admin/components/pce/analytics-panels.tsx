@@ -50,7 +50,7 @@ import {
   courseResponseRateSeries, courseQuestionTrend, courseOfferingListRows,
   facultyHeatCells, facultyRatingTrendByTerm, facultyRatingRangeByTerm,
   facultyResponseRateSeries, facultyContentAvg, facultyCourseStats, facultyCourseResponseTrend,
-  facultyOfferings, academicYearOf, compareTerms,
+  facultyOfferings, academicYearOf, compareTerms, termSeason,
   type TermCourseRow, type DualMean, type FacultyEvalRoleId, type CourseOfferingListRow,
 } from '@/lib/pce-analytics'
 import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
@@ -1388,9 +1388,9 @@ export function ByFacultyPanel({
             className="rounded-sm text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={(e) => e.stopPropagation()}
           >
-            {row.term}
+            {termSeason(row.term)}
           </a>
-        ) : <span className="text-sm">{row.term}</span>,
+        ) : <span className="text-sm">{termSeason(row.term)}</span>,
       },
       {
         key: 'courseCode', label: 'Course', sortable: true, sortKey: 'courseCode',
@@ -2040,9 +2040,9 @@ export function ByCoursePanel({
             className="rounded-sm text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={(e) => e.stopPropagation()}
           >
-            {row.term}
+            {termSeason(row.term)}
           </a>
-        ) : <span className="text-sm">{row.term}</span>,
+        ) : <span className="text-sm">{termSeason(row.term)}</span>,
       },
       {
         key: 'facultyName', label: 'Faculty', sortable: true, sortKey: 'facultyName',

@@ -328,7 +328,7 @@ export function SurveysTable({
           <span className="text-sm font-semibold">{row.survey.courseCode}</span>
           <span className="text-xs text-muted-foreground">
             {row.survey.courseName}
-            {row.survey.evalScope ? ` · ${row.survey.evalScope === 'course' ? 'Course evaluation' : 'Instructor evaluation'}` : ''}
+            {row.survey.evalScope ? ` · ${row.survey.evalScope === 'course' ? 'Course content evaluation' : 'Instructor evaluation'}` : ''}
           </span>
         </Link>
       ),

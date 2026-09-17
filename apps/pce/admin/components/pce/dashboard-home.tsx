@@ -123,7 +123,7 @@ import { ResponseProgressCell } from '@/components/pce/response-gauge'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { DashboardResponseTrend, dashboardTrendLabel } from '@/components/pce/analytics-plots'
 import { ChartCard, ChartFigure, ChartDataTable, type ChartLeoInsight } from '@/components/charts-core'
-import { termSeries, programSummary, shortTerm, termToYear, RATING_THRESHOLD, termBelowThreshold, type TermSeriesPoint } from '@/lib/pce-analytics'
+import { termSeries, programSummary, shortTerm, termToYear, termSeason, RATING_THRESHOLD, termBelowThreshold, type TermSeriesPoint } from '@/lib/pce-analytics'
 
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -179,12 +179,15 @@ const POSITION_BADGE: Record<TermPosition, { label: string; tone: 'success' | 'n
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** Cosmetic-only "Fall 2027" relabel for whatever term is really 'Fall 2026'
- *  — see `TermCardShell`'s `displayName` prop doc comment for why this is a
- *  display swap, not a rename of the underlying term data. Shared here so
- *  the Live-term card and the KPI band's own "Fall 2026 · vs last closed
- *  term" description can't drift out of sync with each other. */
-const displayTermName = (name: string) => (name === 'Fall 2026' ? 'Fall 2027' : name)
+/** Term cards and the KPI band show the bare season ("Fall") — the year is
+ *  the academic year on the card's own meta line right beneath it (Monil,
+ *  2026-09-17: "define terms as fall, summer, spring, and not include the
+ *  years in the term. Years would be included in the academic year").
+ *  Supersedes the 2026-09-14 cosmetic 'Fall 2026' → "Fall 2027" relabel —
+ *  see `TermCardShell`'s `displayName` prop doc comment for why that was a
+ *  display swap, not a data rename; this one is too. Shared here so the
+ *  Live-term card and the KPI band's description can't drift apart. */
+const displayTermName = (name: string) => termSeason(name)
 
 const fmtDate = (d: string) =>
   parseDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -848,10 +851,10 @@ function TermCardShell({
           <CardTitle className="min-w-0 font-sans text-sm font-semibold leading-tight">
             <Link
               href={`/course-evaluation/term/${term.id}`}
-              aria-label={`Open ${displayName ?? term.name} workspace`}
+              aria-label={`Open ${displayName ?? termSeason(term.name)} ${term.academicYear} workspace`}
               className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              {displayName ?? term.name}
+              {displayName ?? termSeason(term.name)}
             </Link>
           </CardTitle>
           <StatusBadge

@@ -25,18 +25,14 @@
 // face piles... MUST NOT").
 
 import { AvatarGroup, AvatarGroupCount, AvatarInitials, Badge, Tip } from '@exxatdesignux/ui'
-import type { PceInstructor } from '@/lib/pce-mock-data'
+import { instructorEvalRoleLabel, type PceInstructor } from '@/lib/pce-mock-data'
 
-// Program Director gets a distinct ring — Aarti, same meeting (0ef80c33):
-// "the program director who has senior program complete visibility across
-// everything can be shown in a different color... people who just have
-// affiliation to that course can be shown in a different color icon."
-// `--chart-3` not brand-color (feedback_ds_typography_color_discipline:
-// brand-color is reserved for primary CTAs, never identity/semantic state)
-// and not `--chart-2` (already means "correct/selected" elsewhere in the
-// product). Ring, not a background recolor, so initials stay legible.
-// Color is a secondary cue only — the Tip label carries the position too,
-// so the distinction survives for screen readers and non-color viewing.
+// Program Director distinction lives in the Tip label only ("— Program
+// Director"). The 1.5px `--chart-3` ring it used to carry (Aarti, 0ef80c33)
+// read as an extra-thick avatar next to plain initials in the same cell
+// (Romit, 2026-09-17: "remove extra thickness from avatar") — the
+// course-association role chip beside each group now carries the
+// hierarchy visibly, so the ring was a second cue for the same fact.
 const isProgramDirector = (i: PceInstructor) => i.position === 'Program Director'
 
 const MAX_PER_GROUP = 3
@@ -44,8 +40,12 @@ const MAX_PER_GROUP = 3
 function RoleGroup({ label, icon, instructors }: { label: string; icon: string; instructors: PceInstructor[] }) {
   const shown = instructors.slice(0, MAX_PER_GROUP)
   const overflow = instructors.length - MAX_PER_GROUP
+  /* One ROW per role: the chip and its own avatars stay on a single line
+   * (2026-09-17, Romit: "arrange the evaluatees column properly" — the old
+   * flat flex-wrap let a chip wrap away from its avatars, so "Course
+   * Coordinator" sat on one line and AP on the next). */
   return (
-    <>
+    <div className="flex items-center gap-1.5">
       <Badge
         tabIndex={0}
         variant="outline"
@@ -62,27 +62,31 @@ function RoleGroup({ label, icon, instructors }: { label: string; icon: string; 
               <span
                 tabIndex={0}
                 className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                style={isPD ? { boxShadow: '0 0 0 1.5px var(--chart-3)', borderRadius: '9999px' } : undefined}
               >
                 <AvatarInitials initials={i.initials} size="sm" className="size-5" />
               </span>
             </Tip>
           )
         })}
-        {overflow > 0 && <AvatarGroupCount className="text-[11px]">+{overflow}</AvatarGroupCount>}
+        {overflow > 0 && <AvatarGroupCount className="text-xs">+{overflow}</AvatarGroupCount>}
       </AvatarGroup>
-    </>
+    </div>
   )
 }
 
 export function FacultyAvatarRow({ instructors, className }: { instructors: PceInstructor[]; className?: string }) {
   if (instructors.length === 0) return null
-  const primary = instructors.filter((i) => i.role === 'primary')
-  const guest = instructors.filter((i) => i.role === 'guest')
+  /* Grouped by course-association role ("Course Coordinator" / "Instructor"),
+   * the same label every other faculty surface uses — not by the pairing's
+   * own primary/guest flag (2026-09-17 review: only those two roles exist in
+   * the demo data; 'Primary faculty' / 'Guest faculty' were a third
+   * vocabulary). */
+  const coordinators = instructors.filter((i) => instructorEvalRoleLabel(i) === 'Course Coordinator')
+  const others = instructors.filter((i) => instructorEvalRoleLabel(i) !== 'Course Coordinator')
   return (
-    <div className={className ?? 'flex flex-wrap items-center gap-1.5'}>
-      {primary.length > 0 && <RoleGroup label="Primary faculty" icon="fa-chalkboard-user" instructors={primary} />}
-      {guest.length > 0 && <RoleGroup label="Guest faculty" icon="fa-microphone" instructors={guest} />}
+    <div className={className ?? 'flex flex-col items-start gap-1'}>
+      {coordinators.length > 0 && <RoleGroup label="Course Coordinator" icon="fa-user-tie" instructors={coordinators} />}
+      {others.length > 0 && <RoleGroup label="Instructor" icon="fa-chalkboard-user" instructors={others} />}
     </div>
   )
 }

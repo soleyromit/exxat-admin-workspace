@@ -1480,6 +1480,17 @@ function academicYearStart(term: string): number {
   return season === 'Fall' ? year : year - 1
 }
 
+/** "Fall 2025" → "Fall" — how a term is DISPLAYED wherever an academic year
+ *  is shown beside it (2026-09-17 review, Monil: "define terms as fall,
+ *  summer, spring, and not include the years in the term. Years would be
+ *  included in the academic year"). The full "Fall 2025" string stays the
+ *  term's identity/key everywhere in the data — only the label drops the
+ *  year, and only where the AY carries it. Cross-year trend axes and prose
+ *  ("vs Spring 2025") keep the year: two "Fall"s on one axis say nothing. */
+export function termSeason(term: string): string {
+  return term.trim().split(/\s+/)[0] ?? term
+}
+
 /** "Fall 2025" / "Spring 2026" → "2025–2026" — the AY label the term belongs to. */
 export function academicYearOf(term: string): string {
   const start = academicYearStart(term)

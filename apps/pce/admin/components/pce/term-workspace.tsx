@@ -348,9 +348,16 @@ function TermWorkspaceInner() {
         // step-survey-instances.tsx) in name and position.
         key: 'evaluatees',
         label: 'Evaluatees',
-        width: 180,
+        // 192 — "Course Coordinator" chip (~140px) + one avatar on ONE line
+        // once the rows stopped wrapping (2026-09-17); 180 clipped the avatar
+        // against the Status column border. The 12px came out of Response
+        // rate (204→196) so the row total still fits a 1440 viewport without
+        // pushing the actions column into horizontal scroll.
+        width: 192,
         cell: (row) => (
-          <div className="flex flex-wrap items-center gap-1.5">
+          /* Stacked: Course chip on its own line, then one line per faculty
+             role (chip + avatars) — see FacultyAvatarRow (2026-09-17). */
+          <div className="flex flex-col items-start gap-1">
             {/* Same "Course material" chip vocabulary as Step 2's Evaluatees
                 column (EvaluateeChipCluster) — this column otherwise showed
                 only faculty, silently dropping the fact that course content
@@ -394,7 +401,7 @@ function TermWorkspaceInner() {
         key: 'responseRate',
         label: 'Response rate',
         sortable: true,
-        width: 204,
+        width: 196,
         cell: (row) =>
           row.responseCount > 0 || isLive(row.status) ? (
             <ResponseProgressCell
@@ -768,8 +775,25 @@ function TermWorkspaceInner() {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {/* KPI strip */}
-            <KeyMetrics variant="compact" metricsSingleRow metrics={kpis} />
+            {/* KPI strip — the same `cards` + `md` tiles the Dashboard's
+                Program status band uses (dashboard-home.tsx), not a single
+                `compact` card: the term page is the Dashboard's drill-in, so
+                its KPI anatomy (label / numeral / caption type scale, one
+                tile per metric) must read as the same component (Romit,
+                2026-09-17: "kpi card and font size isn't matching other kpi
+                card guidelines"). */}
+            <div className="shrink-0 -mx-4 lg:-mx-6 [&_.text-3xl.tabular-nums]:!text-[26px] [&_.text-sm.line-clamp-2]:!text-[11.5px]">
+              {/* Identical wrapper to dashboard-home.tsx's Program status band:
+                  sr-only h2 (KeyMetrics' tile titles are h3 — axe heading-order
+                  straight after the page h1 otherwise), the `-mx` counter-margin
+                  cancelling KeyMetrics' own baked-in section gutter so the tiles
+                  align with the table below, and the 26px / 11.5px type overrides
+                  that match the `kpi-chart` reference scale (see that file's
+                  comment for why they're `!important` and why `size` alone can't
+                  reach these numbers). */}
+              <h2 className="sr-only">Term status</h2>
+              <KeyMetrics variant="cards" size="md" showHeader={false} metricsSingleRow metrics={kpis} />
+            </div>
 
             {/* ── Evaluations — table ⇄ kanban ── */}
             <section className="flex flex-col gap-2" aria-label="Evaluations">

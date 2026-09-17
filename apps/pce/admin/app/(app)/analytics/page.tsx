@@ -14,7 +14,7 @@ import { MOCK_FACULTY } from '@/lib/pce-mock-data'
 import { usePce } from '@/components/pce/pce-state'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
-import { allTerms, academicYears, termOfferingsEvaluated } from '@/lib/pce-analytics'
+import { allTerms, academicYears, termOfferingsEvaluated, termSeason } from '@/lib/pce-analytics'
 
 /**
  * By Term / By Faculty / By Course code-split from Overview's initial bundle.
@@ -298,22 +298,20 @@ function AnalyticsInner() {
    *  a multi-select on one tab silently narrow a single-select on another. */
   const overviewAcademicYears = useMemo(() => academicYears(), [])
   const overviewAcademicYear = param('ay') || overviewAcademicYears.find((ay) => ay.terms.includes(defaultTerm))?.year || overviewAcademicYears[0]?.year || ''
-  /** Term options for the picker — the selected AY's terms PLUS its immediate neighbor AYs, not
-   *  just the selected AY alone (Vishal, 2026-09-15: "By default, select Summer 2026. With an
-   *  option to also select Spring 2026 and Fall 2026"). Fall opens the NEXT academic year
-   *  (`academicYearOf`), so Fall 2026 sits in AY 2026–2027 while Spring/Summer 2026 sit in
-   *  2025–2026 — a strict single-AY gate would hide Fall 2026 from Summer 2026's default view.
-   *  `overviewAcademicYears` is sorted newest-first, so idx-1 is the newer neighbor AY, idx+1
-   *  the older one. */
+  /** Term options for the picker — ONLY the selected AY's own terms, shown as bare seasons
+   *  ("Fall" / "Spring" / "Summer") since the year now lives in the Academic year select
+   *  (Monil, 2026-09-17: "define terms as fall, summer, spring, and not include the years
+   *  in the term. Years would be included in the academic year"). This supersedes the
+   *  2026-09-15 neighbor-AY widening (Vishal: "select Summer 2026, with an option to also
+   *  select Spring 2026 and Fall 2026") — with the year gone from the chips, two "Fall"s
+   *  from adjacent AYs in one list would be indistinguishable, so the AY gate has to be
+   *  strict: Fall 2026 is reachable by switching the AY to 2026–2027. Within one AY the
+   *  seasons stay in calendar order (Fall → Spring → Summer, `academicYears()` lists
+   *  each AY's terms oldest-first). */
   const overviewTermsForYear = useMemo(() => {
-    const idx = overviewAcademicYears.findIndex((ay) => ay.year === overviewAcademicYear)
-    if (idx === -1) return analyticsTerms
-    const neighborTerms = new Set([
-      ...(overviewAcademicYears[idx - 1]?.terms ?? []),
-      ...(overviewAcademicYears[idx]?.terms ?? []),
-      ...(overviewAcademicYears[idx + 1]?.terms ?? []),
-    ])
-    return analyticsTerms.filter((t) => neighborTerms.has(t))
+    const ay = overviewAcademicYears.find((a) => a.year === overviewAcademicYear)
+    if (!ay) return analyticsTerms
+    return ay.terms.filter((t) => analyticsTerms.includes(t))
   }, [overviewAcademicYear, overviewAcademicYears, analyticsTerms])
   const overviewTermsParam = param('terms')
   const overviewTerms = useMemo(() => {
@@ -406,7 +404,7 @@ function AnalyticsInner() {
             labelId="overview-term-label"
             contentLabel="Select terms"
             placeholder="Select terms"
-            options={overviewTermsForYear.map((t) => ({ value: t, label: t }))}
+            options={overviewTermsForYear.map((t) => ({ value: t, label: termSeason(t) }))}
             selected={overviewTerms}
             onToggle={toggleOverviewTerm}
           />
