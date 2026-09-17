@@ -93,6 +93,7 @@ interface StepReviewProps {
    *  design row already shows — removed as repeated content, not replaced. */
   evaluateSummary?: string
   subjectIssues?: CourseIssue[]
+  /** Accepted for caller compatibility; no longer rendered (2026-09-17). */
   windowIssues?: CourseIssue[]
   /** Duplicate ACK gate. Term-setup passes course-grained issues (merged
    *  step); the push wizard passes the duplicates the admin explicitly
@@ -238,7 +239,7 @@ export function StepReview({
   reminderAnchor = EVAL_REMINDER_CADENCE.anchor, reminderFrequency = EVAL_REMINDER_CADENCE.frequency,
   surveyTitleTemplate, surveyInstructions,
   onEdit, onBack, onPush,
-  cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [], duplicateIssues = [],
+  cohortSummary, evaluateSummary, subjectIssues = [], duplicateIssues = [],
   duplicateTitle, skippedDuplicateCount = 0, instanceCount, reEvalCount = 0, pendingGapCount = 0,
 }: StepReviewProps) {
   const totalRecipients = studentCount + emailContacts.length
@@ -270,9 +271,7 @@ export function StepReview({
   // Acknowledgement gates — each unresolved warning category must be consciously
   // accepted before Push (Dropbox multi-ack model).
   const [ackSubject, setAckSubject] = useState(false)
-  const [ackWindow, setAckWindow] = useState(false)
   const [ackDuplicate, setAckDuplicate] = useState(false)
-  const [windowListOpen, setWindowListOpen] = useState(false)
 
   // Whether the headline dispatch sentence (below) actually renders — same
   // three-part condition it gates on. Recipients' own rows only need to
@@ -289,9 +288,8 @@ export function StepReview({
   const emailComplete = !!templateName
   const recipientsComplete = totalRecipients > 0
   const subjectAck = subjectIssues.length === 0 || ackSubject
-  const windowAck = windowIssues.length === 0 || ackWindow
   const duplicateAck = duplicateIssues.length === 0 || ackDuplicate
-  const allReady = scheduleComplete && coursesComplete && emailComplete && recipientsComplete && subjectAck && windowAck && duplicateAck
+  const allReady = scheduleComplete && coursesComplete && emailComplete && recipientsComplete && subjectAck && duplicateAck
 
   const heading = surveyTitle.trim() || (surveyMode === 'course_evaluation' ? termName || 'Course evaluation' : 'Untitled survey')
 
@@ -600,7 +598,7 @@ export function StepReview({
       {/* Email lives with the schedule — both are step-3 decisions, so the
           section's Edit routes to the step that actually owns them. */}
       <Section
-        state={!scheduleComplete || !emailComplete ? 'incomplete' : windowIssues.length > 0 && !ackWindow ? 'warning' : 'ready'}
+        state={!scheduleComplete || !emailComplete ? 'incomplete' : 'ready'}
         title="Schedule & email"
         onEdit={() => onEdit(3)}
         rows={[
@@ -635,47 +633,10 @@ export function StepReview({
           ['From', senderName || 'Exxat Surveys'],
         ]}
       >
-        {surveyMode === 'course_evaluation' && windowIssues.length > 0 && (
-          <div className={emailComplete ? 'mt-1' : undefined}>
-            <AckBanner
-              id="ack-window"
-              title={`${windowIssues.length} course${windowIssues.length !== 1 ? 's' : ''} ended over 2 weeks before the survey opens`}
-              reason="Students would answer long after class ended, so responses may be less accurate."
-              issues={windowIssues}
-              ackLabel="Send to these courses anyway"
-              checked={ackWindow}
-              onChange={setAckWindow}
-              action={{ label: 'Edit schedule', onClick: () => onEdit(3) }}
-            >
-              {/* Progressive disclosure — collapsed count expands to one row
-                  per course; the list is capped at ~5 rows with an inner
-                  scroll so a large term never stretches the review page. */}
-              {windowIssues.length > 3 && (
-                <div className="flex flex-col gap-1">
-                  {windowListOpen && (
-                    <div className="flex flex-col gap-1 overflow-y-auto pe-1" style={{ maxHeight: 150 }}>
-                      {windowIssues.map(iss => (
-                        <div key={iss.id} className="text-sm min-w-0 truncate">
-                          {iss.courseLabel}
-                          <span style={{ color: 'var(--muted-foreground)' }}> · {iss.reasons.join(' · ')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    className="self-start"
-                    aria-expanded={windowListOpen}
-                    onClick={() => setWindowListOpen(v => !v)}
-                  >
-                    {windowListOpen ? 'Hide courses' : `Show all ${windowIssues.length} courses`}
-                  </Button>
-                </div>
-              )}
-            </AckBanner>
-          </div>
-        )}
+        {/* The "course ended over 2 weeks before the survey opens" AckBanner
+            that used to sit here was removed (Romit, 2026-09-17: "remove
+            this") — the schedule step owns the window; the review step no
+            longer gates the push on acknowledging stale courses. */}
       </Section>
       </div>
 
@@ -692,7 +653,7 @@ export function StepReview({
             <p className="text-xs flex items-center gap-1.5 min-w-0" style={{ color: 'var(--insight-severity-warning-fg)' }}>
               <i className="fa-light fa-circle-exclamation text-xs" aria-hidden="true" />
               <span className="truncate">
-                {!subjectAck || !windowAck || !duplicateAck
+                {!subjectAck || !duplicateAck
                   ? 'Acknowledge the flagged warnings above to continue.'
                   : 'Resolve the flagged sections before pushing.'}
               </span>
