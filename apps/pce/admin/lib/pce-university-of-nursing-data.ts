@@ -33,16 +33,19 @@
 import type { CourseOffering, FacultyOfferingRecord, PceInstructor, PceSurvey } from '@/lib/pce-mock-data'
 import { MOCK_RESPONSES, MOCK_SURVEY_QUESTION_DATA } from '@/lib/pce-mock-data'
 
-const PATEL: PceInstructor = { id: 'f1', name: 'Dr. Anita Patel', initials: 'AP', role: 'primary' }
-const CHEN: PceInstructor = { id: 'f2', name: 'Dr. Kevin Chen', initials: 'KC', role: 'primary' }
-const WILLIAMS: PceInstructor = { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' }
-const KIM: PceInstructor = { id: 'f4', name: 'Dr. James Kim', initials: 'JK', role: 'primary' }
-const GOMEZ: PceInstructor = { id: 'f5', name: 'Dr. Rachel Gomez', initials: 'RG', role: 'primary' }
-const HASSAN: PceInstructor = { id: 'f6', name: 'Dr. Omar Hassan', initials: 'OH', role: 'primary' }
-// No guest-lecturer pairings in this account (Monil/Vishal, 2026-09-16 demo
-// bar: "instructor and coordinator or 2 instructors") — co-taught records
-// pair two `role: 'primary'` instructors and let `facultyEvalRole()` derive
-// Coordinator / Instructor / Lab Assistant from each person's position.
+// Evaluatees are Course + Instructor ONLY (Monil's data brief, 2026-09-16:
+// "1-2 instructors max per course… no other faculty role to be present in the
+// data"). `evalRole: 'instructor'` pins every pairing to Instructor so the
+// shared faculty roster's directory positions (Department Chair, Clinical
+// Coordinator, Lab Instructor…) never surface as Coordinator / Lab Assistant
+// labels on this account. No guest-lecturer pairings either.
+const asInstructor = (i: Omit<PceInstructor, 'evalRole'>): PceInstructor => ({ ...i, evalRole: 'instructor' })
+const PATEL = asInstructor({ id: 'f1', name: 'Dr. Anita Patel', initials: 'AP', role: 'primary' })
+const CHEN = asInstructor({ id: 'f2', name: 'Dr. Kevin Chen', initials: 'KC', role: 'primary' })
+const WILLIAMS = asInstructor({ id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' })
+const KIM = asInstructor({ id: 'f4', name: 'Dr. James Kim', initials: 'JK', role: 'primary' })
+const GOMEZ = asInstructor({ id: 'f5', name: 'Dr. Rachel Gomez', initials: 'RG', role: 'primary' })
+const HASSAN = asInstructor({ id: 'f6', name: 'Dr. Omar Hassan', initials: 'OH', role: 'primary' })
 
 export const UON_OFFERINGS: CourseOffering[] = [
   // ── Fall 2026 (pt5) — current term, 10 courses ──────────────────────────
@@ -53,7 +56,7 @@ export const UON_OFFERINGS: CourseOffering[] = [
   { id: 'uon-off-f5',  masterCourseId: 'mc27', termId: 'pt5', cohort: 'Class of 2027',      primaryFacultyId: 'f1', collaboratorIds: [],       enrolledCount: 44, status: 'active', courseType: 'didactic' },
   { id: 'uon-off-f6',  masterCourseId: 'mc28', termId: 'pt5', cohort: 'Class of 2027',      primaryFacultyId: 'f5', collaboratorIds: [],       enrolledCount: 36, status: 'active', courseType: 'clinical' },
   { id: 'uon-off-f7',  masterCourseId: 'mc29', termId: 'pt5', cohort: 'Class of 2027',      primaryFacultyId: 'f3', collaboratorIds: [],       enrolledCount: 40, status: 'active', courseType: 'clinical' },
-  { id: 'uon-off-f8',  masterCourseId: 'mc30', termId: 'pt5', cohort: 'Class of 2026',      primaryFacultyId: 'f6', collaboratorIds: ['f4'],   enrolledCount: 20, status: 'active', courseType: 'clinical' },
+  { id: 'uon-off-f8',  masterCourseId: 'mc30', termId: 'pt5', cohort: 'Class of 2026',      primaryFacultyId: 'f6', collaboratorIds: ['f4'],   enrolledCount: 32, status: 'active', courseType: 'clinical' },
   { id: 'uon-off-f9',  masterCourseId: 'mc31', termId: 'pt5', cohort: 'Class of 2026',      primaryFacultyId: 'f2', collaboratorIds: [],       enrolledCount: 50, status: 'active', courseType: 'didactic' },
   { id: 'uon-off-f10', masterCourseId: 'mc32', termId: 'pt5', cohort: 'MSN Cohort 2027',    primaryFacultyId: 'f3', collaboratorIds: [],       enrolledCount: 30, status: 'active', courseType: 'didactic' },
   // ── Summer 2026 (pt9) — last closed term, 5 courses ─────────────────────
@@ -61,7 +64,7 @@ export const UON_OFFERINGS: CourseOffering[] = [
   { id: 'uon-off-s2',  masterCourseId: 'mc25', termId: 'pt9', cohort: 'Class of 2028',      primaryFacultyId: 'f3', collaboratorIds: [],       enrolledCount: 45, status: 'completed', courseType: 'didactic' },
   { id: 'uon-off-s3',  masterCourseId: 'mc26', termId: 'pt9', cohort: 'Class of 2028',      primaryFacultyId: 'f2', collaboratorIds: [],       enrolledCount: 50, status: 'completed', courseType: 'didactic' },
   { id: 'uon-off-s4',  masterCourseId: 'mc27', termId: 'pt9', cohort: 'Class of 2027',      primaryFacultyId: 'f5', collaboratorIds: [],       enrolledCount: 35, status: 'completed', courseType: 'didactic' },
-  { id: 'uon-off-s5',  masterCourseId: 'mc32', termId: 'pt9', cohort: 'MSN Cohort 2027',    primaryFacultyId: 'f6', collaboratorIds: [],       enrolledCount: 25, status: 'completed', courseType: 'didactic' },
+  { id: 'uon-off-s5',  masterCourseId: 'mc32', termId: 'pt9', cohort: 'MSN Cohort 2027',    primaryFacultyId: 'f6', collaboratorIds: [],       enrolledCount: 30, status: 'completed', courseType: 'didactic' },
 ]
 
 export const UON_SURVEYS: PceSurvey[] = [
@@ -98,6 +101,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     responseRate: 31, responseCount: 22, enrollmentCount: 72, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
+      { term: 'Spring 2024', courseAvg: 3.5, facultyAvg: 3.7, responseRate: 58 },
       { term: 'Fall 2024', courseAvg: 3.4, facultyAvg: 3.6, responseRate: 55 },
       { term: 'Spring 2025', courseAvg: 3.3, facultyAvg: 3.5, responseRate: 50 },
       { term: 'Fall 2025', courseAvg: 3.2, facultyAvg: 3.4, responseRate: 45 },
@@ -132,6 +136,7 @@ export const UON_SURVEYS: PceSurvey[] = [
     responseRate: 91, responseCount: 40, enrollmentCount: 44, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     priorOfferings: [
+      { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2, responseRate: 68 },
       { term: 'Fall 2024', courseAvg: 4.1, facultyAvg: 4.3, responseRate: 70 },
       { term: 'Spring 2025', courseAvg: 4.2, facultyAvg: 4.4, responseRate: 68 },
       { term: 'Fall 2025', courseAvg: 4.1, facultyAvg: 4.3, responseRate: 72 },
@@ -172,7 +177,7 @@ export const UON_SURVEYS: PceSurvey[] = [
   {
     id: 'uon-f8', courseCode: 'BSN-401', courseName: 'Clinical Practicum I', term: 'Fall 2026', cohort: 'Class of 2026',
     courseType: 'clinical', templateId: 'tmpl1', status: 'closed', instructors: [KIM, HASSAN],
-    responseRate: 95, responseCount: 19, enrollmentCount: 20, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
+    responseRate: 94, responseCount: 30, enrollmentCount: 32, deadline: 'Nov 20, 2026', createdAt: 'Aug 1, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-11-14', surveyType: 'course_evaluation', openDate: '2026-11-06', academicYear: '2026–2027', programId: 'prog1',
     // Edge case: stellar/perfect — consistently excellent history, this is a
     // hallmark course, not a one-off (see the near-unanimous distribution).
@@ -268,7 +273,7 @@ export const UON_SURVEYS: PceSurvey[] = [
   {
     id: 'uon-s5', courseCode: 'MSN-601', courseName: 'Advanced Pathophysiology', term: 'Summer 2026', cohort: 'MSN Cohort 2027',
     courseType: 'didactic', templateId: 'tmpl1', status: 'released', instructors: [HASSAN],
-    responseRate: 92, responseCount: 23, enrollmentCount: 25, deadline: 'Aug 18, 2026', createdAt: 'May 20, 2026',
+    responseRate: 93, responseCount: 28, enrollmentCount: 30, deadline: 'Aug 18, 2026', createdAt: 'May 20, 2026',
     createdBy: 'Dr. Anita Patel', lastReminderSentAt: '2026-08-05', releasedAt: 'Aug 24, 2026', surveyType: 'course_evaluation', openDate: '2026-07-20', academicYear: '2025–2026', programId: 'prog2',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.5, facultyAvg: 3.8, responseRate: 55 },
@@ -321,6 +326,7 @@ export const UON_FACULTY_OFFERINGS: FacultyOfferingRecord[] = UON_SURVEYS.flatMa
       term: s.term,
       cohort: s.cohort,
       role: inst.role,
+      evalRole: inst.evalRole,
       enrolled,
       responseRate: s.responseRate,
       avgRating: r2(own ?? surveyFacultyAvg ?? courseAvg ?? 4),
@@ -336,6 +342,7 @@ export const UON_FACULTY_OFFERINGS: FacultyOfferingRecord[] = UON_SURVEYS.flatMa
         term: po.term,
         cohort: s.cohort,
         role: lead.role,
+        evalRole: lead.evalRole,
         enrolled,
         responseRate: po.responseRate ?? s.responseRate,
         avgRating: po.facultyAvg,

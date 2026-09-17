@@ -258,7 +258,7 @@ export function offeringPoints(): OfferingPoint[] {
       surveyId: o.surveyId ?? survey?.id,
       // Shared derivation (pce-mock-data.facultyEvalRole) — the results page uses the
       // same one, so a person's role can never differ between the two surfaces.
-      evalRole: facultyEvalRole(o.role, f?.position),
+      evalRole: o.evalRole ?? facultyEvalRole(o.role, f?.position),
       year: termToYear(o.term),
       facultyName: name,
       initials: f?.initials ?? initialsOf(name),

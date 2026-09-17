@@ -185,6 +185,7 @@ import {
   MOCK_SURVEY_QUESTION_DATA,
   MOCK_OPEN_TEXT_RESPONSES,
   MOCK_QUESTION_AI_SUMMARY,
+  MOCK_SCOPE_AI_SUMMARY,
   medianFromDistribution,
   termAvgForQuestion,
   EVALUATION_TYPE_LABEL,
@@ -2676,6 +2677,7 @@ function ResultDetail({
    * use case for longitudinal analytics, not for single course offering"). */
   const evalRoleFor = (facultyId: string): FacultyEvalRoleId => {
     const inst = survey.instructors.find((i) => i.id === facultyId)
+    if (inst?.evalRole) return inst.evalRole
     return facultyEvalRole(inst?.role ?? 'primary', MOCK_FACULTY.find((f) => f.id === facultyId)?.position)
   }
   /* ONE predicate for every faculty-scoped aggregate on the page. */
@@ -3535,7 +3537,13 @@ function ResultDetail({
       summaryRange(summaryRated.filter((r) => r.group === 'Faculty')) +
       summaryThemeSentence
     : null
-  const aiSummaryText = facultySummaryText ?? courseSummaryText
+  /* Hand-authored 2-sentence insight per evaluatee wins when one exists
+   * (`MOCK_SCOPE_AI_SUMMARY`, Monil's University of Nursing brief, 2026-09-16);
+   * the number-templated prose above is the fallback for every other record. */
+  const aiSummaryText =
+    MOCK_SCOPE_AI_SUMMARY[scopedInstructor ? `${survey.id}:${scopedInstructor.id}` : survey.id] ??
+    facultySummaryText ??
+    courseSummaryText
 
   /* `overviewContent` is now a function of what renders as the FIRST item in
    * the left column, ahead of `#scores` (`summaryHeader`). Course tab passes

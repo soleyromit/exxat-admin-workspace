@@ -384,6 +384,13 @@ export interface PceInstructor {
   email?: string
   phone?: string
   employmentStatus?: 'active' | 'inactive'
+  /** Explicit course-association role for THIS pairing. When set it wins over
+   *  `facultyEvalRole(role, position)` — for datasets whose brief fixes the
+   *  evaluatee structure (University of Nursing, Monil 2026-09-16: "Course +
+   *  Instructor only… no other faculty role to be present in the data"), so a
+   *  Department Chair teaching BSN-101 is evaluated as its Instructor, not
+   *  re-labelled Course Coordinator by their directory position. */
+  evalRole?: FacultyEvalRoleId
 }
 
 export interface PceSurvey {
@@ -1238,6 +1245,52 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
  * from the same response set, just narrated as a takeaway/heads-up rather
  * than a change-request — nothing asserted here that the responses (above,
  * in `MOCK_OPEN_TEXT_RESPONSES`) don't say. */
+/** Hand-authored 2-sentence AI Insights per EVALUATEE (Monil's University of
+ *  Nursing data brief, 2026-09-16: "Generate a 2-sentence AI Insights summary
+ *  summarizing the feedback" for each evaluatee). Keyed `surveyId` for the
+ *  course scope and `surveyId:facultyId` for one instructor's scope — the
+ *  results page's Summary card reads this first and falls back to its
+ *  derived, number-templated prose when a key is absent (every non-UoN
+ *  record today). Keep each entry to two sentences and grounded in the
+ *  record's own MOCK_RESPONSES / question data — no claims the numbers and
+ *  comments do not back. */
+export const MOCK_SCOPE_AI_SUMMARY: Record<string, string> = {
+  // ── University of Nursing · Fall 2026 ─────────────────────────────────
+  'uon-f1': 'Fundamentals of Nursing I is one of the strongest-rated courses this term (4.3 of 5) on an unusually high 91% response rate, with students crediting the skills-lab structure and the approachability of the teaching. The one recurring ask is trimming the reading load where it repeats what the lab already covers.',
+  'uon-f1:f1': 'Students describe Dr. Patel as organized and approachable, checking in with every table during skills lab and remembering where each student struggled last time. No instructor-specific concerns surfaced; the pacing comments in this survey are about the course calendar, not her teaching.',
+  'uon-f2': 'Health Assessment is underperforming at 3.2 of 5 with a 59% response rate, and the written feedback is mostly constructive: the pace of the head-to-toe sequence, thin lab resources and crowded office hours all come up. Exam feedback is split, with some students finding the practical check-offs fair and others finding them far harder than the practice sessions.',
+  'uon-f2:f4': 'Dr. Kim is rated 3.6 of 5 here, with students praising his one-on-one help after class while asking for a slower pace through the assessment sequence. Crowded office hours before check-offs are the most repeated instructor-level request.',
+  'uon-f3': 'Pathophysiology is the lowest-rated course this term at 2.8 of 5, continuing a four-term decline, on a 31% response rate that limits how much weight the written feedback can carry. Concerns concentrate on exam difficulty and outdated materials, with pacing feedback split between too fast and about right.',
+  'uon-f3:f3': 'Dr. Williams is scored 3.1 of 5 on this section, with students describing her as responsive on email and invested in their passing even while the course itself frustrates them. Instructor-specific asks centre on slowing the pace through the cellular-injury and fluid-balance units.',
+  'uon-f4': 'Pharmacology for Nurses is the most polarised course in the program this term: responses split almost evenly between Strongly Disagree and Strongly Agree with virtually nothing in between, averaging 3.2 of 5 on a 78% response rate. The new case-based, mechanism-first format is the dividing line, praised by half the cohort as the best pharmacology teaching they have had and blamed by the other half for a sudden jump in exam difficulty.',
+  'uon-f4:f2': 'Dr. Chen\'s ratings mirror the course split, with students who thrived on the new format calling him engaging and his drug-classification framework clarifying, while others report the cardiac and renal units moved too fast and office hours were impossible to get into before the exam. The disagreement is about the format change, not his subject knowledge, which even critical comments acknowledge.',
+  'uon-f4:f5': 'Dr. Gomez is rated highly across the cohort regardless of how students felt about the course format, with her antibiotic stewardship unit repeatedly named as the most organized and engaging part of the semester. Several students asked for more of the course to run the way her sessions did.',
+  'uon-f5': 'Medical-Surgical Nursing I scores 4.2 of 5 on a 91% response rate, with realistic case studies and clinical preparation the clearest strengths. The main constructive thread is the wound-care skills lab feeling rushed, with students getting through only half the stations.',
+  'uon-f5:f1': 'Dr. Patel is rated 4.4 of 5, with students describing her feedback on care plans as specific and her office hours as genuinely available. Instructor-level comments are consistently positive; the pacing concern in this survey is about lab time, not her sessions.',
+  'uon-f6': 'Maternal-Newborn Nursing rates 3.8 of 5 but on only an 11-of-36 response rate (31%), so the picture is indicative rather than conclusive. Students praise the simulation-based assessments and the instructor\'s engagement while asking for more accessible office hours and more current reading material.',
+  'uon-f6:f5': 'Dr. Gomez is rated 4.0 of 5 here, with students calling her labor-and-delivery simulations engaging and well run. The recurring ask is more office-hour availability during the clinical weeks when questions pile up.',
+  'uon-f7': 'Pediatric Nursing rates 3.6 of 5 on the lowest response rate of the term (23%, 9 of 40), so these signals should be read cautiously. Students who did respond credit the weekly structure and the instructor\'s explanations while flagging exam difficulty and a second half that moved too fast.',
+  'uon-f7:f3': 'Dr. Williams is rated 3.9 of 5 in this section, praised for making growth-and-development milestones memorable and for engaging delivery. The one instructor-level request is a steadier pace once the course moves into acute pediatric conditions.',
+  'uon-f8': 'Clinical Practicum I is the standout course of the term at 4.8 of 5 with a 94% response rate, and the written feedback is almost uniformly positive about the shift debriefs, the prep packets and both instructors\' availability on the floor. The only constructive notes are a fast first two shifts for students new to med-surg and a reading list that could be trimmed.',
+  'uon-f8:f4': 'Dr. Kim is rated 4.9 of 5, with students highlighting that he debriefs every shift and is available whenever a patient situation gets tense. No instructor-specific concerns were raised.',
+  'uon-f8:f6': 'Dr. Hassan is rated 4.9 of 5, described as calm, organized and consistently helpful at the bedside. Students single out his skills-lab preparation as the reason the first shifts felt manageable.',
+  'uon-f9': 'Psychiatric-Mental Health Nursing rates 3.4 of 5 on a 42% response rate, with students valuing the instructor\'s engagement and the case materials while finding the exams far more detailed than the scenarios practiced in class. Pacing feedback is mixed, with the therapeutic-communication weeks described as either well paced or too compressed.',
+  'uon-f9:f2': 'Dr. Chen is rated 3.7 of 5 in this course, credited with engaging discussion of de-escalation and therapeutic communication. The instructor-level ask is closer alignment between what is practiced in class and what the exams test.',
+  'uon-f10': 'Advanced Pathophysiology (MSN) rates 3.7 of 5 but only 8 of 30 students responded (27%), so treat the feedback as directional. Respondents value the case-conference worked examples and the instructor\'s thoroughness while flagging a heavy exam load and a fast pace through the evening blocks.',
+  'uon-f10:f3': 'Dr. Williams is rated 4.1 of 5 by the MSN cohort, praised for staying engaging through three-hour evening sessions and answering questions thoroughly. The single constructive thread is the pace of the renal and endocrine units.',
+  // ── University of Nursing · Summer 2026 (last closed term) ────────────
+  'uon-s1': 'The Summer 2026 run of Fundamentals of Nursing I rated 4.3 of 5 on a 90% response rate, with the compressed pacing and the skills-lab structure both praised. The one recurring ask was broader office-hour coverage than the single Tuesday slot the summer schedule allowed.',
+  'uon-s1:f1': 'Dr. Patel was rated 4.4 of 5, with students describing her as organized and clear about what each week expected. Instructor-level feedback was uniformly positive.',
+  'uon-s2': 'The summer Pathophysiology section rated 3.3 of 5 on a 42% response rate, with exam difficulty and outdated readings the main concerns. Students split on the teaching itself, praising the instructor\'s help after sessions while finding the lectures dense.',
+  'uon-s2:f3': 'Dr. Williams was rated 3.6 of 5, credited with staying after every session to walk through missed cases. The constructive thread is lecture density in a six-week format rather than her availability.',
+  'uon-s3': 'The summer Pharmacology section rated 4.1 of 5 on an 88% response rate, well ahead of the polarised Fall run, with the antibiotic unit\'s pacing and the instructor\'s office hours both praised. Constructive notes point to outdated brand names in the drug-card packets and a fast cardiac unit.',
+  'uon-s3:f2': 'Dr. Chen was rated 4.3 of 5 in the summer section, with students valuing his accessible office hours and clear mechanism-first framework. The one pacing concern was specific to the cardiac drug unit.',
+  'uon-s4': 'The summer Medical-Surgical Nursing I section rated 3.9 of 5 but on a 29% response rate (10 of 35), so the signal is thin. Respondents praised the practice quizzes and the instructor\'s approachability while raising pace, materials and exam-weighting concerns typical of a compressed term.',
+  'uon-s4:f5': 'Dr. Gomez was rated 4.1 of 5, described as approachable and responsive even on the compressed summer schedule. Instructor-level comments were positive; the course-level concerns are about the six-week format.',
+  'uon-s5': 'The summer Advanced Pathophysiology (MSN) section rated 4.4 of 5 on a 93% response rate, with pacing, materials and the instructor\'s engagement all praised. The constructive notes are a 50% final-exam weighting that felt heavy for six weeks and some reading that overlapped with lecture.',
+  'uon-s5:f6': 'Dr. Hassan was rated 4.5 of 5 by the MSN cohort, praised as organized, engaging and readily available. No instructor-specific concerns were raised.',
+}
+
 export const MOCK_QUESTION_AI_SUMMARY: Record<string, string> = {
   'mon28:q5':
     "What stands out from students' experience is mostly pacing and timing rather than content: the cardiac and anticoagulant units stack too close together, the dosage calculation practice sets land after the unit exam instead of before it, and slides sometimes post after class instead of ahead of it. What they'd tell a future student to expect and value is the drug-class case studies and running this course alongside pathophysiology in the same term.",
@@ -2196,6 +2249,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'The care-plan writing assignment felt rushed right before the midterm.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Patel is incredibly organized and responsive to messages, usually within a day.', sentiment: 'positive', facultyId: 'f1' },
       { section: 'faculty_performance', text: 'She holds office hours every week and actually walks you through the dosage math instead of just giving the answer.', sentiment: 'positive', facultyId: 'f1' },
+      { section: 'course_content', text: 'Some of the assigned readings repeat what the skills lab already covers, so the reading load felt heavier than it needed to be.', sentiment: 'concern' },
     ] },
   { surveyId: 'uon-f2', sectionScores: [{ section: 'course_content', avg: 3.2, count: 34 }, { section: 'faculty_performance', avg: 3.6, count: 34 }],
     comments: [
@@ -2203,6 +2257,7 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'Some of the practice videos are low resolution and hard to follow for auscultation technique.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Kim gives clear, worked examples when demonstrating percussion technique.', sentiment: 'positive', facultyId: 'f4' },
       { section: 'faculty_performance', text: 'Office hours conflict with our clinical rotation block on Wednesdays, so it is hard to get one-on-one time.', sentiment: 'concern', facultyId: 'f4' },
+      { section: 'faculty_performance', text: 'Dr. Kim is approachable one-on-one and genuinely helpful when you catch him after class.', sentiment: 'positive', facultyId: 'f4' },
     ] },
   { surveyId: 'uon-f3', sectionScores: [{ section: 'course_content', avg: 2.8, count: 22 }, { section: 'faculty_performance', avg: 3.1, count: 22 }],
     comments: [
@@ -2211,10 +2266,11 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'Would help to have more structure, right now it feels like a wall of content with no roadmap.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Williams is knowledgeable but lectures move very fast through the compensatory-mechanisms sections.', sentiment: 'concern', facultyId: 'f3' },
       { section: 'faculty_performance', text: 'When she does slow down for questions, the explanations are excellent.', sentiment: 'positive', facultyId: 'f3' },
+      { section: 'faculty_performance', text: 'Dr. Williams is responsive on email and clearly wants us to pass, even when the content is brutal.', sentiment: 'positive', facultyId: 'f3' },
     ] },
   // Edge case: controversial — comments split cleanly on the SAME aspects
   // (dosage exams, pacing, office hours) after the mid-term format change.
-  { surveyId: 'uon-f4', sectionScores: [{ section: 'course_content', avg: 3.9, count: 62 }, { section: 'faculty_performance', avg: 3.8, count: 62 }],
+  { surveyId: 'uon-f4', sectionScores: [{ section: 'course_content', avg: 3.2, count: 62 }, { section: 'faculty_performance', avg: 3.9, count: 62 }],
     comments: [
       { section: 'course_content', text: 'The worked examples in the new case-based drug-class studies made dosage calculation finally click for me.', sentiment: 'positive' },
       { section: 'course_content', text: 'The switch to the new case-based dosage format happened without enough warm-up, the exam jumped in difficulty overnight and a lot of the class failed the first attempt.', sentiment: 'concern' },
@@ -2224,6 +2280,9 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', text: 'The pace through the cardiac and renal drug units was too fast for how dense the dosage math is.', sentiment: 'concern', facultyId: 'f2' },
       { section: 'faculty_performance', text: 'Office hours were packed after the format change, it was hard to get help before the exam.', sentiment: 'concern', facultyId: 'f2' },
       { section: 'faculty_performance', text: "The instructor's antibiotic stewardship unit was one of the most engaging and well-organized parts of the semester.", sentiment: 'positive', facultyId: 'f5' },
+      { section: 'faculty_performance', text: 'Dr. Gomez\'s stewardship cases were organized and easy to follow; more of the course should run that way.', sentiment: 'positive', facultyId: 'f5' },
+      { section: 'course_content', text: 'Either you loved the case-based format or it wrecked your grade. There was no middle ground in our cohort.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Best pharmacology course I have taken. The mechanism-first approach is how every drug class should be taught.', sentiment: 'positive' },
     ] },
   { surveyId: 'uon-f5', sectionScores: [{ section: 'course_content', avg: 4.2, count: 40 }, { section: 'faculty_performance', avg: 4.4, count: 40 }],
     comments: [
@@ -2245,9 +2304,11 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'Hard to say much yet, but the growth-and-development unit moved fast before we had even seen a pediatric patient in clinical.', sentiment: 'concern' },
       { section: 'course_content', text: 'Would help to have more worked examples for the pediatric weight-based dosage calculations.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Williams is organized and posts materials well ahead of each session.', sentiment: 'positive', facultyId: 'f3' },
+      { section: 'course_content', text: 'The pace in the first half was manageable and the weekly structure helped me keep up.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Williams explains growth-and-development milestones in a way that is engaging and easy to remember.', sentiment: 'positive', facultyId: 'f3' },
     ] },
   // Edge case: stellar/perfect — no real complaints, one mild suggestion.
-  { surveyId: 'uon-f8', sectionScores: [{ section: 'course_content', avg: 4.8, count: 19 }, { section: 'faculty_performance', avg: 4.9, count: 19 }],
+  { surveyId: 'uon-f8', sectionScores: [{ section: 'course_content', avg: 4.8, count: 30 }, { section: 'faculty_performance', avg: 4.9, count: 30 }],
     comments: [
       { section: 'course_content', text: 'Best clinical placement experience in the program so far, the preceptor match and unit orientation were excellent.', sentiment: 'positive' },
       { section: 'course_content', text: 'Pairing simulation lab practice before the first hospital shift made me feel prepared instead of thrown in.', sentiment: 'positive' },
@@ -2255,6 +2316,9 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'faculty_performance', text: 'Dr. Hassan is incredibly responsive, he answers a clinical question within the hour even outside office hours.', sentiment: 'positive', facultyId: 'f6' },
       { section: 'faculty_performance', text: 'Dr. Hassan gave the most useful, specific feedback on my clinical documentation of any instructor I have had.', sentiment: 'positive', facultyId: 'f6' },
       { section: 'faculty_performance', text: "Dr. Kim's post-clinical debrief sessions are the most helpful part of my week, he is engaging and makes you comfortable admitting what you did not know.", sentiment: 'positive', facultyId: 'f4' },
+      { section: 'course_content', text: 'The pace of the first two shifts was fast for those of us who had never been on a med-surg floor.', sentiment: 'concern' },
+      { section: 'course_content', text: 'The skills lab prep packets were helpful, though the reading list could be trimmed.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Kim debriefs every shift with us and is always available when a patient situation gets tense.', sentiment: 'positive', facultyId: 'f4' },
     ] },
   { surveyId: 'uon-f9', sectionScores: [{ section: 'course_content', avg: 3.4, count: 21 }, { section: 'faculty_performance', avg: 3.7, count: 21 }],
     comments: [
@@ -2262,24 +2326,30 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'The unit on personality disorders felt rushed compared to how much time we spent on mood disorders.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Chen is engaging and creates a safe space to discuss difficult case material.', sentiment: 'positive', facultyId: 'f2' },
       { section: 'faculty_performance', text: 'Feedback on our process recordings takes a while to come back, usually over two weeks.', sentiment: 'concern', facultyId: 'f2' },
+      { section: 'course_content', text: 'The exam questions went far deeper than the de-escalation scenarios we practiced in class.', sentiment: 'concern' },
     ] },
   { surveyId: 'uon-f10', sectionScores: [{ section: 'course_content', avg: 3.7, count: 8 }, { section: 'faculty_performance', avg: 4.1, count: 8 }],
     comments: [
       { section: 'course_content', text: "The graduate-level pace is intense, we're covering two undergrad units' worth of content per week.", sentiment: 'concern' },
       { section: 'course_content', text: 'Would help to have example problems worked through in class before the graded case analyses.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Williams brings in relevant recent research and is clearly an expert.', sentiment: 'positive', facultyId: 'f3' },
+      { section: 'faculty_performance', text: 'Dr. Williams is engaging even in a three-hour evening block and answers questions thoroughly.', sentiment: 'positive', facultyId: 'f3' },
+      { section: 'course_content', text: 'The worked examples in the case conferences were the most useful part of the term.', sentiment: 'positive' },
     ] },
   { surveyId: 'uon-s1', sectionScores: [{ section: 'course_content', avg: 4.3, count: 36 }, { section: 'faculty_performance', avg: 4.4, count: 36 }],
     comments: [
       { section: 'course_content', text: 'Same well-paced structure as always, the lab sequence makes fundamentals finally click.', sentiment: 'positive' },
       { section: 'course_content', text: 'Some of the assigned readings are outdated and reference equipment we do not use anymore.', sentiment: 'concern' },
       { section: 'faculty_performance', text: "Dr. Patel's feedback on our care plans came back fast and was genuinely useful.", sentiment: 'positive', facultyId: 'f1' },
+      { section: 'course_content', text: 'Summer office hours were only on Tuesdays, which was hard to reach once the term compressed everything.', sentiment: 'concern' },
+      { section: 'faculty_performance', text: 'Dr. Patel is organized and clearly communicates what each week expects of us.', sentiment: 'positive', facultyId: 'f1' },
     ] },
   { surveyId: 'uon-s2', sectionScores: [{ section: 'course_content', avg: 3.3, count: 19 }, { section: 'faculty_performance', avg: 3.6, count: 19 }],
     comments: [
       { section: 'course_content', text: 'The exams still test different material than what is emphasized in lecture.', sentiment: 'concern' },
       { section: 'course_content', text: 'Readings are dense and not well organized by system.', sentiment: 'concern' },
       { section: 'faculty_performance', text: "Office hours were actually really helpful once I started going, she'll work through a whole case with you.", sentiment: 'positive', facultyId: 'f3' },
+      { section: 'faculty_performance', text: 'Dr. Williams stayed after every session to walk through the cases we missed, genuinely helpful.', sentiment: 'positive', facultyId: 'f3' },
     ] },
   { surveyId: 'uon-s3', sectionScores: [{ section: 'course_content', avg: 4.1, count: 44 }, { section: 'faculty_performance', avg: 4.3, count: 44 }],
     comments: [
@@ -2287,19 +2357,25 @@ export const MOCK_RESPONSES: PceResponse[] = [
       { section: 'course_content', text: 'Still a heavy workload for a summer term, the pace felt fast for eight weeks.', sentiment: 'concern' },
       { section: 'faculty_performance', text: "Dr. Chen's drug-classification approach makes so much more sense than straight memorization.", sentiment: 'positive', facultyId: 'f2' },
       { section: 'faculty_performance', text: 'Office hours were easy to get into this term, no more crowding.', sentiment: 'positive', facultyId: 'f2' },
+      { section: 'course_content', text: 'The pacing through the antibiotic unit was just right.', sentiment: 'positive' },
+      { section: 'course_content', text: 'The drug-card reading packets had several outdated brand names.', sentiment: 'concern' },
     ] },
   { surveyId: 'uon-s4', sectionScores: [{ section: 'course_content', avg: 3.9, count: 10 }, { section: 'faculty_performance', avg: 4.1, count: 10 }],
     comments: [
       { section: 'course_content', text: 'Compressed into an eight-week summer format, the pacing was tough to keep up with.', sentiment: 'concern' },
       { section: 'course_content', text: 'Wish there were more structured practice quizzes before the unit exams.', sentiment: 'concern' },
       { section: 'faculty_performance', text: 'Dr. Gomez is responsive over email even during the condensed summer schedule.', sentiment: 'positive', facultyId: 'f5' },
+      { section: 'course_content', text: 'The practice quizzes before each exam were the best prep we had all term.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Dr. Gomez is approachable and responsive, even during the compressed summer schedule.', sentiment: 'positive', facultyId: 'f5' },
     ] },
-  { surveyId: 'uon-s5', sectionScores: [{ section: 'course_content', avg: 4.4, count: 23 }, { section: 'faculty_performance', avg: 4.5, count: 23 }],
+  { surveyId: 'uon-s5', sectionScores: [{ section: 'course_content', avg: 4.4, count: 28 }, { section: 'faculty_performance', avg: 4.5, count: 28 }],
     comments: [
       { section: 'course_content', text: 'The case-analysis structure this term was much better paced than what I had heard from the Fall cohort.', sentiment: 'positive' },
       { section: 'course_content', text: 'The recommended readings were exactly the right depth for graduate work.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Dr. Hassan is extremely responsive and available even though this is a small cohort.', sentiment: 'positive', facultyId: 'f6' },
       { section: 'faculty_performance', text: 'Office hours turned into informal case-consult sessions, genuinely valuable.', sentiment: 'positive', facultyId: 'f6' },
+      { section: 'course_content', text: 'The final exam weighting at 50% felt heavy for a six-week term.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Some reading assignments overlapped with what the lecture already covered.', sentiment: 'concern' },
     ] },
 ]
 
@@ -3357,27 +3433,27 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     // to a new case-based dosage-calculation format split the class.
     surveyId: 'uon-f4',
     sectionScores: { course_content: [
-      { questionId: 'q1', avg: 3.89, count: 62, distribution: [13, 3, 2, 4, 40] },
-      { questionId: 'q2', avg: 3.90, count: 62, distribution: [11, 4, 3, 6, 38] },
-      { questionId: 'q3', avg: 3.79, count: 62, distribution: [0, 2, 13, 43, 4] },
-      { questionId: 'q4', avg: 4.06, count: 62, distribution: [2, 2, 5, 34, 19] },
-      { questionId: 'q12', avg: 3.92, count: 62, distribution: [2, 5, 5, 34, 16] },
-      { questionId: 'q13', avg: 4.02, count: 62, distribution: [0, 0, 14, 33, 15] },
+      { questionId: 'q1', avg: 3.13, count: 62, distribution: [29, 0, 0, 0, 33] },
+      { questionId: 'q2', avg: 3.10, count: 62, distribution: [28, 2, 0, 0, 32] },
+      { questionId: 'q3', avg: 3.18, count: 62, distribution: [27, 1, 0, 2, 32] },
+      { questionId: 'q4', avg: 3.34, count: 62, distribution: [25, 1, 0, 0, 36] },
+      { questionId: 'q12', avg: 3.23, count: 62, distribution: [27, 0, 0, 2, 33] },
+      { questionId: 'q13', avg: 3.16, count: 62, distribution: [27, 2, 0, 0, 33] },
     ] },
     instructorBlocks: [
       { instructorId: 'f2', scores: [
-        { questionId: 'q6', avg: 3.84, count: 62, distribution: [12, 4, 3, 6, 37] },
-        { questionId: 'q7', avg: 3.81, count: 62, distribution: [14, 3, 2, 5, 38] },
-        { questionId: 'q15', avg: 3.77, count: 62, distribution: [4, 2, 10, 34, 12] },
-        { questionId: 'q18', avg: 3.69, count: 62, distribution: [0, 1, 20, 38, 3] },
-        { questionId: 'q19', avg: 3.55, count: 62, distribution: [1, 1, 26, 31, 3] },
-        { questionId: 'q16', avg: 3.63, count: 62, distribution: [0, 0, 26, 33, 3] },
-        { questionId: 'q20', avg: 3.89, count: 62, distribution: [3, 1, 10, 34, 14] },
-        { questionId: 'q21', avg: 3.98, count: 62, distribution: [2, 3, 6, 34, 17] },
-        { questionId: 'q14', avg: 4.02, count: 62, distribution: [0, 0, 14, 33, 15] },
-        { questionId: 'q17', avg: 3.73, count: 62, distribution: [0, 0, 19, 41, 2] },
-        { questionId: 'q22', avg: 3.61, count: 62, distribution: [0, 0, 28, 30, 4] },
-        { questionId: 'q23', avg: 3.94, count: 62, distribution: [3, 4, 4, 34, 17] },
+        { questionId: 'q6', avg: 3.13, count: 62, distribution: [28, 1, 0, 1, 32] },
+        { questionId: 'q7', avg: 3.21, count: 62, distribution: [27, 1, 0, 0, 34] },
+        { questionId: 'q15', avg: 3.27, count: 62, distribution: [25, 2, 0, 1, 34] },
+        { questionId: 'q18', avg: 3.23, count: 62, distribution: [26, 2, 0, 0, 34] },
+        { questionId: 'q19', avg: 3.16, count: 62, distribution: [28, 0, 0, 2, 32] },
+        { questionId: 'q16', avg: 3.16, count: 62, distribution: [27, 2, 0, 0, 33] },
+        { questionId: 'q20', avg: 3.13, count: 62, distribution: [29, 0, 0, 0, 33] },
+        { questionId: 'q21', avg: 3.55, count: 62, distribution: [22, 0, 0, 2, 38] },
+        { questionId: 'q14', avg: 3.19, count: 62, distribution: [26, 2, 0, 2, 32] },
+        { questionId: 'q17', avg: 3.53, count: 62, distribution: [22, 1, 0, 0, 39] },
+        { questionId: 'q22', avg: 3.39, count: 62, distribution: [24, 1, 0, 1, 36] },
+        { questionId: 'q23', avg: 3.37, count: 62, distribution: [24, 1, 0, 2, 35] },
       ] },
       // f5 Dr. Rachel Gomez — co-instructor (antibiotic stewardship unit), scored
       // independently of the split main-instructor sentiment.
@@ -3480,41 +3556,41 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
     // Edge case: stellar/perfect — near-unanimous "Strongly Agree".
     surveyId: 'uon-f8',
     sectionScores: { course_content: [
-      { questionId: 'q1', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
-      { questionId: 'q2', avg: 4.74, count: 19, distribution: [0, 0, 1, 3, 15] },
-      { questionId: 'q3', avg: 4.53, count: 19, distribution: [0, 0, 3, 3, 13] },
-      { questionId: 'q4', avg: 4.79, count: 19, distribution: [0, 0, 1, 2, 16] },
-      { questionId: 'q12', avg: 4.53, count: 19, distribution: [0, 0, 2, 5, 12] },
-      { questionId: 'q13', avg: 4.68, count: 19, distribution: [0, 0, 1, 4, 14] },
+      { questionId: 'q1', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
+      { questionId: 'q2', avg: 4.70, count: 30, distribution: [0, 0, 2, 5, 23] },
+      { questionId: 'q3', avg: 4.50, count: 30, distribution: [0, 0, 5, 5, 20] },
+      { questionId: 'q4', avg: 4.77, count: 30, distribution: [0, 0, 2, 3, 25] },
+      { questionId: 'q12', avg: 4.53, count: 30, distribution: [0, 0, 3, 8, 19] },
+      { questionId: 'q13', avg: 4.67, count: 30, distribution: [0, 0, 2, 6, 22] },
     ] },
     instructorBlocks: [
       { instructorId: 'f6', scores: [
-        { questionId: 'q6', avg: 4.95, count: 19, distribution: [0, 0, 0, 1, 18] },
-        { questionId: 'q7', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
-        { questionId: 'q15', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
-        { questionId: 'q18', avg: 4.84, count: 19, distribution: [0, 0, 0, 3, 16] },
-        { questionId: 'q19', avg: 4.95, count: 19, distribution: [0, 0, 0, 1, 18] },
-        { questionId: 'q16', avg: 4.79, count: 19, distribution: [0, 0, 1, 2, 16] },
-        { questionId: 'q20', avg: 4.68, count: 19, distribution: [0, 0, 1, 4, 14] },
-        { questionId: 'q21', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
-        { questionId: 'q14', avg: 4.95, count: 19, distribution: [0, 0, 0, 1, 18] },
-        { questionId: 'q17', avg: 4.79, count: 19, distribution: [0, 0, 0, 4, 15] },
-        { questionId: 'q22', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
-        { questionId: 'q23', avg: 4.79, count: 19, distribution: [0, 0, 0, 4, 15] },
+        { questionId: 'q6', avg: 4.93, count: 30, distribution: [0, 0, 0, 2, 28] },
+        { questionId: 'q7', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
+        { questionId: 'q15', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
+        { questionId: 'q18', avg: 4.83, count: 30, distribution: [0, 0, 0, 5, 25] },
+        { questionId: 'q19', avg: 4.93, count: 30, distribution: [0, 0, 0, 2, 28] },
+        { questionId: 'q16', avg: 4.77, count: 30, distribution: [0, 0, 2, 3, 25] },
+        { questionId: 'q20', avg: 4.67, count: 30, distribution: [0, 0, 2, 6, 22] },
+        { questionId: 'q21', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
+        { questionId: 'q14', avg: 4.93, count: 30, distribution: [0, 0, 0, 2, 28] },
+        { questionId: 'q17', avg: 4.80, count: 30, distribution: [0, 0, 0, 6, 24] },
+        { questionId: 'q22', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
+        { questionId: 'q23', avg: 4.80, count: 30, distribution: [0, 0, 0, 6, 24] },
       ] },
       { instructorId: 'f4', scores: [
-        { questionId: 'q6', avg: 4.84, count: 19, distribution: [0, 0, 0, 3, 16] },
-        { questionId: 'q15', avg: 4.63, count: 19, distribution: [0, 0, 1, 5, 13] },
-        { questionId: 'q18', avg: 4.58, count: 19, distribution: [0, 0, 2, 4, 13] },
-        { questionId: 'q19', avg: 4.63, count: 19, distribution: [0, 0, 1, 5, 13] },
-        { questionId: 'q7', avg: 4.58, count: 19, distribution: [0, 0, 0, 8, 11] },
-        { questionId: 'q16', avg: 4.74, count: 19, distribution: [0, 0, 0, 5, 14] },
-        { questionId: 'q20', avg: 4.63, count: 19, distribution: [0, 1, 0, 4, 14] },
-        { questionId: 'q21', avg: 4.84, count: 19, distribution: [0, 0, 0, 3, 16] },
-        { questionId: 'q14', avg: 4.95, count: 19, distribution: [0, 0, 0, 1, 18] },
-        { questionId: 'q17', avg: 4.74, count: 19, distribution: [0, 0, 0, 5, 14] },
-        { questionId: 'q22', avg: 4.79, count: 19, distribution: [0, 0, 1, 2, 16] },
-        { questionId: 'q23', avg: 4.89, count: 19, distribution: [0, 0, 0, 2, 17] },
+        { questionId: 'q6', avg: 4.83, count: 30, distribution: [0, 0, 0, 5, 25] },
+        { questionId: 'q15', avg: 4.60, count: 30, distribution: [0, 0, 2, 8, 20] },
+        { questionId: 'q18', avg: 4.60, count: 30, distribution: [0, 0, 3, 6, 21] },
+        { questionId: 'q19', avg: 4.60, count: 30, distribution: [0, 0, 2, 8, 20] },
+        { questionId: 'q7', avg: 4.57, count: 30, distribution: [0, 0, 0, 13, 17] },
+        { questionId: 'q16', avg: 4.73, count: 30, distribution: [0, 0, 0, 8, 22] },
+        { questionId: 'q20', avg: 4.60, count: 30, distribution: [0, 2, 0, 6, 22] },
+        { questionId: 'q21', avg: 4.83, count: 30, distribution: [0, 0, 0, 5, 25] },
+        { questionId: 'q14', avg: 4.93, count: 30, distribution: [0, 0, 0, 2, 28] },
+        { questionId: 'q17', avg: 4.73, count: 30, distribution: [0, 0, 0, 8, 22] },
+        { questionId: 'q22', avg: 4.77, count: 30, distribution: [0, 0, 2, 3, 25] },
+        { questionId: 'q23', avg: 4.90, count: 30, distribution: [0, 0, 0, 3, 27] },
       ] },
     ],
     freeTextCounts: { q5: 1, q8: 1 },
@@ -3678,26 +3754,26 @@ export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
   {
     surveyId: 'uon-s5',
     sectionScores: { course_content: [
-      { questionId: 'q1', avg: 4.43, count: 23, distribution: [0, 0, 2, 9, 12] },
-      { questionId: 'q2', avg: 4.39, count: 23, distribution: [0, 0, 3, 8, 12] },
-      { questionId: 'q3', avg: 4.48, count: 23, distribution: [0, 0, 0, 12, 11] },
-      { questionId: 'q4', avg: 4.30, count: 23, distribution: [0, 0, 1, 14, 8] },
-      { questionId: 'q12', avg: 4.17, count: 23, distribution: [0, 0, 4, 11, 8] },
-      { questionId: 'q13', avg: 4.13, count: 23, distribution: [0, 0, 4, 12, 7] },
+      { questionId: 'q1', avg: 4.46, count: 28, distribution: [0, 0, 2, 11, 15] },
+      { questionId: 'q2', avg: 4.36, count: 28, distribution: [0, 0, 4, 10, 14] },
+      { questionId: 'q3', avg: 4.46, count: 28, distribution: [0, 0, 0, 15, 13] },
+      { questionId: 'q4', avg: 4.32, count: 28, distribution: [0, 0, 1, 17, 10] },
+      { questionId: 'q12', avg: 4.18, count: 28, distribution: [0, 0, 5, 13, 10] },
+      { questionId: 'q13', avg: 4.14, count: 28, distribution: [0, 0, 5, 14, 9] },
     ] },
     instructorBlocks: [{ instructorId: 'f6', scores: [
-      { questionId: 'q6', avg: 4.57, count: 23, distribution: [0, 0, 1, 8, 14] },
-      { questionId: 'q7', avg: 4.43, count: 23, distribution: [0, 0, 2, 9, 12] },
-      { questionId: 'q15', avg: 4.70, count: 23, distribution: [0, 1, 0, 4, 18] },
-      { questionId: 'q18', avg: 4.22, count: 23, distribution: [0, 0, 3, 12, 8] },
-      { questionId: 'q19', avg: 4.30, count: 23, distribution: [0, 0, 2, 12, 9] },
-      { questionId: 'q16', avg: 4.26, count: 23, distribution: [0, 0, 3, 11, 9] },
-      { questionId: 'q20', avg: 4.35, count: 23, distribution: [0, 0, 1, 13, 9] },
-      { questionId: 'q21', avg: 4.35, count: 23, distribution: [0, 0, 1, 13, 9] },
-      { questionId: 'q14', avg: 4.35, count: 23, distribution: [0, 0, 2, 11, 10] },
-      { questionId: 'q17', avg: 4.22, count: 23, distribution: [0, 0, 1, 16, 6] },
-      { questionId: 'q22', avg: 4.30, count: 23, distribution: [0, 0, 0, 16, 7] },
-      { questionId: 'q23', avg: 4.22, count: 23, distribution: [0, 0, 1, 16, 6] },
+      { questionId: 'q6', avg: 4.57, count: 28, distribution: [0, 0, 1, 10, 17] },
+      { questionId: 'q7', avg: 4.46, count: 28, distribution: [0, 0, 2, 11, 15] },
+      { questionId: 'q15', avg: 4.71, count: 28, distribution: [0, 1, 0, 5, 22] },
+      { questionId: 'q18', avg: 4.21, count: 28, distribution: [0, 0, 4, 14, 10] },
+      { questionId: 'q19', avg: 4.32, count: 28, distribution: [0, 0, 2, 15, 11] },
+      { questionId: 'q16', avg: 4.25, count: 28, distribution: [0, 0, 4, 13, 11] },
+      { questionId: 'q20', avg: 4.36, count: 28, distribution: [0, 0, 1, 16, 11] },
+      { questionId: 'q21', avg: 4.36, count: 28, distribution: [0, 0, 1, 16, 11] },
+      { questionId: 'q14', avg: 4.36, count: 28, distribution: [0, 0, 2, 14, 12] },
+      { questionId: 'q17', avg: 4.21, count: 28, distribution: [0, 0, 1, 20, 7] },
+      { questionId: 'q22', avg: 4.32, count: 28, distribution: [0, 0, 0, 19, 9] },
+      { questionId: 'q23', avg: 4.21, count: 28, distribution: [0, 0, 1, 20, 7] },
     ] }],
     freeTextCounts: { q5: 1, q8: 1 },
   },
@@ -3770,6 +3846,9 @@ export interface FacultyOfferingRecord {
    *  cohort in a particular term"). */
   cohort?: string
   role: 'primary' | 'guest'
+  /** Explicit evaluatee role — see `PceInstructor.evalRole`. Wins over the
+   *  position-derived `facultyEvalRole()` in `offeringPoints()` when set. */
+  evalRole?: FacultyEvalRoleId
   enrolled: number
   responseRate: number
   /** Faculty-performance score, 1–5 — how the INSTRUCTOR was rated. */
