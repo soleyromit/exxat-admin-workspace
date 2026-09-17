@@ -2,6 +2,8 @@
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "2"
   },
+  "bashOutputMaxChars": 128000,
+  "taskOutputMaxChars": 128000,
   "hooks": {
     "PreToolUse": [
       {
