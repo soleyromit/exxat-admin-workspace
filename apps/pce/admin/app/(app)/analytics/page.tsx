@@ -11,6 +11,7 @@ import {
 import { SiteHeader } from '@/components/site-header'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { MOCK_FACULTY } from '@/lib/pce-mock-data'
+import { usePce } from '@/components/pce/pce-state'
 import { AnalyticsOverviewPanel } from '@/components/pce/analytics-overview-panel'
 import { TokenSelect } from '@/components/pce/courses-evaluatees/scope-controls'
 import { allTerms, academicYears, termOfferingsEvaluated } from '@/lib/pce-analytics'
@@ -607,9 +608,16 @@ function AnalyticsInner() {
 }
 
 export default function AnalyticsPage() {
+  /* Remount the whole tree when the demo account switches. Every stat below
+   * is a `useMemo` over `terms`/filters that calls into `pce-analytics.ts`
+   * (now account-scoped via `activeFacultyOfferings()`/`activeSurveys()`,
+   * 2026-09-16) — keying on `accountId` recomputes all of them at once
+   * and resets term/tab defaults to the new account's data, instead of
+   * threading `accountId` through dozens of dependency arrays. */
+  const { accountId } = usePce()
   return (
     <Suspense>
-      <AnalyticsInner />
+      <AnalyticsInner key={accountId} />
     </Suspense>
   )
 }

@@ -38,7 +38,10 @@ import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { scoreText } from '@/components/pce/score-cell'
 import { TermThemesInsight } from '@/components/pce/term-themes-insight'
 import { usePce } from '@/components/pce/pce-state'
-import { MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_BENCHMARKS } from '@/lib/pce-mock-data'
+import { MOCK_FACULTY, EVAL_BENCHMARKS } from '@/lib/pce-mock-data'
+// Account-scoped score/survey registers (2026-09-16) — never the global MOCK_* here, so
+// Analytics follows the demo-account switch like the Dashboard and /results/[id].
+import { activeFacultyOfferings, activeSurveys } from '@/lib/pce-demo-accounts'
 import {
   termKpis, cohortKpis, termCourseBreakdown, termSeries, gapPoints, medianOf,
   courseTrend, courseFacultyStats, courseStats, facultyStats, termSlope,
@@ -296,7 +299,7 @@ export function ByTermPanel({
     // No live CE surveys for this term (e.g. an archived term) — fall back to the
     // term's historical offerings so the profile shows real courses, never a blank.
     if (axis === 'term') {
-      return MOCK_FACULTY_OFFERINGS
+      return activeFacultyOfferings()
         .filter(o => o.term === value)
         .map(o => {
           const fac = MOCK_FACULTY.find(f => f.id === o.facultyId)
@@ -548,7 +551,7 @@ export function ByTermPanel({
 
   const courseAllTimeRanked = useMemo(() => {
     const byCode: Record<string, { totalRating: number; totalEnrolled: number }> = {}
-    MOCK_FACULTY_OFFERINGS.forEach(o => {
+    activeFacultyOfferings().forEach(o => {
       if (!byCode[o.courseCode]) byCode[o.courseCode] = { totalRating: 0, totalEnrolled: 0 }
       byCode[o.courseCode].totalRating   += o.avgRating * o.enrolled
       byCode[o.courseCode].totalEnrolled += o.enrolled
@@ -561,7 +564,7 @@ export function ByTermPanel({
 
   const facultyAllTimeRanked = useMemo(() => {
     const byFaculty: Record<string, { name: string; totalRating: number; totalEnrolled: number }> = {}
-    MOCK_FACULTY_OFFERINGS.forEach(o => {
+    activeFacultyOfferings().forEach(o => {
       const f = MOCK_FACULTY.find(fac => fac.id === o.facultyId)
       if (!f) return
       const last = f.name.split(' ').slice(-1)[0]
@@ -1790,7 +1793,7 @@ export function ByCoursePanel({
    *  (Romit: "ai insights card is missing") after an earlier pass retired it as out of the
    *  written PRD's scope. */
   const courseSurveys = useMemo(
-    () => MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic' && s.courseCode === courseCode),
+    () => activeSurveys().filter(s => s.surveyType !== 'programmatic' && s.courseCode === courseCode),
     [courseCode],
   )
 
@@ -1825,7 +1828,7 @@ export function ByCoursePanel({
   /** Course-wide, deliberately UNFILTERED by `facultyFilter` — the guard below decides whether
    *  this course has any history at all, independent of which instructor is spotlighted. */
   const allCourseOfferings = useMemo(
-    () => MOCK_FACULTY_OFFERINGS.filter(o => o.courseCode === courseCode),
+    () => activeFacultyOfferings().filter(o => o.courseCode === courseCode),
     [courseCode],
   )
 

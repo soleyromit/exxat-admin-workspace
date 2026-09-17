@@ -30,7 +30,8 @@
 // (dashboard/course list/analytics ARE correctly account-scoped; this one
 // deep-dive comparison is not).
 
-import type { CourseOffering, PceInstructor, PceSurvey } from '@/lib/pce-mock-data'
+import type { CourseOffering, FacultyOfferingRecord, PceInstructor, PceSurvey } from '@/lib/pce-mock-data'
+import { MOCK_RESPONSES, MOCK_SURVEY_QUESTION_DATA } from '@/lib/pce-mock-data'
 
 const PATEL: PceInstructor = { id: 'f1', name: 'Dr. Anita Patel', initials: 'AP', role: 'primary' }
 const CHEN: PceInstructor = { id: 'f2', name: 'Dr. Kevin Chen', initials: 'KC', role: 'primary' }
@@ -278,3 +279,68 @@ export const UON_SURVEYS: PceSurvey[] = [
     ],
   },
 ]
+
+/* ── Analytics score register for this account ──────────────────────────────
+ * `/analytics` derives everything from `FacultyOfferingRecord`s (one row per
+ * course × term × cohort × instructor), a separate universe from `PceSurvey`.
+ * Until 2026-09-16 the Analytics page read the global `MOCK_FACULTY_OFFERINGS`
+ * regardless of the active demo account, so switching to this account changed
+ * the Dashboard and `/results/[id]` but left Analytics on Johns Hopkins DPT
+ * numbers. These rows are DERIVED from the surveys above (no second
+ * hand-authored score set to drift): current/last-closed terms take each
+ * instructor's real per-question averages from `MOCK_SURVEY_QUESTION_DATA`
+ * and the course score from `MOCK_RESPONSES`; the 5-term history comes from
+ * each survey's `priorOfferings`, attributed to its first-listed instructor. */
+const mean = (xs: number[]): number | null => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
+const r2 = (v: number) => Math.round(v * 100) / 100
+
+/* Terms this account really ran (Fall 2026 / Summer 2026, with real offerings
+ * and surveys). History rows are only added for OTHER terms: a Fall 2026
+ * survey's `priorOfferings` also lists Summer 2026, and keeping those made
+ * Analytics count 10 Summer 2026 offerings while the Dashboard (reading the
+ * account's real `UON_OFFERINGS`) shows 5 — the two surfaces must agree. */
+const LIVE_TERMS = new Set(UON_SURVEYS.map((s) => s.term))
+
+export const UON_FACULTY_OFFERINGS: FacultyOfferingRecord[] = UON_SURVEYS.flatMap((s) => {
+  const q = MOCK_SURVEY_QUESTION_DATA.find((d) => d.surveyId === s.id)
+  const resp = MOCK_RESPONSES.find((r) => r.surveyId === s.id)
+  const courseAvg =
+    resp?.sectionScores.find((x) => x.section === 'course_content')?.avg ??
+    mean(Object.values(q?.sectionScores ?? {}).flat().map((x) => x.avg)) ??
+    undefined
+  const surveyFacultyAvg = resp?.sectionScores.find((x) => x.section === 'faculty_performance')?.avg
+  const enrolled = s.enrollmentCount
+  const current: FacultyOfferingRecord[] = s.instructors.map((inst) => {
+    const block = q?.instructorBlocks?.find((b) => b.instructorId === inst.id)
+    const own = mean((block?.scores ?? []).map((x) => x.avg))
+    return {
+      facultyId: inst.id,
+      surveyId: s.id,
+      courseCode: s.courseCode,
+      courseName: s.courseName,
+      term: s.term,
+      cohort: s.cohort,
+      role: inst.role,
+      enrolled,
+      responseRate: s.responseRate,
+      avgRating: r2(own ?? surveyFacultyAvg ?? courseAvg ?? 4),
+      courseAvg: courseAvg != null ? r2(courseAvg) : undefined,
+    }
+  })
+  const lead = s.instructors[0]
+  const history: FacultyOfferingRecord[] = lead
+    ? (s.priorOfferings ?? []).filter((po) => !LIVE_TERMS.has(po.term)).map((po) => ({
+        facultyId: lead.id,
+        courseCode: s.courseCode,
+        courseName: s.courseName,
+        term: po.term,
+        cohort: s.cohort,
+        role: lead.role,
+        enrolled,
+        responseRate: po.responseRate ?? s.responseRate,
+        avgRating: po.facultyAvg,
+        courseAvg: po.courseAvg,
+      }))
+    : []
+  return [...current, ...history]
+})

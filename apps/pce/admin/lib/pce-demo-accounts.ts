@@ -27,13 +27,15 @@ import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
   MOCK_SURVEYS,
+  MOCK_FACULTY_OFFERINGS,
+  type FacultyOfferingRecord,
   type ProgramTerm,
   type CourseOffering,
   type PceSurvey,
   type PceTemplate,
   type SurveyStatus,
 } from '@/lib/pce-mock-data'
-import { UON_OFFERINGS, UON_SURVEYS } from '@/lib/pce-university-of-nursing-data'
+import { UON_OFFERINGS, UON_SURVEYS, UON_FACULTY_OFFERINGS } from '@/lib/pce-university-of-nursing-data'
 
 export interface DemoAccount {
   id: string
@@ -47,6 +49,13 @@ export interface DemoAccount {
   /** Survey templates — omit for the full mock catalog; [] = none created yet
    *  (drives the dashboard's "Create template" CTA). */
   templates?: PceTemplate[]
+  /** Analytics score register (`/analytics` derives everything from these
+   *  rows via `offeringPoints()`). Omit to share the global
+   *  `MOCK_FACULTY_OFFERINGS` — right for every Johns Hopkins DPT variant
+   *  (they only re-slice the same program). An isolated dataset (University
+   *  of Nursing) supplies its own so Analytics follows the account switch
+   *  like the Dashboard and `/results/[id]` already did (2026-09-16). */
+  facultyOfferings?: FacultyOfferingRecord[]
 }
 
 /* ── reusable terms pulled from the full mock ─────────────────────────────── */
@@ -357,6 +366,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     terms: [FALL26, SUMMER26],
     offerings: UON_OFFERINGS,
     surveys: UON_SURVEYS,
+    facultyOfferings: UON_FACULTY_OFFERINGS,
   },
 ]
 
@@ -391,4 +401,9 @@ export function activeOfferings(): CourseOffering[] {
 
 export function activeSurveys(): PceSurvey[] {
   return activeAccount().surveys
+}
+
+/** Score rows Analytics derives from — the account's own set, else the shared program fixture. */
+export function activeFacultyOfferings(): FacultyOfferingRecord[] {
+  return activeAccount().facultyOfferings ?? MOCK_FACULTY_OFFERINGS
 }

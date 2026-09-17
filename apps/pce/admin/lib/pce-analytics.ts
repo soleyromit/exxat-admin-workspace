@@ -21,7 +21,7 @@
  */
 
 import {
-  MOCK_SURVEYS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS, EVAL_FACULTY_ROLES, facultyEvalRole,
+  MOCK_FACULTY, EVAL_FACULTY_ROLES, facultyEvalRole,
   MOCK_SURVEY_QUESTION_DATA, questionTextFor, EVAL_BENCHMARKS,
 } from '@/lib/pce-mock-data'
 import type { FacultyOfferingRecord, FacultyEvalRoleId, PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
@@ -32,6 +32,7 @@ export type { FacultyEvalRoleId } from '@/lib/pce-mock-data'
 // per survey (`survey.minimumThreshold ?? MINIMUM_THRESHOLD`) and so must this file — a
 // threshold that means 40 on the result page and 5 here is not a gate.
 import { MINIMUM_THRESHOLD } from '@/lib/pce-results'
+import { activeAccountId, activeFacultyOfferings, activeSurveys } from '@/lib/pce-demo-accounts'
 import { gatedScore, type ScoreCell } from '@/lib/pce-score-cell'
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -137,7 +138,7 @@ export const RATING_THRESHOLD = 4.0
  * `PceSurvey` data `breakdownFor` uses.
  */
 export function termBelowThreshold(term: string): { courses: number; faculty: number } {
-  const rows = MOCK_FACULTY_OFFERINGS.filter((o) => o.term === term && o.courseAvg != null)
+  const rows = activeFacultyOfferings().filter((o) => o.term === term && o.courseAvg != null)
   const courseAvgs = new Map<string, number[]>()
   const facultyAvgs = new Map<string, number[]>()
   for (const r of rows) {
@@ -219,10 +220,10 @@ export function initialsOf(name: string): string {
  */
 function surveyFor(o: FacultyOfferingRecord): PceSurvey | undefined {
   if (o.surveyId) {
-    const byId = MOCK_SURVEYS.find((x) => x.id === o.surveyId)
+    const byId = activeSurveys().find((x) => x.id === o.surveyId)
     if (byId) return byId
   }
-  return MOCK_SURVEYS.find(
+  return activeSurveys().find(
     (x) => x.surveyType !== 'programmatic' && x.courseCode === o.courseCode && x.term === o.term,
   )
 }
@@ -232,17 +233,21 @@ function surveyFor(o: FacultyOfferingRecord): PceSurvey | undefined {
  * `termKpis`, `cohortKpis`, `gapPoints`, `courseTrend`, ...) calls this internally, and each
  * of THOSE gets called several times over across a single tab render (KPI strip, leaderboard,
  * drill-down charts, comparison tables all pulling from the canonical layer independently) —
- * 19 call sites in this file alone. `MOCK_FACULTY`/`MOCK_FACULTY_OFFERINGS`/`MOCK_SURVEYS` are
- * static module-level consts, never mutated, so re-deriving the same map+sort on every call is
- * pure waste — one real computation, cached for the session, instead of a double-digit-count
- * of redundant O(n) passes on every By Faculty/By Course/By Term render.
+ * 19 call sites in this file alone. The source rows are static per demo account, so one real
+ * computation per account, cached until the account switches (`activeAccountId()` is the
+ * cache key — Analytics became account-scoped 2026-09-16; before that it always read the
+ * global `MOCK_FACULTY_OFFERINGS`, so switching to an isolated dataset like University of
+ * Nursing changed the Dashboard but not this page).
  */
 let offeringPointsCache: OfferingPoint[] | null = null
+let offeringPointsCacheAccount: string | null = null
 
 export function offeringPoints(): OfferingPoint[] {
-  if (offeringPointsCache) return offeringPointsCache
+  const account = activeAccountId()
+  if (offeringPointsCache && offeringPointsCacheAccount === account) return offeringPointsCache
+  offeringPointsCacheAccount = account
   const facultyById = new Map(MOCK_FACULTY.map((f) => [f.id, f]))
-  offeringPointsCache = MOCK_FACULTY_OFFERINGS.map((o): OfferingPoint => {
+  offeringPointsCache = activeFacultyOfferings().map((o): OfferingPoint => {
     const f = facultyById.get(o.facultyId)
     const name = f?.name ?? o.facultyId
     const survey = surveyFor(o)
@@ -914,7 +919,7 @@ export function facultyHeatCells(
  * same entity mix-up that had By Course reporting the instructor's score as the course's.
  */
 export function facultySurveys(facultyId: string): PceSurvey[] {
-  return MOCK_SURVEYS.filter((s) => {
+  return activeSurveys().filter((s) => {
     if (s.surveyType === 'programmatic') return false
     const primary = s.instructors.filter((i) => i.role !== 'guest')
     return primary.length > 0 && primary[0]!.id === facultyId
