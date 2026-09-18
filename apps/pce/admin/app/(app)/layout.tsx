@@ -15,12 +15,10 @@ import { KeyMetricsAskLeoBridge } from "@/components/key-metrics-ask-leo-bridge"
 import { SystemBannerProvider } from "@/contexts/system-banner-context"
 import { SystemBannerSlot } from "@/components/system-banner-slot"
 import { CommandMenu } from "@/components/command-menu"
-import { CommandMenuProvider } from "@/contexts/command-menu-context"
+import { PceCommandMenuProvider } from "@/components/pce/pce-command-menu-provider"
 import { SidebarShell, SecondaryPanel, SecondaryPanelProvider } from "@/components/sidebar"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { buildCommandMenuConfig } from "@/lib/command-menu-config"
-import { PCE_COMMAND_MENU_DATA_GROUPS } from "@/lib/pce-command-menu"
 import { PceProvider } from "@/components/pce/pce-state"
 import { PceBrandSync } from "@/components/pce/pce-brand-sync"
 import { SchoolSwitcherProvider } from "@/contexts/school-switcher-context"
@@ -28,10 +26,6 @@ import { CompactHeaderSlotProvider } from "@/contexts/compact-header-slot-contex
 import { UtilityBarSlot } from "@/components/utility-bar-slot"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const commandMenuConfig = buildCommandMenuConfig({
-    dataGroups: PCE_COMMAND_MENU_DATA_GROUPS,
-  })
-
   return (
     <PceProvider>
       <SchoolSwitcherProvider>
@@ -49,7 +43,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <PackageLeoAmbienceProvider>
                   <KeyMetricsAskLeoBridge>
                     <SystemBannerProvider>
-                      <CommandMenuProvider value={commandMenuConfig}>
+                      {/* Account-aware: ⌘K's Surveys/Templates rows follow the
+                          active demo account, not the raw mock constants. */}
+                      <PceCommandMenuProvider>
                         <CompactHeaderSlotProvider>
                           <SidebarShell
                             // Compact-shell migration (Aug 2026): rail defaults to
@@ -98,7 +94,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </div>
                           </SidebarShell>
                         </CompactHeaderSlotProvider>
-                      </CommandMenuProvider>
+                      </PceCommandMenuProvider>
                     </SystemBannerProvider>
                   </KeyMetricsAskLeoBridge>
                   </PackageLeoAmbienceProvider>

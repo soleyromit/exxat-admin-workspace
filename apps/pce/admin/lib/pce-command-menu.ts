@@ -1,5 +1,5 @@
 import type { CommandMenuGroup } from "@/lib/command-menu-config"
-import { MOCK_SURVEYS, MOCK_TEMPLATES } from "@/lib/pce-mock-data"
+import type { PceSurvey, PceTemplate } from "@/lib/pce-mock-data"
 import { termsOrdered } from "@/lib/pce-term-metrics"
 
 const ADMIN_ENTITY_ROUTES = [
@@ -56,12 +56,20 @@ const PAGE_ROUTES = [
   { id: "page-help",              label: "Help",                                 href: "/help",                      icon: "fa-light fa-circle-question" },
 ]
 
-export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [
+/** Searchable data rows for ⌘K, built from the ACTIVE demo account's own
+ *  surveys/templates (`usePce()`), never the raw `MOCK_SURVEYS` constant —
+ *  that constant still holds every Fall 2026 survey the default account
+ *  deliberately strips (dashboard opens on all courses Not set up), so a
+ *  static index let "Fall" in ⌘K surface 19 surveys the dashboard says
+ *  don't exist yet (verification-reviewer, 2026-09-18). See
+ *  `PceCommandMenuProvider` for the consumer. */
+export function pceCommandMenuDataGroups(surveys: PceSurvey[], templates: PceTemplate[]): CommandMenuGroup[] {
+  return [
   {
     id: "surveys",
     heading: "Surveys",
     searchOnly: true,
-    items: MOCK_SURVEYS.map(s => ({
+    items: surveys.map(s => ({
       id: `survey-${s.id}`,
       label: `${s.courseCode} · ${s.courseName}`,
       keywords: s.term,
@@ -73,7 +81,7 @@ export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [
     id: "templates",
     heading: "Templates",
     searchOnly: true,
-    items: MOCK_TEMPLATES.map(t => ({
+    items: templates.map(t => ({
       id: `template-${t.id}`,
       label: t.name,
       icon: "fa-light fa-rectangle-list",
@@ -90,4 +98,5 @@ export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [
     heading: "Pages",
     items: PAGE_ROUTES,
   },
-]
+  ]
+}
