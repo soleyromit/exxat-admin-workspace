@@ -2352,16 +2352,18 @@ function AiGeneratedBadge() {
    * foreground label) — the ONE brand-coloured element on an AI surface, so
    * brand ink means "AI" and nothing else on this page. Replaced the grey
    * `BadgeAi` pill, which fought the lavender Leo wash (Romit, 2026-09-17:
-   * "focus on color choices and placement of icons better"). Label is
-   * "Leo spotted" — the wording every other module's AI surface uses
-   * (leo-insight-indicator.tsx), 2026-09-18 feedback: "wherever we are
-   * showing AI generated, show Leo spotted". */
+   * "focus on color choices and placement of icons better"). Label is the
+   * bare name "Leo" (2026-09-18, Vishal: show the Leo name wherever content
+   * is AI-generated). A noun, like the DS `BadgeAi` "AI" pill — Design OS
+   * uses Leo strictly as the agent's name ("Ask Leo", "Leo is thinking");
+   * "Leo spotted" exists only as the chart-popover sentence opener
+   * ("Leo spotted a dip of 12%") and dangles as a chip beside "Summary". */
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium text-foreground ${LEO_TOKENS.softBgClass} ${LEO_TOKENS.borderClass}`}
     >
       <i className={`fa-duotone fa-solid fa-star-christmas text-xs ${LEO_TOKENS.iconClass}`} aria-hidden="true" />
-      Leo spotted
+      Leo
     </span>
   )
 }

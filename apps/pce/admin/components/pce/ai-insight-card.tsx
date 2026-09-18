@@ -12,9 +12,10 @@ import { Card, CardContent } from '@exxatdesignux/ui'
  * question-level pulled metrics — per Aarti 2026-05-08 16:09 D14
  * ("AI summaries surface BEFORE question-level detail at every aggregation level").
  *
- * Affordance: fa-light fa-sparkles + var(--brand-color) + "Leo spotted" label
- * (the wording every other module's AI surface uses — 2026-09-18 feedback:
- * "wherever we are showing AI generated, show Leo spotted") + source
+ * Affordance: fa-light fa-sparkles + var(--brand-color) + "Leo insights"
+ * title (2026-09-18, Vishal: show the Leo name wherever content is
+ * AI-generated; Design OS's own generated-content card is titled
+ * "Insights", so this is that title with the agent's name) + source
  * citation. Distinct from pulled-data cards which use no AI affordance.
  *
  * Per workspace ADR-005: "AI is good at finding themes and grouping the
@@ -28,7 +29,7 @@ interface Props {
   body: React.ReactNode
   /** Where the AI extracted from. e.g. "47 open-text responses · 6 themes". */
   source: string
-  /** Optional title above the body. Defaults to "Leo spotted". */
+  /** Optional title above the body. Defaults to "Leo insights". */
   title?: string
   /** Optional action buttons rendered below body. */
   actions?: React.ReactNode
@@ -40,7 +41,7 @@ interface Props {
 export function AiInsightCard({
   body,
   source,
-  title = 'Leo spotted',
+  title = 'Leo insights',
   actions,
   preBody,
   className,

@@ -136,7 +136,7 @@ export function StudentVoice({
       <div className="flex flex-wrap items-center gap-2">
         <i className="fa-light fa-sparkles text-sm" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
         <span className="text-xs font-medium" style={{ color: 'var(--brand-color)' }}>
-          Leo spotted
+          Leo insights
         </span>
         <h3 className="text-sm font-semibold">Student voice</h3>
       </div>
