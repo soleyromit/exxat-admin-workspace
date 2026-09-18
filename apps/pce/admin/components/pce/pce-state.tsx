@@ -262,6 +262,14 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   // choice is applied post-mount below.
   const [accountId, setAccountId] = useState<string>(DEFAULT_ACCOUNT_ID)
   const ACCOUNT_STORAGE_KEY = 'pce.demoAccount'
+  // A saved switcher choice only survives while the product default it was
+  // made against is still the default. When `DEFAULT_ACCOUNT_ID` changes (as
+  // it did 2026-09-18 for the "all courses Not set up" demo), every browser
+  // that had picked an account earlier would otherwise keep landing on that
+  // stale pick and never see the new default — which is exactly how "I
+  // don't see it reflected" happened. Stored alongside the choice, compared
+  // on load.
+  const ACCOUNT_DEFAULT_STORAGE_KEY = 'pce.demoAccount.defaultAtSave'
 
   const switchAccount = useCallback((id: string) => {
     const acc = accountById(id)
@@ -272,13 +280,29 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     setProgramTerms(acc.terms)
     setHiddenComments({})
     if (typeof window !== 'undefined') {
-      try { window.localStorage.setItem(ACCOUNT_STORAGE_KEY, acc.id) } catch { /* ignore */ }
+      try {
+        window.localStorage.setItem(ACCOUNT_STORAGE_KEY, acc.id)
+        window.localStorage.setItem(ACCOUNT_DEFAULT_STORAGE_KEY, DEFAULT_ACCOUNT_ID)
+      } catch { /* ignore */ }
     }
   }, [])
 
   useEffect(() => {
     let stored: string | null = null
-    try { stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY) } catch { /* ignore */ }
+    let storedDefault: string | null = null
+    try {
+      stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY)
+      storedDefault = window.localStorage.getItem(ACCOUNT_DEFAULT_STORAGE_KEY)
+    } catch { /* ignore */ }
+    if (stored && storedDefault !== DEFAULT_ACCOUNT_ID) {
+      // Saved against an older default (or before this key existed) — drop
+      // it so the current product default wins, as it does on a fresh visit.
+      try {
+        window.localStorage.removeItem(ACCOUNT_STORAGE_KEY)
+        window.localStorage.removeItem(ACCOUNT_DEFAULT_STORAGE_KEY)
+      } catch { /* ignore */ }
+      return
+    }
     if (stored && stored !== DEFAULT_ACCOUNT_ID && DEMO_ACCOUNTS.some(a => a.id === stored)) {
       switchAccount(stored)
     }

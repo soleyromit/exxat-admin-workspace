@@ -252,21 +252,34 @@ const CASE9 = buildCaseTermData(CASE9_TERM, [
 /* ── the scenario accounts ────────────────────────────────────────────────── */
 export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
+    /* The default demo account. Its live term (Fall 2026) starts with every
+     * course Not set up — the demo walks through scheduling them — while
+     * every earlier term keeps its real evaluated data, so the results /
+     * analytics half of the demo still has something to show (2026-09-14,
+     * re-confirmed 2026-09-18: "by default, show all the courses in not
+     * setup state… update the KPIs accordingly"). The KPI band derives from
+     * this same data, so it reads N needs setup / no response rate yet /
+     * below-threshold from the closed terms without any special casing.
+     *
+     * Why THIS account is the default and not the isolated University of
+     * Nursing dataset: the push wizard, directory, admin courses, surveys
+     * hub and the survey-creation paths in pce-state.tsx all read the
+     * global `MOCK_COURSE_OFFERINGS` (this roster) directly — an isolated
+     * roster as default would show nursing courses on the Dashboard and
+     * Johns Hopkins courses the moment "Schedule" opens the wizard.
+     *
+     * Analytics rows are stripped to match the surveys: with the Fall
+     * surveys gone, `offeringPoints()` would classify the orphaned Fall
+     * score rows 'historical' (no linked survey) and Analytics would score
+     * a term the Dashboard says hasn't been evaluated yet. "Every state
+     * occupied at once" lives on Brightwater OT (Case 4) now. */
     id: 'acc-healthy',
     name: 'Johns Hopkins DPT',
-    blurb: 'Steady-state — realistic mixed history, every bucket occupied at once',
+    blurb: 'Fall courses awaiting setup, real history on every earlier term',
     terms: MOCK_PROGRAM_TERMS,
     offerings: MOCK_COURSE_OFFERINGS,
-    surveys: MOCK_SURVEYS,
-  },
-  {
-    id: 'acc-demo-default',
-    name: 'Johns Hopkins DPT',
-    blurb:
-      'Default — Vishal, 2026-09-14: "by default, show all the courses in not setup state... keep one demo account to show courses in all states but for demo let\'s keep it simple." Same real courses/history as Johns Hopkins DPT — only the Live term\'s own surveys are stripped, so every course there starts Not set up. Last closed term (Summer 2026) is untouched real data.',
-    terms: MOCK_PROGRAM_TERMS,
-    offerings: MOCK_COURSE_OFFERINGS,
-    surveys: MOCK_SURVEYS.filter((s) => s.term !== 'Fall 2026'),
+    surveys: MOCK_SURVEYS.filter((s) => s.term !== FALL26.name),
+    facultyOfferings: MOCK_FACULTY_OFFERINGS.filter((o) => o.term !== FALL26.name),
   },
   {
     id: 'acc-fresh',
@@ -359,10 +372,14 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     templates: [],
   },
   {
+    /* Isolated dataset — Dashboard, /results/[id] and /analytics follow it,
+     * but the push wizard / directory / admin courses still read the global
+     * Johns Hopkins roster (see `acc-healthy` above), so it is a viewing
+     * scenario, not the default. */
     id: 'acc-university-of-nursing',
     name: 'University of Nursing',
     blurb:
-      'BSN/MSN dummy-data scenario — 10 Fall 2026 (current) + 5 Summer 2026 (last closed) course+instructor evaluations, 5-term score history, realistic student comments, one polarized/controversial course (BSN-210) and one stellar course (BSN-401 Clinical Practicum I).',
+      'BSN/MSN program — 10 current-term and 5 last-term course+instructor evaluations, 5-term score history, realistic student comments, one polarized course (BSN-210) and one stellar course (BSN-401)',
     terms: [FALL26, SUMMER26],
     offerings: UON_OFFERINGS,
     surveys: UON_SURVEYS,

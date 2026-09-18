@@ -3208,8 +3208,22 @@ function DashboardHomeInner() {
   const onboardingSnap = currentSnaps[0] ?? upcomingSnaps[0] ?? null
   const primaryBreakdown = onboardingSnap ? breakdownForSnap(onboardingSnap) : null
   const hasTemplates = templates.length > 0
+  /* "Getting started" is a FIRST-RUN affordance. A program that has already
+   * run evaluations to completion on any term (the default demo account:
+   * Fall's courses all Not set up, Summer and earlier fully evaluated) has
+   * self-evidently done all four steps before — ticking "Set up your first
+   * term ✓ / First survey ○" at it reads as a brand-new tenant and, worse,
+   * the checklist REPLACES the Live term card's row list, so the ten
+   * courses sitting in "Not set up" were never shown as such (2026-09-18,
+   * Vishal: "show all the courses in not setup state" — the term card had
+   * to actually show them). For such a program the live term's own
+   * not-configured row + Schedule action is the guidance. */
+  const programEstablished = useMemo(
+    () => mounted && ordered.some((t) => termHasFinishedSurveys(t, ce)),
+    [mounted, ordered, ce],
+  )
   const onboardingDone = useMemo(
-    () => [
+    () => programEstablished ? [true, true, true, true] : [
       programTerms.length > 0,
       primaryBreakdown !== null,
       primaryBreakdown
@@ -3219,7 +3233,7 @@ function DashboardHomeInner() {
         ? primaryBreakdown.scheduled.length + primaryBreakdown.live.length + primaryBreakdown.closed.length > 0
         : false,
     ],
-    [programTerms.length, primaryBreakdown],
+    [programEstablished, programTerms.length, primaryBreakdown],
   )
   const onboardingComplete = onboardingDone.every(Boolean)
   /* The one thing to do next, for whichever term onboarding is scoped to —

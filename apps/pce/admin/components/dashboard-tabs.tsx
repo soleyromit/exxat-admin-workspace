@@ -172,7 +172,7 @@ function InsightsWidget({ plain = false }: { plain?: boolean }) {
             Insights
           </DashboardSectionTitle>
           <p className={cn(dashboardSectionDescriptionClassName, "mt-0.5")}>
-            AI-generated · Updated now
+            Leo spotted · Updated now
           </p>
         </div>
         <div className="flex flex-col">{items}</div>
@@ -184,7 +184,7 @@ function InsightsWidget({ plain = false }: { plain?: boolean }) {
     <Card size="sm" className="overflow-hidden" style={INSIGHTS_WIDGET_GLOW_STYLE}>
       <CardHeader>
         <DashboardSectionTitle as="h2">Insights</DashboardSectionTitle>
-        <CardDescription>AI-generated · Updated now</CardDescription>
+        <CardDescription>Leo spotted · Updated now</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {INSIGHTS.map((ins) => (

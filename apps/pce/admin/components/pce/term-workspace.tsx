@@ -59,8 +59,9 @@ import {
 import { evaluationsFor } from '@/lib/pce-evaluations'
 import {
   type PceSurvey, type SurveyStatus, type PceInstructor,
-  MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_FACULTY,
+  MOCK_MASTER_COURSES, MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
+import { activeOfferings } from '@/lib/pce-demo-accounts'
 import { withFrom } from '@/lib/pce-nav-origin'
 
 /** Raw row status — every real SurveyStatus, plus a synthetic value for a
@@ -230,7 +231,14 @@ function TermWorkspaceInner() {
     const setupRows: EvalRow[] = term
       ? (() => {
           const surveyedCodes = new Set(termSurveys.map((s) => s.courseCode))
-          return MOCK_COURSE_OFFERINGS
+          /* The active demo account's offerings, not the global
+           * `MOCK_COURSE_OFFERINGS` — that constant is Johns Hopkins DPT's
+           * roster, so any other account's not-yet-configured courses were
+           * invisible here (University of Nursing's ten Fall courses rendered
+           * as "No evaluations yet" instead of ten "No survey configured"
+           * rows — caught 2026-09-18 while making that account the default).
+           * Same register `breakdownFor()` (pce-term-metrics.ts) reads. */
+          return activeOfferings()
             .filter((o) => o.termId === term.id && o.status !== 'archived')
             .flatMap((o): EvalRow[] => {
               const course = MOCK_MASTER_COURSES.find((c) => c.id === o.masterCourseId)
@@ -732,7 +740,13 @@ function TermWorkspaceInner() {
     },
   ]
 
-  const firstRun = termSurveys.length === 0
+  /* Empty state only when there is genuinely nothing to list — a term whose
+   * courses are all still "No survey configured" has ten rows of work to
+   * show, not an empty state (the not_configured rows ARE the setup surface;
+   * see feedback_no_bare_count_action_surfaces). Was `termSurveys.length ===
+   * 0`, which hid every not-configured course behind the "No evaluations
+   * yet" card. */
+  const firstRun = tableRows.length === 0
 
   return (
     <div className="flex flex-col flex-1">

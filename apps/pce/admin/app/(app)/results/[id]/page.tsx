@@ -2345,22 +2345,23 @@ function ResponseCollectionTrend({ survey, rate }: { survey: PceSurvey; rate: nu
  *  convention already on this surface), never a new colour. Extracted
  *  2026-09-16 so the per-question free-text summary (`WrittenResponsesRow`)
  *  and the scope-level Summary card at the top of the Course/Faculty tabs
- *  share one affordance instead of two copies that drift apart. Label stays
- *  sentence-cased ("AI generated"), same as every other chip on the page. */
+ *  share one affordance instead of two copies that drift apart. */
 function AiGeneratedBadge() {
   /* The DS Leo insight popover's own "kind chip" (leo-insight-indicator.tsx:
    * rounded-full, `bg-brand/10` fill, `border-brand/50` hairline, brand star,
    * foreground label) — the ONE brand-coloured element on an AI surface, so
    * brand ink means "AI" and nothing else on this page. Replaced the grey
    * `BadgeAi` pill, which fought the lavender Leo wash (Romit, 2026-09-17:
-   * "focus on color choices and placement of icons better"). Label stays
-   * sentence-cased ("AI generated"), same as every other chip on the page. */
+   * "focus on color choices and placement of icons better"). Label is
+   * "Leo spotted" — the wording every other module's AI surface uses
+   * (leo-insight-indicator.tsx), 2026-09-18 feedback: "wherever we are
+   * showing AI generated, show Leo spotted". */
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium text-foreground ${LEO_TOKENS.softBgClass} ${LEO_TOKENS.borderClass}`}
     >
       <i className={`fa-duotone fa-solid fa-star-christmas text-xs ${LEO_TOKENS.iconClass}`} aria-hidden="true" />
-      AI generated
+      Leo spotted
     </span>
   )
 }
