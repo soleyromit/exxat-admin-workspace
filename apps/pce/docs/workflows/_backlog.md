@@ -910,8 +910,62 @@ Source: `docs/research/meetings/2026-09-15-analytics-solution-course-faculty-spe
 
 ---
 
+## Phase 1 design tasks — added 2026-09-16 (Single survey analytics spec + demo prep — Vishal)
+
+Source: `docs/research/meetings/2026-09-16-single-survey-analytics-dashboard-design-demo-prep-vishal.md` (Granola `de0c85ee`)
+
+> Vishal + Romit daily Cohere-prep cadence (day 3). Full single survey analytics layout spec delivered. Demo account cleanup directives also given.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T273 | "Export as" split button — PDF primary, Excel secondary (chevron) — REPLACES Reports tab | Admin | Analytics header + any export surface | **P0 — Cohere demo** | Reports tab is killed entirely. Replaced with a split button: left = "Export as PDF" (primary action), right = chevron dropdown containing "Export as Excel." D_PCE_0916_02, D_PCE_0916_03. |
+| T274 | Question breakdown: expand all questions by default | Admin | Single survey analytics — question breakdown | P1 — DESIGN-REVIEW | All questions in the question breakdown section render expanded on load. No click required to open individual questions. Vishal: "All questions should be expanded by default." D_PCE_0916_04. |
+| T275 | Rename "Program average" → "term average" in question breakdown / section tile context | Admin | Single survey analytics — section tile + question tile | P1 | Label "Program average" within the question breakdown and section distribution tile must read "term average." Scope: breakdown context only — not the top-level KPI strip. D_PCE_0916_05. |
+| T276 | Section distribution: render as static single line — not expandable | Admin | Single survey analytics — section distribution | P1 | Section distribution bar is a single static line (bar + key stats). No accordion, no expand/collapse toggle. Vishal: "Section distribution — not expandable. Just one line." D_PCE_0916_06. |
+| T277 | Remove rating trend card from Overview tab | Admin | Analytics → Overview tab (`analytics/page.tsx`) | P1 | Rating trend chart/card removed from Overview. Vishal: "Remove the rating trend from overview. Too much. Less is more." D_PCE_0916_07. NEEDS REVIEW: verify which card this is in `analytics/page.tsx` before applying — should not conflict with TrendSparkline program trend (T268 applied Sep 14). |
+| T278 | KPI cards placement: above tabs in course/faculty analytics views | Admin | Analytics page layout | P1 — DESIGN-REVIEW | When course or faculty analytics tabs are active, KPI cards sit ABOVE the tab row, not inside the tab body. D_PCE_0916_08. |
+| T279 | AI summary in both course content section AND faculty section of single survey | Admin | Single survey analytics | P1 — DESIGN-REVIEW | AI summary component rendered inside the course content section AND inside the faculty section — not only at page level. D_PCE_0916_09. |
+| T280 | Free text questions: per-question AI summary chip/card | Admin | Single survey analytics — free text section | P1 — DESIGN-REVIEW | Each free text question renders its responses followed by an individual AI summary. Not aggregated into a single qualitative panel. Vishal: "Each free text question should have its own AI summary. Individual." D_PCE_0916_10. |
+| T281 | KILL standalone qualitative feedback component in single survey analytics | Admin | Single survey analytics | P1 | Standalone "qualitative feedback" component/panel is removed. Free text content is handled per-question with per-question AI (T280). Supersedes any design showing a global qualitative feedback panel. D_PCE_0916_11. |
+| T282 | Reminder sent date markers on response rate / completion timeline | Admin | Single survey analytics — timeline | P1 — DESIGN-REVIEW | Timeline showing response rate over time must include vertical marker(s) for each reminder sent date. Vishal: "On the timeline — show when the reminder was sent. A marker." D_PCE_0916_12. |
+| T283 | Faculty score displayed immediately below faculty filter when faculty selected | Admin | Single survey analytics — faculty filter | P1 | When user selects a faculty via the faculty filter, show that faculty's score directly below the filter control. Do not require scrolling to see it. D_PCE_0916_13. |
+| T284 | Remove onboarding step cards from dashboard (Cohere demo account cleanup) | Admin | PCE dashboard | **P0 — Cohere demo** | Onboarding/welcome step cards must not appear in the demo account dashboard. Rohit building demo — clean state needed for Cohere. D_PCE_0916_14. |
+
+### Already confirmed absent — no action (Sep 16)
+
+| Item | Status |
+|---|---|
+| "My Logs" tab | Not in ADMIN_NAV or FACULTY_NAV in `app-sidebar.tsx` — already absent |
+| Reports tab | No such nav item — already absent |
+| Heatmap in question breakdown | No heatmap component in codebase — confirmed do-not-build |
+
+---
+
+## Phase 1 design tasks — added 2026-09-17 (Course content + faculty evaluation UI review — Rohit)
+
+Source: `docs/research/meetings/2026-09-17-course-content-faculty-evaluation-ui-review.md` (Granola `8152353a`)
+
+> Rohit (Engineering / demo builder) + Romit review call. Rohit building Cohere demo prototype. Five concrete directives for faculty tab layout, role labels, AI visual treatment, term format, and mock data scope.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T285 | Faculty tab: skip course content questions — start directly with faculty-specific sections | Admin | Single survey analytics — faculty view | **P0 — Cohere demo** | ⚠️ CONFLICTS T259 (Aarti Aug 26 said "show course content in faculty view too"). Do NOT apply either until Vishal + Aarti align. Rohit: "For the faculty tab — we skip the course content. Start right from the faculty sections." D_PCE_0917_01. |
+| T286 | Role label in faculty evaluation section header | Admin | Single survey analytics — faculty section header | P1 | Show role label ("Course Coordinator" or "Instructor") in the faculty section header alongside or below the faculty name. Rohit: "Can we show the role? Like, is this the coordinator or the instructor? In the header." D_PCE_0917_02. |
+| T287 | AI components: elevated visual treatment — distinct from vanilla card background | Admin | All AI cards — `ai-insight-card.tsx` + scope/highlights components | P1 — DESIGN-REVIEW | AI summary, AI highlights, "Scope of improvement" must use a tinted or elevated surface token — visually distinct from regular `--card` background. Token-based only — no hardcoded hex. Rohit: "The AI stuff needs to look elevated. Not just like a plain card." D_PCE_0917_03. |
+| T288 | Term dropdown format: short labels only ("Fall", "Summer", "Spring") — academic year in separate field | Admin | All term selectors (analytics, setup wizard, push survey) | P1 | Term dropdowns show only "Fall", "Summer", "Spring" — never compound "Fall 2026" as a single label. Academic year is controlled by a separate adjacent selector. Rohit: "Just Fall, Summer, Spring. No year. The year is separate." D_PCE_0917_04. Requires TypeScript mock data and selector architecture review — do not apply to `MOCK_TERMS` until Romit confirms data model impact. |
+| T289 | Faculty roles in mock data: instructor + coordinator only | Admin | `lib/pce-mock-data.ts` | **P0 — Cohere demo** | All faculty role types except "instructor" and "course coordinator" must be removed from prototype/mock data before Cohere demo. Rohit to apply. D_PCE_0917_05. BLOCKED on T285 conflict resolution for faculty-view content scope. |
+
+### Conflict flagged — Sep 17
+
+| Conflict | Parties | Status |
+|---|---|---|
+| T285 (skip course content in faculty tab) vs. T259 (show course content in faculty view — Aarti Aug 26) | Rohit (Sep 17) vs. Aarti (Aug 26) | **UNRESOLVED — do NOT apply T285 until Vishal + Aarti align.** T285 may be a demo simplification; T259 may be product-correct behavior. Raise at next daily cadence call with Vishal. |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
 - Grade-lock workflow — was a PCE PRD feature; Aarti didn't reaffirm in 2026-05-08; treat as deferred until reconfirmed
 - "Notes" concept — Aarti said "low priority placeholder" for action-plan content (D32)
+- T285/T259 conflict — faculty view course content: Rohit (skip) vs. Aarti (show). Needs Vishal + Aarti alignment before Cohere.
