@@ -1969,6 +1969,26 @@
                 "docs/watch/flags/pce.md",
                 "docs/watch/updates-log.json"
             ]
+        },
+        {
+            "id": "2026-09-21-granola-intake-001",
+            "date": "2026-09-21",
+            "product": "workspace",
+            "type": "decision-extracted",
+            "title": "Weekly Granola intake — 7 new PCE decisions, 2 conflicts flagged (Sep 14–21 window)",
+            "what": "Fetched 8 meetings from Sep 14–18, 2026. 7 relevant (screened against filter keywords). Transcripts reviewed: (1) 'Course evaluation design — distribution workflow, analytics, and design system alignment with Vishal' (Sep 14, 60KB) — already captured as conflicts in 2026-09-15 run, no new extraction needed; (2) 'Single survey analytics — dashboard design and demo prep with Vishal and Rohit' (Sep 16) — 7 new PCE decisions extracted (pce-decision-165–171); (3) 'Prism GTM strategy and exam management sales enablement with Kunal and Ashwin' (Sep 16) — 1 exam-management launch timeline conflict flagged; (4) 'Learning contract workflow configuration and student view demo' (Sep 18, 55.9KB) — 0 new decisions (workflow demo/walkthrough, no new directives); (5–7) 3 additional Sep 15–17 meetings screened as non-product (portfolio reviews, general Exxat team meetings). 1 transcript was null (skipped). Total: 7 new decisions added, pce-decision-154 and pce-decision-158 marked superseded, 2 conflicts flagged (pce.md: qualitative feedback component removal; exam-management.md: Q2 2027 launch vs Jan exam-decision-017).",
+            "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026; Prism GTM strategy and exam management sales enablement with Kunal and Ashwin transcript — Sep 16, 2026",
+            "meetingsFetched": 8,
+            "meetingsRelevant": 7,
+            "newDecisions": 7,
+            "conflictsFlagged": 2,
+            "meetingsWithNoTranscript": 1,
+            "files": [
+                "docs/watch/stakeholder-decisions.json",
+                "docs/watch/flags/pce.md",
+                "docs/watch/flags/exam-management.md",
+                "docs/watch/updates-log.json"
+            ]
         }
     ]
 }

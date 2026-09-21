@@ -602,3 +602,10 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Suggested action:** Remove the AY/term view toggle from the rating trend chart in the analytics spec and prototype. Confirm 6-term default with Vishal.
 
 ---
+
+## DECISION CONFLICT — 2026-09-21
+**Old decision:** pce-decision-158 (Aug 26, 2026) — Qualitative feedback is a separate section below quantitative data, with two distinct sub-sections: raw responses first, AI analysis second.
+**New directive from Vishal in Single survey analytics — dashboard design and demo prep with Vishal and Rohit (Sep 16, 2026):** Qualitative feedback is NOT a standalone section. Free-text responses and per-question AI summary are integrated inline within the question breakdown section. The separate qualitative feedback component is removed entirely.
+**Action:** pce-decision-158 marked superseded by pce-decision-167. Update single survey analytics design to remove the standalone qualitative feedback section and move free-text + AI summary inline into the question breakdown.
+
+---

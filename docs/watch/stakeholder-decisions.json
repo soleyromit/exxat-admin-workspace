@@ -1833,7 +1833,8 @@
       "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
       "sourceType": "transcript",
       "date": "2026-08-26",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-170"
     },
     {
       "id": "pce-decision-155",
@@ -1873,7 +1874,8 @@
       "source": "Single server analytics — UI design and export strategy transcript — Aug 26, 2026",
       "sourceType": "transcript",
       "date": "2026-08-26",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-167"
     },
     {
       "id": "pce-decision-159",
@@ -2073,6 +2075,76 @@
       "source": "Learning contracts — configuration, workflows, and phased rollout transcript — Sep 3, 2026",
       "sourceType": "transcript",
       "date": "2026-09-03",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-165",
+      "product": "pce",
+      "text": "'Term average' replaces 'program average' as the label in section tiles and score visualizations throughout single survey analytics. All instances of 'program average' in the single survey analytics UI should read 'term average'. Vishal: 'Should it be term average? I don't know. Like, should we change that from program average to term average? Yeah, it makes more sense.' Rohit agreed.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-166",
+      "product": "pce",
+      "text": "Single survey analytics Reports tab is removed entirely. Export PDF and Export Excel actions are inline buttons placed per analytics tab, not aggregated into a separate Reports tab. Refines pce-decision-155 (which established export as a two-button UI). Vishal confirmed the tab removal and inline button placement during Sep 16 demo prep.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-167",
+      "product": "pce",
+      "text": "Qualitative feedback is NOT a standalone component/section. Free-text question responses (with per-question AI summary) are integrated inline within the question breakdown section — co-located with the question's quantitative data. The separate 'qualitative feedback component' is removed. Vishal: the free-text responses and AI summary belong inside the question breakdown, not in a separate section below. Supersedes pce-decision-158.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-168",
+      "product": "pce",
+      "text": "AI analysis in single survey analytics produces two named output sub-sections: (1) 'Highlights' = what went well across the course; (2) 'Scope for improvement' = what needs improvement. Final display labels are TBD — Vishal to confirm with David for cleaner boundary language. The two-section AI output structure is confirmed; exact label wording is pending.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-169",
+      "product": "pce",
+      "text": "'My Logs' tab is removed from single survey analytics. The tab was in the design; Vishal confirmed it is out of scope for the current build. No replacement tab or view was specified.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-170",
+      "product": "pce",
+      "text": "Section tile distribution in single survey analytics is NOT expandable via accordion. Shows a static distribution bar/line only. The accordion expand interaction previously specified (pce-decision-154) is removed — the distribution is always visible inline, no expand/collapse. Supersedes pce-decision-154.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-171",
+      "product": "pce",
+      "text": "Single survey analytics KPI cards are persona-differentiated: admin sees all top-level KPI cards. Faculty persona has the top-section KPI cards removed. When a faculty member is selected via the faculty filter chip, their score is shown inline below the filter chip — not as a separate KPI card. Vishal confirmed this persona split during Sep 16 demo prep.",
+      "stakeholder": "Vishal",
+      "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-09-16",
       "status": "confirmed"
     }
   ]

@@ -437,3 +437,11 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Action:** exam-decision-001 has been marked superseded by exam-decision-017. Confirm whether the March download target is firm (speaker questioned it before leaving the call) and update exam-decision-017 when the date is locked. Any design work on the offline download flow (student-side download prompt, coordinator download window) should be deferred until the March scope is confirmed.
 
 ---
+
+## DECISION CONFLICT — 2026-09-21
+**Old decision:** exam-decision-017 (Jul 23, 2026) — Students take exams online with a password for the January launch (Jan 20). Download capability deferred to March limited availability.
+**New directive from Kunal in Prism GTM strategy call — Sep 16, 2026:** Kunal (leadership) stated Exam Management launches in Q2 2027 (April–June). An earlier statement of "January" was explicitly corrected by Kunal to Q2 2027 during the call.
+**Ambiguity:** This may represent a beta (Jan internal/limited) vs. general availability (Q2 2027) distinction rather than a full contradiction — Kunal was speaking in the context of commercial GTM, not internal beta. Confirm whether the Jan timeline in exam-decision-017 refers to a closed beta/Cohere launch while Q2 2027 is the GA/commercial launch date.
+**Action:** Clarify with Aarti/Kunal: is January 2027 still the target for any Exam Management release (beta, Cohere limited, or otherwise), or has the full launch moved to Q2 2027? Update exam-decision-017 once confirmed.
+
+---
