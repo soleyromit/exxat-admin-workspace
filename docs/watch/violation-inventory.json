@@ -11,7 +11,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -26,7 +26,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining instance; lines 414/618/662 fixed)."
     },
@@ -41,7 +41,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -56,7 +56,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -71,7 +71,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; line 120 fixed)."
     },
@@ -86,7 +86,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -101,7 +101,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; line 76 fixed)."
     },
@@ -116,7 +116,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -131,7 +131,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -147,7 +147,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -162,7 +162,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -181,7 +181,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — inconsistent UX and potential a11y regression.",
       "fixLevel": "Replace pagination controls with DS <Button> using appropriate variant and size."
     },
@@ -211,7 +211,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\" pattern."
     },
@@ -226,7 +226,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -241,7 +241,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -256,7 +256,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element (1 remaining; lines 414/618/662 fixed)."
     },
@@ -272,7 +272,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 remaining; line 402 fixed)."
     },
@@ -288,7 +288,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (2 remaining; line 232 fixed)."
     },
@@ -304,7 +304,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -319,7 +319,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -336,7 +336,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons to users — noise and confusion for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements (3 remaining; lines 210/686/2597/3436 fixed)."
     },
@@ -356,7 +356,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to decorative <i> elements (6 remaining; lines 417/550/984/1312 fixed). Line 958 uses aria-label — confirm role."
     },
@@ -373,7 +373,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -388,7 +388,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -403,7 +403,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -418,7 +418,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -435,7 +435,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -450,7 +450,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icon — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> element."
     },
@@ -466,7 +466,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -483,7 +483,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -499,7 +499,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -516,7 +516,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Screen readers announce decorative icons — noise for AT users.",
       "fixLevel": "Add aria-hidden=\"true\" to the <i> elements."
     },
@@ -535,7 +535,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Without modal={false}, Radix DropdownMenu locks body scroll on open — breaks scroll inside nested drawers/dialogs and causes layout shift on mobile.",
       "fixLevel": "Add modal={false} to each <DropdownMenu> root in qb-table.tsx (5 instances)."
     },
@@ -551,7 +551,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or a role=\"button\" div for drag handles."
     },
@@ -566,7 +566,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -581,7 +581,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -596,7 +596,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -612,7 +612,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -631,7 +631,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace pagination controls with DS <Button>."
     },
@@ -661,7 +661,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button — widespread in shared DataTable used by every page.",
       "fixLevel": "Replace raw <button> elements with DS <Button>; column drag handles may use role=\"button\"."
     },
@@ -678,7 +678,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> or Button asChild pattern."
     },
@@ -693,7 +693,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract.",
       "fixLevel": "Replace with DS <Button> using appropriate variant and size."
     },
@@ -708,7 +708,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "toast() is banned for product feedback; expected pattern is LocalBanner. QB undo exception only covers qb-table.tsx.",
       "fixLevel": "Move sidebar folder-action feedback to LocalBanner, or extend QB undo exception to cover qb-sidebar in the sweep rule."
     },
@@ -724,7 +724,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "opacity-60 on hover/idle states can drop text contrast below 4.5:1 WCAG AA threshold — risk for low-vision users.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground or text-foreground/60 token to avoid compounding opacity on already-muted text."
     },
@@ -739,7 +739,7 @@
       "severity": "P3",
       "status": "open",
       "firstSeen": "2026-06-22",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "opacity-60 applied to container element by default (not just hover) — text inside at ~2.57:1 vs WCAG AA 4.5:1 minimum.",
       "fixLevel": "Replace opacity-60 with text-muted-foreground and group-hover:text-foreground pattern to avoid blanket opacity on text containers."
     },
@@ -754,7 +754,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -769,7 +769,7 @@
       "severity": "P2",
       "status": "open",
       "firstSeen": "2026-07-13",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Bypasses DS Button focus ring, variant system, and keyboard contract — in the KeyMetrics card component used on multiple pages.",
       "fixLevel": "Replace with DS <Button> using explicit variant and size."
     },
@@ -952,7 +952,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose; WCAG 4.1.2 failure blocks keyboard and AT users.",
       "fixLevel": "Add aria-label describing the button action (e.g., aria-label=\"Row actions\")."
     },
@@ -972,7 +972,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only buttons with no accessible name — screen reader users cannot determine button purposes; 6 instances in drawer.",
       "fixLevel": "Add aria-label to each icon-only Button (size=\"icon-sm\") describing its action."
     },
@@ -987,7 +987,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1002,7 +1002,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1017,7 +1017,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1032,7 +1032,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1047,7 +1047,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1062,7 +1062,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1077,7 +1077,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1092,7 +1092,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1107,7 +1107,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1122,7 +1122,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action (e.g., aria-label=\"Row actions\")."
     },
@@ -1137,7 +1137,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name — screen reader users cannot determine button purpose.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1165,7 +1165,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "14 icon-only buttons without accessible names in QB table — screen reader users cannot use QB action controls.",
       "fixLevel": "Add aria-label to each icon-only Button (size=\"icon-sm\") describing its action."
     },
@@ -1181,7 +1181,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only buttons with no accessible names in QB header.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -1196,7 +1196,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1211,7 +1211,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1227,7 +1227,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only buttons with no accessible names in faculty tab.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -1242,7 +1242,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name in students tab.",
       "fixLevel": "Add aria-label describing the button action."
     },
@@ -1258,7 +1258,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only buttons with no accessible names in courses list.",
       "fixLevel": "Add aria-label to each icon-only Button describing its action."
     },
@@ -1273,7 +1273,7 @@
       "severity": "P1",
       "status": "open",
       "firstSeen": "2026-09-07",
-      "lastSeen": "2026-09-14",
+      "lastSeen": "2026-10-05",
       "consequence": "Icon-only button with no accessible name in terms list.",
       "fixLevel": "Add aria-label describing the button action."
     }
