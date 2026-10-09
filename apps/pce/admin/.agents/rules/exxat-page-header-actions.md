@@ -1,0 +1,54 @@
+---
+description: Exxat DS — PageHeader actions slot; View as / overflow / primary CTA patterns. Auto-attaches when editing React PageHeader callsites; the universal "one filled primary" rule lives in P3 of exxat-ux-principles.
+activation: glob
+globs: {components,lib,src}/**/*.{tsx,ts}
+---
+
+<!-- Synced from .agents/rules/exxat-page-header-actions.mdc - run npx exxat-ui sync-extras after Cursor rule edits -->
+
+# Exxat DS — page header actions
+
+**Blueprint:** `docs/exxat-ds/blueprints/page-header.md`
+
+## Anatomy (actions slot only)
+
+| Control | DS pattern |
+|---------|------------|
+| **Primary CTA** | One **`Button`** `variant="default"` at the **default size** (filled) — e.g. “Add student”, “Ask Leo” when it is the main action. Do **not** pass `size="lg"`: header actions sit at the shared 36px default so they stop out-scaling the 32px `Select` and `Input` beside them |
+| **Secondary / scope** (“View as”, “All students”) | **`Button variant="outline"`** + chevron, or **`Select`** / **`DropdownMenu`** trigger styled as outline button — **not** plain grey rectangles or unstyled `<button>` |
+| **Overflow (⋯)** | **`Button variant="outline" size="icon"`** opening **`DropdownMenu`** — Export, settings, invite |
+| **Collaboration** | **`PageHeader variant="collaboration"`** face rail — not a custom avatar row |
+
+## MUST
+
+- Compose **`PageHeader`** and prefer **`actionItems`** for labelled commands. It enforces at most three visible actions (excluding More), icon-only secondary actions below `md`, and an all-actions More menu during WCAG reflow / 200% zoom.
+- **Filled primary (`variant="default"`) MUST declare `shortcut`** — inline bare `Kbd` + `<Shortcut>`. See **`exxat-primary-button-shortcuts.md`**. Prefer `actionItems` so `PageHeader` wires both.
+- Use the legacy **`actions`** slot only for custom composites that cannot be represented as labelled commands; keep those compositions to three visible buttons maximum, and still give the filled primary the same Kbd + Shortcut parity.
+- Keep **one** filled primary; put Export and long-tail items under **⋯** (or as outline `actionItems` with `${mod}${alt}E`).
+- **List hubs** (`ListPageTemplate` + table/board views): wire **`ExportDrawer`** (or domain header with **`onExport`**) and mount the drawer on the page client — see `library-client.tsx`.
+- **Record detail routes** (`PrimaryPageTemplate` + entity header): **`PageHeader`** with **⋯** overflow at minimum **Export** when the surface has exportable rows; add domain actions (Configure, Invite, etc.) as extra menu items — see `learning-activities-course-detail-client.tsx`.
+- Reuse **`LibraryPageHeader`** / domain `*-page-header.tsx` when the hub matches library collaboration patterns — do not hand-roll a second overflow menu.
+
+## List hub checklist (binding)
+
+| Piece | DS primitive |
+|-------|----------------|
+| Shell | `PrimaryPageTemplate` or `SecondaryPanelHubTemplate` |
+| Hub body | `ListPageTemplate` |
+| Route identity | `PageHeader` or domain `*PageHeader` with responsive **`actionItems`** |
+| Primary CTA | One `Button variant="default"` at the default size when the hub has a create action |
+| Overflow | `Button variant="outline" size="icon"` → `DropdownMenu` |
+| Export | Menu item → `setExportOpen(true)` + **`<ExportDrawer>`** sibling on the client |
+| Table | `HubTable` inside `renderContent` — not a bespoke grid |
+
+## MUST NOT
+
+- Hand-built header button rows that skip **`PageHeader`** and **`Button`** variants.
+- More than three visible header actions, excluding the More trigger.
+- Multiple filled primaries beside each other (e.g. “Ask Leo” + “Add student” both solid black unless product explicitly documents hierarchy — prefer outline for secondary).
+
+## Reference
+
+- `components/library-page-header.tsx`, `components/library-client.tsx` — hub + export drawer
+- `components/learning-activities-course-detail-client.tsx` — detail ⋯ + export
+- Placements/Team patterns in **`docs/exxat-ds/reference-implementations.md`**

@@ -1,0 +1,35 @@
+---
+description: KeyMetrics hubs use per-metric cards + size sm|md|lg — no brand glow
+globs: components/**/*key-metrics*,src/styles/globals.css,docs/exxat-ds/kpi*.md
+alwaysApply: false
+appliesTo: [react]
+tags: [hub, kpi]
+seeAlso:
+  - apps/web/docs/kpi-flat-band-pattern.md
+  - .cursor/skills/exxat-kpi/SKILL.md
+---
+
+# Exxat DS — KPI strip (`KeyMetrics` cards + size)
+
+**Authoritative detail:** **`docs/exxat-ds/kpi-flat-band-pattern.md`**, **`.cursor/skills/exxat-kpi/SKILL.md`**.
+
+## MUST
+
+1. **List hubs / dashboard mix** — **`KeyMetrics variant="cards" size="sm"`** (one card per metric). Prefer this over `variant="flat"`.
+2. **Size scale** — `sm` hubs, `md` dashboard `variant="card"` tile (default), `lg` catalog / hero demos only.
+3. **Mini charts (`md` / `lg` only)** — optional `metric.chart` with `kind: "sparkline" | "bars"`; hover shows point label + value. **Forbidden on `sm`.** Mutually exclusive with `progress` when shown. Full plots stay in ChartCard.
+4. **Whole-card click** — set `href` or `onClick` on `MetricItem`; the Card shell is the single focusable target (no nested controls).
+5. **No brand radial glow** on KeyMetrics — `--key-metrics-flat-band-radial` and `--key-metrics-card-glow-radial` are **`none`**. Ask Leo utility glow stays on Ask Leo chrome only.
+6. **≤ 4** tiles — **`exxat-kpi-max-four.mdc`**.
+7. **`variant="flat"`** (if still used) — transparent cells + hairlines only; **no** glow wash.
+
+## MUST NOT
+
+- Use glow under KPI strips or KPI cards.
+- Ship hub strips as oversized `flat` hero type without `size="sm"` cards.
+- Embed pie / donut / radar / axes / legends inside KeyMetrics tiles.
+- Stack a fifth KPI on the strip.
+
+## See also
+
+- **`exxat-kpi-max-four.mdc`**, **`exxat-kpi-trends.mdc`**, **`exxat-list-page-connected-views.mdc`**

@@ -1,6 +1,6 @@
 ---
-last_full_audit: 2026-05-09
-audit_method: WebFetch (anthropic.com + code.claude.com + platform.claude.com + claude.com/plugins) + claude-code-guide subagent + design-specific subagent cross-check
+last_full_audit: 2026-08-15
+audit_method: claude-updates-watcher subagent (Claude Code CHANGELOG 2.1.222-2.1.226, Agent SDK TS 0.3.213-0.3.226, Agent SDK Python 0.2.124-0.2.134) + claude-code-guide subagent live .claude/ conventions cross-check. Full row-by-row date bump not performed this run — only rows with confirmed deltas were touched; see docs/governance/claude-updates/2026-08-15-v2222-2226.md for the full gap report.
 sources_consulted:
   - https://code.claude.com/docs/en/hooks
   - https://code.claude.com/docs/en/sub-agents
@@ -92,6 +92,8 @@ sources_consulted:
 | Frontmatter `skills` (preload skills into agent context) | not adopted | deferred (would be useful for agents that need Granola intake; revisit when relevant) | 2026-05-09 | (same) |
 | Frontmatter `mcpServers`, `hooks`, `memory`, `background`, `color`, `initialPrompt` | not adopted | deferred | 2026-05-09 | (same) |
 | Subagents loaded at session start; restart needed when files edited directly | known | current | 2026-05-09 | code.claude.com/docs/en/sub-agents |
+| Subagent spawn depth cap (default lowered 5→1) and concurrency cap (default 20) | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=2` in `.claude/settings.json` env block — our subagents are leaf agents today, but this guards Pattern G's nested `Explore` spawns from silently failing as the depth-1 default tightens; concurrency cap (20) needs no override, our heaviest fan-out is ≤5 concurrent | current | 2026-08-15 | Agent SDK TypeScript CHANGELOG 0.3.217; docs/governance/claude-updates/2026-08-15-v2222-2226.md ADOPT-1 |
+| `Notification` hook (`agent_completed` / `agent_needs_input` for background-session subagents) | Step 1 (capture-only) wired — `.claude/hooks/notification-capture.py` logs raw payloads to `docs/governance/notification-payloads.log` for shape confirmation. Step 2 (parse + merge into `subagent-stop.py`/`_telemetry.py`) held until a real payload is captured, per the two-step plan (re-elevated from a July HOLD) | partial | 2026-08-15 | Claude Code CHANGELOG 2.1.224; Agent SDK TypeScript 0.3.224; docs/governance/claude-updates/2026-08-15-v2222-2226.md ADOPT-2 |
 
 ## Slash commands
 
@@ -100,6 +102,7 @@ sources_consulted:
 | Custom commands have been merged into skills — `/X` works whether at `.claude/commands/X.md` or `.claude/skills/X/SKILL.md` | partially aligned — we still have ds-check + design-variants as commands | partial | 2026-05-09 | code.claude.com/docs/en/skills (commands→skills migration note) |
 | Migration: prefer skills going forward | ✅ shipped (commit pending — migrate ds-check + design-variants) | current | 2026-05-09 | (same) |
 | Frontmatter `argument-hint`, `description`, `model`, `allowed-tools` | not adopted on remaining commands (will move to skills) | deferred | 2026-05-09 | code.claude.com/docs/en/slash-commands |
+| `/code-review <level> [<pr#>]` built-in — `/review` is now an alias; reviews current diff or a specific PR; effort level is remembered between invocations | adopted as our self-review pass before sending to Himanshu (was `deferred` — closes that gap at zero implementation cost) | current | 2026-08-15 | Claude Code CHANGELOG 2.1.223; docs/governance/claude-updates/2026-08-15-v2222-2226.md ADOPT-3. Note: `/code-review ultra` (deep cloud review) needs a web/Remote Control session — terminal-only sessions cap at `high`. |
 
 ## Settings
 
@@ -253,7 +256,7 @@ These ship with the superpowers plugin (already cached at `~/.claude/plugins/cac
 | `frontend-design` | ⚠ **anti-adopted** | Tells Claude to avoid Inter, use Playfair, vary aesthetics, use bold asymmetric layouts. Directly violates our DS rules (R1-R12). Never invoke for Exxat work. |
 | `test-driven-development` | skipped | Wrong discipline for design prototyping (TDD is for production code, not stakeholder mockups). |
 | `dispatching-parallel-agents`, `using-git-worktrees` | skipped (subsumed) | Specialized in `design-variants` already; generic versions add noise. |
-| `requesting-code-review` / `receiving-code-review` | deferred | Could be repurposed as "self-review before sending to Himanshu" pass. Low priority. |
+| `requesting-code-review` / `receiving-code-review` | superseded | Built-in `/code-review <level>` (CC 2.1.223) now covers the "self-review before sending to Himanshu" use case natively — see Slash commands table. |
 | `systematic-debugging`, `finishing-a-development-branch`, `writing-skills` | deferred | Tuned for engineers; not your primary mode. |
 
 ## Why this file exists

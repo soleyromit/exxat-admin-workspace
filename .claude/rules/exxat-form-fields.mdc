@@ -1,0 +1,60 @@
+---
+description: Exxat DS — product and catalog forms use Field, Input, Textarea, Select, Checkbox, RadioGroup; never hand-styled native controls.
+alwaysApply: false
+globs: 
+  - components/**/*.tsx
+  - **/*preview*.tsx
+  - lib/design-system/**/*.tsx
+tags: [forms, composition]
+seeAlso:
+  - .cursor/rules/exxat-reuse-before-custom.mdc
+  - docs/exxat-ds/component-map.json
+---
+
+# Exxat DS — form fields from the design system
+
+## Intent
+
+Every text, select, checkbox, and radio control in product UI **and** Design System
+catalog demos comes from `@/components/ui/*`. Hand-rolled `<input>` / `<textarea>` /
+`<select>` with custom border classes teach the wrong pattern and drift from tokens.
+
+## MUST
+
+1. **Compose with Field** — wrap controls in **`Field`** + **`FieldLabel`**
+   (`htmlFor` / `id`). Groups use **`FieldGroup`**; radio/checkbox sets use
+   **`FieldSet`** + **`FieldLegend`**.
+2. **Use the registered control** — map intent → primitive:
+
+   | Intent | Use |
+   |---|---|
+   | Single-line text | **`Input`** |
+   | Multi-line text | **`Textarea`** |
+   | Choose one from a list | **`Select`** (`SelectTrigger` / `SelectContent` / `SelectItem`) |
+   | Exclusive options | **`RadioGroup`** + **`RadioGroupItem`** |
+   | Multi-select flags | **`Checkbox`** (+ label via `FieldLabel` or `CheckboxLabel`) |
+   | Format / validation hint | **`FieldDescription`** (not placeholder-only) |
+
+3. **Catalog demos ship the same stack** — Leo Assist Bar, Form, Input, and other
+   doc previews must not invent `FIELD_CLASS` / native controls to “look cleaner.”
+   The Leo **bar / composer chrome** may stay custom; the **host form fields**
+   around it must not.
+
+## MUST NOT
+
+- Style a bare `<input>`, `<textarea>`, `<select>`, or native radio/checkbox with
+  one-off border / focus / radius classes when a DS control exists.
+- Use placeholders as the only format instruction (`exxat-accessibility.mdc`).
+- Fork a second Input/Textarea for a single surface.
+
+## Allowed exceptions
+
+- **Leo Assist Bar / AskLeoComposer** internals (instruction field inside the bar).
+- Third-party embeds or truly uncontrolled native elements required by an API
+  (document why in a one-line comment).
+
+## See also
+
+- **`exxat-reuse-before-custom.mdc`** — search `component-map.json` first
+- Catalog refs: `components/design-system/form-previews.tsx`,
+  `input-previews.tsx`
