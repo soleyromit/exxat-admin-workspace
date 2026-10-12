@@ -2007,6 +2007,26 @@
                 "docs/watch/flags/system.md",
                 "docs/watch/updates-log.json"
             ]
+        },
+        {
+            "id": "2026-10-12-granola-intake-001",
+            "date": "2026-10-12",
+            "product": "workspace",
+            "type": "decision-extracted",
+            "title": "Weekly Granola intake \u2014 13 new decisions (skills-checklist \u00d7 11, accreditation \u00d7 2), 0 conflicts flagged (Oct 5\u201312 window)",
+            "what": "Fetched meetings from Oct 5\u201312, 2026. Filtered to 4 relevant meetings: (1) 'Dr. Gilzai \u2014 Pharmacy accreditation' (Oct 5, 426KB \u2014 read in 15KB chunks) \u2014 1 new accreditation decision (accreditation-decision-001); (2) 'Skills Checklist' (Oct 8) \u2014 9 new skills-checklist decisions (skills-decision-001 through 009, partial); (3) 'Skill Checklist Follow Up Meeting with Aarti' (Oct 9, 50.6KB \u2014 read in 15KB chunks) \u2014 3 new decisions completing the skills set (skills-decision-003, 009\u2013011) and confirming/extending Oct 8 directives; (4) 'AACP Project with Dr. Mody' (Oct 8) \u2014 1 new accreditation decision (accreditation-decision-002). Note: Oct 8 Skills Checklist transcript shows all speakers as 'Microphone' (no differentiation), but Aarti Vaishnav is a confirmed participant; directives attributed to Aarti based on meeting context and follow-up meeting corroboration. No conflicts with existing decisions (skills-checklist and accreditation are new product areas with no prior entries). 13 new decisions added: skills-decision-001 through skills-decision-011, accreditation-decision-001, accreditation-decision-002.",
+            "why": "Weekly automated Granola transcript intake. Two new product areas first captured this week: skills-checklist (extending competency module) and accreditation (discipline-agnostic, 60 disciplines).",
+            "source": "Skills Checklist transcript \u2014 Oct 8, 2026; Skill Checklist Follow Up Meeting with Aarti transcript \u2014 Oct 9, 2026; Dr. Gilzai \u2014 Pharmacy accreditation transcript \u2014 Oct 5, 2026; AACP Project with Dr. Mody transcript \u2014 Oct 8, 2026",
+            "severity": null,
+            "meetingsFetched": 9,
+            "meetingsRelevant": 4,
+            "newDecisions": 13,
+            "conflictsFlagged": 0,
+            "meetingsWithNoTranscript": 0,
+            "files": [
+                "docs/watch/stakeholder-decisions.json",
+                "docs/watch/updates-log.json"
+            ]
         }
     ]
 }

@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-09-07",
+  "lastUpdated": "2026-10-12",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -2145,6 +2145,136 @@
       "source": "Single survey analytics — dashboard design and demo prep with Vishal and Rohit transcript — Sep 16, 2026",
       "sourceType": "transcript",
       "date": "2026-09-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-001",
+      "product": "skills-checklist",
+      "text": "Skills/competency module is part of Student Success and lives at the student level only — not at the course level. The module is not sent separately per course; it is set up once at the student level.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-002",
+      "product": "skills-checklist",
+      "text": "The report IS the launch page — there is no separate trigger page and no separate report page. The student's checklist/progress view and the place they trigger interactions are the same page.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-003",
+      "product": "skills-checklist",
+      "text": "Skills, Competencies, EPAs, and Essentials are to be investigated as ONE unified module. The goal is a single student-level area that covers all four concept types rather than four separate modules.",
+      "stakeholder": "Aarti",
+      "source": "Skill Checklist Follow Up Meeting with Aarti transcript — Oct 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-004",
+      "product": "skills-checklist",
+      "text": "Course mapping for skills is SOFT only — never hard. Skills sit at the student level; a course can highlight likely skills but students can access all skills from any course context. There is no hard mapping that restricts which skills appear per course.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-005",
+      "product": "skills-checklist",
+      "text": "Three achievement criteria types are supported: (1) count-based — student must complete the skill X number of times; (2) binary — met or not met; (3) score threshold — must reach a defined score.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-006",
+      "product": "skills-checklist",
+      "text": "Five input source types are supported for validating skill completion: (1) a question in an end-of-rotation form; (2) a question in an assessment or exam; (3) a full assessment (passing score counts as completion); (4) a course grade; (5) a standalone FAST form. All five must be supported.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-007",
+      "product": "skills-checklist",
+      "text": "Three sign-off types are supported: (1) self-attestation — student confirms they completed the skill; (2) faculty sign-off; (3) preceptor sign-off.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-008",
+      "product": "skills-checklist",
+      "text": "Do not build the skills module from scratch. Extend the existing competency module rather than creating a brand-new system.",
+      "stakeholder": "Aarti",
+      "source": "Skills Checklist transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-009",
+      "product": "skills-checklist",
+      "text": "Skills lists are pre-populated from accrediting body defaults but must be editable and manageable by each school at the OU code level. Schools can modify, add, or remove skills from the default list.",
+      "stakeholder": "Aarti",
+      "source": "Skill Checklist Follow Up Meeting with Aarti transcript — Oct 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-010",
+      "product": "skills-checklist",
+      "text": "Skills hierarchy supports a tree structure — categories contain skills. Supporting multiple lists per school or program is to be validated as a requirement; the tree structure (categories → skills) is confirmed.",
+      "stakeholder": "Aarti",
+      "source": "Skill Checklist Follow Up Meeting with Aarti transcript — Oct 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "skills-decision-011",
+      "product": "skills-checklist",
+      "text": "The skills module is fully discipline-agnostic. Programs define their own skills, their own groupings, their own evaluation questions, their own response labels, and their own achievement thresholds. No universal taxonomy is imposed.",
+      "stakeholder": "Aarti",
+      "source": "Skill Checklist Follow Up Meeting with Aarti transcript — Oct 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "accreditation-decision-001",
+      "product": "accreditation",
+      "text": "The accreditation module must be discipline-agnostic — built to work for all 60 disciplines on the Exxat platform, not as a pharmacy-specific accreditation tool.",
+      "stakeholder": "Aarti",
+      "source": "Dr. Gilzai — Pharmacy accreditation transcript — Oct 5, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-05",
+      "status": "confirmed"
+    },
+    {
+      "id": "accreditation-decision-002",
+      "product": "accreditation",
+      "text": "The accreditation module should focus on disciplines that do not already have pre-built accreditation portals. Pharmacy already has FARMS (ACPE portal), so the product adds less incremental value there versus disciplines with no existing portal.",
+      "stakeholder": "Aarti",
+      "source": "AACP Project with Dr. Mody transcript — Oct 8, 2026",
+      "sourceType": "transcript",
+      "date": "2026-10-08",
       "status": "confirmed"
     }
   ]
