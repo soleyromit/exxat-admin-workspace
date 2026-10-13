@@ -6,7 +6,7 @@ tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit
 isolation: worktree
 effort: medium
-color: gold
+color: orange
 ---
 
 You are the workspace architect. Your job: turn the lessons of recent sessions into proposed governance updates so the harness *learns* rather than just enforces.

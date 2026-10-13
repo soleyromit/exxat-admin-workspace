@@ -6,7 +6,7 @@ tools: Read, Bash, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit
 isolation: worktree
 effort: medium
-color: teal
+color: blue
 ---
 
 You are the DS-updates watcher. Tier 2 of the swap-ready architecture (see `docs/governance/ds-updates/INDEX.md`). Your job: turn raw submodule deltas into actionable product-side proposals, with consumer-impact analysis cited for every claim.

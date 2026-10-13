@@ -1,6 +1,6 @@
 ---
-last_full_audit: 2026-08-15
-audit_method: claude-updates-watcher subagent (Claude Code CHANGELOG 2.1.222-2.1.226, Agent SDK TS 0.3.213-0.3.226, Agent SDK Python 0.2.124-0.2.134) + claude-code-guide subagent live .claude/ conventions cross-check. Full row-by-row date bump not performed this run — only rows with confirmed deltas were touched; see docs/governance/claude-updates/2026-08-15-v2222-2226.md for the full gap report.
+last_full_audit: 2026-10-09
+audit_method: claude-code-guide + general-purpose audit (coverage gap: Claude Code changelog 2.1.227-2.1.280 not read; anthropic.com engineering/news and Python SDK not fetched). Only rows with confirmed deltas were touched.
 sources_consulted:
   - https://code.claude.com/docs/en/hooks
   - https://code.claude.com/docs/en/sub-agents
@@ -54,10 +54,16 @@ sources_consulted:
 | `PostCompact` (or SessionStart matcher=compact) for recovery | ✅ wired (matcher=compact branch) | current | 2026-05-09 | code.claude.com/docs/en/hooks |
 | `FileChanged` event for registry watching | ✅ shipped (commit pending) — replaced our mtime-in-UserPromptSubmit hack | current | 2026-05-09 | code.claude.com/docs/en/hooks |
 | `SubagentStop` event for telemetry | ✅ shipped (commit pending) | current | 2026-05-09 | code.claude.com/docs/en/hooks |
-| `Stop` event | not adopted | deferred | 2026-05-09 | code.claude.com/docs/en/hooks |
-| `PostToolUse` event | not adopted | deferred (we use PreToolUse for blocking; PostToolUse would be additive but not load-bearing) | 2026-05-09 | code.claude.com/docs/en/hooks |
+| `Stop` event | ✅ adopted (wired: `ds-claim-gate.py`) | current | 2026-10-09 | code.claude.com/docs/en/hooks |
+| `PostToolUse` event | ✅ adopted (wired in `.claude/settings.json`) | current | 2026-10-09 | code.claude.com/docs/en/hooks |
 | `PostToolUseFailure` event | not adopted | deferred (would be useful for telemetry of hook failures; revisit if we hit reliability issues) | 2026-05-09 | code.claude.com/docs/en/hooks |
-| `Notification` event | not adopted | deferred (no current notification flow) | 2026-05-09 | code.claude.com/docs/en/hooks |
+| `Notification` event | ✅ adopted (wired: `notification-capture.py`, capture-only; see Step 1/2 row below) | current | 2026-10-09 | code.claude.com/docs/en/hooks |
+| `.claude/rules/` (65 `.mdc` files) | likely NOT loaded (Claude Code loads `.md` rules, not `.mdc`) | pending `/doctor` prompt-audit; rename deferred | 2026-10-09 | code.claude.com/docs/en/memory |
+| `PostToolBatch`, `PreModelSwitch`, `SessionEnd`, `Setup` hook events | exist upstream; not adopted | deferred (no current need) | 2026-10-09 | code.claude.com/docs/en/hooks |
+| Hook `onFailure: "block"` | ADOPTED on 2 fail-closed gates: Stop `ds-claim-gate.py` (root settings) and PreToolUse `skills-code-gate.mjs` (skills-checklist settings). Confirmed in Claude Code CHANGELOG 2.1.295 (command + HTTP hooks); not yet in the fetched portion of the hooks docs page | current | 2026-10-09 | github.com/anthropics/claude-code CHANGELOG.md |
+| Agent tool `effort` param | new; not adopted | deferred | 2026-10-09 | Claude Code changelog |
+| MCP `alwaysLoad: false` | new; not adopted | deferred | 2026-10-09 | Claude Code changelog |
+| Mods (plugin-authoring) | not adopted | deferred (no current need) | 2026-10-09 | Claude Code docs |
 | `InstructionsLoaded` / `ConfigChange` / `CwdChanged` | not adopted | deferred (specialty events; no current need) | 2026-05-09 | code.claude.com/docs/en/hooks |
 | `Elicitation` / `ElicitationResult` / `TeammateIdle` / `UserPromptExpansion` | not adopted | deferred (specialty events) | 2026-05-09 | code.claude.com/docs/en/hooks |
 | `WorktreeCreate` / `WorktreeRemove` | not adopted | deferred (revisit when we use worktrees more) | 2026-05-09 | code.claude.com/docs/en/hooks |
@@ -99,8 +105,8 @@ sources_consulted:
 
 | Practice | Our state | Status | Last verified | Source |
 |---|---|---|---|---|
-| Custom commands have been merged into skills — `/X` works whether at `.claude/commands/X.md` or `.claude/skills/X/SKILL.md` | partially aligned — we still have ds-check + design-variants as commands | partial | 2026-05-09 | code.claude.com/docs/en/skills (commands→skills migration note) |
-| Migration: prefer skills going forward | ✅ shipped (commit pending — migrate ds-check + design-variants) | current | 2026-05-09 | (same) |
+| Custom commands have been merged into skills — `/X` works whether at `.claude/commands/X.md` or `.claude/skills/X/SKILL.md` | ✅ ds-check and design-variants are skills (not commands) | current | 2026-10-09 | code.claude.com/docs/en/skills (commands→skills migration note) |
+| Migration: prefer skills going forward | ✅ done (ds-check + design-variants are skills) | current | 2026-10-09 | (same) |
 | Frontmatter `argument-hint`, `description`, `model`, `allowed-tools` | not adopted on remaining commands (will move to skills) | deferred | 2026-05-09 | code.claude.com/docs/en/slash-commands |
 | `/code-review <level> [<pr#>]` built-in — `/review` is now an alias; reviews current diff or a specific PR; effort level is remembered between invocations | adopted as our self-review pass before sending to Himanshu (was `deferred` — closes that gap at zero implementation cost) | current | 2026-08-15 | Claude Code CHANGELOG 2.1.223; docs/governance/claude-updates/2026-08-15-v2222-2226.md ADOPT-3. Note: `/code-review ultra` (deep cloud review) needs a web/Remote Control session — terminal-only sessions cap at `high`. |
 
@@ -118,7 +124,7 @@ sources_consulted:
 | Practice | Our state | Status | Last verified | Source |
 |---|---|---|---|---|
 | Auto-memory at `~/.claude/projects/<encoded-project-path>/memory/` | ✅ | current | 2026-05-09 | code.claude.com/docs/en/memory |
-| `MEMORY.md` index + per-entry files | ✅ 9 entries, indexed | current | 2026-05-09 | (same) |
+| `MEMORY.md` index + per-entry files | ✅ ~154 entries / 157 lines (under the 200-line / 25KB cap) | current | 2026-10-09 | (same) |
 | Frontmatter per-entry: `name`, `description`, `type` | ✅ | current | 2026-05-09 | (same) |
 | Memory types: user / feedback / project / reference | ✅ all 4 used | current | 2026-05-09 | (same) |
 

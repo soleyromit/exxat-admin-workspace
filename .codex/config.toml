@@ -1,0 +1,8 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "2"
+
+[mcp_servers.mobbin]
+url = "https://api.mobbin.com/mcp"

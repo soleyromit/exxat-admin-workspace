@@ -3,7 +3,7 @@
 > Auto-populated by `scripts/ds-update-watch.py` when either DS submodule changes its component exports or theme tokens.
 > Empty file = nothing to review. The `ds-updates-watcher` subagent reads this when invoked.
 
-_Last checked: 2026-09-07T12:35:50.996480+00:00 — no DS deltas detected._
+_Last checked: 2026-09-21T12:23:04.772510+00:00 — no DS deltas detected._
 
 ## @exxatdesignux/ui — NPM package (the canonical DS)
 
