@@ -1,0 +1,20 @@
+import { open, cap, capLong, save, nav, clk, btn, setManifest, step, closeTop } from './parity-lib.mjs';
+setManifest('manifest-4-mapping-review.json');
+const { b, p } = await open();
+await nav(p, 'Course Mapping');
+await cap(p, '100-mapping-default', 'Course Mapping default (first offering selected?)');
+await step('filters', async () => { const sels = await p.$$eval('select', (els) => els.map((e) => [...e.options].map((o) => o.text).join('|'))); console.log(JSON.stringify(sels)); await p.locator('select').nth(0).selectOption({ index: 1 }); await cap(p, '101-mapping-filter-cohort', 'Mapping filtered by first cohort (BSN 2026)'); await p.locator('select').nth(2).selectOption({ index: 1 }); await cap(p, '102-mapping-filter-cohort-term', 'Mapping filtered by cohort + term Fall'); await btn(p, 'Clear'); });
+await step('search', async () => { await p.getByPlaceholder('Search by course code or name').fill('NURS 410'); await cap(p, '103-mapping-search', 'Mapping search "NURS 410"'); await p.getByPlaceholder('Search by course code or name').fill(''); });
+await step('empty offering', async () => { await p.getByRole('button', { name: /NURS 301.*Spring 2027/ }).first().click(); await cap(p, '104-mapping-offering-no-cohort', 'Offering with no cohort selected (NURS 301 Spring 2027)'); });
+await step('map skill', async () => { await p.getByLabel('Map Medication Administration').check(); await cap(p, '105-mapping-skill-mapped', 'After mapping Medication Administration in an unmapped offering'); });
+await step('toggle req', async () => { await p.getByRole('button', { name: 'Non-mandatory', exact: true }).first().click(); await cap(p, '106-mapping-nonmandatory', 'After choosing Non-mandatory'); });
+await step('unmap', async () => { await p.getByLabel('Map Medication Administration').uncheck(); await cap(p, '107-mapping-unmapped', 'After unmapping'); });
+await step('skill search', async () => { await p.getByPlaceholder('Search the Skills Library').fill('wound'); await cap(p, '108-mapping-skill-search', 'Skill search "wound" in mapping panel'); });
+// review
+await nav(p, 'Review & Approve');
+await cap(p, '110-review-default', 'Review & Approve: two evaluation cards');
+await step('responses', async () => { await btn(p, 'See the full responses', { nth: 0 }); await cap(p, '111-review-full-responses', 'Review card with full responses expanded'); });
+await step('note', async () => { await p.locator('textarea').first().fill('Checked against the placement record.'); await cap(p, '112-review-note-entered', 'Review note entered'); });
+await step('return', async () => { await btn(p, 'Return to preceptor', { nth: 0 }); await cap(p, '113-review-after-return', 'After Return to preceptor (banner? card removed?)'); });
+await step('approve', async () => { await btn(p, 'Approve', { nth: 0 }); await cap(p, '114-review-after-approve', 'After Approve (queue empty state?)'); });
+save('manifest-4-mapping-review.json'); await b.close();

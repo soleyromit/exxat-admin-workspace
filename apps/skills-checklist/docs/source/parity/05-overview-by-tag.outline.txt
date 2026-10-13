@@ -1,0 +1,112 @@
+# 05-overview-by-tag: Overview By tag  (doc 1440x900, fullPage=True)
+## headings: h1:Overview(18px/600)
+## buttons: Overview*FILLED* | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Filters | By student | By skill | By tag | Export
+## table rows=3 rowH=43 box=[265, 384, 1150, 161] headers=['TAG', 'SKILLS', 'CATEGORIES SPANNED', 'ACHIEVED', 'IN PROGRESS', 'NOT MET', '% ACHIEVED', 'STUDENTS ACHIEVING ALL', '']
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Overview" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Skills attainment by student, by skill and by tag" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x492
+        div @265,108 1150x46 | display=flex gap=8px dir=row ai=center pad=8px 12px
+          button "Filters" type=submit @277,116 98x30 | display=flex gap=6px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          span "Showing everything" @383,123 111x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+        p "Showing data for 150 students · All cohorts · All groups · All clinical courses · 9 skills in scope" @264,171 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,203 1152x118 | display=grid cols=279px 279px 279px 279px gap=12px
+          div @264,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students in view" @281,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "150" @281,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Matches the filters above" @281,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @555,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Avg. skills achieved" @572,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "3.2 / 9" @572,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Per student, in scope" @572,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @846,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students achieving all skills in scope" @863,218 245x32 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "0" @863,256 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "0% of students in view" @863,290 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @1137,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Skills needing attention" @1154,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "6" @1154,240 245x32 | fs=24px fw=600 color=rgb(180, 83, 9)
+            p "Below 50% achievement in view" @1154,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,337 1152x262 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,338 1150x46 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+            div @281,338 306x45 | display=flex gap=4px dir=row
+              button "By student" type=submit @281,338 117x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+              button "By skill" type=submit @402,338 92x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+              button "By tag" type=submit @499,338 88x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+            button "Export" type=button @1319,348 80x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          div @265,384 1150x214
+            table @265,384 1150x161
+              thead @265,384 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,384 1150x33
+                  th "Tag" @265,384 89x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Skills" @354,384 80x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Categories spanned" @434,384 199x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achieved" @633,384 105x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "In progress" @738,384 129x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Not met" @867,384 96x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "% achieved" @963,384 175x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Students achieving all" @1139,384 229x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1368,384 48x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,417 1150x129
+                tr @265,417 1150x43
+                  td @265,417 89x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Tag A" @277,427 50x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "4" @354,417 80x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "3" @434,417 199x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "149" @633,417 105x43 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "265" @738,417 129x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "186" @867,417 96x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @963,417 175x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @975,428 151x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "25 %" @1003,428 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1139,417 229x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1368,417 48x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,460 1150x43 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,460 89x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Tag B" @277,470 50x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "4" @354,460 80x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "3" @434,460 199x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "270" @633,460 105x43 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "203" @738,460 129x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "127" @867,460 96x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @963,460 175x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @975,471 151x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "45 %" @1003,471 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "12" @1139,460 229x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1368,460 48x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,503 1150x43 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,503 89x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Tag C" @277,513 51x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "4" @354,503 80x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "2" @434,503 199x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "191" @633,503 105x43 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "165" @738,503 129x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "244" @867,503 96x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @963,503 175x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @975,514 151x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "32 %" @1003,514 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1139,503 229x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1368,503 48x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+            p "Achieved, in progress and not met count student-to-skill records, not students. A skill carrying two tags is counted under both, so these ro" @265,545 1150x53 | pad=10px 16px fs=12px fw=400 color=rgb(100, 116, 139) border=1px/0px/0px/0px rgb(226, 232, 240)

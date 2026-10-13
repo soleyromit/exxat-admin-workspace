@@ -1,0 +1,237 @@
+# 132-student-send-clinical-filled: Send dialog, details filled (Send enabled)  (doc 1440x1370, fullPage=False)
+## headings: h1:Student View(18px/600) | h3:Awaiting preceptor evaluation(14px/600) | h3:Mapped to this course(14px/600) | h3:Other skills2 sent(14px/600) | h2:Send for review(16px/600) | h3:Foley Catheter Insertion(14px/600) | h3:Medication Administration(14px/600)
+## buttons: Overview | Skills Library | Course Mapping | Review & Approve | Student View*FILLED* | Preceptor Evaluation | View history (5) | View history (5) | View history (3) | View history (4) | View history (3) | Other skills2 sent Not mapped to this course. Evidence still | View history (2) | View history (2) | Clear | Send for review*FILLED* | Close | Clinical*FILLED* | Lab / Simulation | Cancel | Send request*FILLED*
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x1370 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x1370 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Student View" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "What a student sees in their own login: pick skills, submit, track history" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x1283 | pad=20px 24px
+      div @264,107 1152x1243
+        div @265,108 1150x79 | display=flex gap=12px dir=row ai=flex-end pad=12px 16px
+          label @281,120 224x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+            span "Viewing as student" @281,120 224x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            select type=select-one val="st1" @281,142 224x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          label @517,120 256x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+            span "Clinical course" @517,120 256x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            select type=select-one val="co-nurs350-2026-fall" @517,142 256x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          div @785,133 339x42 | pad=0px 0px 8px
+            p "BSN 2026 · Group A" @785,133 339x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            p "Placed at Harbor Family Practice, Northgate Surgical Center" @785,151 339x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,204 1152x111 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @307,217 201x38
+            h3 "Awaiting preceptor evaluation" @307,217 201x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+            p "1 request sent" @307,239 201x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          span "Medication Reconciliation · S. Nakamura, RN ( Preceptor )" @281,280 344x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=4px
+        div @265,332 1150x44 | display=flex gap=12px dir=row jc=space-between ai=center pad=12px 16px
+          label @281,344 269x20 | display=flex gap=10px dir=row ai=center fs=16px fw=400 color=rgb(15, 23, 42)
+            input type=checkbox val="on" checked=False @281,346 16x16
+            span "Show only skills I have sent for review" @307,344 243x20 | fs=14px fw=400 color=rgb(30, 41, 59)
+          p "7 of 9 skills sent , 2 not mapped to this course" @1141,346 258x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,393 1152x439 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @307,406 730x38
+            h3 "Mapped to this course" @307,406 730x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+            p "NURS 350 — Clinical Practicum. Mandatory skills are required for this course; non-mandatory ones are available but not required." @307,428 730x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @265,457 1150x374
+            div @265,457 1150x70 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px
+              input aria="Select IV Insertion" type=checkbox val="on" checked=False @281,473 16x16
+              div @309,469 944x46
+                div @309,469 944x22 | display=flex gap=8px dir=row ai=center
+                  p "IV Insertion" @309,470 75x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Mandatory for this course" @392,469 167x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  span "In Progress" @567,469 95x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=9999px
+                  span "1 in progress" @670,469 92x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=4px
+                div @309,499 944x16 | display=flex gap=12px dir=row ai=center
+                  span "4 / 5 demonstrations" @481,499 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Demonstration-Level Outcome" @610,499 180x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              button "View history ( 5 )" type=button @1265,469 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,527 1150x71 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px bg=rgb(239, 246, 255) border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Foley Catheter Insertion" type=checkbox val="on" checked=True @281,544 16x16
+              div @309,540 944x46
+                div @309,540 944x22 | display=flex gap=8px dir=row ai=center
+                  p "Foley Catheter Insertion" @309,541 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Mandatory for this course" @476,540 167x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  span "In Progress" @651,540 95x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=9999px
+                div @309,570 944x16 | display=flex gap=12px dir=row ai=center
+                  span "2 / 3 qualifying evaluations" @481,570 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Question-Level Qualitative" @644,570 156x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              button "View history ( 5 )" type=button @1265,540 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,598 1150x71 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px bg=rgb(239, 246, 255) border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Medication Administration" type=checkbox val="on" checked=True @281,615 16x16
+              div @309,611 944x46
+                div @309,611 944x22 | display=flex gap=8px dir=row ai=center
+                  p "Medication Administration" @309,612 173x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Mandatory for this course" @490,611 167x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  span "In Progress" @665,611 95x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=9999px
+                div @309,641 944x16 | display=flex gap=12px dir=row ai=center
+                  span "2 / 3 qualifying evaluations" @481,641 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Question-Level Qualitative" @644,641 156x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              button "View history ( 3 )" type=button @1265,611 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,669 1150x71 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Wound Care" type=checkbox val="on" checked=False @281,686 16x16
+              div @309,682 944x46
+                div @309,682 944x22 | display=flex gap=8px dir=row ai=center
+                  p "Wound Care" @309,683 81x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Mandatory for this course" @398,682 167x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  span "In Progress" @573,682 95x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=9999px
+                div @309,712 944x16 | display=flex gap=12px dir=row ai=center
+                  span "4 / 4 demonstrations" @481,712 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Demonstration-Level Outcome" @610,712 180x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              button "View history ( 4 )" type=button @1265,682 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,740 1150x91 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Medication Reconciliation" type=checkbox val="on" checked=False @281,757 16x16
+              div @309,753 944x66
+                div @309,753 944x22 | display=flex gap=8px dir=row ai=center
+                  p "Medication Reconciliation" @309,754 169x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Non-mandatory for this course" @486,753 196x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Achieved" @690,753 83x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=9999px
+                  span "1 in progress" @781,753 92x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=4px
+                div @309,783 944x16 | display=flex gap=12px dir=row ai=center
+                  span "2 / 1 qualifying evaluations" @481,783 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Overall Binary Outcome" @644,783 141x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+                p "Already achieved — you can still request another evaluation if your program wants more evidence." @309,803 944x16 | fs=12px fw=400 color=rgb(4, 120, 87)
+              button "View history ( 3 )" type=button @1265,753 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+        div @264,848 1152x426 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          button type=submit @265,849 1150x62 | display=flex dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42)
+            div @307,861 413x38
+              h3 "Other skills" @307,861 413x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                span "2 sent" @391,862 48x19 | pad=2px 6px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) radius=4px
+              p "Not mapped to this course. Evidence still counts toward your skill record." @307,883 413x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          input type=text ph="Search all skills" @281,924 1118x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          div @265,970 1150x303
+            div @265,970 1150x70 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px
+              input aria="Select Sterile Dressing Change" type=checkbox val="on" checked=False @281,986 16x16
+              div @309,982 1090x46
+                div @309,982 1090x22 | display=flex gap=8px dir=row ai=center
+                  p "Sterile Dressing Change" @309,983 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Not mapped to this course" @476,982 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Not Started" @655,982 97x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                div @309,1012 1090x16 | display=flex gap=12px dir=row ai=center
+                  span "0 / 3 qualifying evaluations" @481,1012 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Overall Binary Outcome" @644,1012 141x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+            div @265,1040 1150x91 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Head-to-Toe Assessment" type=checkbox val="on" checked=False @281,1057 16x16
+              div @309,1053 945x66
+                div @309,1053 945x22 | display=flex gap=8px dir=row ai=center
+                  p "Head-to-Toe Assessment" @309,1054 168x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Not mapped to this course" @485,1053 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Achieved" @664,1053 83x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=9999px
+                div @309,1083 945x16 | display=flex gap=12px dir=row ai=center
+                  span "2 / 2 qualifying evaluations" @481,1083 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Scored / Likert" @644,1083 89x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+                p "Already achieved — you can still request another evaluation if your program wants more evidence." @309,1103 945x16 | fs=12px fw=400 color=rgb(4, 120, 87)
+              button "View history ( 2 )" type=button @1266,1053 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,1131 1150x71 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Vital Signs Assessment" type=checkbox val="on" checked=False @281,1148 16x16
+              div @309,1144 945x46
+                div @309,1144 945x22 | display=flex gap=8px dir=row ai=center
+                  p "Vital Signs Assessment" @309,1145 154x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Not mapped to this course" @471,1144 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Not Met" @650,1144 76x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(190, 18, 60) bg=rgb(255, 241, 242) border=1px/1px/1px/1px rgb(254, 205, 211) radius=9999px
+                div @309,1174 945x16 | display=flex gap=12px dir=row ai=center
+                  span "0 / 2 qualifying evaluations" @481,1174 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Overall Binary Outcome" @644,1174 141x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              button "View history ( 2 )" type=button @1266,1144 134x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,1202 1150x71 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              input aria="Select Tracheostomy Care" type=checkbox val="on" checked=False @281,1219 16x16
+              div @309,1215 1090x46
+                div @309,1215 1090x22 | display=flex gap=8px dir=row ai=center
+                  p "Tracheostomy Care" @309,1216 128x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  span "Not mapped to this course" @445,1215 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Not Started" @625,1215 97x22 | display=flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                div @309,1245 1090x16 | display=flex gap=12px dir=row ai=center
+                  span "0 / 2 qualifying evaluations" @481,1245 151x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "· Scored / Likert" @644,1245 89x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+        div @264,824 1152x60 | display=flex gap=12px dir=row jc=space-between ai=center pad=12px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 pos=sticky zauto
+          p "skill s selected" @281,844 104x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+            strong "2" @281,845 9x17 | fs=14px fw=700 color=rgb(51, 65, 85)
+          div @1179,837 220x34 | display=flex gap=8px dir=row
+            button "Clear" type=button @1179,837 61x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            button "Send for review" type=button @1248,837 151x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+        div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+          div @208,48 1024x760 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+            div @208,48 1024x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @228,62 227x42
+                h2 "Send for review" @228,62 227x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                p "2 skills · NURS 350 — Clinical Practicum" @228,88 227x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              button aria="Close" type=submit @1188,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+            div @228,-239 984x972
+              label @228,-239 984x76 | fs=16px fw=400 color=rgb(15, 23, 42)
+                span "Where did you perform this?" @228,-239 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                div @228,-217 984x34 | display=flex gap=8px dir=row
+                  button "Clinical" type=button @228,-217 94x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+                  button "Lab / Simulation" type=button @330,-217 149x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                span "Programs can require a minimum amount of clinical evidence." @228,-179 984x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              label @228,-147 984x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+                span "Which clinical setting?" @228,-147 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                select type=select-one val="pl1|cs-outpatient" @228,-125 984x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                span "From your 2 placements for this course. You may move between settings during a placement — record where this one happened." @228,-88 984x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              div @228,-56 984x75 | display=grid cols=484px 484px gap=16px
+                label @228,-56 484x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Send for review to" @228,-56 484x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="preceptor" @228,-34 484x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  span "Roles that sign off clinical evidence." @228,3 484x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                label @728,-56 484x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Preceptor" @728,-56 484x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="A. Whitfield, RN" @728,-34 484x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              div @228,35 984x110
+                p "Skills in this request" @228,35 984x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                div @228,59 984x86
+                  div @228,59 984x40 | display=flex gap=8px dir=row jc=space-between ai=center pad=8px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                    span "Foley Catheter Insertion" @241,69 155x20 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    span "Question-Level Qualitative" @1028,68 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  div @228,105 984x40 | display=flex gap=8px dir=row jc=space-between ai=center pad=8px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                    span "Medication Administration" @241,115 168x20 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    span "Question-Level Qualitative" @1028,114 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+              div @228,161 984x251 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                div @229,162 982x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+                  div @245,174 162x38
+                    h3 "Foley Catheter Insertion" @245,174 162x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                    p "Details for this submission" @245,196 162x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "Complete" @1121,174 74x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                div @245,237 950x162 | display=grid cols=469px 469px gap=12px
+                  label @245,237 469x58 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Completion date" @245,237 469x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      span "*" @369,237 6x16 | fs=12px fw=600 color=rgb(244, 63, 94) tt=uppercase ls=0.3px
+                    input type=date val="2026-09-01" @245,259 469x36 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  label @245,307 950x92 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Student notes" @245,307 950x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    textarea type=textarea @245,329 950x64 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              div @228,428 984x251 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                div @229,429 982x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+                  div @245,441 177x38
+                    h3 "Medication Administration" @245,441 177x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                    p "Details for this submission" @245,463 177x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  span "Complete" @1121,441 74x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                div @245,504 950x162 | display=grid cols=469px 469px gap=12px
+                  label @245,504 469x58 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Completion date" @245,504 469x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      span "*" @369,504 6x16 | fs=12px fw=600 color=rgb(244, 63, 94) tt=uppercase ls=0.3px
+                    input type=date val="2026-09-01" @245,526 469x36 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(59, 130, 246) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(59, 130, 246) 0px 0p
+                  label @245,574 950x92 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Student notes" @245,574 950x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    textarea type=textarea @245,596 950x64 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              div "The evaluator completes the form your program configured for each skill. They do not choose how a skill is evaluated." @263,704 665x20 | fs=12px fw=400 color=rgb(30, 58, 138)
+            div @208,749 1024x59 | display=flex gap=8px dir=row jc=flex-end ai=center pad=12px 20px bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(226, 232, 240)
+              button "Cancel" type=button @997,762 71x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Send request" type=button @1076,762 136x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

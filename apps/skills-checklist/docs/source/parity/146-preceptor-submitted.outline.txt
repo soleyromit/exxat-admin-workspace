@@ -1,0 +1,85 @@
+# 146-preceptor-submitted: After Submit evaluation (result table)  (doc 1440x900, fullPage=True)
+## headings: h1:Preceptor Evaluation(18px/600) | h3:Evaluation submitted(14px/600) | h3:Evaluations sent(14px/600)
+## buttons: Overview | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation*FILLED* | Dismiss | Open link*FILLED* | Open link*FILLED* | Open link*FILLED*
+## table rows=2 rowH=43 box=[265, 171, 1150, 119] headers=['SKILL', 'RECORDED', 'QUALIFIES?', 'PROGRESS', 'STATUS']
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Preceptor Evaluation" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The form an evaluator opens from their emailed link — preceptors do not sign in to Prism" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x537
+        div @264,107 1152x184 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,108 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+            div @307,120 205x38
+              h3 "Evaluation submitted" @307,120 205x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+              p "2 skills recorded for Jonah Okonkwo" @307,142 205x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            button "Dismiss" type=button @1312,120 87x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          table @265,171 1150x119
+            thead @265,171 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+              tr @265,171 1150x33
+                th "Skill" @265,171 275x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                th "Recorded" @540,171 233x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                th "Qualifies?" @773,171 146x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                th "Progress" @919,171 296x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                th "Status" @1216,171 199x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            tbody @265,204 1150x87
+              tr @265,204 1150x43
+                td "IV Insertion" @265,204 275x43 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                td "Independent" @540,204 233x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                td @773,204 146x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  span "Qualifies" @785,214 69x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                td @919,204 296x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  span "Held for review" @931,216 97x17 | fs=14px fw=400 color=rgb(100, 116, 139)
+                td @1216,204 199x43 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  span "Awaiting review" @1228,214 108x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+              tr @265,247 1150x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                td "Foley Catheter Insertion" @265,247 275x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                td "3 of 3 answered Yes" @540,247 233x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                td @773,247 146x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  span "Qualifies" @785,258 69x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                td "4 / 3 qualifying evaluations" @919,247 296x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                td @1216,247 199x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  span "Achieved" @1228,258 83x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=9999px
+        div @264,307 1152x337 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @307,320 833x38
+            h3 "Evaluations sent" @307,320 833x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+            p "Preceptors receive a delegator link by email. Faculty and lab instructors can open the same form in Prism. Open one to see what the evaluato" @307,342 833x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @265,371 1150x272
+            div @265,371 1150x90 | display=flex gap=12px dir=row jc=space-between ai=center pad=12px 16px
+              div @281,383 497x66
+                p "Olivia Martin" @281,383 497x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                p "NURS 350 — Clinical Practicum · Requested 2026-08-28 · S. Nakamura, RN ( Preceptor )" @281,405 497x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "Medication Reconciliation" @281,427 166x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              button "Open link" type=button @1303,403 96x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            div @265,461 1150x91 | display=flex gap=12px dir=row jc=space-between ai=center pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              div @281,474 482x66
+                p "Tobias Zeller" @281,474 482x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                p "NURS 350 — Clinical Practicum · Requested 2026-08-23 · T. Ferreira ( Lab Instructor )" @281,496 482x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "Medication Administration" @281,518 169x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              button "Open link" type=button @1303,494 96x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            div @265,552 1150x91 | display=flex gap=12px dir=row jc=space-between ai=center pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+              div @281,565 491x66
+                p "Olivia Martin" @281,565 491x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                p "NURS 350 — Clinical Practicum · Requested 2026-08-11 · M. Okonkwo, RN ( Preceptor )" @281,587 491x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "IV Insertion" @281,609 84x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              button "Open link" type=button @1303,585 96x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

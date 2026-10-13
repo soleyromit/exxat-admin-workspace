@@ -1,0 +1,12 @@
+node_modules
+.next
+.vercel
+.verify
+tsconfig.tsbuildinfo
+next-env.d.ts
+# exxat-ui upgrade backups
+.exxat-ui/backups/
+
+# env files (keep the example)
+.env*
+!.env.example

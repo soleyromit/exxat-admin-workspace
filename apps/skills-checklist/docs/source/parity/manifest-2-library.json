@@ -1,0 +1,333 @@
+[
+ {
+  "name": "20-library-skills",
+  "desc": "Skills Library, Skills tab (default)",
+  "headings": [
+   "Skills Library"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill"
+  ]
+ },
+ {
+  "name": "21-library-search",
+  "desc": "Skills tab, search \"wound\"",
+  "headings": [
+   "Skills Library"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill"
+  ]
+ },
+ {
+  "name": "22-library-filter-category",
+  "desc": "Skills tab, category filter = Category A",
+  "headings": [
+   "Skills Library"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill"
+  ]
+ },
+ {
+  "name": "23-library-categories",
+  "desc": "Categories tab",
+  "headings": [
+   "Skills Library",
+   "Categories"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add category"
+  ]
+ },
+ {
+  "name": "24-library-tags",
+  "desc": "Tags tab",
+  "headings": [
+   "Skills Library",
+   "Tags",
+   "Where each tag reaches"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add tag"
+  ]
+ },
+ {
+  "name": "25-library-settings",
+  "desc": "Clinical settings tab",
+  "headings": [
+   "Skills Library",
+   "Clinical settings"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add setting"
+  ]
+ },
+ {
+  "name": "26-library-lab-instructors",
+  "desc": "Lab instructors tab",
+  "headings": [
+   "Skills Library",
+   "Lab instructors",
+   "Named by students, not on the roster"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add instructor"
+  ]
+ },
+ {
+  "name": "27-category-add-dialog",
+  "desc": "Add category dialog",
+  "headings": [
+   "Skills Library",
+   "Categories",
+   "Add category"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add category",
+   "Save"
+  ]
+ },
+ {
+  "name": "28-category-edit-dialog",
+  "desc": "Edit category dialog",
+  "headings": [
+   "Skills Library",
+   "Categories",
+   "Edit category"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add category",
+   "Save"
+  ]
+ },
+ {
+  "name": "29-tag-add-dialog",
+  "desc": "Add tag dialog",
+  "headings": [
+   "Skills Library",
+   "Tags",
+   "Where each tag reaches",
+   "Add tag"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add tag",
+   "Save"
+  ]
+ },
+ {
+  "name": "30-tag-edit-dialog",
+  "desc": "Edit tag dialog",
+  "headings": [
+   "Skills Library",
+   "Tags",
+   "Where each tag reaches",
+   "Edit tag"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add tag",
+   "Save"
+  ]
+ },
+ {
+  "name": "31-setting-add-dialog",
+  "desc": "Add setting dialog",
+  "headings": [
+   "Skills Library",
+   "Clinical settings",
+   "Add clinical setting"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add setting",
+   "Save"
+  ]
+ },
+ {
+  "name": "32-setting-edit-dialog",
+  "desc": "Edit setting dialog",
+  "headings": [
+   "Skills Library",
+   "Clinical settings",
+   "Edit clinical setting"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add setting",
+   "Save"
+  ]
+ },
+ {
+  "name": "33-lab-add-dialog",
+  "desc": "Add lab instructor dialog",
+  "headings": [
+   "Skills Library",
+   "Lab instructors",
+   "Named by students, not on the roster",
+   "Add lab instructor"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add instructor",
+   "Save"
+  ]
+ },
+ {
+  "name": "34-lab-edit-dialog",
+  "desc": "Edit lab instructor dialog",
+  "headings": [
+   "Skills Library",
+   "Lab instructors",
+   "Named by students, not on the roster",
+   "Edit lab instructor"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add instructor",
+   "Save"
+  ]
+ },
+ {
+  "name": "35-lab-adopt-dialog",
+  "desc": "Add to roster opens prefilled instructor dialog",
+  "headings": [
+   "Skills Library",
+   "Lab instructors",
+   "Named by students, not on the roster",
+   "Edit lab instructor"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add instructor",
+   "Save"
+  ]
+ },
+ {
+  "name": "36-lab-adopt-result",
+  "desc": "Lab instructors after saving the adopted instructor",
+  "headings": [
+   "Skills Library",
+   "Lab instructors"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add instructor"
+  ]
+ },
+ {
+  "name": "40-import-dialog-empty",
+  "desc": "Import dialog, empty",
+  "headings": [
+   "Skills Library",
+   "Import skills",
+   "Upload a file",
+   "Or paste the list"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Read the list"
+  ]
+ },
+ {
+  "name": "41-import-dialog-pasted",
+  "desc": "Import dialog with sample list pasted",
+  "headings": [
+   "Skills Library",
+   "Import skills",
+   "Upload a file",
+   "Or paste the list"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Read the list"
+  ]
+ },
+ {
+  "name": "42-import-review",
+  "desc": "Import review step",
+  "headings": [
+   "Skills Library",
+   "Review 8 skills found in pasted list",
+   "1 lines were not read as skills"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Create 8 skills"
+  ]
+ },
+ {
+  "name": "43-import-created-banner",
+  "desc": "Library after import: banner + unconfigured skills",
+  "headings": [
+   "Skills Library"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure"
+  ]
+ },
+ {
+  "name": "44-library-filter-needs-config",
+  "desc": "Library filtered to Needs configuration",
+  "headings": [
+   "Skills Library"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure"
+  ]
+ },
+ {
+  "name": "45-configure-unconfigured-step1",
+  "desc": "Configure (unconfigured skill) step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Nasogastric Tube Insertion"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "1 Skill definition",
+   "Active",
+   "Continue"
+  ]
+ }
+]

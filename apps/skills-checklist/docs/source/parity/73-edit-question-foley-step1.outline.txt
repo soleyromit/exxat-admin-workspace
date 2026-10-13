@@ -1,0 +1,126 @@
+# 73-edit-question-foley-step1: Edit Foley Catheter Insertion: step 1  (doc 1440x900, fullPage=False)
+## headings: h1:Skills Library(18px/600) | h2:Edit skill — Foley Catheter Insertion(16px/600)
+## buttons: Overview | Skills Library*FILLED* | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Skills (9) | Categories (3) | Tags (3) | Clinical Settings (5) | Lab Instructors (2) | Import | Add skill*FILLED* | Foley Catheter Insertion | 3 | Active | Edit | Close | 1 Skill definition*FILLED* | 2 Evaluation configuration | 3 Achievement criteria | New | Tag A*FILLED* | Tag B | Tag C*FILLED* | New tag | Active*FILLED* | Inactive | Cancel | Continue*FILLED*
+## table rows=1 rowH=87 box=[265, 225, 1150, 119] headers=['SKILL', 'CATEGORY', 'EVALUATION MODEL', 'ACHIEVEMENT CRITERIA', 'COURSES', 'STATUS', '']
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Skills Library" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The program's skills, plus the categories, tags and settings that organise them" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x238
+        div @264,107 1152x42 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+          button "Skills (9)" type=submit @264,107 104x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+          button "Categories (3)" type=submit @372,107 141x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Tags (3)" type=submit @517,107 100x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Clinical Settings (5)" type=submit @622,107 176x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Lab Instructors (2)" type=submit @802,107 169x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+        div @264,165 1152x180
+          div @264,165 1152x180 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,166 1150x59 | display=flex gap=8px dir=row ai=center pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              input type=text ph="Search skills" val="Foley Catheter Insertion" @281,178 402x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @691,179 176x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @875,179 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @1043,179 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Import" type=button @1195,178 92x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Add skill" type=button @1295,178 104x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            table @265,225 1150x119
+              thead @265,225 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,225 1150x33
+                  th "Skill" @265,225 330x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Category" @595,225 110x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluation model" @704,225 222x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achievement criteria" @927,225 202x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Courses" @1129,225 97x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Status" @1225,225 89x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1314,225 101x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,258 1150x87
+                tr @265,258 1150x87
+                  td @265,258 330x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Foley Catheter Insertion" type=submit @277,268 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,290 306x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @277,312 306x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,312 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,312 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @595,258 110x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @704,258 222x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @716,290 171x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "3 qualifying evaluations" @927,258 202x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1129,258 97x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "3" type=submit @1205,291 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1225,258 89x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1237,290 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1237,290 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1314,258 101x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,288 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+            div @208,48 1024x678 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+              div @208,48 1024x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+                div @228,62 448x42
+                  h2 "Edit skill — Foley Catheter Insertion" @228,62 448x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                  p "The program defines how this skill is evaluated and what achievement requires." @228,88 448x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                button aria="Close" type=submit @1188,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+              div @228,135 984x516
+                div @228,135 984x32 | display=flex gap=8px dir=row ai=center
+                  button type=submit @228,135 130x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) radius=6px
+                    span "1" @238,141 20x20 | display=flex dir=row jc=center ai=center fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) radius=9999px
+                    span "Skill definition" @266,143 82x16 | fs=12px fw=500 color=rgb(30, 64, 175)
+                  button type=submit @388,135 188x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(100, 116, 139) radius=6px
+                    span "2" @398,141 20x20 | display=flex dir=row jc=center ai=center fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(226, 232, 240) radius=9999px
+                    span "Evaluation configuration" @426,143 140x16 | fs=12px fw=500 color=rgb(100, 116, 139)
+                  button type=submit @606,135 167x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(100, 116, 139) radius=6px
+                    span "3" @616,141 20x20 | display=flex dir=row jc=center ai=center fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(226, 232, 240) radius=9999px
+                    span "Achievement criteria" @644,143 119x16 | fs=12px fw=500 color=rgb(100, 116, 139)
+                div @228,187 984x464
+                  label @228,187 984x56 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Skill name" @228,187 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      span "*" @308,187 6x16 | fs=12px fw=600 color=rgb(244, 63, 94) tt=uppercase ls=0.3px
+                    input type=text ph="Program-defined skill name" val="Foley Catheter Insertion" @228,209 984x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  label @228,259 984x108 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Description" @228,259 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    textarea "Placeholder skill definition — program-defined." type=textarea val="Placeholder skill definition — program-defined." @228,281 984x80 | pad=6px 10px fs=14px fw=400 color=rgb(15, 23, 42) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  label @228,383 984x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Category" @228,383 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    div @228,405 984x33 | display=flex gap=8px dir=row
+                      select type=select-one val="cat-b" @228,405 908x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      button "New" type=button @1144,405 68x33 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                    span "One per skill. Optional. Only active categories are listed." @228,442 984x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  label @228,474 984x68 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Tags" @228,474 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    div @228,496 984x26 | display=flex gap=6px dir=row ai=center
+                      button "Tag A" type=button @228,496 72x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                      button "Tag B" type=button @306,496 72x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=9999px
+                      button "Tag C" type=button @384,496 73x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                      button "New tag" type=button @463,496 88x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgb(203, 213, 225) radius=9999px
+                    span "Any number per skill. Only active tags are listed. Tags cut across categories and drive cross-cutting reports." @228,526 984x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  label @228,575 984x76 | fs=16px fw=400 color=rgb(15, 23, 42)
+                    span "Skill status" @228,575 984x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    div @228,597 984x34 | display=flex gap=8px dir=row
+                      button "Active" type=button @228,597 87x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+                      button "Inactive" type=button @323,597 96x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                    span "Active skills can be mapped to course offerings and requested by students." @228,635 984x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              div @228,680 984x34 | display=flex dir=row jc=space-between ai=center
+                p "Step 1 of 3 — Skill definition" @228,689 158x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                div @1047,680 165x34 | display=flex gap=8px dir=row
+                  button "Cancel" type=button @1047,680 71x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  button "Continue" type=button @1126,680 86x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

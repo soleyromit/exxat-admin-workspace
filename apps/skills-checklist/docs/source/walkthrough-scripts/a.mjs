@@ -1,0 +1,11 @@
+import {open,main,snap,clk,ctrls,S} from './lib.mjs';
+const {b,p}=await open();
+const step=async(name,fn)=>{try{await fn();}catch(e){console.log('ERR',name,e.message.split('\n')[0]);}console.log(`\n=== ${name} ===\n`+(await main(p)).replace(/\n{2,}/g,'\n').slice(0,3500));console.log('CTRL:',(await ctrls(p)).slice(0,1500));await snap(p,'A-'+name.replace(/\W+/g,'_'));};
+await clk(p,'Skills Library');
+await step('lib-categories',()=>clk(p,'Categories (3)'));
+await step('lib-tags',()=>clk(p,'Tags (3)'));
+await step('lib-settings',()=>clk(p,'Clinical Settings (5)'));
+await step('lib-labinstr',()=>clk(p,'Lab Instructors (2)'));
+await clk(p,'Skills (9)');
+await step('lib-import',()=>clk(p,'Import'));
+await b.close();

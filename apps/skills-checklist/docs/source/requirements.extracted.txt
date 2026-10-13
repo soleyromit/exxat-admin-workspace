@@ -1,0 +1,380 @@
+Prism — Skills Tracking Module
+Initial requirements
+Initiative owner: Sankalp Panda
+This document sets out what the Skills capability needs to support, organised by the stages a skill passes through: defining it, mapping it to a course, a student submitting evidence, an evaluator assessing it, and the program reporting on the result. It describes required capability, not screens or interaction design, which follow once the scope here is agreed. The final sections record decisions that are still open and areas deliberately left out.
+[Heading1] Contents
+1. Purpose and scope
+2. Defining the skills library
+3. Populating the library from an existing list
+4. Configuring how a skill is evaluated
+5. Mapping skills to course offerings
+6. Students submitting evidence
+7. Evaluators assessing a submission
+8. Administrator review and approval
+9. Revision and further attempts
+10. Students tracking their own record
+11. Reporting
+12. Cross-cutting rules: the achievement engine
+13. Open decisions
+14. Not covered by this document
+15. Sources and external context
+Requirement IDs are stable: SL (library), IM (import), SC (skill configuration), CM (course mapping), ST (student submission), EV (evaluator), AR (administrator review), RV (revision), SH (student history), RP (reporting), AE (achievement engine), OD (open decisions).
+[Heading1] 1. Purpose and scope
+[Heading2] 1.1 What skills tracking is
+Skills tracking is the process of defining the practice-based skills a program expects its students to develop, capturing evidence that a student has performed or demonstrated them, having that evidence evaluated, and determining whether the program's achievement criteria have been met.
+A skill is narrower and more observable than a competency. A competency describes a broad area of professional performance; a skill describes something a student can be watched doing. What counts as a skill, how it is evaluated and what constitutes achievement all vary by program and by discipline, which is why Skills are treated here as program-defined entities rather than drawn from a universal healthcare taxonomy.
+[Heading2] 1.2 Why programs track skills
+Programs need to establish that students are moving from learning concepts to applying them safely and consistently in practice. Skills tracking gives them a structured way to document that progression and to connect individual clinical experiences to a student's overall record.
+[ListParagraph] •Practice readiness — establishing whether a student has demonstrated the skills expected before entering practice.
+[ListParagraph] •Progression — following a student from initial exposure and supervised performance toward independence.
+[ListParagraph] •Structured feedback — allowing preceptors, faculty and other evaluators to assess against criteria the program set.
+[ListParagraph] •Remediation and follow-up — identifying where a student has insufficient or unsuccessful evidence and needs further practice.
+[ListParagraph] •Clinical experience management — associating expected skills with courses and rotations so students know what they are expected to encounter.
+[ListParagraph] •Program-level visibility — seeing attainment across cohorts, groups and courses rather than across disconnected forms and spreadsheets.
+[ListParagraph] •Evidence of outcomes — retaining the evaluations that support an achievement, not only the final status.
+[Heading2] 1.3 Where this applies in US healthcare education
+Practice-performance tracking is relevant wherever education includes laboratory, simulation, clinical education, fieldwork or supervised patient care. Terminology differs by profession — clinical skills, technical skills, psychomotor skills, performance outcomes, demonstrated behaviours — but the underlying need is the same: establishing whether a student can apply in practice what they have learned.
+Discipline
+Why practice-based tracking applies
+Accreditation context
+Nursing
+Increasingly competency-based, with programs evaluating observable behaviours and progression toward practice readiness.
+AACN's Essentials frame competency-based education around demonstrated knowledge and skills, and provide Progression Indicators as observable behaviours.
+Physical Therapy / PTA
+Includes laboratory practice, psychomotor learning and clinical education, assessed across several domains.
+CAPTE standards reference opportunities to practise clinical skills and assessment covering cognitive, psychomotor and affective domains, including safe practice.
+Physician Assistant
+Student performance is monitored through didactic and supervised clinical education, including clinical and technical skills.
+ARC-PA standards describe experiential competency-based education and identify clinical and technical skills within the competencies required for practice.
+Occupational Therapy / OTA
+Laboratory and fieldwork experiences in which students progressively demonstrate competency and are assessed by fieldwork educators.
+ACOTE describes fieldwork supervision that changes as students establish competency, with attention to skills and client safety.
+Other allied health
+Hands-on laboratory, simulation, externship or clinical experiences requiring assessment of practice-based skills.
+CAAHEP states that its standards reflect the knowledge and skills needed to function in a profession and to prepare competent entry-level professionals.
+Accreditation bodies generally set educational outcomes, competencies, clinical education requirements and assessment expectations. They do not, as a rule, publish a single skills checklist that every program must adopt. That supports a model in which Prism supplies the infrastructure and each program defines its own skills library and evaluation approach.
+[Heading2] 1.4 How skills relate to competencies
+Skills sit within the broader Competency Management module and are intended to complement competency tracking rather than replace it. Competencies give a broad view of what a student should be able to do; skills provide granular, observable evidence of practice. A program may reasonably use both.
+The relationship between a skill and a competency should be configurable rather than assumed, and a skill must not inherit the scoring or reporting model used for competencies. Skills and competencies are also distinct from the generic Standards supported today. Where exactly the boundary sits is an open decision (OD-02).
+[Heading2] 1.5 Core design principle
+The evaluation method a program chooses determines what evidence exists, and that in turn determines which achievement criteria are valid. A skill evaluated as a single Met/Unmet outcome cannot also require three independent demonstrations and one observed, because the evaluation never captured a level of independence. The capability must enforce this dependency rather than allow the two to be configured independently.
+[Heading2] 1.6 What the program owns
+Prism ships no skills, no categories and no taxonomy. Programs define their own skills, their own grouping, their own evaluation questions, their own response labels and their own achievement thresholds. Nursing is the initial focus, but nothing in the model should be specific to it; the same capability must serve other disciplines using their own terminology, evaluation methods and achievement rules.
+[Heading2] 1.7 Scope and terminology
+In this document, skills tracking means the program-defined process of recording, evaluating and determining achievement of specific practice-based skills. It does not imply that Prism will provide a list of healthcare skills, or a taxonomy prescribed by an accreditation body.
+Today this need is met through workarounds — most commonly the Evaluations module — which does not express the underlying model and does not report as a skills record. The sections that follow set out the capability required, organised by the stages a skill passes through.
+[Heading1] 2. Defining the skills library
+Before anything can be tracked, a program defines the skills it expects, the structures that organise them, and the supporting lists drawn on when evidence is recorded.
+ID
+Requirement
+SL-01
+The skills library is program-defined. Prism does not supply a standard skills library or taxonomy.
+SL-02
+A skill has a name, a description and an active/inactive status.
+SL-03
+Categories are program-defined. A skill belongs to at most one category; a category is optional.
+SL-04
+Tags are program-defined and cross-cutting. A skill may carry any number, and a tag may span categories.
+SL-05
+A category or tag can be created at the point it is needed while defining a skill, without a separate setup exercise.
+SL-06
+Only active categories and tags are available for assignment. One already assigned but since deactivated remains on the skill, identifiable as inactive, so it can be removed deliberately rather than disappearing.
+SL-07
+Clinical settings (for example inpatient, emergency, outpatient) are a program-defined list, used to describe where clinical evidence was gathered.
+SL-08
+Lab instructors must be recordable without being Prism users. A name and an email are sufficient, since the email is what an evaluation request is sent to.
+SL-09
+Where a student names a lab instructor who is not already recorded, the program must be able to see that name and adopt it, so the same person does not accumulate as several spellings.
+SL-10
+The library must be searchable and filterable by name, category, tag and status.
+SL-11
+Deactivating a skill withdraws it from course mapping, from student selection and from reporting scope, while retaining evidence already recorded against it.
+[Heading1] 3. Populating the library from an existing list
+Programs do not arrive without a skills list. They almost always hold one already — in a spreadsheet, a Word document or a PDF checklist — and requiring it to be re-entered one skill at a time is the largest single obstacle to adopting the module. A library of two hundred skills entered by hand is days of work before any value is seen, and it is work a client may reasonably decline to do.
+Creating a skill and configuring how it is evaluated are therefore treated as separate stages. The library is populated first, in bulk, from whatever the program already has. Configuration then happens per skill, once the list exists and can be worked through.
+ID
+Requirement
+IM-01
+A program must be able to create skills in bulk by supplying an existing list, rather than entering each one individually.
+IM-02
+Accepted sources must include spreadsheets, word-processed documents and PDFs, since programs hold their lists in whatever format they already use.
+IM-03
+No prescribed template or column order should be required. The content is interpreted as supplied; asking a client to reformat their list into our template reintroduces the work the import is meant to remove.
+IM-04
+Interpretation should identify candidate skills and, where the source contains them, accompanying details: a description, a grouping or heading that may serve as a category, and any evaluation questions or criteria already written down.
+IM-05
+Interpretation is a proposal, not an outcome. Nothing enters the library until the program has reviewed the extracted list and confirmed it, with the ability to edit, rename, merge, split, discard and add entries before anything is created.
+IM-06
+The proposed list must be checked against the existing library and possible duplicates identified, with the program deciding whether to skip, replace or keep both.
+IM-07
+Where the source is organised under headings or groupings, those may be proposed as categories and applied to the skills beneath them, subject to the same review.
+IM-08
+Anything in the source that could not be interpreted must be reported alongside its original text rather than silently dropped, so the program can see what was not picked up and decide what to do about it.
+IM-09
+Imported skills are created unconfigured and are distinguishable as such. An unconfigured skill cannot be mapped to a course offering and cannot be submitted against.
+IM-10
+A program must be able to see how many skills still require configuration and work through them, so a part-configured library is a visible state of progress rather than a silent gap.
+IM-11
+Import must be repeatable, adding to an existing library rather than replacing it, and it must remain possible to tell which skills arrived in which import.
+IM-12
+Creating and configuring a single skill by hand remains available; import is an alternative starting point, not the only one.
+IM-13
+Automated interpretation will not be perfect and must be presented as a draft for confirmation. No skill, category or evaluation configuration may be created without explicit human confirmation.
+IM-14
+Because configuration is repetitive across a large library, it must be possible to copy the configuration of one skill to another or apply a configuration to several selected skills at once.
+IM-15
+Whether interpretation should also propose an evaluation model and achievement criteria, or leave those entirely to the program, is an open decision (OD-12).
+[Heading1] 4. Configuring how a skill is evaluated
+Configuration is a separate exercise from creating a skill, carried out once the library exists. Three things are settled for each skill: what it is, how it is evaluated, and what achievement requires. The second determines what the third can ask for.
+[Heading2] 4.1 Evaluation models
+Four models are required initially. The design should allow further models to be added rather than assume these four are exhaustive.
+[ListParagraph] •Overall Binary Outcome — one outcome for the whole skill, using two program-defined labels (Met/Unmet by default).
+[ListParagraph] •Question-Level Qualitative — a Yes or No against each program-defined question.
+[ListParagraph] •Scored / Likert — a score per question on a program-configured scale.
+[ListParagraph] •Demonstration-Level Outcome — a level of supervision per demonstration, on a program-defined scale.
+ID
+Requirement
+SC-01
+Creating a skill and configuring how it is evaluated are separate actions. A skill may exist in the library unconfigured, and configuration may be completed later.
+SC-02
+A skill is evaluated by exactly one model. The model must be chosen explicitly; no default is assumed, and a skill cannot be put into use without one.
+SC-03
+For the binary model, both outcome labels are program-defined (for example Pass/Fail, Satisfactory/Needs Improvement). Which of the two qualifies must be recorded explicitly. Both labels are required and must differ.
+SC-04
+For the question and scored models, the program defines and maintains the question set.
+SC-05
+For the question model, the program decides what makes an evaluation qualify: all questions answered Yes; at least N of M answered Yes; or a named subset of questions answered Yes.
+SC-06
+A qualification rule must be satisfiable. A named subset cannot be empty, and the capability must remain usable where a skill carries a large question set.
+SC-07
+For the scored model, the response scale is program-configured. Qualification is by average across questions, a minimum on every question, or a total.
+SC-08
+For the demonstration model, the levels of supervision are program-defined and ordered. No fixed three-point scale is assumed.
+SC-09
+Achievement criteria are limited to what the chosen model can produce. Changing the model must rebuild the criteria rather than leave contradictory settings in place.
+SC-10
+A demonstration skill can require a total number of demonstrations and a minimum at each level.
+SC-11
+Any skill can require a minimum amount of evidence from named clinical settings, each setting carrying its own minimum. Requirements are counted per setting, not as a single clinical total.
+SC-12
+Lab or simulation evidence never satisfies a clinical setting requirement.
+SC-13
+The program defines what the student must supply when submitting — date, unit, case reference and so on — each with a label, a data type (date, short text, long text, number, choice list) and whether it is mandatory. This is separate from the evaluation model and from the evaluator's own responses.
+SC-14
+Narrative feedback from the evaluator must be capturable on every evaluation, and the program decides per skill whether it is mandatory.
+SC-15
+Two optional steps are configurable per skill: whether the student self-evaluates before the evaluator sees it, and whether an administrator must approve before the evidence counts.
+SC-16
+The program decides which evaluator roles may sign off each skill, so that a skill assessed only in the lab can be restricted accordingly.
+SC-17
+The dependency from evaluation model, through the evidence it produces and the qualification rule, to the achievement criteria must be apparent to whoever is configuring the skill.
+SC-18
+A configuration that cannot be satisfied must not be savable: unlabelled or duplicated questions and levels, an empty subset rule, or minimums that exceed the total required.
+SC-19
+Before a skill is put into use, the program must be able to review everything it will ask of the student and the evaluator, together.
+[Heading1] 5. Mapping skills to course offerings
+Skills are associated with clinical course offerings so that students know what is expected of them on a given rotation. A program runs the same course across many terms, academic years and professional years, so the volume of offerings is significant.
+ID
+Requirement
+CM-01
+A course offering is identified by course code and name, term, academic year, professional year and the cohorts enrolled.
+CM-02
+Offerings must be locatable by search and by cohort, term, academic year and professional year, since a program runs the same course across many terms and years.
+CM-03
+A skill mapped to an offering is marked either mandatory or non-mandatory for that offering.
+CM-04
+The program must be able to see, for any offering, how many skills are mapped and how many of those are mandatory.
+CM-05
+Mapping expresses expectation, not eligibility. A student may submit a skill that is not mapped to their course, and that evidence counts toward their record.
+CM-06
+The requirement level may differ between offerings for the same skill.
+CM-07
+A student holds one record per skill. Evidence gathered on any course counts toward it.
+CM-08
+Mappings are set per offering. Whether they carry forward between terms is an open decision (OD-01).
+[Heading1] 6. Students submitting evidence
+Students work from their own login. They need to know what their course expects, record what they have performed together with the context the program requires, and route it to whoever will assess it.
+ID
+Requirement
+ST-01
+A student must be able to see the skills expected of them on a course, which are mandatory, and how far they have progressed on each.
+ST-02
+A student must be able to submit a skill that is not mapped to their course.
+ST-03
+A student must be able to isolate the skills they have already submitted, so earlier submissions remain findable in a library of any size.
+ST-04
+A student must be able to submit several skills together rather than one at a time.
+ST-05
+Every submission records whether the skill was performed in a clinical setting or in lab or simulation.
+ST-06
+For clinical evidence, the setting must be derived from the student's placement for that course rather than freely chosen. Where the placement offers a single setting it is inferred; where a student rotates across several locations or settings, they choose from those, and the location is recorded alongside.
+ST-07
+Where no placement is recorded for the course, the submission must still be possible, drawing on the program's full list of settings.
+ST-08
+The evaluator role available to a student is constrained both by the setting and by the roles the skill permits. Where no valid combination exists, the student must be told why rather than left with no options.
+ST-09
+A student selects the evaluator from those recorded. Where a lab instructor is not yet recorded, the student may name them, supplying an email so the request can reach them.
+ST-10
+The submission details the program requires must be captured, and mandatory ones enforced, before a submission can be sent.
+ST-11
+Where the skill is configured for it, the student records a self-evaluation against the same criteria the evaluator will use, before the evaluator sees it.
+ST-12
+A student records at most one narrative note per submission, kept distinct from the evaluator's own comment.
+ST-13
+A student must receive confirmation of what was submitted, to whom, in what role, and in which setting and location.
+ST-14
+Whether setting and location are captured once per submission or separately for each skill within it is an open decision (OD-07).
+[Heading1] 7. Evaluators assessing a submission
+Preceptors do not hold Prism logins and must be able to assess a submission without one. Clinical faculty and lab instructors also act as evaluators, and faculty may already work inside Prism. In every case the evaluator records an outcome against criteria the program set; they never decide how a skill is evaluated.
+ID
+Requirement
+EV-01
+An evaluation must be completable without a Prism login. A request reaches the evaluator by email and opens directly, creating no account for them.
+EV-02
+More than one kind of evaluator must be supported: a preceptor at the placement site, program faculty, and a lab instructor for skills assessed in the lab. Which roles are valid depends on where the skill was performed.
+EV-03
+An evaluator is presented with what the program configured for that skill and cannot alter how the skill is evaluated.
+EV-04
+An evaluator must be able to see the details the student supplied, and the student's self-evaluation where one exists, as context for their own assessment.
+EV-05
+Where several skills are sent together, the evaluator completes them in one sitting, each with its own outcome and feedback.
+EV-06
+Where the program has made feedback mandatory for a skill, the evaluation cannot be submitted without it.
+EV-07
+On submission, evidence either counts immediately or is held for administrator approval, according to the skill's configuration, and the evaluator is told which applies.
+EV-08
+Whether evaluator roles are a fixed set or program-defined is an open decision (OD-06).
+[Heading1] 8. Administrator review and approval
+Some programs want an internal check before an evaluation counts, and some skills warrant it where others do not. Where it is required, the evidence waits; where it is not, it counts as soon as the evaluator submits.
+ID
+Requirement
+AR-01
+Administrators must be able to see every evaluation awaiting approval, with the student, skill, course, setting, location, evaluator and role.
+AR-02
+Where a self-evaluation exists, the student's and the evaluator's assessments must be comparable side by side, including whether they agreed.
+AR-03
+The reviewer must be able to examine the full set of responses, not only a summary of them.
+AR-04
+A reviewer may record a note, which is retained with the evaluation.
+AR-05
+A reviewer may approve an evaluation, at which point it counts, or return it, in which case it goes back for correction and does not count.
+AR-06
+Evidence awaiting approval is excluded from achievement calculations until approved.
+[Heading1] 9. Revision and further attempts
+Correcting a submission and making a further attempt are different actions with different consequences for the record, and must be treated separately.
+ID
+Requirement
+RV-01
+A student must be able to correct and resend a submission that was returned to them, or that has not yet been assessed.
+RV-02
+A correction continues the same record rather than starting a new one, retaining an auditable count of revisions and the reason it was returned.
+RV-03
+A completed evaluation is a record and cannot be edited. Where it did not meet the criteria, the student makes a further attempt, which is recorded separately and leaves the original intact.
+RV-04
+Either path allows the submission to go to a different evaluator, since the original may no longer be available.
+RV-05
+An evaluation that has counted, or that is awaiting administrator approval, cannot be edited or resent.
+RV-06
+Whether a correction clears the evaluator's previous answers or retains them is an open decision (OD-08).
+[Heading1] 10. Students tracking their own record
+A student needs more than a measure of progress. They need to know which submissions counted, which did not, and what to do about it.
+ID
+Requirement
+SH-01
+A student must be able to see every submission they have made for a skill, in order, identified by attempt.
+SH-02
+Each submission carries an explicit outcome: it counted; it did not meet the criteria; it was returned; or it is waiting, identifying who it is with.
+SH-03
+Where a submission did not meet the criteria, the rule it failed must be stated in terms the student can act on.
+SH-04
+A student must be able to see how many of their submissions counted, how many are outstanding and how many were returned.
+SH-05
+Where a skill requires evidence from named settings, the student must be able to see progress against each.
+SH-06
+Because evidence counts across courses, a student's record for a skill must cover every course, with the ability to narrow to one.
+SH-07
+A student must be able to see the completed evaluation, including the evaluator's responses and feedback in full.
+[Heading1] 11. Reporting
+Programs need to see attainment across a population, and to move from an aggregate figure to the individual evidence behind it without starting the enquiry again.
+ID
+Requirement
+RP-01
+Reporting must be filterable by cohort, group, clinical course, category, tag, location and setting. What is currently applied must be evident, and each filter removable on its own.
+RP-02
+Attainment by student: how many skills each student has achieved, has in progress and has not met, and their overall attainment.
+RP-03
+Attainment by skill: how the population is performing on each skill, including whether it is mandatory where the report is scoped to a course.
+RP-04
+Attainment by tag, to answer questions that cut across the category structure. Because a skill may carry several tags, these figures overlap, and the report must say so rather than imply a partition.
+RP-05
+From any aggregate figure, it must be possible to reach the individuals behind it.
+RP-06
+From a student or a skill, it must be possible to reach the underlying evidence without leaving the report and searching again.
+RP-07
+Any recorded evaluation must be viewable in full — which questions were answered Yes, what score was given on each, the feedback, and the details the student supplied — not only a summary such as '9 of 12 answered Yes'.
+RP-08
+Filtering by location or setting must count only the evidence gathered there and recalculate progress accordingly, so that site and setting performance can be examined.
+RP-09
+A filter combination that cannot produce evidence — a location that does not offer the chosen setting — must be explained rather than returned as an empty result.
+RP-10
+Reports must be exportable, both as the aggregate view and as a row-per-evaluation detail carrying feedback, settings, locations, self-evaluations and review notes. An export must cover the full filtered scope, and record the filters that produced it.
+RP-11
+The export format required — CSV or a native Excel workbook — is an open decision (OD-10).
+[Heading1] 12. Cross-cutting rules: the achievement engine
+These rules apply throughout and are the part most worth agreeing first, since everything else depends on them.
+ID
+Requirement
+AE-01
+Only completed evidence counts toward achievement. Anything awaiting a self-evaluation, an evaluator or an approval does not.
+AE-02
+Whether a completed evaluation qualifies is determined by the skill's current rule rather than fixed at the time of recording, so that a change to the rule re-applies to evidence already held.
+AE-03
+A skill is achieved only when every criterion is met: the required qualifying evaluations or demonstration counts, any per-level minimums, and any clinical setting minimums.
+AE-04
+Four states are distinguished: no evidence yet; evidence exists but none qualifies; some qualifying evidence with criteria not yet met; and achieved.
+AE-05
+A student holds one record per skill, shared across courses.
+AE-06
+Response labels, demonstration levels and question text are presentation only. Renaming them must not change what was recorded or whether existing evidence counts.
+AE-07
+Removing a question or a level must remove it from any rule that referenced it, so that no requirement points at something that no longer exists.
+AE-08
+Whether 'no evidence yet' and 'evidence that does not qualify' are reported separately is an open decision (OD-03).
+[Heading1] 13. Open decisions
+The following are open product decisions. Each is inexpensive to settle now and costly to change once built.
+ID
+Requirement
+OD-01
+Do skill mappings carry forward between terms, or are they inherited from a catalogue-level course and overridden per offering? (CM-08)
+OD-02
+Should skills link to the AACN Essentials sub-competencies Prism already holds, or stay deliberately separate from Standards? Where exactly is the boundary between a Skill and a Competency?
+OD-03
+Are 'no evidence yet' and 'evidence that does not qualify' reported separately, or together? (AE-08)
+OD-04
+Should submission details be configured per skill, or should there be a program-level default with per-skill additions, so a common field is not configured on every skill individually?
+OD-05
+Should an external evaluator who is not a Prism user be recorded within Skills, or as a Prism-wide record that Learning Contracts and Evaluations could also draw on?
+OD-06
+Are three evaluator roles sufficient, or do other disciplines need to define their own? (EV-08)
+OD-07
+Is setting and location captured once per submission, or separately for each skill within it? A student logging a week of work retrospectively may have moved between settings. (ST-14)
+OD-08
+When a returned submission is corrected, should the evaluator start afresh, or see their previous answers prefilled? (RV-06)
+OD-09
+Should the student's self-evaluation form be able to differ from the evaluator's, or must they stay identical for comparison?
+OD-10
+Is a CSV export sufficient, or is a native Excel workbook required? (RP-11)
+OD-11
+Should reporting expose an evaluator and site dimension? The data would be captured either way, and it is the basis for site-quality and evaluator-consistency analysis.
+OD-12
+Should automated interpretation of an uploaded list stop at identifying skills and their descriptions, or also propose an evaluation model and achievement criteria for the program to confirm? (IM-15)
+OD-13
+What happens on re-import of a skill that already exists and already has evidence recorded against it — is it matched and left alone, or is the program asked each time? (IM-06)
+[Heading1] 14. Not covered by this document
+The following were identified during discovery but are not specified here:
+[ListParagraph] •Linking skill evidence to the patient encounter or clinical hours records Prism already holds.
+[ListParagraph] •Skill currency and expiry — whether a skill achieved in year one must be re-demonstrated before graduation.
+[ListParagraph] •Remediation workflow for students flagged as below expectation.
+[ListParagraph] •Notifications, reminders and escalation for evaluations that are not completed.
+[ListParagraph] •Accreditation-ready outputs beyond the exports described above.
+[ListParagraph] •How existing clients using the Evaluations module for this purpose are migrated. Inputs from the LAM team are outstanding.

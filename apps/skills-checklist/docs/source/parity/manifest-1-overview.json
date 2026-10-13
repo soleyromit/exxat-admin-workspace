@@ -1,0 +1,181 @@
+[
+ {
+  "name": "01-shell-overview-by-student",
+  "desc": "Overview, By student (default), filters collapsed",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "02-overview-filters-open",
+  "desc": "Overview with Filters panel expanded",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview",
+   "Filters"
+  ]
+ },
+ {
+  "name": "03-overview-show-more",
+  "desc": "Overview By student after Show 25 more",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "04-overview-by-skill",
+  "desc": "Overview By skill",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "05-overview-by-tag",
+  "desc": "Overview By tag",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "06-overview-export-menu",
+  "desc": "Export menu open",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "07-overview-student-panel",
+  "desc": "Student drill-down panel (Noah Zeller), skills list collapsed",
+  "headings": [
+   "Overview",
+   "Noah Zeller"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "08-overview-student-evidence-ledger",
+  "desc": "Student panel with IV Insertion evidence ledger expanded",
+  "headings": [
+   "Overview",
+   "Noah Zeller"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "09-overview-evaluation-dialog",
+  "desc": "Evaluation detail (\"View form\") dialog",
+  "headings": [
+   "Overview",
+   "Noah Zeller",
+   "IV Insertion — Noah Zeller",
+   "Supplied by the student"
+  ],
+  "buttons": [
+   "Overview",
+   "Independent",
+   "Close"
+  ]
+ },
+ {
+  "name": "10-overview-after-dialog",
+  "desc": "Student panel after closing evaluation dialog (dialog closed?)",
+  "headings": [
+   "Overview",
+   "Noah Zeller"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "11-overview-student-show-these-only",
+  "desc": "Student panel filtered with Show these only",
+  "headings": [
+   "Overview",
+   "Noah Zeller"
+  ],
+  "buttons": [
+   "Overview",
+   "ACHIEVED 7 Showing — click to clear"
+  ]
+ },
+ {
+  "name": "12-overview-search",
+  "desc": "By student with search \"Noah\"",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "13-overview-by-skill-row-click",
+  "desc": "By skill after clicking first row",
+  "headings": [
+   "Overview",
+   "Wound Care"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "14-overview-by-tag-row-click",
+  "desc": "By tag after clicking first row",
+  "headings": [
+   "Overview",
+   "Tag A"
+  ],
+  "buttons": [
+   "Overview"
+  ]
+ },
+ {
+  "name": "15-overview-filter-cohort",
+  "desc": "Filters panel with first cohort selected",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview",
+   "Filters 1",
+   "BSN 2026"
+  ]
+ },
+ {
+  "name": "16-overview-impossible-filter",
+  "desc": "Location Mercy Home Health + setting Emergency (prototype behaviour for a combination with no evidence)",
+  "headings": [
+   "Overview"
+  ],
+  "buttons": [
+   "Overview",
+   "Filters 3",
+   "BSN 2026",
+   "Mercy Home Health",
+   "Emergency"
+  ]
+ }
+]

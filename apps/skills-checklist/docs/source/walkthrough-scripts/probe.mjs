@@ -1,0 +1,10 @@
+import { chromium } from '/Users/romitsoley/Exxat-DS-Workspace/node_modules/.pnpm/playwright-core@1.62.1/node_modules/playwright-core/index.mjs';
+const S=process.argv[2];
+const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1440,height:900}});
+await p.goto('file:///Users/romitsoley/Downloads/prism-skills-prototype%201.html');
+await p.waitForTimeout(1000);
+await p.screenshot({path:S+'/shots/00-home.png'});
+console.log((await p.innerText('body')).slice(0,3000));
+const btns=await p.$$eval('button,a,[role=tab],[role=button]',els=>els.map(e=>(e.innerText||e.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ')).filter(Boolean));
+console.log('CLICKABLES',JSON.stringify(btns));
+await b.close();

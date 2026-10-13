@@ -12,7 +12,17 @@
 | Admin | @exxat/skills-checklist-admin | 3007 | apps/skills-checklist/admin/ |
 | Student | @exxat/skills-checklist-student | 3008 | apps/skills-checklist/student/ |
 
-**Status:** Not yet scaffolded — directory exists in pnpm-workspace.yaml but apps not created.
+**Status:** Not yet scaffolded (no app code). **Understanding pack complete 2026-10-08** — `docs/README.md` is the entry point.
+
+---
+
+## Module Context (READ FIRST — anti-hallucination)
+
+Product = **Prism Skills Tracking** (initiative owner Sankalp Panda). Sources, in precedence: **REQ** `docs/source/requirements.extracted.txt` > **CALL** vault raw transcripts (2026-09-23, 2026-03-05) > **PROTO** `docs/source/prism-skills-prototype.html` (behaviour: illustration; VISUAL LAYOUT/IA/COPY: build it exactly, inside the DS base shell with left nav + utility bar + page header, per Romit 2026-10-08) > **INFER**.
+- Index + rules: `docs/README.md` · why/so-what: `docs/strategy/01` · engine: `docs/strategy/02` · journeys: `docs/journeys/` · coverage: `docs/strategy/04` · open decisions: `docs/strategy/05` · defects/do-not-assume: `docs/strategy/07` · build plan: `docs/build/01`.
+- Tools here: skills `skills-module-context`, `skills-surface-contract`, `skills-journey-check`, `skills-req-trace`; agents `skills-requirements-auditor`, `skills-ux-critic`, `skills-pm-challenger`; hooks in `.claude/settings.json` (session context, code-gate until a contract exists, requirement-ID validator).
+- Hard stops: no shipped skills/taxonomy · no default evaluation model · unconfigured skills can't be mapped/submitted · completed evaluations immutable · mapping ≠ eligibility · preceptors have no login · lab never satisfies clinical-setting minimum · REQ §14 out of scope · never treat an `OD-*` as decided.
+- Section 3/4 component lists below are legacy scaffold text; use `node tools/ds/source.mjs <Component>` (DS = `@exxatdesignux/ui`) instead.
 
 ---
 

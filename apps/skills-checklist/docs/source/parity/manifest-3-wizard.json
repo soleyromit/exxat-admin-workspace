@@ -1,0 +1,352 @@
+[
+ {
+  "name": "50-add-skill-step1-blank",
+  "desc": "Add skill: step 1 blank (note Continue enabled/disabled state)",
+  "headings": [
+   "Skills Library",
+   "Add a skill"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Add and configure"
+  ]
+ },
+ {
+  "name": "70-edit-demo-iv-step1",
+  "desc": "Edit IV Insertion: step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — IV Insertion"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "1 Skill definition",
+   "Tag A",
+   "Tag B",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "71-edit-demo-iv-step2",
+  "desc": "Edit IV Insertion: step 2 evaluation configuration",
+  "headings": [
+   "Skills Library",
+   "Edit skill — IV Insertion",
+   "Demonstration levels (3)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Demonstration-Level Outcome The evaluator records the level ",
+   "Required",
+   "Required",
+   "Required",
+   "On",
+   "On",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "72-edit-demo-iv-step3",
+  "desc": "Edit IV Insertion: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — IV Insertion",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "73-edit-question-foley-step1",
+  "desc": "Edit Foley Catheter Insertion: step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "1 Skill definition",
+   "Tag A",
+   "Tag C",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "74-edit-question-foley-step2",
+  "desc": "Edit Foley Catheter Insertion: step 2 evaluation configuration",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Evaluation questions (3)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Question-Level Qualitative The evaluator answers Yes/No agai",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "75-edit-question-foley-step3",
+  "desc": "Edit Foley Catheter Insertion: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "76-edit-scored-h2t-step1",
+  "desc": "Edit Head-to-Toe Assessment: step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Head-to-Toe Assessment"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "1 Skill definition",
+   "Tag B",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "77-edit-scored-h2t-step2",
+  "desc": "Edit Head-to-Toe Assessment: step 2 evaluation configuration",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Head-to-Toe Assessment",
+   "Evaluation questions (2)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Scored / Likert The evaluator scores each question on the pr",
+   "Required",
+   "Optional",
+   "On",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "78-edit-scored-h2t-step3",
+  "desc": "Edit Head-to-Toe Assessment: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Head-to-Toe Assessment",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "79-edit-binary-sterile-step1",
+  "desc": "Edit Sterile Dressing Change: step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sterile Dressing Change"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "1 Skill definition",
+   "Tag A",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "80-edit-binary-sterile-step2",
+  "desc": "Edit Sterile Dressing Change: step 2 evaluation configuration",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sterile Dressing Change",
+   "Response options",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Overall Binary Outcome The evaluator records one overall out",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "82-edit-demo-wound-step1",
+  "desc": "Edit Wound Care: step 1",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Wound Care"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "1 Skill definition",
+   "Tag A",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "83-edit-demo-wound-step2",
+  "desc": "Edit Wound Care: step 2 evaluation configuration",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Wound Care",
+   "Demonstration levels (4)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Demonstration-Level Outcome The evaluator records the level ",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "84-edit-demo-wound-step3",
+  "desc": "Edit Wound Care: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Wound Care",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "90-edit-change-model",
+  "desc": "Edit Foley, step 2 after switching model to Overall Binary Outcome (is there a confirm? criteria rebuilt?)",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Response options",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Overall Binary Outcome The evaluator records one overall out",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "91-edit-change-model-step3",
+  "desc": "After model change: step 3",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "92-edit-add-question",
+  "desc": "Step 2 after Add question",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Evaluation questions (4)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Question-Level Qualitative The evaluator answers Yes/No agai",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "93-edit-add-field",
+  "desc": "Step 2 after Add field (if present)",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Foley Catheter Insertion",
+   "Evaluation questions (4)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "2 Evaluation configuration",
+   "Question-Level Qualitative The evaluator answers Yes/No agai",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ }
+]

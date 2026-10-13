@@ -1,0 +1,11 @@
+import { chromium } from '/Users/romitsoley/Exxat-DS-Workspace/node_modules/.pnpm/playwright-core@1.62.1/node_modules/playwright-core/index.mjs';
+import fs from 'fs';
+const AXE=fs.readFileSync('/Users/romitsoley/Work/apps/skills-checklist/admin/node_modules/axe-core/axe.min.js','utf8');
+const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1440,height:900}});
+await p.goto('http://localhost:3005/surveys',{waitUntil:'load'}); await p.waitForTimeout(3000);
+const axe=async(n)=>{await p.evaluate(AXE);const r=await p.evaluate(async()=>{const res=await window.axe.run(document.body,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','best-practice']}});return res.violations.map(v=>v.id+' x'+v.nodes.length)});console.log('PCE AXE',n,JSON.stringify(r))};
+await axe('closed');
+await p.getByRole('button',{name:/Current product/i}).click(); await p.waitForTimeout(500); await axe('product switcher open'); await p.keyboard.press('Escape');
+await p.getByRole('button',{name:/Johns Hopkins/i}).click(); await p.waitForTimeout(500); await axe('school switcher open'); await p.keyboard.press('Escape');
+await p.getByRole('button',{name:/open profile/i}).click(); await p.waitForTimeout(500); await axe('profile open'); 
+await b.close();

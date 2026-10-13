@@ -1,0 +1,12 @@
+// Achievement engine public API. Pure TypeScript: no React, no I/O, deterministic.
+export * from "./types"
+export { explainEvaluation, qualifies } from "./explain"
+export type { Explanation, Reason } from "./explain"
+export { buildRecords, evaluateSkill, isConfigured, isEligible, previewImpact, stateRank } from "./achievement"
+export type { BuildRecordsInput, ImpactPreview } from "./achievement"
+export { validateConfig } from "./validate"
+export type { Issue, IssueCode, ValidationContext, ValidationResult } from "./validate"
+export { emptyModel, rebuildForModel, removeLevel, removeQuestion, renameBinaryLabel, renameLevel, renameQuestion } from "./rules"
+export type { Dropped, DroppedField, RebuildOptions, Removal } from "./rules"
+export { canChangeEvaluator, canEdit, canResend, canStartFurtherAttempt, isLocked, isStateAvailable, submissionOutcome } from "./submission"
+export type { SubmissionOptions, SubmissionState } from "./submission"

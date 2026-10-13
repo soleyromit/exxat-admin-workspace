@@ -1,0 +1,77 @@
+# 36-lab-adopt-result: Lab instructors after saving the adopted instructor  (doc 1440x900, fullPage=True)
+## headings: h1:Skills Library(18px/600) | h3:Lab instructors(14px/600)
+## buttons: Overview | Skills Library*FILLED* | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Skills (9) | Categories (3) | Tags (3) | Clinical Settings (5) | Lab Instructors (3) | Add instructor*FILLED* | Edit | Edit | Edit
+## table rows=3 rowH=47 box=[265, 302, 1150, 173] headers=['NAME', 'EMAIL', 'EVALUATIONS', 'STATUS', '']
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Skills Library" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The program's skills, plus the categories, tags and settings that organise them" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x369
+        div @264,107 1152x42 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+          button "Skills (9)" type=submit @264,107 104x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Categories (3)" type=submit @372,107 141x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Tags (3)" type=submit @517,107 100x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Clinical Settings (5)" type=submit @622,107 176x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Lab Instructors (3)" type=submit @802,107 169x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+        div @264,165 1152x311
+          div "Lab instructors are not Prism users and are not stored elsewhere in the product. This roster holds only what a delegator link needs — a name" @299,174 1104x39 | fs=12px fw=400 color=rgb(30, 58, 138)
+          div @264,238 1152x238 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,239 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @307,251 308x38
+                h3 "Lab instructors" @307,251 308x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                p "Offered to students when a skill is signed off in the lab" @307,273 308x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              button "Add instructor" type=button @1274,251 125x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            table @265,302 1150x173
+              thead @265,302 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,302 1150x33
+                  th "Name" @265,302 213x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Email" @478,302 375x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluations" @853,302 226x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Status" @1079,302 157x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1237,302 178x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,335 1150x141
+                tr @265,335 1150x47
+                  td "T. Ferreira" @265,335 213x47 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "t.ferreira@example.edu" @478,335 375x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "454" @853,335 226x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1079,335 157x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1091,347 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1237,335 178x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,345 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,382 1150x47 | bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "K. Larsen" @265,382 213x47 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "k.larsen@example.edu" @478,382 375x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "380" @853,382 226x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1079,382 157x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1091,394 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1237,382 178x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,392 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,429 1150x47 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "R. Whitmore" @265,429 213x47 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "r.whitmore@example.edu" @478,429 375x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "1" @853,429 226x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1079,429 157x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1091,441 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1237,429 178x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,439 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px

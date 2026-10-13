@@ -1,0 +1,352 @@
+[
+ {
+  "name": "51-add-skill-dialog-empty",
+  "desc": "Add a skill dialog, empty",
+  "headings": [
+   "Skills Library",
+   "Add a skill"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Add and configure"
+  ]
+ },
+ {
+  "name": "52-add-skill-dialog-filled",
+  "desc": "Add a skill dialog with name entered",
+  "headings": [
+   "Skills Library",
+   "Add a skill"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Add and configure"
+  ]
+ },
+ {
+  "name": "53-new-binary-step1",
+  "desc": "New skill (binary): wizard step 1 after Add and configure",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample binary"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "1 Skill definition",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "54-new-binary-step2-no-model",
+  "desc": "New skill (binary): step 2 before choosing a model",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample binary"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "2 Evaluation configuration",
+   "Continue"
+  ]
+ },
+ {
+  "name": "55-new-binary-step2-model-chosen",
+  "desc": "New skill, Overall Binary Outcome: step 2 with model chosen, config blank",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample binary",
+   "Response options",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "2 Evaluation configuration",
+   "Overall Binary Outcome The evaluator records one overall out",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "56-new-binary-step2-labels-filled",
+  "desc": "Binary: step 2 with both labels entered",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample binary",
+   "Response options",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "2 Evaluation configuration",
+   "Overall Binary Outcome The evaluator records one overall out",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "57-new-binary-step3",
+  "desc": "New skill, Overall Binary Outcome: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample binary",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "58-new-question-step1",
+  "desc": "New skill (question): wizard step 1 after Add and configure",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample question"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "1 Skill definition",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "59-new-question-step2-no-model",
+  "desc": "New skill (question): step 2 before choosing a model",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample question"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Continue"
+  ]
+ },
+ {
+  "name": "60-new-question-step2-model-chosen",
+  "desc": "New skill, Question-Level Qualitative: step 2 with model chosen, config blank",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample question",
+   "Evaluation questions (1)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Question-Level Qualitative The evaluator answers Yes/No agai",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "63-new-scored-step1",
+  "desc": "New skill (scored): wizard step 1 after Add and configure",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample scored"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "1 Skill definition",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "64-new-scored-step2-no-model",
+  "desc": "New skill (scored): step 2 before choosing a model",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample scored"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Continue"
+  ]
+ },
+ {
+  "name": "65-new-scored-step2-model-chosen",
+  "desc": "New skill, Scored / Likert: step 2 with model chosen, config blank",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample scored",
+   "Evaluation questions (1)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Scored / Likert The evaluator scores each question on the pr",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "68-new-demo-step1",
+  "desc": "New skill (demo): wizard step 1 after Add and configure",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample demo"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "1 Skill definition",
+   "Active",
+   "Continue"
+  ]
+ },
+ {
+  "name": "69-new-demo-step2-no-model",
+  "desc": "New skill (demo): step 2 before choosing a model",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample demo"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Continue"
+  ]
+ },
+ {
+  "name": "70-new-demo-step2-model-chosen",
+  "desc": "New skill, Demonstration-Level Outcome: step 2 with model chosen, config blank",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample demo",
+   "Demonstration levels (3)",
+   "Evaluation qualification"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "2 Evaluation configuration",
+   "Demonstration-Level Outcome The evaluator records the level ",
+   "Required",
+   "Optional",
+   "Preceptor",
+   "Clinical Faculty",
+   "Lab Instructor",
+   "Continue"
+  ]
+ },
+ {
+  "name": "72-new-demo-step3",
+  "desc": "New skill, Demonstration-Level Outcome: step 3 criteria",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sample demo",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "81-edit-binary-sterile-step3",
+  "desc": "Edit Sterile Dressing Change: step 3 criteria (after filling blank labels)",
+  "headings": [
+   "Skills Library",
+   "Edit skill — Sterile Dressing Change",
+   "Achievement criteria"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "3 Achievement criteria",
+   "Save skill"
+  ]
+ },
+ {
+  "name": "78-add-skill-dialog-unticked",
+  "desc": "Add a skill dialog with Configure-now unticked",
+  "headings": [
+   "Skills Library",
+   "Add a skill"
+  ],
+  "buttons": [
+   "Skills Library",
+   "Add skill",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Configure",
+   "Add to library"
+  ]
+ }
+]

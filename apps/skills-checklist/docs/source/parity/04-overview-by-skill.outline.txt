@@ -1,0 +1,215 @@
+# 04-overview-by-skill: Overview By skill  (doc 1440x1197, fullPage=True)
+## headings: h1:Overview(18px/600)
+## buttons: Overview*FILLED* | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Filters | By student | By skill | By tag | Export
+## table rows=9 rowH=67 box=[265, 384, 1150, 755] headers=['SKILL', 'CATEGORY', 'EVALUATION MODEL', 'STUDENTS IN VIEW', 'ACHIEVED', 'IN PROGRESS', 'NOT MET', '% ACHIEVED', 'COURSES', '']
+## tree
+div @0,0 1440x1197 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x1197 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Overview" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Skills attainment by student, by skill and by tag" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x1110 | pad=20px 24px
+      div @264,107 1152x1070
+        div @265,108 1150x46 | display=flex gap=8px dir=row ai=center pad=8px 12px
+          button "Filters" type=submit @277,116 98x30 | display=flex gap=6px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          span "Showing everything" @383,123 111x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+        p "Showing data for 150 students · All cohorts · All groups · All clinical courses · 9 skills in scope" @264,171 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,203 1152x118 | display=grid cols=279px 279px 279px 279px gap=12px
+          div @264,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students in view" @281,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "150" @281,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Matches the filters above" @281,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @555,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Avg. skills achieved" @572,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "3.2 / 9" @572,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Per student, in scope" @572,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @846,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students achieving all skills in scope" @863,218 245x32 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "0" @863,256 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "0% of students in view" @863,290 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @1137,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Skills needing attention" @1154,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "6" @1154,240 245x32 | fs=24px fw=600 color=rgb(180, 83, 9)
+            p "Below 50% achievement in view" @1154,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,337 1152x840 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,338 1150x46 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+            div @281,338 306x45 | display=flex gap=4px dir=row
+              button "By student" type=submit @281,338 117x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+              button "By skill" type=submit @402,338 92x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+              button "By tag" type=submit @499,338 88x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+            button "Export" type=button @1319,348 80x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          div @265,384 1150x792
+            table @265,384 1150x755
+              thead @265,384 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,384 1150x33
+                  th "Skill" @265,384 166x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Category" @431,384 95x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluation model" @526,384 192x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Students in view" @718,384 145x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achieved" @864,384 88x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "In progress" @952,384 109x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Not met" @1061,384 81x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "% achieved" @1142,384 148x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Courses" @1290,384 85x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1375,384 40x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,417 1150x723
+                tr @265,417 1150x67
+                  td "Wound Care" @265,417 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag A" @277,451 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,417 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,417 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @538,431 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,417 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "15" @864,417 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "82" @952,417 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "53" @1061,417 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,417 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,440 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "10 %" @1154,440 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,417 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,417 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,484 1150x67 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Tracheostomy Care" @265,484 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag C" @277,518 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,484 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,484 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @538,506 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,484 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "30" @864,484 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "20" @952,484 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "100" @1061,484 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,484 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,507 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "20 %" @1154,507 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1290,484 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,484 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,551 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Medication Administration" @265,551 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,605 142x22 | display=flex gap=4px dir=row
+                      span "Tag B" @277,605 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,605 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,551 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,551 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @538,575 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,551 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "38" @864,551 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "67" @952,551 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "45" @1061,551 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,551 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,584 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "25 %" @1154,584 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,551 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,551 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,638 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Sterile Dressing Change" @265,638 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag A" @277,692 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,638 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,638 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,670 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,638 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "39" @864,638 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "26" @952,638 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "85" @1061,638 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,638 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,671 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "26 %" @1154,671 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1290,638 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,638 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,725 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Foley Catheter Insertion" @265,725 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,779 142x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,779 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,779 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,725 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,725 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @538,749 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,725 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "42" @864,725 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "78" @952,725 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "30" @1061,725 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,725 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,758 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "28 %" @1154,758 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "3" @1290,725 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,725 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,812 1150x67 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "IV Insertion" @265,812 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,846 142x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,846 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag B" @331,846 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,812 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,812 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @538,826 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,812 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "53" @864,812 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "79" @952,812 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "18" @1061,812 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,812 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,835 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "35 %" @1154,835 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "4" @1290,812 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,812 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,879 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Medication Reconciliation" @265,879 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag C" @277,933 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,879 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,879 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,911 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,879 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "81" @864,879 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "0" @952,879 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "69" @1061,879 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,879 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,912 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "54 %" @1154,912 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,879 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,879 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,966 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Vital Signs Assessment" @265,966 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag B" @277,1020 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,966 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,966 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,998 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,966 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "89" @864,966 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "21" @952,966 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "40" @1061,966 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,966 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,999 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "59 %" @1154,999 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,966 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,966 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,1053 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Head-to-Toe Assessment" @265,1053 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag B" @277,1107 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,1053 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,1053 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @538,1085 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,1053 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "90" @864,1053 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "36" @952,1053 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "24" @1061,1053 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,1053 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,1086 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "60 %" @1154,1086 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,1053 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,1053 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+            p "% achieved counts every student in view, including students whose clinical courses do not recommend the skill. Filter by clinical course to " @265,1139 1150x37 | pad=10px 16px fs=12px fw=400 color=rgb(100, 116, 139) border=1px/0px/0px/0px rgb(226, 232, 240)

@@ -1,0 +1,324 @@
+# 42-import-review: Import review step  (doc 1440x1225, fullPage=False)
+## headings: h1:Skills Library(18px/600) | h2:Review 8 skills found in pasted list(16px/600) | h3:1 lines were not read as skills(14px/600)
+## buttons: Overview | Skills Library*FILLED* | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Skills (9) | Categories (3) | Tags (3) | Clinical Settings (5) | Lab Instructors (3) | Import | Add skill*FILLED* | IV Insertion | 4 | Active | Edit | Foley Catheter Insertion | 3 | Active | Edit | Sterile Dressing Change | 1 | Active | Edit | Head-to-Toe Assessment | 2 | Active | Edit | Medication Administration | 2 | Active | Edit | Vital Signs Assessment | 2 | Active | Edit | Wound Care | 2 | Active | Edit | Tracheostomy Care | 1 | Active | Edit | Medication Reconciliation | 2 | Active | Edit | Close | Back | Create 8 skills*FILLED*
+## table rows=9 rowH=103 box=[265, 225, 1150, 979] headers=['SKILL', 'CATEGORY', 'EVALUATION MODEL', 'ACHIEVEMENT CRITERIA', 'COURSES', 'STATUS', '']
+## table rows=8 rowH=55 box=[229, 330, 982, 472] headers=['', 'SKILL', 'DESCRIPTION', 'CATEGORY', '']
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x1225 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x1225 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Skills Library" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The program's skills, plus the categories, tags and settings that organise them" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x1138 | pad=20px 24px
+      div @264,107 1152x1098
+        div @264,107 1152x42 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+          button "Skills (9)" type=submit @264,107 104x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+          button "Categories (3)" type=submit @372,107 141x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Tags (3)" type=submit @517,107 100x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Clinical Settings (5)" type=submit @622,107 176x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Lab Instructors (3)" type=submit @802,107 169x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+        div @264,165 1152x1040
+          div @264,165 1152x1040 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,166 1150x59 | display=flex gap=8px dir=row ai=center pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              input type=text ph="Search skills" @281,178 402x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @691,179 176x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @875,179 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @1043,179 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Import" type=button @1195,178 92x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Add skill" type=button @1295,178 104x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            table @265,225 1150x979
+              thead @265,225 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,225 1150x33
+                  th "Skill" @265,225 197x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Category" @462,225 94x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluation model" @556,225 182x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achievement criteria" @738,225 425x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Courses" @1164,225 85x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Status" @1249,225 78x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1327,225 88x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,258 1150x947
+                tr @265,258 1150x103
+                  td @265,258 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "IV Insertion" type=submit @277,268 75x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,290 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @277,328 173x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,328 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag B" @331,328 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @462,258 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,258 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @568,290 158x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "5 demonstrations · 1 observed · 1 with assistance · 3 independent" @738,258 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,258 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "4" type=submit @1228,299 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,258 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,298 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,298 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,258 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,296 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,361 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,361 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Foley Catheter Insertion" type=submit @277,371 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,393 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @277,431 173x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,431 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,431 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @462,361 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,361 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @568,393 158x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "3 qualifying evaluations" @738,361 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,361 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "3" type=submit @1228,402 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,361 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,401 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,401 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,361 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,399 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,464 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,464 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Sterile Dressing Change" type=submit @277,474 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,496 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag A" @277,534 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @462,464 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,464 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @568,504 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "3 qualifying evaluations" @738,464 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,464 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "1" type=submit @1228,505 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,464 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,504 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,504 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,464 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,502 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,567 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,567 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Head-to-Toe Assessment" type=submit @277,577 168x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,599 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag B" @277,637 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @462,567 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,567 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @568,607 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "2 qualifying evaluations" @738,567 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,567 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "2" type=submit @1228,608 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,567 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,607 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,607 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,567 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,605 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,670 1150x123 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,670 197x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Medication Administration" type=submit @277,680 173x40 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,722 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @277,760 173x22 | display=flex gap=4px dir=row
+                      span "Tag B" @277,760 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,760 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @462,670 94x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,670 182x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @568,712 158x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "3 qualifying evaluations" @738,670 425x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,670 85x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "2" type=submit @1228,721 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,670 78x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,720 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,720 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,670 88x123 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,718 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,793 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,793 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Vital Signs Assessment" type=submit @277,803 154x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,825 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag B" @277,863 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @462,793 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,793 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @568,833 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "2 qualifying evaluations" @738,793 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,793 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "2" type=submit @1228,834 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,793 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,833 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,833 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,793 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,831 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,896 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,896 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Wound Care" type=submit @277,906 81x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,928 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag A" @277,966 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @462,896 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,896 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @568,928 158x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency" @738,896 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,896 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "2" type=submit @1228,937 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,896 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,936 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,936 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,896 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,934 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,999 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,999 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Tracheostomy Care" type=submit @277,1009 128x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,1031 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag C" @277,1069 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @462,999 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,999 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @568,1039 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "2 qualifying evaluations" @738,999 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,999 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "1" type=submit @1228,1040 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,999 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,1039 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,1039 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,999 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,1037 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,1102 1150x103 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,1102 197x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Medication Reconciliation" type=submit @277,1112 169x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,1134 173x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    span "Tag C" @277,1172 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @462,1102 94x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @556,1102 182x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @568,1142 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "1 qualifying evaluation" @738,1102 425x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1164,1102 85x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "2" type=submit @1228,1143 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1249,1102 78x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1261,1142 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1261,1142 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1327,1102 88x103 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,1140 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+            div @208,48 1024x760 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+              div @208,48 1024x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+                div @228,62 479x42
+                  h2 "Review 8 skills found in pasted list" @228,62 479x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                  p "Nothing is added until you confirm. Edit, exclude or rename anything before creating." @228,88 479x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                button aria="Close" type=submit @1188,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+              div @228,135 984x787
+                div @228,135 984x102 | display=grid cols=320px 320px 320px 0px gap=12px
+                  div @228,135 320x102 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                    p "Found" @245,150 286x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    p "8" @245,172 286x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+                    p "Rows read from the source" @245,206 286x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  div @560,135 320x102 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                    p "Will be created" @577,150 286x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    p "8" @577,172 286x32 | fs=24px fw=600 color=rgb(4, 120, 87)
+                    p "0 excluded" @577,206 286x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  div @892,135 320x102 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                    p "Possible duplicates" @909,150 286x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    p "0" @909,172 286x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+                    p "Already in the library" @909,206 286x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                label @228,253 984x60 | display=flex gap=10px dir=row ai=flex-start pad=10px 12px fs=16px fw=400 color=rgb(15, 23, 42) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                  input type=checkbox val="on" checked=True @241,266 16x16
+                  span "Create 3 new categor ies from the groupings in this list" @267,264 350x38 | fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Category D, Category E, Category F" @267,286 350x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                table @229,330 982x472
+                  thead @229,330 982x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                    tr @229,330 982x33
+                      th @229,330 70x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      th "Skill" @299,330 350x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      th "Description" @649,330 350x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      th "Category" @999,330 170x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      th @1169,330 42x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  tbody @229,363 982x440
+                    tr @229,363 982x55
+                      td @229,363 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Nasogastric Tube Insertion" type=checkbox val="on" checked=True @241,380 16x16
+                      td @299,363 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Nasogastric Tube Insertion" @311,373 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,363 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Placement and confirmation per programme policy" @661,373 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category D" @999,363 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,363 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,418 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,418 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Central Line Dressing Change" type=checkbox val="on" checked=True @241,435 16x16
+                      td @299,418 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Central Line Dressing Change" @311,428 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,418 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Sterile technique on an established line" @661,428 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category D" @999,418 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,418 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,473 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,473 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Blood Glucose Monitoring" type=checkbox val="on" checked=True @241,490 16x16
+                      td @299,473 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Blood Glucose Monitoring" @311,483 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,473 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Capillary sampling and result interpretation" @661,483 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category E" @999,473 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,473 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,528 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,528 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Oxygen Therapy Administration" type=checkbox val="on" checked=True @241,545 16x16
+                      td @299,528 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Oxygen Therapy Administration" @311,538 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,528 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Delivery device selection and titration" @661,538 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category E" @999,528 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,528 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,583 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,583 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Urinary Catheter Removal" type=checkbox val="on" checked=True @241,600 16x16
+                      td @299,583 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Urinary Catheter Removal" @311,593 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,583 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" @661,593 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category F" @999,583 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,583 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,638 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,638 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Peripheral IV Removal" type=checkbox val="on" checked=True @241,655 16x16
+                      td @299,638 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Peripheral IV Removal" @311,648 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,638 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Documentation of site condition" @661,648 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "Category F" @999,638 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,638 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,693 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,693 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Lead ECG Acquisition" type=checkbox val="on" checked=True @241,710 16x16
+                      td @299,693 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Lead ECG Acquisition" @311,703 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,693 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" val="Lead placement and trace quality" @661,703 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "—" @999,693 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,693 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    tr @229,748 982x55 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                      td @229,748 70x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input aria="Include Wound Irrigation" type=checkbox val="on" checked=True @241,765 16x16
+                      td @299,748 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text val="Wound Irrigation" @311,758 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td @649,748 350x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                        input type=text ph="—" @661,758 326x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      td "—" @999,748 170x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      td @1169,748 42x55 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                div @228,819 984x103 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                  div @271,832 527x38
+                    h3 "1 lines were not read as skills" @271,832 527x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                    p "Shown so nothing is lost silently. Add any of these by hand if they should have been included." @271,854 527x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  div @229,883 982x38 | display=flex gap=8px dir=row jc=space-between ai=center pad=8px 16px
+                    span "Line 9 : SECTION 2 — ADVANCED PROCEDURES" @245,894 271x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                    span "Looks like a section heading" @1015,891 180x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              div @208,749 1024x59 | display=flex gap=8px dir=row jc=flex-end ai=center pad=12px 20px bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(226, 232, 240)
+                button "Back" type=button @1004,762 59x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                button "Create 8 skill s" type=button @1070,762 142x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

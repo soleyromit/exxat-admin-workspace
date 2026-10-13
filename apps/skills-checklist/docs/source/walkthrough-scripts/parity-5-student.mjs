@@ -1,0 +1,35 @@
+import { open, cap, capLong, save, nav, clk, btn, setManifest, step as rawStep, closeTop, ensureClosed } from './parity-lib.mjs';
+setManifest('manifest-5-student.json');
+const { b, p } = await open();
+const step = async (l, f) => { await ensureClosed(p); await rawStep(l, f); };
+await nav(p, 'Student View');
+await cap(p, '120-student-default', 'Student View default (Olivia Martin, NURS 350)');
+await step('switch course', async () => { await p.locator('select').nth(1).selectOption({ index: 1 }); await cap(p, '121-student-course-410', 'Student View, course NURS 410'); await p.locator('select').nth(1).selectOption({ index: 0 }); });
+await step('switch student', async () => { await p.locator('select').nth(0).selectOption({ label: 'Rina Okonkwo' }); await cap(p, '122-student-switched', 'Student View, switched student (Rina Okonkwo)'); await p.locator('select').nth(0).selectOption({ label: 'Olivia Martin' }); });
+await step('only sent', async () => { await p.getByText('Show only skills I have sent for review').click(); await cap(p, '123-student-only-sent', 'Show only skills I have sent for review ticked'); await p.getByText('Show only skills I have sent for review').click(); });
+await step('other skills', async () => { await p.getByText('Other skills').first().click(); await p.waitForTimeout(300); await cap(p, '124-student-other-skills-open', 'Other skills section expanded'); });
+await step('history flow', async () => {
+  await p.getByRole('button', { name: 'View history (5)' }).first().click();
+  await capLong(p, '125-student-history', 'History drawer, IV Insertion (5 attempts)');
+  await p.getByRole('button', { name: /NURS 350 only/ }).click(); await capLong(p, '126-student-history-course-only', 'History drawer, NURS 350 only');
+  await p.getByRole('button', { name: 'View form' }).first().click(); await cap(p, '127-student-history-view-form', 'View form from history (nested dialog)', { full: false });
+  await p.getByRole('button', { name: 'Close', exact: true }).last().click(); await p.waitForTimeout(300);
+  await p.getByRole('button', { name: 'All courses (5)' }).click(); await p.waitForTimeout(250);
+  await p.getByRole('button', { name: 'Revise and resend' }).click(); await capLong(p, '128-student-revise-and-resend', 'Revise and resend dialog');
+});
+await step('send flow', async () => {
+  await p.locator('input[aria-label="Select Foley Catheter Insertion"]').check(); await p.locator('input[aria-label="Select Medication Administration"]').check();
+  await cap(p, '130-student-selection-bar', 'Two skills selected: sticky selection bar');
+  await btn(p, 'Send for review'); await capLong(p, '131-student-send-clinical', 'Send for review dialog (Clinical default)');
+  const d = p.locator('input[type=date]'); const n = await d.count(); for (let i = 0; i < n; i++) await d.nth(i).fill('2026-09-01'); await p.waitForTimeout(250);
+  await capLong(p, '132-student-send-clinical-filled', 'Send dialog, details filled (Send enabled)');
+  await p.getByRole('button', { name: 'Lab / Simulation' }).last().click(); await p.waitForTimeout(300); await capLong(p, '133-student-send-lab', 'Send dialog, Lab / Simulation');
+  const dd = await p.$$eval('select', (els) => els.filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().top > 100).map((e) => [...e.options].map((o) => o.text)));
+  console.log('dialog selects', JSON.stringify(dd));
+  const roleSel = p.locator('select').filter({ hasText: 'Lab Instructor' }).last();
+  await roleSel.selectOption({ label: 'Lab Instructor' }); await p.waitForTimeout(300); await capLong(p, '134-student-send-lab-instructor', 'Send dialog, role = Lab Instructor');
+  const ppl = await p.$$eval('select', (els) => els.filter((e) => e.getBoundingClientRect().top > 100).map((e) => [...e.options].map((o) => o.text)));
+  console.log('selects after lab instructor', JSON.stringify(ppl.slice(-2)));
+  await p.getByRole('button', { name: 'Send request' }).click(); await p.waitForTimeout(500); await cap(p, '135-student-sent-confirmation', 'After Send request (confirmation banner, waiting strip)');
+});
+save('manifest-5-student.json'); await b.close();

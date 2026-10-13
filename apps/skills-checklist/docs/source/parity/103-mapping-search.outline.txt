@@ -1,0 +1,163 @@
+# 103-mapping-search: Mapping search "NURS 410"  (doc 1440x900, fullPage=True)
+## headings: h1:Course Mapping(18px/600) | h3:Clinical course offerings(14px/600) | h3:Skills mapped — NURS 410(14px/600)
+## buttons: Overview | Skills Library | Course Mapping*FILLED* | Review & Approve | Student View | Preceptor Evaluation | Clear | NURS 410 — Community Health Fall 2024 · Year 3 · No cohort e*FILLED* | NURS 410 — Community Health Spring 2025 · Year 3 · No cohort | NURS 410 — Community Health Fall 2025 · Year 3 · No cohort e | NURS 410 — Community Health Spring 2026 · Year 3 · No cohort | NURS 410 — Community Health Fall 2026 · Year 3 · BSN 2026 2/ | NURS 410 — Community Health Spring 2027 · Year 3 · No cohort
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Course Mapping" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Set which skills are mandatory for each clinical course offering" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x716
+        div "Mapping a skill to an offering marks it as or for that course. Neither setting restricts where a skill can be evaluated — students may still" @299,116 1104x39 | fs=12px fw=400 color=rgb(30, 58, 138)
+          strong "mandatory" @531,118 66x15 | fs=12px fw=700 color=rgb(30, 58, 138)
+          strong "non-mandatory" @614,118 94x15 | fs=12px fw=700 color=rgb(30, 58, 138)
+        div @264,180 1152x643 | display=grid cols=378.656px 757.344px gap=16px
+          div @264,180 379x643 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,181 377x79 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @303,193 234x54
+                h3 "Clinical course offerings" @303,193 234x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                p "6 of 42 offerings match · count shows mandatory / total" @303,215 234x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+              button "Clear" type=button @553,193 72x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+            div @265,260 377x185 | pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              input type=text ph="Search by course code or name" val="NURS 410" @281,272 345x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(59, 130, 246) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(59, 130, 246) 0px 0p
+              div @281,314 345x118 | display=grid cols=168.328px 168.328px gap=8px
+                label @281,314 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Cohort" @281,314 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @281,336 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @457,314 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Academic year" @457,314 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @457,336 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @281,377 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Term" @281,377 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @281,399 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @457,377 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Professional year" @457,377 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @457,399 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            div @265,445 377x377
+              button type=submit @265,445 377x62 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) bg=rgb(239, 246, 255)
+                div @281,457 214x38
+                  p "NURS 410 — Community Health" @281,457 214x20 | fs=14px fw=500 color=rgb(30, 58, 138)
+                  p "Fall 2024 · Year 3 · No cohort enrolled" @281,479 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,466 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,507 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,520 231x38
+                  p "NURS 410 — Community Health" @281,520 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 3 · No cohort enrolled" @281,542 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,529 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,570 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,583 214x38
+                  p "NURS 410 — Community Health" @281,583 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 3 · No cohort enrolled" @281,605 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,592 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,633 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,646 232x38
+                  p "NURS 410 — Community Health" @281,646 232x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 3 · No cohort enrolled" @281,668 232x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,655 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,696 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,709 209x38
+                  p "NURS 410 — Community Health" @281,709 209x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 3 · BSN 2026" @281,731 209x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "2 / 3" @594,718 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,759 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,772 231x38
+                  p "NURS 410 — Community Health" @281,772 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 3 · No cohort enrolled" @281,794 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,781 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+          div @659,180 757x643 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @702,193 406x38
+              h3 "Skills mapped — NURS 410" @702,193 406x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+              p "Community Health · Fall 2024 · Year 3 — 0 mandatory, 0 non-mandatory" @702,215 406x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            input type=text ph="Search the Skills Library" @676,256 723x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            div @660,303 755x420
+              div @660,303 755x100 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px
+                input aria="Map IV Insertion" type=checkbox val="on" checked=False @676,319 16x16
+                div @704,315 695x76
+                  div @704,315 695x22 | display=flex gap=8px dir=row ai=center
+                    p "IV Insertion" @704,316 75x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Demonstration-Level Outcome" @787,315 195x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "5 demonstrations · 1 observed · 1 with assistance · 3 independent" @704,339 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 301 (Fall 2026), NURS 315 (Fall 2026) and 1 more — one student-level skill record is shared across" @704,359 695x32 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,403 755x101 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Foley Catheter Insertion" type=checkbox val="on" checked=False @676,420 16x16
+                div @704,416 695x76
+                  div @704,416 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Foley Catheter Insertion" @704,417 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Question-Level Qualitative" @870,416 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,440 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 301 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,460 695x32 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,504 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Sterile Dressing Change" type=checkbox val="on" checked=False @676,521 16x16
+                div @704,517 695x60
+                  div @704,517 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Sterile Dressing Change" @704,518 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @871,517 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,541 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 301 (Fall 2026) — one student-level skill record is shared across courses." @704,561 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,589 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Head-to-Toe Assessment" type=checkbox val="on" checked=False @676,606 16x16
+                div @704,602 695x60
+                  div @704,602 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Head-to-Toe Assessment" @704,603 168x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Scored / Likert" @879,602 102x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,626 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 301 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,646 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,674 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Medication Administration" type=checkbox val="on" checked=False @676,691 16x16
+                div @704,687 695x60
+                  div @704,687 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Medication Administration" @704,688 173x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Question-Level Qualitative" @884,687 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,711 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 315 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,731 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,759 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Vital Signs Assessment" type=checkbox val="on" checked=False @676,776 16x16
+                div @704,772 695x60
+                  div @704,772 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Vital Signs Assessment" @704,773 154x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @865,772 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,796 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 315 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,816 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,844 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Wound Care" type=checkbox val="on" checked=False @676,861 16x16
+                div @704,857 695x60
+                  div @704,857 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Wound Care" @704,858 81x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Demonstration-Level Outcome" @792,857 195x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency" @704,881 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,901 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,929 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Tracheostomy Care" type=checkbox val="on" checked=False @676,946 16x16
+                div @704,942 695x60
+                  div @704,942 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Tracheostomy Care" @704,943 128x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Scored / Likert" @840,942 102x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,966 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 315 (Fall 2026) — one student-level skill record is shared across courses." @704,986 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,1014 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Medication Reconciliation" type=checkbox val="on" checked=False @676,1031 16x16
+                div @704,1027 695x60
+                  div @704,1027 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Medication Reconciliation" @704,1028 169x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @881,1027 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "1 qualifying evaluation" @704,1051 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,1071 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)

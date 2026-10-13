@@ -1,0 +1,277 @@
+# 93-edit-add-field: Step 2 after Add field (if present)  (doc 1440x900, fullPage=False)
+## headings: h1:Skills Library(18px/600) | h2:Edit skill — Foley Catheter Insertion(16px/600) | h3:Evaluation questions (4)(14px/600) | h3:Evaluation qualification(14px/600) | h3:Student submission details (3)(14px/600) | h3:Evaluator comment(14px/600) | h3:Review workflow(14px/600) | h3:Form preview(14px/600)
+## buttons: Overview | Skills Library*FILLED* | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Skills (9) | Categories (3) | Tags (3) | Clinical Settings (5) | Lab Instructors (2) | Import | Add skill*FILLED* | Foley Catheter Insertion | 3 | Active | Edit | Close | Skill definition | 2 Evaluation configuration*FILLED* | 3 Achievement criteria | Overall Binary Outcome The evaluator records one overall out | Question-Level Qualitative The evaluator answers Yes/No agai*FILLED* | Scored / Likert The evaluator scores each question on the pr | Demonstration-Level Outcome The evaluator records the level  | Add question | Remove question | Remove question | Remove question | Remove question | Add field | Required*FILLED* | Optional | Optional | Optional*FILLED* | Required | Off | Off | Preceptor*FILLED* | Clinical Faculty*FILLED* | Lab Instructor*FILLED* | Yes(dis) | No(dis) | Yes(dis) | No(dis) | Yes(dis) | No(dis) | Yes(dis) | No(dis) | Cancel | Back | Continue*FILLED*(dis)
+## table rows=1 rowH=87 box=[265, 225, 1150, 119] headers=['SKILL', 'CATEGORY', 'EVALUATION MODEL', 'ACHIEVEMENT CRITERIA', 'COURSES', 'STATUS', '']
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Skills Library" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The program's skills, plus the categories, tags and settings that organise them" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x238
+        div @264,107 1152x42 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+          button "Skills (9)" type=submit @264,107 104x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+          button "Categories (3)" type=submit @372,107 141x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Tags (3)" type=submit @517,107 100x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Clinical Settings (5)" type=submit @622,107 176x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Lab Instructors (2)" type=submit @802,107 169x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+        div @264,165 1152x180
+          div @264,165 1152x180 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,166 1150x59 | display=flex gap=8px dir=row ai=center pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              input type=text ph="Search skills" val="Foley" @281,178 402x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @691,179 176x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @875,179 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              select type=select-one val="all" @1043,179 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Import" type=button @1195,178 92x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              button "Add skill" type=button @1295,178 104x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            table @265,225 1150x119
+              thead @265,225 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,225 1150x33
+                  th "Skill" @265,225 330x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Category" @595,225 110x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluation model" @704,225 222x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achievement criteria" @927,225 202x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Courses" @1129,225 97x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Status" @1225,225 89x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1314,225 101x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,258 1150x87
+                tr @265,258 1150x87
+                  td @265,258 330x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Foley Catheter Insertion" type=submit @277,268 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    p "Placeholder skill definition — program-defined." @277,290 306x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @277,312 306x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,312 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,312 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @595,258 110x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @704,258 222x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @716,290 171x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "3 qualifying evaluations" @927,258 202x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1129,258 97x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "3" type=submit @1205,291 9x20 | fs=14px fw=400 color=rgb(29, 78, 216)
+                  td @1225,258 89x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button type=submit @1237,290 54x22 | fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Active" @1237,290 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1314,258 101x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,288 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+            div @208,48 1024x760 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+              div @208,48 1024x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+                div @228,62 448x42
+                  h2 "Edit skill — Foley Catheter Insertion" @228,62 448x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                  p "The program defines how this skill is evaluated and what achievement requires." @228,88 448x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                button aria="Close" type=submit @1188,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+              div @228,-524 984x2598 | display=grid cols=645.328px 322.656px gap=16px
+                div @228,-524 645x2598
+                  div @228,-524 645x32 | display=flex gap=8px dir=row ai=center
+                    button type=submit @228,-524 130x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(100, 116, 139) radius=6px
+                      span "Skill definition" @266,-516 82x16 | fs=12px fw=500 color=rgb(100, 116, 139)
+                    button type=submit @388,-524 188x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) radius=6px
+                      span "2" @398,-518 20x20 | display=flex dir=row jc=center ai=center fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) radius=9999px
+                      span "Evaluation configuration" @426,-516 140x16 | fs=12px fw=500 color=rgb(30, 64, 175)
+                    button type=submit @606,-524 167x32 | display=flex gap=8px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(100, 116, 139) radius=6px
+                      span "3" @616,-518 20x20 | display=flex dir=row jc=center ai=center fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(226, 232, 240) radius=9999px
+                      span "Achievement criteria" @644,-516 119x16 | fs=12px fw=500 color=rgb(100, 116, 139)
+                  div @228,-472 645x2546
+                    div @228,-472 645x230
+                      p "Evaluation model" @228,-472 645x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                      div @228,-448 645x206 | display=grid cols=318.656px 318.672px gap=8px
+                        button type=submit @228,-448 319x109 | pad=12px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                          span "Overall Binary Outcome" @265,-435 156x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                          span "The evaluator records one overall outcome, using two labels the program defines. Defaults to Met / Unmet." @241,-411 293x59 | pad=0px 0px 0px 24px fs=12px fw=400 color=rgb(100, 116, 139)
+                        button type=submit @555,-448 319x109 | pad=12px fs=16px fw=400 color=rgb(15, 23, 42) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+                          span "Question-Level Qualitative" @592,-425 175x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                          span "The evaluator answers Yes/No against each program-defined question." @568,-401 293x39 | pad=0px 0px 0px 24px fs=12px fw=400 color=rgb(100, 116, 139)
+                        button type=submit @228,-331 319x89 | pad=12px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                          span "Scored / Likert" @265,-318 96x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                          span "The evaluator scores each question on the program-configured scale." @241,-294 293x39 | pad=0px 0px 0px 24px fs=12px fw=400 color=rgb(100, 116, 139)
+                        button type=submit @555,-331 319x89 | pad=12px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                          span "Demonstration-Level Outcome" @592,-318 203x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                          span "The evaluator records the level of supervision the demonstration needed." @568,-294 293x39 | pad=0px 0px 0px 24px fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @228,-222 645x249 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @229,-221 643x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+                        div @271,-209 211x38
+                          h3 "Evaluation questions (4)" @271,-209 211x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                          p "Each question is answered Yes or No." @271,-187 211x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                        button "Add question" type=button @738,-209 118x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      div @229,-158 643x184 | pad=12px 16px
+                        div @245,-146 611x34 | display=flex gap=8px dir=row ai=center
+                          span "Q 1" @245,-137 28x16 | fs=12px fw=500 color=rgb(148, 163, 184)
+                          input type=text ph="Program-defined question" val="Performs appropriate preparation" @281,-146 539x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button aria="Remove question" type=submit @828,-143 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        div @245,-104 611x34 | display=flex gap=8px dir=row ai=center
+                          span "Q 2" @245,-95 28x16 | fs=12px fw=500 color=rgb(148, 163, 184)
+                          input type=text ph="Program-defined question" val="Performs the procedure correctly" @281,-104 539x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button aria="Remove question" type=submit @828,-101 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        div @245,-62 611x34 | display=flex gap=8px dir=row ai=center
+                          span "Q 3" @245,-53 28x16 | fs=12px fw=500 color=rgb(148, 163, 184)
+                          input type=text ph="Program-defined question" val="Maintains appropriate technique" @281,-62 539x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button aria="Remove question" type=submit @828,-59 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        div @245,-20 611x34 | display=flex gap=8px dir=row ai=center
+                          span "Q 4" @245,-11 28x16 | fs=12px fw=500 color=rgb(148, 163, 184)
+                          input type=text ph="Program-defined question" @281,-20 539x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button aria="Remove question" type=submit @828,-17 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                    div @228,47 645x333 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @271,60 481x38
+                        h3 "Evaluation qualification" @271,60 481x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                        p "Defines when a single completed evaluation counts as evidence toward achievement." @271,82 481x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                      div @245,123 611x244
+                        label @245,123 611x20 | display=flex gap=8px dir=row ai=center fs=16px fw=400 color=rgb(15, 23, 42)
+                          input type=radio val="on" checked=False @245,125 16x16
+                          span "All questions answered Yes" @269,123 175x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                        label @245,155 611x34 | display=flex gap=8px dir=row ai=center fs=16px fw=400 color=rgb(15, 23, 42)
+                          input type=radio val="on" checked=False @245,164 16x16
+                          span "At least" @269,162 48x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                          input type=number val="3" DISABLED @325,155 64x34 | pad=6px 10px bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          span "of 4 questions answered Yes" @397,162 185x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                        div @245,201 611x166
+                          label @245,201 611x20 | display=flex gap=8px dir=row ai=center fs=16px fw=400 color=rgb(15, 23, 42)
+                            input type=radio val="on" checked=True @245,203 16x16
+                            span "These specific questions answered Yes" @269,201 253x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                          div @245,229 611x138 | pad=0px 0px 0px 16px border=0px/0px/0px/2px rgb(226, 232, 240)
+                            p "Every question you tick must be Yes. Unticked questions are recorded but do not affect qualification." @263,229 593x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                            div @263,253 593x114
+                    div @228,400 645x405 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @229,401 643x79 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+                        div @270,413 479x54
+                          h3 "Student submission details (3)" @270,413 479x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                          p "What the student supplies when sending this skill. Independent of the evaluation model." @270,435 479x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                        button "Add field" type=button @765,413 91x42 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                      div @229,480 643x324 | pad=12px 16px
+                        div "Location and setting are already captured from the student's placement. Anything here is written by the student when they submit; the evalua" @280,501 563x39 | fs=12px fw=400 color=rgb(30, 58, 138)
+                        div @245,557 611x65 | display=flex gap=8px dir=row ai=flex-end pad=0px 0px 8px border=0px/0px/1px/0px rgb(241, 245, 249)
+                          span "1" @245,589 24x24 | pad=0px 0px 8px fs=12px fw=500 color=rgb(148, 163, 184)
+                          label @277,557 310x56 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Label" @277,557 310x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            input type=text ph="Program-defined label" val="Completion date" @277,579 310x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          label @595,558 144x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Type" @595,558 144x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            select type=select-one val="date" @595,580 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button "Required" type=button @747,581 74x30 | pad=6px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px
+                          button type=button @828,583 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        div @245,630 611x65 | display=flex gap=8px dir=row ai=flex-end pad=0px 0px 8px border=0px/0px/1px/0px rgb(241, 245, 249)
+                          span "2" @245,662 24x24 | pad=0px 0px 8px fs=12px fw=500 color=rgb(148, 163, 184)
+                          label @277,630 312x56 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Label" @277,630 312x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            input type=text ph="Program-defined label" val="Student notes" @277,652 312x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          label @597,631 144x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Type" @597,631 144x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            select type=select-one val="textarea" @597,653 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button "Optional" type=button @749,654 71x30 | pad=6px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button type=button @828,656 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        div @245,703 611x65 | display=flex gap=8px dir=row ai=flex-end pad=0px 0px 8px border=0px/0px/1px/0px rgb(241, 245, 249)
+                          span "3" @245,735 24x24 | pad=0px 0px 8px fs=12px fw=500 color=rgb(148, 163, 184)
+                          label @277,703 312x56 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Label" @277,703 312x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            input type=text ph="Program-defined label" @277,725 312x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          label @597,704 144x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            span "Type" @597,704 144x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            select type=select-one val="text" @597,726 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button "Optional" type=button @749,727 71x30 | pad=6px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                          button type=button @828,729 28x28 | pad=6px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+                        p "Every field needs a label." @245,776 611x16 | fs=12px fw=400 color=rgb(180, 83, 9)
+                    div @228,825 645x163 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @270,838 586x54
+                        h3 "Evaluator comment" @270,838 586x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                        p "Narrative feedback the evaluator writes alongside the outcome. Separate from the student's own notes above." @270,860 586x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                      div @229,905 643x82 | pad=12px 16px
+                        div @245,917 611x34 | display=flex gap=8px dir=row
+                          button "Optional" type=button @245,917 102x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+                          button "Required" type=button @355,917 104x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                        p "The preceptor may leave the comment blank." @245,959 611x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @228,1008 645x344 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @271,1021 261x38
+                        h3 "Review workflow" @271,1021 261x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                        p "Who touches an evaluation, and in what order." @271,1043 261x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                      div @229,1072 643x279 | pad=12px 16px
+                        div @245,1084 611x51 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=0px 0px 12px border=0px/0px/1px/0px rgb(241, 245, 249)
+                          div @245,1084 366x38
+                            p "Student self-evaluates first" @245,1084 366x20 | fs=14px fw=500 color=rgb(30, 41, 59)
+                            p "The student selects the skill and it goes straight to the evaluator." @245,1106 366x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                          button "Off" type=button @810,1084 46x34 | pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                        div @245,1147 611x51 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=0px 0px 12px border=0px/0px/1px/0px rgb(241, 245, 249)
+                          div @245,1147 270x38
+                            p "Administrator reviews before it counts" @245,1147 270x20 | fs=14px fw=500 color=rgb(30, 41, 59)
+                            p "The evaluator's submission counts immediately." @245,1169 270x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                          button "Off" type=button @810,1147 46x34 | pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                        div @245,1210 611x101 | pad=12px 0px 0px border=1px/0px/0px/0px rgb(241, 245, 249)
+                          p "Who can evaluate this skill" @245,1223 611x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                          div @245,1247 611x26 | display=flex gap=6px dir=row
+                            button "Preceptor" type=button @245,1247 97x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                            button "Clinical Faculty" type=button @348,1247 127x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                            button "Lab Instructor" type=button @481,1247 121x26 | display=flex gap=6px dir=row ai=center pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                          p "A lab-only skill is usually signed off by a lab instructor; some skills are reviewed by faculty rather than a preceptor. Students can only s" @245,1279 611x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+                        p "Route: Student selects → Evaluator completes the form → Counts as evidence" @245,1323 611x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    div @228,1372 645x702 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                      div @271,1385 227x38
+                        h3 "Form preview" @271,1385 227x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                        p "What the evaluator will fill in for this skill" @271,1407 227x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                      div @245,1448 611x613
+                        div @245,1448 611x264 | pad=12px bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                          p "Student supplies on submission" @258,1461 585x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                          div @258,1485 585x214 | display=grid cols=286.656px 286.672px gap=12px
+                            label @258,1485 287x58 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            label @258,1555 585x92 | fs=16px fw=400 color=rgb(15, 23, 42)
+                            label @258,1659 287x40 | fs=16px fw=400 color=rgb(15, 23, 42)
+                        div @245,1728 611x211
+                          div @245,1728 611x47 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 0px 12px border=0px/0px/1px/0px rgb(241, 245, 249)
+                            p "Performs appropriate preparation" @245,1735 239x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                            div @715,1728 141x34 | display=flex gap=8px dir=row
+                          div @245,1787 611x47 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 0px 12px border=0px/0px/1px/0px rgb(241, 245, 249)
+                            p "Performs the procedure correctly" @245,1794 240x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                            div @715,1787 141x34 | display=flex gap=8px dir=row
+                          div @245,1846 611x47 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 0px 12px border=0px/0px/1px/0px rgb(241, 245, 249)
+                            p "Maintains appropriate technique" @245,1853 233x20 | fs=14px fw=400 color=rgb(51, 65, 85)
+                            div @715,1846 141x34 | display=flex gap=8px dir=row
+                          div @245,1905 611x34 | display=flex gap=12px dir=row jc=space-between ai=center
+                            p @245,1912 195x20
+                            div @715,1905 141x34 | display=flex gap=8px dir=row
+                        div @245,1955 611x106
+                          p "Evaluator comment" @245,1955 611x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                            span "(optional)" @393,1955 55x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+                          div "Narrative feedback" @245,1977 611x64 | pad=8px 10px fs=14px fw=400 color=rgb(148, 163, 184) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                          p "May be left blank." @245,2045 611x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                div @889,135 323x403 | pad=16px bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px pos=sticky zauto
+                  p "Configuration lineage" @906,152 289x16 | display=flex gap=6px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  ol @906,180 289x234 | pad=0px 0px 0px 20px border=0px/0px/0px/1px rgb(226, 232, 240)
+                    li @927,180 268x37
+                      p "Evaluation model" @927,180 268x16 | fs=12px fw=600 color=rgb(148, 163, 184) tt=uppercase ls=0.3px
+                      p "Question-Level Qualitative" @927,198 268x19 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    li @927,229 268x37
+                      p "Evidence per evaluation" @927,229 268x16 | fs=12px fw=600 color=rgb(148, 163, 184) tt=uppercase ls=0.3px
+                      p "Yes / No per question" @927,247 268x19 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    li @927,279 268x37
+                      p "An evaluation qualifies when" @927,279 268x16 | fs=12px fw=600 color=rgb(148, 163, 184) tt=uppercase ls=0.3px
+                      p "Q2 and Q3 answered Yes" @927,297 268x19 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    li @927,328 268x37
+                      p "Achievement criteria" @927,328 268x16 | fs=12px fw=600 color=rgb(148, 163, 184) tt=uppercase ls=0.3px
+                      p "3 qualifying evaluations" @927,346 268x19 | fs=14px fw=400 color=rgb(30, 41, 59)
+                    li @927,377 268x37
+                      p "Skill status" @927,377 268x16 | fs=12px fw=600 color=rgb(148, 163, 184) tt=uppercase ls=0.3px
+                      p "Not Started → In Progress → Achieved" @927,395 268x19 | fs=14px fw=400 color=rgb(30, 41, 59)
+                  p "Each step below the model is determined by the one above it. This is what keeps evaluation setup and achievement criteria from contradicting" @906,430 289x91 | pad=12px 0px 0px fs=12px fw=400 color=rgb(100, 116, 139) border=1px/0px/0px/0px rgb(226, 232, 240)
+              div @228,762 984x34 | display=flex dir=row jc=space-between ai=center
+                p "Step 2 of 3 — Evaluation configuration" @228,771 216x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                div @959,762 253x34 | display=flex gap=8px dir=row
+                  button "Cancel" type=button @959,762 71x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  button "Back" type=button @1038,762 81x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                  button "Continue" type=button DISABLED @1126,762 86x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

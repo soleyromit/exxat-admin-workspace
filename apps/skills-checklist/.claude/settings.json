@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/skills-session-start.mjs" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/skills-code-gate.mjs", "onFailure": "block" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-req-ids.mjs" } ] }
+    ]
+  }
+}

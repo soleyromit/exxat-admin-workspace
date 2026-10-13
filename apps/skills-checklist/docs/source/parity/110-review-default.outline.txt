@@ -1,0 +1,107 @@
+# 110-review-default: Review & Approve: two evaluation cards  (doc 1440x1119, fullPage=True)
+## headings: h1:Review & Approve(18px/600) | h3:Rina Okonkwo — IV Insertion(14px/600) | h3:Jonah Nakamura — IV Insertion(14px/600)
+## buttons: Overview | Skills Library | Course Mapping | Review & Approve*FILLED* | Student View | Preceptor Evaluation | Return to preceptor | Approve*FILLED* | Return to preceptor | Approve*FILLED*
+## tree
+div @0,0 1440x1119 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x1119 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Review & Approve" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Approve submitted evaluations for skills that require it" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x1032 | pad=20px 24px
+      div @264,107 1152x992
+        div "Evaluations appear here only for skills where the program turned on administrator review. Everything else counts as soon as the preceptor su" @299,116 841x20 | fs=12px fw=400 color=rgb(30, 58, 138)
+        div @264,161 1152x938
+          div @264,161 1152x461 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,162 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @281,174 691x38
+                h3 "Rina Okonkwo — IV Insertion" @281,174 691x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                p "NURS 350 · Clinical (Outpatient Clinic, Lakeside Community Clinic) · submitted 2026-08-26 by J. Delgado, RN (Preceptor)" @281,196 691x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              span "Qualifies" @1330,174 69x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+            div @265,225 1150x396 | pad=12px 16px
+              div @294,246 1092x16 | display=flex gap=4px 16px dir=row
+                span "2026-08-26" @294,246 174x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Completion date :" @294,246 99x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+                span "5 East" @484,246 66x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Unit :" @484,246 28x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+                span "Felt I needed a prompt on preparation." @566,246 306x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Student notes :" @566,246 85x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+              div @281,283 1118x82 | display=grid cols=734.656px 367.344px gap=16px
+                div @281,283 735x82 | pad=10px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                  p "Preceptor" @294,294 709x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  p "Independent" @294,314 709x20 | fs=14px fw=400 color=rgb(30, 41, 59)
+                  p "Sound technique throughout; talked the patient through each step." @294,338 709x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                div @1032,283 367x82 | pad=10px 12px bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=6px
+                  p "Student self-evaluation" @1045,294 341x16 | fs=12px fw=600 color=rgb(30, 64, 175) tt=uppercase ls=0.3px
+                  p "With Assistance" @1045,314 341x20 | fs=14px fw=400 color=rgb(30, 58, 138)
+              p "Student and preceptor recorded different outcomes — worth a conversation before approving." @281,377 1118x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              details @281,405 1118x34 | pad=8px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                summary "See the full responses" @294,414 1092x16 | fs=12px fw=500 color=rgb(71, 85, 105)
+                div @294,442 1092x58
+                  p "Demonstration outcome" @294,442 1092x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  div @294,466 1092x34 | display=flex gap=8px dir=row
+                    button "Observed" type=button DISABLED @294,466 109x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                    button "With Assistance" type=button DISABLED @411,466 149x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                    button "Independent" type=button DISABLED @568,466 129x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+              label @281,451 1118x112 | fs=16px fw=400 color=rgb(15, 23, 42)
+                span "Review note" @281,451 1118x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                textarea type=textarea @281,473 1118x64 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                span "Optional. Kept with the evaluation." @281,547 1118x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              div @281,575 1118x34 | display=flex gap=8px dir=row jc=flex-end
+                button "Return to preceptor" type=button @1132,575 156x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(190, 18, 60) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(254, 205, 211) radius=6px
+                button "Approve" type=button @1296,575 103x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+          div @264,638 1152x461 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,639 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @281,651 482x38
+                h3 "Jonah Nakamura — IV Insertion" @281,651 482x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                p "NURS 350 · Lab / Simulation · submitted 2026-08-27 by R. Whitmore (Lab Instructor)" @281,673 482x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              span "Qualifies" @1330,651 69x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+            div @265,702 1150x396 | pad=12px 16px
+              div @294,723 1092x16 | display=flex gap=4px 16px dir=row
+                span "2026-08-27" @294,723 173x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Completion date :" @294,723 99x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+                span "Skills Lab" @483,723 85x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Unit :" @483,723 28x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+                span "Still building confidence." @583,723 228x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                  span "Student notes :" @583,723 85x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+              div @281,760 1118x82 | display=grid cols=734.656px 367.344px gap=16px
+                div @281,760 735x82 | pad=10px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                  p "Lab Instructor" @294,771 709x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  p "With Assistance" @294,791 709x20 | fs=14px fw=400 color=rgb(30, 41, 59)
+                  p "Needed guidance on one preparation step." @294,815 709x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                div @1032,760 367x82 | pad=10px 12px bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=6px
+                  p "Student self-evaluation" @1045,771 341x16 | fs=12px fw=600 color=rgb(30, 64, 175) tt=uppercase ls=0.3px
+                  p "With Assistance" @1045,791 341x20 | fs=14px fw=400 color=rgb(30, 58, 138)
+              p "Student and lab instructor recorded the same outcome." @281,854 1118x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              details @281,882 1118x34 | pad=8px 12px border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+                summary "See the full responses" @294,891 1092x16 | fs=12px fw=500 color=rgb(71, 85, 105)
+                div @294,919 1092x58
+                  p "Demonstration outcome" @294,919 1092x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  div @294,943 1092x34 | display=flex gap=8px dir=row
+                    button "Observed" type=button DISABLED @294,943 109x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                    button "With Assistance" type=button DISABLED @411,943 152x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(37, 99, 235) 0px 0px
+                    button "Independent" type=button DISABLED @571,943 127x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              label @281,928 1118x112 | fs=16px fw=400 color=rgb(15, 23, 42)
+                span "Review note" @281,928 1118x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                textarea type=textarea @281,950 1118x64 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                span "Optional. Kept with the evaluation." @281,1024 1118x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              div @281,1052 1118x34 | display=flex gap=8px dir=row jc=flex-end
+                button "Return to preceptor" type=button @1132,1052 156x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(190, 18, 60) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(254, 205, 211) radius=6px
+                button "Approve" type=button @1296,1052 103x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

@@ -1,0 +1,63 @@
+[
+ {
+  "name": "154-student-send-scored-binary-filled",
+  "desc": "Send dialog (scored+binary) with self-evaluation scores and details filled",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "4",
+   "4",
+   "Send request"
+  ]
+ },
+ {
+  "name": "155-student-sent-confirmation-scored",
+  "desc": "After sending scored+binary skills",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills6 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "156-preceptor-mailbox-after-send",
+  "desc": "Mailbox after the student sent new skills",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluations sent"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Open link",
+   "Open link",
+   "Open link",
+   "Open link",
+   "Open link"
+  ]
+ },
+ {
+  "name": "157-preceptor-form-scored-binary",
+  "desc": "Evaluation form for scored + binary skills (with student self-evaluation shown?)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. Head-to-Toe Assessment",
+   "2. Sterile Dressing Change"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Submit evaluation"
+  ]
+ }
+]

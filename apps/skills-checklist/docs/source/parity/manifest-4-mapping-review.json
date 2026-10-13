@@ -1,0 +1,190 @@
+[
+ {
+  "name": "100-mapping-default",
+  "desc": "Course Mapping default (first offering selected?)",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Fall 2026 · Year 1 · BSN 2027, ABS",
+   "Mandatory",
+   "Mandatory",
+   "Mandatory",
+   "Non-mandatory"
+  ]
+ },
+ {
+  "name": "101-mapping-filter-cohort",
+  "desc": "Mapping filtered by first cohort (BSN 2026)",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 350"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 350 — Clinical Practicum Fall 2026 · Year 3 · BSN 2026,",
+   "Mandatory",
+   "Mandatory",
+   "Mandatory",
+   "Mandatory",
+   "Non-mandatory"
+  ]
+ },
+ {
+  "name": "102-mapping-filter-cohort-term",
+  "desc": "Mapping filtered by cohort + term Fall",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 350"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 350 — Clinical Practicum Fall 2026 · Year 3 · BSN 2026,",
+   "Mandatory",
+   "Mandatory",
+   "Mandatory",
+   "Mandatory",
+   "Non-mandatory"
+  ]
+ },
+ {
+  "name": "103-mapping-search",
+  "desc": "Mapping search \"NURS 410\"",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 410"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 410 — Community Health Fall 2024 · Year 3 · No cohort e"
+  ]
+ },
+ {
+  "name": "104-mapping-offering-no-cohort",
+  "desc": "Offering with no cohort selected (NURS 301 Spring 2027)",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e"
+  ]
+ },
+ {
+  "name": "105-mapping-skill-mapped",
+  "desc": "After mapping Medication Administration in an unmapped offering",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e",
+   "Mandatory"
+  ]
+ },
+ {
+  "name": "106-mapping-nonmandatory",
+  "desc": "After choosing Non-mandatory",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e",
+   "Non-mandatory"
+  ]
+ },
+ {
+  "name": "107-mapping-unmapped",
+  "desc": "After unmapping",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e"
+  ]
+ },
+ {
+  "name": "108-mapping-skill-search",
+  "desc": "Skill search \"wound\" in mapping panel",
+  "headings": [
+   "Course Mapping",
+   "Clinical course offerings",
+   "Skills mapped — NURS 301"
+  ],
+  "buttons": [
+   "Course Mapping",
+   "NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e"
+  ]
+ },
+ {
+  "name": "110-review-default",
+  "desc": "Review & Approve: two evaluation cards",
+  "headings": [
+   "Review & Approve",
+   "Rina Okonkwo — IV Insertion",
+   "Jonah Nakamura — IV Insertion"
+  ],
+  "buttons": [
+   "Review & Approve",
+   "",
+   "Approve",
+   "",
+   "Approve"
+  ]
+ },
+ {
+  "name": "112-review-note-entered",
+  "desc": "Review note entered",
+  "headings": [
+   "Review & Approve",
+   "Rina Okonkwo — IV Insertion",
+   "Jonah Nakamura — IV Insertion"
+  ],
+  "buttons": [
+   "Review & Approve",
+   "",
+   "Approve",
+   "",
+   "Approve"
+  ]
+ },
+ {
+  "name": "113-review-after-return",
+  "desc": "After Return to preceptor (banner? card removed?)",
+  "headings": [
+   "Review & Approve",
+   "Jonah Nakamura — IV Insertion"
+  ],
+  "buttons": [
+   "Review & Approve",
+   "",
+   "Approve"
+  ]
+ },
+ {
+  "name": "114-review-after-approve",
+  "desc": "After Approve (queue empty state?)",
+  "headings": [
+   "Review & Approve"
+  ],
+  "buttons": [
+   "Review & Approve"
+  ]
+ }
+]

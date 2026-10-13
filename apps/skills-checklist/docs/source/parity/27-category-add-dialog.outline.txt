@@ -1,0 +1,102 @@
+# 27-category-add-dialog: Add category dialog  (doc 1440x900, fullPage=False)
+## headings: h1:Skills Library(18px/600) | h3:Categories(14px/600) | h2:Add category(16px/600)
+## buttons: Overview | Skills Library*FILLED* | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Skills (9) | Categories (3) | Tags (3) | Clinical Settings (5) | Lab Instructors (2) | Add category*FILLED* | Edit | Edit | Edit | Close | Cancel | Save*FILLED*
+## table rows=3 rowH=47 box=[265, 283, 1150, 173] headers=['CATEGORY', 'DESCRIPTION', 'SKILLS', 'STATUS', '']
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Skills Library" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The program's skills, plus the categories, tags and settings that organise them" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x350
+        div @264,107 1152x42 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+          button "Skills (9)" type=submit @264,107 104x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Categories (3)" type=submit @372,107 141x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+          button "Tags (3)" type=submit @517,107 100x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Clinical Settings (5)" type=submit @622,107 176x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+          button "Lab Instructors (2)" type=submit @802,107 169x42 | display=flex gap=6px dir=row ai=center pad=10px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+        div @264,165 1152x292
+          div "Categories are defined by the program — Prism does not ship a standard taxonomy. A skill sits in at most one category, which is how the libr" @299,174 883x20 | fs=12px fw=400 color=rgb(30, 58, 138)
+          div @264,219 1152x238 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @265,220 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @307,232 186x38
+                h3 "Categories" @307,232 186x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+                p "Each skill belongs to at most one" @307,254 186x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              button "Add category" type=button @1279,232 120x26 | display=flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px
+            table @265,283 1150x173
+              thead @265,283 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,283 1150x33
+                  th "Category" @265,283 215x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Description" @480,283 425x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Skills" @905,283 147x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Status" @1052,283 170x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1222,283 193x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,315 1150x141
+                tr @265,315 1150x47
+                  td @265,315 215x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Category A" @277,330 74x17 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "Program-defined category" @480,315 425x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "3" @905,315 147x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1052,315 170x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1064,328 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1222,315 193x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,326 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,362 1150x47 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,362 215x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Category B" @277,377 74x17 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "Program-defined category" @480,362 425x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "3" @905,362 147x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1052,362 170x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1064,375 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1222,362 193x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,373 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+                tr @265,409 1150x47 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td @265,409 215x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Category C" @277,424 75x17 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "Program-defined category" @480,409 425x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "3" @905,409 147x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1052,409 170x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Active" @1064,422 54x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(4, 120, 87) bg=rgb(236, 253, 245) border=1px/1px/1px/1px rgb(167, 243, 208) radius=4px
+                  td @1222,409 193x47 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    button "Edit" type=button @1339,420 64x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+            div @384,48 672x413 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+              div @384,48 672x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+                div @404,62 242x42
+                  h2 "Add category" @404,62 242x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                  p "Each skill belongs to at most one category." @404,88 242x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                button aria="Close" type=submit @1012,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+              div @404,135 632x251
+                label @404,135 632x56 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Name" @404,135 632x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    span "*" @445,135 6x16 | fs=12px fw=600 color=rgb(244, 63, 94) tt=uppercase ls=0.3px
+                  input type=text ph="Program-defined name" @404,157 632x34 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @404,207 632x108 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Description" @404,207 632x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  textarea type=textarea @404,229 632x80 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @404,331 632x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Status" @404,331 632x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="active" @404,353 632x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              div @384,402 672x59 | display=flex gap=8px dir=row jc=flex-end ai=center pad=12px 20px bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(226, 232, 240)
+                button "Cancel" type=button @899,415 71x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                button "Save" type=button @978,415 58x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

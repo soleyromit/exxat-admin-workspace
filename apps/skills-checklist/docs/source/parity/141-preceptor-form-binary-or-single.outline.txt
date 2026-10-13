@@ -1,0 +1,58 @@
+# 141-preceptor-form-binary-or-single: Open link #1 (Olivia Martin, Medication Reconciliation: Overall Binary)  (doc 1440x900, fullPage=True)
+## headings: h1:Preceptor Evaluation(18px/600) | h2:Evaluate student skills(16px/600) | h3:1. Medication Reconciliation(14px/600)
+## buttons: Overview | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation*FILLED* | Back to sent links | Met | Unmet | Submit evaluation*FILLED*(dis)
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Preceptor Evaluation" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "The form an evaluator opens from their emailed link — preceptors do not sign in to Prism" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x571
+        div @265,108 1150x104 | pad=12px 16px
+          button "Back to sent links" type=button @281,120 144x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) border=1px/1px/1px/1px rgba(0, 0, 0, 0) radius=6px
+          h2 "Evaluate student skills" @281,154 1118x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+          p "Olivia Martin · NURS 350 — Clinical Practicum · evaluated by S. Nakamura, RN ( Preceptor )" @281,180 1118x20 | fs=14px fw=400 color=rgb(71, 85, 105)
+        div @264,229 1152x373 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,230 1150x63 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+            div @281,242 349x38
+              h3 "1. Medication Reconciliation" @281,242 349x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+              p "Overall Binary Outcome · Achievement: 1 qualifying evaluation" @281,264 349x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            span @1121,242 278x22 | display=flex gap=6px dir=row ai=center
+              span "Clinical — Outpatient Clinic" @1121,242 174x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              span "Not answered" @1301,242 98x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(146, 64, 14) bg=rgb(255, 251, 235) border=1px/1px/1px/1px rgb(253, 230, 138) radius=4px
+          div @265,293 1150x308 | pad=16px
+            div @281,309 1118x58 | pad=10px 12px bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=6px
+              p "Supplied by the student" @294,320 1092x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              span "2026-08-28" @294,340 174x16 | fs=12px fw=400 color=rgb(71, 85, 105)
+                span "Completion date :" @294,340 99x15 | fs=12px fw=500 color=rgb(100, 116, 139)
+            div @281,383 1118x58
+              p "Overall skill evaluation" @281,383 1118x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              div @281,407 1118x34 | display=flex gap=8px dir=row
+                button "Met" type=button @281,407 71x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                button "Unmet" type=button @360,407 89x34 | display=flex gap=6px dir=row ai=center pad=6px 12px fs=14px fw=400 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @281,457 1118x128 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Your comment (optional)" @281,457 1118x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              textarea type=textarea ph="Narrative feedback" @281,479 1118x80 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              span "What the student did well, and what to work on next time." @281,569 1118x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,618 1152x60 | display=flex dir=row jc=space-between ai=center pad=12px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=8px
+          p "Submitting converts each response into skill evidence and re-applies the program's achievement criteria." @281,640 594x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          button "Submit evaluation" type=button DISABLED @1233,631 166x34 | display=flex gap=6px dir=row jc=center ai=center pad=6px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) border=1px/1px/1px/1px rgb(29, 78, 216) radius=6px

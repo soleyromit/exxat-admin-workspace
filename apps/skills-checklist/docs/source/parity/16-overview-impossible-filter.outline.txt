@@ -1,0 +1,66 @@
+# 16-overview-impossible-filter: Location Mercy Home Health + setting Emergency (prototype behaviour for a combination with no evidence)  (doc 1440x900, fullPage=True)
+## headings: h1:Overview(18px/600)
+## buttons: Overview*FILLED* | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Filters 3*FILLED* | BSN 2026*FILLED* | Mercy Home Health*FILLED* | Emergency*FILLED* | Clear all | Clear location and setting
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Overview" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Skills attainment by student, by skill and by tag" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x515
+        div @264,107 1152x223 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,108 1150x46 | display=flex gap=8px dir=row ai=center pad=8px 12px
+            button "Filters" type=submit @277,116 124x30 | display=flex gap=6px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=6px
+              span "3" @350,123 20x16 | pad=0px 6px fs=12px fw=500 color=rgb(255, 255, 255) bg=rgb(29, 78, 216) radius=9999px
+            button "BSN 2026" type=submit @409,120 93x22 | display=flex gap=4px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=9999px
+            button "Mercy Home Health" type=submit @509,120 148x22 | display=flex gap=4px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=9999px
+            button "Emergency" type=submit @665,120 99x22 | display=flex gap=4px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=9999px
+            button "Clear all" type=submit @1357,123 46x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @265,154 1150x175 | display=flex gap=4px 12px dir=row ai=flex-start pad=8px 12px 12px border=1px/0px/0px/0px rgb(226, 232, 240)
+            label @277,163 160x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Cohort" @277,163 160x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="c26" @277,185 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @449,163 160x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Group" @449,163 160x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="all" @449,185 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @621,163 224x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Clinical Course" @621,163 224x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="all" @621,185 224x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @870,163 144x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Category" @870,163 144x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="all" @870,185 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @1026,163 144x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Tag" @1026,163 144x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="all" @1026,185 144x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              span "Cuts across categories" @1026,222 144x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            label @1195,163 192x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Location" @1195,163 192x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="loc-mercy" @1195,185 192x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            label @277,242 160x75 | fs=16px fw=400 color=rgb(15, 23, 42)
+              span "Setting" @277,242 160x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              select type=select-one val="cs-emergency" @277,264 160x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              span "Filters the evidence" @277,301 160x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        p "Showing data for 0 students · BSN 2026 · All groups · All clinical courses · at Mercy Home Health · in Emergency · 9 skills in scope" @264,346 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @265,379 1150x242 | display=flex dir=column jc=center ai=center pad=48px 24px
+          p "No evidence matches these filters" @725,467 229x20 | fs=14px fw=600 color=rgb(30, 41, 59)
+          p "Mercy Home Health does not offer Emergency, so no evidence could have been gathered there in that setting." @616,491 448x39 | fs=12px fw=400 color=rgb(100, 116, 139)
+          button "Clear location and setting" type=button @755,547 170x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px

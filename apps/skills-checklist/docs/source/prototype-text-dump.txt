@@ -1,0 +1,779 @@
+
+
+######## Overview
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Overview
+
+Skills attainment by student, by skill and by tag
+
+Filters
+Showing everything
+
+Showing data for 150 students · All cohorts · All groups · All clinical courses · 9 skills in scope
+
+STUDENTS IN VIEW
+
+150
+
+Matches the filters above
+
+AVG. SKILLS ACHIEVED
+
+3.2 / 9
+
+Per student, in scope
+
+STUDENTS ACHIEVING ALL SKILLS IN SCOPE
+
+0
+
+0% of students in view
+
+SKILLS NEEDING ATTENTION
+
+6
+
+Below 50% achievement in view
+
+By student
+By skill
+By tag
+Highest attainment
+Lowest attainment
+Name (A–Z)
+Export
+STUDENT	COHORT · GROUP	ACHIEVED	IN PROGRESS	NOT MET	ATTAINMENT	
+Noah Zeller	BSN 2027 · Group A	7	0	2	
+78%
+	
+
+Owen Ashford	BSN 2027 · Group C	7	0	2	
+78%
+	
+
+Jonah Nakamura	BSN 2026 · Group A	6	1	2	
+67%
+	
+
+Nina Zeller	BSN 2026 · Group C	6	1	2	
+67%
+	
+
+Maya Waverly	BSN 2026 · Group C	6	1	2	
+67%
+	
+
+Owen Ashford	BSN 2026 · Group C	6	1	2	
+67%
+	
+
+Clara Delgado	BSN 2027 · Group A	6	2	1	
+67%
+	
+
+Samir Prasad	BSN 2027 · Group B	6	0	3	
+67%
+	
+
+Felix Nakamura	BSN 2027 · Group B	6	2	1	
+67%
+	
+
+Caleb Voss	BSN 2027 · Group B	6	1	2	
+67%
+	
+
+Amara Delgado	BSN 2027 · Group C	6	1	2	
+67%
+	
+
+Maya Ferreira	ABSN 2026 · Group A	6	1	2	
+67%
+	
+
+Noah Cardoza	ABSN 2026 · Group A	6	1	2	
+67%
+	
+
+Ivy Fontaine	ABSN 2026 · Group B	6	1	2	
+67%
+	
+
+Nina Bansal	BSN 2026 · Group A	5	2	2	
+56%
+	
+
+Diego Voss	BSN 2026 · Group A	5	2	2	
+56%
+	
+
+Milo Whitfield	BSN 2026 · Group A	5	2	2	
+56%
+	
+
+Jonah Prasad	BSN 2026 · Group B	5	2	2	
+56%
+	
+
+Diego Peterson	BSN 2026 · Group B	5	1	3	
+56%
+	
+
+Tobias Ferreira	BSN 2026 · Group B	5	2	2	
+56%
+	
+
+Rina Ivanov	BSN 2026 · Group B	5	2	2	
+56%
+	
+
+Milo Kimura	BSN 2026 · Group C	5	0	4	
+56%
+	
+
+Milo Ellery	BSN 2026 · Group C	5	1	3	
+56%
+	
+
+Felix Whitfield	BSN 2026 · Group C	5	2	2	
+56%
+	
+
+Samir Odell	BSN 2026 · Group C	5	1	3	
+56%
+	
+
+Showing 25 of 150 students · Not met includes skills with no qualifying evidence yet
+
+Show 25 more
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | BUTTON:Filters | BUTTON:By student | BUTTON:By skill | BUTTON:By tag | INPUT:Search students | SELECT:Highest attainment Lowest attainment Name (A–Z) | BUTTON:Export | BUTTON:Show 25 more
+
+######## Skills Library
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Skills Library
+
+The program's skills, plus the categories, tags and settings that organise them
+
+Skills (9)
+Categories (3)
+Tags (3)
+Clinical Settings (5)
+Lab Instructors (2)
+All categories
+No category
+Category A
+Category B
+Category C
+All tags
+Tag A
+Tag B
+Tag C
+All statuses
+Active
+Needs configuration
+Inactive
+Import
+Add skill
+SKILL	CATEGORY	EVALUATION MODEL	ACHIEVEMENT CRITERIA	COURSES	STATUS	
+IV Insertion
+
+Placeholder skill definition — program-defined.
+
+Tag A
+Tag B
+	Category A	Demonstration-Level Outcome	5 demonstrations · 1 observed · 1 with assistance · 3 independent	4	Active	
+Edit
+Foley Catheter Insertion
+
+Placeholder skill definition — program-defined.
+
+Tag A
+Tag C
+	Category B	Question-Level Qualitative	3 qualifying evaluations	3	Active	
+Edit
+Sterile Dressing Change
+
+Placeholder skill definition — program-defined.
+
+Tag A
+	Category C	Overall Binary Outcome	3 qualifying evaluations	1	Active	
+Edit
+Head-to-Toe Assessment
+
+Placeholder skill definition — program-defined.
+
+Tag B
+	Category A	Scored / Likert	2 qualifying evaluations	2	Active	
+Edit
+Medication Administration
+
+Placeholder skill definition — program-defined.
+
+Tag B
+Tag C
+	Category B	Question-Level Qualitative	3 qualifying evaluations	2	Active	
+Edit
+Vital Signs Assessment
+
+Placeholder skill definition — program-defined.
+
+Tag B
+	Category C	Overall Binary Outcome	2 qualifying evaluations	2	Active	
+Edit
+Wound Care
+
+Placeholder skill definition — program-defined.
+
+Tag A
+	Category A	Demonstration-Level Outcome	4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency	2	Active	
+Edit
+Tracheostomy Care
+
+Placeholder skill definition — program-defined.
+
+Tag C
+	Category B	Scored / Likert	2 qualifying evaluations	1	Active	
+Edit
+Medication Reconciliation
+
+Placeholder skill definition — program-defined.
+
+Tag C
+	Category C	Overall Binary Outcome	1 qualifying evaluation	2	Active	
+Edit
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | BUTTON:Skills (9) | BUTTON:Categories (3) | BUTTON:Tags (3) | BUTTON:Clinical Settings (5) | BUTTON:Lab Instructors (2) | INPUT:Search skills | SELECT:All categories No category Category A Category B Category C | SELECT:All tags Tag A Tag B Tag C | SELECT:All statuses Active Needs configuration Inactive | BUTTON:Import | BUTTON:Add skill | BUTTON:IV Insertion | BUTTON:4 | BUTTON:Active | BUTTON:Edit | BUTTON:Foley Catheter Insertion | BUTTON:3 | BUTTON:Active | BUTTON:Edit | BUTTON:Sterile Dressing Change | BUTTON:1 | BUTTON:Active | BUTTON:Edit | BUTTON:Head-to-Toe Assessment | BUTTON:2 | BUTTON:Active | BUTTON:Edit | BUTTON:Medication Administration | BUTTON:2 | BUTTON:Active | BUTTON:Edit | BUTTON:Vital Signs Assessment | BUTTON:2 | BUTTON:Active | BUTTON:Edit | BUTTON:Wound Care | BUTTON:2 | BUTTON:Active | BUTTON:Edit | BUTTON:Tracheostomy Care | BUTTON:1 | BUTTON:Active | BUTTON:Edit | BUTTON:Medication Reconciliation | BUTTON:2 | BUTTON:Active | BUTTON:Edit
+
+######## Course Mapping
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Course Mapping
+
+Set which skills are mandatory for each clinical course offering
+
+Mapping a skill to an offering marks it as mandatory or non-mandatory for that course. Neither setting restricts where a skill can be evaluated — students may still request evaluations for skills outside the mapping, and evidence counts toward one skill record shared across courses.
+Clinical course offerings
+
+14 of 42 offerings match · count shows mandatory / total
+
+Clear
+COHORT
+All cohorts
+BSN 2026
+BSN 2027
+ABSN 2026
+ACADEMIC YEAR
+All years
+2024-2025
+2025-2026
+2026-2027
+TERM
+All terms
+Fall
+Spring
+Summer
+PROFESSIONAL YEAR
+All professional years
+Year 1
+Year 2
+Year 3
+
+NURS 301 — Adult Health I
+
+Fall 2026 · Year 1 · BSN 2027, ABSN 2026
+
+3/4
+
+NURS 301 — Adult Health I
+
+Spring 2027 · Year 1 · No cohort enrolled
+
+0/0
+
+NURS 305 — Foundations of Clinical Practice
+
+Fall 2026 · Year 1 · No cohort enrolled
+
+0/0
+
+NURS 305 — Foundations of Clinical Practice
+
+Spring 2027 · Year 1 · No cohort enrolled
+
+0/0
+
+NURS 315 — Adult Health II
+
+Fall 2026 · Year 2 · BSN 2027
+
+2/4
+
+NURS 315 — Adult Health II
+
+Spring 2027 · Year 2 · No cohort enrolled
+
+0/0
+
+NURS 360 — Clinical Seminar
+
+Fall 2026 · Year 2 · No cohort enrolled
+
+0/0
+
+NURS 360 — Clinical Seminar
+
+Spring 2027 · Year 2 · No cohort enrolled
+
+0/0
+
+NURS 360 — Clinical Seminar
+
+Summer 2027 · Year 2 · No cohort enrolled
+
+0/0
+
+NURS 350 — Clinical Practicum
+
+Fall 2026 · Year 3 · BSN 2026, ABSN 2026
+
+4/5
+
+NURS 350 — Clinical Practicum
+
+Spring 2027 · Year 3 · No cohort enrolled
+
+0/0
+
+NURS 350 — Clinical Practicum
+
+Summer 2027 · Year 3 · No cohort enrolled
+
+0/0
+
+NURS 410 — Community Health
+
+Fall 2026 · Year 3 · BSN 2026
+
+2/3
+
+NURS 410 — Community Health
+
+Spring 2027 · Year 3 · No cohort enrolled
+
+0/0
+Skills mapped — NURS 301
+
+Adult Health I · Fall 2026 · Year 1 — 3 mandatory, 1 non-mandatory
+
+IV Insertion
+
+Demonstration-Level Outcome
+
+5 demonstrations · 1 observed · 1 with assistance · 3 independent
+
+Mandatory
+Non-mandatory
+
+Also mapped in NURS 350 (Fall 2025), NURS 315 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses.
+
+Foley Catheter Insertion
+
+Question-Level Qualitative
+
+3 qualifying evaluations
+
+Mandatory
+Non-mandatory
+
+Also mapped in NURS 350 (Fall 2025), NURS 350 (Fall 2026) — one student-level skill record is shared across courses.
+
+Sterile Dressing Change
+
+Overall Binary Outcome
+
+3 qualifying evaluations
+
+Mandatory
+Non-mandatory
+
+Head-to-Toe Assessment
+
+Scored / Likert
+
+2 qualifying evaluations
+
+Mandatory
+Non-mandatory
+
+Also mapped in NURS 410 (Fall 2026) — one student-level skill record is shared across courses.
+
+Medication Administration
+
+Question-Level Qualitative
+
+3 qualifying evaluations
+
+Also mapped in NURS 315 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses.
+
+Vital Signs Assessment
+
+Overall Binary Outcome
+
+2 qualifying evaluations
+
+Also mapped in NURS 315 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses.
+
+Wound Care
+
+Demonstration-Level Outcome
+
+4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency
+
+Also mapped in NURS 350 (Fall 2025), NURS 350 (Fall 2026) — one student-level skill record is shared across courses.
+
+Tracheostomy Care
+
+Scored / Likert
+
+2 qualifying evaluations
+
+Also mapped in NURS 315 (Fall 2026) — one student-level skill record is shared across courses.
+
+Medication Reconciliation
+
+Overall Binary Outcome
+
+1 qualifying evaluation
+
+Also mapped in NURS 350 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses.
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | BUTTON:Clear | INPUT:Search by course code or name | SELECT:All cohorts BSN 2026 BSN 2027 ABSN 2026 | SELECT:All years 2024-2025 2025-2026 2026-2027 | SELECT:All terms Fall Spring Summer | SELECT:All professional years Year 1 Year 2 Year 3 | BUTTON:NURS 301 — Adult Health I Fall 2026 · Year 1 · BSN 2027, ABS | BUTTON:NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e | BUTTON:NURS 305 — Foundations of Clinical Practice Fall 2026 · Year | BUTTON:NURS 305 — Foundations of Clinical Practice Spring 2027 · Ye | BUTTON:NURS 315 — Adult Health II Fall 2026 · Year 2 · BSN 2027 2/4 | BUTTON:NURS 315 — Adult Health II Spring 2027 · Year 2 · No cohort  | BUTTON:NURS 360 — Clinical Seminar Fall 2026 · Year 2 · No cohort e | BUTTON:NURS 360 — Clinical Seminar Spring 2027 · Year 2 · No cohort | BUTTON:NURS 360 — Clinical Seminar Summer 2027 · Year 2 · No cohort | BUTTON:NURS 350 — Clinical Practicum Fall 2026 · Year 3 · BSN 2026, | BUTTON:NURS 350 — Clinical Practicum Spring 2027 · Year 3 · No coho | BUTTON:NURS 350 — Clinical Practicum Summer 2027 · Year 3 · No coho | BUTTON:NURS 410 — Community Health Fall 2026 · Year 3 · BSN 2026 2/ | BUTTON:NURS 410 — Community Health Spring 2027 · Year 3 · No cohort | INPUT:Search the Skills Library | INPUT:Map IV Insertion | BUTTON:Mandatory | BUTTON:Non-mandatory | INPUT:Map Foley Catheter Insertion | BUTTON:Mandatory | BUTTON:Non-mandatory | INPUT:Map Sterile Dressing Change | BUTTON:Mandatory | BUTTON:Non-mandatory | INPUT:Map Head-to-Toe Assessment | BUTTON:Mandatory | BUTTON:Non-mandatory | INPUT:Map Medication Administration | INPUT:Map Vital Signs Assessment | INPUT:Map Wound Care | INPUT:Map Tracheostomy Care | INPUT:Map Medication Reconciliation
+
+######## Review & Approve
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Review & Approve
+
+Approve submitted evaluations for skills that require it
+
+Evaluations appear here only for skills where the program turned on administrator review. Everything else counts as soon as the preceptor submits it.
+Rina Okonkwo — IV Insertion
+
+NURS 350 · Clinical (Outpatient Clinic, Lakeside Community Clinic) · submitted 2026-08-26 by J. Delgado, RN (Preceptor)
+
+Qualifies
+Completion date: 2026-08-26
+Unit: 5 East
+Student notes: Felt I needed a prompt on preparation.
+
+PRECEPTOR
+
+Independent
+
+Sound technique throughout; talked the patient through each step.
+
+STUDENT SELF-EVALUATION
+
+With Assistance
+
+Student and preceptor recorded different outcomes — worth a conversation before approving.
+
+See the full responses
+REVIEW NOTE
+Optional. Kept with the evaluation.
+Return to preceptor
+Approve
+Jonah Nakamura — IV Insertion
+
+NURS 350 · Lab / Simulation · submitted 2026-08-27 by R. Whitmore (Lab Instructor)
+
+Qualifies
+Completion date: 2026-08-27
+Unit: Skills Lab
+Student notes: Still building confidence.
+
+LAB INSTRUCTOR
+
+With Assistance
+
+Needed guidance on one preparation step.
+
+STUDENT SELF-EVALUATION
+
+With Assistance
+
+Student and lab instructor recorded the same outcome.
+
+See the full responses
+REVIEW NOTE
+Optional. Kept with the evaluation.
+Return to preceptor
+Approve
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | BUTTON:Return to preceptor | BUTTON:Approve | BUTTON:Return to preceptor | BUTTON:Approve
+
+######## Student View
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Student View
+
+What a student sees in their own login: pick skills, submit, track history
+
+VIEWING AS STUDENT
+Olivia Martin
+Felix Sandoval
+Nina Bansal
+Jonah Okonkwo
+Maya Okonkwo
+Yara Boone
+Elena Larsen
+Tobias Zeller
+Aisha Boone
+Priya Tran
+Diego Voss
+Rina Okonkwo
+Milo Whitfield
+Ivy Odell
+Jonah Nakamura
+Felix Ivanov
+Desmond Boone
+Maya Mensah
+Elena Ferreira
+Marcus Ashford
+Lena Mensah
+Elena Mensah
+Isla Whitfield
+Aisha Waverly
+Owen Quinn
+Jonah Prasad
+Ethan Rios
+Jonah Bansal
+Diego Peterson
+Lena Cardoza
+Tobias Ferreira
+Elena Castellano
+Ethan Kimura
+Lena Beaumont
+Rina Ivanov
+Desmond Waverly
+Milo Kimura
+Nina Zeller
+Amara Sandoval
+Olivia Larsen
+CLINICAL COURSE
+NURS 350 — Clinical Practicum
+NURS 410 — Community Health
+
+BSN 2026 · Group A
+
+Placed at Harbor Family Practice, Northgate Surgical Center
+
+Awaiting preceptor evaluation
+
+1 request sent
+
+Medication Reconciliation · S. Nakamura, RN (Preceptor)
+Show only skills I have sent for review
+
+7 of 9 skills sent, 2 not mapped to this course
+
+Mapped to this course
+
+NURS 350 — Clinical Practicum. Mandatory skills are required for this course; non-mandatory ones are available but not required.
+
+IV Insertion
+
+Mandatory for this course
+In Progress
+1 in progress
+4 / 5 demonstrations
+· Demonstration-Level Outcome
+View history (5)
+
+Foley Catheter Insertion
+
+Mandatory for this course
+In Progress
+2 / 3 qualifying evaluations
+· Question-Level Qualitative
+View history (5)
+
+Medication Administration
+
+Mandatory for this course
+In Progress
+2 / 3 qualifying evaluations
+· Question-Level Qualitative
+View history (3)
+
+Wound Care
+
+Mandatory for this course
+In Progress
+4 / 4 demonstrations
+· Demonstration-Level Outcome
+View history (4)
+
+Medication Reconciliation
+
+Non-mandatory for this course
+Achieved
+1 in progress
+2 / 1 qualifying evaluations
+· Overall Binary Outcome
+
+Already achieved — you can still request another evaluation if your program wants more evidence.
+
+View history (3)
+Other skills2 sent
+
+Not mapped to this course. Evidence still counts toward your skill record.
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | SELECT:Olivia Martin Felix Sandoval Nina Bansal Jonah Okonkwo Maya  | SELECT:NURS 350 — Clinical Practicum NURS 410 — Community Health | INPUT:on | INPUT:Select IV Insertion | BUTTON:View history (5) | INPUT:Select Foley Catheter Insertion | BUTTON:View history (5) | INPUT:Select Medication Administration | BUTTON:View history (3) | INPUT:Select Wound Care | BUTTON:View history (4) | INPUT:Select Medication Reconciliation | BUTTON:View history (3) | BUTTON:Other skills2 sent Not mapped to this course. Evidence still
+
+######## Preceptor Evaluation
+exxat Prism
+
+ADMINISTRATOR
+
+Overview
+Skills Library
+Course Mapping
+Review & Approve
+
+STUDENT
+
+Student View
+
+EVALUATOR
+
+Preceptor Evaluation
+
+Skills & Competencies / Nursing
+
+Preceptor Evaluation
+
+The form an evaluator opens from their emailed link — preceptors do not sign in to Prism
+
+Evaluations sent
+
+Preceptors receive a delegator link by email. Faculty and lab instructors can open the same form in Prism. Open one to see what the evaluator sees.
+
+Olivia Martin
+
+NURS 350 — Clinical Practicum · Requested 2026-08-28 · S. Nakamura, RN (Preceptor)
+
+Medication Reconciliation
+Open link
+
+Jonah Okonkwo
+
+NURS 350 — Clinical Practicum · Requested 2026-08-24 · A. Whitfield, RN (Preceptor)
+
+IV Insertion
+Foley Catheter Insertion
+Open link
+
+Tobias Zeller
+
+NURS 350 — Clinical Practicum · Requested 2026-08-23 · T. Ferreira (Lab Instructor)
+
+Medication Administration
+Open link
+
+Olivia Martin
+
+NURS 350 — Clinical Practicum · Requested 2026-08-11 · M. Okonkwo, RN (Preceptor)
+
+IV Insertion
+Open link
+--CLICKABLES--
+BUTTON:Overview | BUTTON:Skills Library | BUTTON:Course Mapping | BUTTON:Review & Approve | BUTTON:Student View | BUTTON:Preceptor Evaluation | BUTTON:Open link | BUTTON:Open link | BUTTON:Open link | BUTTON:Open link

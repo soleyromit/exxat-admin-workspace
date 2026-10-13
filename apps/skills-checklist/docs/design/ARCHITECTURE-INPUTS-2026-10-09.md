@@ -1,0 +1,59 @@
+# Architecture inputs for the redesign (2026-10-09)
+
+**Status:** input to the redesign, not a design and not a decision. Built from `strategy/08-raw-granola-findings-oct-2026.md` (quotes raw-verified there where marked). Every `OD-*` stays open; hard stops stand.
+**Read with:** `strategy/05-open-decisions.md` (OD-28..OD-38), `strategy/07` section E, `design/brief-v2.md`, `design/product-architecture-variant-{a-journey,b-entities,c-workbench}.md`.
+**Attribution:** "Aarti, inferred" throughout. Granola has no diarization. Firmness: Firm / Moderate / Weak (defined in `08` section 0).
+**Reading limit:** the variant stale-assumption section below is based on each variant's thesis, rules and rail as summarised in `brief-v2.md` and the raw-review files; I did not re-read the 45 to 70 KB bodies line by line.
+
+## 1. Twelve design constraints and preferences the redesign must honour
+
+| # | Constraint or preference | Quote | Tag | Firmness | Hard-stop check |
+|---|---|---|---|---|---|
+| 1 | **The student-level report is the launch page, and it carries the review trigger.** One surface for "what have I / they met" and "start a review of what is unmet" | "My report should be my launch page." / "I don't want a separate place where they go to see the what I have met and run a report, and then a separate place where they have to go to trigger." | `[CALL 10-08 Aarti]` | Firm, repeated | none |
+| 2 | **Per-skill counts against targets are visible in that page** | "I know that I have to do at least 5, 5, 5, 5, 5 of each. I know I've done 2 of these, 4 of these, 6 of these." | `[CALL 10-08 Aarti]` | Firm | Keep 4 states (AE-04), no scores by default |
+| 3 | **Everything sits at student level; rotation is not a headline axis** | "All of this stays at the student level." / "On my main report, I don't care." | `[CALL 10-08 Aarti]` | Firm for the headline report | SC-12 and SC-11 still govern the rules; setting stays in the ledger |
+| 4 | **Mapping is a soft highlight on one checklist; the student can do any skill** | "every course can only have a soft mapping." / "You either put them bold or put a star in front of them or make them in a different color or something." / "But they should be able to, um, do any, any of it." | `[CALL 10-08 Aarti]` | Firm | Consistent with CM-05 |
+| 5 | **Where it was learned does not matter to the checklist** | "It doesn't matter whether they learn in classroom, labs, clinics. It just matters that they learn it." | `[CALL 10-08 Aarti]` | Firm as a principle | **Pressures SC-12.** Do not let lab satisfy a clinical minimum; the headline may hide the setting axis only |
+| 6 | **Flexible achievement and sign-off per school and discipline, not one fixed workflow** | "what is acceptable and what workflow they want to do is changing and can be custom for custom disciplines and custom schools" | `[CALL 10-08 Aarti]` | Firm | SC-02: no default model. Roles as rows (OD-06); chain steps with sequence and signer count (OD-33) |
+| 7 | **Program requirements defined once, applied to every student; hours are out** | "Program requirements is defined once and every student should meet those requirements." / "we are not going to do hours in here." | `[CALL 10-08 Aarti]` | Moderate; Firm on hours | §14: hours out. Seam only (OD-30) |
+| 8 | **Student dashboard: this course and overall standing** | "I can have the view in this course, how many things did they check off, and overall where do they stand." | `[CALL 10-08 Aarti]` | Moderate | none |
+| 9 | **Extend what exists; do not build competency from scratch** | "we don't develop something completely from scratch and we just abstract out that" | `[CALL 10-08 Aarti]` | Moderate | Cross-checks OD-28; do not copy competency scoring (REQ 1.4 stands until Sankalp rules) |
+| 10 | **Follow the final Prism design system and the module-based landing; the module is independently sellable and also part of Student Success** | "this has to kind of follow whatever final design of our— that we have of our current product, right?" / "most of them are independently sellable as well" | `[CALL 10-08 Vaibhav]` `[CALL 09-30..10-02 leaders]` | Moderate | none. Needs an entitlement state (OD-34) |
+| 11 | **Manual path must work with AI off; do not over-generalise one school's workflow** | "we would need to have all those non-AI availability" / "interviewing one person, we may think that what their school does is what every school does." | `[CALL 10-02]` | Moderate / Firm | IM-13 still: human confirmation. Design with PA, nutrition, SLP shapes as stress tests |
+| 12 | **A usable version by the last week of October; make the landing actionable, not navigational** | "Means the last week of October is where we want to have at least some version available for skills checklist." / "it is very good to make it actionable. These are all your students who need attention." | `[CALL 10-08 Vaibhav]` `[CALL 09-30..10-02 leaders]` | Moderate target; Moderate preference | The date is a target, not a commitment; build timing is Q1 in other sources (`07` C-18) |
+
+## 2. Open seams that must be left (build the seam, not the answer)
+
+| Seam | Open question | What the design must allow | If the answer is X later |
+|---|---|---|---|
+| **One list: skills / competency / EPA** (OD-02, OD-28) | One entity or two modules; does REQ 1.4 stand | A Skill object with a `kind` label and a nullable competency link. Neutral nav naming that does not hard-code "skills vs competency". No competency scoring inherited | One list: relabel and reuse; two modules: the link already exists |
+| **Evidence sources** (OD-31, OD-32, OD-37) | Student-submitted only, or also assessment, grade, course pass, FAST form, patient log, self-attestation alone | A `sourceType` on every ledger row and an `evidenceSource` on skill config; student-submitted is the only live value. The history card has room for a source line. No auto-credit on unconfigured skills (IM-09) | Add rules without redesigning the ledger |
+| **Hard vs soft mapping** (OD-32, CM-05) | Does a course pass ever confer a skill | Mapping stays a highlight; any course-pass rule lives on the skill, not on the mapping | Mapping is unchanged either way |
+| **Sign-off chain** (OD-33, OD-06, OD-37) | Ordered steps, N distinct signers, self-only, automatic | A list of steps (`role`, `count`, `distinctPeople`) rather than one approval boolean; roles as rows | Single-step v1 is a chain of length one |
+| **Program requirements and "behind"** (OD-30, OD-27) | Program total, quotas, accreditor vs program threshold | A reserved entity; the student page has a slot for "overall standing" that can be empty | Fill the slot; no layout change |
+| **Review trigger location** (OD-29) | Who may trigger, from which surface | A single "request review" action reachable from the student-skill row, from a placement context, and from the cohort row | Remove or add entry points without moving the page |
+| **Forms** (OD-36) | Reuse FAST forms or generate from configuration; shared form vs per skill | Evaluator surface rendered from `EvaluationConfig` with an adapter point; multi-response submission in the data model | Adapter swaps the renderer |
+| **Module relationship** (OD-34) | Standalone, Student Success part, or both; label | An entitlement flag per program; the label as a copy token; the student page embeddable | Move host without redoing content |
+
+## 3. Stale assumptions in the existing variants and the built hybrid IA
+
+Two families of "A/B/C" exist. `design/brief-v2.md` names A "Guided setup journey", B "Action-first command center", C "Student x skill matrix". `design/product-architecture-variant-{a-journey,b-entities,c-workbench}.md` names A lifecycle (Set up / Run / Understand), B entities (skill / student / course / preceptor), C workbench (inbox plus cohort board). The raw-review files read the second family. Both are listed.
+
+| Artifact | Assumption now stale or at risk | Why (source) | Likely repair `[INFER]` |
+|---|---|---|---|
+| **Variant A (lifecycle, Set up / Run / Understand)** and brief-v2 A | Reporting is a phase after running reviews, a separate place ("Understand") from where the review is triggered | Constraint 1: report = launch page (`07` C-14) | Put the review trigger on every Understand row, or fold Run into the student page. Keep the Set up spine; it still matches the sequence library, config, thresholds, workflow (Sep 23) |
+| **Variant A and hybrid Home** | Home is a setup journey that later becomes a worklist | A single actionable landing is wanted, but the launch page is the **student-level report** (constraints 1, 2, 12) | Home after go-live = the student-level report with attention items, not counts-only status |
+| **Variant B (entities)** | Course is a first-class destination with its own detail; no top-level program requirements place | Course is only a soft lens (constraint 4); a program-requirements object is likely (constraint 7) | Keep the Student entity page as the anchor (the best match to constraint 1); reduce Course to mapping and emphasis; reserve a Program requirements entry |
+| **Variant C (workbench: inbox and cohort board)** and brief-v2 C | Staff queues and a cohort matrix are the centre; Home deleted | Aarti centres the **student-level checklist** and the student dashboard (constraints 1, 8). No call supports a matrix at 150 x 100 (RR-C 9(d)). Red/orange status conflicts with the no-red rule (`07` C-19) | Use the cohort board as an entry that lands on the student page; keep the matrix deferred |
+| **Built hybrid IA (Home, Skills, Courses, Attainment, Reviews)** | Attainment and Reviews as separate rail rows; Courses as a full destination; skills named "Skills" only | Constraint 1 (see/trigger split); constraint 4; OD-28 (naming); OD-34 (label "checkoff") | Merge Attainment and Reviews into one student-level surface or make each Attainment row carry the review trigger; Courses = mapping only; keep neutral naming until OD-28 |
+| **Prototype parity build** | Course-first student view (open a course, then list its skills) | Constraint 4: the one checklist is the home, course is an overlay (`journeys/02` new evidence) | Student home = whole checklist at student level; course emphasis as overlay (CM-05, ST-02 unchanged) |
+| **All variants** | The only evidence source is a student send-for-review, and the only approval is a single admin step | Aarti's "five ways" and sign-off chains (`07` C-11, C-13) | Seams in section 2; no v1 build change |
+| **All variants** | A "product switcher" in the utility bar is how users reach Skills (brief-v2 3.1) | Single module-based landing per persona; switcher explored and set aside on Aug 21 (RR-C 9(a)5) | Keep the DS shell; do not rely on a switcher for entry |
+| **All variants** | Skills ships with an Admin app and a Student app only | Student Success / module relationship, entitlement states (OD-34) | Keep apps; design an embeddable student page |
+| **brief-v2 recommendation (hybrid order: shell, Home, kits, log sheet, Reviews, matrix last)** | Reviews is a grouped queue; Attainment is a cohort table | Constraint 1 | The kit-based configure workspace and the log sheet survive; the Reviews/Attainment split should be retested with Aarti |
+
+**Suggested next test (not a decision):** draw the student-level page of the surviving variant as one page, "launch page with report, counts per skill, soft course highlights and the review trigger", and show it to Aarti at the second knowledge-dump session. Re-read `strategy/08` after the implementation Excel lands (Thursday).
+
+## 4. What survives unchanged
+
+Setup by import and kits (A), the log sheet, the no-shell preceptor surface, the DS-correct shell and role-scoped nav, side-panel drill-down, four skill states, no scores by default, no red, and every REQ hard stop. None of the new calls challenges these.

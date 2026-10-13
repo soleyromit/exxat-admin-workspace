@@ -1,0 +1,8 @@
+# Isolates this app from the repo-root pnpm workspace (same pattern as apps/pce/admin).
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver
+
+overrides:
+  "@exxatdesignux/product-framework": "^0.2.5"

@@ -1,0 +1,117 @@
+[
+ {
+  "name": "140-preceptor-mailbox",
+  "desc": "Preceptor Evaluation: Evaluations sent (mailbox)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluations sent"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Open link",
+   "Open link",
+   "Open link",
+   "Open link"
+  ]
+ },
+ {
+  "name": "141-preceptor-form-binary-or-single",
+  "desc": "Open link #1 (Olivia Martin, Medication Reconciliation: Overall Binary)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. Medication Reconciliation"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Submit evaluation"
+  ]
+ },
+ {
+  "name": "142-preceptor-form-demo-question",
+  "desc": "Open link #2 (Jonah Okonkwo, IV Insertion + Foley: demonstration + question)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. IV Insertion",
+   "2. Foley Catheter Insertion"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Submit evaluation"
+  ]
+ },
+ {
+  "name": "143-preceptor-form-lab",
+  "desc": "Open link #3 (Tobias Zeller, Medication Administration, Lab Instructor)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. Medication Administration"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Submit evaluation"
+  ]
+ },
+ {
+  "name": "144-preceptor-form-iv",
+  "desc": "Open link #4 (Olivia Martin, IV Insertion)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. IV Insertion"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Submit evaluation"
+  ]
+ },
+ {
+  "name": "145-preceptor-form-answered",
+  "desc": "Form answered, Submit enabled",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluate student skills",
+   "1. IV Insertion",
+   "2. Foley Catheter Insertion"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Independent",
+   "Yes",
+   "Yes",
+   "Yes",
+   "Submit evaluation"
+  ]
+ },
+ {
+  "name": "146-preceptor-submitted",
+  "desc": "After Submit evaluation (result table)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluation submitted",
+   "Evaluations sent"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Open link",
+   "Open link",
+   "Open link"
+  ]
+ },
+ {
+  "name": "147-preceptor-mailbox-after",
+  "desc": "Mailbox after submission (link removed?)",
+  "headings": [
+   "Preceptor Evaluation",
+   "Evaluations sent"
+  ],
+  "buttons": [
+   "Preceptor Evaluation",
+   "Open link",
+   "Open link",
+   "Open link"
+  ]
+ }
+]

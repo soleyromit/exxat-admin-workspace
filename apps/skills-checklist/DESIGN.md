@@ -5,7 +5,7 @@
 
 **Version:** 0.0.1 (2026-05-08 — scaffold, no product content yet)
 **Owner:** Romit Soley
-**Phase:** Not yet scaffolded — directory exists in `pnpm-workspace.yaml`, no app code, no design work.
+**Phase:** Research/understanding complete (2026-10-08); no app code. Product strategy, journeys, engine, and decisions now live in `docs/` — start at `docs/README.md`. The scaffold warning below is superseded for strategy; design work still requires a confirmed contract per surface.
 
 ---
 

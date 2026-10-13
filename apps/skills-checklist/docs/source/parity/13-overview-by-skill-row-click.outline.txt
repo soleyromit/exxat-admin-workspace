@@ -1,0 +1,776 @@
+# 13-overview-by-skill-row-click: By skill after clicking first row  (doc 1440x1197, fullPage=False)
+## headings: h1:Overview(18px/600) | h2:Wound Care(16px/600)
+## buttons: Overview*FILLED* | Skills Library | Course Mapping | Review & Approve | Student View | Preceptor Evaluation | Filters | By student | By skill | By tag | Export | Close | Achieved (15) | In progress (82) | Not met (53)
+## table rows=9 rowH=67 box=[265, 384, 1150, 755] headers=['SKILL', 'CATEGORY', 'EVALUATION MODEL', 'STUDENTS IN VIEW', 'ACHIEVED', 'IN PROGRESS', 'NOT MET', '% ACHIEVED', 'COURSES', '']
+## table rows=53 rowH=44 box=[229, 352, 982, 2364] headers=['STUDENT', 'GROUP', 'PROGRESS', 'EVIDENCE', 'STATUS', '']
+## overlay [0, 16, 1440, 884] z=50 bg=rgba(15, 23, 42, 0.4) cls=fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-
+## tree
+div @0,0 1440x1197 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x1197 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Overview" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Skills attainment by student, by skill and by tag" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x1110 | pad=20px 24px
+      div @264,107 1152x1070
+        div @265,108 1150x46 | display=flex gap=8px dir=row ai=center pad=8px 12px
+          button "Filters" type=submit @277,116 98x30 | display=flex gap=6px dir=row ai=center pad=6px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          span "Showing everything" @383,123 111x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+        p "Showing data for 150 students · All cohorts · All groups · All clinical courses · 9 skills in scope" @264,171 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,203 1152x118 | display=grid cols=279px 279px 279px 279px gap=12px
+          div @264,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students in view" @281,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "150" @281,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Matches the filters above" @281,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @555,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Avg. skills achieved" @572,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "3.2 / 9" @572,240 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "Per student, in scope" @572,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @846,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Students achieving all skills in scope" @863,218 245x32 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "0" @863,256 245x32 | fs=24px fw=600 color=rgb(15, 23, 42)
+            p "0% of students in view" @863,290 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+          div @1137,203 279x118 | pad=14px 16px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            p "Skills needing attention" @1154,218 245x16 | fs=12px fw=500 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+            p "6" @1154,240 245x32 | fs=24px fw=600 color=rgb(180, 83, 9)
+            p "Below 50% achievement in view" @1154,274 245x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        div @264,337 1152x840 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+          div @265,338 1150x46 | display=flex gap=12px dir=row jc=space-between ai=center pad=0px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+            div @281,338 306x45 | display=flex gap=4px dir=row
+              button "By student" type=submit @281,338 117x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+              button "By skill" type=submit @402,338 92x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+              button "By tag" type=submit @499,338 88x46 | display=flex gap=6px dir=row ai=center pad=12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+            button "Export" type=button @1319,348 80x26 | display=inline-flex gap=6px dir=row jc=center ai=center pad=4px 10px fs=12px fw=500 color=rgb(51, 65, 85) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+          div @265,384 1150x792
+            table @265,384 1150x755
+              thead @265,384 1150x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240)
+                tr @265,384 1150x33
+                  th "Skill" @265,384 166x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Category" @431,384 95x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Evaluation model" @526,384 192x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Students in view" @718,384 145x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Achieved" @864,384 88x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "In progress" @952,384 109x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Not met" @1061,384 81x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "% achieved" @1142,384 148x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th "Courses" @1290,384 85x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  th @1375,384 40x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+              tbody @265,417 1150x723
+                tr @265,417 1150x67
+                  td "Wound Care" @265,417 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag A" @277,451 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,417 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,417 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @538,431 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,417 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "15" @864,417 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "82" @952,417 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "53" @1061,417 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,417 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,440 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "10 %" @1154,440 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,417 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,417 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,484 1150x67 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Tracheostomy Care" @265,484 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag C" @277,518 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,484 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,484 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @538,506 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,484 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "30" @864,484 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "20" @952,484 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "100" @1061,484 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,484 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,507 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "20 %" @1154,507 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1290,484 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,484 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,551 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Medication Administration" @265,551 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,605 142x22 | display=flex gap=4px dir=row
+                      span "Tag B" @277,605 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,605 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,551 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,551 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @538,575 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,551 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "38" @864,551 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "67" @952,551 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "45" @1061,551 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,551 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,584 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "25 %" @1154,584 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,551 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,551 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,638 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Sterile Dressing Change" @265,638 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag A" @277,692 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,638 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,638 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,670 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,638 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "39" @864,638 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "26" @952,638 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "85" @1061,638 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,638 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,671 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "26 %" @1154,671 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "1" @1290,638 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,638 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,725 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Foley Catheter Insertion" @265,725 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,779 142x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,779 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag C" @331,779 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category B" @431,725 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,725 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Question-Level Qualitative" @538,749 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,725 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "42" @864,725 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "78" @952,725 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "30" @1061,725 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,725 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,758 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "28 %" @1154,758 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "3" @1290,725 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,725 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,812 1150x67 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "IV Insertion" @265,812 166x67 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span @277,846 142x22 | display=flex gap=4px dir=row
+                      span "Tag A" @277,846 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                      span "Tag B" @331,846 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,812 95x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,812 192x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Demonstration-Level Outcome" @538,826 168x38 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,812 145x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "53" @864,812 88x67 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "79" @952,812 109x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "18" @1061,812 81x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,812 148x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,835 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "35 %" @1154,835 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "4" @1290,812 85x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,812 40x67 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,879 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Medication Reconciliation" @265,879 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag C" @277,933 51x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,879 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,879 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,911 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,879 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "81" @864,879 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "0" @952,879 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "69" @1061,879 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,879 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,912 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "54 %" @1154,912 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,879 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,879 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,966 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Vital Signs Assessment" @265,966 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag B" @277,1020 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category C" @431,966 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,966 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Overall Binary Outcome" @538,998 155x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,966 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "89" @864,966 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "21" @952,966 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "40" @1061,966 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,966 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,999 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "59 %" @1154,999 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,966 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,966 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                tr @265,1053 1150x87 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                  td "Head-to-Toe Assessment" @265,1053 166x87 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Tag B" @277,1107 50x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(29, 78, 216) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(191, 219, 254) radius=4px
+                  td "Category A" @431,1053 95x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @526,1053 192x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    span "Scored / Likert" @538,1085 102x22 | display=inline-flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  td "150" @718,1053 145x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "90" @864,1053 88x87 | pad=10px 12px fs=14px fw=500 color=rgb(51, 65, 85)
+                  td "36" @952,1053 109x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td "24" @1061,1053 81x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1142,1053 148x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    div @1154,1086 124x20 | display=flex gap=8px dir=row jc=flex-end ai=center
+                      span "60 %" @1154,1086 36x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  td "2" @1290,1053 85x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  td @1375,1053 40x87 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+            p "% achieved counts every student in view, including students whose clinical courses do not recommend the skill. Filter by clinical course to " @265,1139 1150x37 | pad=10px 16px fs=12px fw=400 color=rgb(100, 116, 139) border=1px/0px/0px/0px rgb(226, 232, 240)
+        div @0,16 1440x884 | display=flex dir=row jc=center ai=flex-start pad=32px bg=rgba(15, 23, 42, 0.4) pos=fixed z50
+          div @208,48 1024x639 | bg=rgb(255, 255, 255) radius=8px shadow=rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0
+            div @208,48 1024x71 | display=flex gap=16px dir=row jc=space-between ai=flex-start pad=14px 20px border=0px/0px/1px/0px rgb(226, 232, 240)
+              div @228,62 317x42
+                h2 "Wound Care" @228,62 317x24 | fs=16px fw=600 color=rgb(15, 23, 42)
+                p "15 of 150 students in view have achieved this skill (10%)" @228,88 317x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+              button aria="Close" type=submit @1188,62 24x24 | pad=4px fs=16px fw=400 color=rgb(148, 163, 184) radius=4px
+            div @208,119 1024x568 | pad=16px 20px
+              div @228,135 984x150 | pad=16px bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+                p "How this skill is achieved" @245,152 950x16 | fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                div @245,178 950x90 | display=flex gap=6px 8px dir=row ai=center
+                  span "Demonstration-Level Outcome" @245,178 191x26 | pad=4px 8px fs=12px fw=400 color=rgb(51, 65, 85) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Observed only / Performed with assistance / Performed with supervision / Performed independently" @464,178 580x26 | pad=4px 8px fs=12px fw=400 color=rgb(51, 65, 85) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "Each completed demonstration counts as evidence" @245,210 307x26 | pad=4px 8px fs=12px fw=400 color=rgb(51, 65, 85) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+                  span "4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency" @245,242 634x26 | pad=4px 8px fs=12px fw=400 color=rgb(51, 65, 85) bg=rgb(248, 250, 252) border=1px/1px/1px/1px rgb(226, 232, 240) radius=4px
+              div @228,301 984x38 | display=flex gap=4px dir=row border=0px/0px/1px/0px rgb(226, 232, 240)
+                button "Achieved (15)" type=submit @228,301 114x38 | pad=8px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+                button "In progress (82)" type=submit @346,301 130x38 | pad=8px 12px fs=14px fw=500 color=rgb(100, 116, 139) border=0px/0px/2px/0px rgba(0, 0, 0, 0)
+                button "Not met (53)" type=submit @481,301 109x38 | pad=8px 12px fs=14px fw=500 color=rgb(30, 64, 175) border=0px/0px/2px/0px rgb(29, 78, 216)
+              table @229,352 982x2364
+                thead @229,352 982x33 | bg=rgb(248, 250, 252) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky zauto
+                  tr @229,352 982x33
+                    th "Student" @229,352 183x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    th "Group" @412,352 187x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    th "Progress" @599,352 314x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    th "Evidence" @913,352 112x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    th "Status" @1025,352 155x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                    th @1180,352 31x33 | pad=8px 12px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                tbody @229,385 982x2332
+                  tr @229,385 982x44
+                    td "Felix Ivanov" @229,385 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2026 · Group A" @412,385 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,385 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,399 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,399 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,385 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,385 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,396 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,385 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,429 982x44 | bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Desmond Waverly" @229,429 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2026 · Group B" @412,429 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,429 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,443 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,443 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,429 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,429 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,440 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,429 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,473 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Milo Kimura" @229,473 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2026 · Group C" @412,473 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,473 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,487 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,487 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,473 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,473 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,484 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,473 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,517 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Kai Zeller" @229,517 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2026 · Group D" @412,517 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,517 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,531 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,531 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,517 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,517 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,528 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,517 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,561 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Sofia Odell" @229,561 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,561 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,561 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,575 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,575 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,561 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,561 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,572 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,561 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,605 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Jonah Ellery" @229,605 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,605 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,605 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,619 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,619 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,605 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,605 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,616 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,605 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,649 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Nina Zeller" @229,649 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,649 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,649 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,663 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,663 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,649 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,649 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,660 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,649 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,693 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Amara Martin" @229,693 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,693 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,693 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,707 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,707 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,693 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,693 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,704 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,693 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,737 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Rina Ferreira" @229,737 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,737 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,737 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,751 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,751 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,737 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,737 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,748 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,737 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,781 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Hana Sandoval" @229,781 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,781 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,781 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,795 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,795 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,781 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,781 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,792 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,781 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,825 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Aisha Tran" @229,825 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,825 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,825 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,839 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,839 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,825 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,825 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,836 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,825 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,869 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Elena Halloran" @229,869 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,869 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,869 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,883 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,883 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,869 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,869 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,880 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,869 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,913 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Lena Prasad" @229,913 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,913 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,913 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,927 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,927 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,913 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,913 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,924 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,913 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,957 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Milo Zeller" @229,957 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,957 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,957 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,971 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,971 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,957 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,957 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,968 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,957 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1001 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Rohan Ferreira" @229,1001 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1001 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1001 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1015 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1015 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1001 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1001 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1012 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1001 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1045 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Ivy Zeller" @229,1045 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1045 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1045 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1059 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1059 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1045 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1045 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1056 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1045 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1089 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Samir Voss" @229,1089 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1089 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1089 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1103 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1103 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1089 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1089 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1100 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1089 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1133 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Sofia Zeller" @229,1133 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1133 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1133 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1147 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1147 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1133 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1133 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1144 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1133 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1177 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Clara Delgado" @229,1177 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1177 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1177 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1191 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1191 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1177 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1177 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1188 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1177 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1221 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Noah Zeller" @229,1221 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group A" @412,1221 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1221 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1235 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1235 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1221 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1221 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1232 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1221 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1265 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Diego Peterson" @229,1265 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1265 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1265 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1279 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1279 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1265 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1265 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1276 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1265 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1309 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Felix Beaumont" @229,1309 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1309 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1309 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1323 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1323 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1309 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1309 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1320 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1309 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1353 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Kai Boone" @229,1353 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1353 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1353 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1367 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1367 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1353 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1353 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1364 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1353 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1397 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Noah Halloran" @229,1397 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1397 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1397 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1411 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1411 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1397 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1397 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1408 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1397 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1441 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Rina Zeller" @229,1441 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1441 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1441 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1455 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1455 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1441 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1441 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1452 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1441 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1485 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Samir Prasad" @229,1485 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1485 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1485 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1499 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1499 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1485 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1485 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1496 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1485 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1529 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Felix Waverly" @229,1529 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1529 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1529 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1543 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1543 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1529 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1529 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1540 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1529 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1573 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Caleb Mensah" @229,1573 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1573 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1573 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1587 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1587 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1573 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1573 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1584 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1573 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1617 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Elena Cardoza" @229,1617 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1617 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1617 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1631 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1631 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1617 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1617 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1628 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1617 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1661 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Felix Nakamura" @229,1661 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1661 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1661 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1675 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1675 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1661 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1661 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1672 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1661 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1705 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Aisha Larsen" @229,1705 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1705 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1705 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1719 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1719 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1705 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1705 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1716 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1705 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1749 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Maya Mensah" @229,1749 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1749 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1749 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1763 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1763 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1749 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1749 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1760 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1749 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1793 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Clara Fontaine" @229,1793 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1793 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1793 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1807 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1807 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1793 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1793 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1804 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1793 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1837 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Diego Larsen" @229,1837 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1837 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1837 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1851 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1851 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1837 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1837 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1848 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1837 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1881 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Elena Prasad" @229,1881 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group B" @412,1881 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1881 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1895 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1895 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1881 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1881 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1892 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1881 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1925 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Hana Cardoza" @229,1925 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,1925 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1925 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1939 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1939 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1925 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1925 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1936 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1925 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,1969 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Yara Boone" @229,1969 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,1969 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,1969 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,1983 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,1983 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,1969 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,1969 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,1980 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,1969 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2013 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Isla Zeller" @229,2013 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2013 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2013 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2027 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2027 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2013 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2013 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2024 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2013 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2057 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Maya Odell" @229,2057 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2057 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2057 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2071 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2071 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2057 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2057 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2068 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2057 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2101 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Lena Ashford" @229,2101 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2101 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2101 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2115 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2115 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2101 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2101 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2112 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2101 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2145 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Owen Waverly" @229,2145 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2145 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2145 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2159 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2159 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2145 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2145 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2156 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2145 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2189 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Yara Tran" @229,2189 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2189 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2189 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2203 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2203 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2189 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2189 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2200 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2189 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2233 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Ethan Delgado" @229,2233 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2233 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2233 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2247 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2247 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2233 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2233 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2244 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2233 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2277 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Clara Odell" @229,2277 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2277 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2277 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2291 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2291 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2277 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2277 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2288 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2277 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2321 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Lena Fontaine" @229,2321 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2321 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2321 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2335 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2335 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2321 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2321 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2332 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2321 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2365 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Yara Martin" @229,2365 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2365 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2365 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2379 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2379 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2365 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2365 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2376 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2365 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2409 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Milo Voss" @229,2409 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2409 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2409 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2423 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2423 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2409 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2409 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2420 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2409 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2453 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Amara Bansal" @229,2453 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2453 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2453 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2467 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2467 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2453 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2453 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2464 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2453 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2497 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Amara Delgado" @229,2497 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "BSN 2027 · Group C" @412,2497 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2497 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2511 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2511 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2497 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2497 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2508 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2497 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2541 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Ivy Ellery" @229,2541 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "ABSN 2026 · Group A" @412,2541 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2541 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2555 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2555 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2541 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2541 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2552 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2541 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2585 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Liam Bansal" @229,2585 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "ABSN 2026 · Group A" @412,2585 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2585 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2599 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2599 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2585 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2585 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2596 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2585 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2629 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Liam Tran" @229,2629 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "ABSN 2026 · Group A" @412,2629 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2629 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2643 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2643 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2629 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2629 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2640 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2629 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                  tr @229,2673 982x44 | border=1px/0px/0px/0px rgb(241, 245, 249)
+                    td "Owen Delgado" @229,2673 183x44 | pad=10px 12px fs=14px fw=500 color=rgb(15, 23, 42)
+                    td "ABSN 2026 · Group B" @412,2673 187x44 | pad=10px 12px fs=12px fw=400 color=rgb(51, 65, 85)
+                    td @599,2673 314x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      div @611,2687 290x16 | display=flex gap=8px dir=row ai=center
+                        span "0 / 4 demonstrations" @715,2687 117x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                    td "0" @913,2673 112x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                    td @1025,2673 155x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)
+                      span "Not Started" @1037,2684 97x22 | display=inline-flex gap=6px dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(241, 245, 249) border=1px/1px/1px/1px rgb(226, 232, 240) radius=9999px
+                    td @1180,2673 31x44 | pad=10px 12px fs=14px fw=400 color=rgb(51, 65, 85)

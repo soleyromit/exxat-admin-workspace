@@ -1,0 +1,76 @@
+[
+ {
+  "name": "150-student-send-with-self-eval",
+  "desc": "Send dialog for IV Insertion (self-evaluation + approval workflow skill)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "Send request"
+  ]
+ },
+ {
+  "name": "151-student-course-410-skills",
+  "desc": "Student (Olivia) NURS 410 skills list",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "152-student-course-410-other-open",
+  "desc": "NURS 410 with Other skills expanded",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "153-student-send-scored-binary",
+  "desc": "Send dialog for Head-to-Toe (scored), Sterile (binary), Tracheostomy (scored)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "Send request"
+  ]
+ },
+ {
+  "name": "154-student-send-scored-binary-filled",
+  "desc": "Same dialog filled",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "Send request"
+  ]
+ }
+]

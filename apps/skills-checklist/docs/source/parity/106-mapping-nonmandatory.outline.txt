@@ -1,0 +1,344 @@
+# 106-mapping-nonmandatory: After choosing Non-mandatory  (doc 1440x900, fullPage=True)
+## headings: h1:Course Mapping(18px/600) | h3:Clinical course offerings(14px/600) | h3:Skills mapped — NURS 301(14px/600)
+## buttons: Overview | Skills Library | Course Mapping*FILLED* | Review & Approve | Student View | Preceptor Evaluation | NURS 301 — Adult Health I Fall 2024 · Year 1 · No cohort enr | NURS 301 — Adult Health I Spring 2025 · Year 1 · No cohort e | NURS 305 — Foundations of Clinical Practice Fall 2024 · Year | NURS 305 — Foundations of Clinical Practice Spring 2025 · Ye | NURS 315 — Adult Health II Fall 2024 · Year 2 · No cohort en | NURS 315 — Adult Health II Spring 2025 · Year 2 · No cohort  | NURS 360 — Clinical Seminar Fall 2024 · Year 2 · No cohort e | NURS 360 — Clinical Seminar Spring 2025 · Year 2 · No cohort | NURS 360 — Clinical Seminar Summer 2025 · Year 2 · No cohort | NURS 350 — Clinical Practicum Fall 2024 · Year 3 · No cohort | NURS 350 — Clinical Practicum Spring 2025 · Year 3 · No coho | NURS 350 — Clinical Practicum Summer 2025 · Year 3 · No coho | NURS 410 — Community Health Fall 2024 · Year 3 · No cohort e | NURS 410 — Community Health Spring 2025 · Year 3 · No cohort | NURS 301 — Adult Health I Fall 2025 · Year 1 · No cohort enr | NURS 301 — Adult Health I Spring 2026 · Year 1 · No cohort e | NURS 305 — Foundations of Clinical Practice Fall 2025 · Year | NURS 305 — Foundations of Clinical Practice Spring 2026 · Ye | NURS 315 — Adult Health II Fall 2025 · Year 2 · No cohort en | NURS 315 — Adult Health II Spring 2026 · Year 2 · No cohort  | NURS 360 — Clinical Seminar Fall 2025 · Year 2 · No cohort e | NURS 360 — Clinical Seminar Spring 2026 · Year 2 · No cohort | NURS 360 — Clinical Seminar Summer 2026 · Year 2 · No cohort | NURS 350 — Clinical Practicum Fall 2025 · Year 3 · No cohort | NURS 350 — Clinical Practicum Spring 2026 · Year 3 · No coho | NURS 350 — Clinical Practicum Summer 2026 · Year 3 · No coho | NURS 410 — Community Health Fall 2025 · Year 3 · No cohort e | NURS 410 — Community Health Spring 2026 · Year 3 · No cohort | NURS 301 — Adult Health I Fall 2026 · Year 1 · BSN 2027, ABS | NURS 301 — Adult Health I Spring 2027 · Year 1 · No cohort e*FILLED* | NURS 305 — Foundations of Clinical Practice Fall 2026 · Year | NURS 305 — Foundations of Clinical Practice Spring 2027 · Ye | NURS 315 — Adult Health II Fall 2026 · Year 2 · BSN 2027 2/4 | NURS 315 — Adult Health II Spring 2027 · Year 2 · No cohort  | NURS 360 — Clinical Seminar Fall 2026 · Year 2 · No cohort e | NURS 360 — Clinical Seminar Spring 2027 · Year 2 · No cohort | NURS 360 — Clinical Seminar Summer 2027 · Year 2 · No cohort | NURS 350 — Clinical Practicum Fall 2026 · Year 3 · BSN 2026, | NURS 350 — Clinical Practicum Spring 2027 · Year 3 · No coho | NURS 350 — Clinical Practicum Summer 2027 · Year 3 · No coho | NURS 410 — Community Health Fall 2026 · Year 3 · BSN 2026 2/ | NURS 410 — Community Health Spring 2027 · Year 3 · No cohort | Mandatory | Non-mandatory*FILLED*
+## tree
+div @0,0 1440x900 | display=flex dir=row bg=rgb(248, 250, 252)
+  aside @0,0 240x900 | bg=rgb(15, 23, 42) pos=sticky z30
+    p "exxat" @20,20 199x24 | fs=16px fw=600 color=rgb(255, 255, 255) ls=-0.4px
+      span "Prism" @63,23 42x18 | fs=16px fw=600 color=rgb(96, 165, 250) ls=-0.4px
+    nav @0,64 239x404 | pad=0px 12px 16px
+      div @12,64 215x174
+        p "Administrator" @12,64 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Overview" type=submit @12,88 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Skills Library" type=submit @12,126 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+        button "Course Mapping" type=submit @12,164 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=500 color=rgb(255, 255, 255) bg=rgb(30, 41, 59) radius=6px
+        button "Review & Approve" type=submit @12,202 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,258 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Student" @12,275 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Student View" type=submit @12,299 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+      div @12,355 215x77 | pad=16px 0px 0px border=1px/0px/0px/0px rgb(30, 41, 59)
+        p "Evaluator" @12,372 215x24 | pad=0px 8px 8px fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+        button "Preceptor Evaluation" type=submit @12,396 215x36 | display=flex gap=10px dir=row ai=center pad=8px 12px fs=14px fw=400 color=rgb(203, 213, 225) radius=6px
+  div @240,0 1200x900 | display=flex dir=column
+    header @240,0 1200x87 | pad=12px 24px bg=rgb(255, 255, 255) border=0px/0px/1px/0px rgb(226, 232, 240) pos=sticky z20
+      div @264,12 1152x62
+        p "Skills & Competencies / Nursing" @264,12 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+        h1 "Course Mapping" @264,30 1152x28 | fs=18px fw=600 color=rgb(15, 23, 42) ls=-0.45px
+        p "Set which skills are mandatory for each clinical course offering" @264,58 1152x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+    main @240,87 1200x813 | pad=20px 24px
+      div @264,107 1152x719
+        div "Mapping a skill to an offering marks it as or for that course. Neither setting restricts where a skill can be evaluated — students may still" @299,116 1104x39 | fs=12px fw=400 color=rgb(30, 58, 138)
+          strong "mandatory" @531,118 66x15 | fs=12px fw=700 color=rgb(30, 58, 138)
+          strong "non-mandatory" @614,118 94x15 | fs=12px fw=700 color=rgb(30, 58, 138)
+        div @264,180 1152x646 | display=grid cols=378.656px 757.344px gap=16px
+          div @264,180 379x646 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @307,193 319x54
+              h3 "Clinical course offerings" @307,193 319x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+              p "42 of 42 offerings match · count shows mandatory / total" @307,215 319x32 | fs=12px fw=400 color=rgb(100, 116, 139)
+            div @265,260 377x185 | pad=12px 16px border=0px/0px/1px/0px rgb(226, 232, 240)
+              input type=text ph="Search by course code or name" @281,272 345x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+              div @281,314 345x118 | display=grid cols=168.328px 168.328px gap=8px
+                label @281,314 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Cohort" @281,314 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @281,336 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @457,314 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Academic year" @457,314 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @457,336 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @281,377 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Term" @281,377 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @281,399 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+                label @457,377 168x55 | fs=16px fw=400 color=rgb(15, 23, 42)
+                  span "Professional year" @457,377 168x16 | display=flex gap=4px dir=row ai=center fs=12px fw=600 color=rgb(100, 116, 139) tt=uppercase ls=0.3px
+                  select type=select-one val="all" @457,399 168x33 | pad=6px 10px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            div @265,445 377x380
+              button type=submit @265,-1223 377x62 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42)
+                div @281,-1211 212x38
+                  p "NURS 301 — Adult Health I" @281,-1211 212x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 1 · No cohort enrolled" @281,-1189 212x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-1202 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-1161 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-1148 230x38
+                  p "NURS 301 — Adult Health I" @281,-1148 230x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 1 · No cohort enrolled" @281,-1126 230x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-1139 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-1098 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-1085 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,-1085 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 1 · No cohort enrolled" @281,-1063 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-1076 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-1035 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-1022 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,-1022 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 1 · No cohort enrolled" @281,-1000 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-1013 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-972 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-959 214x38
+                  p "NURS 315 — Adult Health II" @281,-959 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 2 · No cohort enrolled" @281,-937 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-950 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-909 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-896 231x38
+                  p "NURS 315 — Adult Health II" @281,-896 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 2 · No cohort enrolled" @281,-874 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-887 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-846 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-833 214x38
+                  p "NURS 360 — Clinical Seminar" @281,-833 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 2 · No cohort enrolled" @281,-811 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-824 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-783 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-770 231x38
+                  p "NURS 360 — Clinical Seminar" @281,-770 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 2 · No cohort enrolled" @281,-748 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-761 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-720 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-707 241x38
+                  p "NURS 360 — Clinical Seminar" @281,-707 241x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2025 · Year 2 · No cohort enrolled" @281,-685 241x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-698 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-657 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-644 214x38
+                  p "NURS 350 — Clinical Practicum" @281,-644 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 3 · No cohort enrolled" @281,-622 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-635 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-594 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-581 231x38
+                  p "NURS 350 — Clinical Practicum" @281,-581 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 3 · No cohort enrolled" @281,-559 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-572 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-531 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-518 242x38
+                  p "NURS 350 — Clinical Practicum" @281,-518 242x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2025 · Year 3 · No cohort enrolled" @281,-496 242x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-509 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-468 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-455 214x38
+                  p "NURS 410 — Community Health" @281,-455 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2024 · Year 3 · No cohort enrolled" @281,-433 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-446 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-405 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-392 231x38
+                  p "NURS 410 — Community Health" @281,-392 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2025 · Year 3 · No cohort enrolled" @281,-370 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-383 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-342 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-329 212x38
+                  p "NURS 301 — Adult Health I" @281,-329 212x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 1 · No cohort enrolled" @281,-307 212x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-320 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-279 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-266 230x38
+                  p "NURS 301 — Adult Health I" @281,-266 230x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 1 · No cohort enrolled" @281,-244 230x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-257 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-216 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-203 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,-203 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 1 · No cohort enrolled" @281,-181 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-194 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-153 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-140 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,-140 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 1 · No cohort enrolled" @281,-118 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-131 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-90 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-77 214x38
+                  p "NURS 315 — Adult Health II" @281,-77 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 2 · No cohort enrolled" @281,-55 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-68 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,-27 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,-14 231x38
+                  p "NURS 315 — Adult Health II" @281,-14 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 2 · No cohort enrolled" @281,8 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,-5 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,36 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,49 214x38
+                  p "NURS 360 — Clinical Seminar" @281,49 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 2 · No cohort enrolled" @281,71 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,58 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,99 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,112 231x38
+                  p "NURS 360 — Clinical Seminar" @281,112 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 2 · No cohort enrolled" @281,134 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,121 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,162 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,175 242x38
+                  p "NURS 360 — Clinical Seminar" @281,175 242x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2026 · Year 2 · No cohort enrolled" @281,197 242x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,184 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,225 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,238 214x38
+                  p "NURS 350 — Clinical Practicum" @281,238 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 3 · No cohort enrolled" @281,260 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "1 / 3" @594,247 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,288 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,301 232x38
+                  p "NURS 350 — Clinical Practicum" @281,301 232x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 3 · No cohort enrolled" @281,323 232x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,310 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,351 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,364 242x38
+                  p "NURS 350 — Clinical Practicum" @281,364 242x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2026 · Year 3 · No cohort enrolled" @281,386 242x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,373 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,414 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,427 214x38
+                  p "NURS 410 — Community Health" @281,427 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2025 · Year 3 · No cohort enrolled" @281,449 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,436 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,477 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,490 232x38
+                  p "NURS 410 — Community Health" @281,490 232x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2026 · Year 3 · No cohort enrolled" @281,512 232x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,499 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,540 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,553 235x38
+                  p "NURS 301 — Adult Health I" @281,553 235x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 1 · BSN 2027, ABSN 2026" @281,575 235x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "3 / 4" @594,562 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,603 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) bg=rgb(239, 246, 255) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,616 229x38
+                  p "NURS 301 — Adult Health I" @281,616 229x20 | fs=14px fw=500 color=rgb(30, 58, 138)
+                  p "Spring 2027 · Year 1 · No cohort enrolled" @281,638 229x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 1" @594,625 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,666 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,679 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,679 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 1 · No cohort enrolled" @281,701 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,688 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,729 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,742 297x38
+                  p "NURS 305 — Foundations of Clinical Practice" @281,742 297x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 1 · No cohort enrolled" @281,764 297x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,751 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,792 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,805 179x38
+                  p "NURS 315 — Adult Health II" @281,805 179x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 2 · BSN 2027" @281,827 179x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "2 / 4" @594,814 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,855 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,868 231x38
+                  p "NURS 315 — Adult Health II" @281,868 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 2 · No cohort enrolled" @281,890 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,877 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,918 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,931 214x38
+                  p "NURS 360 — Clinical Seminar" @281,931 214x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 2 · No cohort enrolled" @281,953 214x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,940 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,981 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,994 231x38
+                  p "NURS 360 — Clinical Seminar" @281,994 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 2 · No cohort enrolled" @281,1016 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,1003 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1044 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1057 241x38
+                  p "NURS 360 — Clinical Seminar" @281,1057 241x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2027 · Year 2 · No cohort enrolled" @281,1079 241x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,1066 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1107 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1120 238x38
+                  p "NURS 350 — Clinical Practicum" @281,1120 238x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 3 · BSN 2026, ABSN 2026" @281,1142 238x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "4 / 5" @594,1129 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1170 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1183 231x38
+                  p "NURS 350 — Clinical Practicum" @281,1183 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 3 · No cohort enrolled" @281,1205 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,1192 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1233 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1246 241x38
+                  p "NURS 350 — Clinical Practicum" @281,1246 241x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Summer 2027 · Year 3 · No cohort enrolled" @281,1268 241x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,1255 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1296 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1309 209x38
+                  p "NURS 410 — Community Health" @281,1309 209x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Fall 2026 · Year 3 · BSN 2026" @281,1331 209x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "2 / 3" @594,1318 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+              button type=submit @265,1359 377x63 | display=flex gap=8px dir=row jc=space-between ai=center pad=12px 16px fs=16px fw=400 color=rgb(15, 23, 42) border=1px/0px/0px/0px rgb(241, 245, 249)
+                div @281,1372 231x38
+                  p "NURS 410 — Community Health" @281,1372 231x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                  p "Spring 2027 · Year 3 · No cohort enrolled" @281,1394 231x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                span "0 / 0" @594,1381 31x20 | pad=2px 6px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) radius=4px shadow=rgb(255, 255, 255) 0px 0px 0px 0px, rgb(226, 232, 240) 0px 0
+          div @659,180 757x646 | bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(226, 232, 240) radius=8px
+            div @702,193 391x38
+              h3 "Skills mapped — NURS 301" @702,193 391x20 | fs=14px fw=600 color=rgb(15, 23, 42)
+              p "Adult Health I · Spring 2027 · Year 1 — 0 mandatory, 1 non-mandatory" @702,215 391x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+            input type=text ph="Search the Skills Library" @676,256 723x34 | pad=6px 10px 6px 32px bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=6px
+            div @660,303 755x420
+              div @660,68 755x100 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px
+                input aria="Map IV Insertion" type=checkbox val="on" checked=False @676,84 16x16
+                div @704,80 695x76
+                  div @704,80 695x22 | display=flex gap=8px dir=row ai=center
+                    p "IV Insertion" @704,81 75x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Demonstration-Level Outcome" @787,80 195x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "5 demonstrations · 1 observed · 1 with assistance · 3 independent" @704,104 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 301 (Fall 2026), NURS 315 (Fall 2026) and 1 more — one student-level skill record is shared across" @704,124 695x32 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,168 755x101 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Foley Catheter Insertion" type=checkbox val="on" checked=False @676,185 16x16
+                div @704,181 695x76
+                  div @704,181 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Foley Catheter Insertion" @704,182 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Question-Level Qualitative" @870,181 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,205 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 301 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,225 695x32 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,269 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Sterile Dressing Change" type=checkbox val="on" checked=False @676,286 16x16
+                div @704,282 695x60
+                  div @704,282 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Sterile Dressing Change" @704,283 159x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @871,282 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,306 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 301 (Fall 2026) — one student-level skill record is shared across courses." @704,326 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,354 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Head-to-Toe Assessment" type=checkbox val="on" checked=False @676,371 16x16
+                div @704,367 695x60
+                  div @704,367 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Head-to-Toe Assessment" @704,368 168x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Scored / Likert" @879,367 102x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,391 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 301 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,411 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,439 755x119 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px bg=rgb(248, 250, 252) border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Medication Administration" type=checkbox val="on" checked=True @676,456 16x16
+                div @704,452 695x94
+                  div @704,452 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Medication Administration" @704,453 173x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Question-Level Qualitative" @884,452 171x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "3 qualifying evaluations" @704,476 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  div @704,500 695x26 | display=flex gap=6px dir=row
+                    button "Mandatory" type=button @704,500 84x26 | pad=4px 10px fs=12px fw=500 color=rgb(71, 85, 105) bg=rgb(255, 255, 255) border=1px/1px/1px/1px rgb(203, 213, 225) radius=9999px
+                    button "Non-mandatory" type=button @794,500 113x26 | pad=4px 10px fs=12px fw=500 color=rgb(30, 64, 175) bg=rgb(239, 246, 255) border=1px/1px/1px/1px rgb(37, 99, 235) radius=9999px
+                  p "Also mapped in NURS 315 (Fall 2026), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,530 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,558 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Vital Signs Assessment" type=checkbox val="on" checked=False @676,575 16x16
+                div @704,571 695x60
+                  div @704,571 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Vital Signs Assessment" @704,572 154x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @865,571 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,595 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 315 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,615 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,643 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Wound Care" type=checkbox val="on" checked=False @676,660 16x16
+                div @704,656 695x60
+                  div @704,656 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Wound Care" @704,657 81x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Demonstration-Level Outcome" @792,656 195x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "4 demonstrations · 1 performed with supervision · 2 performed independently · 1 in Inpatient · 1 in Emergency" @704,680 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2025), NURS 350 (Fall 2026) — one student-level skill record is shared across courses." @704,700 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,728 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Tracheostomy Care" type=checkbox val="on" checked=False @676,745 16x16
+                div @704,741 695x60
+                  div @704,741 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Tracheostomy Care" @704,742 128x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Scored / Likert" @840,741 102x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "2 qualifying evaluations" @704,765 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 315 (Fall 2026) — one student-level skill record is shared across courses." @704,785 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)
+              div @660,813 755x85 | display=flex gap=12px dir=row ai=flex-start pad=12px 16px border=1px/0px/0px/0px rgb(241, 245, 249)
+                input aria="Map Medication Reconciliation" type=checkbox val="on" checked=False @676,830 16x16
+                div @704,826 695x60
+                  div @704,826 695x22 | display=flex gap=8px dir=row ai=center
+                    p "Medication Reconciliation" @704,827 169x20 | fs=14px fw=500 color=rgb(15, 23, 42)
+                    span "Overall Binary Outcome" @881,826 155x22 | display=flex dir=row ai=center pad=2px 8px fs=12px fw=500 color=rgb(67, 56, 202) bg=rgb(238, 242, 255) border=1px/1px/1px/1px rgb(199, 210, 254) radius=4px
+                  p "1 qualifying evaluation" @704,850 695x16 | fs=12px fw=400 color=rgb(100, 116, 139)
+                  p "Also mapped in NURS 350 (Fall 2026), NURS 410 (Fall 2026) — one student-level skill record is shared across courses." @704,870 695x16 | fs=12px fw=400 color=rgb(148, 163, 184)

@@ -1,0 +1,217 @@
+[
+ {
+  "name": "120-student-default",
+  "desc": "Student View default (Olivia Martin, NURS 350)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "121-student-course-410",
+  "desc": "Student View, course NURS 410",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills4 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "122-student-switched",
+  "desc": "Student View, switched student (Rina Okonkwo)",
+  "headings": [
+   "Student View",
+   "Mapped to this course",
+   "Other skills1 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "123-student-only-sent",
+  "desc": "Show only skills I have sent for review ticked",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "124-student-other-skills-open",
+  "desc": "Other skills section expanded",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ },
+ {
+  "name": "125-student-history",
+  "desc": "History drawer, IV Insertion (5 attempts)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "All courses (5)"
+  ]
+ },
+ {
+  "name": "126-student-history-course-only",
+  "desc": "History drawer, NURS 350 only",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "NURS 350 only (1)"
+  ]
+ },
+ {
+  "name": "127-student-history-view-form",
+  "desc": "View form from history (nested dialog)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "NURS 350 only (1)",
+   "Independent",
+   "Close"
+  ]
+ },
+ {
+  "name": "128-student-revise-and-resend",
+  "desc": "Revise and resend dialog",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "All courses (5)",
+   "Independent",
+   "Resend for review"
+  ]
+ },
+ {
+  "name": "130-student-selection-bar",
+  "desc": "Two skills selected: sticky selection bar",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review"
+  ]
+ },
+ {
+  "name": "131-student-send-clinical",
+  "desc": "Send for review dialog (Clinical default)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "Send request"
+  ]
+ },
+ {
+  "name": "132-student-send-clinical-filled",
+  "desc": "Send dialog, details filled (Send enabled)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Clinical",
+   "Send request"
+  ]
+ },
+ {
+  "name": "133-student-send-lab",
+  "desc": "Send dialog, Lab / Simulation",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Lab / Simulation",
+   "Send request"
+  ]
+ },
+ {
+  "name": "134-student-send-lab-instructor",
+  "desc": "Send dialog, role = Lab Instructor",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View",
+   "Send for review",
+   "Lab / Simulation",
+   "Send request"
+  ]
+ },
+ {
+  "name": "135-student-sent-confirmation",
+  "desc": "After Send request (confirmation banner, waiting strip)",
+  "headings": [
+   "Student View",
+   "Awaiting preceptor evaluation",
+   "Mapped to this course",
+   "Other skills2 sent"
+  ],
+  "buttons": [
+   "Student View"
+  ]
+ }
+]
