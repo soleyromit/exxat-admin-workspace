@@ -14,8 +14,8 @@ importers:
   .:
     dependencies:
       '@exxatdesignux/ui':
-        specifier: ^1.6.3
-        version: 1.6.3(@emotion/is-prop-valid@1.4.0)(@standard-schema/spec@1.1.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/extensions@3.31.2(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redux@5.0.1)(styled-components@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(use-sync-external-store@1.6.0(react@19.2.8))
+        specifier: ^1.6.5
+        version: 1.6.5(@emotion/is-prop-valid@1.4.0)(@standard-schema/spec@1.1.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/extensions@3.31.2(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redux@5.0.1)(styled-components@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(use-sync-external-store@1.6.0(react@19.2.8))
       echarts:
         specifier: ^6.1.0
         version: 6.1.0
@@ -59,8 +59,8 @@ packages:
       react:
         optional: true
 
-  '@exxatdesignux/ui@1.6.3':
-    resolution: {integrity: sha512-0TyzlYEPGOjXcDaSNdD7FpFE7kfWpheSxwmQxe+Zf8h3x7a4jMiUvsno3ZCVUbUXhNknMBSKK1TVVpZSzboAxw==}
+  '@exxatdesignux/ui@1.6.5':
+    resolution: {integrity: sha512-7NpaPKF4IjWsAVLEBi3Wlpml2GF0UQ0L8Ot53wDxyGf3w8gLjCllkAUgnqfepaoKda4FA/7rJg1uIEQDGtEBSw==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -1533,7 +1533,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@exxatdesignux/ui@1.6.3(@emotion/is-prop-valid@1.4.0)(@standard-schema/spec@1.1.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/extensions@3.31.2(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redux@5.0.1)(styled-components@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(use-sync-external-store@1.6.0(react@19.2.8))':
+  '@exxatdesignux/ui@1.6.5(@emotion/is-prop-valid@1.4.0)(@standard-schema/spec@1.1.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/extensions@3.31.2(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redux@5.0.1)(styled-components@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(use-sync-external-store@1.6.0(react@19.2.8))':
     dependencies:
       '@exxatdesignux/product-framework': 0.2.5(@types/react@19.2.18)(immer@11.1.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@floating-ui/dom': 1.8.0

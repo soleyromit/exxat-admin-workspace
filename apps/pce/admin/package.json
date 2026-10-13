@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@exxatdesignux/product-framework": "^0.2.5",
-    "@exxatdesignux/ui": "^1.6.3",
+    "@exxatdesignux/ui": "^1.6.5",
     "@hookform/resolvers": "^5.4.0",
     "@observablehq/plot": "^0.6.17",
     "clsx": "^2.1.1",
