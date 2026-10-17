@@ -16,12 +16,14 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
+import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { QBToggle } from '@/components/qb/toggle'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
 import { CurricularLoopDiagram } from '@/components/curricular-loop-diagram'
@@ -63,8 +65,53 @@ export function OverviewTab({
   // Untested objectives
   const untested = objectives.filter(o => !o.lastAssessed)
 
+  // QB stats for Phase 1 overview — Aarti May 19
+  const courseData = mockCourses.find(c => c.id === course.id)
+  const qbQuestions = courseData
+    ? MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(courseData.questionBankFolderId))
+    : []
+
   return (
     <div className="flex flex-col gap-6">
+      {/* QB Stats block — Phase 1 overview content (Aarti May 19)
+          Learning objectives in overview = Phase 2 only. */}
+      <section aria-labelledby="qb-overview-heading" className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <i className="fa-light fa-books text-muted-foreground" aria-hidden="true" style={{ fontSize: 14 }} />
+            <h2 id="qb-overview-heading" className="text-sm font-semibold text-foreground">
+              Question Bank
+            </h2>
+          </div>
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0 text-xs" asChild>
+            <Link href="/question-bank">
+              <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
+              Open QB
+            </Link>
+          </Button>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-foreground tabular-nums">{qbQuestions.length}</span>
+            <span className="text-xs text-muted-foreground leading-tight">total<br/>questions</span>
+          </div>
+          <div className="w-px h-8 bg-border shrink-0" aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-foreground tabular-nums">
+              {qbQuestions.filter(q => q.status === 'Saved').length}
+            </span>
+            <span className="text-xs text-muted-foreground leading-tight">saved<br/>&amp; ready</span>
+          </div>
+          <div className="w-px h-8 bg-border shrink-0" aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-foreground tabular-nums">
+              {qbQuestions.filter(q => q.status === 'Draft').length}
+            </span>
+            <span className="text-xs text-muted-foreground leading-tight">in<br/>draft</span>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Hero KPI strip ─────────────────────────────────────────────── */}
       <section
         className="grid gap-3"
@@ -300,13 +347,13 @@ function ActivityTimeline({
 }
 
 function describeEvent(r: AssessmentReview) {
-  if (r.state === 'results-published') return { label: 'Results published', icon: 'fa-eye', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'in-progress') return { label: 'Ongoing', icon: 'fa-play', bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' }
-  if (r.state === 'submitted') return { label: 'All students submitted', icon: 'fa-check-double', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'published') return { label: 'Published', icon: 'fa-bullhorn', bg: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', fg: 'var(--brand-color)' }
-  if (r.state === 'approved') return { label: 'Approved by chair', icon: 'fa-check-circle', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'changes-requested') return { label: 'Chair requested changes', icon: 'fa-arrows-rotate', bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
-  if (r.state === 'pending-chair') return { label: 'Sent for chair review', icon: 'fa-hourglass-half', bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
+  if (r.state === 'results-published') return { label: 'Results published', icon: 'fa-eye', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'in-progress') return { label: 'Ongoing', icon: 'fa-play', bg: 'var(--brand-tint)', fg: 'var(--chart-1)' }
+  if (r.state === 'submitted') return { label: 'All students submitted', icon: 'fa-check-double', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'published') return { label: 'Published', icon: 'fa-bullhorn', bg: 'var(--brand-tint)', fg: 'var(--brand-color)' }
+  if (r.state === 'approved') return { label: 'Approved by chair', icon: 'fa-check-circle', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'changes-requested') return { label: 'Chair requested changes', icon: 'fa-arrows-rotate', bg: 'var(--muted)', fg: 'var(--chart-4)' }
+  if (r.state === 'pending-chair') return { label: 'Sent for chair review', icon: 'fa-hourglass-half', bg: 'var(--muted)', fg: 'var(--chart-4)' }
   return { label: 'Draft saved', icon: 'fa-file-pen', bg: 'var(--muted)', fg: 'var(--muted-foreground)' }
 }
 
@@ -384,7 +431,7 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
               className="rounded font-mono text-[9px] uppercase tracking-wider"
               style={{
                 backgroundColor: effective
-                  ? 'color-mix(in oklch, var(--chart-2) 14%, var(--background))'
+                  ? 'var(--muted)'
                   : 'var(--muted)',
                 color: effective ? 'var(--chart-2)' : 'var(--muted-foreground)',
               }}

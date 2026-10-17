@@ -25,7 +25,10 @@ import {
   Separator,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   SheetFooter,
-} from '@exxat/ds/packages/ui/src'
+  StatusBadge,
+  Card, CardContent,
+  InputGroup, InputGroupAddon, InputGroupInput,
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
@@ -33,21 +36,41 @@ import { SiteHeader } from '@/components/site-header'
 import { allFaculty, type ExtendedFaculty, type FacultyCourse, type FacultyAssessment } from '@/lib/faculty-mock-data'
 import { courseOfferingRows, type CourseOfferingRow } from '@/lib/course-mock-data'
 
+// ── Mock QB folders owned by faculty — production derives from QB folder ownership ──
+
+const MOCK_QB_FOLDERS_BY_FACULTY: Record<string, { id: string; name: string; course: string; questionCount: number }[]> = {
+  'fac-001': [
+    { id: 'f1', name: 'Pharmacology I', course: 'PHAR 101', questionCount: 48 },
+    { id: 'f2', name: 'Drug Interactions', course: 'PHAR 101', questionCount: 22 },
+  ],
+  'fac-002': [
+    { id: 'f3', name: 'Cardiology', course: 'BIOL 201', questionCount: 31 },
+  ],
+}
+
+// ── Mock pending reviews — assessments this faculty has been asked to review ──
+
+const MOCK_PENDING_REVIEWS_BY_FACULTY: Record<string, { id: string; title: string; course: string; requestedBy: string; requestedAt: string }[]> = {
+  'fac-001': [
+    { id: 'r1', title: 'Midterm 1 — Spring 2026', course: 'PHAR 101', requestedBy: 'Dr. Chen', requestedAt: '2026-05-18' },
+  ],
+}
+
 // ── Status configs ────────────────────────────────────────────────────────────
 
 const COURSE_STATUS_CONFIG = {
-  active:    { label: 'Active',    icon: 'fa-circle-dot',   bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
+  active:    { label: 'Active',    icon: 'fa-circle-dot',   bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
   completed: { label: 'Completed', icon: 'fa-circle-check', bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
   upcoming:  { label: 'Upcoming',  icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
 const ASSESSMENT_STATUS_CONFIG: Record<string, { bg: string; fg: string }> = {
   'Draft':            { bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  'Pending Review':   { bg: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))', fg: 'var(--chart-4)' },
-  'Changes Requested':{ bg: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', fg: 'var(--destructive)' },
+  'Pending Review':   { bg: 'var(--muted)', fg: 'var(--chart-4)' },
+  'Changes Requested':{ bg: 'var(--muted)', fg: 'var(--destructive)' },
   'Approved':         { bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
-  'In Progress':      { bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
-  'Results Published':{ bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))', fg: 'var(--chart-2)' },
+  'In Progress':      { bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
+  'Results Published':{ bg: 'var(--muted)', fg: 'var(--chart-2)' },
 }
 
 function assessmentStatusStyle(status: string): { bg: string; fg: string } {
@@ -57,7 +80,42 @@ function assessmentStatusStyle(status: string): { bg: string; fg: string } {
 // ── Profile tab ───────────────────────────────────────────────────────────────
 
 function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: boolean }) {
+  const pendingReviewCount = (MOCK_PENDING_REVIEWS_BY_FACULTY[faculty.id] ?? []).length
+  const qbFolderCount = (MOCK_QB_FOLDERS_BY_FACULTY[faculty.id] ?? []).length
+
   return (
+    <div className="flex flex-col gap-5">
+
+      {/* Quick outcome stats — blended with identity so Profile feels active, not just static */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { icon: 'fa-graduation-cap',  label: 'Courses',         value: faculty.courses.length },
+          { icon: 'fa-clipboard-list',  label: 'Assessments',     value: faculty.assessmentsManaged.length },
+          { icon: 'fa-clock',           label: 'Pending reviews', value: pendingReviewCount },
+          { icon: 'fa-folder',          label: 'QB folders',      value: qbFolderCount },
+        ].map(stat => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-border bg-card px-4 py-4 flex items-center gap-3"
+          >
+            <div
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: 'var(--brand-tint)' }}
+            >
+              <i
+                className={`fa-light ${stat.icon}`}
+                aria-hidden="true"
+                style={{ fontSize: 15, color: 'var(--brand-color)' }}
+              />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground leading-none tabular-nums">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 flex flex-col gap-5">
 
@@ -118,10 +176,8 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
       {/* Right column — Prism link */}
       {isPrism && (
         <div className="flex flex-col gap-5">
-          <div
-            className="rounded-xl border border-border p-4 flex items-start gap-3"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}
-          >
+          <Card className="flex items-start gap-3" style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <CardContent className="flex items-start gap-3 p-4">
             <i
               className="fa-light fa-arrow-up-right-from-square mt-0.5"
               aria-hidden="true"
@@ -143,9 +199,11 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
                 <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
               </a>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
+    </div>
     </div>
   )
 }
@@ -249,9 +307,9 @@ function buildCourseColumns(onRemove: (id: string) => void): ColumnDef<CourseRow
 // ── Add Course Sheet ──────────────────────────────────────────────────────────
 
 const OFFERING_STATUS_CONFIG = {
-  ongoing:   { label: 'Ongoing',   bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
-  completed: { label: 'Completed', bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
-  upcoming:  { label: 'Upcoming',  bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
+  active:   { label: 'Active',   bg: 'var(--brand-tint)',            fg: 'var(--brand-color)' },
+  past:     { label: 'Past',     bg: 'var(--qb-status-saved-bg)',    fg: 'var(--qb-status-saved-fg)' },
+  upcoming: { label: 'Upcoming', bg: 'var(--muted)',                 fg: 'var(--muted-foreground)' },
 }
 
 interface AddCourseSheetProps {
@@ -296,7 +354,7 @@ function AddCourseSheet({ open, onOpenChange, assignedCodes, onAdd }: AddCourseS
       name: co.courseName,
       term: co.term,
       students: co.registeredStudents,
-      status: co.status === 'ongoing' ? 'active' : co.status === 'completed' ? 'completed' : 'upcoming',
+      status: co.status === 'active' ? 'active' : co.status === 'past' ? 'completed' : 'upcoming',
     }
     onAdd(course)
   }
@@ -323,24 +381,17 @@ function AddCourseSheet({ open, onOpenChange, assignedCodes, onAdd }: AddCourseS
 
         {/* Search */}
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div
-            className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
-          >
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
-              aria-hidden="true"
-              style={{ fontSize: 13 }}
-            />
-            <input
-              type="search"
+          <InputGroup className="w-full max-w-sm">
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search courses…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search course offerings to add"
             />
-          </div>
+          </InputGroup>
         </div>
 
         <Separator />
@@ -412,15 +463,15 @@ function AddCourseSheet({ open, onOpenChange, assignedCodes, onAdd }: AddCourseS
 
 interface TeachingTabProps {
   courses: FacultyCourse[]
+  /** Original faculty.courses array — used for level lookup even after dynamic add/remove. */
+  facultyCourses: FacultyCourse[]
   onAdd: (course: FacultyCourse) => void
   onRemove: (id: string) => void
 }
 
-function TeachingTab({ courses, onAdd, onRemove }: TeachingTabProps) {
+function TeachingTab({ courses, facultyCourses, onAdd, onRemove }: TeachingTabProps) {
   const router = useRouter()
   const [sheetOpen, setSheetOpen] = useState(false)
-
-  const columns = useMemo(() => buildCourseColumns(onRemove), [onRemove])
 
   const rows: CourseRow[] = courses.map((c: FacultyCourse) => ({
     id: c.id,
@@ -433,39 +484,108 @@ function TeachingTab({ courses, onAdd, onRemove }: TeachingTabProps) {
 
   const assignedCodes = courses.map((c) => c.code)
 
+  // Split courses by role — Aarti May 13: "Courses I'm managing" vs "Courses I'm contributing to"
+  // Level comes from the original facultyCourses array (which carries the level field).
+  // Dynamically added courses (via AddCourseSheet) default to 'viewer'.
+  const coordinatorCourses = rows.filter((r: CourseRow) => {
+    const fc = facultyCourses.find((c) => c.id === r.id) ?? courses.find((c) => c.id === r.id)
+    return fc?.level === 'editor'
+  })
+  const contributorCourses = rows.filter((r: CourseRow) => {
+    const fc = facultyCourses.find((c) => c.id === r.id) ?? courses.find((c) => c.id === r.id)
+    return fc?.level !== 'editor'
+  })
+
   return (
     <>
-      <DataTable<CourseRow>
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        selectable={false}
-        searchable={false}
-        showQueryControls={false}
-        onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
-        toolbarSlot={() => (
-          <>
-            <span className="text-xs text-muted-foreground">
-              {rows.length} course{rows.length !== 1 ? 's' : ''} assigned
-            </span>
-            <Button size="sm" className="gap-2" onClick={() => setSheetOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Add Course
-            </Button>
-          </>
-        )}
-        emptyState={
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-chalkboard text-muted-foreground text-xl" aria-hidden="true" />
-            </div>
-            <p className="font-semibold text-foreground">No courses assigned</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Use &ldquo;Add Course&rdquo; to assign course offerings.
-            </p>
+      {/* Toolbar for Add Course — sits above the split sections */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border">
+        <span className="text-xs text-muted-foreground">
+          {rows.length} course{rows.length !== 1 ? 's' : ''} assigned
+        </span>
+        <Button size="sm" className="gap-2" onClick={() => setSheetOpen(true)}>
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Add Course
+        </Button>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <i className="fa-light fa-chalkboard text-muted-foreground text-xl" aria-hidden="true" />
           </div>
-        }
-      />
+          <p className="font-semibold text-foreground">No courses assigned</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Use &ldquo;Add Course&rdquo; to assign course offerings.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6 pt-4">
+          {/* Coordinator courses */}
+          <section aria-labelledby="coordinator-heading">
+            <div className="flex items-center gap-2 mb-3 px-6">
+              <h2 id="coordinator-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Courses I Coordinate
+              </h2>
+              {coordinatorCourses.length > 0 && (
+                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  {coordinatorCourses.length}
+                </Badge>
+              )}
+            </div>
+            {coordinatorCourses.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-6">No courses as coordinator.</p>
+            ) : (
+              <DataTable<CourseRow>
+                data={coordinatorCourses}
+                columns={buildCourseColumns(onRemove)}
+                getRowId={(row) => row.id}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
+                toolbarSlot={() => (
+                  <span className="text-xs text-muted-foreground">
+                    {coordinatorCourses.length} course{coordinatorCourses.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              />
+            )}
+          </section>
+
+          {/* Contributor courses */}
+          <section aria-labelledby="contributor-heading">
+            <div className="flex items-center gap-2 mb-3 px-6">
+              <h2 id="contributor-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Courses I Contribute To
+              </h2>
+              {contributorCourses.length > 0 && (
+                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  {contributorCourses.length}
+                </Badge>
+              )}
+            </div>
+            {contributorCourses.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-6">No courses as contributor.</p>
+            ) : (
+              <DataTable<CourseRow>
+                data={contributorCourses}
+                columns={buildCourseColumns(() => {})}
+                getRowId={(row) => row.id}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
+                toolbarSlot={() => (
+                  <span className="text-xs text-muted-foreground">
+                    {contributorCourses.length} course{contributorCourses.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              />
+            )}
+          </section>
+        </div>
+      )}
 
       <AddCourseSheet
         open={sheetOpen}
@@ -548,35 +668,131 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
     date: a.date,
   }))
 
+  const pendingReviews = MOCK_PENDING_REVIEWS_BY_FACULTY[faculty.id] ?? []
+  const qbFolders = MOCK_QB_FOLDERS_BY_FACULTY[faculty.id] ?? []
+
   return (
-    <DataTable<AssessmentRow>
-      data={rows}
-      columns={ASSESSMENT_COLUMNS}
-      getRowId={(row) => row.id}
-      selectable={false}
-      searchable={false}
-      showQueryControls={false}
-      toolbarSlot={() => (
-        <span className="text-xs text-muted-foreground">
-          {rows.length} assessment{rows.length !== 1 ? 's' : ''}
-        </span>
-      )}
-      emptyState={
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <i className="fa-light fa-file-check text-muted-foreground text-xl" aria-hidden="true" />
+    <div className="flex flex-col">
+      {/* Pending Reviews — Aarti May 19: "which reviews are they pending" */}
+      {pendingReviews.length > 0 && (
+        <section
+          aria-labelledby="pending-reviews-heading"
+          className="rounded-xl border border-border bg-card p-5 mb-4"
+          style={{ borderLeft: '3px solid var(--chart-4)' }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <h2 id="pending-reviews-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+              Pending Reviews
+            </h2>
+            <Badge
+              variant="secondary"
+              className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+              style={{
+                backgroundColor: 'var(--muted)',
+                color: 'var(--chart-4)',
+              }}
+            >
+              {pendingReviews.length}
+            </Badge>
           </div>
-          <p className="font-semibold text-foreground">No assessments managed</p>
-          <p className="text-sm text-muted-foreground mt-1">This faculty member hasn&apos;t managed any assessments yet.</p>
+          <div className="flex flex-col gap-3">
+            {pendingReviews.map(review => (
+              <div key={review.id} className="flex items-start gap-3">
+                <div
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
+                  style={{ backgroundColor: 'var(--muted)' }}
+                >
+                  <i className="fa-light fa-clipboard-check" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{review.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {review.course} · Requested by {review.requestedBy} ·{' '}
+                    {new Date(review.requestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0 text-xs">
+                  Review
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Assessments DataTable */}
+      <DataTable<AssessmentRow>
+        data={rows}
+        columns={ASSESSMENT_COLUMNS}
+        getRowId={(row) => row.id}
+        selectable={false}
+        searchable={false}
+        showQueryControls={false}
+        toolbarSlot={() => (
+          <span className="text-xs text-muted-foreground">
+            {rows.length} assessment{rows.length !== 1 ? 's' : ''}
+          </span>
+        )}
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-file-check text-muted-foreground text-xl" aria-hidden="true" />
+            </div>
+            <p className="font-semibold text-foreground">No assessments managed</p>
+            <p className="text-sm text-muted-foreground mt-1">This faculty member hasn&apos;t managed any assessments yet.</p>
+          </div>
+        }
+      />
+
+      {/* QB Folders owned — Aarti May 19: "which banks do they own" */}
+      <section aria-labelledby="qb-folders-heading" className="rounded-xl border border-border bg-card p-5 mt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 id="qb-folders-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+            Question Bank Folders
+          </h2>
+          {qbFolders.length > 0 && (
+            <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+              {qbFolders.length}
+            </Badge>
+          )}
         </div>
-      }
-    />
+        {qbFolders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No QB folders owned.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {qbFolders.map(folder => (
+              <Link
+                key={folder.id}
+                href="/question-bank"
+                className="flex items-center gap-3 rounded-lg px-2 py-1.5 -mx-2 hover:bg-muted/60 transition-colors no-underline group"
+              >
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                  style={{ backgroundColor: 'var(--brand-tint)' }}
+                >
+                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate group-hover:underline underline-offset-2">
+                    {folder.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    {folder.course} · {folder.questionCount} questions
+                  </p>
+                </div>
+                <i className="fa-light fa-arrow-up-right-from-square text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 10 }} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   )
 }
 
 // ── Status badge (header) ─────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: 'active' | 'inactive' }) {
+function FacultyStatusBadge({ status }: { status: 'active' | 'inactive' }) {
   const style = status === 'active'
     ? { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', label: 'Active' }
     : { bg: 'var(--muted)', fg: 'var(--muted-foreground)', label: 'Inactive' }
@@ -646,26 +862,24 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
 
   return (
     <>
-      <SiteHeader title={faculty.fullName} />
+      <SiteHeader
+        title={faculty.fullName}
+        breadcrumbs={[
+          { label: 'Faculty', href: '/faculty' },
+          { label: faculty.fullName },
+        ]}
+      />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
 
         {/* ── Header strip ───────────────────────────────────────────────── */}
         <div className="border-b border-border bg-card px-6 py-5">
-          {/* Back nav */}
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mb-4 px-0 h-auto" asChild>
-            <Link href="/faculty">
-              <i className="fa-light fa-chevron-left" aria-hidden="true" style={{ fontSize: 10 }} />
-              Faculty
-            </Link>
-          </Button>
-
           <div className="flex items-start gap-4 flex-wrap">
             {/* Decorative avatar — aria-hidden; name is in the h1 */}
             <Avatar style={{ width: 52, height: 52, flexShrink: 0 }} aria-hidden="true">
               <AvatarFallback
                 className="text-base font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >
@@ -681,7 +895,7 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
                 >
                   {faculty.fullName}
                 </h1>
-                <StatusBadge status={faculty.status} />
+                <FacultyStatusBadge status={faculty.status} />
               </div>
               <div className="flex items-center gap-3 mt-1 flex-wrap text-sm text-muted-foreground">
                 <span className="font-mono text-xs">{faculty.facultyId}</span>
@@ -732,7 +946,7 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
               <TabsContent value="profile"     className="mt-0 outline-none"><ProfileTab     faculty={faculty} isPrism={isPrism} /></TabsContent>
-              <TabsContent value="teaching"    className="mt-0 outline-none"><TeachingTab    courses={assignedCourses} onAdd={handleAddCourse} onRemove={handleRemoveCourse} /></TabsContent>
+              <TabsContent value="teaching"    className="mt-0 outline-none"><TeachingTab    courses={assignedCourses} facultyCourses={faculty.courses} onAdd={handleAddCourse} onRemove={handleRemoveCourse} /></TabsContent>
               <TabsContent value="assessments" className="mt-0 outline-none"><AssessmentsTab faculty={faculty} /></TabsContent>
             </div>
           </Tabs>

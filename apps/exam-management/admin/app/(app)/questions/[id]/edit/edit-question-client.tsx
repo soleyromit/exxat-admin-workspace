@@ -57,6 +57,7 @@ export function EditQuestionClient({ questionId }: { questionId: string }) {
       objectiveId:      null,
       folderId:         question.folder,
       tags:             question.tags,
+      standardIds:      [],
       state:            question.status === 'Saved' ? 'saved' : 'draft',
       confidence:       null,
       payload:          defaultPayload(editorType),
