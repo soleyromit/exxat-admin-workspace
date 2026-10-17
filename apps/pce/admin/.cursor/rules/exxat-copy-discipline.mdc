@@ -1,0 +1,59 @@
+---
+description: Exxat DS copy discipline. Omit decorative descriptions by default. Never use dash punctuation in user-visible copy (titles, body, tooltips, empty cells).
+alwaysApply: true
+tags: [copy, voice]
+seeAlso:
+  - docs/exxat-ds/voice-and-tone.md
+  - docs/exxat-ds/blueprints/page-header.md
+  - .cursor/rules/exxat-page-header-actions.mdc
+---
+
+# Exxat DS: copy discipline
+
+Agents invent filler prose. This rule stops two recurring failures: **decorative descriptions** and **dash punctuation** in user-visible strings.
+
+## MUST NOT: decorative descriptions
+
+Do **not** invent or paste marketing/helper blurbs into:
+
+- `PageHeader` / hub header `description` or `subtitle` (unless the brief asks for **meta**: count, freshness, record ID)
+- Card / section / empty-state / dialog / sheet intros that only restate the title
+- Form field helper text that is not a **format or validation rule**
+- Tooltips that repeat the visible label
+
+**Default:** title (and actions) only. Omit `description` / `subtitle` / helper props.
+
+| Invented (ban) | Allowed when needed |
+|---|---|
+| "Set up, distribute, review, and grade course-related activities." | `247 courses · Updated 2m ago` |
+| "Manage all people in this program." under **Students** | omit subtitle |
+| Tooltip "Export" on a button already labelled Export | omit tooltip, or add only the **Kbd** chord |
+
+## MUST NOT: dashes in user-visible copy
+
+Do **not** put these characters in **any** user-visible string (title, body, banner, dialog, empty state, tooltip, aria-label, placeholder, table cell, KPI caption):
+
+| Character | Name | Example ban |
+|---|---|---|
+| U+2014 em dash | em dash | `Read-only` + em dash + `term ended.` |
+| U+2013 en dash | en dash | date ranges joined only by en dash; write `12/14/2025 to 12/20/2025` |
+| ASCII `-` as pause, separator, or empty | hyphen-minus | `Status - Active`, cell value `-` |
+
+**Rewrite instead:** period, comma, colon, or a second short sentence. For missing values use `None`, leave blank, or a domain empty glyph. **Never** a lone `-`.
+
+### Allowed hyphens (not punctuation)
+
+- Compound modifiers in English: `real-time`, `read-only`, `icon-only`
+- Record / product IDs: `STU-2026-014`, `P-2026-014`
+- Code, CSS, file paths, URLs (not shown as product copy)
+
+## MUST
+
+1. Prefer **no** description over a vague one.
+2. If meta is required under a title, keep it to **one line** of facts (count, ID, freshness), not a job description of the page.
+3. Before shipping strings, scan for em dash, en dash, and lone `-` placeholders.
+
+## Authoritative detail
+
+- [`docs/exxat-ds/voice-and-tone.md`](../../docs/exxat-ds/voice-and-tone.md) (voice, empty states, KPI captions)
+- [`docs/exxat-ds/blueprints/page-header.md`](../../docs/exxat-ds/blueprints/page-header.md) (subtitle = meta only)

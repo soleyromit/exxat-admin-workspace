@@ -1,0 +1,38 @@
+---
+description: Do not duplicate parent navigation with a Back control when breadcrumbs exist
+globs: {components,lib,src}/**/*.{tsx,ts}
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — breadcrumbs and back navigation
+
+## MUST NOT
+
+When a page uses **`SiteHeader`** with **`breadcrumbs`** (a visible trail such as Patterns → Library → current title), **do not** add a **“Back to …”** link or button in the page body that goes to the same parent as the breadcrumb segment. Breadcrumbs already provide hierarchy and one-click navigation up the tree.
+
+**Do not** put the **current page title** in `breadcrumbs` when you also pass `title` to **`SiteHeader`**. `PageBreadcrumbTrail` appends `currentPage={title}` automatically. Duplicating the leaf (e.g. Components → Toggle Switch → Toggle Switch) breaks the trail.
+
+## MAY
+
+- Rely on **`SiteHeader`** breadcrumbs only for returning to parent routes.
+- Use a **single** explicit back affordance on flows that **omit** breadcrumbs by design (e.g. full-screen step, modal route) where product copy requires it.
+
+## SiteHeader breadcrumb overflow
+
+The trail collapses **on room, not on count**. `PageBreadcrumbTrail` measures the row it was given (`useRowFitLadder`) and shows every segment that fits; a trail with space for four crumbs shows four. When the row runs short, middle segments move into a **More** control (`BreadcrumbEllipsis` + `DropdownMenu`) **shallowest first**, so the root and the immediate parent are the last ancestors standing, and the current page truncates only after that.
+
+**MUST NOT** reintroduce a crumb-count threshold (`items.length > 2`), a breakpoint (`hidden md:flex`), or a per-variant collapse rule. Those hide parents on wide screens that had room for them, which is the defect this replaced.
+
+Two things the measurement depends on, so do not remove them without replacing the signal:
+
+- The leaf keeps a **min-width floor** while an ancestor could still step aside. Ancestors do not shrink, so without the floor a tight row squeezes the leaf and never reports overflow at all.
+- The list stays **`flex-nowrap`**. A wrapping trail always fits, and pays for the extra crumbs with a second line.
+
+Do **not** wrap breadcrumbs in **`HorizontalScrollRegion`** — that pattern stays for tab/chip rows (**`.cursor/rules/exxat-horizontal-scroll.mdc`**).
+
+## See also
+
+- `components/site-header.tsx`
+- `components/page-breadcrumb-trail.tsx`
+- `components/templates/primary-page-template.tsx`
