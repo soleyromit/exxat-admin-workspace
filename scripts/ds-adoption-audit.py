@@ -310,6 +310,12 @@ DOCUMENTED_HAND_ROLLS = {
     # docs/governance/ds-adoption.md -> PCE hand-rolls, 2026-09-01; that entry
     # predates this one, which syncs the enforcement list to match.
     "components/pce/permissions-matrix.tsx",
+    # skills-checklist v2: the cohort heatmap and the lab entry grid are student x
+    # skill matrices (cross-tab, per-cell interaction) built on the DS Table
+    # primitive per its "static doc matrices" docstring. Reviewed by
+    # ds-adoption-reviewer 2026-10-20; documented in docs/governance/ds-adoption.md.
+    "components/v2/reports/reports-page.tsx",
+    "components/v2/preceptor/lab-grid-page.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of

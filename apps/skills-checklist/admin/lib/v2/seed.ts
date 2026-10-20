@@ -369,5 +369,6 @@ export function createSeed(): V2State {
     device: { offline: false, signedOut: false, updatePending: false, failNextSync: false },
     logDraft: null,
     verifications: [],
+    labBatches: [],
   }
 }

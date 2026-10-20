@@ -19,6 +19,7 @@
 // Playwright is NOT installed in the app. It is resolved from /Users/romitsoley/Work/tools/visual-check.
 
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -49,7 +50,9 @@ if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/precepto
   '/v2/reviewer/outcome-remediation', '/v2/admin/outcomes', '/v2/admin/evaluation/ev-3-1', '/v2/reviewer/evaluation/ev-7-2', '/v2/student/evaluation/ev-maya-1', '/v2/admin/remediation/rem-1', '/v2/student/remediation/rem-1',
   // Stage 4
   '/v2/admin/review-queue', '/v2/reviewer/review-queue/sub-02', '/v2/reviewer/review-queue/sub-04', '/v2/reviewer/review-queue/ev-maya-7', '/v2/admin/review-queue/sub-nope',
-  '/v2/director/director-verification', '/v2/director/verification/stu-maya', '/v2/director/verification/stu-07', '/v2/admin/verification', '/v2/admin/verification/stu-07')
+  '/v2/director/director-verification', '/v2/director/verification/stu-maya', '/v2/director/verification/stu-07', '/v2/admin/verification', '/v2/admin/verification/stu-07',
+  // Stage 5
+  '/v2/admin/reports', '/v2/director/reports', '/v2/student/verified-record', '/v2/preceptor/lab-batch-grid', '/v2/preceptor/lab-batch-grid?as=pre-delgado')
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -115,6 +118,22 @@ const paperFill = async (p) => {
   await p.getByRole('radiogroup', { name: 'Clinical setting on the form' }).getByRole('radio', { name: 'Inpatient', exact: true }).click()
   await p.getByRole('radiogroup', { name: 'Outcome for Vital signs and early warning score' }).getByRole('radio', { name: 'Met', exact: true }).click()
   await p.getByRole('radiogroup', { name: 'Outcome for Point-of-care blood glucose' }).getByRole('radio', { name: 'Met', exact: true }).click()
+}
+
+// ---- Stage 5 helpers. Reports: Radix selects, downloads and the document checker. Record: Maya verified with one skill achieved. Lab grid: pressing cells.
+const pickOption = async (p, label, option) => { await p.getByRole('combobox', { name: label, exact: true }).click(); await p.getByRole('option', { name: option, exact: true }).click(); await p.waitForTimeout(200) }
+const VERIFIED_RECORD = "s.verifications=[{id:'vf-1',studentId:'stu-maya',version:1,byId:'dir-brennan',at:'2026-10-20T10:00:00.000Z',note:'',evidence:s.evaluations.filter(e=>e.studentId==='stu-maya'&&e.status==='counted').map(e=>({evaluationId:e.id,skillId:e.skillId,version:e.currentVersion})),skills:[{skillId:'sk-vitals',achieved:true},{skillId:'sk-urinary-cath',achieved:false},{skillId:'sk-med-admin',achieved:false},{skillId:'sk-sterile-dressing',achieved:false}]}]"
+const CHANGED_RECORD = VERIFIED_RECORD + "; s.evaluations.find(e=>e.studentId==='stu-maya'&&e.skillId==='sk-vitals'&&e.status==='counted').currentVersion = 2"
+const TMP = path.join(os.tmpdir(), 'sc-v2-stage5-shoot'); fs.mkdirSync(TMP, { recursive: true })
+async function downloadCohort(p) { const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('[data-download="cohort"]').click()]); const file = path.join(TMP, `cohort-${Date.now()}.pdf`); await dl.saveAs(file); await p.locator('[data-pdf-done]').waitFor(); return file }
+// At phone width the report views are a Select ("Report view"); from 768 px they are tabs.
+const viewTab = async (p, name) => { if ((p.viewportSize()?.width ?? 1440) < 768) { await p.getByRole('combobox', { name: 'Report view', exact: true }).click(); await p.getByRole('option', { name }).click() } else await tab(p, name) }
+const lab = (p, student, skill) => p.getByRole('button', { name: new RegExp(`^${student}, ${skill}:`) })
+async function fillLab(p) {
+  await lab(p, 'Maya Ferreira', 'Vital signs and early warning score').click()
+  await lab(p, 'Jordan Okafor', 'Vital signs and early warning score').click(); await lab(p, 'Jordan Okafor', 'Vital signs and early warning score').click()
+  for (let i = 0; i < 3; i++) await lab(p, 'Priya Raman', 'Vital signs and early warning score').click()
+  await p.locator('[data-set-column="sk-sterile-dressing"]').click()
 }
 const STATES = {
 
@@ -250,6 +269,30 @@ const STATES = {
   '/v2/director/verification/stu-07': [
     { name: 'confirm-error', setup: async (p) => { await btn(p, /^Verify Amara Nwosu's record as version 1$/).click(); await p.locator('#verify-error').waitFor() }, expect: ["Verify Amara Nwosu's record as version 1"] },
     { name: 'verified', setup: async (p) => { await p.locator('#verify-confirm').click(); await btn(p, /^Verify Amara Nwosu's record as version 1$/).click(); await p.locator('[data-verify-message]').waitFor() }, expect: [] },
+  ],
+  '/v2/admin/reports': [
+    { name: 'filters-conflict', setup: async (p) => { await pickOption(p, 'Setting', 'Lab'); await pickOption(p, 'Clinical setting', 'Inpatient'); await p.locator('[data-filter-conflict]').waitFor() }, expect: ['Clear the clinical setting filter'] },
+    { name: 'filters-chips', setup: async (p) => { await pickOption(p, 'Category', 'Assessment'); await p.locator('#flt-mandatory').click(); await p.locator('[data-applied-filters] [data-remove-filter]').first().waitFor() }, expect: ['Remove filter Category: Assessment', 'Remove filter Mandatory skills only'] },
+    { name: 'tab-behind-pace', setup: async (p) => { await viewTab(p, /^Behind pace/); await p.locator('[data-pace-basis]').waitFor() }, expect: [] },
+    { name: 'tab-skills-and-raters', setup: async (p) => { await viewTab(p, 'Skills and raters'); await p.getByText('One evaluator', { exact: true }).first().waitFor() }, expect: [] },
+    { name: 'tab-rater-comparison', setup: async (p) => { await viewTab(p, 'Rater comparison'); await p.locator('[data-rater-note]').waitFor() }, expect: [] },
+    { name: 'tab-student-table', setup: async (p) => { await viewTab(p, 'Student table'); await p.getByText('In progress, 2 of 3').first().waitFor() }, expect: [] },
+    { name: 'pdf-downloaded', setup: async (p) => { await downloadCohort(p); await reveal(p, '[data-pdf-done]') }, expect: ['Download cohort PDF', 'Choose a PDF to check'] },
+    { name: 'check-unchanged', setup: async (p) => { const f = await downloadCohort(p); await p.locator('#check-file').setInputFiles(f); await p.locator('[data-check-result="ok"]').waitFor(); await reveal(p, '[data-check-result]') }, expect: ['Choose a PDF to check'] },
+    { name: 'check-changed', setup: async (p) => { const f = await downloadCohort(p); const t = fs.readFileSync(f, 'latin1').replace('(Cohort skills report)', '(Cohort skills reporT)'); const bad = path.join(TMP, 'tampered.pdf'); fs.writeFileSync(bad, t, 'latin1'); await p.locator('#check-file').setInputFiles(bad); await p.locator('[data-check-result="content-changed"]').waitFor(); await reveal(p, '[data-check-result]') }, expect: ['Choose a PDF to check'] },
+  ],
+  '/v2/student/verified-record': [
+    { name: 'verified', setup: async (p) => { await persist(p); await mutate(p, VERIFIED_RECORD); await p.locator('[data-included]').waitFor() }, expect: ['Download PDF', 'Download CLR 2.0 file'] },
+    { name: 'changed-since-verified', setup: async (p) => { await persist(p); await mutate(p, CHANGED_RECORD); await p.locator('[data-record-blocked]').waitFor() }, expect: ['Back to your record'] },
+    { name: 'pdf-downloaded', setup: async (p) => { await persist(p); await mutate(p, VERIFIED_RECORD); const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('[data-download-pdf]').click()]); await dl.path(); await p.locator('[data-record-done="pdf"]').waitFor() }, expect: ['Download PDF'] },
+    { name: 'clr-downloaded', setup: async (p) => { await persist(p); await mutate(p, VERIFIED_RECORD); const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('[data-download-clr]').click()]); await dl.path(); await p.locator('[data-record-done="clr"]').waitFor() }, expect: ['Download CLR 2.0 file'] },
+  ],
+  '/v2/preceptor/lab-batch-grid': [
+    { name: 'results-entered', setup: async (p) => { await fillLab(p); await reveal(p, '[data-lab-counts]') }, expect: ['Save lab session for 12 students'] },
+    { name: 'student-absent', setup: async (p) => { await fillLab(p); await p.getByRole('checkbox', { name: 'Liam Kowalski was absent' }).click(); await reveal(p, '[data-lab-counts]') }, expect: ['Save lab session for 11 students'] },
+    { name: 'simulation-session', setup: async (p) => { await p.getByRole('radio', { name: 'Simulation' }).click(); await fillLab(p); await reveal(p, '[data-lab-counts]') }, expect: ['Save simulation session for 12 students'] },
+    { name: 'confirm-dialog', setup: async (p) => { await fillLab(p); await p.locator('[data-lab-save]').click(); await p.locator('[data-lab-dialog]').waitFor() }, expect: ['Keep editing'] },
+    { name: 'saved', setup: async (p) => { await fillLab(p); await p.locator('[data-lab-save]').click(); await p.locator('[data-lab-confirm]').click(); await p.locator('[data-lab-saved]').waitFor(); await p.locator('[data-lab-batches]').scrollIntoViewIfNeeded() }, expect: ['Open the cohort reports'] },
   ],
   '/v2/director/verification/stu-maya': [
     { name: 'changed-since-verified', setup: async (p) => { await stage(p, '/v2/director/verification/stu-maya', CHANGED_MAYA); await p.locator('[data-changed-banner]').waitFor() }, expect: [] },

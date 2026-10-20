@@ -13,6 +13,7 @@ import { useV2State } from "@/lib/v2/react"
 import { STUDENT_ID, studentHistory, type Attempt, type AttemptKind, type SkillHistory } from "@/lib/v2/student"
 import { statusLabel, STATUS_TONE } from "@/components/v2/director/verification-pages"
 import { verificationStatus } from "@/lib/v2/verification"
+import { RECORD_PATH } from "@/lib/v2/paths"
 import type { V2State } from "@/lib/v2/types"
 
 const KIND: Record<AttemptKind, { tone: "success" | "info" | "warning" | "neutral"; icon: string }> = {
@@ -195,6 +196,9 @@ function VerificationCard({ s }: { s: V2State }) {
           <p className="text-muted-foreground">Your program director has not verified your record yet. You can share a verified record once they do.</p>
         )}
         {st.status === "changed" ? <p className="text-foreground">Your program changed an evaluation after it was verified. The earlier verification is kept, and your director verifies the new version.</p> : null}
+        <Button asChild variant={st.status === "verified" ? "default" : "outline"} size="lg" className={BTN} data-share-record>
+          <Link href={RECORD_PATH}>Share your verified record</Link>
+        </Button>
       </CardContent>
     </Card>
   )

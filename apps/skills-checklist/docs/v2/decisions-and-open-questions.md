@@ -1,131 +1,97 @@
 # v2 decisions and open questions
 
-Format: **what**, **why**, **status**. "Decided" here means decided for this prototype by the person named. Nothing in this file decides a requirements `OD-*`.
+Consolidated after Stage 5. "Decided" means decided for this prototype by the person named. **Nothing here decides a requirements `OD-*`.** (`OD-14` and above are team-proposed open decisions in `strategy/05`, not in the requirements document; `OD-19`, the batch grid, is one of them.) Tags: `[PROPOSED]` a capability beyond the requirements, `[INFER]` my reading, "Romit" or "brief" where the instruction came from the person.
 
-## Decisions taken for v2
+## A. Ground rules (Stage 0 brief)
 
-| # | Decision | Why | Status |
-|---|---|---|---|
-| D1 | **DS choice:** build every v2 screen on `@exxatdesignux/ui` 1.6.5. `studentUX` and `exxat-ds` are read-only visual references and are never edited or imported for v2 screens. | The package is the canonical admin DS per the workspace rules, and the existing admin app already uses it. | Decided by Romit (stated in the Stage 0 brief). |
-| D2 | **Hard-stop scope change (v2 prototype only).** Items that `strategy/07` section D and `strategy/05` forbid or leave undecided are in scope for the v2 prototype: starter libraries (hard stop 1, `SL-01`), a default evaluation model (hard stop 2, `SC-02`), remediation (hard stop 9, section 14 of the requirements), QR codes and heatmaps (hard stop 12), batch grid (`OD-19`), offline sync, CLR 2.0, photo of a signed paper form, tamper-evident PDF, evaluator qualification and expiry. They are labelled `[PROPOSED]` in docs only and never shown as such in the UI. No `OD-*` is treated as decided. The hard stops that v2 keeps: completed evaluations are immutable, preceptors have no login, lab never satisfies a clinical-setting minimum, mapping is not eligibility, `REQ` section 14 stays out of scope unless named above. | Romit wants a connected prototype that shows the whole story, including ideas the requirements have not settled, so stakeholders can react. | Decided by Romit (stated in the Stage 0 brief). The product `CLAUDE.md` hard-stop line still reads as before; it applies to the production build, not this prototype. Needs a note in `strategy/07` once Romit agrees where to record it. |
-| D3 | **Scored model default.** Four models are offered and configurable (binary, question-level, scored, demonstration). Binary is the pre-selected default in v2 screens. Scored is never the default. | Keeps the demo simple and avoids showing scores by default (`strategy/07` hard stop 10). Pre-selecting binary conflicts with `SC-02` ("no default is assumed"), so it is part of D2 and flagged as `[PROPOSED]`. | Decided by Romit (stated in the Stage 0 brief). |
-| D4 | **Route group.** v2 lives in `app/(v2)/v2/...` with its own layout, store provider and nav. The v1 `(shell)` and `(evaluator)` groups are untouched. Routes are `/v2`, `/v2/<role>` and `/v2/<role>/<step>`. | Keeps v1 working while v2 is built, avoids a shared store, and lets the role come from the URL. | Decided by me `[INFER]`, easy to change. |
-| D5 | **Store.** React context plus `useSyncExternalStore`, localStorage persistence with guarded access, no new dependency. Hydration happens after mount so server and client markup match. A shape check discards bad persisted data. | The brief allows a zustand-free store. The existing v1 store is a separate, richer engine and is not reused for v2 mock data. | Decided by me `[INFER]`. |
-| D6 | **Role switcher is URL-driven.** A role change navigates to that role's home. The Student role is "Student (mobile)" and is designed for 390 px but renders in the same shell on desktop. R. Whitmore (lab instructor) uses the Preceptor role. | Mirrors how the v1 shell derives its view from the route. | Decided by me `[INFER]`. |
-| D7 | **Sample people.** L. Haddad (reviewer) and Dr. K. Brennan (program director) are invented sample names, as are the eleven other students. | The brief names Maya, J. Delgado, R. Whitmore and A. Ross only. | Placeholder, replace if the team supplies names. |
-
-### Stage 1 decisions (admin setup)
-
-| # | Decision | Why | Status |
-|---|---|---|---|
-| D8 | **The configure Wizard has 8 steps**, above the DS recommendation of 6 (the DS logs a console warning in dev). It uses the horizontal compact variant, which scrolls with arrow controls at narrow widths. Opening the review step directly (route `validate-publish`) shows steps 1 to 7 as completed, because the DS marks every earlier step done. | The brief names 8 steps. Merging them would hide the failure path and re-validation, which stakeholders want to react to. Not deviating from the brief. | Decided by the Stage 1 brief. Open: split into two flows? |
-| D9 | **Starter libraries are static sample catalogues** (`lib/v2/starter-libraries.ts`), separate from the seed. The seed's 31 skills are already the program's library; copying adds only skills not already present (name match) and creates them unconfigured. A duplicate can be ticked to keep both. "Replace" is not offered because it would overwrite configuration that may carry evidence. | Keeps "nothing is created until confirm" real while the seed precondition (31 skills, 4 specialties) stays as Stage 0 defined it. | Decided by me `[INFER]`. |
-| D10 | **Import uses the local `/api/import/extract` route** (code only, no network, no AI key) to read a PDF, and a rule-based proposal (`lib/v2/import.ts`) instead of the AI reading. The bundled `public/v2/sample-skills-checklist.pdf` is generated by `scripts/make-v2-sample-pdf.mjs`. Line numbers count the extractor's lines, which drops blank lines. | The brief asks for no network. The v1 AI path (OD-12) stays a v1 concern. | Decided by me `[INFER]`. |
-| D11 | **Evaluator attributes are sample data.** Credentials, years of practice and training were added to the preceptors and lab instructor, and three more preceptors (S. Okonkwo, M. Castillo, T. Aldridge) were added so the qualified-evaluator preview has something to filter. | The "who counts as qualified" rule needs people to qualify. | Placeholder, replace with real data. |
-| D12 | **Wizard draft lives in the store** (`drafts[skillId]`, including the current step) and is saved on every edit without an audit entry. Moving to the next step and publishing are audited. | State must survive navigation between the two routes and a reload, and the audit log should record decisions, not keystrokes. | Decided by me `[INFER]`. |
-| D13 | **Stage 0 changes forced by the new data:** `ENVELOPE_VERSION` went from 1 to 2 (saved Stage 0 browser state is discarded once), `SkillConfig` gained fields and lost `prerequisiteSkillIds` and `failurePath`, `Program` and `Course` gained clinical settings, and one assertion in `tests/v2/store.test.ts` changed from `toEqual` to `toMatchObject` on the achievement rule. | The rule engine needs the fields; no Stage 0 behaviour changed. | Done. |
-| D14 | **Strength thresholds are my heuristic** (`strengthHint` in `lib/v2/rules.ts`: points for evaluations, evaluators, top level, recent window, named settings). | A plain-language hint needs some rule. It is not a requirement and should be reviewed. | `[INFER]`, needs Sankalp's view. |
-| D15 | **"No setting can satisfy it" in coverage** is read as: a mandatory skill requires evidence in a named clinical setting that the course does not place students in. | The requirements do not define the warning. | `[INFER]`. |
-
-### Stage 2 decisions (student mobile and offline)
-
-| # | Decision | Why | Status |
-|---|---|---|---|
-| D16 | **Student screens are a 28rem column on every viewport** (the conflict screen widens to 48rem so the two versions sit side by side). The bottom navigation is sticky below 768 px and sits above the column on desktop. Four destinations: Home, Log, Requests, Record. The sync chip links to Sync, so it is not a fifth tab. | Designs for 390 px, renders sensibly centred on desktop. Answers open question 3 below (not forced to a phone frame, but a phone-width column). | Decided by me `[INFER]`. |
-| D17 | **Store changes.** `ENVELOPE_VERSION` 2 to 3 (saved Stage 1 browser state is discarded once). New: `placements`, `logEntries`, `labCheckoffs`, `device`, `logDraft`; `SyncItem` gained `entryId`, `requestId`, `error`, `attempts`, `serverEdit`, `conflict`; `SyncState` gained `failed`; `SubmissionStatus` gained `on-device`; `Submission` gained `entryIds`, `candidateIds`, `photo`; `Evaluation` gained `clinicalSetting`, `levelIndex`. Seed: Maya has a third vital signs evaluation so the IV prerequisite "have met vital signs" holds; the seeded request `sub-maya-1` now covers urinary catheter and oral medication (it covered IV and urinary) so the story's new request for IV is not a duplicate. | The flow needs real entries, requests and sync items. | Done. No earlier assertion needed to change. |
-| D18 | **A lab or simulation entry is a practice trial.** It counts toward prerequisites, is never sent for sign-off, and lab instructors record lab evaluations themselves (step 14). A clinical entry is what a student sends for sign-off. | Keeps the lab hard stop (lab never satisfies a clinical-setting minimum) true in the data: only clinical evaluations carry a named clinical setting. | `[PROPOSED]`. |
-| D19 | **Prerequisites read as "and".** Lab check-off, practice trials and each prerequisite skill are all required together, as the Stage 1 review step words it. The brief said "lab check-off or N practice trials"; the stored rule has no "or". | One source of truth for the rule. | Open: should the program choose "all" or "any of"? Ask Sankalp. |
-| D20 | **Prerequisites unlocked for Maya in the seed, locked by a configuration change.** Raise practice trials in the admin configure step and her IV card locks with what to do. Screenshots and the e2e do this through the store. | The story needs Maya able to log IV in step 5; the block still shows. | `[INFER]`. |
-| D21 | **OD-07 stays open.** The log asks for the setting once for the whole log and stores it on each entry. A note is stored per skill entry (ST-12 says "one per submission", and a submission is the request, so this is an [INFER] reading). | Neither is decided by the requirements. | Open. |
-| D22 | **Evaluator choices.** Preceptors and lab instructors are always listed (unqualified ones disabled with the reason); faculty only when qualified. A person must be qualified for every skill in the request. Lab instructors are never valid for a clinical entry. | ST-08 and ST-09, and "students can only pick qualified evaluators". | `[INFER]`. |
-| D23 | **QR generator.** `lib/v2/qr.ts` is a dependency-free byte-mode, level M, versions 1 to 10 generator (up to 213 bytes). It matches the `qrcode` package module for module for 6 texts and all 8 masks (checked once, outside the repo), is decoded by an independent decoder in `tests/v2/qr.test.ts`, and the e2e decodes the rendered SVG with the browser's BarcodeDetector. | No QR package in the app and the brief asks for no new dependency. | Done. |
-| D24 | **Offline is a demo toggle**, not `navigator.onLine`. The shared store plays both device and server. Demo controls live in the Scenario menu (checkbox items) and in a labelled "Demo controls (not part of the product)" card on the Sync screen. | A presenter must be able to show every case on demand. | Decided by the Stage 2 brief. |
-| D25 | **Conflict resolution is a new change.** The chosen value is written to the entry and the item goes back to queued, then syncs at once when the phone can. Keep both is only offered for a note (server text, blank line, then the phone's text). | Offline resolution must not be lost. | `[PROPOSED]`. |
-| D26 | **Handover mode** is a full-screen sheet with three phases (student, evaluator, back). The evaluator phase links to the Stage 3 preceptor route for the real form. A PIN or lock is not built. | The form is Stage 3. | `[PROPOSED]`. |
-
-### Stage 3 decisions (preceptor, remediation, versions)
-
-| # | Decision | Why | Status |
-|---|---|---|---|
-| D27 | **Reopen adds a version, it never edits one.** Staff (administrator, reviewer, director) reopen a counted, awaiting or already reopened evaluation with a required reason and a real change. Version n+1 is appended, the status becomes `reopened`, and the evaluation does not count until staff confirm the newest version. Earlier versions are byte-for-byte unchanged (tested). A returned evaluation is corrected by the student, not reopened. | The hard stop says completed evaluations are immutable. This keeps it true while allowing a correction with an audit trail. | `[PROPOSED]`. Who may reopen is an invention; ask Sankalp. |
-| D28 | **Not yet, feedback only** is stored as outcome `not-yet` with status `counted` (a completed record that never qualifies). It is not an attempt, never opens a plan, and shows in the student record as its own outcome, separate from "did not meet". Feedback is required for it. | The brief: feedback saved, no pass or fail recorded. | `[PROPOSED]`. |
-| D29 | **Remediation follows the skill's failure path.** A fail opens a plan only when the skill's auto-remediation is on (IV catheter insertion is; Sterile dressing change is not). Staff can open one by hand from a failed evaluation. One open plan per student and skill; a later fail adds a note. Status derives from the steps (open, in progress) and closes only by staff. Plan steps are sample text. | Honour the configuration the wizard promises. The brief's "fail opens a plan" holds wherever the skill says so. | `[PROPOSED]`; deviation from a literal reading of the brief, noted in the report. |
-| D30 | **Concerns are visible to program staff (administrator, reviewer, director), never to the student or the preceptor role.** The brief says "admin only"; the data model already said faculty only, so the three staff roles read it. Confidentiality is by screen: the shared browser store holds the note. | Matches `ConcernFlag.visibleTo`. | Open: should the reviewer and director see it? |
-| D31 | **Who opens the link.** The link names a request; the person is the assigned evaluator, or the one chosen in a labelled demo control ("Open this link as"). An unqualified person is blocked first, then a qualified person who was not named. Blocking is for the whole request, with the reason per skill and "Ask the student to send this request to a qualified evaluator". | No accounts exist (hard stop), so identity has to come from the link. | `[PROPOSED]`. |
-| D32 | **Optional config flags without wizard controls.** `SkillConfig.feedbackRequired` (SC-14) and `approvalRequired` (SC-15) are read by the form. The seed sets `feedbackRequired` on IV catheter insertion; nothing sets `approvalRequired`. The wizard has no control for either yet. | Needed for EV-06 and EV-07 without widening Stage 1. | Open: add the controls to the wizard. |
-| D33 | **Overall supervision rating** shows only when the skill enables it, and is required for Met or Not met when shown. The scored model has no scale in the configuration, so the form uses 1 to 5. | Needs a rule to validate against. | `[INFER]`. |
-| D34 | **Store shape.** `EvaluationVersion.detail` (answers, scores, level, feedback, attestation), `Evaluation.submissionId`, `Submission.completedById/At`, `ConcernFlag.submissionId`, and `Remediation` gained evaluation, opened, notes and closed fields. All optional, so the envelope version stays 3 and saved state still loads. History `AttemptKind` gained `not-yet` and the summary gained `notYet`. | Needed to hold what the evaluator recorded. | Done. |
-| D35 | **Attempts shown, not enforced.** Plan pages show attempts used against the limit and the earliest next attempt (last fail plus days between attempts). Requests are not blocked by them. Not yet is not an attempt. | Keeps Stage 3 to display. | `[INFER]`. |
-
-### Stage 4 decisions (review queue, verification)
-
-| # | Decision | Why | Status |
-|---|---|---|---|
-| D36 | **The queue has three kinds of item.** (1) An evaluation held for approval (`awaiting-approval`), grouped with its request when it has one; (2) a photo of a paper form with no outcome yet (`needs-outcome`); (3) stalled requests and returned items on their own tabs. The unit of approval is the request (several skills, one decision), or the evaluation when it has no request. | AR-01 lists "every evaluation awaiting approval"; the story also puts photos in the queue (V2-02c), and a request carries several skills (EV-05). | `[PROPOSED]` |
-| D37 | **Paper form: the reviewer enters the outcome on the evaluator's behalf.** The photo placeholder shows the file name and size, not an image. The reviewer names who signed (qualified people only, preselected from the student's request), the clinical setting on the form, and the outcome per skill with the same rules as the evaluator form. The evaluations are marked `source: paper-form`, name the signer as evaluator and the reviewer as `enteredById`, and then wait for approval like any other. | The requirement only says the paper form goes to review; someone has to turn it into evidence, and the record has to say who typed it. | `[PROPOSED]` |
-| D38 | **Blocked items do not stop the others.** An item that cannot be approved (no outcome entered, or the paper-form signer is not qualified for a skill) stays in the queue. The confirm dialog names each blocked item and why BEFORE the click, the button says "Approve 2 of 3 submissions", and the result banner repeats which stayed and why. Only when every chosen item is blocked is nothing approved, and then the error names them. | Partial failure is the normal case in bulk work; hiding which item failed makes the reviewer re-check everything. | `[PROPOSED]` |
-| D39 | **Return needs a reason, and the student reads it with a next step.** The reason is required (up to 1000 characters). The next step is derived from how the request was sent: a photo asks for a new photo; any other method sends the request back to the evaluator; an evaluation with no request names the evaluator to ask. Returning a request returns every evaluation in it. A returned evaluation stays as history and does not count. | AR-05 says return goes back for correction; RV-02 keeps the reason and a revision count. | `[PROPOSED]` for the derived next step. |
-| D40 | **Send again continues the same record (RV-02), without editing anything in place.** The request gets `revisions + 1`, keeps `returns`, and goes back to its evaluator (or the reviewer for a photo, which needs a new photo). The returned evaluation is not edited; the evaluator makes a new pass, which is a new evaluation with its own version 1. Nothing here answers OD-08 (whether a correction clears the evaluator's earlier answers); the prototype keeps the earlier pass as read-only history. | Respects RV-03 and RV-05 and the immutability hard stop. | Open: OD-08 stays undecided. |
-| D41 | **Stalled is a status the seed sets.** The prototype has no timer, so only `status: stalled` requests appear on the Stalled tab (one in the seed, nine days). Reassigning replaces the candidates (the old link stops opening the form for the first person), resets the wait, records the reassignment and audits who, from whom, to whom and why. Only someone qualified for every skill in the request can receive it. | RV-04 lets a request go to a different evaluator. The threshold for stalled is a program setting nobody has defined. | `[INFER]`. Open: what makes a request stalled (days, per skill)? |
-| D42 | **Who can act.** Administrator and clinical coordinator approve, return, enter paper outcomes and reassign. The director verifies and cannot approve. Evaluators and students have no route to the queue. The role comes from the URL like every v2 page, so `/v2/admin/review-queue` and `/v2/reviewer/review-queue` are the same screen with a different name in the audit log. | Matches the role switcher. | `[PROPOSED]` |
-| D43 | **Director verification is an append-only, numbered record.** A verification stores who, when, a note, the counted evaluations and the version of each, and the mandatory skills with whether each was achieved. It is never edited. Reopening a verified evaluation (the Stage 3 flow) does not touch it; the record reads "Changed since verified" and the next verification is version n + 1. New evidence added after a verification is counted and shown but does not change the status. | Makes the signature a fact. Matches RV-03: a later change is a new version, not an edit. | `[PROPOSED]` (REQ section 14 stays out of scope for production, D2 allows it here). |
-| D44 | **"Completed record" means nothing pending, not every mandatory skill achieved.** Verification is refused while anything is waiting for approval, reopened, returned or in an open request, and when nothing counts. Unmet mandatory skills are listed in the form and the director confirms them; they do not block. Verifying an unchanged record again is refused. | A program can sign off a record "as of today"; forcing completion would make the story impossible with the seed. The real rule belongs to the program. | `[INFER]`. Open question for Sankalp and Aarti, see below. |
-| D45 | **Store shape.** `Evaluation.source`, `enteredById` and `review` (decision, who, when, note); `Submission.revisions`, `returns`, `reassignments`, `studentNote`; `V2State.verifications`. All optional, so the envelope version stays 3 and saved state still loads (a test deletes `verifications` and runs). The seed gained a held evaluation for Jordan Okafor with a self-rating that differs (the compare view), a note on Maya's waiting evaluation, a file name on the photo request and a candidate on the stalled one. | Needed to hold the decisions above. | Done. |
-| D46 | **Reviewer notes.** An approve note is kept with the evaluation (AR-04) and shown to staff only; a return reason is shown to the student. There is no stand-alone "save a note" action. | Keeps AR-04 to the two decisions that matter. | `[INFER]`. |
-
-### Stage 4 findings
-
-- **DS DataTable reserves the column key `select`.** A product column with that key renders an empty cell, so the row checkboxes did not appear until the key was renamed. The DS row checkboxes also show only on hover or focus, which a phone cannot do, so the queue draws its own visible checkbox column and bar and turns the DS selection off (`selectable={false}`). `V2Grid` gained `selectable`, `rowLabel`, `bulkActions` and `emptyText` props; the defaults keep every earlier page as it was.
-- **The DS DataTable bulk bar's default actions are placeholders** (Export and Delete). Earlier v2 tables inherit it because selection is on by default. Not changed in this stage; worth setting `selectable={false}` on those tables.
-- **Tabs overflow on a phone.** Three tabs with counts did not fit at 390 px and the third went into the DS overflow menu, so the labels were shortened to "Awaiting", "Stalled" and "Returned".
-
-### Stage 3 findings
-
-- **Form unmount on completion.** The moment a request completes the access check says "completed", so the form unmounts; the page now keeps the result of that sitting in the parent so the receipt can say "Submitted".
-- **Intermittent hidden h1** in one e2e run (a retry passed). Not reproduced; most likely a dev recompile during the run.
-
-## Stage 1 findings (DS and tooling, not v2 decisions)
-
-- **Open DS Select fails two axe rules behind it.** While a Radix Select listbox is open, axe reports `aria-hidden-focus` for the page behind it and, for a long list, `scrollable-region-focusable` for the option list. Tab also cannot leave an open listbox. `shoot.mjs` records these as `knownAxe` for the menu states and checks ArrowDown and Escape instead. A DS bug report is the right fix.
-- **DS TabsList can take focus without a focus ring** (Radix roving root, after a mouse click on a tab). v2 adds the DS ring tokens to the tab list and to the tab panels it renders.
-- **DS Wizard console warning** for more than 6 steps (D8).
-- **Radix ToggleGroup single mode renders `role="radio"`**, so the accept and reject controls are radios to assistive tech, not buttons.
-
-## Naming and relation to `docs/design/brief-v2.md`
-
-`docs/design/brief-v2.md` is the **Design Brief v2 (three directions)** from 2026-10-08, a proposal written before any v2 code. This folder, `docs/v2/`, is the **Connected prototype v2**. The names collide but the artifacts differ:
-
-| | `docs/design/brief-v2.md` | `docs/v2/` and `app/(v2)/` |
+| # | Decision | Status |
 |---|---|---|
-| What | Three IA and workflow directions, no code | One connected clickable prototype with shared mock data |
-| Status | Proposal awaiting Romit's choice | Built in stages |
-| Scope | The existing hybrid IA of the v1 admin app | The 14-step cross-role story, including `[PROPOSED]` items |
+| D1 | Every v2 screen is built on `@exxatdesignux/ui` 1.6.5. `studentUX` and `exxat-ds` are read-only references. | Romit |
+| D2 | **Hard-stop scope change, v2 only.** Starter libraries (`SL-01`), a default evaluation model (`SC-02`), remediation (REQ section 14), QR codes and heatmaps, the batch grid (`OD-19`), offline sync, CLR 2.0, photo of a signed paper form, tamper-evident PDF, evaluator qualification and expiry are in scope for the prototype. They are `[PROPOSED]` in docs and never labelled in the UI. **Kept:** completed evaluations are immutable (a later change is a new version), preceptors have no login, lab never satisfies a clinical-setting minimum, mapping is not eligibility. | Romit. The product `CLAUDE.md` still reads as before; it applies to the production build. |
+| D3 | Four models are configurable. Binary is pre-selected in v2 screens, scored is never the default. Pre-selecting conflicts with `SC-02`, so it is part of D2. | Romit |
+| D4 | v2 lives in `app/(v2)/v2/...` with its own layout, store provider and nav. v1 groups are untouched. The role comes from the URL, and the role switcher navigates. | `[INFER]` |
+| D5 | Store: React context plus `useSyncExternalStore`, `localStorage` with guarded access, hydrate after mount, a shape check discards bad data. Envelope version 3. Every later field is optional so saved state still loads. | `[INFER]` |
+| D6 | Student screens are a 28rem column on every viewport (conflict screen 48rem). Bottom navigation below 768 px: Home, Log, Requests, Record. R. Whitmore uses the Preceptor role. | `[INFER]` |
+| D7 | L. Haddad, Dr. K. Brennan and the eleven other students are invented names. Preceptor and lab-instructor credentials are sample data. | Placeholder |
 
-Open: whether to rename one of them (suggestion: call this one "connected prototype" in all docs and keep "brief v2" for the directions). Not renamed in Stage 0 to avoid breaking existing links.
+## B. Admin setup (Stage 1)
 
-## Open questions
+| # | Decision | Status |
+|---|---|---|
+| D8 | The configure wizard has 8 steps (the DS recommends 6 and warns in dev). Opening the review step directly shows steps 1 to 7 as complete. | Brief |
+| D9 | Starter libraries are static sample catalogues. Copying adds only skills not already present (name match), unconfigured. "Replace" is not offered because it could overwrite configuration that carries evidence. | `[INFER]` |
+| D10 | Import reads a PDF through the local extractor and proposes skills by rules (no network, no AI key). The AI path (OD-12) stays a v1 concern. | `[INFER]` |
+| D11 | The wizard draft lives in the store and is saved without audit entries. Step changes and publish are audited. | `[INFER]` |
+| D12 | The strength hint (`strengthHint`) and the coverage warning "no setting can satisfy it" are my heuristics, not requirements. | `[INFER]`, review with Sankalp |
+| D13 | `SkillConfig.feedbackRequired` (SC-14) and `approvalRequired` (SC-15) are read by the forms. The wizard has no control for either yet. | Open: add the controls |
 
-1. **Where does D2 get recorded?** `strategy/07` section D and the product `CLAUDE.md` still say the hard stops apply. Romit to decide whether to add a "v2 prototype exception" note there.
-2. **Sample names** in D7: use real program staff names or keep placeholders?
-3. **Student on desktop.** Should `/v2/student/*` force a phone-width frame on desktop, or stay fluid? Stage 0 keeps it fluid.
-4. **Vercel or local only?** v2 reads and writes `localStorage` only, so a hosted copy would show each viewer their own state. Fine for demos, wrong for a shared review session.
-5. **Which stakeholders see `[PROPOSED]` items?** The UI never labels them, so a reviewer could mistake a proposal for a requirement. Option: a one-line "Prototype, not the requirements" note in the Scenario menu.
+## C. Student, sign-off, offline (Stage 2)
 
-6. **Stage 4: can a record with unmet mandatory skills be verified?** The prototype lets the director verify and states the gaps (D44). Is "verified" a statement about the evidence so far, or about program completion?
-7. **Stage 4: what makes a request stalled?** The seed marks one; no timer exists (D41). Days, per skill, per program?
-8. **Stage 4: should a reviewer be able to edit what the evaluator answered?** The prototype only approves or returns (RV-03, OD-08 untouched).
-9. **Stage 4: who may verify?** One director role is modelled; programs may have a dean, an accreditation officer or several directors.
+| # | Decision | Status |
+|---|---|---|
+| D14 | A lab or simulation entry is a practice trial: it counts toward prerequisites and is never sent for sign-off. A clinical entry is what a student sends. | `[PROPOSED]` |
+| D15 | Prerequisites read as "and": lab check-off, practice trials and each prerequisite skill together. | Open: "all" or "any of"? |
+| D16 | The log asks for the setting once and stores it on each entry. A note is stored per skill entry (OD-07 and ST-12 untouched). | `[INFER]`, OD-07 open |
+| D17 | A person must be qualified for every skill in a request. Preceptors and lab instructors are always listed (unqualified ones disabled with the reason); faculty only when qualified. Lab instructors are never valid for a clinical entry. | `[INFER]` |
+| D18 | The QR generator is dependency-free (`lib/v2/qr.ts`, byte mode, level M, versions 1 to 10), cross-checked against an independent decoder. | Done |
+| D19 | Offline is a demo toggle, not `navigator.onLine`. A conflict resolution is a new change that syncs at once when it can. Handover is a sheet with three phases, no PIN. | Brief, `[PROPOSED]` |
 
-## Stage 2 findings
+## D. Evaluation, outcomes, review, verification (Stages 3 and 4)
 
-- **DS LocalBanner buttons are small.** Its `Dismiss` button is 32 px and its `action` button 24 px under a fine pointer. The DS coarse-pointer rule lifts `Dismiss` to 44 px on a phone, not the action button, so Stage 2 puts its own DS `Button size="lg"` inside the banner body instead of using `action` on the device banners.
-- **DS Button `lg` is a fixed 36 px and does not wrap.** Long labels ("Create request and show QR code") overflowed at 390 px. Student buttons add `min-h-(--control-height-touch) h-auto whitespace-normal py-2`.
-- **Next `Card` has no `asChild`**, so cards use `role="article"` with `aria-labelledby`.
-- **The next best action is a heuristic** (conflict, unsent entries, closest started mandatory skill, locked skill, waiting, optional, up to date). Review with the team.
-- **QR contrast** uses the foreground token on the background token, so it inverts in dark mode. Not verified in dark mode.
+| # | Decision | Status |
+|---|---|---|
+| D20 | Reopen adds a version and never edits one. Staff reopen with a reason; the evaluation does not count until the newest version is confirmed. | `[PROPOSED]`, ask Sankalp who may reopen |
+| D21 | "Not yet, feedback only" is outcome `not-yet`, status counted, never an attempt, never opens a plan. | `[PROPOSED]` |
+| D22 | Remediation opens on a fail only where the skill's failure path says so (IV catheter does, sterile dressing does not), or by hand. One open plan per student and skill. | `[PROPOSED]`, deviation from a literal reading of the brief |
+| D23 | Confidential concerns are visible to administrator, reviewer and director, never to the student or preceptor, and are never in any report, PDF or export (tested). | Open: should the reviewer and director see them? |
+| D24 | No accounts: identity comes from the link (the assigned evaluator, or "Open this link as" in a labelled demo control). Unqualified people are blocked with the reason. | `[PROPOSED]` |
+| D25 | The queue holds evaluations awaiting approval, photos of paper forms and stalled or returned requests. The unit of approval is the request. Blocked items never stop the others; the confirm names them before the click. | `[PROPOSED]` |
+| D26 | A paper form is entered by the reviewer on the evaluator's behalf, source recorded as paper form and who typed it. | `[PROPOSED]` |
+| D27 | A return needs a reason and shows the student a next step. Send again continues the same record with a revision count and edits nothing in place. OD-08 untouched. | Open: OD-08 |
+| D28 | "Stalled" is a status the seed sets; there is no timer. Reassign replaces the candidates, resets the wait, and audits who, from whom, to whom and why. | `[INFER]`, open: what makes a request stalled |
+| D29 | A director verification is append-only and numbered. It stores who, when, a note, the counted evaluations with their versions, and the mandatory skills with whether each was achieved. A later reopen marks the record "Changed since verified"; the next verification is version n + 1. | `[PROPOSED]` |
+| D30 | "Completed record" means nothing pending, not every mandatory skill achieved. Unmet mandatory skills are listed and confirmed, not blocking. | `[INFER]`, open question 6 |
 
-## Findings during Stage 0 (not v2 decisions)
+## E. Reports, record, lab grid (Stage 5)
 
-- **Pre-existing hydration error under reduced motion.** The DS Ask Leo launcher renders different markup on the server and the client when the browser prefers reduced motion. React regenerates the tree, which also left the mobile sidebar sheet open in a 390 px screenshot. The v1 shell (`/home`) shows it too. v2 renders the launcher after mount to avoid it. The v1 shell is not changed in this stage. A DS bug report is the right fix.
-- **DS version skew.** `node tools/ds/source.mjs` prints `@exxatdesignux/ui@1.5.1`, while the admin app installs 1.6.5. Component APIs used in Stage 0 were checked against the installed 1.6.5 `.d.ts` files.
-- **Stale file in the product `CLAUDE.md`.** It says the product is "not yet scaffolded"; the admin app, 18 contracts and a store engine already exist.
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D31 | **Pace is evidence-based and a prototype assumption.** Term Aug 24 to Dec 11, 2026; expected = floor(evaluations the mandatory rules ask for x share of term gone); behind = more than 1 evaluation short. On the demo day (day 56 of 109) 10 of 12 students are behind, because the seed history is thin. A mandatory-skills-achieved measure was tried first and put all 12 behind. | The requirements do not define pace. | `[INFER]`, needs a program rule |
+| D32 | **Heatmap states** are Achieved, Half or more (counted at least half of the need), Some, Not met yet (attempted, none qualifying) and Not started, on a 4-step sequential brand scale. Every cell carries a symbol and words; the Student table tab is the words-only equivalent. | Colour must never be the only carrier; no red. | `[PROPOSED]` |
+| D33 | **Single rater** = two or more counted observations and one evaluator behind all of them. One observation is not flagged. Rater comparison shows a gap to all raters, never a verdict, and marks raters under 5 evaluations. | A flag on a single observation would be noise; a verdict would be unfair to raters who see different students. | `[PROPOSED]` |
+| D34 | **Filters re-scope the evidence first, then recompute** (RP-08). Cohort and group are one value in v2; tag and location filters are not built (RP-04 is not covered). A lab or simulation setting with a named clinical setting is explained, not returned empty (RP-09). | Meets RP-01, RP-08, RP-09 as far as the data allows. | Done |
+| D35 | **The signature.** The PDF is rebuilt byte for byte from the content it carries and checked against a SHA-256 hash and an HMAC-SHA-256 signature with a demo key that ships in the page. It proves the file is unchanged since it was made here. It does not prove who made it, and anyone can recompute it. The page says so beside the download, in the PDF itself and on the checker. A production design needs a private key held by the program or an e-signature service. | A real signature needs a key management decision nobody has made. | `[PROPOSED]` |
+| D36 | **What leaves the program.** Reports and the record never contain concerns, self-ratings, notes or evaluator feedback text. The record includes only Met evaluations of skills that were achieved when the director verified, unchanged since, plus a "Not included" list with a reason each. It does not say a concern exists. | A shared record can only state what the program verified. | `[PROPOSED]`. Open: may feedback text leave the program? Should failed attempts? |
+| D37 | **Sharing needs a verified, unchanged record.** Not verified or Changed since verified turns both downloads off and says why. New evidence added after verification is excluded and counted in the list. | Keeps "only verified items" true. | `[PROPOSED]` |
+| D38 | **CLR 2.0** is the 1EdTech v2.0 shape (VC 2.0 context, `ClrCredential`, one `AchievementCredential` per skill, `Competency`, evidence per evaluation) with no `proof`, so it is not a verifiable credential until signed. No external validator was run. | A signed CLR needs the same key decision as D35. | `[PROPOSED]` |
+| D39 | **Lab grid.** Any published skill the course maps is offered (the lab instructor role is not checked against `evaluatorRoles`, because no seeded skill lists it; qualification of the instructor is checked). A session is Skills lab or Simulation. Results are stored as lab or simulation evaluations by the lab instructor with no clinical setting, so they cannot satisfy a setting minimum; the simulation cap still applies. Absent students get no evaluation and are listed on the batch. A saved batch is read-only and the same name, date and setting cannot be saved twice. A skill with `approvalRequired` holds the result for approval. A lab Met adds a lab check-off for skills whose prerequisites ask for one. | Makes the lab hard stop true in data and keeps completed evaluations immutable. | `[PROPOSED]`; OD-06 and OD-19 open |
+| D40 | **Store shape.** `V2State.labBatches` (optional). No version change. `lib/v2/pdf.ts`, `reports.ts`, `report-docs.ts`, `record.ts`, `lab.ts`, `download.ts` and `paths.ts` are new. | | Done |
+
+## F. Open questions
+
+1. **Where does D2 get recorded?** `strategy/07` and the product `CLAUDE.md` still say the hard stops apply. Romit to decide on a "v2 prototype exception" note.
+2. **Sample names** (D7): real program staff names or placeholders?
+3. **Hosting.** v2 uses `localStorage` only, so a hosted copy shows each viewer their own state. Fine for demos, wrong for a shared review.
+4. **Do stakeholders see `[PROPOSED]` items?** The UI never labels them, so a reviewer could mistake a proposal for a requirement. Option: a one-line "Prototype, not the requirements" note in the Scenario menu.
+5. **Prerequisites "all" or "any of"** (D15), and the wizard controls for feedback and approval (D13).
+6. **Can a record with unmet mandatory skills be verified?** (D30) Is "verified" about the evidence so far, or about program completion?
+7. **What makes a request stalled?** (D28) Days, per skill, per program?
+8. **Who may verify, reopen, see concerns?** One director role is modelled; programs may have a dean, an accreditation officer or several directors (D20, D23).
+9. **Signature key** (D35, D38): who holds the private key, and is a signed PDF enough or does the receiving party need a verifiable credential?
+10. **What may leave the program in a shared record?** Feedback text, failed attempts, evaluator names (D36).
+11. **Pace rule** (D31): by term share, by calendar milestones the program sets, or not at all?
+12. **Is a lab instructor allowed on every skill?** (D39, OD-06) The grid assumes yes, subject to qualification.
+
+## G. Findings (DS and tooling, not v2 decisions)
+
+- **DS DataTable** reserves the column key `select` (an empty cell results). Its row checkboxes show only on hover or focus, and its default bulk actions are placeholders (Export, Delete). The queue draws its own checkboxes; `V2Grid` has `selectable`, `rowLabel`, `bulkActions` and `emptyText`. Earlier v2 tables still inherit the placeholder bar unless `selectable={false}`.
+- **Open DS Select** fails `aria-hidden-focus` (and `scrollable-region-focusable` for long lists) behind it and traps Tab by design. `shoot.mjs` records these as `knownAxe` and checks ArrowDown and Escape.
+- **DS TabsList** can take focus without a ring after a mouse click; v2 adds the DS ring tokens. Three tabs with counts overflow at 390 px, so tab labels are short.
+- **DS Wizard** warns above 6 steps. **DS LocalBanner** action buttons are small on touch; student banners use a DS `Button size="lg"` in the body. **DS Button `lg`** is a fixed 36 px and does not wrap, so student buttons add `min-h-(--control-height-touch) h-auto whitespace-normal py-2`. **DS ToggleSwitch** shrinks to a circle in a narrow flex row unless wrapped in `shrink-0`. **A native `type="date"` input** counts as a keyboard trap in the Tab walker (three segments, one element), so the lab grid uses the DS `DatePickerField`.
+- **`node tools/ds/source.mjs`** reports `@exxatdesignux/ui@1.5.1` while the app installs 1.6.5; APIs were checked against the installed `.d.ts`.
+- **Reduced-motion hydration error** in the DS Ask Leo launcher (also in v1); v2 renders it after mount.
+- **`shoot.mjs` overwrites `report.json`** with the routes of the current run, so only a run with no route arguments writes the full report.
+
+## H. Naming
+
+`docs/design/brief-v2.md` is the three-direction design brief of 2026-10-08. This folder is the connected prototype. The names collide; suggestion: say "connected prototype" in all docs. Not renamed, to keep links working.

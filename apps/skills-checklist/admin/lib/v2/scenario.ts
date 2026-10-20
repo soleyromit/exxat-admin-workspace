@@ -177,7 +177,7 @@ export const STEPS: ScenarioStep[] = [
     title: "Read cohort reports",
     summary: "Heatmap, students behind expected pace, observations and distinct raters per skill, rater comparison, simulation share and a signed PDF.",
     route: "/v2/admin/reports",
-    reqIds: ["RP-01", "RP-02", "RP-03", "RP-05", "RP-06", "RP-07", "RP-10"],
+    reqIds: ["RP-01", "RP-02", "RP-03", "RP-05", "RP-06", "RP-07", "RP-08", "RP-09", "RP-10"],
     proposed: ["Cohort heatmap", "Pace behind expected", "Single-rater flag", "Rater comparison", "Simulation share", "Tamper-evident signed PDF"],
     stage: 5,
     counters: ["students", "evalsCounted", "evalsWaiting"],

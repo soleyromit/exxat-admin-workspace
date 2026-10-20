@@ -355,6 +355,23 @@ export interface Verification {
   skills: Array<{ skillId: string; achieved: boolean }>
 }
 
+/** Stage 5: one saved lab (or simulation) session recorded from the batch grid by a lab instructor. Read-only once saved. */
+export interface LabBatch {
+  id: string
+  name: string
+  /** Session day, YYYY-MM-DD. */
+  date: string
+  setting: "lab" | "simulation"
+  instructorId: string
+  skillIds: string[]
+  /** Present students got a result per recorded cell. Absent students were not assessed and have no evaluation. */
+  absentIds: string[]
+  evaluationIds: string[]
+  /** Cells left blank, which were not saved. */
+  blank: number
+  savedAt: string
+}
+
 export interface V2State {
   schema: 1
   program: Program
@@ -381,4 +398,6 @@ export interface V2State {
   logDraft: LogDraft | null
   /** Stage 4: director verifications, oldest first. Optional so state saved before Stage 4 still loads. */
   verifications?: Verification[]
+  /** Stage 5: saved lab sessions, oldest first. Optional so state saved before Stage 5 still loads. */
+  labBatches?: LabBatch[]
 }

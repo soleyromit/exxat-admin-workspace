@@ -8,6 +8,9 @@ import { VerificationListPage } from "@/components/v2/director/verification-page
 import { ReviewQueuePage } from "@/components/v2/review/review-queue-page"
 import { OutcomesPage } from "@/components/v2/outcomes/outcomes-page"
 import { PreceptorEvaluation } from "@/components/v2/preceptor/evaluation-form"
+import { LabGridPage } from "@/components/v2/preceptor/lab-grid-page"
+import { ReportsPage } from "@/components/v2/reports/reports-page"
+import { RecordPage } from "@/components/v2/student/record-page"
 import { LogFlow } from "@/components/v2/student/log-flow"
 import { RequestSignoff } from "@/components/v2/student/request-signoff"
 import { SyncPage } from "@/components/v2/student/sync-page"
@@ -37,6 +40,12 @@ export function StepScreen({ stepId, fallback }: { stepId: string; fallback: Rea
       return <ReviewQueuePage role="reviewer" />
     case "director-verification":
       return <VerificationListPage role="director" />
+    case "reports":
+      return <ReportsPage role="admin" />
+    case "verified-record":
+      return <RecordPage />
+    case "lab-batch-grid":
+      return <LabGridPage />
     default:
       return <>{fallback}</>
   }

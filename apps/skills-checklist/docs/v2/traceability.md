@@ -4,7 +4,41 @@ Maps each v2 screen to the requirement IDs it will satisfy and to the new requir
 
 **How to read it.** "Requirement IDs" lists IDs the finished screen is meant to cover. "Coverage now" says how much exists today. "New requirements (status: proposed)" lists capabilities the prototype adds that no requirement states; each is `[PROPOSED]` and none is a requirement or a decided `OD-*`. The step list and IDs are generated from `admin/lib/v2/scenario.ts`, and a test (`tests/v2/scenario.test.ts`) fails if a step cites an ID that is not in the requirements file.
 
-Coverage values: **None** (placeholder only), **Seed** (data for it exists in the store), **Built** (real screen, tested), **Verified** (axe, focus walk and screenshots pass).
+Coverage values: **None** (placeholder only), **Seed** (data for it exists in the store), **Built** (real screen, tested), **Verified** (axe, focus walk and screenshots pass). No screen is marked Verified for dark mode, forced colors, a screen reader or a real device: those were not run.
+
+## Complete screen-to-requirement table (all stages)
+
+One row per screen. "IDs" are the requirement IDs the screen satisfies in whole or in part; the stage sections below say which part and list the proposed capabilities. "Flow check" is the Playwright script that drives it end to end. Every screen was also run through `shoot.mjs` (axe WCAG 2.0 and 2.1 A and AA, a Tab-key focus walk, screenshots at 1440 and 390).
+
+| Stage | Screen | Route | IDs | Flow check |
+|---|---|---|---|---|
+| 0 | Scenario overview, role homes (x5), Scenario menu, Reset demo | `/v2`, `/v2/<role>` | none (navigation and demo data) | `tests/v2/store.test.ts` |
+| 1 | Add skills: starter libraries | `/v2/admin/starter-library` | SL-01, IM-09, IM-10, IM-11, IM-12 | `stage1.e2e.mjs` |
+| 1 | Add skills: import from a file | `/v2/admin/starter-library` | IM-01 to IM-11, IM-13 | `stage1.e2e.mjs` |
+| 1 | Your library (Edit, Configure) | `/v2/admin/starter-library` | IM-09, IM-10, IM-11 | `stage1.e2e.mjs` |
+| 1 | Configure wizard, steps 1 to 7 | `/v2/admin/configure-skill` | SC-01 to SC-04, SC-08 to SC-12, SC-16, SC-17, IM-14 | `stage1.e2e.mjs` |
+| 1 | Review and publish | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | `stage1.e2e.mjs` |
+| 1 | Map skills to NURS 350 | `/v2/admin/map-courses` | CM-01, CM-03 to CM-06, IM-09, SC-12 | `stage1.e2e.mjs` |
+| 2 | Student home, what is left | `/v2/student` | ST-01, SC-12, AR-06, IM-09 | `stage2.e2e.mjs` |
+| 2 | Log skills, 4 steps | `/v2/student/pick-and-rate` | ST-02, ST-04 to ST-07, ST-10 to ST-13, SC-08, SC-11, CM-05 | `stage2.e2e.mjs` |
+| 2 | Ask for sign-off, 4 ways | `/v2/student/request-signoff` | ST-08 to ST-10, ST-13, EV-01, EV-02, EV-05, AR-01, RV-05, SC-16 | `stage2.e2e.mjs` |
+| 2 | Sync and offline, conflict | `/v2/student/offline-sync` | none | `stage2.e2e.mjs` |
+| 2, 3, 4 | Your record | `/v2/student/history` | SH-01 to SH-07 (SH-06 narrowing not built; SH-07 in full for v2 evaluations) | `stage2`, `stage3`, `stage4`, `stage5` |
+| 3 | Preceptor evaluation, one pass | `/v2/preceptor/preceptor-evaluation?request=<id>` | EV-01 to EV-07, SC-08, SC-14, SC-16, RV-03, AE-01 | `stage3.e2e.mjs` |
+| 3 | Outcomes and remediation (staff) | `/v2/reviewer/outcome-remediation`, `/v2/admin/outcomes` | RV-03, SH-02, SH-04, AE-01, AE-03, AE-04 (partial) | `stage3.e2e.mjs` |
+| 3 | Remediation plan | `/v2/<staff>/remediation/<id>`, `/v2/student/remediation/<id>` | SH-03, AR-04 | `stage3.e2e.mjs` |
+| 3, 4 | Evaluation and version history | `/v2/<staff>/evaluation/<id>`, `/v2/student/evaluation/<id>` | RV-03, RV-05, AE-02, AR-06, SH-02, SH-07, RP-07 | `stage3`, `stage4` |
+| 4 | Review queue: Awaiting, Stalled, Returned | `/v2/reviewer/review-queue`, `/v2/admin/review-queue` | AR-01, AR-05, AR-06, RV-04, RV-05, SH-02 | `stage4.e2e.mjs` |
+| 4 | Review item: compare, paper form, decision | `/v2/<admin\|reviewer>/review-queue/<id>` | AR-02 to AR-05, EV-02, RV-02, SC-12 | `stage4.e2e.mjs` |
+| 4 | Student: returned request | `/v2/student`, `/v2/student/request-signoff` | RV-01, RV-02, RV-05, SH-02, SH-04 | `stage4.e2e.mjs` |
+| 4 | Director: verification list | `/v2/director/director-verification`, `/v2/admin/verification` | AE-01, AE-03 | `stage4.e2e.mjs` |
+| 4 | Director: verify one record | `/v2/<director\|admin\|reviewer>/verification/<student>` | AE-01 to AE-03, RP-07, RV-03 | `stage4.e2e.mjs` |
+| 5 | Cohort reports: heatmap, behind pace, skills and raters, rater comparison, student table | `/v2/admin/reports`, `/v2/director/reports` | RP-01, RP-02, RP-03, RP-05, RP-06, RP-07, RP-08, RP-09, AE-01, AE-03, AR-06 (RP-04 not built) | `stage5.e2e.mjs` |
+| 5 | Signed PDF per student and per cohort, document checker | `/v2/admin/reports` (below the views) | RP-10 (PDF with the filters recorded; the row-per-evaluation detail is not built; the format question, RP-11 and OD-10, is open and not built) | `stage5.e2e.mjs` |
+| 5 | Share your verified record (PDF, CLR 2.0) | `/v2/student/verified-record` | SH-01, SH-06, SH-07, RP-10, AE-01 | `stage5.e2e.mjs` |
+| 5 | Lab batch grid | `/v2/preceptor/lab-batch-grid` | EV-02, EV-05, SC-12, ST-05, AR-06, AE-01 | `stage5.e2e.mjs` |
+
+Not exercised by any v2 screen: SL-02 to SL-11, SC-05 to SC-07, SC-13, CM-02, CM-07, CM-08, ST-03, RV-06 (OD-08), RP-04, RP-11 (OD-10), AE-05 to AE-08, and every `OD-*`. Coverage for these stays with the v1 build (`docs/strategy/04-requirements-traceability.md`).
 
 ## Foundation screens (Stage 0)
 
@@ -71,9 +105,27 @@ Status: **Built** (real screens, unit tests in `tests/v2/queue.test.ts` and `ver
 
 Scenario steps 10 and 11 now point at built screens. Step 10 keeps its planned IDs; RV-02 is covered as far as the revision count and reason (the correction never edits an answer in place, OD-08 untouched).
 
+## Stage 5 screens (reports, record, lab grid; built)
+
+Status: **Built** (real screens, unit tests in `tests/v2/reports.test.ts`, `pdf.test.ts`, `record.test.ts`, `lab.test.ts`, Playwright flow `docs/v2/verify/stage5.e2e.mjs`, screenshots and axe via `shoot.mjs`). Not **Verified**: dark mode, forced colors, screen reader, a real device, an external CLR validator and visual-diff against localhost:4000 were not run. Contracts: `V2-05a`, `V2-05b`, `V2-05c`.
+
+| Screen | Route | Requirement IDs satisfied | New requirements (status: proposed) |
+|---|---|---|---|
+| Cohort reports: filters, summary | `/v2/admin/reports`, `/v2/director/reports` | RP-01 (category, setting, named clinical setting; cohort and group are one value; applied filters shown, each removable; tag and location not built), RP-08 (a setting filter re-scopes the evidence and progress is recomputed), RP-09 (an impossible pair is explained, with the fix), AE-01, AR-06 | Mandatory-only filter; summary figures `[PROPOSED]` |
+| Heatmap and words-only student table | same | RP-02 (achieved, in progress, not met yet, not started per student), RP-03 (per skill, mandatory shown), RP-05 and RP-06 (every name opens the student's evidence; Show students narrows the table to a skill), AE-03 | Cohort heatmap on a 4-step sequential scale with a symbol and words in every cell, no red; the Student table as its accessible alternative `[PROPOSED]` |
+| Behind pace | same | none directly (RP-02 in spirit) | Pace against a term clock, evidence-based, with the basis stated `[PROPOSED]`, see D31 |
+| Skills and raters | same | RP-03 | Observations and distinct evaluators per skill; single-evaluator flag; simulation share `[PROPOSED]` |
+| Rater comparison | same | none | Met rate per evaluator with a gap to all, small-numbers mark `[PROPOSED]` |
+| Signed PDF, document checker | same | RP-10 (the PDF records the filters that produced it; the row-per-evaluation detail and CSV or Excel are not built, OD-10), RP-07 (verification status carried in the PDF) | Tamper-evident PDF per student or cohort, rebuilt and re-checked byte for byte; says what the signature does and does not prove `[PROPOSED]` |
+| Share your verified record | `/v2/student/verified-record` (from `/v2/student/history`) | SH-01 (evaluations in order), SH-06 (one course in v2), SH-07 (outcome, evaluator, date, setting; feedback text stays inside the program), RP-10 (states what produced it), AE-01 | Student-shareable record limited to what the director verified; Included and Not included lists with reasons; PDF and CLR 2.0 JSON; sharing off unless verified and unchanged `[PROPOSED]` |
+| Lab batch grid | `/v2/preceptor/lab-batch-grid` | EV-02 (a lab instructor evaluates), EV-05 (several skills, one sitting), SC-12 (lab and simulation never satisfy a clinical setting: stored without one), ST-05 (setting recorded), AR-06 (held for approval where the skill asks), AE-01 | Grid with cells that cycle Met, Not met, Not yet, Not recorded; absent students; Set column to Met; one save per batch, read-only after; lab check-off added on a Met where a prerequisite asks for it `[PROPOSED]`; OD-19 and OD-06 untouched |
+| Your record (changed) | `/v2/student/history` | SH-02 | "Share your verified record" button on the verification card `[PROPOSED]` |
+
+Scenario steps 12 to 14 now point at built screens. Step 12 adds RP-08 and RP-09 to its IDs; RP-04 is not built.
+
 ## Story steps (14)
 
-Rows for steps 1 to 4 are built in Stage 1, steps 5 to 7 in Stage 2, steps 8 and 9 in Stage 3 and steps 10 and 11 in Stage 4 (tables above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
+All 14 steps are built (steps 1 to 4 in Stage 1, 5 to 7 in Stage 2, 8 and 9 in Stage 3, 10 and 11 in Stage 4, 12 to 14 in Stage 5). "Requirement IDs" is the plan, not a claim of coverage; the complete table above says what each screen covers.
 
 | # | Screen | Route | Requirement IDs (planned) | Coverage now | New requirements (status: proposed) |
 |---|---|---|---|---|---|
@@ -88,13 +140,13 @@ Rows for steps 1 to 4 are built in Stage 1, steps 5 to 7 in Stage 2, steps 8 and
 | 9 | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | RV-03, SH-02, SH-03, AE-01, AE-03, AE-04 | Built | Remediation plan on fail; reopen after sign-off with version history `[PROPOSED]`; remediation is outside section 14 of the requirements, see D2 |
 | 10 | Clear the review queue | `/v2/reviewer/review-queue` | AR-01, AR-02, AR-03, AR-04, AR-05, AR-06, RV-02, RV-04 | Built | Bulk approve; reassign a stalled request; paper-form outcome entry by the reviewer `[PROPOSED]` |
 | 11 | Verify the program record | `/v2/director/director-verification` | AE-03, RP-07 | Built | Program director verification as immutable versions `[PROPOSED]` |
-| 12 | Read cohort reports | `/v2/admin/reports` | RP-01, RP-02, RP-03, RP-05, RP-06, RP-07, RP-10 | Seed | Cohort heatmap; behind expected pace; observations and distinct raters per skill with single-rater flag; rater comparison; simulation share; tamper-evident signed PDF per student or cohort `[PROPOSED]` |
-| 13 | Share the verified record | `/v2/student/verified-record` | SH-01, SH-06, SH-07, RP-10 | Seed | Share as PDF or CLR 2.0 `[PROPOSED]` |
-| 14 | Record a lab session for a group | `/v2/preceptor/lab-batch-grid` | EV-02, EV-05, SC-12, ST-05 | Seed | Lab batch grid (cells cycle Met, Not met, Not yet); absent student handling `[PROPOSED]`; see OD-19 |
+| 12 | Read cohort reports | `/v2/admin/reports` | RP-01, RP-02, RP-03, RP-05, RP-06, RP-07, RP-08, RP-09, RP-10 | Built (RP-04 and CSV or Excel not built) | Cohort heatmap; behind expected pace; observations and distinct raters per skill with single-rater flag; rater comparison; simulation share; tamper-evident signed PDF per student or cohort `[PROPOSED]` |
+| 13 | Share the verified record | `/v2/student/verified-record` | SH-01, SH-06, SH-07, RP-10 | Built | Share as PDF or CLR 2.0 `[PROPOSED]` |
+| 14 | Record a lab session for a group | `/v2/preceptor/lab-batch-grid` | EV-02, EV-05, SC-12, ST-05 | Built | Lab batch grid (cells cycle Met, Not met, Not yet); absent student handling `[PROPOSED]`; see OD-19 |
 
-## Requirements not yet planned in any v2 step
+## Requirements not exercised by any v2 step
 
-These are requirement IDs the v2 story does not exercise, so a reader does not assume the prototype covers them: SL-02 to SL-11 (library fields, categories, tags, settings, search), SC-05 to SC-07, SC-13 (qualification rule detail, student fields), CM-02, CM-07, CM-08, ST-02, ST-03, ST-07, RV-06 (OD-08), RP-04, RP-08, RP-09, RP-11, AE-05 to AE-08. Coverage for these stays with the v1 build (`docs/strategy/04-requirements-traceability.md`).
+SL-02 to SL-11 (library fields, categories, tags, settings, search), SC-05 to SC-07, SC-13 (qualification rule detail, student fields), CM-02, CM-07, CM-08, ST-03, RV-06 (OD-08), RP-04 (attainment by tag), RP-11 (OD-10), AE-05 to AE-08. Coverage for these stays with the v1 build (`docs/strategy/04-requirements-traceability.md`). RP-08 and RP-09 are now covered by Stage 5.
 
 ## Update rule
 

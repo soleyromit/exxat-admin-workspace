@@ -1,7 +1,7 @@
 # Components v2 needs that the DS does not ship
 
 Rule: do not style ad hoc. Each item below is composed from DS primitives in a product file, registered here, and offered to the DS team as a candidate. DS version checked: `@exxatdesignux/ui` 1.6.5 (via `node tools/ds/source.mjs <Component>`; the CLI reports 1.5.1 types, the installed package is 1.6.5, see `decisions-and-open-questions.md`).
-Verdicts (IMPORT, VENDOR, HAND-ROLL) are for `ds-adoption-reviewer` before each component file is written. Rows 3 to 7 were built in Stage 2 (see the Stage 2 table).
+Verdicts (IMPORT, VENDOR, HAND-ROLL) are for `ds-adoption-reviewer` before each component file is written. Rows 3 to 7 were built in Stage 2, rows 9 and 11 in Stage 5 (see the Stage 5 table; rows 1, 2, 9 and 11 below are the original plan, the built versions differ).
 
 | # | Component | Needed by (steps) | Composes from DS primitives | Notes and constraints |
 |---|---|---|---|---|
@@ -73,10 +73,26 @@ DS registry note from the reviewer: the registry row that marks `DataTable` as V
 | 37 | **Returned-request panel (student)** | `components/v2/student/returned-panel.tsx` | `LocalBanner`, `Textarea`, `Button`, hidden file input behind a DS `Button` | Reason in the reviewer's words, a derived next step, send again. 44 px targets. |
 | 38 | **Verification pages** | `components/v2/director/verification-pages.tsx` | `V2Grid` (DS `DataTable`), `Card`, `StatusBadge`, `Checkbox`, `Textarea`, `LocalBanner`, semantic `ol` for the version history | The history list is a candidate for the same pattern as the version-history timeline (item 8). |
 
+## Registered in Stage 5 (composed from DS primitives, no ad hoc styling)
+
+The DS `Table` primitive (a bordered, keyboard-reachable scroll region) is used for the heatmap and the lab grid, which are matrices, not data lists. It is a DS component, not a raw `<table>`. `DataTable` through `V2Grid` carries every list. The PDF writer, hash and signature are logic in `lib/v2/pdf.ts` (about 250 lines, no dependency, tested), not UI.
+
+| # | Component | File | Composes from | Notes |
+|---|---|---|---|---|
+| 39 | **Cohort heatmap** (built, was 1) | `components/v2/reports/reports-page.tsx` | DS `Table` (row and column headers, scroll label), FA icons (aria-hidden), colour classes from tokens only (`bg-background`, `bg-muted`, `bg-brand-tint`, `bg-brand`) | Four-step sequential scale plus a symbol and words in every cell. No arrow-key cell navigation and no per-cell popover: the cell is read in the table, and the name beside it opens the evidence. The Student table tab is the words-only equivalent. |
+| 40 | **Sequential scale tokens** (was 2, not built as tokens) | `reports-page.tsx` `SCALE_CLASS` | existing DS brand tokens | No new CSS custom properties: the scale reuses four DS tokens. Candidate for a DS chart-scale token set if heatmaps spread. |
+| 41 | **Filter chip row** | `reports-page.tsx` | `Button` (outline, sm) with a trailing icon and a full `aria-label` ("Remove filter Category: Assessment"), `Select`, `Checkbox`, `Label` | The DS `FilterChipGroup` is built for data-table state; the report filters are plain values, so chips are DS Buttons. Candidate to move to `FilterChipGroup` if the DS exposes a value-only mode. |
+| 42 | **Report view switcher** | `reports-page.tsx` | `Tabs` from 768 px, `Select` below | Five views do not fit as tabs at 390 px (the DS moves the rest into an overflow menu), so a Select with the same state replaces them on a phone. |
+| 43 | **Signed-document panel and checker** | `reports-page.tsx`, `lib/v2/pdf.ts` | `Button`, `Select`, `Card`, `LocalBanner`, hidden file input behind a DS `Button` | Replaces the planned "signed report preview" (was 11): a preview adds nothing the PDF does not show, and the page cannot honestly show a signature that is only a demo. The checker shows unchanged or the reason it fails. |
+| 44 | **Included and not-included lists** | `components/v2/student/record-page.tsx` | `Card size sm`, `StatusBadge`, `Block`, semantic `ul` | Each exclusion has a label and a reason. |
+| 45 | **Lab grid cycle cell** (built, was 9) | `components/v2/preceptor/lab-grid-page.tsx` | DS `Table`, `Button` (outline, lg) per cell, `Checkbox` for Absent, `Dialog`, `DatePickerField`, `RadioGroup` | Each cell button names student, skill, state and the next state; state is a word plus an icon, never colour alone. A native date input was replaced by `DatePickerField` because its three segments read as a keyboard trap to the Tab walker. |
+
+DS findings from Stage 5 (candidates for the DS team): `ToggleSwitch` stretches to an oval under a coarse pointer because the DS 44 px touch rule applies to its height only (the report filter uses a `Checkbox` instead); `Tabs` overflow at phone width; `Table` has no sortable or sticky-column mode for wide matrices.
+
 ## Already covered by the DS (do not rebuild)
 
 `DataTable`, `Dialog`, `Sheet`, `Popover`, `Command`, `LocalBanner`, `Badge`, `Button`, `Card`, `Tabs`, `RadioGroup`, `SelectionTileGrid`, `Checkbox`, `Skeleton`, `Tooltip`, `PageHeader`, `KeyMetrics`, `AppSidebar`.
 
 ## Registered hand-rolls
 
-Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Stage 3 and Stage 4: none. Stage 2: the QR matrix generator (`lib/v2/qr.ts`, item 23) and a native file input behind a DS Button for the photo (item 18 again). Everything else above is composition of DS primitives.
+Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Stage 3, 4 and 5: none beyond the PDF writer and hash (`lib/v2/pdf.ts`, logic not UI). Stage 2: the QR matrix generator (`lib/v2/qr.ts`, item 23) and a native file input behind a DS Button for the photo (item 18 again). Everything else above is composition of DS primitives.

@@ -27,10 +27,11 @@ export function buildV2Nav(role: RoleId | null): NavLinkItem[] {
           item("v2-admin-verification", "Record verification", "/v2/admin/verification", "badge-check"),
         ]
       : []),
+    ...(role === "director" ? [item("v2-director-reports", "Cohort reports", "/v2/director/reports", "chart-mixed")] : []),
     ...(role === "student" ? [item("v2-student-history", "Your record", STUDENT_HISTORY, "clock-rotate-left")] : []),
   ]
 }
 
 export function allV2Urls(): string[] {
-  return ["/v2", ...ROLES.map((r) => r.home), ...STEPS.map((s) => s.route), STUDENT_HISTORY, "/v2/admin/outcomes", "/v2/admin/review-queue", "/v2/admin/verification"]
+  return ["/v2", ...ROLES.map((r) => r.home), ...STEPS.map((s) => s.route), STUDENT_HISTORY, "/v2/admin/outcomes", "/v2/admin/review-queue", "/v2/admin/verification", "/v2/director/reports"]
 }
