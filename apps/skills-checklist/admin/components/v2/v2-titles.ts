@@ -6,6 +6,9 @@ export function v2TitleFor(pathname: string): string {
   const step = STEPS.find((s) => s.route === pathname)
   if (step) return `${step.n}. ${step.title}`
   if (pathname === "/v2/student/history") return "Your record"
+  if (pathname === "/v2/admin/outcomes") return "Outcomes and remediation"
+  if (/^\/v2\/[^/]+\/evaluation\//.test(pathname)) return "Evaluation and versions"
+  if (/^\/v2\/[^/]+\/remediation\//.test(pathname)) return "Remediation plan"
   const role = roleForPath(pathname)
   if (role) return `${ROLE_BY_ID[role].label} home`
   return "Scenario overview"

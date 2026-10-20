@@ -16,6 +16,7 @@ import type { V2State } from "@/lib/v2/types"
 const KIND: Record<AttemptKind, { tone: "success" | "info" | "warning" | "neutral"; icon: string }> = {
   counted: { tone: "success", icon: "fa-circle-check" },
   "did-not-meet": { tone: "warning", icon: "fa-circle-minus" },
+  "not-yet": { tone: "neutral", icon: "fa-comment" },
   waiting: { tone: "info", icon: "fa-hourglass-half" },
   returned: { tone: "warning", icon: "fa-rotate-left" },
   reopened: { tone: "warning", icon: "fa-folder-open" },
@@ -36,6 +37,7 @@ export function HistoryPage() {
               ["Counted", sum.counted, "counted"],
               ["Waiting", sum.waiting, "waiting"],
               ["Did not meet", sum.didNotMeet, "did-not-meet"],
+              ["Not yet, feedback only", sum.notYet, "not-yet"],
               ["Returned or reopened", sum.returned, "returned"],
             ].map(([label, n, key]) => (
               <div key={String(key)} className="flex flex-col gap-0.5">
@@ -116,7 +118,7 @@ export function HistoryPage() {
   )
 }
 
-const OUT = { met: "Met", "not-met": "Did not meet the criteria", "not-yet": "Not yet" } as const
+const OUT = { met: "Met", "not-met": "Did not meet the criteria", "not-yet": "Not yet, feedback only" } as const
 
 function Detail({ s, open, onClose }: { s: V2State; open: { skill: SkillHistory; attempt: Attempt } | null; onClose: () => void }) {
   const e = open?.attempt.evaluation ?? null
@@ -151,7 +153,10 @@ function Detail({ s, open, onClose }: { s: V2State; open: { skill: SkillHistory;
                 ))}
               </ol>
             </section>
-            <p className="text-xs text-muted-foreground">Only the outcome is recorded for this evaluation. A completed evaluation cannot be edited.</p>
+            <p className="text-xs text-muted-foreground">A completed evaluation is never edited. A correction adds a version and keeps the earlier ones.</p>
+            <Button asChild variant="outline" size="lg" className={BTN}>
+              <Link href={`/v2/student/evaluation/${e.id}`}>See the full evaluation and versions</Link>
+            </Button>
           </>
         ) : null}
         <DialogFooter>

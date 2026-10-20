@@ -31,6 +31,7 @@ const { chromium } = req('playwright')
 let AxeBuilder = null
 try { AxeBuilder = req('@axe-core/playwright').AxeBuilder ?? req('@axe-core/playwright').default } catch { /* fallback below */ }
 
+const PRE = '/v2/preceptor/preceptor-evaluation?request=sub-maya-1'
 const args = process.argv.slice(2)
 let base = 'http://localhost:3007'
 let tabs = 400
@@ -42,7 +43,10 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--no-states') withStates = false
   else routes.push(args[i])
 }
-if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/preceptor', '/v2/reviewer', '/v2/director', '/v2/admin/starter-library', '/v2/admin/configure-skill', '/v2/admin/validate-publish', '/v2/admin/map-courses', '/v2/student/pick-and-rate', '/v2/student/request-signoff', '/v2/student/offline-sync', '/v2/student/history', '/v2/reviewer/review-queue')
+if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/preceptor', '/v2/reviewer', '/v2/director', '/v2/admin/starter-library', '/v2/admin/configure-skill', '/v2/admin/validate-publish', '/v2/admin/map-courses', '/v2/student/pick-and-rate', '/v2/student/request-signoff', '/v2/student/offline-sync', '/v2/student/history', '/v2/reviewer/review-queue',
+  // Stage 3
+  '/v2/preceptor/preceptor-evaluation', PRE, PRE + '&as=lab-whitmore', PRE + '&as=pre-castillo', '/v2/preceptor/preceptor-evaluation?request=sub-nope', '/v2/preceptor/preceptor-evaluation?request=sub-06',
+  '/v2/reviewer/outcome-remediation', '/v2/admin/outcomes', '/v2/admin/evaluation/ev-3-1', '/v2/reviewer/evaluation/ev-7-2', '/v2/student/evaluation/ev-maya-1', '/v2/admin/remediation/rem-1', '/v2/student/remediation/rem-1')
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -82,6 +86,15 @@ async function logTwo(p) {
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
 const toRequests = async (p) => { await goto(p, '/v2/student/request-signoff'); await p.getByRole('heading', { name: /Ready to send \(2\)/ }).waitFor() }
 const reveal = (p, sel) => p.locator(sel).first().scrollIntoViewIfNeeded()
+
+/** Stage 3: fills the seeded request (Indwelling urinary catheter insertion: Met at a level; Oral medication administration: Not yet with feedback). */
+async function fillPre(p) {
+  await p.getByRole('radiogroup', { name: 'Level of supervision you observed for Indwelling urinary catheter insertion' }).getByRole('radio', { name: 'Works alone', exact: true }).click()
+  await p.getByRole('radiogroup', { name: 'Outcome for Indwelling urinary catheter insertion' }).getByRole('radio', { name: 'Met', exact: true }).click()
+  await p.getByRole('radiogroup', { name: 'Outcome for Oral medication administration' }).getByRole('radio', { name: 'Not yet, feedback only', exact: true }).click()
+  await p.locator('#fb-sk-med-admin').fill('Check the five rights again before you open the packet.')
+  await p.locator('#attest').click()
+}
 const STATES = {
 
   '/v2/student': [
@@ -122,6 +135,36 @@ const STATES = {
     { name: 'signed-out-waiting', setup: async (p) => { await btn(p, 'Sign out').click(); await btn(p, 'Mark update as pending').click() }, expect: ['Sign in'] },
     { name: 'demo-conflict-created', setup: async (p) => { await btn(p, 'Simulate an edit on another device').click(); await p.locator('[data-sync-message]').waitFor() }, expect: ['Send all waiting (1)'] },
   ],
+  // ---- Stage 3 states
+  '/v2/preceptor/preceptor-evaluation?request=sub-maya-1': [
+    { name: 'student-context-open', setup: async (p) => { await btn(p, /What Maya supplied for Indwelling urinary catheter insertion/).click(); await p.locator('[data-student-context]').first().waitFor() }, expect: ['Submit evaluation of 2 skills'] },
+    { name: 'validation-errors', setup: async (p) => { await btn(p, /^Submit evaluation of 2 skills$/).click(); await p.locator('[data-error-summary]').waitFor() }, expect: ['Submit evaluation of 2 skills'] },
+    { name: 'filled-not-yet-and-concern', setup: async (p) => { await fillPre(p); await p.locator('#concern-flag').click(); await p.locator('#concern-note').fill('Arrived late twice this week.'); await reveal(p, '[data-counts-note]') }, expect: ['Submit evaluation of 2 skills'] },
+    { name: 'submitted-receipt', setup: async (p) => { await fillPre(p); await btn(p, /^Submit evaluation of 2 skills$/).click(); await p.locator('[data-receipt]').waitFor() }, expect: [] },
+    { name: 'open-as-menu', menu: true, setup: async (p) => { await p.locator('#open-as').click(); await p.getByRole('listbox').waitFor() }, expect: ['R. Whitmore, Lab instructor'] },
+  ],
+  '/v2/admin/outcomes': [
+    { name: 'filter-did-not-meet', setup: async (p) => { await p.getByRole('tab', { name: 'Did not meet' }).click(); await p.waitForTimeout(300) }, expect: [] },
+    { name: 'filter-reopened', setup: async (p) => { const t = p.getByRole('tab', { name: 'Reopened' }); if (await t.count()) await t.click(); else { await p.getByRole('button', { name: 'More tabs' }).click(); await p.getByRole('menu').getByText('Reopened', { exact: true }).click() } await p.waitForTimeout(300) }, expect: [] },
+  ],
+  '/v2/admin/evaluation/ev-3-1': [
+    { name: 'reopen-dialog', setup: async (p) => { await btn(p, 'Reopen to edit').click(); await p.getByRole('dialog').waitFor() }, expect: ['Reopen and add version 3', 'Keep as it is'] },
+    { name: 'reopen-error', setup: async (p) => { await btn(p, 'Reopen to edit').click(); await p.getByRole('dialog').getByRole('button', { name: /^Reopen and add version 3$/ }).click(); await p.locator('#reopen-error').waitFor() }, expect: ['Reopen and add version 3', 'Keep as it is'] },
+    { name: 'confirm-version', setup: async (p) => { await btn(p, 'Confirm version 2 as final').click(); await p.locator('[data-staff-message]').waitFor() }, expect: ['Reopen to edit'] },
+  ],
+  '/v2/reviewer/evaluation/ev-7-2': [
+    { name: 'open-plan-by-hand', setup: async (p) => { await btn(p, 'Open a remediation plan').click(); await p.locator('[data-staff-message]').waitFor() }, expect: ['Open the remediation plan'] },
+  ],
+  '/v2/admin/remediation/rem-1': [
+    { name: 'close-dialog', setup: async (p) => { await btn(p, 'Close plan').first().click(); await p.getByRole('dialog').waitFor() }, expect: ['Keep plan open'] },
+    { name: 'close-error', setup: async (p) => { await btn(p, 'Close plan').first().click(); await p.getByRole('dialog').getByRole('button', { name: 'Close plan' }).click(); await p.locator('#close-error').waitFor() }, expect: ['Keep plan open'] },
+    { name: 'step-ticked', setup: async (p) => { await p.locator('#step-2').click(); await p.locator('[data-staff-message]').waitFor() }, expect: ['Close plan'] },
+    { name: 'closed', setup: async (p) => { await p.locator('#step-2').click(); await p.locator('[data-staff-message]').waitFor(); await btn(p, 'Close plan').first().click(); await p.getByRole('dialog').getByRole('button', { name: 'Close plan' }).click(); await p.locator('[data-plan-closed]').waitFor() }, expect: [] },
+  ],
+  '/v2/student/remediation/rem-1': [
+    { name: 'own-plan', setup: async (p) => { await persist(p); await mutate(p, "s.remediations[0].studentId = 'stu-maya'") }, expect: ['Log a new attempt'] },
+  ],
+
   '/v2/student/history': [
     { name: 'attempt-detail', setup: async (p) => { await p.getByRole('button', { name: /^See details of attempt 1 at Indwelling urinary catheter insertion/ }).click(); await p.getByRole('dialog').waitFor() }, expect: ['Close'] },
   ],

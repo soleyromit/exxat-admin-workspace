@@ -678,7 +678,7 @@ export function whereOptions(s: V2State, studentId: string = STUDENT_ID): WhereO
 // ---------------------------------------------------------------------------------------------------------------------
 // History: the student's record so far (SH-01 to SH-05)
 
-export type AttemptKind = "counted" | "did-not-meet" | "waiting" | "returned" | "reopened"
+export type AttemptKind = "counted" | "did-not-meet" | "not-yet" | "waiting" | "returned" | "reopened"
 
 export interface Attempt {
   key: string
@@ -708,6 +708,8 @@ export interface HistorySummary {
   counted: number
   waiting: number
   didNotMeet: number
+  /** Not yet, feedback only: no pass or fail is recorded. */
+  notYet: number
   returned: number
 }
 
@@ -717,7 +719,7 @@ const settingText = (e: Evaluation) => (e.setting === "clinical" ? `Clinical, ${
 export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { skills: SkillHistory[]; summary: HistorySummary } {
   const name = (id: string) => s.people.find((p) => p.id === id)?.name ?? "an evaluator"
   const out: SkillHistory[] = []
-  const summary: HistorySummary = { counted: 0, waiting: 0, didNotMeet: 0, returned: 0 }
+  const summary: HistorySummary = { counted: 0, waiting: 0, didNotMeet: 0, notYet: 0, returned: 0 }
   for (const skill of s.skills) {
     const evals = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skill.id).sort((a, b) => (a.date < b.date ? -1 : 1))
     const open = s.submissions.filter((x) => x.studentId === studentId && x.skillIds.includes(skill.id) && OPEN_STATUSES.includes(x.status) && x.status !== "returned")
@@ -739,8 +741,11 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
         const why = progress.leftOut[e.id]
         attempts.push({ ...base, kind: "counted", outcome: "Counted", counted: why ?? (e.setting === "clinical" ? "Counts toward the rule" + (e.clinicalSetting ? ` and toward ${e.clinicalSetting}.` : ".") : `Counts toward the rule. ${e.setting === "lab" ? "Lab" : "Simulation"} evidence never counts toward a clinical setting.`) })
         summary.counted++
+      } else if (e.outcome === "not-yet") {
+        attempts.push({ ...base, kind: "not-yet", outcome: "Not yet, feedback only", counted: "Feedback only. No pass or fail is recorded and it does not count toward the rule.", failedRule: `${ruleSentence(skill)} Read the feedback, then make a further attempt. The earlier one stays as it is.` })
+        summary.notYet++
       } else {
-        attempts.push({ ...base, kind: "did-not-meet", outcome: e.outcome === "not-yet" ? "Not yet" : "Did not meet the criteria", counted: "This attempt is kept in your record and does not count toward the rule.", failedRule: `${ruleSentence(skill)} You can make a further attempt. The earlier one stays as it is.` })
+        attempts.push({ ...base, kind: "did-not-meet", outcome: "Did not meet the criteria", counted: "This attempt is kept in your record and does not count toward the rule.", failedRule: `${ruleSentence(skill)} You can make a further attempt. The earlier one stays as it is.` })
         summary.didNotMeet++
       }
     }

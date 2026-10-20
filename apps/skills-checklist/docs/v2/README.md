@@ -37,8 +37,8 @@ Defined in `admin/lib/v2/scenario.ts`, each with a route, requirement IDs and a 
 | 5 | Student | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | Stage 2 (built) |
 | 6 | Student | Ask for sign-off (QR, hand over phone, link, photo of paper form) | `/v2/student/request-signoff` | Stage 2 (built) |
 | 7 | Student | Work offline and resolve a conflict | `/v2/student/offline-sync` | Stage 2 (built) |
-| 8 | Preceptor | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | Stage 3 |
-| 9 | Reviewer | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | Stage 3 |
+| 8 | Preceptor | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | Stage 3 (built) |
+| 9 | Reviewer | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | Stage 3 (built) |
 | 10 | Reviewer | Clear the review queue | `/v2/reviewer/review-queue` | Stage 4 |
 | 11 | Director | Verify the program record | `/v2/director/director-verification` | Stage 4 |
 | 12 | Admin | Read cohort reports | `/v2/admin/reports` | Stage 5 |
@@ -64,6 +64,13 @@ Stage numbers are my build plan `[INFER]`, not a commitment.
 - **Tests:** `admin/tests/v2/{rules,coverage,import,admin-actions}.test.ts` plus the Stage 0 files.
 - **Flow script:** `docs/v2/verify/stage1.e2e.mjs` drives import, confirm, configure, a blocked and fixed publish, mapping, reload and Reset demo.
 
+## Stage 3: what exists
+
+- **Preceptor evaluation** (`/v2/preceptor/preceptor-evaluation?request=<id>`): no account. One card per requested skill with the program's levels, questions, optional overall rating, an outcome (Met, Not met, Not yet with feedback only) and feedback; a confidential concern flag; a credential attestation; one submit. Unqualified or unnamed evaluators are blocked with the reason and what to do. A completed request opens read-only.
+- **Outcomes** (`/v2/reviewer/outcome-remediation`, `/v2/admin/outcomes`): evaluations, remediation plans, staff-only concerns.
+- **Remediation plan** (`.../remediation/<id>`, staff and student views) and **evaluation versions** (`.../evaluation/<id>`, staff and student views, reopen and confirm).
+- **Tests:** `tests/v2/preceptor.test.ts`, `outcomes.test.ts`. **Flow script:** `docs/v2/verify/stage3.e2e.mjs`.
+
 ## How to run
 
 ```bash
@@ -82,6 +89,7 @@ npx vitest run tests/v2               # store and scenario tests
 node ../.claude/hooks/check-req-ids.mjs   # every requirement ID in docs exists
 node ../docs/v2/verify/shoot.mjs      # needs the dev server on 3007; includes the dialog, sheet, menu and wizard-step states
 node ../docs/v2/verify/stage1.e2e.mjs # the Stage 1 flow, needs the dev server on 3007
+node ../docs/v2/verify/stage3.e2e.mjs # the Stage 3 flow, needs the dev server on 3007
 ```
 
 `docs/v2/verify/shoot.mjs [routes...]` takes screenshots at 1440x900 and 390x844 into `docs/v2/screenshots/<route-slug>-{desktop,phone}.png`, runs axe-core (WCAG 2.0 and 2.1, A and AA) through `@axe-core/playwright`, walks the page with the Tab key until focus completes a full cycle to check for a visible focus indicator and keyboard traps, repeats everything for named interaction states (sheet, dialog, menu, wizard step), records uncaught page errors, and writes `docs/v2/screenshots/report.json`. It freezes transitions before axe. Playwright is loaded from `tools/visual-check`, not installed in the app.

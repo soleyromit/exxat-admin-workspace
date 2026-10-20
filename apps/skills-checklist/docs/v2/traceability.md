@@ -41,6 +41,20 @@ Status: **Built** (real screens, unit tests in `tests/v2/student.test.ts`, `sync
 | Sync and offline, conflict | `/v2/student/offline-sync` | none (the requirements do not cover offline; ST-13 and RV-05 respected) | Offline queue with Queued, Synced, Failed, Conflict; retry one and all; conflict resolution (keep mine, keep theirs, keep both where valid); demo toggles for offline, signed out and update pending; no login loop and no update-required wall `[PROPOSED]` |
 | Your record | `/v2/student/history` | SH-01 (attempts in order, by attempt number), SH-02 (explicit outcome, who it is with), SH-03 (the failed rule in plain words), SH-04 (counts), SH-05 (progress per named setting), SH-06 (every course; narrowing is stated, not built, because every v2 evaluation is NURS 350), SH-07 (partial: outcome, evaluator, setting and all versions; the store holds no evaluator responses) | Versions shown with what counted `[PROPOSED]` |
 
+## Stage 3 screens (preceptor, outcomes, remediation, versions; built)
+
+Status: **Built** (real screens, unit tests in `tests/v2/preceptor.test.ts` and `outcomes.test.ts`, Playwright flow `docs/v2/verify/stage3.e2e.mjs`, screenshots and axe via `shoot.mjs`). Not **Verified**: dark mode, forced colors, screen reader, a real device and visual-diff against localhost:4000 were not run. Contracts: `V2-03a`, `V2-03b`, `V2-03c`.
+
+| Screen | Route | Requirement IDs satisfied | New requirements (status: proposed) |
+|---|---|---|---|
+| Preceptor evaluation, one pass | `/v2/preceptor/preceptor-evaluation?request=<id>` | EV-01 (link opens directly, no account), EV-02 (preceptor, faculty, lab instructor; lab instructor blocked for clinical), EV-03 (program form, read-only to the evaluator), EV-04 (student entry shown as context), EV-05 (all skills in one sitting, own outcome and feedback each), EV-06 (feedback cannot be skipped where the skill requires it; flag set in data, no wizard control), EV-07 (told whether it counts now or is held; approval flag set in data), SC-14 (feedback captured on every evaluation), SC-16, SC-08, RV-03 (receipt is read-only), AE-01 | Not yet, feedback only; confidential concern flag (staff only); credential attestation; overall supervision rating beside a checklist; first evaluator to finish completes a link request; "open this link as" demo control `[PROPOSED]` |
+| Outcomes and remediation (staff) | `/v2/reviewer/outcome-remediation`, `/v2/admin/outcomes` | RV-03, SH-02, SH-04, AE-01, AE-03, AE-04 (partial: counted, not counted, reopened; the four AE-04 states are not drawn as such) | Remediation plan list; staff-only concern list `[PROPOSED]` |
+| Remediation plan | `/v2/<admin\|reviewer\|director>/remediation/<id>`, `/v2/student/remediation/<id>` | SH-03 (rule stated beside attempts), AR-04 (close note retained) | Plan opens on a fail when the skill's failure path says so, or by hand; steps; close plan with a reason; attempts used and next attempt date `[PROPOSED]` |
+| Evaluation and version history | `/v2/<admin\|reviewer\|director>/evaluation/<id>`, `/v2/student/evaluation/<id>` | RV-03, RV-05, AE-02, AR-06, SH-02, SH-07 (responses and feedback in full for evaluations made in v2; seeded history stores only the outcome), RP-07 (single evaluation) | Reopen with a reason adds a version; confirm the newest version; v1 never changed `[PROPOSED]` |
+| Your record (changed) | `/v2/student/history` | SH-02 (Not yet is its own outcome, not "did not meet"), SH-04 | Not yet count `[PROPOSED]` |
+
+Scenario steps 8 and 9 now point at built screens. Step 9 keeps its planned IDs; AE-01, AE-03 and AE-04 are only partly shown (see above).
+
 ## Story steps (14)
 
 Rows for steps 1 to 4 are built in Stage 1 and steps 5 to 7 in Stage 2 (tables above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
@@ -54,8 +68,8 @@ Rows for steps 1 to 4 are built in Stage 1 and steps 5 to 7 in Stage 2 (tables a
 | 5 | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | ST-01, ST-04, ST-05, ST-06, ST-11, ST-12, ST-13 | Built (home is `/v2/student`) | Mobile bottom navigation; prerequisite gating; next best action `[PROPOSED]` |
 | 6 | Ask for sign-off | `/v2/student/request-signoff` | ST-08, ST-09, ST-10, EV-01 | Built | QR sign-off; hand the phone to the evaluator; photo of a signed paper form that goes to review `[PROPOSED]` |
 | 7 | Work offline and resolve a conflict | `/v2/student/offline-sync` | none | Built | Offline queue (Queued, Synced, Conflict); conflict resolution screen `[PROPOSED]` |
-| 8 | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | EV-01, EV-03, EV-04, EV-05, EV-06, EV-07 | Seed | "Not yet, feedback only" outcome; confidential concern flag (faculty only); credential attestation `[PROPOSED]` |
-| 9 | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | RV-03, SH-02, SH-03, AE-01, AE-03, AE-04 | Seed | Remediation plan on fail; reopen after sign-off with version history `[PROPOSED]`; remediation is outside section 14 of the requirements, see D2 |
+| 8 | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | EV-01, EV-03, EV-04, EV-05, EV-06, EV-07 | Built | "Not yet, feedback only" outcome; confidential concern flag (faculty only); credential attestation `[PROPOSED]` |
+| 9 | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | RV-03, SH-02, SH-03, AE-01, AE-03, AE-04 | Built | Remediation plan on fail; reopen after sign-off with version history `[PROPOSED]`; remediation is outside section 14 of the requirements, see D2 |
 | 10 | Clear the review queue | `/v2/reviewer/review-queue` | AR-01, AR-02, AR-03, AR-04, AR-05, AR-06, RV-02, RV-04 | Seed | Bulk approve; reassign a stalled request `[PROPOSED]` |
 | 11 | Verify the program record | `/v2/director/director-verification` | AE-03, RP-07 | Seed | Program director verification `[PROPOSED]` |
 | 12 | Read cohort reports | `/v2/admin/reports` | RP-01, RP-02, RP-03, RP-05, RP-06, RP-07, RP-10 | Seed | Cohort heatmap; behind expected pace; observations and distinct raters per skill with single-rater flag; rater comparison; simulation share; tamper-evident signed PDF per student or cohort `[PROPOSED]` |

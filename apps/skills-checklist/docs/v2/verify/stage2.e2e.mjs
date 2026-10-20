@@ -100,7 +100,7 @@ try {
   await open('/v2/student')
   let s = await store()
   const seedCounters = {}
-  await open('/v2/preceptor/preceptor-evaluation')
+  await open('/v2')
   seedCounters.withEvaluator = await counter('withEvaluator')
   await open('/v2/reviewer/review-queue')
   seedCounters.queueWaiting = await counter('queueWaiting')
@@ -250,7 +250,7 @@ try {
 
   // ------------------------------------------------------------------ 5. other roles
   step('5. Other roles see the new requests')
-  await open('/v2/preceptor/preceptor-evaluation')
+  await open('/v2')
   const we = await counter('withEvaluator')
   await open('/v2/reviewer/review-queue')
   const qw = await counter('queueWaiting')
@@ -283,7 +283,7 @@ try {
   s = await store()
   const offSub = mine(s)[mine(s).length - 1]
   check('a request made offline is saved on the phone, not yet with the evaluator', offSub.status === 'on-device' && s.submissions.length === beforeOffline + 1, offSub.status)
-  await open('/v2/preceptor/preceptor-evaluation')
+  await open('/v2')
   check('the preceptor page counter did not change while offline', (await counter('withEvaluator')) === seedCounters.withEvaluator + 3)
   await open('/v2/student/offline-sync')
   check('Send all and Retry are disabled with a reason while offline', (await btn(/^Send all waiting/).isDisabled()) && (await page.getByText('You are offline. Go online to send.').count()) === 1)
@@ -291,7 +291,7 @@ try {
   await page.waitForTimeout(400)
   s = await store()
   check('going online sends everything: entry Synced, request with the evaluator', s.syncQueue.find((i) => i.entryId === offEntry)?.state === 'synced' && s.submissions.find((x) => x.id === offSub.id).status === 'with-evaluator' && s.device.offline === false)
-  await open('/v2/preceptor/preceptor-evaluation')
+  await open('/v2')
   check('now the preceptor counter rose by 1 more', (await counter('withEvaluator')) === seedCounters.withEvaluator + 4)
 
   // ------------------------------------------------------------------ 7. signed out, update pending

@@ -4,6 +4,8 @@ import * as React from "react"
 import { ConfigureWizardPage } from "@/components/v2/admin/configure-wizard"
 import { MapCoursesPage } from "@/components/v2/admin/map-courses-page"
 import { StarterLibraryPage } from "@/components/v2/admin/starter-library-page"
+import { OutcomesPage } from "@/components/v2/outcomes/outcomes-page"
+import { PreceptorEvaluation } from "@/components/v2/preceptor/evaluation-form"
 import { LogFlow } from "@/components/v2/student/log-flow"
 import { RequestSignoff } from "@/components/v2/student/request-signoff"
 import { SyncPage } from "@/components/v2/student/sync-page"
@@ -25,6 +27,10 @@ export function StepScreen({ stepId, fallback }: { stepId: string; fallback: Rea
       return <RequestSignoff />
     case "offline-sync":
       return <SyncPage />
+    case "preceptor-evaluation":
+      return <PreceptorEvaluation />
+    case "outcome-remediation":
+      return <OutcomesPage role="reviewer" />
     default:
       return <>{fallback}</>
   }

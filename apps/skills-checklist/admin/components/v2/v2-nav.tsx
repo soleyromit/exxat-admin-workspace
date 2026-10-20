@@ -20,10 +20,11 @@ export function buildV2Nav(role: RoleId | null): NavLinkItem[] {
     item("v2-overview", "Scenario overview", "/v2", "route"),
     item(`v2-home-${role}`, `${ROLE_BY_ID[role].label} home`, ROLE_BY_ID[role].home, ROLE_ICON[role]),
     ...stepsForRole(role).map((s) => item(`v2-step-${s.id}`, `${s.n}. ${s.title}`, s.route, "circle-dot")),
+    ...(role === "admin" ? [item("v2-admin-outcomes", "Outcomes and remediation", "/v2/admin/outcomes", "clipboard-list-check")] : []),
     ...(role === "student" ? [item("v2-student-history", "Your record", STUDENT_HISTORY, "clock-rotate-left")] : []),
   ]
 }
 
 export function allV2Urls(): string[] {
-  return ["/v2", ...ROLES.map((r) => r.home), ...STEPS.map((s) => s.route), STUDENT_HISTORY]
+  return ["/v2", ...ROLES.map((r) => r.home), ...STEPS.map((s) => s.route), STUDENT_HISTORY, "/v2/admin/outcomes"]
 }

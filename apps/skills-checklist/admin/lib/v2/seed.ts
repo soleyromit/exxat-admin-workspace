@@ -95,6 +95,8 @@ const IV_CONFIG: SkillConfig = {
   qualification: { credentials: ["RN"], minYears: 2, training: ["IV therapy"] },
   failure: { attemptLimit: 3, minDaysBetween: 7, retakeScoreCap: null, autoRemediation: true },
   revalidation: { onEvents: ["After a leave of absence", "After a policy or equipment change"], calendarExpiry: { enabled: false, months: 24 } },
+  // Stage 3: the program made narrative feedback mandatory for this skill (SC-14), so the evaluator form shows the rule (EV-06).
+  feedbackRequired: true,
 }
 
 type SkillSeed = [id: string, name: string, category: string, model: Skill["model"], published: boolean, configured?: boolean]
@@ -336,6 +338,9 @@ export function createSeed(): V2State {
         studentId: "stu-04",
         skillId: "sk-sterile-dressing",
         status: "in-progress",
+        evaluationId: "ev-rem-1",
+        openedAt: daysBefore(20),
+        openedById: IDS.delgado,
         steps: [
           { label: "Review the sterile technique module", done: true },
           { label: "Practice session in the skills lab", done: true },

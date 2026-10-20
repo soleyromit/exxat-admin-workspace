@@ -82,6 +82,10 @@ export interface SkillConfig {
   qualification: { credentials: string[]; minYears: number; training: string[] }
   failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null; autoRemediation: boolean }
   revalidation: { onEvents: string[]; calendarExpiry: { enabled: boolean; months: number } }
+  /** SC-14: the evaluator cannot submit without narrative feedback. Absent means feedback is optional. The wizard has no control for it yet. */
+  feedbackRequired?: boolean
+  /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. The wizard has no control for it yet. */
+  approvalRequired?: boolean
 }
 
 /** A configuration being edited in the wizard. Saved in the store so it survives navigation and reload. */
@@ -127,12 +131,27 @@ export type Outcome = "met" | "not-met" | "not-yet"
 
 export type EvaluationStatus = "counted" | "awaiting-approval" | "returned" | "reopened"
 
+/** What the evaluator recorded in one version (Stage 3). Absent on the seeded history, which stores only the outcome. */
+export interface EvaluationDetail {
+  /** Question model: one answer per question, in the order the skill listed them. */
+  answers?: Array<"yes" | "no" | null>
+  /** Scored model: a score per question, 1 to SCORE_MAX. */
+  scores?: Array<number | null>
+  /** Index into the skill's levels: the demonstrated level, or the overall supervision rating. */
+  levelIndex?: number | null
+  /** Narrative feedback (SC-14). */
+  feedback: string
+  /** Credential attestation made at submit. */
+  attested?: { text: string; at: string }
+}
+
 export interface EvaluationVersion {
   version: number
   outcome: Outcome
   at: string
   by: string
   reason: string | null
+  detail?: EvaluationDetail
 }
 
 export interface Evaluation {
@@ -151,6 +170,8 @@ export interface Evaluation {
   clinicalSetting?: string
   /** Index into the skill's levels when the evaluation recorded a level. Absent means the level is not recorded. */
   levelIndex?: number
+  /** Stage 3: the request this evaluation completed. */
+  submissionId?: string
 }
 
 export type SignoffMethod = "qr" | "handover" | "link" | "photo"
@@ -173,6 +194,9 @@ export interface Submission {
   candidateIds?: string[]
   /** Stage 2: a photo of a signed paper form. Only the file facts are stored, never the image. */
   photo?: { name: string; sizeKb: number }
+  /** Stage 3: the evaluator who completed it and when. For a link sent to several people, the first to finish. */
+  completedById?: string
+  completedAt?: string
 }
 
 export type SyncState = "queued" | "synced" | "conflict" | "failed"
@@ -271,10 +295,12 @@ export interface ConcernFlag {
   evaluationId: string
   studentId: string
   raisedById: string
-  /** Faculty only: never shown to the student or in student-facing exports. */
+  /** Program staff only: never shown to the student or the preceptor, or in student-facing exports. */
   visibleTo: "faculty-only"
   note: string
   at: string
+  /** Stage 3: the request the concern was raised on. */
+  submissionId?: string
 }
 
 export interface Remediation {
@@ -282,7 +308,14 @@ export interface Remediation {
   studentId: string
   skillId: string
   status: "open" | "in-progress" | "closed"
-  steps: Array<{ label: string; done: boolean }>
+  steps: Array<{ label: string; done: boolean; doneAt?: string; doneById?: string }>
+  /** Stage 3: the failed evaluation that opened the plan, who opened it and when. */
+  evaluationId?: string
+  openedAt?: string
+  openedById?: string
+  /** Stage 3: later fails on the same skill while the plan was open, kept as notes on the one plan. */
+  notes?: Array<{ at: string; text: string }>
+  closed?: { at: string; byId: string; completed: boolean; note: string }
 }
 
 export interface AuditEntry {

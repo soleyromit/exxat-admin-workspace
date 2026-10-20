@@ -46,6 +46,20 @@ Verdicts (IMPORT, VENDOR, HAND-ROLL) are for `ds-adoption-reviewer` before each 
 | 27 | **Sticky device banners** | `student-frame.tsx` `DeviceBanners` | `LocalBanner`, `Button` | Offline, signed out, update pending. None blocks anything. |
 | 28 | **Demo controls card** | `student/demo-controls.tsx`, `scenario-menu.tsx` | `Card`, `Button`, `DropdownMenuCheckboxItem` | Labelled as not part of the product. |
 
+## Registered in Stage 3 (composed from DS primitives, no ad hoc styling)
+
+`ds-adoption-reviewer` verdicts, 2026-10-20: forms and timeline are product composition of DS primitives; dialogs, Tabs, Select and the staff table are IMPORT (the table through `V2Grid`).
+
+| # | Component | File | Composes from | Notes |
+|---|---|---|---|---|
+| 29 | **Preceptor evaluation form** (skill assessment card, error summary with field links) | `components/v2/preceptor/evaluation-form.tsx`, `choice-group.tsx` | `Card`, `RadioGroup`, `Textarea`, `Collapsible`, `Checkbox`, `Field`, `FieldError`, `LocalBanner`, `Select` (demo control) | No DS evaluation form exists. The error summary is a `role="alert"` wrapper around `LocalBanner` with link-style `Button`s that move focus. |
+| 8 | **Version-history timeline** (built) | `components/v2/outcomes/version-timeline.tsx` | `Collapsible`, `StatusBadge`, `Button`, semantic `ol` | Newest first, who, when, why, what each version recorded. Read-only. |
+| 30 | **Remediation plan steps list** | `components/v2/outcomes/remediation-page.tsx` `StepList` | `Checkbox` (staff), FA status icon (student), `Dialog` for closing | Student view has no controls. |
+| 31 | **Reopen dialog** | `components/v2/outcomes/evaluation-page.tsx` `ReopenDialog` | `Dialog`, `RadioGroup`, `Textarea`, `Field`, `FieldError` | |
+| 32 | **Staff outcomes screen** | `components/v2/outcomes/outcomes-page.tsx` | `Tabs`, `V2Grid` (DS `DataTable`), `Card`, `StatusBadge` | |
+
+DS registry note from the reviewer: the registry row that marks `DataTable` as VENDOR is stale at 1.6.5; v2 imports it from the package.
+
 ## Already covered by the DS (do not rebuild)
 
 `DataTable`, `Dialog`, `Sheet`, `Popover`, `Command`, `LocalBanner`, `Badge`, `Button`, `Card`, `Tabs`, `RadioGroup`, `SelectionTileGrid`, `Checkbox`, `Skeleton`, `Tooltip`, `PageHeader`, `KeyMetrics`, `AppSidebar`.

@@ -10,7 +10,8 @@ import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { SkillCard } from "@/components/v2/student/skill-card"
 import { TOUCH, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
-import { courseWork } from "@/lib/v2/student"
+import { courseWork, STUDENT_ID } from "@/lib/v2/student"
+import { plansOf, PLAN_STATUS_LABEL } from "@/lib/v2/outcomes"
 
 /** Student role home: what is left in the course, per-skill progress against the published rule, and the best next action. */
 export function StudentHome() {
@@ -35,6 +36,23 @@ export function StudentHome() {
           </Button>
         </CardContent>
       </Card>
+
+      {plansOf(s, STUDENT_ID).filter((r) => r.status !== "closed").map((r) => (
+        <Card size="sm" key={r.id} data-plan-card={r.id}>
+          <CardHeader>
+            <CardDescription>Remediation plan</CardDescription>
+            <CardTitle asChild className="text-base">
+              <h2>{s.skills.find((k) => k.id === r.skillId)?.name ?? "Skill"}</h2>
+            </CardTitle>
+            <CardDescription>{`${PLAN_STATUS_LABEL[r.status]}. ${r.steps.filter((x) => x.done).length} of ${r.steps.length} steps done.`}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" size="lg" className={`${BTN} w-full`}>
+              <Link href={`/v2/student/remediation/${r.id}`}>See your plan</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
 
       <Card size="sm">
         <CardContent>
