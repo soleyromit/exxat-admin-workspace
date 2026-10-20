@@ -1,0 +1,349 @@
+{
+  "base": "http://localhost:3007",
+  "when": "2026-10-20T01:02:58.144Z",
+  "axe": "@axe-core/playwright",
+  "pages": [
+    {
+      "route": "/v2",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 59,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 59,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/admin",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-admin-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 58,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/admin",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-admin-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 24,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/student",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-student-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/student",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-student-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 24,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/preceptor",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-preceptor-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/preceptor",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-preceptor-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 56,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/reviewer",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-reviewer-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/reviewer",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-reviewer-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 56,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/director",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-director-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 56,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/director",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-director-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 23,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 55,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/admin/starter-library",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-admin-starter-library-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 58,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/admin/starter-library",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-admin-starter-library-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/student/offline-sync",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-student-offline-sync-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 58,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/student/offline-sync",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-student-offline-sync-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/reviewer/review-queue",
+      "viewport": "desktop",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-reviewer-review-queue-desktop.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 1
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/v2/reviewer/review-queue",
+      "viewport": "phone",
+      "status": 200,
+      "consoleErrors": [],
+      "screenshot": "docs/v2/screenshots/v2-reviewer-review-queue-phone.png",
+      "a11y": {
+        "violations": [],
+        "passes": 26,
+        "incomplete": 0
+      },
+      "contrastFallback": null,
+      "focus": {
+        "stops": 57,
+        "missingIndicator": [],
+        "traps": []
+      },
+      "pageErrors": []
+    }
+  ]
+}
