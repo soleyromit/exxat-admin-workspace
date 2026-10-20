@@ -1,6 +1,6 @@
 # Connected prototype v2 (Skills Checklist, Prism)
 
-**Status:** Stage 0 foundation built. Stages 1 to 5 replace the placeholder step pages with real screens.
+**Status:** Stage 0 foundation and Stage 1 (admin setup, steps 1 to 4) built. Stages 2 to 5 replace the remaining placeholder step pages with real screens.
 **Branch:** `feat/skills-checklist-v2` · **Admin app:** `apps/skills-checklist/admin` · **Port:** 3007 · **URL:** `http://localhost:3007/v2`
 **Tags used in these docs:** `[REQ xx-nn]` requirement (only IDs in `docs/source/requirements.extracted.txt`), `[OD-n]` open decision (never treated as decided), `[PROPOSED]` a capability this prototype adds beyond the requirements, `[INFER]` my inference.
 
@@ -30,10 +30,10 @@ Defined in `admin/lib/v2/scenario.ts`, each with a route, requirement IDs and a 
 
 | # | Role | Step | Route | Built in |
 |---|---|---|---|---|
-| 1 | Admin | Copy a specialty starter library | `/v2/admin/starter-library` | Stage 1 |
-| 2 | Admin | Configure IV catheter insertion | `/v2/admin/configure-skill` | Stage 1 |
-| 3 | Admin | Fix validation errors, then publish | `/v2/admin/validate-publish` | Stage 1 |
-| 4 | Admin | Map skills to NURS 350 | `/v2/admin/map-courses` | Stage 1 |
+| 1 | Admin | Copy a specialty starter library | `/v2/admin/starter-library` | Stage 1 (built) |
+| 2 | Admin | Configure IV catheter insertion | `/v2/admin/configure-skill` | Stage 1 (built) |
+| 3 | Admin | Fix validation errors, then publish | `/v2/admin/validate-publish` | Stage 1 (built) |
+| 4 | Admin | Map skills to NURS 350 | `/v2/admin/map-courses` | Stage 1 (built) |
 | 5 | Student | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | Stage 2 |
 | 6 | Student | Ask for sign-off (QR, hand over phone, link, photo of paper form) | `/v2/student/request-signoff` | Stage 2 |
 | 7 | Student | Work offline and resolve a conflict | `/v2/student/offline-sync` | Stage 2 |
@@ -56,6 +56,14 @@ Stage numbers are my build plan `[INFER]`, not a commitment.
 - **Placeholder step pages:** each shows the step title, who acts, requirement IDs, a live starting-condition check and live store counters. The one working control, **Mark step as reviewed**, writes to the store and the audit log, which proves state carries between pages and survives a reload.
 - **Tests:** `admin/tests/v2` (21 tests): seed integrity, reset, persistence round trip, corrupt or blocked storage, pure transitions, scenario routes, requirement IDs that exist, starting conditions that hold on the seed.
 
+## Stage 1: what exists
+
+- **Add skills** (`/v2/admin/starter-library`): copy a specialty starter library through a review sheet, or upload a PDF or text checklist and review proposed skills beside the source lines they came from. Nothing is created until one confirm. New skills are unconfigured. The library table shows where each skill came from, its status, Edit and Configure.
+- **Configure wizard** (`/v2/admin/configure-skill`, `/v2/admin/validate-publish`): 8 steps (model, achievement, simulation, prerequisites, qualified evaluators, failure path, re-validation, review and publish). The draft is in the store. Publishing is blocked until every issue is fixed, and each issue links to its field. Add `?skill=<id>` to configure another skill.
+- **Mapping** (`/v2/admin/map-courses`): mandatory, optional, not expected or not mapped per skill, with coverage warnings. Unconfigured skills are blocked with a reason.
+- **Tests:** `admin/tests/v2/{rules,coverage,import,admin-actions}.test.ts` plus the Stage 0 files.
+- **Flow script:** `docs/v2/verify/stage1.e2e.mjs` drives import, confirm, configure, a blocked and fixed publish, mapping, reload and Reset demo.
+
 ## How to run
 
 ```bash
@@ -72,10 +80,11 @@ cd admin
 npx tsc --noEmit                      # types
 npx vitest run tests/v2               # store and scenario tests
 node ../.claude/hooks/check-req-ids.mjs   # every requirement ID in docs exists
-node ../docs/v2/verify/shoot.mjs      # needs the dev server on 3007
+node ../docs/v2/verify/shoot.mjs      # needs the dev server on 3007; includes the dialog, sheet, menu and wizard-step states
+node ../docs/v2/verify/stage1.e2e.mjs # the Stage 1 flow, needs the dev server on 3007
 ```
 
-`docs/v2/verify/shoot.mjs [routes...]` takes screenshots at 1440x900 and 390x844 into `docs/v2/screenshots/<route-slug>-{desktop,phone}.png`, runs axe-core (WCAG 2.0 and 2.1, A and AA) through `@axe-core/playwright`, walks the page with the Tab key to check for a visible focus indicator and keyboard traps, records uncaught page errors, and writes `docs/v2/screenshots/report.json`. It freezes transitions before axe. Playwright is loaded from `tools/visual-check`, not installed in the app.
+`docs/v2/verify/shoot.mjs [routes...]` takes screenshots at 1440x900 and 390x844 into `docs/v2/screenshots/<route-slug>-{desktop,phone}.png`, runs axe-core (WCAG 2.0 and 2.1, A and AA) through `@axe-core/playwright`, walks the page with the Tab key until focus completes a full cycle to check for a visible focus indicator and keyboard traps, repeats everything for named interaction states (sheet, dialog, menu, wizard step), records uncaught page errors, and writes `docs/v2/screenshots/report.json`. It freezes transitions before axe. Playwright is loaded from `tools/visual-check`, not installed in the app.
 
 ## Rules every stage follows
 

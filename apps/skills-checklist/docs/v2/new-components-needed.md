@@ -17,10 +17,22 @@ Verdicts (IMPORT, VENDOR, HAND-ROLL) are for `ds-adoption-reviewer` before each 
 | 10 | **Side-by-side compare** | 10 | `Card` pair, `DataTable`, `Badge` for agree or differ | Student self-rating next to evaluator outcome with an agreement badge `[REQ AR-02]`. Likely composes into the existing `AgreementCompareCard` hand-roll. |
 | 11 | **Signed report preview** | 12, 13 | `Dialog`, `Card`, `Button`, `LocalBanner` | A read-only preview of the PDF contents plus a fingerprint line. The tamper-evident claim is a `[PROPOSED]` design, not an implemented signature, in the prototype. |
 
+## Registered in Stage 1 (composed from DS primitives, no ad hoc styling)
+
+| # | Component | File | Composes from | Notes |
+|---|---|---|---|---|
+| 12 | **Editable ordered list** (levels, questions, events) | `components/v2/admin/wizard-fields.tsx` `ListEditor` | `Input`, `Button` (ghost, icon-sm), `fieldset` | Add, remove, optional up and down. The DS has no list editor. Drag reordering is not built. |
+| 13 | **Checkbox group with a focusable fieldset** | `wizard-fields.tsx` `CheckGroup` | `Checkbox`, `Label`, `FieldSet`, `FieldLegend` | Fieldset has `tabIndex=-1` so an issue link can focus the group. |
+| 14 | **Number field** (empty is null, never 0) | `wizard-fields.tsx` `NumberField` | `Field`, `FieldLabel`, `Input` | Validation sees exactly what would be saved. |
+| 15 | **Rule hint card** (live region with a strength badge) | `wizard-steps.tsx` `Hint` | `Card`, `Badge` | Used for the achievement strength, simulation share and qualified evaluators. |
+| 16 | **Proposal beside source line** | `import-panel.tsx` | `DataTable` via `V2Grid`, `ToggleGroup`, `Badge`, `q` | Decision, proposal, source line and edit in one row. |
+| 17 | **Skill edit dialog** | `edit-skill-dialog.tsx` | `Dialog`, `Field`, `Input`, `Textarea` | Used for library skills and proposed skills. |
+| 18 | **File chooser** | `components/skills/skills-file-upload.tsx` (existing v1 hand-roll) | native input behind a DS `Button` | The DS has no file upload. |
+
 ## Already covered by the DS (do not rebuild)
 
 `DataTable`, `Dialog`, `Sheet`, `Popover`, `Command`, `LocalBanner`, `Badge`, `Button`, `Card`, `Tabs`, `RadioGroup`, `SelectionTileGrid`, `Checkbox`, `Skeleton`, `Tooltip`, `PageHeader`, `KeyMetrics`, `AppSidebar`.
 
-## Registered hand-rolls in Stage 0
+## Registered hand-rolls
 
-None. Stage 0 composes only DS primitives and the existing product shell pieces.
+Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Everything else above is composition of DS primitives.

@@ -43,7 +43,7 @@ describe("seed", () => {
     const iv = createSeed().skills.find((k) => k.id === "sk-iv-cath")!
     expect(iv.config?.levels.length).toBeGreaterThan(1)
     expect(iv.config?.levels.join(" ")).not.toMatch(/Observed|Assisted|Independent/)
-    expect(iv.config?.achievement).toEqual({ kind: "last-n", need: 4, window: 5 })
+    expect(iv.config?.achievement).toMatchObject({ kind: "last-n", need: 4, window: 5 })
   })
 
   it("keeps every evaluation's latest outcome equal to its latest version", () => {

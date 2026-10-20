@@ -20,6 +20,10 @@ export interface Person {
   title: string
   kind: "admin" | "student" | "preceptor" | "lab-instructor" | "reviewer" | "director"
   email: string
+  /** Evaluator attributes used by the "who counts as qualified" rule. Sample data. */
+  credentials?: string[]
+  yearsPractice?: number
+  training?: string[]
 }
 
 export interface Program {
@@ -27,6 +31,10 @@ export interface Program {
   school: string
   name: string
   cohorts: string[]
+  /** Program-defined clinical settings (SL-07). Evidence in a named setting is counted per setting (SC-11). */
+  clinicalSettings: string[]
+  /** Simulation settings the program can allow-list. */
+  simulationSettings: string[]
 }
 
 export interface Course {
@@ -35,6 +43,8 @@ export interface Course {
   name: string
   term: string
   cohort: string
+  /** Clinical settings this offering actually places students in. */
+  clinicalSettings: string[]
 }
 
 export interface AchievementRule {
@@ -44,15 +54,52 @@ export interface AchievementRule {
   window?: number
 }
 
+export type EvaluatorRole = "preceptor" | "faculty" | "lab-instructor"
+
 export interface SkillConfig {
-  /** Program-named levels, ordered lowest to highest. Never hard-coded Observed, Assisted, Independent. */
+  /** Binary model: [qualifying label, other label] (SC-03). */
+  outcomeLabels: [string, string]
+  /** Question and scored models: the program-defined question set (SC-04). */
+  questions: string[]
+  /** Program-named levels, ordered lowest to highest. Never hard-coded Observed, Assisted, Independent (SC-08). */
   levels: string[]
-  achievement: AchievementRule
-  simulation: { allowed: boolean; maxSharePercent: number }
-  prerequisiteSkillIds: string[]
-  evaluatorRoles: Array<"preceptor" | "faculty" | "lab-instructor">
-  failurePath: "further-attempt" | "remediation-plan"
-  revalidation: { onEvents: string[] }
+  /** One overall supervision rating beside the checklist, using the same levels. [PROPOSED] */
+  overallRating: boolean
+  achievement: {
+    /** "count": N qualifying evaluations. "last-n": need X of the last N. */
+    kind: "count" | "last-n"
+    need: number
+    window?: number
+    /** Index into levels of the lowest level that counts, or null when every level counts. */
+    minLevelIndex: number | null
+    distinctEvaluators: number
+    /** Minimum evidence from named clinical settings, each counted per setting (SC-11). */
+    settingMinimums: Array<{ setting: string; min: number }>
+  }
+  simulation: { allowed: boolean; mode: "cap" | "allow-list"; maxSharePercent: number; allowList: string[] }
+  prerequisites: { skillIds: string[]; labCheckoff: boolean; practiceTrials: number }
+  evaluatorRoles: EvaluatorRole[]
+  qualification: { credentials: string[]; minYears: number; training: string[] }
+  failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null; autoRemediation: boolean }
+  revalidation: { onEvents: string[]; calendarExpiry: { enabled: boolean; months: number } }
+}
+
+/** A configuration being edited in the wizard. Saved in the store so it survives navigation and reload. */
+export interface SkillDraft {
+  model: EvalModel | null
+  config: SkillConfig
+  /** Wizard step, 1 to 8. */
+  step: number
+  copiedFromSkillId?: string
+}
+
+export interface ImportBatch {
+  id: string
+  at: string
+  actorId: string
+  kind: "starter-library" | "file-import"
+  label: string
+  skillIds: string[]
 }
 
 export interface Skill {
@@ -65,6 +112,9 @@ export interface Skill {
   configured: boolean
   published: boolean
   config: SkillConfig | null
+  description?: string
+  /** Which import or copy created the skill (IM-11). Absent for the original seed. */
+  batchId?: string
 }
 
 export interface MappingRow {
@@ -164,6 +214,9 @@ export interface V2State {
   concerns: ConcernFlag[]
   remediations: Remediation[]
   audit: AuditEntry[]
+  batches: ImportBatch[]
+  /** Skill id -> wizard draft. */
+  drafts: Record<string, SkillDraft>
   /** Scenario step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
 }

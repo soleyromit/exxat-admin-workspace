@@ -1,3 +1,4 @@
+import { defaultConfig, SAMPLE_QUESTIONS } from "./config"
 import type {
   AuditEntry,
   Evaluation,
@@ -50,8 +51,11 @@ const PEOPLE: Person[] = [
   { id: IDS.ross, name: "A. Ross", title: "Program administrator", kind: "admin", email: "a.ross@harbor.example" },
   { id: IDS.reviewer, name: "L. Haddad", title: "Clinical coordinator", kind: "reviewer", email: "l.haddad@harbor.example" },
   { id: IDS.director, name: "Dr. K. Brennan", title: "Program director", kind: "director", email: "k.brennan@harbor.example" },
-  { id: IDS.delgado, name: "J. Delgado, RN", title: "Preceptor, Harbor General", kind: "preceptor", email: "j.delgado@harborgeneral.example" },
-  { id: IDS.whitmore, name: "R. Whitmore", title: "Lab instructor", kind: "lab-instructor", email: "r.whitmore@harbor.example" },
+  { id: IDS.delgado, name: "J. Delgado, RN", title: "Preceptor, Harbor General", kind: "preceptor", email: "j.delgado@harborgeneral.example", credentials: ["RN"], yearsPractice: 9, training: ["IV therapy"] },
+  { id: IDS.whitmore, name: "R. Whitmore", title: "Lab instructor", kind: "lab-instructor", email: "r.whitmore@harbor.example", credentials: ["RN"], yearsPractice: 12, training: ["IV therapy", "Simulation facilitation"] },
+  { id: "pre-okonkwo", name: "S. Okonkwo, RN", title: "Preceptor, Harbor General", kind: "preceptor", email: "s.okonkwo@harborgeneral.example", credentials: ["RN"], yearsPractice: 1, training: [] },
+  { id: "pre-castillo", name: "M. Castillo, RN", title: "Preceptor, Harbor Outpatient", kind: "preceptor", email: "m.castillo@harboroutpatient.example", credentials: ["RN"], yearsPractice: 4, training: ["IV therapy"] },
+  { id: "pre-aldridge", name: "T. Aldridge, LPN", title: "Preceptor, Harbor General", kind: "preceptor", email: "t.aldridge@harborgeneral.example", credentials: ["LPN"], yearsPractice: 6, training: ["IV therapy"] },
   { id: IDS.maya, name: "Maya Ferreira", title: "BSN 2027", kind: "student", email: "m.ferreira@students.harbor.example" },
   ...[
     "Jordan Okafor",
@@ -74,14 +78,20 @@ const PEOPLE: Person[] = [
   })),
 ]
 
-const DEFAULT_CONFIG: SkillConfig = {
-  levels: ["Needs coaching", "Works with prompts", "Works alone"],
-  achievement: { kind: "count", need: 3 },
-  simulation: { allowed: true, maxSharePercent: 33 },
-  prerequisiteSkillIds: [],
-  evaluatorRoles: ["preceptor", "faculty"],
-  failurePath: "further-attempt",
-  revalidation: { onEvents: [] },
+function configFor(model: Skill["model"]): SkillConfig {
+  const c = defaultConfig(model)
+  if (model === "question" || model === "scored") c.questions = [...SAMPLE_QUESTIONS]
+  return c
+}
+
+const IV_CONFIG: SkillConfig = {
+  ...defaultConfig("demonstration"),
+  achievement: { kind: "last-n", need: 4, window: 5, minLevelIndex: 2, distinctEvaluators: 2, settingMinimums: [{ setting: "Inpatient", min: 2 }] },
+  simulation: { allowed: true, mode: "cap", maxSharePercent: 25, allowList: [] },
+  prerequisites: { skillIds: ["sk-vitals"], labCheckoff: true, practiceTrials: 3 },
+  qualification: { credentials: ["RN"], minYears: 2, training: ["IV therapy"] },
+  failure: { attemptLimit: 3, minDaysBetween: 7, retakeScoreCap: null, autoRemediation: true },
+  revalidation: { onEvents: ["After a leave of absence", "After a policy or equipment change"], calendarExpiry: { enabled: false, months: 24 } },
 }
 
 type SkillSeed = [id: string, name: string, category: string, model: Skill["model"], published: boolean, configured?: boolean]
@@ -143,15 +153,8 @@ function buildSkills(): Skill[] {
         published,
         config: isConfigured
           ? id === IDS.ivCath
-            ? {
-                ...DEFAULT_CONFIG,
-                achievement: { kind: "last-n", need: 4, window: 5 },
-                simulation: { allowed: true, maxSharePercent: 25 },
-                prerequisiteSkillIds: ["sk-vitals"],
-                failurePath: "remediation-plan",
-                revalidation: { onEvents: ["Extended time away from practice", "Policy change"] },
-              }
-            : { ...DEFAULT_CONFIG }
+            ? structuredClone(IV_CONFIG)
+            : configFor(model)
           : null,
       })
     }
@@ -258,8 +261,8 @@ export function createSeed(): V2State {
   const evals = buildEvaluations()
   return {
     schema: 1,
-    program: { id: "prg-bsn", school: "Harbor University", name: "BSN", cohorts: ["BSN 2027"] },
-    course: { id: IDS.course, code: "NURS 350", name: "Clinical Practicum", term: "Fall 2026", cohort: "BSN 2027" },
+    program: { id: "prg-bsn", school: "Harbor University", name: "BSN", cohorts: ["BSN 2027"], clinicalSettings: ["Inpatient", "Emergency", "Outpatient"], simulationSettings: ["Simulation lab", "Standardized patient suite"] },
+    course: { id: IDS.course, code: "NURS 350", name: "Clinical Practicum", term: "Fall 2026", cohort: "BSN 2027", clinicalSettings: ["Inpatient", "Outpatient"] },
     people: PEOPLE.map((p) => ({ ...p })),
     skills: buildSkills(),
     mappings: MAPPED.map(([skillId, level]) => ({ courseId: IDS.course, skillId, level })),
@@ -287,6 +290,8 @@ export function createSeed(): V2State {
       },
     ],
     audit: buildAudit(evals.reopenedId),
+    batches: [],
+    drafts: {},
     stepsReviewed: {},
   }
 }
