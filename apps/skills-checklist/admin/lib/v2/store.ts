@@ -2,7 +2,7 @@ import { createSeed } from "./seed"
 import type { AuditEntry, V2State } from "./types"
 
 export const STORAGE_KEY = "skills-checklist:v2:store"
-const ENVELOPE_VERSION = 2
+const ENVELOPE_VERSION = 3
 
 export interface V2Store {
   getSnapshot(): V2State
@@ -21,7 +21,7 @@ export interface V2Store {
 export function isV2State(x: unknown): x is V2State {
   if (!x || typeof x !== "object") return false
   const s = x as Record<string, unknown>
-  const arrays = ["people", "skills", "mappings", "evaluations", "submissions", "syncQueue", "concerns", "remediations", "audit", "batches"]
+  const arrays = ["people", "skills", "mappings", "evaluations", "submissions", "syncQueue", "concerns", "remediations", "audit", "batches", "placements", "logEntries", "labCheckoffs"]
   return (
     s.schema === 1 &&
     arrays.every((k) => Array.isArray(s[k])) &&
@@ -30,7 +30,9 @@ export function isV2State(x: unknown): x is V2State {
     !!s.drafts &&
     typeof s.drafts === "object" &&
     !!s.stepsReviewed &&
-    typeof s.stepsReviewed === "object"
+    typeof s.stepsReviewed === "object" &&
+    !!s.device &&
+    typeof s.device === "object"
   )
 }
 

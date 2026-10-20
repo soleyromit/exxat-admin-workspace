@@ -25,6 +25,7 @@ export const COUNTERS: CounterDef[] = [
   { id: "withEvaluator", label: "Requests with an evaluator", value: (s) => s.submissions.filter((x) => x.status === "with-evaluator").length },
   { id: "syncQueued", label: "Changes queued offline", value: (s) => s.syncQueue.filter((x) => x.state === "queued").length },
   { id: "syncSynced", label: "Changes synced", value: (s) => s.syncQueue.filter((x) => x.state === "synced").length },
+  { id: "syncFailed", label: "Changes that failed to sync", value: (s) => s.syncQueue.filter((x) => x.state === "failed").length },
   { id: "syncConflict", label: "Sync conflicts", value: (s) => s.syncQueue.filter((x) => x.state === "conflict").length },
   { id: "concerns", label: "Confidential concerns (faculty only)", value: (s) => s.concerns.length },
   { id: "remediations", label: "Open remediation plans", value: (s) => s.remediations.filter((r) => r.status !== "closed").length },

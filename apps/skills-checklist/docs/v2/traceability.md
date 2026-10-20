@@ -29,9 +29,21 @@ Status: **Built** (real screens, unit tests, Playwright flow `docs/v2/verify/sta
 
 Scenario steps 2 and 3 cite SC-15; Stage 1 does not build it (see the Out of scope line of `V2-01b`). Steps 1 to 4 keep their planned IDs in `scenario.ts`; this table is the claim of coverage.
 
+## Stage 2 screens (student mobile and offline, built)
+
+Status: **Built** (real screens, unit tests in `tests/v2/student.test.ts`, `sync.test.ts`, `qr.test.ts`, Playwright flow `docs/v2/verify/stage2.e2e.mjs`, screenshots and axe in `docs/v2/screenshots`). Not **Verified**: dark mode, forced colors, screen reader, a real device and visual-diff against localhost:4000 were not run. Contracts: `V2-02a` to `V2-02d`.
+
+| Screen | Route | Requirement IDs satisfied | New requirements (status: proposed) |
+|---|---|---|---|
+| Student home, what is left | `/v2/student` | ST-01 (mapped skills, mandatory, progress per skill against the published rule), SC-12 (lab and simulation never satisfy a named setting, stated on the card), AR-06 (awaiting approval excluded), IM-09 (skills not in use listed as not open, never offered) | Next best action; progress dots; prerequisite checklist on the card; "not open yet" list; mobile bottom navigation; always-visible sync strip `[PROPOSED]` |
+| Log skills, 4 steps | `/v2/student/pick-and-rate` | ST-02 and CM-05 (an unmapped published skill can be logged), ST-04, ST-05, ST-06, ST-07, ST-10, ST-11 (where the skill has a scale; SC-15 toggle itself not built), ST-12 (one note per skill entry, an [INFER] reading), ST-13, SC-08 (the skill's own level names), SC-11 | Saved-first drafts (`logDraft`); prerequisite gating by lab check-off, practice trials and prerequisite skills; a lab or simulation entry is a practice trial that is not sent for sign-off `[PROPOSED]` |
+| Ask for sign-off, 4 ways | `/v2/student/request-signoff` | ST-08 (roles by setting and by the skill; told why), ST-09 (pick from those on record; naming an unrecorded lab instructor is not built), ST-10, ST-13, EV-01 (every method reaches an evaluator with no account), EV-02, EV-05 (one request, several skills), AR-01 (a paper submission appears in the review queue), RV-05 (a request in flight cannot be sent again), SC-16 | QR code (real, scannable); hand over the phone (handover mode); one link to several qualified evaluators, first to finish completes it; photo of a signed paper form to review; offline-created request `[PROPOSED]` |
+| Sync and offline, conflict | `/v2/student/offline-sync` | none (the requirements do not cover offline; ST-13 and RV-05 respected) | Offline queue with Queued, Synced, Failed, Conflict; retry one and all; conflict resolution (keep mine, keep theirs, keep both where valid); demo toggles for offline, signed out and update pending; no login loop and no update-required wall `[PROPOSED]` |
+| Your record | `/v2/student/history` | SH-01 (attempts in order, by attempt number), SH-02 (explicit outcome, who it is with), SH-03 (the failed rule in plain words), SH-04 (counts), SH-05 (progress per named setting), SH-06 (every course; narrowing is stated, not built, because every v2 evaluation is NURS 350), SH-07 (partial: outcome, evaluator, setting and all versions; the store holds no evaluator responses) | Versions shown with what counted `[PROPOSED]` |
+
 ## Story steps (14)
 
-Rows for steps 1 to 4 are built in Stage 1 (table above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
+Rows for steps 1 to 4 are built in Stage 1 and steps 5 to 7 in Stage 2 (tables above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
 
 | # | Screen | Route | Requirement IDs (planned) | Coverage now | New requirements (status: proposed) |
 |---|---|---|---|---|---|
@@ -39,9 +51,9 @@ Rows for steps 1 to 4 are built in Stage 1 (table above). The rest are placehold
 | 2 | Configure IV catheter insertion | `/v2/admin/configure-skill` | SC-01, SC-02, SC-08, SC-10, SC-11, SC-12, SC-15, SC-16, SC-17 | Built (SC-15 not built) | Last-N achievement rule ("4 of last 5"); simulation share cap; prerequisites; evaluator qualification; failure path; event-based revalidation; binary as pre-selected model `[PROPOSED]` |
 | 3 | Fix validation errors, then publish | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | Built | none beyond the requirements |
 | 4 | Map skills to NURS 350 | `/v2/admin/map-courses` | CM-01, CM-03, CM-04, CM-05, CM-06 | Built | Coverage warnings `[PROPOSED]` |
-| 5 | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | ST-01, ST-04, ST-05, ST-06, ST-11, ST-12, ST-13 | Seed | Mobile bottom navigation `[PROPOSED]` |
-| 6 | Ask for sign-off | `/v2/student/request-signoff` | ST-08, ST-09, ST-10, EV-01 | Seed | QR sign-off; hand the phone to the evaluator; photo of a signed paper form that goes to review `[PROPOSED]` |
-| 7 | Work offline and resolve a conflict | `/v2/student/offline-sync` | none | Seed | Offline queue (Queued, Synced, Conflict); conflict resolution screen `[PROPOSED]` |
+| 5 | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | ST-01, ST-04, ST-05, ST-06, ST-11, ST-12, ST-13 | Built (home is `/v2/student`) | Mobile bottom navigation; prerequisite gating; next best action `[PROPOSED]` |
+| 6 | Ask for sign-off | `/v2/student/request-signoff` | ST-08, ST-09, ST-10, EV-01 | Built | QR sign-off; hand the phone to the evaluator; photo of a signed paper form that goes to review `[PROPOSED]` |
+| 7 | Work offline and resolve a conflict | `/v2/student/offline-sync` | none | Built | Offline queue (Queued, Synced, Conflict); conflict resolution screen `[PROPOSED]` |
 | 8 | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | EV-01, EV-03, EV-04, EV-05, EV-06, EV-07 | Seed | "Not yet, feedback only" outcome; confidential concern flag (faculty only); credential attestation `[PROPOSED]` |
 | 9 | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | RV-03, SH-02, SH-03, AE-01, AE-03, AE-04 | Seed | Remediation plan on fail; reopen after sign-off with version history `[PROPOSED]`; remediation is outside section 14 of the requirements, see D2 |
 | 10 | Clear the review queue | `/v2/reviewer/review-queue` | AR-01, AR-02, AR-03, AR-04, AR-05, AR-06, RV-02, RV-04 | Seed | Bulk approve; reassign a stalled request `[PROPOSED]` |

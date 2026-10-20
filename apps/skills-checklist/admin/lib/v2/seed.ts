@@ -3,9 +3,12 @@ import type {
   AuditEntry,
   Evaluation,
   EvaluationStatus,
+  LabCheckoff,
+  LogEntry,
   MappingRow,
   Outcome,
   Person,
+  Placement,
   Setting,
   Skill,
   SkillConfig,
@@ -189,6 +192,8 @@ function mkEval(id: string, studentId: string, h: Hist): Evaluation {
     outcome,
     currentVersion: 1,
     versions: [{ version: 1, outcome, at: daysBefore(daysAgo), by: evaluatorId, reason: null }],
+    // Clinical evidence names its clinical setting (SC-11). Lab and simulation evidence has none, so it can never satisfy one.
+    ...(setting === "clinical" ? { clinicalSetting: "Inpatient" } : {}),
   }
 }
 
@@ -203,6 +208,8 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
     ["sk-vitals", "met", "clinical", 12, IDS.delgado],
     ["sk-sterile-dressing", "not-yet", "clinical", 9, IDS.delgado],
     ["sk-blood-glucose", "met", "clinical", 6, IDS.delgado, "awaiting-approval"],
+    // A third met vital signs evaluation, so the IV catheter prerequisite "have met vital signs" holds for Maya.
+    ["sk-vitals", "met", "clinical", 5, IDS.delgado],
   ]
   maya.forEach((h, i) => out.push(mkEval(`ev-maya-${i + 1}`, IDS.maya, h)))
 
@@ -240,13 +247,46 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
 
 function buildSubmissions(): Submission[] {
   return [
-    { id: "sub-maya-1", studentId: IDS.maya, skillIds: [IDS.ivCath, IDS.urinaryCath], method: "qr", status: "with-evaluator", assignedToId: IDS.delgado, createdAt: daysBefore(0), daysWaiting: 0 },
+    { id: "sub-maya-1", studentId: IDS.maya, skillIds: [IDS.urinaryCath, "sk-med-admin"], method: "qr", status: "with-evaluator", assignedToId: IDS.delgado, createdAt: daysBefore(0), daysWaiting: 0, entryIds: ["log-maya-uc-1"], candidateIds: [IDS.delgado] },
     { id: "sub-02", studentId: "stu-02", skillIds: ["sk-med-admin"], method: "link", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(3), daysWaiting: 3 },
     { id: "sub-04", studentId: "stu-04", skillIds: ["sk-vitals", "sk-blood-glucose"], method: "photo", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(2), daysWaiting: 2 },
     { id: "sub-03", studentId: "stu-03", skillIds: ["sk-sterile-dressing"], method: "link", status: "stalled", assignedToId: IDS.delgado, createdAt: daysBefore(9), daysWaiting: 9 },
     { id: "sub-06", studentId: "stu-06", skillIds: ["sk-handoff"], method: "handover", status: "done", assignedToId: IDS.delgado, createdAt: daysBefore(15), daysWaiting: 0 },
   ]
 }
+
+const PLACEMENTS: Placement[] = [
+  { id: "pl-maya-1", studentId: IDS.maya, courseId: IDS.course, location: "Harbor General, 4 West", setting: "Inpatient" },
+  { id: "pl-maya-2", studentId: IDS.maya, courseId: IDS.course, location: "Harbor Outpatient Clinic", setting: "Outpatient" },
+]
+
+/**
+ * Maya's earlier log. Three IV catheter practice trials in the lab (so the Stage 1 prerequisite "3 practice trials" holds), the
+ * last one still queued on her phone, and a note on a urinary catheter entry that two devices edited (a conflict).
+ */
+function buildLogEntries(): LogEntry[] {
+  const base = { studentId: IDS.maya, answers: null, clinicalSetting: null, setting: "lab" as const }
+  return [
+    { ...base, id: "log-maya-prac-1", skillId: IDS.ivCath, batchId: "lb-seed-1", location: "Skills lab 2", rating: "Needs coaching", note: "", at: daysBefore(21), requestId: null },
+    { ...base, id: "log-maya-prac-2", skillId: IDS.ivCath, batchId: "lb-seed-2", location: "Skills lab 2", rating: "Works with prompts", note: "", at: daysBefore(18), requestId: null },
+    { ...base, id: "log-maya-prac-3", skillId: IDS.ivCath, batchId: "lb-seed-3", location: "Skills lab 2", rating: "Works with prompts", note: "", at: daysBefore(0), requestId: null },
+    {
+      ...base,
+      id: "log-maya-uc-1",
+      skillId: IDS.urinaryCath,
+      batchId: "lb-seed-4",
+      setting: "clinical" as const,
+      clinicalSetting: "Inpatient",
+      location: "Harbor General, 4 West",
+      rating: "Works with prompts",
+      note: "Asked the preceptor to check my sterile technique before I inserted the catheter.",
+      at: daysBefore(14),
+      requestId: "sub-maya-1",
+    },
+  ]
+}
+
+const LAB_CHECKOFFS: LabCheckoff[] = [{ id: "lc-maya-1", studentId: IDS.maya, skillId: IDS.ivCath, byId: IDS.whitmore, at: daysBefore(30) }]
 
 function buildAudit(reopenedId: string): AuditEntry[] {
   return [
@@ -269,9 +309,23 @@ export function createSeed(): V2State {
     evaluations: evals.list,
     submissions: buildSubmissions(),
     syncQueue: [
-      { id: "sy-1", studentId: IDS.maya, label: "Self-rating: IV catheter insertion", state: "queued", at: daysBefore(0) },
+      { id: "sy-1", studentId: IDS.maya, label: "Practice trial: IV catheter insertion, lab", state: "queued", at: daysBefore(0), entryId: "log-maya-prac-3" },
       { id: "sy-2", studentId: IDS.maya, label: "Setting confirmed: Harbor General, 4 West", state: "synced", at: daysBefore(0) },
-      { id: "sy-3", studentId: IDS.maya, label: "Note on urinary catheter insertion", state: "conflict", at: daysBefore(1) },
+      {
+        id: "sy-3",
+        studentId: IDS.maya,
+        label: "Note on Indwelling urinary catheter insertion",
+        state: "conflict",
+        at: daysBefore(1),
+        entryId: "log-maya-uc-1",
+        conflict: {
+          field: "note",
+          mine: "Asked the preceptor to check my sterile technique before I inserted the catheter.",
+          theirs: "Used a 14 Fr catheter. The preceptor stayed for the whole procedure.",
+          theirsAt: daysBefore(1),
+          theirsBy: "Your other device",
+        },
+      },
     ],
     concerns: [
       { id: "cn-1", evaluationId: "ev-5-2", studentId: "stu-05", raisedById: IDS.delgado, visibleTo: "faculty-only", note: "Sample concern for the faculty-only flow.", at: daysBefore(4) },
@@ -293,5 +347,10 @@ export function createSeed(): V2State {
     batches: [],
     drafts: {},
     stepsReviewed: {},
+    placements: PLACEMENTS.map((p) => ({ ...p })),
+    logEntries: buildLogEntries(),
+    labCheckoffs: LAB_CHECKOFFS.map((c) => ({ ...c })),
+    device: { offline: false, signedOut: false, updatePending: false, failNextSync: false },
+    logDraft: null,
   }
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -15,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { STEPS } from "@/lib/v2/scenario"
 import { useV2State, useV2Store } from "@/lib/v2/react"
+import { setDevice } from "@/lib/v2/sync"
 
 /** Scenario menu: jump to any of the 14 story steps, or reset the demo to its seed. */
 export function ScenarioMenu() {
@@ -46,6 +48,19 @@ export function ScenarioMenu() {
                 {s.id in state.stepsReviewed ? <i className="fa-solid fa-check text-xs text-(--brand-color)" aria-label="Reviewed" role="img" /> : null}
               </Link>
             </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Demo controls for the student phone</DropdownMenuLabel>
+          {(
+            [
+              ["offline", "Phone is offline"],
+              ["signedOut", "Phone is signed out"],
+              ["updatePending", "App update is pending"],
+            ] as const
+          ).map(([key, label]) => (
+            <DropdownMenuCheckboxItem key={key} className="min-h-10" checked={state.device[key]} onCheckedChange={(v) => store.update((s) => setDevice(s, { [key]: v === true }, new Date().toISOString()).state)}>
+              {label}
+            </DropdownMenuCheckboxItem>
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem className="min-h-10" onSelect={() => setConfirmOpen(true)}>

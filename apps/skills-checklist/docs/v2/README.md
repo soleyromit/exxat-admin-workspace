@@ -1,6 +1,6 @@
 # Connected prototype v2 (Skills Checklist, Prism)
 
-**Status:** Stage 0 foundation and Stage 1 (admin setup, steps 1 to 4) built. Stages 2 to 5 replace the remaining placeholder step pages with real screens.
+**Status:** Stage 0 foundation, Stage 1 (admin setup, steps 1 to 4) and Stage 2 (student mobile and offline, steps 5 to 7, plus the student home `/v2/student` and `/v2/student/history`) built. Stages 3 to 5 replace the remaining placeholder step pages with real screens.
 **Branch:** `feat/skills-checklist-v2` · **Admin app:** `apps/skills-checklist/admin` · **Port:** 3007 · **URL:** `http://localhost:3007/v2`
 **Tags used in these docs:** `[REQ xx-nn]` requirement (only IDs in `docs/source/requirements.extracted.txt`), `[OD-n]` open decision (never treated as decided), `[PROPOSED]` a capability this prototype adds beyond the requirements, `[INFER]` my inference.
 
@@ -34,9 +34,9 @@ Defined in `admin/lib/v2/scenario.ts`, each with a route, requirement IDs and a 
 | 2 | Admin | Configure IV catheter insertion | `/v2/admin/configure-skill` | Stage 1 (built) |
 | 3 | Admin | Fix validation errors, then publish | `/v2/admin/validate-publish` | Stage 1 (built) |
 | 4 | Admin | Map skills to NURS 350 | `/v2/admin/map-courses` | Stage 1 (built) |
-| 5 | Student | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | Stage 2 |
-| 6 | Student | Ask for sign-off (QR, hand over phone, link, photo of paper form) | `/v2/student/request-signoff` | Stage 2 |
-| 7 | Student | Work offline and resolve a conflict | `/v2/student/offline-sync` | Stage 2 |
+| 5 | Student | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | Stage 2 (built) |
+| 6 | Student | Ask for sign-off (QR, hand over phone, link, photo of paper form) | `/v2/student/request-signoff` | Stage 2 (built) |
+| 7 | Student | Work offline and resolve a conflict | `/v2/student/offline-sync` | Stage 2 (built) |
 | 8 | Preceptor | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | Stage 3 |
 | 9 | Reviewer | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | Stage 3 |
 | 10 | Reviewer | Clear the review queue | `/v2/reviewer/review-queue` | Stage 4 |

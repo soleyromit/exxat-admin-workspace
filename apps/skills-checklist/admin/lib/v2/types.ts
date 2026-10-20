@@ -147,11 +147,16 @@ export interface Evaluation {
   outcome: Outcome
   currentVersion: number
   versions: EvaluationVersion[]
+  /** Named clinical setting (SC-11) for clinical evaluations. Lab and simulation never carry one, so they can never satisfy it. */
+  clinicalSetting?: string
+  /** Index into the skill's levels when the evaluation recorded a level. Absent means the level is not recorded. */
+  levelIndex?: number
 }
 
 export type SignoffMethod = "qr" | "handover" | "link" | "photo"
 
-export type SubmissionStatus = "with-evaluator" | "awaiting-review" | "returned" | "stalled" | "done"
+/** "on-device": saved on the student's phone and not yet sent (Stage 2). It moves to with-evaluator or awaiting-review when it syncs. */
+export type SubmissionStatus = "on-device" | "with-evaluator" | "awaiting-review" | "returned" | "stalled" | "done"
 
 export interface Submission {
   id: string
@@ -162,9 +167,24 @@ export interface Submission {
   assignedToId: string
   createdAt: string
   daysWaiting: number
+  /** Stage 2: the log entries this request carries. Absent on seed requests made before the log existed. */
+  entryIds?: string[]
+  /** Stage 2: every evaluator who may open a link request. assignedToId is the first. The first to finish completes it. [PROPOSED] */
+  candidateIds?: string[]
+  /** Stage 2: a photo of a signed paper form. Only the file facts are stored, never the image. */
+  photo?: { name: string; sizeKb: number }
 }
 
-export type SyncState = "queued" | "synced" | "conflict"
+export type SyncState = "queued" | "synced" | "conflict" | "failed"
+
+/** One value that two versions disagree about. A note keeps one narrative (ST-12); a rating keeps one level. */
+export interface SyncConflict {
+  field: "note" | "rating"
+  mine: string
+  theirs: string
+  theirsAt: string
+  theirsBy: string
+}
 
 export interface SyncItem {
   id: string
@@ -172,6 +192,78 @@ export interface SyncItem {
   label: string
   state: SyncState
   at: string
+  /** Stage 2: what the change belongs to. */
+  entryId?: string
+  requestId?: string
+  /** Why the last attempt failed, in plain words. */
+  error?: string
+  attempts?: number
+  /** A newer change that exists on the server. It becomes a conflict the next time this item syncs. */
+  serverEdit?: { field: SyncConflict["field"]; value: string; at: string; by: string }
+  conflict?: SyncConflict
+}
+
+/** A placement for the course: where the student works and in which named clinical setting (ST-06). */
+export interface Placement {
+  id: string
+  studentId: string
+  courseId: string
+  location: string
+  setting: string
+}
+
+/**
+ * One skill logged by a student (ST-04, ST-05). Clinical entries can be sent for sign-off. A lab or simulation entry is a
+ * practice trial: it counts toward prerequisites and is never sent for sign-off. [PROPOSED]
+ */
+export interface LogEntry {
+  id: string
+  studentId: string
+  skillId: string
+  /** Entries saved together share a batch (ST-04). */
+  batchId: string
+  setting: Setting
+  /** Named clinical setting for clinical entries, else null. */
+  clinicalSetting: string | null
+  location: string | null
+  /** Self-rating: one of the skill's own level names or outcome labels, else null. */
+  rating: string | null
+  /** Question model self-rating: one answer per question. */
+  answers: Array<"yes" | "no"> | null
+  /** At most one narrative note per entry (ST-12). */
+  note: string
+  at: string
+  requestId: string | null
+}
+
+/** A lab check-off recorded by a lab instructor (a prerequisite, SC-15 family). */
+export interface LabCheckoff {
+  id: string
+  studentId: string
+  skillId: string
+  byId: string
+  at: string
+}
+
+/** Demo toggles for the student phone. They are labelled as demo controls in the UI. */
+export interface DeviceState {
+  offline: boolean
+  signedOut: boolean
+  updatePending: boolean
+  /** The next sync attempt fails once, then this clears. */
+  failNextSync: boolean
+}
+
+/** The log flow in progress, saved on every edit so a reload or a lost signal never loses it. Not audited. */
+export interface LogDraft {
+  step: 1 | 2 | 3 | 4
+  skillIds: string[]
+  /** "placement:<id>", "lab", "simulation", or "program:<name>" when no placement exists. */
+  where: string
+  location: string
+  ratings: Record<string, string>
+  answers: Record<string, Array<"yes" | "no" | null>>
+  notes: Record<string, string>
 }
 
 export interface ConcernFlag {
@@ -219,4 +311,10 @@ export interface V2State {
   drafts: Record<string, SkillDraft>
   /** Scenario step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
+  /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */
+  placements: Placement[]
+  logEntries: LogEntry[]
+  labCheckoffs: LabCheckoff[]
+  device: DeviceState
+  logDraft: LogDraft | null
 }

@@ -42,7 +42,7 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--no-states') withStates = false
   else routes.push(args[i])
 }
-if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/preceptor', '/v2/reviewer', '/v2/director', '/v2/admin/starter-library', '/v2/admin/configure-skill', '/v2/admin/validate-publish', '/v2/admin/map-courses', '/v2/student/offline-sync', '/v2/reviewer/review-queue')
+if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/preceptor', '/v2/reviewer', '/v2/director', '/v2/admin/starter-library', '/v2/admin/configure-skill', '/v2/admin/validate-publish', '/v2/admin/map-courses', '/v2/student/pick-and-rate', '/v2/student/request-signoff', '/v2/student/offline-sync', '/v2/student/history', '/v2/reviewer/review-queue')
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -59,7 +59,72 @@ const FREEZE = '*,*::before,*::after{transition:none!important;animation:none!im
 // `expect` lists text that must appear among the Tab stops (accessible name or text), so a cut-off walk cannot hide a control.
 const KNOWN_MENU_AXE = ['aria-hidden-focus', 'scrollable-region-focusable']
 const btn = (page, name) => page.getByRole('button', { name })
+
+// ---- Stage 2 helpers: student states. The store only reaches localStorage after its first write, so `persist` makes one harmless write
+// (Scenario menu, Phone is offline, twice) and then `mutate` edits the saved state through a function body that receives it as `s`.
+const SCENARIO = (p) => p.getByRole('button', { name: 'Scenario' })
+async function demoToggle(p, label) { await SCENARIO(p).click(); await p.getByRole('menuitemcheckbox', { name: label }).click(); await p.waitForTimeout(250) }
+async function persist(p) { await demoToggle(p, 'Phone is offline'); await demoToggle(p, 'Phone is offline') }
+async function mutate(p, body) { await p.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); new Function('s', src)(env.state); localStorage.setItem(k, JSON.stringify(env)) }, ['skills-checklist:v2:store', body]); await p.reload({ waitUntil: 'load' }); await p.waitForSelector('h1'); await p.waitForTimeout(900) }
+const publishIv = (p) => mutate(p, "s.skills.find(k => k.id === 'sk-iv-cath').published = true")
+const lockIv = (p) => mutate(p, "const k = s.skills.find(k => k.id === 'sk-iv-cath'); k.published = true; k.config.prerequisites.practiceTrials = 5")
+const goto = async (p, route) => { await p.goto(new URL(route, p.url()).toString(), { waitUntil: 'load' }); await p.waitForSelector('h1'); await p.waitForTimeout(800) }
+const clickLabel = (p, text) => p.getByText(text, { exact: true }).first().click()
+/** Logs Oral medication administration and Sterile dressing change quickly (both are in use on the seed). */
+async function logTwo(p) {
+  await goto(p, '/v2/student/pick-and-rate')
+  await p.locator('#pick-sk-med-admin').click(); await p.locator('#pick-sk-sterile-dressing').click()
+  await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click()
+  await p.getByRole('radiogroup', { name: 'Your rating for Oral medication administration' }).getByRole('radio', { name: 'Met', exact: true }).click()
+  for (const q of ['Performed hand hygiene before and after', 'Kept the field clean throughout', 'Explained each step to the patient']) await p.getByRole('radiogroup', { name: `${q} for Sterile dressing change` }).getByRole('radio', { name: 'Yes' }).click()
+  await btn(p, 'Review').click(); await btn(p, 'Save 2 entries').click(); await p.locator('[data-saved]').waitFor()
+}
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+const toRequests = async (p) => { await goto(p, '/v2/student/request-signoff'); await p.getByRole('heading', { name: /Ready to send \(2\)/ }).waitFor() }
+const reveal = (p, sel) => p.locator(sel).first().scrollIntoViewIfNeeded()
 const STATES = {
+
+  '/v2/student': [
+    { name: 'scenario-menu', menu: 'menu', setup: async (p) => { await SCENARIO(p).click(); await p.getByRole('menu').waitFor() }, expect: ['Phone is offline'] },
+    { name: 'offline-banner', setup: async (p) => { await demoToggle(p, 'Phone is offline') }, expect: ['Sync details'] },
+    { name: 'signed-out-update-banners', setup: async (p) => { await demoToggle(p, 'Phone is signed out'); await demoToggle(p, 'App update is pending') }, expect: ['Sign in', 'Install update'] },
+    { name: 'prerequisite-locked', setup: async (p) => { await persist(p); await lockIv(p); await reveal(p, '[data-prereq="locked"]') }, expect: ['Log a practice trial of IV catheter insertion'] },
+    { name: 'iv-in-use', setup: async (p) => { await persist(p); await publishIv(p) }, expect: ['Log IV catheter insertion'] },
+  ],
+  '/v2/student/pick-and-rate': [
+    { name: 'step2-setting', setup: async (p) => { await p.locator('#pick-sk-med-admin').click(); await btn(p, 'Continue to setting').click(); await p.getByRole('heading', { name: 'Where did you do it?' }).waitFor() }, expect: ['Back', 'Continue to rating'] },
+    { name: 'step3-rating', setup: async (p) => { await p.locator('#pick-sk-med-admin').click(); await p.locator('#pick-sk-sterile-dressing').click(); await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click(); await p.getByRole('heading', { name: 'Rate yourself' }).waitFor() }, expect: ['Back', 'Review'] },
+    { name: 'step4-review', setup: async (p) => { await p.locator('#pick-sk-med-admin').click(); await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click(); await p.getByRole('radiogroup', { name: 'Your rating for Oral medication administration' }).getByRole('radio', { name: 'Met', exact: true }).click(); await btn(p, 'Review').click(); await p.getByRole('heading', { name: 'Review and save' }).waitFor() }, expect: ['Save 1 entry', 'Back'] },
+    { name: 'validation-error', setup: async (p) => { await btn(p, 'Continue to setting').click(); await p.getByText('Pick at least one skill to log.').waitFor() }, expect: ['Continue to setting'] },
+    { name: 'prerequisite-blocked', setup: async (p) => { await persist(p); await lockIv(p); await p.locator('#pick-sk-iv-cath').click(); await btn(p, 'Continue to setting').click(); await p.locator('[data-prereq-block]').waitFor() }, expect: ['Log as lab practice instead', 'Remove IV catheter insertion from this log'] },
+    { name: 'saved-synced', setup: async (p) => { await p.locator('#pick-sk-med-admin').click(); await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click(); await p.getByRole('radiogroup', { name: 'Your rating for Oral medication administration' }).getByRole('radio', { name: 'Met', exact: true }).click(); await btn(p, 'Review').click(); await btn(p, 'Save 1 entry').click(); await p.locator('[data-saved]').waitFor() }, expect: ['Ask for sign-off', 'Log more skills'] },
+    { name: 'saved-queued-offline', setup: async (p) => { await demoToggle(p, 'Phone is offline'); await p.locator('#pick-sk-med-admin').click(); await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click(); await p.getByRole('radiogroup', { name: 'Your rating for Oral medication administration' }).getByRole('radio', { name: 'Met', exact: true }).click(); await btn(p, 'Review').click(); await btn(p, 'Save 1 entry').click(); await p.locator('[data-saved]').waitFor() }, expect: ['Ask for sign-off'] },
+  ],
+  '/v2/student/request-signoff': [
+    { name: 'ready-to-send', setup: async (p) => { await logTwo(p); await toRequests(p) }, expect: ['Show QR code for'] },
+    { name: 'unqualified-disabled', setup: async (p) => { await logTwo(p); await toRequests(p); await publishIv(p); await reveal(p, '#eval-pre-delgado') }, expect: ['Show QR code for'] },
+    { name: 'qr-dialog', setup: async (p) => { await logTwo(p); await toRequests(p); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and show QR code').click(); await p.locator('[data-qr-dialog]').waitFor() }, expect: ['Copy link', 'Open what the evaluator sees', 'Done'] },
+    { name: 'handover-student', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Hand over phone'); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and hand over phone').click(); await p.locator('[data-handover="student"]').waitFor() }, expect: ['Hand over to J. Delgado, RN', 'Cancel handover'] },
+    { name: 'handover-evaluator', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Hand over phone'); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and hand over phone').click(); await btn(p, 'Hand over to J. Delgado, RN').click(); await p.locator('[data-handover="evaluator"]').waitFor() }, expect: ['Start the evaluation', 'Give the phone back to Maya'] },
+    { name: 'handover-back', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Hand over phone'); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and hand over phone').click(); await btn(p, 'Hand over to J. Delgado, RN').click(); await btn(p, /^Give the phone back to Maya$/).click(); await p.locator('[data-handover-back]').waitFor() }, expect: ['Back to your requests'] },
+    { name: 'method-link', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Link'); await p.locator('#eval-pre-delgado').click(); await p.locator('#eval-pre-castillo').click(); await reveal(p, '[data-create-request]') }, expect: ['Create one request and copy link for 2 evaluators'] },
+    { name: 'method-photo-preview', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Photo of paper form'); await p.locator('#eval-pre-delgado').click(); await p.locator('#photo-file').setInputFiles({ name: 'signed-form.png', mimeType: 'image/png', buffer: PNG }); await p.locator('[data-photo-preview]').waitFor(); await reveal(p, '[data-photo-preview]') }, expect: ['Remove photo', 'Send photo for review'] },
+    { name: 'photo-refused', setup: async (p) => { await logTwo(p); await toRequests(p); await clickLabel(p, 'Photo of paper form'); await p.locator('#photo-file').setInputFiles({ name: 'form.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.1') }); await p.getByText(/That file is a PDF/).waitFor(); await reveal(p, '#photo-file') }, expect: ['Choose a photo'] },
+    { name: 'request-created-offline', setup: async (p) => { await logTwo(p); await demoToggle(p, 'Phone is offline'); await toRequests(p); await clickLabel(p, 'Link'); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and copy link').click(); await p.locator('[data-request-done]').waitFor() }, expect: [] },
+  ],
+  '/v2/student/offline-sync': [
+    { name: 'offline', setup: async (p) => { await btn(p, 'Go offline').click(); await p.locator('[data-device-banner="offline"]').waitFor() }, expect: ['Go online'] },
+    { name: 'synced-after-send', setup: async (p) => { await btn(p, 'Send now').click(); await p.locator('[data-sync-message]').waitFor() }, expect: ['Resolve conflict'] },
+    { name: 'conflict-screen', setup: async (p) => { await btn(p, /^Resolve conflict/).click(); await p.locator('[data-version="mine"]').waitFor() }, expect: ['Back to sync'] },
+    { name: 'conflict-keep-both', setup: async (p) => { await btn(p, /^Resolve conflict/).click(); await p.getByText('Keep both', { exact: true }).click() }, expect: ['Resolve conflict', 'Back to sync'] },
+    { name: 'conflict-resolved', setup: async (p) => { await btn(p, /^Resolve conflict/).click(); await p.getByText("Keep this phone's version").click(); await p.locator('[data-resolve]').click(); await p.locator('[data-sync-message]').waitFor() }, expect: ['Send now'] },
+    { name: 'failed-then-retry', setup: async (p) => { await btn(p, 'Make the next sync fail').click(); await btn(p, 'Send now').click(); await p.locator('[data-sync-chip="failed"]').first().waitFor() }, expect: ['Retry'] },
+    { name: 'signed-out-waiting', setup: async (p) => { await btn(p, 'Sign out').click(); await btn(p, 'Mark update as pending').click() }, expect: ['Sign in'] },
+    { name: 'demo-conflict-created', setup: async (p) => { await btn(p, 'Simulate an edit on another device').click(); await p.locator('[data-sync-message]').waitFor() }, expect: ['Send all waiting (1)'] },
+  ],
+  '/v2/student/history': [
+    { name: 'attempt-detail', setup: async (p) => { await p.getByRole('button', { name: /^See details of attempt 1 at Indwelling urinary catheter insertion/ }).click(); await p.getByRole('dialog').waitFor() }, expect: ['Close'] },
+  ],
   '/v2/admin/starter-library': [
     { name: 'sheet-open', setup: async (p) => { await btn(p, /Review BSN medical-surgical skills/).click(); await p.getByRole('dialog').waitFor() }, expect: ['Copy 6 skills', 'Cancel'] },
     { name: 'edit-dialog', setup: async (p) => { await btn(p, 'Edit IV catheter insertion').click(); await p.getByRole('dialog').waitFor() }, expect: ['Save skill', 'Cancel'] },
@@ -157,7 +222,7 @@ const report = { base, when: new Date().toISOString(), axe: AxeBuilder ? '@axe-c
 let failed = false
 
 async function capture(route, vp, state) {
-  const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: 'reduce' })
+  const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: 'reduce', ...(vp.name === 'phone' ? { hasTouch: true, isMobile: true } : {}) })
   const page = await ctx.newPage()
   const entry = { route, state: state?.name ?? null, viewport: vp.name, status: null, consoleErrors: [], screenshot: null, a11y: null, contrastFallback: null, focus: null, missingExpected: [] }
   page.on('console', (m) => { if (m.type() === 'error') entry.consoleErrors.push(m.text().slice(0, 200)) })
@@ -173,6 +238,22 @@ async function capture(route, vp, state) {
     const file = path.join(OUT, `${slug(route)}${state ? '--' + state.name : ''}-${vp.name}.png`)
     await page.screenshot({ path: file, fullPage: false })
     entry.screenshot = path.relative(path.resolve(HERE, '../../..'), file)
+
+    if (vp.name === 'phone' && route.startsWith('/v2/student')) {
+      // Touch targets: every button, link and radio or checkbox in the student column must be at least 44 px high, or sit inside a label or row that is.
+      entry.smallTargets = await page.evaluate(() => {
+        const out = []
+        for (const el of document.querySelectorAll('[data-student-page] button, [data-student-page] a, [data-student-page] [role=radio], [data-student-page] [role=checkbox], [role=dialog] button, [role=dialog] a')) {
+          const r = el.getBoundingClientRect(); if (r.width === 0 || r.height === 0 || el.closest('.sr-only') || el.closest('[aria-hidden=true]')) continue
+          const host = el.closest('label') ?? el.closest('li') ?? el.parentElement
+          const h = Math.max(r.height, host ? host.getBoundingClientRect().height : 0)
+          if (h < 43.5 && !el.matches('[data-slot=checkbox],[data-slot=radio-group-item]')) out.push({ tag: el.tagName.toLowerCase(), name: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 50), h: Math.round(h) })
+          else if (h < 43.5) out.push({ tag: el.tagName.toLowerCase(), name: (el.getAttribute('aria-label') || el.id || '').slice(0, 50), h: Math.round(h) })
+        }
+        return out
+      })
+      if (entry.smallTargets.length) failed = true
+    }
 
     if (AxeBuilder) {
       const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
@@ -193,7 +274,7 @@ async function capture(route, vp, state) {
       const after = await page.evaluate(() => document.activeElement?.textContent?.trim() ?? '')
       await page.keyboard.press('Escape')
       await page.waitForTimeout(200)
-      const closed = (await page.getByRole('listbox').count()) === 0
+      const closed = (await page.getByRole(state.menu === 'menu' ? 'menu' : 'listbox').count()) === 0
       entry.menuKeyboard = { arrowMovesFocus: before !== after, escapeCloses: closed, before, after }
       entry.focus = { stops: 0, names: [after], missingIndicator: [], traps: [], complete: true, ceilingHit: false }
       if (!entry.menuKeyboard.arrowMovesFocus || !closed) failed = true
@@ -226,7 +307,7 @@ for (const p of report.pages) {
   const v = p.a11y ? p.a11y.violations.length : (p.contrastFallback?.length ?? 'n/a')
   const f = p.focus
   const label = (p.route + (p.state ? ' [' + p.state + ']' : '')).padEnd(52)
-  console.log(`${p.status ?? 'ERR'} ${p.viewport.padEnd(7)} ${label} a11y=${v} stops=${f?.stops ?? 0}${p.menuKeyboard ? ` menu(arrow=${p.menuKeyboard.arrowMovesFocus},esc=${p.menuKeyboard.escapeCloses},knownAxe=${(p.knownAxe ?? []).join('+') || 0})` : f?.complete ? ' (full cycle)' : ' (NOT a full cycle)'} noIndicator=${f?.missingIndicator.length ?? 0} traps=${f?.traps.length ?? 0} missingExpected=${p.missingExpected.length} pageErrors=${p.pageErrors?.length ?? 0}${p.error ? ' ERROR ' + p.error : ''}`)
+  console.log(`${p.status ?? 'ERR'} ${p.viewport.padEnd(7)} ${label} a11y=${v} stops=${f?.stops ?? 0}${p.menuKeyboard ? ` menu(arrow=${p.menuKeyboard.arrowMovesFocus},esc=${p.menuKeyboard.escapeCloses},knownAxe=${(p.knownAxe ?? []).join('+') || 0})` : f?.complete ? ' (full cycle)' : ' (NOT a full cycle)'} noIndicator=${f?.missingIndicator.length ?? 0} smallTargets=${p.smallTargets?.length ?? 'n/a'} traps=${f?.traps.length ?? 0} missingExpected=${p.missingExpected.length} pageErrors=${p.pageErrors?.length ?? 0}${p.error ? ' ERROR ' + p.error : ''}`)
 }
 console.log(`Report: ${path.join(OUT, 'report.json')}  (${failed ? 'FAILURES FOUND' : 'clean'})`)
 process.exit(failed ? 1 : 0)
