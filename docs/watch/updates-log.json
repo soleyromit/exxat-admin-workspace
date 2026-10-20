@@ -2026,6 +2026,24 @@
         "docs/watch/stakeholder-decisions.json",
         "docs/watch/updates-log.json"
       ]
+    },
+    {
+      "id": "2026-10-20-transcript-diff-001",
+      "date": "2026-10-20",
+      "product": "all",
+      "type": "prd-clean",
+      "title": "Transcript-PRD diff clean \u2014 Oct 6\u201320 window \u2014 0 conflicts",
+      "what": "Ran weekly transcript-PRD diff. Fetched 13 meetings from Oct 6\u201320, 2026. 6 had Aarti Vaishnav and/or Vishaka Bhave present. Transcripts read for: AACP Project with Dr. Mody (Oct 8, Aarti+Vishaka \u2014 AACP pharmacy accreditation standards, not PCE/Exam scope), Skill Checklist Follow Up with Aarti (Oct 9), Discussion on skills tracking in Prism (Oct 15, Aarti+Vishaka \u2014 skills/competency module), UNE DO RFP Discussion (Oct 20, Aarti+Vishaka \u2014 RFP for DO program expansion), Review UNE DO and USD SoM Requirements (Oct 19, Aarti+Vishaka \u2014 Banner grade integration, LMS integration for new discipline programs), New Disciplines In-person Workshop (Oct 15 \u2014 sales targets by discipline, 5-year roadmap). None contained Aarti/Vishaka/Monil/Nipun directives about PCE or Exam Management features. No scope constraints, design mandates, priority changes, or factual corrections found that conflict with the PRD snapshots. Consistent with workspace-decision-001: Aarti reviews PCE/Exam ~every 1.5 months; her focus in this window is new product domains.",
+      "why": "Weekly automated PRD-transcript diff pass.",
+      "source": "Granola transcripts \u2014 Oct 6\u201320, 2026",
+      "severity": null,
+      "meetingsFetched": 13,
+      "meetingsRelevant": 6,
+      "conflictsFlagged": 0,
+      "files": [
+        "docs/watch/flags/system.md",
+        "docs/watch/updates-log.json"
+      ]
     }
   ]
 }
