@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -98,6 +99,7 @@ export function ReportsPage({ role }: { role: RoleId }) {
   const [studentId, setStudentId] = React.useState("")
   const [done, setDone] = React.useState<Done | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const lastDownload = React.useRef<(() => void) | null>(null)
   const [check, setCheck] = React.useState<{ name: string; result: CheckResult } | null>(null)
   const fileRef = React.useRef<HTMLInputElement>(null)
 
@@ -116,7 +118,7 @@ export function ReportsPage({ role }: { role: RoleId }) {
   const chosenStudent = s.people.find((p) => p.id === studentId)
   const noEvidence = sum.observations === 0
 
-  if (!hydrated && hm.rows.length === 0) return <PageFrame title="Cohort reports"><p role="status" className="text-sm text-muted-foreground">Opening the reports</p></PageFrame>
+  if (!hydrated && hm.rows.length === 0) return <PageFrame title="Cohort reports"><LoadingBlocks label="Opening the reports" rows={4} /></PageFrame>
 
   const set = (patch: Partial<ReportFilters>) => {
     setF((cur) => ({ ...cur, ...patch }))
@@ -124,6 +126,7 @@ export function ReportsPage({ role }: { role: RoleId }) {
   }
 
   const download = async (content: SignedContent | null, file: string) => {
+    lastDownload.current = () => void download(content, file)
     setError(null)
     if (!content) {
       setError("Choose a student first.")
@@ -407,7 +410,7 @@ export function ReportsPage({ role }: { role: RoleId }) {
               </LocalBanner>
             ) : null}
           </div>
-          {error ? <LocalBanner variant="error" title="No PDF was made">{error}</LocalBanner> : null}
+          {error ? <LocalBanner variant="error" title="No PDF was made" retry={{ label: "Try the PDF again", onClick: () => lastDownload.current?.() }}>{error}</LocalBanner> : null}
           <div className="flex flex-wrap items-end gap-4">
             <Button type="button" variant="default" size="lg" className={BTN} disabled={hm.rows.length === 0} data-download="cohort" onClick={() => download(cohortReportContent(s, f, new Date().toISOString()), `cohort-skills-report-${fileSlug(s.course.code, s.course.term)}.pdf`)}>
               Download cohort PDF

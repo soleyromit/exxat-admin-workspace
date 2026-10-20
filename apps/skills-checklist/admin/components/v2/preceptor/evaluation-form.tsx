@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -46,7 +47,7 @@ export function PreceptorEvaluation() {
   // The form unmounts the moment the request completes, so the result of this sitting lives here.
   const [done, setDone] = React.useState<{ requestId: string; result: PassResult } | null>(null)
 
-  if (!hydrated && requestId) return <Frame title="Opening the request"><p className="text-sm text-muted-foreground" role="status">Opening the request</p></Frame>
+  if (!hydrated && requestId) return <Frame title="Opening the request"><LoadingBlocks label="Opening the request" /></Frame>
   if (!requestId) return <Frame title="Requests waiting for you" subtitle="Each one opens from the link or QR code the student sends. You do not need an account."><Waiting personId={person?.id ?? IDS.delgado} s={s} asId={asId} /></Frame>
 
   const access = requestAccess(s, requestId, asId)

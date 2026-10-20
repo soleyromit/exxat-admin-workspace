@@ -117,7 +117,7 @@ function ItemBody({ s, item, role, back, onDecided }: { s: V2State; item: QueueI
       <div className="flex max-w-5xl flex-col gap-6" data-review-item={item.key}>
         <div role="status" aria-live="polite">
           {msg ? (
-            <LocalBanner variant="error" title="Not saved" data-item-message>
+            <LocalBanner variant="error" title="Not saved" retry={{ label: "Approve again", onClick: approve }} data-item-message>
               {msg}
             </LocalBanner>
           ) : null}

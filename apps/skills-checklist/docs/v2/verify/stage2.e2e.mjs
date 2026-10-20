@@ -9,6 +9,7 @@
 // conflict -> resolve -> state in the store, audit log and counters on other pages -> Reset demo restores.
 // Each check prints PASS or FAIL with what it saw. Exit code 1 on any FAIL. Playwright is resolved from tools/visual-check.
 
+import os from 'node:os'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -402,7 +403,9 @@ try {
 } catch (e) {
   failures++
   console.log(`FAIL  flow aborted: ${String(e?.message ?? e).split('\n').slice(0, 3).join(' | ')}`)
-  await page.screenshot({ path: path.resolve(HERE, '../screenshots/stage2-e2e-failure.png') }).catch(() => {})
+  // Failure shots stay out of docs/v2/screenshots, which holds only reviewed evidence.
+  await page.screenshot({ path: path.join(os.tmpdir(), 'stage2-e2e-failure.png') }).catch(() => {})
+  console.log(`(failure screenshot: ${path.join(os.tmpdir(), 'stage2-e2e-failure.png')})`)
 }
 
 await browser.close()

@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -56,6 +57,7 @@ export function LabGridPage() {
   const [cells, setCells] = React.useState<Record<string, Outcome | null>>({})
   const [confirm, setConfirm] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [saveFailed, setSaveFailed] = React.useState(false)
   const [saved, setSaved] = React.useState<string | null>(null)
   const [announce, setAnnounce] = React.useState("")
   const savedRef = React.useRef<HTMLDivElement>(null)
@@ -73,7 +75,7 @@ export function LabGridPage() {
   const nameOf = (id: string) => s.people.find((p) => p.id === id)?.name ?? "Unknown person"
   const heldForApproval = skills.filter((k) => k.config?.approvalRequired).map((k) => k.name)
 
-  if (!hydrated && students.length === 0) return <PageFrame title="Record a lab session"><p role="status" className="text-sm text-muted-foreground">Opening the session</p></PageFrame>
+  if (!hydrated && students.length === 0) return <PageFrame title="Record a lab session"><LoadingBlocks label="Opening the session" rows={4} /></PageFrame>
 
   const press = (studentId: string, skillId: string) => {
     const k = cellKey(studentId, skillId)
@@ -112,6 +114,7 @@ export function LabGridPage() {
 
   const openConfirm = () => {
     setError(null)
+    setSaveFailed(false)
     if (counts.results === 0) {
       setError("Record at least one result before you save. Press a cell to set Met, Not met or Not yet, or mark a student absent.")
       return
@@ -120,10 +123,13 @@ export function LabGridPage() {
   }
 
   const save = () => {
+    setError(null)
+    setSaveFailed(false)
     const r = saveLabBatch(store.getSnapshot(), input, actorId, new Date().toISOString())
     setConfirm(false)
     if (!r.ok) {
       setError(r.error)
+      setSaveFailed(true)
       return
     }
     store.update(() => r.state)
@@ -257,7 +263,7 @@ export function LabGridPage() {
               {setting === "lab" ? <p className="text-muted-foreground">A Met in the lab adds a lab check-off for skills that ask for one.</p> : <p className="text-muted-foreground">Simulation results count only up to the share each skill allows.</p>}
             </CardContent>
           </Card>
-          {error ? <LocalBanner variant="error" title="The session was not saved" data-lab-error>{error}</LocalBanner> : null}
+          {error ? <LocalBanner variant="error" title="The session was not saved" retry={saveFailed ? { label: "Save the session again", onClick: save } : undefined} data-lab-error>{error}</LocalBanner> : null}
           <div>
             <Button type="button" variant="default" size="lg" className={BTN} disabled={!!blockReason || counts.results === 0} data-lab-save onClick={openConfirm}>
               {`Save ${setting === "lab" ? "lab" : "simulation"} session for ${students.length - counts.absent} ${plural(students.length - counts.absent, "student", "students")}`}

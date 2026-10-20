@@ -18,7 +18,7 @@ import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { QrCode } from "@/components/v2/student/qr-code"
 import { ReturnedPanel } from "@/components/v2/student/returned-panel"
 import { SyncChip } from "@/components/v2/student/sync-chip"
-import { Announce, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
+import { Announce, BANNER_TOUCH, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
 import { createRequest, evaluatorChoices, METHOD_WORD, PHOTO_MAX_KB, requestPath, requestsOf, requestWaitText, STUDENT_ID } from "@/lib/v2/student"
 import { syncBlock, syncStateOf } from "@/lib/v2/sync"
@@ -151,7 +151,7 @@ export function RequestSignoff() {
         </LocalBanner>
       ) : null}
       {error ? (
-        <LocalBanner variant="error" title="Not sent" data-request-error>
+        <LocalBanner className={BANNER_TOUCH} variant="error" title="Not sent" retry={{ label: "Send the request again", onClick: () => void create() }} data-request-error>
           {error}
         </LocalBanner>
       ) : null}

@@ -136,7 +136,7 @@ function StudentView({ s, e }: { s: V2State; e: Evaluation }) {
 function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) {
   const { actorId, run } = useStaff(role)
   const [open, setOpen] = React.useState(false)
-  const [msg, setMsg] = React.useState<{ kind: "success" | "error"; text: string } | null>(null)
+  const [msg, setMsg] = React.useState<{ kind: "success" | "error"; text: string; retry?: { label: string; run: () => void } } | null>(null)
   const skill = s.skills.find((k) => k.id === e.skillId)
   const student = s.people.find((p) => p.id === e.studentId)?.name ?? "Unknown person"
   const concerns = concernsFor(s, role).filter((c) => c.evaluationId === e.id)
@@ -152,7 +152,7 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
       <div className="flex max-w-3xl flex-col gap-4" data-evaluation-page>
         <div className="flex flex-wrap gap-2">
           {reopened ? (
-            <Button type="button" variant="default" size="lg" onClick={() => { const r = run((st, a, at) => confirmVersion(st, e.id, a, at)); setMsg(r.ok ? { kind: "success", text: `Version ${e.currentVersion} confirmed as final.${r.planOpened ? " A remediation plan was opened." : ""}` } : { kind: "error", text: r.error }) }}>
+            <Button type="button" variant="default" size="lg" onClick={function confirmIt() { const r = run((st, a, at) => confirmVersion(st, e.id, a, at)); setMsg(r.ok ? { kind: "success", text: `Version ${e.currentVersion} confirmed as final.${r.planOpened ? " A remediation plan was opened." : ""}` } : { kind: "error", text: r.error, retry: { label: "Confirm the version again", run: confirmIt } }) }}>
               {`Confirm version ${e.currentVersion} as final`}
             </Button>
           ) : null}
@@ -164,7 +164,7 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
         </div>
         <div role="status" aria-live="polite">
           {msg ? (
-            <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Done" : "Not saved"} data-staff-message>
+            <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Done" : "Not saved"} retry={msg.kind === "error" && msg.retry ? { label: msg.retry.label, onClick: msg.retry.run } : undefined} data-staff-message>
               {msg.text}
             </LocalBanner>
           ) : null}
@@ -204,7 +204,7 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
           </Button>
         ) : e.outcome === "not-met" && e.status !== "reopened" ? (
           <div>
-            <Button type="button" variant="outline" size="lg" className={BTN} onClick={() => { const r = run((st, a, at) => openPlanByHand(st, e.id, a, at)); setMsg(r.ok ? { kind: "success", text: "A remediation plan was opened. The student can see it." } : { kind: "error", text: r.error }) }}>
+            <Button type="button" variant="outline" size="lg" className={BTN} onClick={function openIt() { const r = run((st, a, at) => openPlanByHand(st, e.id, a, at)); setMsg(r.ok ? { kind: "success", text: "A remediation plan was opened. The student can see it." } : { kind: "error", text: r.error, retry: { label: "Open the plan again", run: openIt } }) }}>
               Open a remediation plan
             </Button>
           </div>

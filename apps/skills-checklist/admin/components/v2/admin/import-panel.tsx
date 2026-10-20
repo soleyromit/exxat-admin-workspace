@@ -44,7 +44,9 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
   const [editing, setEditing] = React.useState<ProposedSkill | null>(null)
   const [createError, setCreateError] = React.useState<string | null>(null)
 
+  const lastFile = React.useRef<File | null>(null)
   const read = async (file: File) => {
+    lastFile.current = file
     setError(null)
     setCreateError(null)
     setPhase("reading")
@@ -128,7 +130,7 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
             </p>
           ) : null}
           {error ? (
-            <LocalBanner variant="error" title="The file could not be read" dismissible onDismiss={() => setError(null)}>
+            <LocalBanner variant="error" title="The file could not be read" retry={lastFile.current ? { label: "Read the file again", onClick: () => void read(lastFile.current as File) } : undefined} dismissible onDismiss={() => setError(null)}>
               {error}
             </LocalBanner>
           ) : null}
@@ -226,7 +228,7 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
             </Card>
           ) : null}
           {createError ? (
-            <LocalBanner variant="error" title="Skills were not created" dismissible onDismiss={() => setCreateError(null)}>
+            <LocalBanner variant="error" title="Skills were not created" retry={{ label: "Create the skills again", onClick: create }} dismissible onDismiss={() => setCreateError(null)}>
               {createError}
             </LocalBanner>
           ) : null}

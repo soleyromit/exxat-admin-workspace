@@ -36,7 +36,9 @@ export function MapCoursesPage() {
   const levelOf = (k: Skill): LevelValue => state.mappings.find((m) => m.courseId === state.course.id && m.skillId === k.id)?.level ?? "none"
   const warnedIds = new Set(warnings.map((w) => w.skillId).filter(Boolean))
 
+  const lastChange = React.useRef<(() => void) | null>(null)
   const change = (k: Skill, value: LevelValue) => {
+    lastChange.current = () => change(k, value)
     setError(null)
     const r = run((s, at) => setMapping(s, k.id, value === "none" ? null : value, ADMIN_ID, at))
     if (!r.ok) {
@@ -114,7 +116,7 @@ export function MapCoursesPage() {
           </div>
         </div>
         {error ? (
-          <LocalBanner variant="error" title="The mapping was not saved" dismissible onDismiss={() => setError(null)}>
+          <LocalBanner variant="error" title="The mapping was not saved" retry={{ label: "Save the mapping again", onClick: () => lastChange.current?.() }} dismissible onDismiss={() => setError(null)}>
             {error}
           </LocalBanner>
         ) : null}

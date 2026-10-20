@@ -72,13 +72,15 @@ const btn = (page, name) => page.getByRole('button', { name })
 
 // ---- Stage 2 helpers: student states. The store only reaches localStorage after its first write, so `persist` makes one harmless write
 // (Scenario menu, Phone is offline, twice) and then `mutate` edits the saved state through a function body that receives it as `s`.
+/** Waits until React has hydrated every button on the page. The server HTML shows the page before it responds, so an early click can do nothing and a state that needs a click then times out. */
+const hydrated = (p) => p.waitForFunction(() => { const bs = [...document.querySelectorAll('button')]; return bs.length > 0 && bs.every((b) => Object.keys(b).some((k) => k.startsWith('__reactProps$'))) }, null, { timeout: 20000 }).catch(() => {})
 const SCENARIO = (p) => p.getByRole('button', { name: 'Scenario' })
 async function demoToggle(p, label) { await SCENARIO(p).click(); await p.getByRole('menuitemcheckbox', { name: label }).click(); await p.waitForTimeout(250) }
 async function persist(p) { await demoToggle(p, 'Phone is offline'); await demoToggle(p, 'Phone is offline') }
-async function mutate(p, body) { await p.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); new Function('s', src)(env.state); localStorage.setItem(k, JSON.stringify(env)) }, ['skills-checklist:v2:store', body]); await p.reload({ waitUntil: 'load' }); await p.waitForSelector('h1'); await p.waitForTimeout(900) }
+async function mutate(p, body) { await p.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); new Function('s', src)(env.state); localStorage.setItem(k, JSON.stringify(env)) }, ['skills-checklist:v2:store', body]); await p.reload({ waitUntil: 'load' }); await p.waitForSelector('h1'); await hydrated(p); await p.waitForTimeout(900) }
 const publishIv = (p) => mutate(p, "s.skills.find(k => k.id === 'sk-iv-cath').published = true")
 const lockIv = (p) => mutate(p, "const k = s.skills.find(k => k.id === 'sk-iv-cath'); k.published = true; k.config.prerequisites.practiceTrials = 5")
-const goto = async (p, route) => { await p.goto(new URL(route, p.url()).toString(), { waitUntil: 'load' }); await p.waitForSelector('h1'); await p.waitForTimeout(800) }
+const goto = async (p, route) => { await p.goto(new URL(route, p.url()).toString(), { waitUntil: 'load' }); await p.waitForSelector('h1'); await hydrated(p); await p.waitForTimeout(800) }
 const clickLabel = (p, text) => p.getByText(text, { exact: true }).first().click()
 /** Logs Oral medication administration and Sterile dressing change quickly (both are in use on the seed). */
 async function logTwo(p) {
@@ -378,6 +380,7 @@ async function capture(route, vp, state) {
     entry.status = resp?.status() ?? null
     await page.addStyleTag({ content: FREEZE })
     await page.waitForSelector('h1', { timeout: 20000 })
+    await hydrated(page)
     await page.waitForTimeout(1200)
     if (state) { await state.setup(page); await page.waitForTimeout(500) }
     const file = path.join(OUT, `${slug(route)}${state ? '--' + state.name : ''}-${vp.name}.png`)

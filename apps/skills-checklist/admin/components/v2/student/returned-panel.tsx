@@ -5,7 +5,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
-import { BTN, fmtDate, useStudentRun } from "@/components/v2/student/use-student"
+import { BANNER_TOUCH, BTN, fmtDate, useStudentRun } from "@/components/v2/student/use-student"
 import { evaluatorOf, lastReturn, NOTE_MAX, resendSubmission, returnNextStep } from "@/lib/v2/queue"
 import { PHOTO_MAX_KB, STUDENT_ID } from "@/lib/v2/student"
 import type { Submission, V2State } from "@/lib/v2/types"
@@ -57,7 +57,7 @@ export function ReturnedPanel({ s, x }: { s: V2State; x: Submission }) {
       </Field>
       <div role="alert">
         {error ? (
-          <LocalBanner variant="error" title="Not sent" data-resend-error>
+          <LocalBanner className={BANNER_TOUCH} variant="error" title="Not sent" retry={{ label: "Send the correction again", onClick: send }} data-resend-error>
             {error}
           </LocalBanner>
         ) : null}

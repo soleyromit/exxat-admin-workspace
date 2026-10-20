@@ -101,6 +101,7 @@ export function StudentHome() {
       </Block>
 
       <Block id="optional" title={`Optional (${w.optional.length})`} description="Not required. More evidence still counts toward your record.">
+        {w.optional.length === 0 ? <p className="text-sm text-muted-foreground" data-optional-empty>{`${s.course.code} has no optional skills for you yet.`}</p> : null}
         <ul className="flex flex-col gap-3">
           {w.optional.map((i) => (
             <li key={i.skill.id}>

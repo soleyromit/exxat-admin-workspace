@@ -142,7 +142,7 @@ function StudentPlan({ s, plan }: { s: V2State; plan: Remediation }) {
 
 function StaffPlan({ s, plan, role }: { s: V2State; plan: Remediation; role: RoleId }) {
   const { run } = useStaff(role)
-  const [msg, setMsg] = React.useState<{ kind: "success" | "error"; text: string } | null>(null)
+  const [msg, setMsg] = React.useState<{ kind: "success" | "error"; text: string; retry?: { label: string; run: () => void } } | null>(null)
   const [closing, setClosing] = React.useState(false)
   const skill = s.skills.find((k) => k.id === plan.skillId)
   const done = plan.steps.filter((x) => x.done).length
@@ -162,7 +162,7 @@ function StaffPlan({ s, plan, role }: { s: V2State; plan: Remediation; role: Rol
         </div>
         <div role="status" aria-live="polite">
           {msg ? (
-            <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Saved" : "Not saved"} data-staff-message>
+            <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Saved" : "Not saved"} retry={msg.kind === "error" && msg.retry ? { label: msg.retry.label, onClick: msg.retry.run } : undefined} data-staff-message>
               {msg.text}
             </LocalBanner>
           ) : null}
@@ -170,7 +170,7 @@ function StaffPlan({ s, plan, role }: { s: V2State; plan: Remediation; role: Rol
         <PlanHead s={s} plan={plan} staff />
         <section aria-labelledby="steps-h" className="flex flex-col gap-3">
           <h2 id="steps-h" className="text-base font-semibold">{`Steps (${done} of ${plan.steps.length} done)`}</h2>
-          <StepList plan={plan} staff s={s} onToggle={(i, d) => { const r = run((st, a, at) => setStepDone(st, plan.id, i, d, a, at)); setMsg(r.ok ? { kind: "success", text: d ? "Step marked done." : "Step marked not done." } : { kind: "error", text: r.error }) }} />
+          <StepList plan={plan} staff s={s} onToggle={function toggle(i: number, d: boolean) { const r = run((st, a, at) => setStepDone(st, plan.id, i, d, a, at)); setMsg(r.ok ? { kind: "success", text: d ? "Step marked done." : "Step marked not done." } : { kind: "error", text: r.error, retry: { label: "Save the step again", run: () => toggle(i, d) } }) }} />
         </section>
         <Attempts s={s} plan={plan} />
         <div>

@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radi
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { StudentPage } from "@/components/v2/student/student-frame"
 import { SyncChip } from "@/components/v2/student/sync-chip"
-import { Announce, TOUCH, useStudentRun, useStudentUpdate, BTN } from "@/components/v2/student/use-student"
+import { Announce, BANNER_TOUCH, TOUCH, useStudentRun, useStudentUpdate, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
 import { courseWork, logSkills, STUDENT_ID, openToLog, prerequisiteStatus, ratingKind, ratingOptions, saveLogDraft, STATUS_LABEL, whereOptions, type CourseItem } from "@/lib/v2/student"
 import { syncStateOf } from "@/lib/v2/sync"
@@ -157,7 +157,7 @@ export function LogFlow() {
         {STEP_NAME[draft.step - 1]}
       </h2>
       {saveError ? (
-        <LocalBanner variant="error" title="Not saved">
+        <LocalBanner className={BANNER_TOUCH} variant="error" title="Not saved" retry={{ label: "Save again", onClick: save }}>
           {saveError}
         </LocalBanner>
       ) : null}
@@ -284,7 +284,11 @@ function StepPick({ rows, draft, error, onToggle, onNext }: { rows: Row[]; draft
   const groups: Array<Row["group"]> = ["Mandatory", "Optional", "Other skills"]
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">Pick one or more skills you performed. You can log several together.</p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground" data-pick-empty>No skills are open to log yet. Skills appear here once your program publishes them.</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">Pick one or more skills you performed. You can log several together.</p>
+      )}
       {groups.map((g) => {
         const list = rows.filter((r) => r.group === g)
         if (!list.length) return null
@@ -382,6 +386,9 @@ function Saved({ ids, status, onAgain, headingRef }: { ids: string[]; status: st
   return (
     <StudentPage title="Log skills" subtitle="Saved on this phone first.">
       <Announce message={status} />
+      <LocalBanner variant="success" title="Saved on this phone" data-saved-banner>
+        {status}
+      </LocalBanner>
       <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none" data-saved>
         {`${entries.length} ${entries.length === 1 ? "entry" : "entries"} saved`}
       </h2>

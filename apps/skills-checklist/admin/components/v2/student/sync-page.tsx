@@ -10,13 +10,13 @@ import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { DemoControls } from "@/components/v2/student/demo-controls"
 import { SyncChip } from "@/components/v2/student/sync-chip"
-import { Announce, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
+import { Announce, BANNER_TOUCH, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
 import { flushQueue, resolutionAllowed, resolveConflict, retryItem, syncBlock, syncSummary, type FlushResult, type Resolution } from "@/lib/v2/sync"
 import { STUDENT_ID } from "@/lib/v2/student"
 import type { SyncItem } from "@/lib/v2/types"
 
-type Msg = { variant: "success" | "info" | "error" | "warning"; title: string; text: string }
+type Msg = { variant: "success" | "info" | "error" | "warning"; title: string; text: string; retry?: boolean }
 
 const ORDER: Record<SyncItem["state"], number> = { conflict: 0, failed: 1, queued: 2, synced: 3 }
 
@@ -24,7 +24,7 @@ function flushMessage(f: FlushResult): Msg {
   if (f.blocked) return { variant: "warning", title: f.blocked === "offline" ? "You are offline" : "You are signed out", text: f.blocked === "offline" ? "Nothing was sent. Your changes are saved on this phone and send when you are back online." : "Nothing was sent. Your changes are saved on this phone and send after you sign in." }
   if (f.attempted === 0) return { variant: "info", title: "Nothing waiting", text: "Everything is already saved and sent." }
   const bits = [f.synced ? `${f.synced} synced` : "", f.failed ? `${f.failed} failed` : "", f.conflicts ? `${f.conflicts} in conflict` : ""].filter(Boolean)
-  return { variant: f.failed ? "error" : f.conflicts ? "warning" : "success", title: f.failed ? "Some changes did not send" : f.conflicts ? "Sent, with a conflict" : "Sent", text: `${bits.join(", ")}.${f.failed ? " They are still saved on this phone. Try again." : ""}${f.conflicts ? " Open the conflict to choose which version to keep." : ""}` }
+  return { retry: f.failed > 0, variant: f.failed ? "error" : f.conflicts ? "warning" : "success", title: f.failed ? "Some changes did not send" : f.conflicts ? "Sent, with a conflict" : "Sent", text: `${bits.join(", ")}.${f.failed ? " They are still saved on this phone. Try again." : ""}${f.conflicts ? " Open the conflict to choose which version to keep." : ""}` }
 }
 
 /** Scenario step 7: connection status, the sync queue with retry one or all, the conflict screen and the demo controls. */
@@ -76,7 +76,7 @@ export function SyncPage() {
     <StudentPage title="Sync and offline" subtitle="Everything you log is saved on this phone first, then sent. Nothing waits for a signal.">
       <Announce message={msg ? `${msg.title}. ${msg.text}` : ""} />
       {msg ? (
-        <LocalBanner variant={msg.variant} title={msg.title} dismissible onDismiss={() => setMsg(null)} data-sync-message>
+        <LocalBanner className={BANNER_TOUCH} variant={msg.variant} title={msg.title} dismissible onDismiss={() => setMsg(null)} retry={msg.variant === "error" && msg.retry && !block ? { label: "Send failed changes again", onClick: () => send() } : undefined} data-sync-message>
           {msg.text}
         </LocalBanner>
       ) : null}

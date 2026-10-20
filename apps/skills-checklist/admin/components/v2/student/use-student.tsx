@@ -11,6 +11,8 @@ export const TOUCH = "min-h-(--control-height-touch) h-auto whitespace-normal"
 
 /** Same, for DS Buttons whose label can wrap onto two lines. */
 export const BTN = `${TOUCH} py-2`
+/** DS LocalBanner retry and action buttons are small on touch; this lifts them to the touch height without changing the DS component. */
+export const BANNER_TOUCH = "[&_button]:min-h-(--control-height-touch) [&_button]:px-3"
 
 /** Day, in UTC so server and client markup always agree. */
 export function fmtDate(iso: string): string {

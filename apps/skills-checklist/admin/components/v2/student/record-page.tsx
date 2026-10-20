@@ -8,7 +8,7 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { statusLabel, STATUS_TONE } from "@/components/v2/director/verification-pages"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
-import { BTN, fmtDate } from "@/components/v2/student/use-student"
+import { BANNER_TOUCH, BTN, fmtDate } from "@/components/v2/student/use-student"
 import { downloadBytes, fileSlug } from "@/lib/v2/download"
 import { signPdf } from "@/lib/v2/pdf"
 import { clrOf, recordContent, verifiedRecord } from "@/lib/v2/record"
@@ -25,13 +25,18 @@ export function RecordPage() {
   const r = verifiedRecord(s, STUDENT_ID)
   const [done, setDone] = React.useState<{ kind: "pdf" | "clr"; name: string; hash: string } | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [failed, setFailed] = React.useState<"pdf" | "clr">("pdf")
+  const [busy, setBusy] = React.useState<"pdf" | "clr" | null>(null)
   const tone = STATUS_TONE[r.status]
   const slug = fileSlug(r.student?.name ?? "student", `v${r.verification?.version ?? 0}`)
 
   const pdf = async () => {
+    if (busy) return
     setError(null)
+    setFailed("pdf")
     const c = recordContent(s, STUDENT_ID, new Date().toISOString())
     if (!c) return setError("Nothing can be shared yet.")
+    setBusy("pdf")
     try {
       const signed = await signPdf(c)
       const name = `verified-skills-record-${slug}.pdf`
@@ -39,16 +44,22 @@ export function RecordPage() {
       setDone({ kind: "pdf", name, hash: signed.hash })
     } catch {
       setError("The PDF could not be made in this browser. Try again in a current version of Chrome, Edge, Firefox or Safari.")
+    } finally {
+      setBusy(null)
     }
   }
 
   const clr = () => {
+    if (busy) return
     setError(null)
+    setFailed("clr")
     const doc = clrOf(s, STUDENT_ID, new Date().toISOString())
     if (!doc) return setError("Nothing can be shared yet.")
+    setBusy("clr")
     const name = `verified-skills-record-${slug}.clr.json`
     downloadBytes(name, "application/json", JSON.stringify(doc, null, 2))
     setDone({ kind: "clr", name, hash: "" })
+    setBusy(null)
   }
 
   return (
@@ -60,7 +71,7 @@ export function RecordPage() {
           </LocalBanner>
         ) : null}
       </div>
-      {error ? <LocalBanner variant="error" title="Nothing was downloaded">{error}</LocalBanner> : null}
+      {error ? <LocalBanner className={BANNER_TOUCH} variant="error" title="Nothing was downloaded" retry={{ label: failed === "pdf" ? "Try the PDF again" : "Try the CLR file again", onClick: () => (failed === "pdf" ? void pdf() : clr()) }}>{error}</LocalBanner> : null}
 
       <Card size="sm" data-record-status={r.status}>
         <CardContent className="flex flex-col gap-2 text-sm">
@@ -125,13 +136,13 @@ export function RecordPage() {
           <Block id="download" title="Download" description={`${r.included.reduce((n, k) => n + k.evaluations.length, 0)} ${plural(r.included.reduce((n, k) => n + k.evaluations.length, 0), "evaluation", "evaluations")} in ${r.included.length} ${plural(r.included.length, "skill", "skills")}.`}>
             <Card size="sm">
               <CardContent className="flex flex-col gap-2 text-sm">
-                <Button type="button" variant="default" size="lg" className={BTN} data-download-pdf onClick={pdf}>Download PDF</Button>
+                <Button type="button" variant="default" size="lg" className={BTN} data-download-pdf disabled={busy !== null} aria-busy={busy === "pdf" || undefined} onClick={pdf}>{busy === "pdf" ? "Making the PDF" : "Download PDF"}</Button>
                 <p className="text-muted-foreground">A signed PDF. Whoever receives it can check it has not changed. This prototype signs with a demo key, so the check shows the file is unchanged, not who made it.</p>
               </CardContent>
             </Card>
             <Card size="sm">
               <CardContent className="flex flex-col gap-2 text-sm">
-                <Button type="button" variant="outline" size="lg" className={BTN} data-download-clr onClick={clr}>Download CLR 2.0 file</Button>
+                <Button type="button" variant="outline" size="lg" className={BTN} data-download-clr disabled={busy !== null} aria-busy={busy === "clr" || undefined} onClick={clr}>Download CLR 2.0 file</Button>
                 <p className="text-muted-foreground">A JSON file in the 1EdTech Comprehensive Learner Record 2.0 shape, one achievement for each skill above. It is unsigned. A receiving system will not treat it as a verifiable credential until the program signs it.</p>
               </CardContent>
             </Card>
