@@ -102,7 +102,7 @@ try {
   const seedCounters = {}
   await open('/v2')
   seedCounters.withEvaluator = await counter('withEvaluator')
-  await open('/v2/reviewer/review-queue')
+  // Stage 4 replaced the placeholder at /v2/reviewer/review-queue with the real queue; the shared counter is still on the overview.
   seedCounters.queueWaiting = await counter('queueWaiting')
   check('seed: 1 request with an evaluator, 2 in the review queue', seedCounters.withEvaluator === 1 && seedCounters.queueWaiting === 2, seedCounters)
   await open('/v2/student')
@@ -252,7 +252,6 @@ try {
   step('5. Other roles see the new requests')
   await open('/v2')
   const we = await counter('withEvaluator')
-  await open('/v2/reviewer/review-queue')
   const qw = await counter('queueWaiting')
   check('requests with an evaluator rose by 3 (QR, handover, link)', we === seedCounters.withEvaluator + 3, we)
   check('requests in the review queue rose by 1 (paper form)', qw === seedCounters.queueWaiting + 1, qw)
@@ -397,7 +396,7 @@ try {
   await page.waitForSelector('h1')
   await page.waitForTimeout(800)
   s = await store()
-  check('log entries, requests and sync items are back to the seed', s.logEntries.length === 4 && mine(s).length === 1 && s.syncQueue.length === 3 && s.syncQueue.filter((i) => i.state === 'conflict').length === 1, { logs: s.logEntries.length, subs: mine(s).length, sync: s.syncQueue.length })
+  check('log entries, requests and sync items are back to the seed', s.logEntries.length === 5 && mine(s).length === 1 && s.syncQueue.length === 3 && s.syncQueue.filter((i) => i.state === 'conflict').length === 1, { logs: s.logEntries.length, subs: mine(s).length, sync: s.syncQueue.length })
   check('the phone is back online, signed in, no update pending, IV not in use again', !s.device.offline && !s.device.signedOut && !s.device.updatePending && s.skills.find((k) => k.id === IV).published === false)
   check('no page errors during the run', pageErrors.length === 0, pageErrors)
 } catch (e) {

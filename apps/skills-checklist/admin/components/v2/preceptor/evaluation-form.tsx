@@ -24,7 +24,7 @@ import {
 import { IDS } from "@/lib/v2/seed"
 import type { Outcome, Skill, Submission, V2State } from "@/lib/v2/types"
 
-const BTN = `${TOUCH} py-2`
+export const BTN = `${TOUCH} py-2`
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 const first = (name: string) => name.split(/\s+/)[0] ?? name
 
@@ -293,7 +293,7 @@ function FormBody({ s, x, evaluatorId, handover, onSubmitted }: { s: V2State; x:
   )
 }
 
-function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V2State; x: Submission; skill: Skill; r: SkillResponse; patch: (p: Partial<SkillResponse>) => void; issueFor: (f: string) => string | undefined; issuesFor: (f: string[]) => FieldIssue[] }) {
+export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V2State; x: Submission; skill: Skill; r: SkillResponse; patch: (p: Partial<SkillResponse>) => void; issueFor: (f: string) => string | undefined; issuesFor: (f: string[]) => FieldIssue[] }) {
   const c = skill.config
   const entry = studentContext(s, x, skill.id)
   const [open, setOpen] = React.useState(false)

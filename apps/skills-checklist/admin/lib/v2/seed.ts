@@ -240,19 +240,28 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
     reopened.versions.push({ version: 2, outcome: "not-yet", at: daysBefore(2), by: IDS.reviewer, reason: "Evaluator corrected the outcome after a documentation review." })
   }
   // Two more waiting for approval so the queue has depth.
-  for (const sid of ["stu-02", "stu-05"]) {
+  for (const sid of ["stu-05"]) {
     const e = out.find((x) => x.studentId === sid && x.status === "counted" && x.outcome === "met")
     if (e) e.status = "awaiting-approval"
   }
+  // Stage 4: Maya's blood glucose evaluation, waiting for approval, keeps the evaluator's words so the compare view has something to show.
+  const mayaWaiting = out.find((e) => e.id === "ev-maya-7")
+  if (mayaWaiting) mayaWaiting.versions[0].detail = { feedback: "Used the meter correctly and cleaned the site first. Wait for the full reading before you document it." }
+  // Stage 4: a request completed through a link and held for approval (sub-02), so the queue holds an item with a self-rating to compare.
+  const held = mkEval("ev-rq-1", "stu-02", ["sk-med-admin", "met", "clinical", 3, IDS.delgado, "awaiting-approval"])
+  held.submissionId = "sub-02"
+  held.clinicalSetting = "Inpatient"
+  held.versions[0].detail = { feedback: "Checked the five rights aloud and confirmed the allergy band before giving the dose." }
+  out.push(held)
   return { list: out, reopenedId: reopened ? reopened.id : "" }
 }
 
 function buildSubmissions(): Submission[] {
   return [
     { id: "sub-maya-1", studentId: IDS.maya, skillIds: [IDS.urinaryCath, "sk-med-admin"], method: "qr", status: "with-evaluator", assignedToId: IDS.delgado, createdAt: daysBefore(0), daysWaiting: 0, entryIds: ["log-maya-uc-1"], candidateIds: [IDS.delgado] },
-    { id: "sub-02", studentId: "stu-02", skillIds: ["sk-med-admin"], method: "link", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(3), daysWaiting: 3 },
-    { id: "sub-04", studentId: "stu-04", skillIds: ["sk-vitals", "sk-blood-glucose"], method: "photo", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(2), daysWaiting: 2 },
-    { id: "sub-03", studentId: "stu-03", skillIds: ["sk-sterile-dressing"], method: "link", status: "stalled", assignedToId: IDS.delgado, createdAt: daysBefore(9), daysWaiting: 9 },
+    { id: "sub-02", studentId: "stu-02", skillIds: ["sk-med-admin"], method: "link", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(3), daysWaiting: 3, entryIds: ["log-stu02-1"], candidateIds: [IDS.delgado], completedById: IDS.delgado, completedAt: daysBefore(3) },
+    { id: "sub-04", studentId: "stu-04", skillIds: ["sk-vitals", "sk-blood-glucose"], method: "photo", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(2), daysWaiting: 2, photo: { name: "signed-form-vitals-glucose.jpg", sizeKb: 842 } },
+    { id: "sub-03", studentId: "stu-03", skillIds: ["sk-sterile-dressing"], method: "link", status: "stalled", assignedToId: IDS.delgado, createdAt: daysBefore(9), daysWaiting: 9, candidateIds: [IDS.delgado] },
     { id: "sub-06", studentId: "stu-06", skillIds: ["sk-handoff"], method: "handover", status: "done", assignedToId: IDS.delgado, createdAt: daysBefore(15), daysWaiting: 0 },
   ]
 }
@@ -285,6 +294,8 @@ function buildLogEntries(): LogEntry[] {
       at: daysBefore(14),
       requestId: "sub-maya-1",
     },
+    // Stage 4: Jordan Okafor rated herself Not met on oral medication administration; the evaluator said Met (a difference to compare).
+    { ...base, id: "log-stu02-1", studentId: "stu-02", skillId: "sk-med-admin", batchId: "lb-seed-5", setting: "clinical" as const, clinicalSetting: "Inpatient", location: "Harbor General, 5 East", rating: "Not met", note: "I was nervous and checked the order twice.", at: daysBefore(4), requestId: "sub-02" },
   ]
 }
 
@@ -357,5 +368,6 @@ export function createSeed(): V2State {
     labCheckoffs: LAB_CHECKOFFS.map((c) => ({ ...c })),
     device: { offline: false, signedOut: false, updatePending: false, failNextSync: false },
     logDraft: null,
+    verifications: [],
   }
 }

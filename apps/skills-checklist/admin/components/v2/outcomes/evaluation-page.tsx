@@ -18,6 +18,7 @@ import { BTN } from "@/components/v2/student/use-student"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { canReopen, concernsFor, confirmVersion, evaluationById, openPlanByHand, OUTCOME_WORD, planOfEvaluation, reopenEvaluation } from "@/lib/v2/outcomes"
 import { STUDENT_ID } from "@/lib/v2/student"
+import { verifiedAt } from "@/lib/v2/verification"
 import type { Evaluation, Outcome, RoleId, V2State } from "@/lib/v2/types"
 
 const STATUS_TEXT: Record<Evaluation["status"], string> = {
@@ -55,6 +56,18 @@ function Facts({ s, e, staff }: { s: V2State; e: Evaluation; staff: boolean }) {
           <dd>{fmtDay(e.date)}</dd>
           <dt className="text-muted-foreground">Setting</dt>
           <dd>{e.setting === "clinical" ? `Clinical, ${e.clinicalSetting ?? "setting not recorded"}` : e.setting === "lab" ? "Lab" : "Simulation"}</dd>
+          {e.source === "paper-form" ? (
+            <>
+              <dt className="text-muted-foreground">Source</dt>
+              <dd data-source="paper-form">{`Paper form, entered by ${name(e.enteredById ?? "")} for ${name(e.evaluatorId)}`}</dd>
+            </>
+          ) : null}
+          {e.review ? (
+            <>
+              <dt className="text-muted-foreground">{e.review.decision === "approved" ? "Approved" : "Returned"}</dt>
+              <dd data-review-decision>{`${name(e.review.byId)}, ${fmtDay(e.review.at)}${e.review.note && staff ? `. Note: ${e.review.note}` : e.review.decision === "returned" ? `. Reason: ${e.review.note}` : ""}`}</dd>
+            </>
+          ) : null}
           <dt className="text-muted-foreground">Outcome</dt>
           <dd data-current-outcome>
             <StatusBadge label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} tone={t.tone} icon={t.icon} size="sm" />
@@ -129,6 +142,7 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
   const concerns = concernsFor(s, role).filter((c) => c.evaluationId === e.id)
   const plan = planOfEvaluation(s, e.id) ?? s.remediations.find((r) => r.studentId === e.studentId && r.skillId === e.skillId && r.status !== "closed")
   const reopened = e.status === "reopened"
+  const verified = verifiedAt(s, e)
   const back = role === "admin" ? "/v2/admin/outcomes" : "/v2/reviewer/outcome-remediation"
   return (
     <PageFrame
@@ -156,6 +170,11 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
           ) : null}
         </div>
         <Facts s={s} e={e} staff />
+        {verified ? (
+          <LocalBanner variant="info" title={`Part of a verified record (version ${verified.version})`} data-verified-banner>
+            {`${student}'s record was verified by ${s.people.find((p) => p.id === verified.byId)?.name ?? "the program director"} on ${fmtDay(verified.at)}. Reopening adds a version here and leaves that verification as it is. The record then reads Changed since verified until the director verifies again.`}
+          </LocalBanner>
+        ) : null}
         {reopened ? (
           <LocalBanner variant="info" title={`Version ${e.currentVersion} is waiting to be confirmed`}>
             This evaluation does not count while it is reopened. Confirm the newest version to make it count again.

@@ -1,4 +1,5 @@
 import type { V2State } from "./types"
+import { verificationRows } from "./verification"
 
 export interface CounterDef {
   id: string
@@ -22,6 +23,7 @@ export const COUNTERS: CounterDef[] = [
   { id: "versions", label: "Evaluation versions on record", value: (s) => s.evaluations.reduce((n, e) => n + e.versions.length, 0) },
   { id: "queueWaiting", label: "Requests in the review queue", value: (s) => s.submissions.filter((x) => x.status === "awaiting-review").length },
   { id: "stalled", label: "Stalled requests", value: (s) => s.submissions.filter((x) => x.status === "stalled").length },
+  { id: "returned", label: "Requests returned to students", value: (s) => s.submissions.filter((x) => x.status === "returned").length },
   { id: "withEvaluator", label: "Requests with an evaluator", value: (s) => s.submissions.filter((x) => x.status === "with-evaluator").length },
   { id: "syncQueued", label: "Changes queued offline", value: (s) => s.syncQueue.filter((x) => x.state === "queued").length },
   { id: "syncSynced", label: "Changes synced", value: (s) => s.syncQueue.filter((x) => x.state === "synced").length },
@@ -29,6 +31,7 @@ export const COUNTERS: CounterDef[] = [
   { id: "syncConflict", label: "Sync conflicts", value: (s) => s.syncQueue.filter((x) => x.state === "conflict").length },
   { id: "concerns", label: "Confidential concerns (faculty only)", value: (s) => s.concerns.length },
   { id: "remediations", label: "Open remediation plans", value: (s) => s.remediations.filter((r) => r.status !== "closed").length },
+  { id: "verified", label: "Student records verified", value: (s) => verificationRows(s).filter((r) => r.status === "verified").length },
   { id: "audit", label: "Audit log entries", value: (s) => s.audit.length },
   { id: "reviewed", label: "Scenario steps reviewed", value: (s) => Object.keys(s.stepsReviewed).length },
 ]

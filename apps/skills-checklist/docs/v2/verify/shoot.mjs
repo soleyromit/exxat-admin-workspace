@@ -46,7 +46,10 @@ for (let i = 0; i < args.length; i++) {
 if (!routes.length) routes.push('/v2', '/v2/admin', '/v2/student', '/v2/preceptor', '/v2/reviewer', '/v2/director', '/v2/admin/starter-library', '/v2/admin/configure-skill', '/v2/admin/validate-publish', '/v2/admin/map-courses', '/v2/student/pick-and-rate', '/v2/student/request-signoff', '/v2/student/offline-sync', '/v2/student/history', '/v2/reviewer/review-queue',
   // Stage 3
   '/v2/preceptor/preceptor-evaluation', PRE, PRE + '&as=lab-whitmore', PRE + '&as=pre-castillo', '/v2/preceptor/preceptor-evaluation?request=sub-nope', '/v2/preceptor/preceptor-evaluation?request=sub-06',
-  '/v2/reviewer/outcome-remediation', '/v2/admin/outcomes', '/v2/admin/evaluation/ev-3-1', '/v2/reviewer/evaluation/ev-7-2', '/v2/student/evaluation/ev-maya-1', '/v2/admin/remediation/rem-1', '/v2/student/remediation/rem-1')
+  '/v2/reviewer/outcome-remediation', '/v2/admin/outcomes', '/v2/admin/evaluation/ev-3-1', '/v2/reviewer/evaluation/ev-7-2', '/v2/student/evaluation/ev-maya-1', '/v2/admin/remediation/rem-1', '/v2/student/remediation/rem-1',
+  // Stage 4
+  '/v2/admin/review-queue', '/v2/reviewer/review-queue/sub-02', '/v2/reviewer/review-queue/sub-04', '/v2/reviewer/review-queue/ev-maya-7', '/v2/admin/review-queue/sub-nope',
+  '/v2/director/director-verification', '/v2/director/verification/stu-maya', '/v2/director/verification/stu-07', '/v2/admin/verification', '/v2/admin/verification/stu-07')
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -95,9 +98,28 @@ async function fillPre(p) {
   await p.locator('#fb-sk-med-admin').fill('Check the five rights again before you open the packet.')
   await p.locator('#attest').click()
 }
+
+// ---- Stage 4 helpers. Staff pages have no demo toggle to force the first store write, so `stage` goes through the student home, writes once,
+// edits the saved state, and the state then opens the route it belongs to.
+const stage = async (p, route, body) => { await goto(p, '/v2/student'); await persist(p); await mutate(p, body); await goto(p, route) }
+const RETURNED_MAYA = "s.submissions.push({id:'sub-maya-9',studentId:'stu-maya',skillIds:['sk-sterile-dressing','sk-ng-tube'],method:'photo',status:'returned',assignedToId:'rev-haddad',createdAt:new Date().toISOString(),daysWaiting:0,candidateIds:['pre-delgado'],photo:{name:'signed-form.jpg',sizeKb:420},returns:[{at:new Date().toISOString(),byId:'rev-haddad',reason:'The signature is cut off. Take the photo again with the whole page in view.',revision:1}]})"
+const VERIFIED_MAYA = "s.verifications=[{id:'vf-1',studentId:'stu-maya',version:1,byId:'dir-brennan',at:new Date().toISOString(),note:'',evidence:s.evaluations.filter(e=>e.studentId==='stu-maya'&&e.status==='counted').map(e=>({evaluationId:e.id,skillId:e.skillId,version:e.currentVersion})),skills:[]}]"
+const CHANGED_MAYA = VERIFIED_MAYA + "; s.evaluations.find(e=>e.studentId==='stu-maya'&&e.status==='counted').currentVersion = 2"
+const ALL_APPROVED = "s.evaluations.forEach(e=>{if(e.status==='awaiting-approval')e.status='counted'}); s.submissions.forEach(x=>{if(x.status==='awaiting-review')x.status='done'})"
+const pickRow = (p, label) => p.getByRole('checkbox', { name: new RegExp(`^Select ${label}`) }).check()
+const bulkOpen = async (p) => { await pickRow(p, 'Maya Ferreira, Point-of-care blood glucose'); await pickRow(p, 'Jordan Okafor'); await pickRow(p, 'Tomas Alvarez'); await btn(p, 'Approve 3 submissions').click(); await p.locator('[data-bulk-dialog]').waitFor() }
+const tab = (p, name) => p.getByRole('tab', { name }).click()
+const reassignOpen = async (p) => { await tab(p, /^Stalled/); await p.locator('[data-reassign="sub-03"]').click(); await p.locator('[data-reassign-dialog]').waitFor() }
+const paperFill = async (p) => {
+  await p.getByRole('radiogroup', { name: 'Who signed the paper form' }).locator('label', { hasText: 'J. Delgado, RN' }).click()
+  await p.getByRole('radiogroup', { name: 'Clinical setting on the form' }).getByRole('radio', { name: 'Inpatient', exact: true }).click()
+  await p.getByRole('radiogroup', { name: 'Outcome for Vital signs and early warning score' }).getByRole('radio', { name: 'Met', exact: true }).click()
+  await p.getByRole('radiogroup', { name: 'Outcome for Point-of-care blood glucose' }).getByRole('radio', { name: 'Met', exact: true }).click()
+}
 const STATES = {
 
   '/v2/student': [
+    { name: 'returned-next-action', setup: async (p) => { await persist(p); await mutate(p, RETURNED_MAYA) }, expect: ['See what to fix'] },
     { name: 'scenario-menu', menu: 'menu', setup: async (p) => { await SCENARIO(p).click(); await p.getByRole('menu').waitFor() }, expect: ['Phone is offline'] },
     { name: 'offline-banner', setup: async (p) => { await demoToggle(p, 'Phone is offline') }, expect: ['Sync details'] },
     { name: 'signed-out-update-banners', setup: async (p) => { await demoToggle(p, 'Phone is signed out'); await demoToggle(p, 'App update is pending') }, expect: ['Sign in', 'Install update'] },
@@ -114,6 +136,8 @@ const STATES = {
     { name: 'saved-queued-offline', setup: async (p) => { await demoToggle(p, 'Phone is offline'); await p.locator('#pick-sk-med-admin').click(); await btn(p, 'Continue to setting').click(); await btn(p, 'Continue to rating').click(); await p.getByRole('radiogroup', { name: 'Your rating for Oral medication administration' }).getByRole('radio', { name: 'Met', exact: true }).click(); await btn(p, 'Review').click(); await btn(p, 'Save 1 entry').click(); await p.locator('[data-saved]').waitFor() }, expect: ['Ask for sign-off'] },
   ],
   '/v2/student/request-signoff': [
+    { name: 'returned-panel', setup: async (p) => { await stage(p, '/v2/student/request-signoff', RETURNED_MAYA); await reveal(p, '[data-returned-panel]') }, expect: ['Choose a new photo', 'Send the corrected photo for review'] },
+    { name: 'returned-panel-error', setup: async (p) => { await stage(p, '/v2/student/request-signoff', RETURNED_MAYA); await p.locator('[data-resend]').click(); await p.getByText('Add a new photo of the signed form before you send it again.').waitFor() }, expect: ['Send the corrected photo for review'] },
     { name: 'ready-to-send', setup: async (p) => { await logTwo(p); await toRequests(p) }, expect: ['Show QR code for'] },
     { name: 'unqualified-disabled', setup: async (p) => { await logTwo(p); await toRequests(p); await publishIv(p); await reveal(p, '#eval-pre-delgado') }, expect: ['Show QR code for'] },
     { name: 'qr-dialog', setup: async (p) => { await logTwo(p); await toRequests(p); await p.locator('#eval-pre-delgado').click(); await btn(p, 'Create request and show QR code').click(); await p.locator('[data-qr-dialog]').waitFor() }, expect: ['Copy link', 'Open what the evaluator sees', 'Done'] },
@@ -166,6 +190,9 @@ const STATES = {
   ],
 
   '/v2/student/history': [
+    { name: 'returned-attempt', setup: async (p) => { await stage(p, '/v2/student/history', RETURNED_MAYA); await reveal(p, '[data-return-reason]') }, expect: ['See details'] },
+    { name: 'verified-record', setup: async (p) => { await stage(p, '/v2/student/history', VERIFIED_MAYA) }, expect: ['See details'] },
+    { name: 'changed-since-verified', setup: async (p) => { await stage(p, '/v2/student/history', CHANGED_MAYA) }, expect: ['See details'] },
     { name: 'attempt-detail', setup: async (p) => { await p.getByRole('button', { name: /^See details of attempt 1 at Indwelling urinary catheter insertion/ }).click(); await p.getByRole('dialog').waitFor() }, expect: ['Close'] },
   ],
   '/v2/admin/starter-library': [
@@ -194,6 +221,38 @@ const STATES = {
     { name: 'level-menu-open', menu: true, setup: async (p) => { await p.getByRole('combobox', { name: 'Requirement for Nasogastric tube care' }).click(); await p.getByRole('listbox').waitFor() }, expect: ['Not mapped'] },
     { name: 'unconfigured-blocked', setup: async (p) => { await p.locator('#map-library').click(); await p.getByRole('option', { name: 'Radiography' }).click(); await p.getByText('Configure this skill').first().waitFor() }, expect: ['Configure Fluoroscopy room setup'] },
     { name: 'warnings-more', setup: async (p) => { await p.getByRole('combobox', { name: 'Requirement for Oral medication administration' }).click(); await p.getByRole('option', { name: 'Not mapped' }).click(); await p.getByRole('combobox', { name: 'Requirement for Vital signs and early warning score' }).click(); await p.getByRole('option', { name: 'Not mapped' }).click() }, expect: [] },
+  ],
+
+  // ---- Stage 4 states
+  '/v2/reviewer/review-queue': [
+    { name: 'stalled-tab', setup: async (p) => { await tab(p, /^Stalled/); await p.locator('[data-reassign="sub-03"]').waitFor() }, expect: ['Reassign request'] },
+    { name: 'returned-tab-empty', setup: async (p) => { await tab(p, /^Returned/); await p.locator('[data-empty="returned"]').waitFor() }, expect: [] },
+    { name: 'two-selected', setup: async (p) => { await pickRow(p, 'Jordan Okafor'); await pickRow(p, 'Tomas Alvarez'); await p.getByText('2 selected').waitFor() }, expect: ['Approve 2 submissions', 'Clear selection'] },
+    { name: 'bulk-confirm-blocked', setup: async (p) => { await bulkOpen(p) }, expect: ['Approve 2 of 3 submissions', 'Keep in queue'] },
+    { name: 'bulk-partial-result', setup: async (p) => { await bulkOpen(p); await p.getByRole('dialog').getByRole('button', { name: 'Approve 2 of 3 submissions' }).click(); await p.locator('[data-queue-message]').waitFor() }, expect: [] },
+    { name: 'reassign-dialog', setup: async (p) => { await reassignOpen(p) }, expect: ['Keep with J. Delgado, RN'] },
+    { name: 'reassign-chosen', setup: async (p) => { await reassignOpen(p); await p.getByRole('dialog').locator('label', { hasText: 'M. Castillo, RN' }).click() }, expect: ['Reassign to M. Castillo, RN'] },
+    { name: 'reassigned', setup: async (p) => { await reassignOpen(p); await p.getByRole('dialog').locator('label', { hasText: 'M. Castillo, RN' }).click(); await p.getByRole('dialog').getByRole('button', { name: 'Reassign to M. Castillo, RN' }).click(); await p.locator('[data-queue-message]').waitFor() }, expect: [] },
+    { name: 'returned-tab-with-item', setup: async (p) => { await stage(p, '/v2/reviewer/review-queue', RETURNED_MAYA); await tab(p, /^Returned/); await p.getByText(/The signature is cut off/).waitFor() }, expect: [] },
+    { name: 'empty-queue', setup: async (p) => { await stage(p, '/v2/reviewer/review-queue', ALL_APPROVED); await p.locator('[data-empty="awaiting"]').waitFor() }, expect: [] },
+  ],
+  '/v2/reviewer/review-queue/sub-02': [
+    { name: 'return-dialog', setup: async (p) => { await p.locator('[data-return]').click(); await p.locator('[data-return-dialog]').waitFor() }, expect: ['Return to student', 'Keep in review'] },
+    { name: 'return-error', setup: async (p) => { await p.locator('[data-return]').click(); await p.locator('[data-return-confirm]').click(); await p.locator('#return-error').waitFor() }, expect: ['Return to student', 'Keep in review'] },
+    { name: 'earlier-attempts-open', setup: async (p) => { await btn(p, /^Earlier attempts at Oral medication administration/).click(); await p.locator('[data-prior-attempts], [data-prior-empty]').first().waitFor() }, expect: ['Approve and count'] },
+  ],
+  '/v2/reviewer/review-queue/sub-04': [
+    { name: 'paper-form-errors', setup: async (p) => { await btn(p, 'Record outcome from the paper form').click(); await p.locator('[data-error-summary]').waitFor() }, expect: ['Record outcome from the paper form'] },
+    { name: 'paper-form-filled', setup: async (p) => { await paperFill(p); await reveal(p, '[data-record-paper]') }, expect: ['Record outcome from the paper form'] },
+    { name: 'paper-form-recorded', setup: async (p) => { await paperFill(p); await btn(p, 'Record outcome from the paper form').click(); await p.locator('[data-item-notice]').waitFor() }, expect: ['Approve 2 evaluations and count them', 'Return to student'] },
+    { name: 'return-dialog', setup: async (p) => { await p.locator('[data-return]').click(); await p.locator('[data-return-dialog]').waitFor() }, expect: ['Return to student', 'Keep in review'] },
+  ],
+  '/v2/director/verification/stu-07': [
+    { name: 'confirm-error', setup: async (p) => { await btn(p, /^Verify Amara Nwosu's record as version 1$/).click(); await p.locator('#verify-error').waitFor() }, expect: ["Verify Amara Nwosu's record as version 1"] },
+    { name: 'verified', setup: async (p) => { await p.locator('#verify-confirm').click(); await btn(p, /^Verify Amara Nwosu's record as version 1$/).click(); await p.locator('[data-verify-message]').waitFor() }, expect: [] },
+  ],
+  '/v2/director/verification/stu-maya': [
+    { name: 'changed-since-verified', setup: async (p) => { await stage(p, '/v2/director/verification/stu-maya', CHANGED_MAYA); await p.locator('[data-changed-banner]').waitFor() }, expect: [] },
   ],
 }
 

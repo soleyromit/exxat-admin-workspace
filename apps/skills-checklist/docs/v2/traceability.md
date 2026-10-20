@@ -55,9 +55,25 @@ Status: **Built** (real screens, unit tests in `tests/v2/preceptor.test.ts` and 
 
 Scenario steps 8 and 9 now point at built screens. Step 9 keeps its planned IDs; AE-01, AE-03 and AE-04 are only partly shown (see above).
 
+## Stage 4 screens (review queue, verification; built)
+
+Status: **Built** (real screens, unit tests in `tests/v2/queue.test.ts` and `verification.test.ts`, Playwright flow `docs/v2/verify/stage4.e2e.mjs`, screenshots and axe via `shoot.mjs`). Not **Verified**: dark mode, forced colors, screen reader, a real device and visual-diff against localhost:4000 were not run. Contracts: `V2-04a`, `V2-04b`.
+
+| Screen | Route | Requirement IDs satisfied | New requirements (status: proposed) |
+|---|---|---|---|
+| Review queue: Awaiting, Stalled, Returned | `/v2/reviewer/review-queue`, `/v2/admin/review-queue` | AR-01 (student, skill, course, setting, location, evaluator and role, source; location comes from the student's entry or placement and says "Not recorded" otherwise), AR-05 (approve counts, return does not), AR-06 (nothing counts until approved; progress and counters move on approve), RV-04 (reassign a stalled request to someone qualified), RV-05 (an item awaiting approval or counted cannot be resent), SH-02 | Bulk approve with a confirm that names the count; per-item blocked reason while the rest go through; reassign with a reason and an audit entry; Returned tab; photo-of-paper-form items in the queue `[PROPOSED]` |
+| Review item: compare, paper form, decision | `/v2/<admin\|reviewer>/review-queue/<id>` | AR-02 (self-rating beside the evaluator with agreed, differed or not comparable), AR-03 (every response, feedback and the student's note in full; seeded history stores only the outcome and says so), AR-04 (approve note kept with the evaluation), AR-05, EV-02 (evaluator role shown), RV-02 (revision count and every return reason shown), SC-12 (setting stated) | Outcome entry from a signed paper form by the reviewer, source recorded as paper form; earlier attempts beside the comparison; return reason split into why and next step `[PROPOSED]` |
+| Student: returned request | `/v2/student`, `/v2/student/request-signoff`, `/v2/student/history` | RV-01 (correct and send again), RV-02 (same record, revision count, reason kept), RV-05, SH-02 (Returned for correction, with the reviewer's reason), SH-04 (returned count) | Next best action "Fix and send again"; send again with a new photo or back to the evaluator `[PROPOSED]` |
+| Director: verification list | `/v2/director/director-verification`, `/v2/admin/verification` | AE-03 (mandatory skills achieved shown against each rule), AE-01 | Status per student, verified by and when `[PROPOSED]` |
+| Director: verify one record | `/v2/<director\|admin\|reviewer>/verification/<student>` | AE-01, AE-02, AE-03, RP-07 (each evaluation reachable in full), RV-03 (a verified evaluation is never edited; reopening adds a version and the record reads Changed since verified) | Program director verification as immutable numbered versions; confirmation names the gaps; "Changed since verified"; report rows (`verificationRows`) for Stage 5 `[PROPOSED]` |
+| Student record (changed) | `/v2/student/history` | SH-02 | Program verification card: who, when, version, or Changed since verified `[PROPOSED]` |
+| Evaluation page (changed) | `/v2/<staff>/evaluation/<id>` | RV-03 | Source row (paper form, entered by), review decision row, warning when the evaluation is part of a verified record `[PROPOSED]` |
+
+Scenario steps 10 and 11 now point at built screens. Step 10 keeps its planned IDs; RV-02 is covered as far as the revision count and reason (the correction never edits an answer in place, OD-08 untouched).
+
 ## Story steps (14)
 
-Rows for steps 1 to 4 are built in Stage 1 and steps 5 to 7 in Stage 2 (tables above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
+Rows for steps 1 to 4 are built in Stage 1, steps 5 to 7 in Stage 2, steps 8 and 9 in Stage 3 and steps 10 and 11 in Stage 4 (tables above). The rest are placeholders until their stage. "Requirement IDs" is the plan, not a claim of coverage.
 
 | # | Screen | Route | Requirement IDs (planned) | Coverage now | New requirements (status: proposed) |
 |---|---|---|---|---|---|
@@ -70,15 +86,15 @@ Rows for steps 1 to 4 are built in Stage 1 and steps 5 to 7 in Stage 2 (tables a
 | 7 | Work offline and resolve a conflict | `/v2/student/offline-sync` | none | Built | Offline queue (Queued, Synced, Conflict); conflict resolution screen `[PROPOSED]` |
 | 8 | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | EV-01, EV-03, EV-04, EV-05, EV-06, EV-07 | Built | "Not yet, feedback only" outcome; confidential concern flag (faculty only); credential attestation `[PROPOSED]` |
 | 9 | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | RV-03, SH-02, SH-03, AE-01, AE-03, AE-04 | Built | Remediation plan on fail; reopen after sign-off with version history `[PROPOSED]`; remediation is outside section 14 of the requirements, see D2 |
-| 10 | Clear the review queue | `/v2/reviewer/review-queue` | AR-01, AR-02, AR-03, AR-04, AR-05, AR-06, RV-02, RV-04 | Seed | Bulk approve; reassign a stalled request `[PROPOSED]` |
-| 11 | Verify the program record | `/v2/director/director-verification` | AE-03, RP-07 | Seed | Program director verification `[PROPOSED]` |
+| 10 | Clear the review queue | `/v2/reviewer/review-queue` | AR-01, AR-02, AR-03, AR-04, AR-05, AR-06, RV-02, RV-04 | Built | Bulk approve; reassign a stalled request; paper-form outcome entry by the reviewer `[PROPOSED]` |
+| 11 | Verify the program record | `/v2/director/director-verification` | AE-03, RP-07 | Built | Program director verification as immutable versions `[PROPOSED]` |
 | 12 | Read cohort reports | `/v2/admin/reports` | RP-01, RP-02, RP-03, RP-05, RP-06, RP-07, RP-10 | Seed | Cohort heatmap; behind expected pace; observations and distinct raters per skill with single-rater flag; rater comparison; simulation share; tamper-evident signed PDF per student or cohort `[PROPOSED]` |
 | 13 | Share the verified record | `/v2/student/verified-record` | SH-01, SH-06, SH-07, RP-10 | Seed | Share as PDF or CLR 2.0 `[PROPOSED]` |
 | 14 | Record a lab session for a group | `/v2/preceptor/lab-batch-grid` | EV-02, EV-05, SC-12, ST-05 | Seed | Lab batch grid (cells cycle Met, Not met, Not yet); absent student handling `[PROPOSED]`; see OD-19 |
 
 ## Requirements not yet planned in any v2 step
 
-These are requirement IDs the v2 story does not exercise, so a reader does not assume the prototype covers them: SL-02 to SL-11 (library fields, categories, tags, settings, search), SC-05 to SC-07, SC-13, SC-14 (qualification rule detail, student fields, narrative feedback), CM-02, CM-07, CM-08, ST-02, ST-03, ST-07, RV-01, RV-05, RV-06, SH-04, SH-05, RP-04, RP-08, RP-09, RP-11, AE-02, AE-05 to AE-08. Coverage for these stays with the v1 build (`docs/strategy/04-requirements-traceability.md`).
+These are requirement IDs the v2 story does not exercise, so a reader does not assume the prototype covers them: SL-02 to SL-11 (library fields, categories, tags, settings, search), SC-05 to SC-07, SC-13 (qualification rule detail, student fields), CM-02, CM-07, CM-08, ST-02, ST-03, ST-07, RV-06 (OD-08), RP-04, RP-08, RP-09, RP-11, AE-05 to AE-08. Coverage for these stays with the v1 build (`docs/strategy/04-requirements-traceability.md`).
 
 ## Update rule
 

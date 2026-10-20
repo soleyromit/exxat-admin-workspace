@@ -1,6 +1,6 @@
 # Connected prototype v2 (Skills Checklist, Prism)
 
-**Status:** Stage 0 foundation, Stage 1 (admin setup, steps 1 to 4) and Stage 2 (student mobile and offline, steps 5 to 7, plus the student home `/v2/student` and `/v2/student/history`) built. Stages 3 to 5 replace the remaining placeholder step pages with real screens.
+**Status:** Stage 0 foundation, Stage 1 (admin setup, steps 1 to 4), Stage 2 (student mobile and offline, steps 5 to 7, plus the student home `/v2/student` and `/v2/student/history`), Stage 3 (preceptor, outcomes, remediation, versions, steps 8 and 9) and Stage 4 (review queue and director verification, steps 10 and 11) built. Stage 5 replaces the remaining placeholder step pages (12 to 14) with real screens.
 **Branch:** `feat/skills-checklist-v2` · **Admin app:** `apps/skills-checklist/admin` · **Port:** 3007 · **URL:** `http://localhost:3007/v2`
 **Tags used in these docs:** `[REQ xx-nn]` requirement (only IDs in `docs/source/requirements.extracted.txt`), `[OD-n]` open decision (never treated as decided), `[PROPOSED]` a capability this prototype adds beyond the requirements, `[INFER]` my inference.
 
@@ -39,8 +39,8 @@ Defined in `admin/lib/v2/scenario.ts`, each with a route, requirement IDs and a 
 | 7 | Student | Work offline and resolve a conflict | `/v2/student/offline-sync` | Stage 2 (built) |
 | 8 | Preceptor | Evaluate both skills in one pass | `/v2/preceptor/preceptor-evaluation` | Stage 3 (built) |
 | 9 | Reviewer | See the outcome, remediation and version history | `/v2/reviewer/outcome-remediation` | Stage 3 (built) |
-| 10 | Reviewer | Clear the review queue | `/v2/reviewer/review-queue` | Stage 4 |
-| 11 | Director | Verify the program record | `/v2/director/director-verification` | Stage 4 |
+| 10 | Reviewer | Clear the review queue | `/v2/reviewer/review-queue` | Stage 4 (built) |
+| 11 | Director | Verify the program record | `/v2/director/director-verification` | Stage 4 (built) |
 | 12 | Admin | Read cohort reports | `/v2/admin/reports` | Stage 5 |
 | 13 | Student | Share the verified record | `/v2/student/verified-record` | Stage 5 |
 | 14 | Preceptor | Record a lab session for a group | `/v2/preceptor/lab-batch-grid` | Stage 5 |
@@ -71,6 +71,14 @@ Stage numbers are my build plan `[INFER]`, not a commitment.
 - **Remediation plan** (`.../remediation/<id>`, staff and student views) and **evaluation versions** (`.../evaluation/<id>`, staff and student views, reopen and confirm).
 - **Tests:** `tests/v2/preceptor.test.ts`, `outcomes.test.ts`. **Flow script:** `docs/v2/verify/stage3.e2e.mjs`.
 
+## Stage 4: what exists
+
+- **Review queue** (`/v2/reviewer/review-queue`, `/v2/admin/review-queue`): tabs Awaiting, Stalled and Returned over the DS DataTable. Awaiting lists evaluations held for approval and photos of signed paper forms with student, skills, evaluator and role, status, setting, location, course, source and date. A visible checkbox bar selects several; "Approve N submissions" opens a confirm that names the count and, before the click, any item that is blocked and why (the rest still go through, and the result banner repeats it). Stalled rows have "Reassign request" (qualified people only, reason optional, audit entry). Returned lists what is out with a student and the reason they read.
+- **Review item** (`.../review-queue/<id>`): facts, the photo placeholder (file name and size, no image), the paper-form entry (who signed, setting, the same outcome rules as the evaluator form, source recorded as paper form), the student's self-rating beside every evaluator response with agreed, differed or not comparable, earlier attempts, an optional note, "Approve and count" and "Return to student" (a reason is required).
+- **Student side of a return:** the reason in the reviewer's words and what to do next on the home screen, the request list and the record; "Send it again" or "Send the corrected photo for review" continues the same record with a revision count.
+- **Director verification** (`/v2/director/director-verification`, `/v2/<role>/verification/<student>`): a list of every student with status, then one record with the evidence by mandatory skill, blockers, the gaps, a confirmation and "Verify <name>'s record as version n". Versions are append-only; reopening a verified evaluation marks the record "Changed since verified" and the next verification is a new version. The student's record shows who verified it and when; `verificationRows` in `lib/v2/verification.ts` is the report data Stage 5 reads.
+- **Tests:** `tests/v2/queue.test.ts`, `verification.test.ts`. **Flow script:** `docs/v2/verify/stage4.e2e.mjs`. Contracts `V2-04a`, `V2-04b`.
+
 ## How to run
 
 ```bash
@@ -90,6 +98,7 @@ node ../.claude/hooks/check-req-ids.mjs   # every requirement ID in docs exists
 node ../docs/v2/verify/shoot.mjs      # needs the dev server on 3007; includes the dialog, sheet, menu and wizard-step states
 node ../docs/v2/verify/stage1.e2e.mjs # the Stage 1 flow, needs the dev server on 3007
 node ../docs/v2/verify/stage3.e2e.mjs # the Stage 3 flow, needs the dev server on 3007
+node ../docs/v2/verify/stage4.e2e.mjs # the Stage 4 flow, needs the dev server on 3007
 ```
 
 `docs/v2/verify/shoot.mjs [routes...]` takes screenshots at 1440x900 and 390x844 into `docs/v2/screenshots/<route-slug>-{desktop,phone}.png`, runs axe-core (WCAG 2.0 and 2.1, A and AA) through `@axe-core/playwright`, walks the page with the Tab key until focus completes a full cycle to check for a visible focus indicator and keyboard traps, repeats everything for named interaction states (sheet, dialog, menu, wizard step), records uncaught page errors, and writes `docs/v2/screenshots/report.json`. It freezes transitions before axe. Playwright is loaded from `tools/visual-check`, not installed in the app.

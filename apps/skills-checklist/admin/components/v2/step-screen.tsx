@@ -4,6 +4,8 @@ import * as React from "react"
 import { ConfigureWizardPage } from "@/components/v2/admin/configure-wizard"
 import { MapCoursesPage } from "@/components/v2/admin/map-courses-page"
 import { StarterLibraryPage } from "@/components/v2/admin/starter-library-page"
+import { VerificationListPage } from "@/components/v2/director/verification-pages"
+import { ReviewQueuePage } from "@/components/v2/review/review-queue-page"
 import { OutcomesPage } from "@/components/v2/outcomes/outcomes-page"
 import { PreceptorEvaluation } from "@/components/v2/preceptor/evaluation-form"
 import { LogFlow } from "@/components/v2/student/log-flow"
@@ -31,6 +33,10 @@ export function StepScreen({ stepId, fallback }: { stepId: string; fallback: Rea
       return <PreceptorEvaluation />
     case "outcome-remediation":
       return <OutcomesPage role="reviewer" />
+    case "review-queue":
+      return <ReviewQueuePage role="reviewer" />
+    case "director-verification":
+      return <VerificationListPage role="director" />
     default:
       return <>{fallback}</>
   }

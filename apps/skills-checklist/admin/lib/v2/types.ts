@@ -172,6 +172,12 @@ export interface Evaluation {
   levelIndex?: number
   /** Stage 3: the request this evaluation completed. */
   submissionId?: string
+  /** Stage 4: "paper-form" when a reviewer entered it from a signed paper form. Absent means the evaluator entered it. */
+  source?: "evaluator" | "paper-form"
+  /** Stage 4: the reviewer who typed a paper-form evaluation on the evaluator's behalf. */
+  enteredById?: string
+  /** Stage 4: the reviewer's latest decision and note (AR-04, AR-05). Earlier returns stay on the request. */
+  review?: { decision: "approved" | "returned"; byId: string; at: string; note: string }
 }
 
 export type SignoffMethod = "qr" | "handover" | "link" | "photo"
@@ -197,6 +203,14 @@ export interface Submission {
   /** Stage 3: the evaluator who completed it and when. For a link sent to several people, the first to finish. */
   completedById?: string
   completedAt?: string
+  /** Stage 4: how many times the student corrected and sent it again (RV-02). */
+  revisions?: number
+  /** Stage 4: every return, oldest first, with the reason the student read (RV-02). */
+  returns?: Array<{ at: string; byId: string; reason: string; revision: number }>
+  /** Stage 4: every time a stalled request was handed to someone else (RV-04). */
+  reassignments?: Array<{ at: string; byId: string; fromId: string; toId: string; reason: string }>
+  /** Stage 4: the student's words when sending a returned request again. */
+  studentNote?: string
 }
 
 export type SyncState = "queued" | "synced" | "conflict" | "failed"
@@ -326,6 +340,21 @@ export interface AuditEntry {
   target: string
 }
 
+/** Stage 4: a program director's verification of a student's record. Append-only: a verification is never edited. */
+export interface Verification {
+  id: string
+  studentId: string
+  /** 1 for the first verification of this student, then 2, 3 ... */
+  version: number
+  byId: string
+  at: string
+  note: string
+  /** The counted evaluations the verification rests on, with the version of each at that moment. */
+  evidence: Array<{ evaluationId: string; skillId: string; version: number }>
+  /** Mandatory skills of the course at that moment and whether each was achieved. */
+  skills: Array<{ skillId: string; achieved: boolean }>
+}
+
 export interface V2State {
   schema: 1
   program: Program
@@ -350,4 +379,6 @@ export interface V2State {
   labCheckoffs: LabCheckoff[]
   device: DeviceState
   logDraft: LogDraft | null
+  /** Stage 4: director verifications, oldest first. Optional so state saved before Stage 4 still loads. */
+  verifications?: Verification[]
 }

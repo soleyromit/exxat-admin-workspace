@@ -154,7 +154,7 @@ export const STEPS: ScenarioStep[] = [
     reqIds: ["AR-01", "AR-02", "AR-03", "AR-04", "AR-05", "AR-06", "RV-02", "RV-04"],
     proposed: ["Bulk approve", "Reassign stalled request"],
     stage: 4,
-    counters: ["queueWaiting", "stalled", "evalsWaiting"],
+    counters: ["queueWaiting", "stalled", "evalsWaiting", "returned"],
     precondition: { text: "The queue holds requests awaiting review and one stalled request.", check: (s) => s.submissions.some((x) => x.status === "awaiting-review") && s.submissions.some((x) => x.status === "stalled") },
   },
   {
@@ -167,7 +167,7 @@ export const STEPS: ScenarioStep[] = [
     reqIds: ["AE-03", "RP-07"],
     proposed: ["Program director verification"],
     stage: 4,
-    counters: ["evalsCounted", "students"],
+    counters: ["verified", "evalsCounted", "students"],
     precondition: { text: "Counted evidence exists for Maya.", check: (s) => s.evaluations.some((e) => e.studentId === IDS.maya && e.status === "counted") },
   },
   {

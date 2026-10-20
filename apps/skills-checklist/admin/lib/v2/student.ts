@@ -239,7 +239,7 @@ export interface NotOpen {
   reason: string
 }
 
-export type NextKind = "resolve" | "request" | "log" | "practice" | "wait" | "optional" | "clear"
+export type NextKind = "returned" | "resolve" | "request" | "log" | "practice" | "wait" | "optional" | "clear"
 
 export interface NextAction {
   kind: NextKind
@@ -275,11 +275,13 @@ export function requestWaitText(s: V2State, x: Submission): string {
     case "with-evaluator":
       return x.candidateIds && x.candidateIds.length > 1 ? `Waiting for the first of ${x.candidateIds.map(name).join(", ")}` : `Waiting for ${name(x.assignedToId)}`
     case "awaiting-review":
-      return `Photo of the paper form is with the reviewer, ${name(x.assignedToId)}`
+      return x.method === "photo" ? `Photo of the paper form is with the reviewer, ${name(x.assignedToId)}` : `Waiting for the reviewer, ${name(x.assignedToId)}, to approve it`
     case "stalled":
       return `Waiting for ${name(x.assignedToId)} for ${x.daysWaiting} days`
-    case "returned":
-      return "Returned for correction"
+    case "returned": {
+      const r = x.returns?.[x.returns.length - 1]
+      return r ? `Returned for correction: ${r.reason}` : "Returned for correction"
+    }
     default:
       return "Done"
   }
@@ -346,6 +348,13 @@ export function courseWork(s: V2State, studentId: string = STUDENT_ID): CourseWo
 }
 
 function nextAction(s: V2State, studentId: string, mandatory: CourseItem[], optional: CourseItem[]): NextAction {
+  const back = s.submissions.filter((x) => x.studentId === studentId && x.status === "returned")
+  if (back.length > 0) {
+    const x = back[back.length - 1]
+    const names = x.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name ?? "A skill")
+    const r = x.returns?.[x.returns.length - 1]
+    return { kind: "returned", title: `Fix and send again: ${names.length > 1 ? `${names[0]} and ${names.length - 1} more` : names[0]}`, reason: r ? `Your reviewer returned it: ${r.reason}` : "Your reviewer returned it for correction.", href: "/v2/student/request-signoff", label: "See what to fix", skillId: null }
+  }
   const conflicts = s.syncQueue.filter((i) => i.studentId === studentId && i.state === "conflict").length
   if (conflicts > 0) {
     return { kind: "resolve", title: `Fix ${conflicts} sync ${plural(conflicts, "conflict", "conflicts")}`, reason: "Two versions of the same entry disagree. Nothing is lost until you choose.", href: "/v2/student/offline-sync", label: "Open sync and fix conflicts", skillId: null }
@@ -696,6 +705,8 @@ export interface Attempt {
   counted: string
   /** The rule that was not met, in plain words (SH-03). */
   failedRule: string | null
+  /** Why a reviewer returned it, when it was returned (RV-02). */
+  returnReason: string | null
 }
 
 export interface SkillHistory {
@@ -723,16 +734,17 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
   for (const skill of s.skills) {
     const evals = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skill.id).sort((a, b) => (a.date < b.date ? -1 : 1))
     const open = s.submissions.filter((x) => x.studentId === studentId && x.skillIds.includes(skill.id) && OPEN_STATUSES.includes(x.status) && x.status !== "returned")
+    const returnedSubs = s.submissions.filter((y) => y.studentId === studentId && y.skillIds.includes(skill.id) && y.status === "returned" && !evals.some((e) => e.submissionId === y.id && e.status === "returned"))
     const progress = skillProgress(s, studentId, skill.id)
-    if (!progress || (evals.length === 0 && open.length === 0)) continue
+    if (!progress || (evals.length === 0 && open.length === 0 && returnedSubs.length === 0)) continue
     const attempts: Attempt[] = []
     for (const e of evals) {
-      const base = { key: e.id, attempt: attempts.length + 1, date: e.date, setting: settingText(e), evaluation: e, who: name(e.evaluatorId), failedRule: null as string | null }
+      const base = { key: e.id, attempt: attempts.length + 1, date: e.date, setting: settingText(e), evaluation: e, who: name(e.evaluatorId), failedRule: null as string | null, returnReason: null as string | null }
       if (e.status === "awaiting-approval") {
         attempts.push({ ...base, kind: "waiting", outcome: "Waiting for approval", who: `the reviewer, ${name(reviewerId(s))}`, counted: "Not counted yet. Evidence waiting for approval is left out of the rule until it is approved.", })
         summary.waiting++
       } else if (e.status === "returned") {
-        attempts.push({ ...base, kind: "returned", outcome: "Returned for correction", counted: "Does not count until it is corrected and approved." })
+        attempts.push({ ...base, kind: "returned", outcome: "Returned for correction", counted: "Does not count. Your reviewer returned it, so it is kept in your record and a new attempt is needed.", returnReason: e.review?.note ?? null })
         summary.returned++
       } else if (e.status === "reopened") {
         attempts.push({ ...base, kind: "reopened", outcome: `Reopened. Version ${e.currentVersion} says ${e.outcome === "met" ? "Met" : e.outcome === "not-yet" ? "Not yet" : "Did not meet the criteria"}`, counted: "Does not count while the reviewer has it open. Every earlier version is kept.", })
@@ -750,8 +762,13 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
       }
     }
     for (const x of open) {
-      attempts.push({ key: x.id, attempt: attempts.length + 1, date: x.createdAt, kind: "waiting", outcome: "Waiting", who: x.status === "on-device" ? "this phone (not sent yet)" : x.status === "awaiting-review" ? `the reviewer, ${name(x.assignedToId)}` : name(x.assignedToId), setting: "Clinical", evaluation: null, counted: "Not counted yet. It counts after the evaluator completes it" + (x.status === "awaiting-review" ? " and the reviewer approves it." : "."), failedRule: null })
+      attempts.push({ key: x.id, attempt: attempts.length + 1, date: x.createdAt, kind: "waiting", outcome: "Waiting", who: x.status === "on-device" ? "this phone (not sent yet)" : x.status === "awaiting-review" ? `the reviewer, ${name(x.assignedToId)}` : name(x.assignedToId), setting: "Clinical", evaluation: null, counted: "Not counted yet. It counts after the evaluator completes it" + (x.status === "awaiting-review" ? " and the reviewer approves it." : "."), failedRule: null, returnReason: null })
       summary.waiting++
+    }
+    for (const x of returnedSubs) {
+      const r = x.returns?.[x.returns.length - 1]
+      attempts.push({ key: x.id, attempt: attempts.length + 1, date: r?.at ?? x.createdAt, kind: "returned", outcome: "Returned for correction", who: name(r?.byId ?? x.assignedToId), setting: "Clinical", evaluation: null, counted: "Does not count. Your reviewer returned it. Correct it and send it again.", failedRule: null, returnReason: r?.reason ?? null })
+      summary.returned++
     }
     out.push({ skill, attempts, progress })
   }

@@ -60,10 +60,23 @@ Verdicts (IMPORT, VENDOR, HAND-ROLL) are for `ds-adoption-reviewer` before each 
 
 DS registry note from the reviewer: the registry row that marks `DataTable` as VENDOR is stale at 1.6.5; v2 imports it from the package.
 
+## Registered in Stage 4 (composed from DS primitives, no ad hoc styling)
+
+`ds-adoption-reviewer` verdicts: the queue table is IMPORT (`DataTable` through `V2Grid`), dialogs, Tabs, Checkbox, RadioGroup, Textarea, Field and LocalBanner are IMPORT; the compare pair, photo placeholder and verification history are composition. Item 10 (side-by-side compare) is built as item 33.
+
+| # | Component | File | Composes from | Notes |
+|---|---|---|---|---|
+| 33 | **Side-by-side compare** (built, was 10) | `components/v2/review/review-item-page.tsx` `CompareBlock` | `Card` pair in a two-column grid that stacks on a phone, `StatusBadge` for the outcome and the agreement, `dl` per side, `Collapsible` for earlier attempts | Agreement is a word plus an icon, never colour alone. Shows every response and the feedback (AR-03). |
+| 34 | **Queue selection bar** | `components/v2/review/review-queue-page.tsx` | `Checkbox` (select all, indeterminate), `Button`, live region | Candidate DS fix: the DataTable row checkboxes show only on hover or focus and its bar is a dark slab with placeholder actions. A visible, touch-sized selection bar with a named count (`Approve 3 submissions`) is what the reviewer needs. |
+| 35 | **Photo placeholder** | `review-item-page.tsx` `PhotoPlaceholder` | `Card`, FA icon, `role="img"` with a text alternative | The prototype stores the file name and size only. A real build needs an image viewer with zoom and rotate. |
+| 36 | **Return dialog and reassign dialog** | `review-item-page.tsx` `ReturnDialog`, `review-queue-page.tsx` `ReassignDialog` | `Dialog`, `Field`, `Textarea`, `RadioGroup` (disabled options keep the reason as text) | |
+| 37 | **Returned-request panel (student)** | `components/v2/student/returned-panel.tsx` | `LocalBanner`, `Textarea`, `Button`, hidden file input behind a DS `Button` | Reason in the reviewer's words, a derived next step, send again. 44 px targets. |
+| 38 | **Verification pages** | `components/v2/director/verification-pages.tsx` | `V2Grid` (DS `DataTable`), `Card`, `StatusBadge`, `Checkbox`, `Textarea`, `LocalBanner`, semantic `ol` for the version history | The history list is a candidate for the same pattern as the version-history timeline (item 8). |
+
 ## Already covered by the DS (do not rebuild)
 
 `DataTable`, `Dialog`, `Sheet`, `Popover`, `Command`, `LocalBanner`, `Badge`, `Button`, `Card`, `Tabs`, `RadioGroup`, `SelectionTileGrid`, `Checkbox`, `Skeleton`, `Tooltip`, `PageHeader`, `KeyMetrics`, `AppSidebar`.
 
 ## Registered hand-rolls
 
-Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Stage 2: the QR matrix generator (`lib/v2/qr.ts`, item 23) and a native file input behind a DS Button for the photo (item 18 again). Everything else above is composition of DS primitives.
+Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Stage 3 and Stage 4: none. Stage 2: the QR matrix generator (`lib/v2/qr.ts`, item 23) and a native file input behind a DS Button for the photo (item 18 again). Everything else above is composition of DS primitives.

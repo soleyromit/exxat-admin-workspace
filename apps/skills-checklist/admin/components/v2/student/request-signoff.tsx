@@ -16,6 +16,7 @@ import { SelectionTileGrid } from "@exxatdesignux/ui/components/ui/selection-til
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@exxatdesignux/ui/components/ui/sheet"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { QrCode } from "@/components/v2/student/qr-code"
+import { ReturnedPanel } from "@/components/v2/student/returned-panel"
 import { SyncChip } from "@/components/v2/student/sync-chip"
 import { Announce, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
@@ -321,8 +322,9 @@ function RequestCard({ s, x, origin, onQr, onHandover, onCopy, manual }: { s: V2
         <CardDescription>{`${METHOD_WORD[x.method][0].toUpperCase()}${METHOD_WORD[x.method].slice(1)}, ${fmtDate(x.createdAt)}`}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 text-sm">
-        <p className="text-foreground">{requestWaitText(s, x)}</p>
+        {x.status === "returned" ? null : <p className="text-foreground">{requestWaitText(s, x)}</p>}
         {x.photo ? <p className="text-muted-foreground">{`Photo: ${x.photo.name}, ${x.photo.sizeKb} KB`}</p> : null}
+        {x.status === "returned" ? <ReturnedPanel s={s} x={x} /> : null}
         {open && x.method !== "photo" ? (
           <div className="flex flex-col gap-2">
             {x.method === "qr" ? (

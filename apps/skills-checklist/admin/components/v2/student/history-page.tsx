@@ -10,7 +10,9 @@ import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { Pips } from "@/components/v2/student/skill-card"
 import { fmtDate, TOUCH, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
-import { studentHistory, type Attempt, type AttemptKind, type SkillHistory } from "@/lib/v2/student"
+import { STUDENT_ID, studentHistory, type Attempt, type AttemptKind, type SkillHistory } from "@/lib/v2/student"
+import { statusLabel, STATUS_TONE } from "@/components/v2/director/verification-pages"
+import { verificationStatus } from "@/lib/v2/verification"
 import type { V2State } from "@/lib/v2/types"
 
 const KIND: Record<AttemptKind, { tone: "success" | "info" | "warning" | "neutral"; icon: string }> = {
@@ -50,6 +52,7 @@ export function HistoryPage() {
           </dl>
         </CardContent>
       </Card>
+      <VerificationCard s={s} />
       <p className="text-sm text-muted-foreground">{`Showing every course. All of your evidence so far is from ${s.course.code}, so narrowing to one course would show the same list.`}</p>
 
       {h.skills.length === 0 ? (
@@ -93,6 +96,11 @@ export function HistoryPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">{`${a.setting}. ${a.kind === "waiting" ? `With ${a.who}.` : `Evaluator: ${a.who}.`}`}</p>
                       <p className="text-sm text-foreground">{a.counted}</p>
+                      {a.returnReason ? (
+                        <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground" data-return-reason>
+                          {`Your reviewer returned it: ${a.returnReason}`}
+                        </p>
+                      ) : null}
                       {a.failedRule ? (
                         <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground" data-failed-rule>
                           {a.failedRule}
@@ -166,5 +174,28 @@ function Detail({ s, open, onClose }: { s: V2State; open: { skill: SkillHistory;
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Whether the program director has verified this record, by whom and when, and whether it changed since. */
+function VerificationCard({ s }: { s: V2State }) {
+  const st = verificationStatus(s, STUDENT_ID)
+  const by = st.latest ? (s.people.find((p) => p.id === st.latest?.byId)?.name ?? "the program director") : ""
+  const tone = STATUS_TONE[st.status]
+  return (
+    <Card size="sm" data-verification-card={st.status}>
+      <CardContent className="flex flex-col gap-2 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-medium text-foreground">Program verification</span>
+          <StatusBadge label={statusLabel(st.status, st.latest?.version ?? null)} tone={tone.tone} icon={tone.icon} size="sm" />
+        </div>
+        {st.latest ? (
+          <p className="text-foreground">{`Verified by ${by} on ${fmtDate(st.latest.at)}, version ${st.latest.version}, based on ${st.latest.evidence.length} ${st.latest.evidence.length === 1 ? "evaluation" : "evaluations"}.`}</p>
+        ) : (
+          <p className="text-muted-foreground">Your program director has not verified your record yet. You can share a verified record once they do.</p>
+        )}
+        {st.status === "changed" ? <p className="text-foreground">Your program changed an evaluation after it was verified. The earlier verification is kept, and your director verifies the new version.</p> : null}
+      </CardContent>
+    </Card>
   )
 }
