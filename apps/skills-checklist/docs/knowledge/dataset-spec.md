@@ -467,3 +467,52 @@ Group values: a program group name (`Group A`, any cohort), a track (`trk:<id>`)
 The assisted level reads **With assistance** (`ASSISTED_LEVEL` in `lib/v2/config.ts`), as the configure preset says it, in place of "Works with prompts" (`SAMPLE_LEVELS`, `PRACTICE_RATINGS`, Maya's practice trials and self-evaluation in `seed.ts`). Verified: the seed JSON before the change, with "Works with prompts" replaced by "With assistance" (353 occurrences), equals the seed after, byte for byte; the facts registry, the approvals row count and the dashboard KPIs are identical. `SEED_VERSION` is `2026-10-26.7-level-words`; the pinned fingerprint is `[4928768, 897679549]`.
 
 The lab's seeded "Clinical skills checklist" minimum total is no longer a fixed 120 of 154: `dataMinTotal` in `lib/lab/lists.ts` takes the median total of the students in its groups who already have every required skill (84 in the reference data), so BSN 2026 shows 17 of 38 meeting the rule and the earlier cohorts, still short of the 52 required skills, show 0. This is lab-only state; no fact changes.
+
+## 15. Cohort inheritance, rule write-back, one engine, persistence (2026-10-26, decision D-X27, SEED_VERSION 2026-10-26.8-question-answers)
+
+Oct 26 call with Sankalp: "define the skills once, tag them to a cohort; when a course offering is created for that cohort, all skills tagged to that cohort automatically become available across all its clinical course offerings". Before this section the lab said it (Course mapping copy) but read only the per-course mapping rows. Now it is data.
+
+### 15.1 Three layers per offering (`lib/lab/mapping.ts resolvedLevels`)
+
+| Layer | Source | Wins over | Notes |
+|---|---|---|---|
+| From list (base) | Live lists assigned to the offering's cohort (`listsForCohort`, `SkillList.groupIds`) | nothing | Clinical offerings only. Configured, active skills only (IM-09, D-X14). Level: `SkillList.levels[skillId]`, else Optional. Two lists: the stronger level. |
+| Explicit | `V2State.mappings` (the seeded course mapping rows) | From list | Any row, "not expected" included, replaces the list level for that skill. |
+| Overlay | `MappingOverlay` (this session's per-offering edits) | both | |
+
+Every resolved level carries `source` ("list" / "explicit" / "overlay"); `skillRowsFor` and `offeringsForSkill` return it, `offeringRows` returns `fromList`. `coverage` and `skillReach` read the required skills of the lists assigned to each cohort (default list when a cohort has none) and report `carriers` (any level, inherited included), `explicitCarriers` (set for the course or changed here) and, in `coverage`, `listOnly` (required skills carried only through a list). `gaps` ("in no course") counts offerings at any level, so with the default list on every cohort the seeded required skills are no longer in no course; they appear in `listOnly` instead.
+
+Group lists (tracks, custom groups) apply to students, not to offerings: an offering belongs to a cohort, so only cohort assignments give a base layer.
+
+**Facts.** No fact changes. `facts()` and "Required this term" read the explicit mandatory rows only, a list gives Optional unless it names a level, and the seeded lists name none (`tests/lab/mapping.test.ts` "leaves every v2 fact unchanged"). The lab Student model (`buildStudent`) and "Likely here" still read the explicit rows; inheritance adds Optional skills only, which never feed "Likely here".
+
+### 15.2 One engine (`lib/v2/rules.ts runRule`)
+
+`runRule(EngineRule, evaluations)` is the only implementation of "what counts as a valid attempt" and "is the record achieved". `skillProgress` (v2, and through it facts, dashboard, director, lists, attainment) calls it with `engineRuleOf(skill)`; the lab `evaluateRule` (and through it `computeImpact`, attempt lines) calls it with `engineRuleOfLab(rule)`. `qualifiesOn` reads the published question rule over `versions[last].detail.answers` (all, at least N of M, named questions), the score rule over `detail.scores`, else the recorded outcome. An evaluation with no answers falls back to its outcome.
+
+An unset need (`NaN`, 0, a fraction) returns `{ valid: false, reason: "need-unset" }`: `evaluateRule` returns `{ state: "invalid" }`, `computeImpact` sets `invalid` and changes nobody, `skillProgress` returns null, `validateRule` names the field and `publishLabRule` refuses. There is no fallback to 1.
+
+`computeImpact` now reads `heldState` (held evidence never counts), the same evidence every student screen reads, so its before-counts equal the screens.
+
+### 15.3 Rule write-back (`lib/lab/configure.ts publishLabRule`, wired in `components/lab/configure/use-configure.tsx`)
+
+Publish with "Re-evaluate it now" (or with no evidence to choose for) writes to the shared v2 store, persisted as a delta: the skill's `config` from `toSkillConfig` (need, distinct evaluators, setting minimums, level minimums, question rule, score rule, qualifying label, labels, questions, levels, roles, feedback, approval; window, minimum level and simulation share written back as carried), `model`, `configured` and `published` true, a `ruleChanges` record with the next version and a `published` snapshot (`PublishedRuleSnapshot`, including `criteriaKind`), and an audit line. Publishing the rule students already have changes no count. "Apply to new evidence only" is PENDING-ROMIT: it writes nothing (the engine has no per-evaluation rule version).
+
+New `SkillConfig` fields (absent on the seed): `questionRule`, `scoredRule`, `levelMinimums`, `qualifyingLabel`. `fromV2` reads them back, so the configure screen opens on the published rule.
+
+### 15.4 The "2 of 3 questions" demo data (SEED_VERSION 2026-10-26.8-question-answers)
+
+Maya's two sterile dressing attempts carry per-question answers in the skill's question order (hand hygiene, clean field, explained each step): `ev-maya-6` (Not yet) Yes, Yes, No; `ev-maya-9` (Unmet) Yes, No, No. The seed publishes no question rule, so both still qualify on their outcome and nothing changes. Verified: the seed with those two details removed equals the previous seed byte for byte; every fact in `facts()` is identical in the default scope, every cohort, every term and with didactic included. Pinned fingerprint `[4929057, 942666486]`.
+
+After publishing "at least 2 of 3 answered Yes" on sterile dressing change: the impact changes exactly one student (Maya, Evidence does not qualify to In progress), her Skill detail reads "2 attempts, 1 not valid: 1 counts. At least 2 of 3 questions answered Yes counts as one.", her Record reads "2 attempts, 1 counts", and the dashboard Required achieved figure is unchanged (she is still short). `tests/lab/rule-writeback.test.ts` and `tests/lab/consistency.mjs` check this; a stricter and a looser rule on oral medication check that the impact after-counts equal the student screens and that `mandatoryAchieved` moves by exactly the impact's flips on required records.
+
+Attempt lines (`attemptCountLine` in `lib/lab/student.ts`, `recordAttemptLine` in `lib/lab/student2.ts`) come from the engine, not from counted rows: "N attempts, K {not qualifying word}: M count" on Skill detail, compact "N attempts, M count" on the Record (density budget at 375).
+
+### 15.5 Three levels in v2 (B.9)
+
+`courseWork` keeps `recommended` and `optionalOnly` apart (with `summary.recommended`, `recommendedAchieved`); `optional` stays the non-mandatory union the v2 screens list under one heading. The next suggestion after mandatory takes recommended first. v2 reports sort mandatory, recommended, optional (`LEVEL_RANK`). "Likely here" reads Mandatory and Recommended only (`tests/lab/likely-here.test.ts`).
+
+### 15.6 Persistence
+
+The program's noun (`lib/lab/terms.ts`, key `lab:terms`) and custom student groups (`customGroupsStore`, key `lab.admin.groups.v1`) are kept in localStorage: they survive reloads and reach every tab through the storage event. Every read and write is guarded; blocked storage keeps the value in memory for the page. The server always renders the defaults and the stored value is read after hydration, so there is no mismatch (`tests/lab/persistence.test.ts`). Other lab overlays (mapping edits, list edits, added evaluators) stay in sessionStorage.
+

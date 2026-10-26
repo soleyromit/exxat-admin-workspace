@@ -1,3 +1,4 @@
+import { skillNoun } from "@/lib/lab/terms"
 /**
  * One wording, one icon and one tone per state (glossary.md; docs/knowledge/design/consistency-audit.md). Screens read these
  * maps; a wrapper badge may change the size, never the word, icon or tone. Amber ("warning") marks shortfall, never red.
@@ -70,7 +71,15 @@ export const SENT_FOR_NEW_EVALUATION_WORD = "Sent for a new evaluation"
  * Graduation readiness bands against "Required to graduate" (decision D-X11; `population.graduationStageOf`): exactly 1 missing is
  * one short, 2 to 3 is short, FAR_BEHIND_MISSING (4) or more is far behind.
  */
-export const GRADUATION_STAGE_LABEL = { complete: "Complete", "one-short": "One skill short", short: "Short", far: "Far behind" } as const
+/** "One skill short" follows the program's noun (Settings > Naming): a getter, so it reads the noun when shown. */
+export const GRADUATION_STAGE_LABEL: { readonly complete: string; readonly "one-short": string; readonly short: string; readonly far: string } = {
+  complete: "Complete",
+  get "one-short"() {
+    return `One ${skillNoun()} short`
+  },
+  short: "Short",
+  far: "Far behind",
+}
 
 /** Readiness record states as a list label: an evaluation answered Unmet (never "Not met"). */
 export const UNMET_LABEL = OUTCOME_LABEL["not-met"]

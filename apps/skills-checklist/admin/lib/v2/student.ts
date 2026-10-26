@@ -1,6 +1,6 @@
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
-import { strengthHint } from "./rules"
+import { engineRuleOf, runRule, strengthHint } from "./rules"
 import { evalsOfStudentSkill, skillById } from "./evidence-index"
 import { IDS } from "./seed"
 import { sentForNewEvaluationLabel } from "./labels"
@@ -66,52 +66,16 @@ export function ruleSentence(skill: Skill): string {
  */
 export function skillProgress(s: V2State, studentId: string, skillId: string): SkillProgress | null {
   const skill = skillById(s, skillId)
-  if (!skill?.config) return null
-  const c = skill.config
-  const a = c.achievement
+  const rule = skill ? engineRuleOf(skill) : null
+  if (!skill?.config || !rule) return null
+  const a = skill.config.achievement
   const mine = evalsOfStudentSkill(s, studentId, skillId)
-  const counted = mine.filter((e) => e.status === "counted").sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
+  // The one engine (lib/v2/rules.ts): the same call the lab configure impact makes, so published rules read the same everywhere.
+  const run = runRule(rule, mine)
+  // A rule with no valid frequency has no progress to report (it cannot be published that way; never defaulted to 1).
+  if (!run.valid) return null
   const awaiting = mine.filter((e) => e.status === "awaiting-approval").length
-  const windowed = a.kind === "last-n" && a.window ? counted.slice(0, a.window) : counted
-  const levelOk = (e: Evaluation) => a.minLevelIndex === null || e.levelIndex === undefined || e.levelIndex >= a.minLevelIndex
-
-  let qualifying = windowed.filter((e) => e.outcome === "met" && levelOk(e))
-  let simLeftOut = 0
-  const sim = c.simulation
-  if (!sim.allowed) {
-    const keep = qualifying.filter((e) => e.setting !== "simulation")
-    simLeftOut = qualifying.length - keep.length
-    qualifying = keep
-  } else if (sim.mode === "cap") {
-    const maxSim = Math.floor((a.need * sim.maxSharePercent) / 100)
-    let used = 0
-    qualifying = qualifying.filter((e) => {
-      if (e.setting !== "simulation") return true
-      if (used < maxSim) {
-        used++
-        return true
-      }
-      simLeftOut++
-      return false
-    })
-  }
-
-  const have = qualifying.length
-  const leftOut: Record<string, string> = {}
-  const usedSet = new Set(qualifying.map((e) => e.id))
-  for (const e of counted.filter((x) => x.outcome === "met")) {
-    if (usedSet.has(e.id)) continue
-    if (!windowed.includes(e)) leftOut[e.id] = `Met, but older than your last ${a.window}, so the rule does not use it.`
-    else if (!levelOk(e)) leftOut[e.id] = "Met, but below the minimum level the rule asks for."
-    else if (e.setting === "simulation") leftOut[e.id] = sim.allowed ? "Met, but simulation can only supply part of the evaluations, and that part is used up." : "Met, but simulation does not count for this skill."
-  }
-  const distinctHave = new Set(qualifying.map((e) => e.evaluatorId)).size
-  const settings: SettingProgress[] = a.settingMinimums.map((m) => ({
-    setting: m.setting,
-    min: m.min,
-    have: qualifying.filter((e) => e.setting === "clinical" && e.clinicalSetting === m.setting).length,
-  }))
-  const achieved = have >= a.need && distinctHave >= a.distinctEvaluators && settings.every((x) => x.have >= x.min)
+  const { have, achieved, distinctHave, settings, simLeftOut } = run
 
   const left: string[] = []
   const notes: string[] = []
@@ -119,12 +83,13 @@ export function skillProgress(s: V2State, studentId: string, skillId: string): S
     if (have < a.need) left.push(`${a.need - have} more successful ${plural(a.need - have, "evaluation", "evaluations")}`)
     if (have > 0 && distinctHave < a.distinctEvaluators) left.push(`Evaluations from ${a.distinctEvaluators - distinctHave} more different ${plural(a.distinctEvaluators - distinctHave, "evaluator", "evaluators")} (you have ${distinctHave})`)
     for (const x of settings) if (x.have < x.min) left.push(`${x.min - x.have} more in ${x.setting} (you have ${x.have} of ${x.min})`)
+    for (const l of run.levels) if (l.have < l.min) left.push(`${l.min - l.have} more at ${l.level} or above (you have ${l.have} of ${l.min})`)
   }
   if (settings.length > 0) notes.push("Lab and simulation do not count toward a clinical setting.")
   if (simLeftOut > 0) {
     notes.push(
-      sim.allowed
-        ? `${simLeftOut} simulation ${plural(simLeftOut, "evaluation is", "evaluations are")} not counted because simulation can supply at most ${Math.floor((a.need * sim.maxSharePercent) / 100)} of ${a.need}.`
+      !rule.simulationExcluded
+        ? `${simLeftOut} simulation ${plural(simLeftOut, "evaluation is", "evaluations are")} not counted because simulation can supply at most ${run.maxSim ?? 0} of ${a.need}.`
         : `${simLeftOut} simulation ${plural(simLeftOut, "evaluation is", "evaluations are")} not counted because simulation does not count for this skill.`,
     )
   }
@@ -135,18 +100,18 @@ export function skillProgress(s: V2State, studentId: string, skillId: string): S
     achieved,
     counted: have,
     need: a.need,
-    window: a.kind === "last-n" && a.window ? a.window : null,
+    window: rule.window,
     distinct: { have: distinctHave, need: a.distinctEvaluators },
-    settings,
+    settings: settings.map((x): SettingProgress => ({ setting: x.setting, min: x.min, have: x.have })),
     awaiting,
-    notMet: counted.filter((e) => e.outcome !== "met").length,
+    notMet: run.notMet,
     simulationLeftOut: simLeftOut,
     summary: `${have} of ${a.need} successful ${plural(a.need, "evaluation", "evaluations")}`,
     left,
     notes,
     rule: ruleSentence(skill),
-    used: [...usedSet],
-    leftOut,
+    used: run.used.map((e) => e.id),
+    leftOut: run.leftOut,
   }
 }
 
@@ -255,10 +220,18 @@ export interface NextAction {
 
 export interface CourseWork {
   mandatory: CourseItem[]
+  /** Recommended on the course (feeds "Likely here" and the placement-ending nudge). Never required. */
+  recommended: CourseItem[]
+  /** Optional on the course: submittable, counts on the record, never required or suggested. */
+  optionalOnly: CourseItem[]
+  /**
+   * Every non-mandatory skill (recommended, then optional), the block the v2 screens list under one heading. Kept as the union so
+   * existing screens read the same rows; the two levels stay separate in `recommended` and `optionalOnly` (B.9).
+   */
   optional: CourseItem[]
   notExpected: CourseItem[]
   notOpen: NotOpen[]
-  summary: { mandatory: number; achieved: number; waiting: number; optional: number; optionalAchieved: number }
+  summary: { mandatory: number; achieved: number; waiting: number; optional: number; optionalAchieved: number; recommended: number; recommendedAchieved: number }
   next: NextAction
 }
 
@@ -355,13 +328,17 @@ export function courseWork(s: V2State, studentId: string = STUDENT_ID): CourseWo
   }
   const group = (level: MappingRow["level"]) => items.filter((i) => i.level === level).sort(byName)
   const mandatory = group("mandatory")
-  // v2 keeps one non-mandatory block: recommended and optional together (the lab screens split them, CALL 10-26).
-  const optional = [...group("recommended"), ...group("optional")].sort(byName)
+  // Three levels kept apart (B.9, CALL 10-26). `optional` stays the non-mandatory union the v2 screens list under one heading.
+  const recommended = group("recommended")
+  const optionalOnly = group("optional")
+  const optional = [...recommended, ...optionalOnly].sort(byName)
   const notExpected = group("not-expected")
   notOpen.sort((a, b) => a.skill.name.localeCompare(b.skill.name))
 
   return {
     mandatory,
+    recommended,
+    optionalOnly,
     optional,
     notExpected,
     notOpen,
@@ -371,8 +348,11 @@ export function courseWork(s: V2State, studentId: string = STUDENT_ID): CourseWo
       waiting: mandatory.filter((i) => i.request && i.status !== "achieved").length,
       optional: optional.length,
       optionalAchieved: optional.filter((i) => i.status === "achieved").length,
+      recommended: recommended.length,
+      recommendedAchieved: recommended.filter((i) => i.status === "achieved").length,
     },
-    next: nextAction(s, studentId, mandatory, optional),
+    // Recommended first, then optional: the next suggestion after mandatory follows the level, not the alphabet.
+    next: nextAction(s, studentId, mandatory, [...recommended, ...optionalOnly]),
   }
 }
 
@@ -409,8 +389,9 @@ function nextAction(s: V2State, studentId: string, mandatory: CourseItem[], opti
     const i = waiting[0]
     return { kind: "wait", title: `Waiting on sign-off for ${i.skill.name}`, reason: requestWaitText(s, i.request as Submission), href: "/v2/student/request-signoff", label: "See your requests", skillId: i.skill.id }
   }
-  const opt = optional.filter((i) => i.status !== "achieved" && !i.request).sort(byName)[0]
-  if (opt) return { kind: "optional", title: `Mandatory skills are done. Log ${opt.skill.name}`, reason: "It is optional for this course. More evidence still counts toward your record.", href: `/v2/student/pick-and-rate?skill=${opt.skill.id}`, label: `Log ${opt.skill.name}`, skillId: opt.skill.id }
+  // `optional` arrives recommended first, then optional, each by name; keep that order.
+  const opt = optional.filter((i) => i.status !== "achieved" && !i.request)[0]
+  if (opt) return { kind: "optional", title: `Mandatory skills are done. Log ${opt.skill.name}`, reason: opt.level === "recommended" ? "It is recommended for this course. More evidence still counts toward your record." : "It is optional for this course. More evidence still counts toward your record.", href: `/v2/student/pick-and-rate?skill=${opt.skill.id}`, label: `Log ${opt.skill.name}`, skillId: opt.skill.id }
   return { kind: "clear", title: "You are up to date", reason: "Every mandatory skill is achieved or waiting for a sign-off.", href: "/v2/student/history", label: "See your record", skillId: null }
 }
 

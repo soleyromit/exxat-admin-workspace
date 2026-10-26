@@ -23,7 +23,7 @@ import {
   type LibraryRow,
   type SkillDraft,
 } from "@/lib/lab/library"
-import { countSkills } from "@/lib/lab/terms"
+import { countSkills, skillNoun } from "@/lib/lab/terms"
 
 export type LibraryDemo = "loading" | "empty" | "error" | null
 
@@ -133,7 +133,7 @@ export function useLibrary() {
   const copyConfig = React.useCallback((sourceId: string, targetIds: string[]) => {
     const source = byId.get(sourceId)
     setOverlay((o) => ({ ...o, copiedFrom: { ...o.copiedFrom, ...Object.fromEntries(targetIds.filter((t) => t !== sourceId).map((t) => [t, sourceId])) } }))
-    setBanner({ variant: "success", title: `Settings copied to ${countSkills(targetIds.length)}`, body: `From ${source?.name ?? "the chosen skill"}. Review each before you publish.` })
+    setBanner({ variant: "success", title: `Settings copied to ${countSkills(targetIds.length)}`, body: `From ${source?.name ?? `the chosen ${skillNoun()}`}. Review each before you publish.` })
   }, [byId])
 
   return { hydrated, demo, rows, counts, names, byId, overlay, banner, setBanner, add, addMany, edit, deactivate, reactivate, remove, copyConfig }

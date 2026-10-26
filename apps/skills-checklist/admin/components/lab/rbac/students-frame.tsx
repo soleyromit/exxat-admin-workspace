@@ -7,6 +7,7 @@
  * Rows come from lib/lab/reviewer.ts reviewerStudents: population rows (the dashboard's 123) joined with the approval queue in
  * scope, so "waiting" here equals the Approvals count for the same scope. Every name opens the reviewer student record.
  */
+import { skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
@@ -61,7 +62,7 @@ export function StudentsFrame({ variant, children, toolbar }: { variant: string;
         ) : model.rows.length === 0 ? (
           <LocalBanner variant="info" title="No students in this scope">
             <span className="flex flex-col gap-2">
-              <span>{applied.length ? "Remove a filter to widen it." : `Nobody takes a course with required skills in ${ctx.termName}.`}</span>
+              <span>{applied.length ? "Remove a filter to widen it." : `Nobody takes a course with required ${skillNounPlural()} in ${ctx.termName}.`}</span>
               <span className="flex flex-wrap gap-2">
                 {applied.map((k) => (
                   <Button key={k} type="button" variant="outline" size="sm" onClick={() => ctx.setScope(removeScope(ctx.scope, k))}>{`Remove ${SCOPE_LABEL[k].toLowerCase()}`}</Button>

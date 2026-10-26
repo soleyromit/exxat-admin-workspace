@@ -549,7 +549,7 @@ export interface DashboardModel {
 /** Columns the dashboard export carries, one row per student in scope (the DS ExportDrawer's "Visible columns only" count). */
 export const DASHBOARD_EXPORT_COLUMNS = ["Student", "Cohort", "Group", "Required this term", "Achieved", "In progress", "Missing", "Waiting with an evaluator"] as const
 /** Columns the operations export carries, one row per waiting evaluation request. */
-export const OPS_EXPORT_COLUMNS = ["Student", "Skill", "Evaluator", "Site", "Sent", "Days waiting"] as const
+export const opsExportColumns = (): string[] => ["Student", skillNoun().charAt(0).toUpperCase() + skillNoun().slice(1), "Evaluator", "Site", "Sent", "Days waiting"]
 
 export interface DrillParams {
   list: "students" | "skills" | "sites" | "requests"

@@ -16,6 +16,8 @@ import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { configureHref } from "@/lib/lab/library"
 import {
   LEVEL_LABEL,
+  LEVEL_SOURCE_LABEL,
+  type LevelSource,
   mappingLink,
   offeringById,
   offeringsForSkill,
@@ -95,6 +97,16 @@ const SHOW_OPTS = [
   { value: "optional", label: LEVEL_LABEL.optional },
   { value: "required", label: "Required on the default list" },
 ]
+
+/** A quiet "From list" beside a level inherited from a list assigned to the cohort (lib/lab/mapping.ts resolvedLevels). */
+export function FromListTag({ source }: { source: LevelSource | null }) {
+  if (source !== "list") return null
+  return (
+    <span className="whitespace-nowrap text-xs text-muted-foreground" data-level-source="list">
+      {LEVEL_SOURCE_LABEL.list}
+    </span>
+  )
+}
 
 /**
  * Assignment comes first, course settings second [CALL 10-26]: the lists attached to a cohort already apply to its offerings, and
@@ -193,7 +205,10 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         width: 200,
         cell: (r) =>
           r.configured ? (
-            <LevelSelect value={r.level} onChange={(l) => change(r, l)} label={`${r.name} in ${offering.code}`} />
+            <span className="flex items-center gap-2">
+              <LevelSelect value={r.level} onChange={(l) => change(r, l)} label={`${r.name} in ${offering.code}`} />
+              <FromListTag source={r.source} />
+            </span>
           ) : (
             <Link className={`${LINK} text-sm text-muted-foreground`} href={configureHref(r.id)}>Not configured</Link>
           ),
@@ -397,7 +412,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
 }
 
 export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName, lists = [], didactic = false }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; termId: string; termName: string; lists?: SkillList[]; didactic?: boolean }) {
-  const rows = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic), [state, overlay, skill.id, termId, didactic])
+  const rows = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic, lists.length ? lists : undefined), [state, overlay, skill.id, termId, didactic, lists])
   const [note, setNote] = React.useState("")
   const carriers = rows.filter((r) => r.level !== "none")
   const mandatory = rows.filter((r) => r.level === "mandatory").length
@@ -421,16 +436,19 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
         label: "Level",
         width: 200,
         cell: (r) => (
-          <LevelSelect
-            value={r.level}
-            label={`${skill.name} in ${r.code}`}
-            onChange={(l) => {
-              const res = setLevel(state, overlay, r.id, skill.id, l)
-              if (!res.ok) return setNote(res.reason)
-              setOverlay(res.overlay)
-              setNote(`${skill.name}: ${LEVEL_LABEL[l].toLowerCase()} in ${r.code}.`)
-            }}
-          />
+          <span className="flex items-center gap-2">
+            <LevelSelect
+              value={r.level}
+              label={`${skill.name} in ${r.code}`}
+              onChange={(l) => {
+                const res = setLevel(state, overlay, r.id, skill.id, l)
+                if (!res.ok) return setNote(res.reason)
+                setOverlay(res.overlay)
+                setNote(`${skill.name}: ${LEVEL_LABEL[l].toLowerCase()} in ${r.code}.`)
+              }}
+            />
+            <FromListTag source={r.source} />
+          </span>
         ),
       },
     ],

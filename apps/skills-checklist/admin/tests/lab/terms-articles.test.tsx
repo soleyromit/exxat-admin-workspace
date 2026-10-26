@@ -1,6 +1,7 @@
 import * as React from "react"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
+import ts from "typescript"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 
@@ -132,6 +133,57 @@ describe("source sweep", () => {
   })
   it("never singularises the plural with a regex (competencies is not competencie)", () => {
     const hits = files.filter((f) => /skillNounPlural\(\)\.replace\(\/s\$\//.test(readFileSync(f, "utf8")))
+    expect(hits).toEqual([])
+  })
+
+  // Naming sweep (CALL 10-26 item 7): the program names the thing (skill, competency, EPA). A literal "skill" or "skills" in
+  // user-visible JSX must go through skillNoun() / skillNounPlural() / aNoun() / withNoun() instead. Read with the TypeScript
+  // parser, so comments, identifiers and imports never count. What counts as user-visible:
+  //   - JSX text;
+  //   - a string attribute that people read or hear (label, title, placeholder, description, body, text, hint, heading,
+  //     caption, summary, alt, aria-label, scrollLabel, previousLabel ...);
+  //   - a string or template part inside a JSX expression that holds a space (copy, not a key such as "skills" or a slug);
+  //   - the singular or plural passed as a literal to plural() / pluralize().
+  // ALLOW lists the only names that stay fixed whatever the program calls its thing.
+  const ALLOW: Array<{ file: string; text: RegExp; why: string }> = [
+    { file: "components/lab/evaluator/lab-grid-parts.tsx", text: /^Skills lab$/, why: "the room's name (a skills lab), not the program's noun" },
+    { file: "components/lab/lab-index.tsx", text: /^Skills tracking$/, why: "the product's name on the internal lab index" },
+  ]
+  const VISIBLE_ATTR = /(label|title|placeholder|description|body|text|hint|heading|caption|summary|alt)$/i
+  const SKILL = /\bskills?\b/i
+  it("finds no literal 'skill' in user-visible JSX outside the allow-list", () => {
+    const hits: string[] = []
+    for (const f of files.filter((p) => p.endsWith(".tsx"))) {
+      const rel = f.split("/admin/")[1]
+      const sf = ts.createSourceFile(f, readFileSync(f, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+      const report = (node: ts.Node, text: string) => {
+        const clean = text.trim().replace(/\s+/g, " ")
+        if (ALLOW.some((a) => a.file === rel && a.text.test(clean))) return
+        hits.push(`${rel}:${sf.getLineAndCharacterOfPosition(node.getStart()).line + 1} "${clean.slice(0, 80)}"`)
+      }
+      const insideJsxExpression = (n: ts.Node) => {
+        for (let p = n.parent; p; p = p.parent) {
+          if (ts.isJsxExpression(p)) return true
+          if (ts.isSourceFile(p)) return false
+        }
+        return false
+      }
+      const pluralArg = (n: ts.Node) => ts.isCallExpression(n.parent) && /^(plural|pluralize)$/.test(n.parent.expression.getText(sf)) && n.parent.arguments.some((a) => a === n)
+      const visit = (n: ts.Node) => {
+        if (ts.isJsxText(n)) {
+          if (SKILL.test(n.text)) report(n, n.text)
+        } else if (ts.isJsxAttribute(n) && n.initializer && ts.isStringLiteral(n.initializer)) {
+          if (VISIBLE_ATTR.test(n.name.getText(sf)) && SKILL.test(n.initializer.text)) report(n, n.initializer.text)
+        } else if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n)) {
+          if (SKILL.test(n.text) && !ts.isJsxAttribute(n.parent) && !ts.isImportDeclaration(n.parent)) {
+            const copy = /\s/.test(n.text.trim()) || /^\s|\s$/.test(n.text)
+            if (pluralArg(n) || (copy && insideJsxExpression(n))) report(n, n.text)
+          }
+        }
+        ts.forEachChild(n, visit)
+      }
+      visit(sf)
+    }
     expect(hits).toEqual([])
   })
 })

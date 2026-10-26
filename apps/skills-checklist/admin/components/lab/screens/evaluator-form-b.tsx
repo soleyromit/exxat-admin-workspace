@@ -5,6 +5,7 @@
  * Mental model: a short survey. Built for a long request (7 skills) where one long page loses the evaluator's place.
  * Next checks only the current skill; the review step lists anything still open with a link back to it.
  */
+import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -57,7 +58,7 @@ export function EvaluatorFormB() {
       footer={
         <StickyBar>
           {/* A Previous / Next pager: the dead half stays in place at the first skill so Next never moves under the thumb. */}
-          <Button type="button" variant="outline" size="lg" className="min-h-(--control-height-touch)" disabled={step === 0} onClick={() => go(step - 1)} aria-label="Previous skill">Previous</Button>
+          <Button type="button" variant="outline" size="lg" className="min-h-(--control-height-touch)" disabled={step === 0} onClick={() => go(step - 1)} aria-label={`Previous ${skillNoun()}`}>Previous</Button>
           {onReview ? (
             <Button type="button" variant="default" size="lg" className="min-h-(--control-height-touch) flex-1 sm:ms-auto sm:flex-none" onClick={m.submit}>{m.offline ? "Save and send later" : `Submit ${skillsWord(last)}`}</Button>
           ) : (
@@ -72,7 +73,7 @@ export function EvaluatorFormB() {
           <Wizard steps={steps} current={step} orientation="horizontal" variant="compact" onStepClick={(i) => go(i)}>
             <WizardNav className="hidden md:flex" />
             <WizardContent className="flex flex-col gap-3">
-              <WizardProgress formatLabel={(c, t) => (c === t ? "Review" : `Skill ${c} of ${t - 1}`)} />
+              <WizardProgress formatLabel={(c, t) => (c === t ? "Review" : `${capitalize(skillNoun())} ${c} of ${t - 1}`)} />
               <div
                 data-region="skill"
                 onTouchStart={(e) => { touch.current = e.touches[0]?.clientX ?? null }}

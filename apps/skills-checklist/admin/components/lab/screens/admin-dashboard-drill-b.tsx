@@ -102,7 +102,7 @@ export function AdminDashboardDrillB() {
       { key: "student", label: "Student", width: 260, cell: (r: DrillStudent) => <PersonIdentityCell name={r.name} initials={initialsOf(r.name)} /> },
       { key: "group", label: "Group", width: 120, cell: (r: DrillStudent) => r.group ?? "None" },
       { key: "achieved", label: "Required achieved", width: 150, cell: (r: DrillStudent) => <span className="tabular-nums">{`${r.achieved} of ${r.required}`}</span> },
-      ...(params.skill ? [{ key: "skill", label: "On this skill", width: 160, cell: (r: DrillStudent) => r.skillState ?? "" }] : []),
+      ...(params.skill ? [{ key: "skill", label: `On this ${skillNoun()}`, width: 160, cell: (r: DrillStudent) => r.skillState ?? "" }] : []),
       ...(allFlagged ? [] : [{ key: "status", label: "Status", width: 200, cell: (r: DrillStudent) => (r.behind ? <BehindBadge label={flag} /> : <span className="text-sm text-muted-foreground">On track</span>) }]),
     ]
   } else if (model.skills) {

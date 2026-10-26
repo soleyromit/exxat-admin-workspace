@@ -33,7 +33,16 @@ export interface SkillList {
   minTotal: number
   /** The standard this list measures, shown under the name. */
   standard: string
+  /**
+   * The level each skill takes in the clinical offerings of an assigned cohort (cohort inheritance, decision D-X27). A skill the
+   * list does not name here is Optional there (available, counts on the record, never required). Explicit course levels and the
+   * per-offering edits override it (lib/lab/mapping.ts resolvedLevels). Absent on the seeded lists.
+   */
+  levels?: Partial<Record<string, ListLevel>>
 }
+
+/** The per-course levels a list can give its skills by inheritance. */
+export type ListLevel = "mandatory" | "recommended" | "optional"
 
 export type GroupKind = "cohort" | "track" | "custom"
 
@@ -67,7 +76,10 @@ export const cohortGroupId = (name: string) => `coh:${name}`
 /** Same value the scope bar's Group filter uses for a track (lib/v2/filters.ts TRACK_GROUP_PREFIX). */
 const trackGroupId = (id: string) => `${TRACK_GROUP_PREFIX}${id}`
 
-/** Live lists assigned to a cohort: they already apply to every offering of that cohort (course levels are overrides). */
+/**
+ * Live lists assigned to a cohort: every skill on them is available in each CLINICAL offering of that cohort, at the list's level
+ * (Optional unless the list names one); explicit course levels and per-offering edits override (lib/lab/mapping.ts resolvedLevels).
+ */
 export const listsForCohort = (lists: readonly SkillList[], cohort: string): SkillList[] => lists.filter((l) => l.status === "live" && l.groupIds.includes(cohortGroupId(cohort)))
 
 /**

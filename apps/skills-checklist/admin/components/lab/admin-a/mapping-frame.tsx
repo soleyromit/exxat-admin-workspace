@@ -45,7 +45,7 @@ export function MappingFrame({ variant, children }: { variant: string; children:
     if (!state) return null
     const terms = termOptions(state)
     const termId = terms.some((t) => t.id === termParam) ? termParam : currentTermId(state)
-    const offerings = offeringRows(state, overlay)
+    const offerings = offeringRows(state, overlay, lists)
     return {
       offerings,
       termId,

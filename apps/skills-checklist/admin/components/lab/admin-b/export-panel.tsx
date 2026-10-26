@@ -17,6 +17,7 @@
  *   overruled). The signed PDF stays the aggregate summary. CSV versus Excel (OD-10) is flagged as a pending decision.
  * - The prototype writes a real CSV file; PDF and Excel confirm in place.
  */
+import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -29,7 +30,8 @@ import { detailRows, exportFormats, FORMAT_DECISION_PENDING, summaryRows, toCsv,
 import type { V2State } from "@/lib/v2/types"
 import { fmt } from "@/lib/v2/format"
 
-const VIEW_WORD: Record<AttView, string> = { students: "Students", skills: "Skills", sections: "Sections", tags: "Tags" }
+// A getter for the program's noun, so it follows Settings > Naming.
+const VIEW_WORD: Record<AttView, string> = { students: "Students", get skills() { return capitalize(skillNounPlural()) }, sections: "Sections", tags: "Tags" }
 
 export function ExportPanel({ open, onOpenChange, model, data, view, scopeLines, fileStem }: { open: boolean; onOpenChange: (o: boolean) => void; model: AttainmentModel; data: V2State; view: AttView; scopeLines: string[]; fileStem: string }) {
   const formats = React.useMemo(() => exportFormats(), [])

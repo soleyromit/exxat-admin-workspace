@@ -10,6 +10,7 @@ import type { Evaluation, Outcome, Person, Skill, Submission, V2State } from "@/
 import { populationRows, resolveTerm, type StudentRow, type TermInfo } from "./dashboard"
 import { EMPTY_SCOPE } from "./scope"
 import { countSkills, skillNoun, skillNounPlural } from "./terms"
+import { attemptLine, evaluateRule, fromV2, isInvalidResult, type LabRule } from "./configure"
 
 /**
  * Student lab model (My progress, Skill detail, My requests, Fix a submission). A pure function of the v2 state, read only.
@@ -650,14 +651,42 @@ export function attempts(state: V2State, studentId: string, skillId: string, tod
 }
 
 /**
- * How attempts are counted, in one plain line next to the progress [CALL 10-26 B.4]: "5 attempts, 3 count". Only completed
- * evaluations are attempts; waiting and returned ones are not yet. Empty when there is no completed attempt.
+ * How a published question rule turns answers into one valid attempt, in one plain sentence [REQ SC-05; CALL 10-26 B.4]:
+ * "At least 2 of 3 questions answered Yes counts as one." Empty when the rule does not read answers (the seed: outcome decides).
  */
-export function attemptCountLine(rows: readonly Pick<AttemptRow, "kind">[]): string {
-  const total = rows.filter((r) => r.kind === "counted" || r.kind === "not-counted").length
-  if (total === 0) return ""
-  const count = rows.filter((r) => r.kind === "counted").length
-  return `${total} ${total === 1 ? "attempt" : "attempts"}, ${count} ${count === 1 ? "counts" : "count"}`
+export function questionRuleLine(rule: LabRule): string {
+  const r = rule.model === "question" ? rule.questionRule : null
+  if (!r) return ""
+  const m = rule.questions.length
+  if (r.kind === "all") return `All ${m} questions answered Yes counts as one.`
+  if (r.kind === "atLeast") return `At least ${r.n} of ${m} questions answered Yes counts as one.`
+  const picked = [...r.indices].sort((a, b) => a - b).map((i) => `${i + 1}`)
+  const list = picked.length <= 1 ? picked.join("") : `${picked.slice(0, -1).join(", ")} and ${picked[picked.length - 1]}`
+  return `${picked.length === 1 ? "Question" : "Questions"} ${list} answered Yes ${picked.length === 1 ? "counts" : "count"} as one.`
+}
+
+/**
+ * How attempts are counted for one student and skill, next to the progress [CALL 10-26 B.4], from the published rule through the
+ * one engine (lib/lab/configure.ts evaluateRule, which runs lib/v2/rules.ts): "5 attempts, 2 unmet: 3 count", and for a question
+ * rule "2 attempts, 1 not valid: 1 counts. At least 2 of 3 questions answered Yes counts as one." Only completed evaluations are
+ * attempts; waiting and returned ones are not yet. Empty when there is no completed attempt or the skill has no valid rule.
+ */
+export function attemptCountLine(state: V2State, studentId: string, skillId: string, opts: { compact?: boolean } = {}): string {
+  const s = heldState(state)
+  const skill = skillById(s, skillId)
+  if (!skill?.config || !skill.model) return ""
+  const rule = fromV2(skill)
+  const r = evaluateRule(rule, evalsOfStudentSkill(s, studentId, skillId))
+  if (isInvalidResult(r)) return ""
+  // Compact (the phone ledger, density budget at 375): the same engine counts without the breakdown or the question sentence.
+  if (opts.compact) {
+    const a = r.attempts
+    return a.total === 0 ? "" : `${a.total} ${a.total === 1 ? "attempt" : "attempts"}, ${a.count} ${a.count === 1 ? "counts" : "count"}`
+  }
+  const line = attemptLine(rule, r.attempts)
+  if (!line) return ""
+  const q = questionRuleLine(rule)
+  return q ? `${line}. ${q}` : line
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -732,7 +761,7 @@ export function fixModel(state: V2State, studentId: string, opts: { submissionId
     reason: rec.failed?.rule ?? shortfallSentence(rec.progress),
     reasonBy: rec.failed?.evaluatorName ?? "",
     reasonAt: rec.failed?.date ?? last?.date ?? today,
-    changes: [`Read the feedback from ${rec.failed?.evaluatorName ?? "your evaluator"}`, "Perform the skill again in a clinical setting", rec.progress.distinct.need > 1 ? `Ask a different evaluator if you need ${fmt(rec.progress.distinct.need)} different evaluators` : "Send it to the evaluator who watched you"],
+    changes: [`Read the feedback from ${rec.failed?.evaluatorName ?? "your evaluator"}`, `Perform the ${skillNoun()} again in a clinical setting`, rec.progress.distinct.need > 1 ? `Ask a different evaluator if you need ${fmt(rec.progress.distinct.need)} different evaluators` : "Send it to the evaluator who watched you"],
     nextNumber: evals.length + 1,
     submissionId: null,
     others: worked,

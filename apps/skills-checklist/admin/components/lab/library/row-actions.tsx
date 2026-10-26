@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { configureHref, mappingHref, newListHref, type LibraryRow } from "@/lib/lab/library"
-import { countSkills } from "@/lib/lab/terms"
+import { countSkills, skillNoun } from "@/lib/lab/terms"
 import type { LibraryApi } from "./use-library"
 import { plural } from "@/lib/v2/format"
 
@@ -154,7 +154,7 @@ export function CopySettingsDialog({ targets, sources, onOpenChange, onConfirm }
           <Label htmlFor="copy-source">Copy from</Label>
           <Select value={source} onValueChange={setSource}>
             <SelectTrigger id="copy-source" className="w-full">
-              <SelectValue placeholder="Choose a configured skill" />
+              <SelectValue placeholder={`Choose a configured ${skillNoun()}`} />
             </SelectTrigger>
             <SelectContent className="max-h-72">
               {sources.map((s) => (

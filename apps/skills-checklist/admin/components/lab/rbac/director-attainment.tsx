@@ -23,7 +23,7 @@ import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
 import { StateLegend } from "@/components/lab/admin-b/state-viz"
 import { RequiredSetSwitch, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
-import { capitalize, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { DiamondGlyph, VIZ } from "@/components/lab/viz"
 import { BASIS_LABEL, conditionLabel } from "@/lib/lab/dashboard"
 import { buildAttainment, peekRecords, scopeLines, type AttView } from "@/lib/lab/attainment"
@@ -107,7 +107,7 @@ export function ReadinessLine({ ctx }: { ctx: DirectorContext & { model: Readine
     <section aria-label={`Graduation readiness, ${who}`} className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-(--brand-tint-subtle) px-4 py-3" data-region="readiness">
       <p className="text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">{who}</span>
-        {` ready to graduate, every required skill · ${plural(m.rows.length, "student", "students")}`}
+        {` ready to graduate, every required ${skillNoun()} · ${plural(m.rows.length, "student", "students")}`}
       </p>
       {GRADUATION_STAGES.map((st) => (
         <span key={st} className="inline-flex items-baseline gap-1.5 text-sm text-muted-foreground" data-figure data-band={st} data-band-count={m.graduation[st]}>

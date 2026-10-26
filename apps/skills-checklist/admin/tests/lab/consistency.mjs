@@ -271,6 +271,86 @@ check("Write: the same assign raises dashboard Waiting with evaluators by 1 (fig
   drill: grab(asgDrillW.text, /(\d[\d,]*) requests? waiting with evaluators/)?.[0],
 })
 seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
+
+// Cohort inheritance (decision D-X27): a list assigned to a cohort makes its skills available in that cohort's clinical offerings,
+// marked "From list". Read the open offering on Course mapping A, assign (or, for BSN 2027, which already has it, unassign) the
+// practicum competencies list through the same lists overlay the Lists screen writes, reload, and read the offering again.
+{
+  const offTotals = async () => {
+    await open(`/lab/admin/course-mapping?${TERM}&variant=A`)
+    return page.evaluate(() => {
+      const label = document.querySelector("[data-level-totals]")?.getAttribute("aria-label") ?? ""
+      const m = label.match(/(\d+) mapped: (\d+) mandatory/)
+      const meta = document.querySelector("[data-region=offering]")?.textContent ?? ""
+      const cohort = (meta.match(/(A?BSN \d{4})/) ?? [])[1] ?? null
+      return { mapped: m ? Number(m[1]) : null, mandatory: m ? Number(m[2]) : null, cohort, fromList: document.querySelectorAll("[data-level-source=list]").length }
+    })
+  }
+  const before = await offTotals()
+  const adding = before.cohort !== "BSN 2027"
+  const groupIds = adding ? ["coh:BSN 2027", `coh:${before.cohort}`] : []
+  await page.evaluate((ids) => {
+    try { sessionStorage.setItem("lab.admin.lists.v1", JSON.stringify({ created: [], edits: { "list-competencies": { groupIds: ids } } })) } catch { /* storage blocked */ }
+  }, groupIds)
+  const after = await offTotals()
+  check(`Inheritance: ${adding ? "assigning" : "removing"} a list on ${before.cohort} ${adding ? "raises" : "lowers"} the open offering's mapped count`, {
+    moved: before.mapped != null && after.mapped != null ? (adding ? after.mapped > before.mapped : after.mapped < before.mapped) ? 1 : 0 : null,
+    expected: 1,
+  })
+  check("Inheritance: a list never adds Mandatory (the open offering's mandatory is unchanged)", { before: before.mandatory, after: after.mandatory })
+  check("Inheritance: inherited rows carry the From list tag", { tagged: after.fromList > 0 ? 1 : 0, expected: 1 })
+  await page.evaluate(() => { try { sessionStorage.removeItem("lab.admin.lists.v1") } catch { /* storage blocked */ } })
+  const restored = await offTotals()
+  check("Inheritance: undoing the assignment restores the mapped count", { before: before.mapped, restored: restored.mapped })
+  seen.inheritance = { before, after, restored }
+}
+
+// Rule write-back (decision D-X27): publish "at least 2 of 3 questions answered Yes" on sterile dressing change (Configure B), then
+// after a reload Maya's attempt line applies the published rule, the impact the configure screen showed equals the students whose
+// record changed, and the dashboard Required achieved figure moves by the impact's gains (none here: Maya is still short).
+{
+  const SK = "sk-sterile-dressing"
+  const lineOf = async () => {
+    await open(`/lab/student/skill-detail?skill=${SK}`)
+    return page.evaluate(() => document.querySelector("[data-attempt-line]")?.textContent?.trim() ?? null)
+  }
+  const lineBefore = await lineOf()
+  const dashBefore = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
+  const achBefore = grab(dashBefore.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
+  await open(`/lab/admin/configure-skill?skill=${SK}&variant=B`)
+  let published = false
+  let changedSaid = null
+  const atLeast = page.locator("label[for=cfg-qrule-atleast]").first()
+  if ((await atLeast.count()) > 0) {
+    await atLeast.click()
+    const pub = page.getByRole("button", { name: "Publish", exact: true }).first()
+    await pub.click()
+    await page.waitForTimeout(800)
+    const reapply = page.locator("label[for=cfg-mode-reapply]").first()
+    if ((await reapply.count()) > 0 && !(await page.locator("[data-published]").count())) {
+      await reapply.click()
+      await pub.click()
+    }
+    await page.waitForSelector("[data-published]", { timeout: 15_000 }).catch(() => null)
+    published = (await page.locator("[data-published]").count()) > 0
+    changedSaid = await page.evaluate(() => {
+      const t = document.querySelector("[data-published]")?.textContent ?? ""
+      const m = t.match(/(\d+) students? now sees?/)
+      return m ? Number(m[1]) : /see this .* as configured/.test(t) ? 0 : null
+    })
+  }
+  const lineAfter = await lineOf()
+  const dashAfter = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
+  const achAfter = grab(dashAfter.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
+  check("Rule write-back: before publish, Maya's sterile dressing line counts on outcome", { ok: lineBefore === "2 attempts, 2 not valid: 0 count" ? 1 : 0, expected: 1 })
+  check("Rule write-back: after publish and reload, Maya's line applies the published question rule", {
+    ok: published && lineAfter === "2 attempts, 1 not valid: 1 counts. At least 2 of 3 questions answered Yes counts as one." ? 1 : 0,
+    expected: 1,
+  })
+  check("Rule write-back: students the impact said would change = students whose record changed (Maya)", { impact: changedSaid, changed: lineAfter !== lineBefore ? 1 : 0 })
+  check("Rule write-back: dashboard Required achieved moves by the impact's gains (0: Maya is still short)", { before: achBefore?.[1], after: achAfter?.[1] })
+  seen.ruleWriteBack = { lineBefore, lineAfter, published, changedSaid, achBefore, achAfter }
+}
 // Leave the shared store as the seed for the next run.
 await page.evaluate(() => { try { localStorage.clear(); sessionStorage.clear() } catch { /* storage blocked */ } })
 

@@ -5,6 +5,7 @@
  * everything else is compact. Selected state is the DS toggle's soft brand tint, never a saturated fill and never red.
  * The skill name is said once, by the caller (card title, step heading or table row); labels here are generic.
  */
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { ToggleGroup, ToggleGroupItem } from "@exxatdesignux/ui/components/ui/toggle-group"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
@@ -195,7 +196,7 @@ export function contextLine(req: EvRequest): string {
   return [req.course.code, req.where ? `${req.where.location}${req.where.setting ? `, ${req.where.setting}` : ""}` : null].filter(Boolean).join(" · ")
 }
 
-export const skillsWord = (n: number) => `${n} ${n === 1 ? "skill" : "skills"}`
+export const skillsWord = (n: number) => `${n} ${n === 1 ? skillNoun() : skillNounPlural()}`
 
 /**
  * Who is asking and where, shown inside the light header (EvaluatorFrame `summary`): the student's name as the page title and

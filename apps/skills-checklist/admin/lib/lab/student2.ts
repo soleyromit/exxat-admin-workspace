@@ -4,7 +4,7 @@ import { evalsOfStudent, personById, skillById, submissionsOfStudent } from "@/l
 import { evaluatorChoices, openToLog, ratingKind, ratingOptions, sentElsewhereTo, skillProgress, whereOptions, type WhereOption } from "@/lib/v2/student"
 import { verificationStatus } from "@/lib/v2/verification"
 import type { Evaluation, Person, Setting, SignoffMethod, Skill, SyncConflict, SyncState, V2State } from "@/lib/v2/types"
-import { DEFAULT_STUDENT, OUTCOME_WORD, STUDENT_BASE, shortDate, shortfallSentence, type SkillState, type StudentModel } from "./student"
+import { DEFAULT_STUDENT, OUTCOME_WORD, STUDENT_BASE, attemptCountLine, shortDate, shortfallSentence, type SkillState, type StudentModel } from "./student"
 import { countSkills } from "./terms"
 
 /**
@@ -399,12 +399,13 @@ export function groupBySkill(rows: RecordRow[]): SkillGroupRow[] {
   return [...m.values()].sort((a, b) => b.notCounted - a.notCounted || (a.latest < b.latest ? 1 : -1))
 }
 
-/** "5 attempts, 3 count" for one skill's record rows [CALL 10-26 B.4]. Waiting and returned rows are not attempts yet. */
-export function recordAttemptLine(rows: readonly Pick<RecordRow, "result">[]): string {
-  const total = rows.filter((r) => r.result === "counted" || r.result === "not-counted").length
-  if (total === 0) return ""
-  const count = rows.filter((r) => r.result === "counted").length
-  return `${total} ${total === 1 ? "attempt" : "attempts"}, ${count} ${count === 1 ? "counts" : "count"}`
+/**
+ * "5 attempts, 3 count" for one skill on the record [CALL 10-26 B.4]: the published rule through the one engine (the same counts
+ * the skill page shows, lib/lab/student.ts attemptCountLine), never a count of rows. Compact on the record: the breakdown and the
+ * question sentence live on the skill page (density budget at 375). Waiting and returned evaluations are not attempts yet.
+ */
+export function recordAttemptLine(state: V2State, studentId: string, skillId: string): string {
+  return attemptCountLine(state, studentId, skillId, { compact: true })
 }
 
 /** Month buckets for the chronological view: "October 2026". */

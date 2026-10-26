@@ -7,6 +7,7 @@
  * (names the filters, one Remove each), no required skills (?state=empty), stale (the scope bar's own badge). A screen lays out
  * only its own regions; error and partial are per region and live in the screen.
  */
+import { skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import type { PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
@@ -59,7 +60,7 @@ export function DirectorPage({ title, variant, pageType, actionItems, showScope 
         {!ctx.ready || !m ? (
           <DirectorSkeleton />
         ) : ctx.demo === "empty" || m.required.length === 0 ? (
-          <Calm icon="fa-list-check" title="No skills are marked required for graduation" body="Readiness appears here once the program marks which skills each student must achieve before graduating." />
+          <Calm icon="fa-list-check" title={`No ${skillNounPlural()} are marked required for graduation`} body={`Readiness appears here once the program marks which ${skillNounPlural()} each student must achieve before graduating.`} />
         ) : m.rows.length === 0 ? (
           <Calm icon="fa-filter" title="No students in this scope" body={`${ctx.scope.cohort || "These filters"} ${ctx.scope.course ? "with this course " : ""}match nobody in ${m.population.term.name}.`}>
             <span className="flex flex-wrap gap-2 pt-1">

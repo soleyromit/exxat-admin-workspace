@@ -5,6 +5,7 @@
  * scope, the export controls (DS ExportDrawer, plus a popover that says what each file holds), and the line that says what is
  * excluded. Every count links to the rows behind it with the same scope [REQ RP-05, RP-06].
  */
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -18,12 +19,13 @@ import { CountLink } from "@/components/lab/director/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { fmt, initialsOf } from "@/lib/v2/format"
-import { CSV_COLUMNS, DIRECTOR_NAME, detailHref, directorHref, listHref, plural, type ReportModel, type ReportView, type SectionReportRow, type SkillReportRow, type StudentReportRow } from "@/lib/lab/director"
+import { csvColumns, DIRECTOR_NAME, detailHref, directorHref, listHref, plural, type ReportModel, type ReportView, type SectionReportRow, type SkillReportRow, type StudentReportRow } from "@/lib/lab/director"
 import type { LabScope } from "@/lib/lab/scope"
 
 export const VIEW_OPTIONS = [
   { value: "student" as const, label: "By student" },
-  { value: "skill" as const, label: "By skill" },
+  // A getter, so the label follows the program's noun when it changes (Settings > Naming).
+  { value: "skill" as const, get label() { return `By ${skillNoun()}` } },
   { value: "section" as const, label: "By section" },
 ]
 
@@ -45,7 +47,7 @@ function studentCols(scope: LabScope): ColumnDef<StudentReportRow>[] {
 
 function skillCols(scope: LabScope): ColumnDef<SkillReportRow>[] {
   return [
-    { key: "name", label: "Skill", width: 240, sortable: true, cell: (r) => <span className="truncate text-sm text-foreground" title={r.name}>{r.name}</span> },
+    { key: "name", label: capitalize(skillNoun()), width: 240, sortable: true, cell: (r) => <span className="truncate text-sm text-foreground" title={r.name}>{r.name}</span> },
     { key: "section", label: "Section", width: 180, sortable: true, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.section}</span> },
     { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <CountLink n={r.achieved} href={listHref(scope, { list: "has", skill: r.id })} label={`${r.achieved} students achieved ${r.name}. Open the list`} className={num} /> },
     { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <CountLink n={r.progress} href={listHref(scope, { list: "progress", skill: r.id })} label={`${r.progress} in progress on ${r.name}. Open the list`} className={num} /> },
@@ -57,7 +59,7 @@ function sectionCols(scope: LabScope, variant: string): ColumnDef<SectionReportR
   const bySkill = (section: string) => directorHref("reports", { ...scope, cat: section }, { variant, view: "skill" })
   return [
     { key: "section", label: "Section", width: 220, sortable: true, cell: (r) => <Link className={`${LINK} text-sm`} href={bySkill(r.section)}>{r.section}</Link> },
-    { key: "skills", label: "Skills", width: 90, sortable: true, cell: (r) => <Link className={`${LINK} ${num}`} href={bySkill(r.section)} aria-label={`${r.skills} skills in ${r.section}. Open them`}>{fmt(r.skills)}</Link> },
+    { key: "skills", label: capitalize(skillNounPlural()), width: 90, sortable: true, cell: (r) => <Link className={`${LINK} ${num}`} href={bySkill(r.section)} aria-label={`${r.skills} ${skillNounPlural()} in ${r.section}. Open them`}>{fmt(r.skills)}</Link> },
     { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.achieved)}</span> },
     { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.progress)}</span> },
     { key: "notMet", label: "Unmet", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.notMet)}</span> },
@@ -71,12 +73,12 @@ export function ReportTable({ view, r, scope, variant }: { view: ReportView; r: 
   const c = React.useMemo(() => sectionCols(scope, variant), [scope, variant])
   const common = { searchable: false, showQueryControls: false, edgeInset: false } as const
   if (view === "student") return <DataTable<StudentReportRow> key="student" data={r.students} columns={s} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No students match these filters" />} />
-  if (view === "skill") return <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No required skills match these filters" />} />
+  if (view === "skill") return <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} match these filters`} />} />
   return <DataTable<SectionReportRow> key="section" data={r.sections} columns={c} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No sections match these filters" />} />
 }
 
 export const viewRows = (view: ReportView, r: ReportModel) => (view === "student" ? r.students.length : view === "skill" ? r.skills.length : r.sections.length)
-const viewNoun = (view: ReportView, n: number) => (view === "student" ? plural(n, "student", "students") : view === "skill" ? plural(n, "skill", "skills") : plural(n, "section", "sections"))
+const viewNoun = (view: ReportView, n: number) => (view === "student" ? plural(n, "student", "students") : view === "skill" ? plural(n, skillNoun(), skillNounPlural()) : plural(n, "section", "sections"))
 
 const EXCLUDED = "Not in either file: self-ratings and private notes."
 
@@ -107,13 +109,13 @@ export function ExportControls({ view, r }: { view: ReportView; r: ReportModel }
           </DropdownMenuItem>
           <DropdownMenuItem className="flex-col items-start gap-0.5" onSelect={() => setOpen(true)}>
             <span className="font-medium text-foreground">CSV</span>
-            <span className="text-xs text-muted-foreground">{`${plural(r.csvRows, "row", "rows")}, one per evaluation: ${CSV_COLUMNS.join(", ").toLowerCase()}.`}</span>
+            <span className="text-xs text-muted-foreground">{`${plural(r.csvRows, "row", "rows")}, one per evaluation: ${csvColumns().join(", ").toLowerCase()}.`}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{EXCLUDED}</DropdownMenuLabel>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ExportDrawer open={open} onOpenChange={setOpen} totalRows={r.csvRows} visibleColumns={CSV_COLUMNS.length} />
+      <ExportDrawer open={open} onOpenChange={setOpen} totalRows={r.csvRows} visibleColumns={csvColumns().length} />
     </>
   )
 }

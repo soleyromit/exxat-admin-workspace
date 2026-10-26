@@ -119,7 +119,7 @@ function StudentsTable({ rows, scope, flagLabel, skillCol }: { rows: DrillStuden
     { key: "cohort", label: "Cohort", width: 130, cell: (r: DrillStudent) => (r.group ? `${r.cohort}, ${r.group}` : r.cohort) },
     { key: "counted", label: "Evaluations counted", width: 160, cell: (r: DrillStudent) => `${r.collected} of ${r.needed}` },
     { key: "achieved", label: "Required achieved", width: 150, cell: (r: DrillStudent) => `${r.achieved} of ${r.required}` },
-    ...(skillCol ? [{ key: "skill", label: "On this skill", width: 140, cell: (r: DrillStudent) => r.skillState ?? "" }] : []),
+    ...(skillCol ? [{ key: "skill", label: `On this ${skillNoun()}`, width: 140, cell: (r: DrillStudent) => r.skillState ?? "" }] : []),
     // When every row carries the same flag (the list is filtered on it), the chip above already says it: no column of
     // identical amber badges (strategy/07 Von Restorff, say it once).
     ...(rows.length > 0 && rows.every((r) => r.behind) ? [] : [{ key: "status", label: "Status", width: 200, cell: (r: DrillStudent) => (r.behind ? <BehindBadge label={flagLabel} /> : <span className="text-sm text-muted-foreground">On track</span>) }]),

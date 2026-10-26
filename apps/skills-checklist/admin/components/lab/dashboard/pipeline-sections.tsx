@@ -182,7 +182,7 @@ export function SectionsCard({ model, scope }: { model: PipelineModel; scope: La
           </ul>
         </div>
         <p className="sr-only">{summary}</p>
-        <Table scrollLabel="Required skill records by section and state">
+        <Table scrollLabel={`Required ${skillNoun()} records by section and state`}>
           <TableHeader>
             <TableRow>
               <TableHead>Section</TableHead>

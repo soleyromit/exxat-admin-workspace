@@ -32,10 +32,11 @@ import { asOfLabel, useDashboardUrl, useSnapshot } from "@/components/lab/dashbo
 import { BASIS_LABEL, chipValue, parseDemoState, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
 import { buildAttainment, detailColumns, detailRows, exportFormats, FORMAT_DECISION_PENDING, isAttView, scopeLines, summaryRows, toCsv, type AttView, type DetailRow, type ExportFormat } from "@/lib/lab/attainment"
 import { basisOf, type ScopeKey } from "@/lib/lab/scope"
-import { capitalize, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 const PREVIEW_ROWS = 5
-const VIEW_WORD: Record<AttView, string> = { students: "Students", skills: "Skills", sections: "Sections", tags: "Tags" }
+// A getter for the program's noun, so it follows Settings > Naming.
+const VIEW_WORD: Record<AttView, string> = { students: "Students", get skills() { return capitalize(skillNounPlural()) }, sections: "Sections", tags: "Tags" }
 
 interface Made { id: number; file: string; format: string; rows: number; lines: string[]; at: string }
 
@@ -210,7 +211,7 @@ export function AdminExportB() {
 }
 
 function SummaryPreview({ model, view }: { model: ReturnType<typeof buildAttainment>; view: AttView }) {
-  const head = view === "students" ? "Student" : view === "skills" ? "Skill" : view === "sections" ? "Section" : "Tag"
+  const head = view === "students" ? "Student" : view === "skills" ? capitalize(skillNoun()) : view === "sections" ? "Section" : "Tag"
   const rows: Array<{ k: string; name: string; achieved: number; total: number }> =
     view === "students" ? model.students.map((s) => ({ k: s.id, name: s.name, achieved: s.counts.achieved, total: s.total }))
       : view === "skills" ? model.skills.map((s) => ({ k: s.skillId, name: s.name, achieved: s.counts.achieved, total: s.total }))

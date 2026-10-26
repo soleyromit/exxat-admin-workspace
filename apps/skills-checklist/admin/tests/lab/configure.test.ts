@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
 import { skillProgress } from "@/lib/v2/student"
 import { skillById } from "@/lib/v2/evidence-index"
+import { heldState } from "@/lib/v2/approvals"
 import type { Evaluation } from "@/lib/v2/types"
 import {
   affectedStudentLine,
@@ -24,7 +25,8 @@ import {
   PROPOSED_MODELS,
   partSentence,
   SECTIONS,
-  evaluateRule,
+  evaluateRule as evaluateRuleRaw,
+  isInvalidResult,
   fromV2,
   ruleSentence,
   sampleChange,
@@ -37,6 +39,13 @@ import {
 
 const s = createSeed()
 const MED = "sk-med-admin"
+
+/** The engine on a rule that is valid (every rule in these tests sets a frequency); an invalid one fails the test loudly. */
+const evaluateRule = (r: LabRule, evals: readonly Evaluation[]) => {
+  const x = evaluateRuleRaw(r, evals)
+  if (isInvalidResult(x)) throw new Error(x.message)
+  return x
+}
 
 const ev = (over: Partial<Evaluation>): Evaluation => ({
   id: Math.random().toString(36).slice(2),
@@ -295,7 +304,8 @@ describe("configure: Oct 26 call updates", () => {
     expect(ex.notQualifying).toBeGreaterThan(0)
     expect(ex.total).toBe(ex.notQualifying + ex.notUsed + ex.count)
     // It is the first student in dataset order whose record shows both sides (some did not count, 2 or more count).
-    const all = studentsOf(s).map((p) => evaluateRule(rule, s.evaluations.filter((e) => e.studentId === p.id && e.skillId === MED)))
+    const held = heldState(s)
+    const all = studentsOf(held).map((p) => evaluateRule(rule, held.evaluations.filter((e) => e.studentId === p.id && e.skillId === MED)))
     const first = all.find((x) => x.attempts.total >= 2 && x.attempts.notQualifying > 0 && x.attempts.count >= 2) ?? all.find((x) => x.attempts.total >= 2 && x.attempts.notQualifying > 0)
     expect(first?.attempts).toEqual(ex)
   })

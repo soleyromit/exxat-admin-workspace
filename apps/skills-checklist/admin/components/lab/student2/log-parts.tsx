@@ -245,7 +245,7 @@ export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, erro
   return (
     <FieldSet>
       <FieldLegend variant="label">Who signs off</FieldLegend>
-      {!anyEligible ? <FieldDescription>Nobody on record can sign off every skill you picked. Name someone below, or send fewer skills.</FieldDescription> : null}
+      {!anyEligible ? <FieldDescription>{`Nobody on record can sign off every ${skillNoun()} you picked. Name someone below, or send fewer ${skillNounPlural()}.`}</FieldDescription> : null}
       {/* Hick's law (strategy/07): more than 7 choices get type-to-search (Popover + Command; the DS has no Combobox). */}
       {list.length > SEARCH_AFTER ? <EvaluatorSearch options={[...here, ...faculty].filter((o) => o.eligible)} onPick={(id) => onChange({ kind: "person", id })} /> : null}
       <RadioGroup value={radio} onValueChange={(v) => onChange(v === "__new" ? { kind: "new" } : { kind: "person", id: v })} className="flex flex-col gap-1.5" aria-label="Who signs off">

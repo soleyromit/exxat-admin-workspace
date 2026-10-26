@@ -15,7 +15,7 @@ import { labSkills, labStudents } from "@/lib/v2/lab"
 import { binaryLabels, outcomeWord } from "@/lib/v2/labels"
 import type { EvalModel, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { LABEL_PRESETS, type LabelPresetId } from "./configure"
-import { aNoun, capitalize } from "./terms"
+import { aNoun, capitalize, skillNoun, skillNounPlural } from "./terms"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lab controls
@@ -394,10 +394,10 @@ export function buildInvitation(s: V2State, evaluatorId: string = EVALUATOR_ID, 
   const names = [...students]
   const subject =
     names.length <= 1
-      ? `${names[0] ?? "A student"} asks you to sign off ${plural(skillCount, "skill", "skills")}`
+      ? `${names[0] ?? "A student"} asks you to sign off ${plural(skillCount, skillNoun(), skillNounPlural())}`
       : names.length === 2
-        ? `${names[0]} and ${names[1]}: ${plural(skillCount, "skill", "skills")} to sign off`
-        : `${names[0]} and ${plural(names.length - 1, "other", "others")}: ${plural(skillCount, "skill", "skills")} to sign off`
+        ? `${names[0]} and ${names[1]}: ${plural(skillCount, skillNoun(), skillNounPlural())} to sign off`
+        : `${names[0]} and ${plural(names.length - 1, "other", "others")}: ${plural(skillCount, skillNoun(), skillNounPlural())} to sign off`
   const oldest = open[0]?.createdAt ?? `${DEMO_TODAY}T09:00:00Z`
   const expiresOn = shortDate(addDays(open[open.length - 1]?.createdAt ?? oldest, 14))
   const from = `${s.program.school} ${s.program.name}`
@@ -535,7 +535,7 @@ export const SMS_SEGMENT = 160
 export function smsDrafts(mail: Invitation, programShort: string): SmsDraft[] {
   return mail.rows.map((r) => {
     const n = r.skills.length
-    const text = `${programShort}: ${r.student} asks you to sign off ${n} ${n === 1 ? "skill" : "skills"}. No account needed. ${r.link}`
+    const text = `${programShort}: ${r.student} asks you to sign off ${n} ${n === 1 ? skillNoun() : skillNounPlural()}. No account needed. ${r.link}`
     return { requestId: r.requestId, student: r.student, text, length: text.length, segments: Math.ceil(text.length / SMS_SEGMENT) }
   })
 }

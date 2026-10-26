@@ -72,18 +72,18 @@ describe("Settings naming", () => {
     expect(aNoun("unit")).toBe("a unit")
   })
 
-  it("keeps the noun in the lab session and reads it back after a reload", () => {
+  it("keeps the noun in localStorage (every tab, across reloads) and reads it back after a reload", () => {
     setTerms({ skillNoun: "competency", skillNounPlural: "competencies" })
-    expect(JSON.parse(window.sessionStorage.getItem(TERMS_KEY)!)).toEqual({ skillNoun: "competency", skillNounPlural: "competencies" })
+    expect(JSON.parse(window.localStorage.getItem(TERMS_KEY)!)).toEqual({ skillNoun: "competency", skillNounPlural: "competencies" })
     // Back to the default noun clears the stored value.
     resetTerms()
-    expect(window.sessionStorage.getItem(TERMS_KEY)).toBeNull()
+    expect(window.localStorage.getItem(TERMS_KEY)).toBeNull()
     expect(getTerms()).toEqual(DEFAULT_TERMS)
   })
 
   it("loads a stored noun once and falls back to the default for blank parts", async () => {
     vi.resetModules()
-    window.sessionStorage.setItem(TERMS_KEY, JSON.stringify({ skillNoun: "procedure", skillNounPlural: " " }))
+    window.localStorage.setItem(TERMS_KEY, JSON.stringify({ skillNoun: "procedure", skillNounPlural: " " }))
     const fresh = await import("@/lib/lab/terms")
     expect(fresh.skillNoun()).toBe("skill")
     fresh.loadStoredTerms()

@@ -22,7 +22,7 @@ import type {
 } from "./types"
 
 /** Bump when the generator changes on purpose: saved deltas made against another seed are then discarded. */
-export const SEED_VERSION = "2026-10-26.7-level-words"
+export const SEED_VERSION = "2026-10-26.8-question-answers"
 
 export { DEMO_TODAY, IDS }
 
@@ -277,6 +277,14 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
     mayaReturned.submissionId = "sub-maya-2"
     mayaReturned.review = { decision: "returned", byId: IDS.reviewer, at: daysBefore(4), note: MAYA_RETURN_REASON }
   }
+  // Per-question answers on Maya's two sterile dressing attempts (SEED_VERSION 2026-10-26.8-question-answers, dataset spec section
+  // 14), in the order of the skill's questions (hand hygiene, clean field, explained each step). The seed publishes no question
+  // rule, so both still qualify on their recorded outcome and no figure changes; once a program publishes "at least 2 of 3 answered
+  // Yes", the first becomes one valid attempt and the second does not (the "2 of 3 questions" demo, end to end).
+  const mayaQ1 = out.find((e) => e.id === "ev-maya-6")
+  if (mayaQ1) mayaQ1.versions[0].detail = { answers: ["yes", "yes", "no"], feedback: "Good hand hygiene and a clean field. Talk the patient through each step next time." }
+  const mayaQ2 = out.find((e) => e.id === "ev-maya-9")
+  if (mayaQ2) mayaQ2.versions[0].detail = { answers: ["yes", "no", "no"], feedback: "The field was contaminated when the dressing pack touched the bed rail. Start again with a new pack." }
 
   const rand = prng(350)
   const totalWeight = RATERS.reduce((n, r) => n + r[1], 0)

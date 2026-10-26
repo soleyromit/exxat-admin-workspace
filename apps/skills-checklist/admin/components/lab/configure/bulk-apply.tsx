@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { bulkImpact, copySources, fromV2, ruleSentence, type LabRule } from "@/lib/lab/configure"
 import { pillSpec, skillPillValue } from "@/lib/v2/status-pill"
 import type { V2State } from "@/lib/v2/types"
+import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 /** "Copy from another skill" (title overflow): search the configured skills, pick one, its configuration replaces the draft. */
 export function CopyFromDialog({ open, onOpenChange, state, skillId, onCopy }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; skillId: string; onCopy: (rule: LabRule, name: string) => void }) {
@@ -22,13 +23,13 @@ export function CopyFromDialog({ open, onOpenChange, state, skillId, onCopy }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 sm:max-w-lg">
         <DialogHeader className="px-4 pt-4">
-          <DialogTitle>Copy from another skill</DialogTitle>
-          <DialogDescription>{`Its configuration replaces this draft. ${sources.length} configured skills.`}</DialogDescription>
+          <DialogTitle>{`Copy from another ${skillNoun()}`}</DialogTitle>
+          <DialogDescription>{`Its configuration replaces this draft. ${sources.length} configured ${skillNounPlural()}.`}</DialogDescription>
         </DialogHeader>
         <Command className="border-t border-border">
-          <CommandInput placeholder="Search configured skills" />
+          <CommandInput placeholder={`Search configured ${skillNounPlural()}`} />
           <CommandList className="max-h-80">
-            <CommandEmpty>No configured skill matches.</CommandEmpty>
+            <CommandEmpty>{`No configured ${skillNoun()} matches.`}</CommandEmpty>
             <CommandGroup>
               {sources.map((k) => (
                 <CommandItem
@@ -65,16 +66,16 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" size="lg" className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>Apply to other skills</SheetTitle>
+          <SheetTitle>{`Apply to other ${skillNounPlural()}`}</SheetTitle>
           <SheetDescription>{ruleSentence(rule)}</SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-4">
-          <Input type="search" aria-label="Search skills" placeholder="Search skills" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input type="search" aria-label={`Search ${skillNounPlural()}`} placeholder={`Search ${skillNounPlural()}`} value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{`${unconfigured} not configured, listed first.`}</span>
             <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setPicked(all.filter((k) => !k.config).map((k) => k.id))}>Select all not configured</Button>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border" aria-label="Skills">
+          <ul className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border" aria-label={capitalize(skillNounPlural())}>
             {shown.map((k) => {
               const spec = pillSpec("skill", skillPillValue(k))
               const id = `cfg-bulk-${k.id}`
@@ -89,10 +90,10 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
                 </li>
               )
             })}
-            {shown.length === 0 ? <li className="p-3 text-sm text-muted-foreground">{`No skills match "${q}".`}</li> : null}
+            {shown.length === 0 ? <li className="p-3 text-sm text-muted-foreground">{`No ${skillNounPlural()} match "${q}".`}</li> : null}
           </ul>
           {inUse.length ? (
-            <Table containerClassName="max-h-48 overflow-y-auto rounded-md border border-border" scrollLabel="Skills in use that change">
+            <Table containerClassName="max-h-48 overflow-y-auto rounded-md border border-border" scrollLabel={`${capitalize(skillNounPlural())} in use that change`}>
               <TableHeader>
                 <TableRow>
                   <TableHead scope="col">In use</TableHead>
@@ -123,7 +124,7 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
               onOpenChange(false)
             }}
           >
-            {picked.length ? `Apply to ${picked.length} ${picked.length === 1 ? "skill" : "skills"}` : "Apply"}
+            {picked.length ? `Apply to ${countSkills(picked.length)}` : "Apply"}
           </Button>
         </SheetFooter>
       </SheetContent>

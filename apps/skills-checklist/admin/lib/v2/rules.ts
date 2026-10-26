@@ -1,5 +1,5 @@
 import { needsLevels, needsQuestions } from "./config"
-import type { EvalModel, EvaluatorRole, Person, SkillConfig, V2State } from "./types"
+import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, QuestionRule, ScoredRule, Skill, SkillConfig, V2State } from "./types"
 
 /** Wizard steps, in order. Step 7 is the review and publish step. */
 export const WIZARD_STEPS = [
@@ -199,6 +199,13 @@ export function strengthHint(model: EvalModel | null, c: SkillConfig): StrengthH
   const parts: string[] = []
   const evals = a.kind === "last-n" && isInt(a.window) && a.window >= need ? `${need} successful ${plural(need, "evaluation", "evaluations")} out of their last ${a.window}` : `${need} successful ${plural(need, "evaluation", "evaluations")}`
   parts.push(evals)
+  // Published lab rules only (absent on the seed, so the seeded sentences are unchanged).
+  const qr = model === "question" ? c.questionRule : null
+  if (qr) {
+    const m = c.questions.length
+    parts.push(qr.kind === "all" ? "each with every question answered Yes" : qr.kind === "atLeast" ? `each with at least ${qr.n} of ${m} questions answered Yes` : `each with ${plural(qr.indices.length, "question", "questions")} ${[...qr.indices].sort((x, y) => x - y).map((i) => i + 1).join(", ")} answered Yes`)
+  }
+  for (const lm of c.levelMinimums ?? []) if (c.levels[lm.levelIndex]?.trim()) parts.push(`at least ${lm.min} at ${c.levels[lm.levelIndex]!.trim()} or above`)
   parts.push(distinct >= 2 ? `from at least ${distinct} different evaluators` : "from any single evaluator")
   if (lvl) parts.push(`at ${lvl} or above`)
   const named = a.settingMinimums.filter((m) => m.setting.trim() && isInt(m.min) && m.min > 0)
@@ -238,5 +245,192 @@ export function simulationShare(c: SkillConfig): SimulationShare {
     maxCount,
     minReal,
     text: `Simulation can supply up to ${maxCount} of the ${need} required ${plural(need, "evaluation", "evaluations")} (${pct} percent). At least ${minReal} must come from clinical practice or the lab.`,
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The one engine: what counts as a valid attempt, and when a record is achieved [REQ AE-01..AE-04, SC-05, SC-10, SC-11, SC-12]
+//
+// Both the v2 student progress (lib/v2/student.ts skillProgress, and through it every figure in facts.ts, the dashboard, the
+// director and the lists) and the lab configure engine (lib/lab/configure.ts evaluateRule, and through it computeImpact) call
+// runRule. There is no second implementation: a rule-impact "after" count and the student screens after publish are the same
+// function over the same evaluations.
+
+export type { LevelMinimum, QuestionRule, ScoredRule } from "./types"
+
+/** Everything that decides who qualifies. Labels, fields, feedback and approval never do [REQ AE-06]. */
+export interface EngineRule {
+  model: EvalModel | null
+  questionRule: QuestionRule | null
+  scoredRule: ScoredRule | null
+  /** How many valid attempts are needed (the frequency). Must be a whole number of 1 or more: no fallback. */
+  need: number
+  /** Last-N currency (v2, carried): only the latest `window` completed evaluations are read. */
+  window: number | null
+  /** v2 minimum level, carried: an evaluation with a recorded level below it does not qualify. */
+  minLevelIndex: number | null
+  simulationExcluded: boolean
+  simulationCapPercent: number | null
+  distinctEvaluators: number
+  settingMinimums: ReadonlyArray<{ setting: string; min: number }>
+  levelMinimums: readonly LevelMinimum[]
+  levels: readonly string[]
+}
+
+export type RuleInvalidReason = "need-unset"
+
+/** A rule the engine refuses to run. Never replaced by a default: the caller surfaces it. */
+export interface InvalidRun {
+  valid: false
+  reason: RuleInvalidReason
+  message: string
+}
+
+export interface RuleRun {
+  valid: true
+  /** Completed (counted-status) evaluations, newest first. Waiting and held evidence is never an attempt [REQ AE-01]. */
+  counted: Evaluation[]
+  /** The ones the window reads. */
+  windowed: Evaluation[]
+  /** Valid attempts the rule uses, after the window, the minimum level and the simulation share. */
+  used: Evaluation[]
+  have: number
+  need: number
+  distinctHave: number
+  distinctNeed: number
+  settings: Array<{ setting: string; min: number; have: number }>
+  levels: Array<{ level: string; min: number; have: number }>
+  achieved: boolean
+  /** Windowed attempts that did not qualify on their own answers, score, outcome or level. */
+  notQualifying: number
+  /** Completed attempts that qualified on their own but were left out (outside the window, simulation share). */
+  notUsed: number
+  /** Completed attempts that did not qualify on their own answers (whole history, not only the window). */
+  notMet: number
+  /** Qualifying simulation attempts left out by the share cap or because simulation does not count. */
+  simLeftOut: number
+  /** Largest number of simulation attempts the cap lets count, or null when no cap applies. */
+  maxSim: number | null
+  /** Why a qualifying attempt was left out, by evaluation id. */
+  leftOut: Record<string, string>
+}
+
+export const NEED_UNSET_MESSAGE = "Enter how many valid attempts are needed, 1 or more."
+
+/**
+ * One evaluation is a valid attempt on its own answers [REQ SC-05, SC-07]: the published question rule over the recorded Yes and No
+ * answers (all, at least N of M, or named questions), the published score rule over the recorded scores, else the recorded
+ * outcome. An evaluation recorded before a question or score rule existed (no answers or scores) falls back to its outcome.
+ * Renaming labels never changes this [REQ AE-06].
+ */
+export function qualifiesOn(rule: Pick<EngineRule, "model" | "questionRule" | "scoredRule">, e: Evaluation): boolean {
+  const detail = e.versions[e.versions.length - 1]?.detail
+  if (rule.model === "question" && rule.questionRule && detail?.answers?.length) {
+    const yes = detail.answers.map((a) => a === "yes")
+    const r = rule.questionRule
+    if (r.kind === "all") return yes.length > 0 && yes.every(Boolean)
+    if (r.kind === "atLeast") return yes.filter(Boolean).length >= r.n
+    return r.indices.length > 0 && r.indices.every((i) => yes[i])
+  }
+  if (rule.model === "scored" && rule.scoredRule && detail?.scores?.length) {
+    const s = detail.scores.filter((x): x is number => typeof x === "number")
+    if (s.length === 0) return false
+    const r = rule.scoredRule
+    if (r.kind === "average") return s.reduce((a, b) => a + b, 0) / s.length >= r.value
+    if (r.kind === "minEach") return s.every((x) => x >= r.value)
+    return s.reduce((a, b) => a + b, 0) >= r.value
+  }
+  return e.outcome === "met"
+}
+
+/** True when the rule reads per-question answers (a published question rule), so the student line can say "2 of 3 questions". */
+export const readsAnswers = (rule: Pick<EngineRule, "model" | "questionRule">): boolean => rule.model === "question" && !!rule.questionRule
+
+/** The engine rule of a skill's published configuration, or null when the skill has no rule. */
+export function engineRuleOf(skill: Pick<Skill, "model" | "config">): EngineRule | null {
+  const c = skill.config
+  if (!c) return null
+  const a = c.achievement
+  return {
+    model: skill.model,
+    questionRule: c.questionRule ?? null,
+    scoredRule: c.scoredRule ?? null,
+    need: a.need,
+    window: a.kind === "last-n" && a.window ? a.window : null,
+    minLevelIndex: a.minLevelIndex,
+    simulationExcluded: !c.simulation.allowed,
+    simulationCapPercent: c.simulation.allowed && c.simulation.mode === "cap" ? c.simulation.maxSharePercent : null,
+    distinctEvaluators: a.distinctEvaluators,
+    settingMinimums: a.settingMinimums,
+    levelMinimums: c.levelMinimums ?? [],
+    levels: c.levels,
+  }
+}
+
+/** Runs a rule over one student's evaluations on one skill. Pure. An unset need is invalid, never defaulted. */
+export function runRule(rule: EngineRule, evals: readonly Evaluation[]): RuleRun | InvalidRun {
+  if (!isInt(rule.need) || rule.need < 1) return { valid: false, reason: "need-unset", message: NEED_UNSET_MESSAGE }
+  const need = rule.need
+  const counted = evals.filter((e) => e.status === "counted").sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
+  const windowed = rule.window ? counted.slice(0, rule.window) : counted
+  const minL = rule.minLevelIndex
+  const levelOk = (e: Evaluation) => minL === null || e.levelIndex === undefined || e.levelIndex >= minL
+  const own = (e: Evaluation) => qualifiesOn(rule, e)
+  const qualifyingOwn = windowed.filter((e) => own(e) && levelOk(e))
+  let used = qualifyingOwn
+  let simLeftOut = 0
+  let maxSim: number | null = null
+  if (rule.simulationExcluded) {
+    used = qualifyingOwn.filter((e) => e.setting !== "simulation")
+    simLeftOut = qualifyingOwn.length - used.length
+  } else if (rule.simulationCapPercent !== null) {
+    const cap = Math.floor((need * rule.simulationCapPercent) / 100)
+    maxSim = cap
+    let n = 0
+    used = qualifyingOwn.filter((e) => {
+      if (e.setting !== "simulation") return true
+      if (n < cap) {
+        n++
+        return true
+      }
+      simLeftOut++
+      return false
+    })
+  }
+  const have = used.length
+  const usedIds = new Set(used.map((e) => e.id))
+  const leftOut: Record<string, string> = {}
+  for (const e of counted) {
+    if (usedIds.has(e.id) || !own(e)) continue
+    if (!windowed.includes(e)) leftOut[e.id] = `Met, but older than your last ${rule.window}, so the rule does not use it.`
+    else if (!levelOk(e)) leftOut[e.id] = "Met, but below the minimum level the rule asks for."
+    else if (e.setting === "simulation") leftOut[e.id] = rule.simulationExcluded ? "Met, but simulation does not count for this skill." : "Met, but simulation can only supply part of the evaluations, and that part is used up."
+  }
+  const distinctHave = new Set(used.map((e) => e.evaluatorId)).size
+  const distinctNeed = Math.max(1, rule.distinctEvaluators)
+  // Only clinical evidence carrying that setting counts toward it; lab and simulation never do [REQ SC-11, SC-12].
+  const settings = rule.settingMinimums.map((m) => ({ setting: m.setting, min: m.min, have: used.filter((e) => e.setting === "clinical" && e.clinicalSetting === m.setting).length }))
+  // An evaluation with no recorded level cannot count toward a level minimum.
+  const levels = rule.levelMinimums.map((m) => ({ level: rule.levels[m.levelIndex] ?? "", min: m.min, have: used.filter((e) => e.levelIndex !== undefined && e.levelIndex >= m.levelIndex).length }))
+  const achieved = have >= need && distinctHave >= distinctNeed && settings.every((x) => x.have >= x.min) && levels.every((l) => l.have >= l.min)
+  const notQualifying = windowed.length - qualifyingOwn.length
+  return {
+    valid: true,
+    counted,
+    windowed,
+    used,
+    have,
+    need,
+    distinctHave,
+    distinctNeed,
+    settings,
+    levels,
+    achieved,
+    notQualifying,
+    notUsed: counted.length - notQualifying - have,
+    notMet: counted.filter((e) => !own(e)).length,
+    simLeftOut,
+    maxSim,
+    leftOut,
   }
 }

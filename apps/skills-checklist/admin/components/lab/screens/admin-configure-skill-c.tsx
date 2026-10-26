@@ -237,7 +237,7 @@ function PublishManyDialog({ open, onOpenChange, state, ids, rule, onPublish }: 
           <DialogDescription>{choice ? `${changing.reduce((n, r) => n + r.changed, 0)} students change status across ${countSkills(changing.length)}.` : "Nobody's status changes."}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-6">
-          <Table containerClassName="max-h-72 overflow-y-auto rounded-md border border-border" scrollLabel="Students who change, per skill">
+          <Table containerClassName="max-h-72 overflow-y-auto rounded-md border border-border" scrollLabel={`Students who change, per ${skillNoun()}`}>
             <TableHeader>
               <TableRow>
                 <TableHead scope="col">{skillNoun().charAt(0).toUpperCase() + skillNoun().slice(1)}</TableHead>

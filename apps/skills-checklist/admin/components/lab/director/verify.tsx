@@ -6,6 +6,7 @@
  * its own gaps, there is no "ready for practice" claim. Evidence in flux blocks (the record may still change). Verifying adds a
  * numbered version; the earlier version stays on file. The lab keeps the result on the page only (no store write).
  */
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -95,7 +96,7 @@ export function RecordLine({ d, flow }: { d: DetailModel; flow: VerifyFlow }) {
       <span className="text-muted-foreground">{r.cohort}</span>
       <span className="tabular-nums" data-figure>
         <span className="font-semibold text-foreground">{`${r.achieved} of ${r.required}`}</span>
-        <span className="text-muted-foreground"> required skills achieved</span>
+        <span className="text-muted-foreground">{` required ${skillNounPlural()} achieved`}</span>
       </span>
       <span className="text-muted-foreground">
         {flow.done ? `Version ${flow.done.version}, ${shortDate(flow.done.at)}` : r.verifiedAt ? `Version ${r.version}, ${shortDate(r.verifiedAt)}, ${DIRECTOR_NAME}` : "Never verified"}
@@ -156,7 +157,7 @@ export function VerifyAction({ d, flow, scope, idPrefix, queue }: { d: DetailMod
     return (
       <div className="flex flex-col gap-3">
         <LocalBanner variant="success" title={`Verified, version ${flow.done.version}`}>
-          {r.gaps.length ? `The record states its ${r.gaps.length === 1 ? "gap" : "gaps"}.` : "The record states every required skill achieved."}
+          {r.gaps.length ? `The record states its ${r.gaps.length === 1 ? "gap" : "gaps"}.` : `The record states every required ${skillNoun()} achieved.`}
         </LocalBanner>
         <Button asChild variant="outline" size="sm" className="self-start">
           <Link href={next ? detailHref(scope, next, { queue: queue.join(",") }) : directorHref("dashboard", scope)}>{next ? `Next record, ${at + 2} of ${queue.length}` : "Back to the dashboard"}</Link>

@@ -6,6 +6,7 @@
  * acknowledgement, what the verified record will state, and one primary action, Verify record, disabled until each gap is
  * acknowledged. ?student= picks the record (default: one with a gap that can be verified); ?queue= walks a bulk selection.
  */
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -28,7 +29,7 @@ function RecordTable({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[42%]">Skill</TableHead>
+          <TableHead className="w-[42%]">{capitalize(skillNoun())}</TableHead>
           <TableHead>State</TableHead>
           <TableHead>Evidence</TableHead>
           <TableHead className="text-end">Latest</TableHead>
@@ -78,7 +79,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
         <Card className="py-0 xl:col-span-8" data-region="record">
           <CardContent className="flex flex-col gap-3 py-4">
-            <h2 className="text-base font-semibold text-foreground">Required skills</h2>
+            <h2 className="text-base font-semibold text-foreground">{`Required ${skillNounPlural()}`}</h2>
             {ctx.demo === "error" ? (
               <LocalBanner variant="warning" title="The record could not load" retry={{ label: "Try again", onClick: () => ctx.setParams({ state: null }) }}>
                 The decision panel is current.

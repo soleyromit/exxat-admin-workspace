@@ -116,11 +116,13 @@ describe("Record", () => {
     expect(groups[0].notCounted).toBeGreaterThan(0)
   })
 
-  it("each skill reads 'n attempts, m count' over its whole record (Oct 26 call)", () => {
-    expect(recordAttemptLine([{ result: "counted" }, { result: "not-counted" }, { result: "counted" }, { result: "not-counted" }, { result: "counted" }])).toBe("5 attempts, 3 count")
-    expect(recordAttemptLine([{ result: "waiting" }])).toBe("")
-    const g = groupBySkill(rows).find((x) => x.notCounted > 0)!
-    expect(recordAttemptLine(g.rows)).toBe(`${g.counted + g.notCounted} attempts, ${g.counted} ${g.counted === 1 ? "counts" : "count"}`)
+  it("each skill reads 'n attempts, m count' over its whole record, from the engine, agreeing with the rows (Oct 26 call)", () => {
+    for (const g of groupBySkill(rows)) {
+      const line = recordAttemptLine(seed, maya.student.id, g.skillId)
+      const total = g.counted + g.notCounted
+      if (total === 0) expect(line).toBe("")
+      else expect(line).toMatch(new RegExp(`^${total} attempts?, .*${g.counted} counts?$`))
+    }
   })
 })
 

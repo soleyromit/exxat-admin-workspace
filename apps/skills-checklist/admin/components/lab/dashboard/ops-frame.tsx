@@ -14,7 +14,7 @@ import { ExportDrawer } from "@exxatdesignux/ui/components/ui/export-drawer"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { PageFrame } from "@/components/skills/page-header"
 import type { V2State } from "@/lib/v2/types"
-import { OPS_EXPORT_COLUMNS, buildDashboard, chipValue, removeKeys, type DashboardModel, type DemoState } from "@/lib/lab/dashboard"
+import { opsExportColumns, buildDashboard, chipValue, removeKeys, type DashboardModel, type DemoState } from "@/lib/lab/dashboard"
 import { SCOPE_LABEL, removeScope, type LabScope, type ScopeKey } from "@/lib/lab/scope"
 import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
 import { LoadingShape } from "@/components/lab/dashboard/cards"
@@ -103,7 +103,7 @@ export function OpsPage({ variant, children }: { variant: string; children: (ctx
           children(ctx)
         )}
       </div>
-      <ExportDrawer open={exportOpen} onOpenChange={setExportOpen} totalRows={model.waitingCount} visibleColumns={OPS_EXPORT_COLUMNS.length} />
+      <ExportDrawer open={exportOpen} onOpenChange={setExportOpen} totalRows={model.waitingCount} visibleColumns={opsExportColumns().length} />
     </PageFrame>
   )
 }

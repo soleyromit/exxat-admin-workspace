@@ -5,6 +5,7 @@
  * add an evaluator by name and email, and the by-site table. The adopt or merge decision goes through the reviewer decisions overlay,
  * so the held evaluations count on Approvals and the student record at once [REQ SL-09; LEDGER].
  */
+import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -229,7 +230,7 @@ function AdoptDialog({ state, row, onClose, onDone }: { state: V2State | null; r
                 <RadioGroupItem id="adopt-new" value="adopt" className="mt-0.5" />
                 <Label htmlFor="adopt-new" className="flex flex-col items-start gap-0.5 font-normal">
                   <span className="font-medium">Adopt as a new evaluator</span>
-                  <span className="text-xs text-muted-foreground">Their evaluations count under each skill rule.</span>
+                  <span className="text-xs text-muted-foreground">{`Their evaluations count under each ${skillNoun()} rule.`}</span>
                 </Label>
               </div>
               {candidates.length ? <p className="pt-2 text-xs font-medium text-muted-foreground">Or merge with someone already on the list</p> : null}
@@ -257,7 +258,7 @@ function AdoptDialog({ state, row, onClose, onDone }: { state: V2State | null; r
               const merge = choice !== "adopt"
               decide({ kind: "adopt", evaluatorId: row.id, mode: merge ? "merge" : "adopt", ...(merge ? { intoId: choice } : {}) })
               const into = candidates.find((c) => c.id === choice)
-              onDone({ title: merge ? `${row.name} merged into ${into?.name ?? "an evaluator"}` : `${row.name} adopted`, body: `${plural(row.held, "held evaluation now counts", "held evaluations now count")} under each skill rule.` })
+              onDone({ title: merge ? `${row.name} merged into ${into?.name ?? "an evaluator"}` : `${row.name} adopted`, body: `${plural(row.held, "held evaluation now counts", "held evaluations now count")} under each ${skillNoun()} rule.` })
               onClose()
             }}
           >

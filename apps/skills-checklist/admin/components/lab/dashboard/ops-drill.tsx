@@ -5,6 +5,7 @@
  * (strategy/06 R1, R5). On the dashboard URL (?list=holders&cond=unverified, ?list=holder&q=<id>) so it has an address and
  * keeps the scope bar; the title repeats the figure, the condition is a removable chip, the breadcrumb leads back.
  */
+import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
@@ -31,7 +32,7 @@ export function OpsDrill({ data, model, scope, list, cond, evaluator, onChange }
   ]
   const requestColumns = [
     { key: "student", label: "Student", width: 220, cell: (r: OpsRequest) => <PersonIdentityCell name={r.student} initials={initialsOf(r.student)} renderName={(n) => <Link className={LINK_IN_TABLE} href={studentHref(scope, r.studentId)}>{n}</Link>} /> },
-    { key: "skills", label: "Skills", width: 300, cell: (r: OpsRequest) => r.skills },
+    { key: "skills", label: capitalize(skillNounPlural()), width: 300, cell: (r: OpsRequest) => r.skills },
     { key: "site", label: "Site", width: 240, cell: (r: OpsRequest) => r.site },
     { key: "days", label: "Waiting", width: 110, cell: (r: OpsRequest) => <span className="block text-right tabular-nums">{days(r.days)}</span> },
   ]

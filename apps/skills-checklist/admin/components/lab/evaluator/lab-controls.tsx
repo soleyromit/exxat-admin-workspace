@@ -1,6 +1,7 @@
 "use client"
 
 /** Lab-only controls for the evaluator screens (excluded from density counts by data-lab-chrome). Not part of the product. */
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
@@ -13,7 +14,7 @@ export interface LabOption {
 }
 
 export const FORM_OPTIONS: LabOption[] = [
-  { key: "hint", label: "Rule hint per skill (pending)" },
+  { key: "hint", get label() { return `Rule hint per ${skillNoun()} (pending)` } },
   { key: "fo", label: "Third answer: Feedback only (pending)" },
   { key: "prefill", label: "Corrected: prefill earlier answers (open)" },
   { key: "fb", label: "Program requires feedback" },
@@ -53,8 +54,8 @@ function InlineControls({ states, defaultState, showSample, options }: { states:
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="request">Seeded request, 2 skills</SelectItem>
-            <SelectItem value="long">Lab sample, 7 skills</SelectItem>
+            <SelectItem value="request">{`Seeded request, 2 ${skillNounPlural()}`}</SelectItem>
+            <SelectItem value="long">{`Lab sample, 7 ${skillNounPlural()}`}</SelectItem>
           </SelectContent>
         </Select>
       ) : null}

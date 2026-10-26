@@ -6,6 +6,7 @@
  * result. 123 students: search and group filter; the table scrolls inside its card with a sticky header and first column.
  * The count is said once, in the save bar. Lab evidence never satisfies a clinical setting (REQ SC-12), said once in the header.
  */
+import { skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -37,7 +38,7 @@ export function LabInstructorLabBatchGridA() {
             <CardContent className="border-b border-border py-2">
               <LabToolbar g={g} />
             </CardContent>
-            <Table scrollLabel="Students by skills" containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
+            <Table scrollLabel={`Students by ${skillNounPlural()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
                   <TableHead scope="col" className="sticky left-0 z-10 min-w-44 bg-card ps-3">{`Student (${g.rows.length})`}</TableHead>

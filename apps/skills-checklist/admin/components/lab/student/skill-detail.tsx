@@ -54,9 +54,9 @@ export function AttemptMark({ kind }: { kind: AttemptRow["kind"] }) {
   )
 }
 
-/** "5 attempts, 3 count", next to the progress [CALL 10-26 B.4]. Nothing before the first completed attempt. */
-export function AttemptCount({ rows }: { rows: AttemptRow[] }) {
-  const line = attemptCountLine(rows)
+/** "5 attempts, 2 unmet: 3 count", next to the progress, from the published rule [CALL 10-26 B.4]. Nothing before the first completed attempt. */
+export function AttemptCount({ state, studentId, skillId }: { state: V2State; studentId: string; skillId: string }) {
+  const line = React.useMemo(() => attemptCountLine(state, studentId, skillId), [state, studentId, skillId])
   if (!line) return null
   return (
     <p className="text-sm tabular-nums text-muted-foreground" data-attempt-line>

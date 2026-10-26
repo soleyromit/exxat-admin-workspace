@@ -5,6 +5,7 @@
  * program's labels, or Absent). Mental model: taking attendance at the bench with a tablet. Same session state as A
  * (search, group, chosen skills, one count in the save bar, lab label once).
  */
+import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -38,7 +39,7 @@ export function LabInstructorLabBatchGridB() {
             <CardContent className="flex flex-col gap-2 border-b border-border py-2">
               <LabToolbar g={g} />
               {skill ? (
-                <ToggleGroup type="single" variant="outline" spacing={2} value={skill.id} onValueChange={(v) => { if (v) setActive(v) }} aria-label="Skill to record" className="flex w-full flex-wrap justify-start">
+                <ToggleGroup type="single" variant="outline" spacing={2} value={skill.id} onValueChange={(v) => { if (v) setActive(v) }} aria-label={`${capitalize(skillNoun())} to record`} className="flex w-full flex-wrap justify-start">
                   {g.chosenSkills.map((k) => (
                     <ToggleGroupItem key={k.id} value={k.id} size="sm" className="px-2.5">{k.name}</ToggleGroupItem>
                   ))}
@@ -52,7 +53,7 @@ export function LabInstructorLabBatchGridB() {
                 {left > 0 ? <Button type="button" variant="outline" size="sm" onClick={() => g.fillColumn(skill.id)}>{`Mark the rest ${l.met}`}</Button> : null}
               </CardContent>
             ) : null}
-            <Table scrollLabel="Students for this skill" containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
+            <Table scrollLabel={`Students for this ${skillNoun()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
                   <TableHead scope="col" className="ps-3">{`Student (${g.rows.length})`}</TableHead>
@@ -92,7 +93,7 @@ export function LabInstructorLabBatchGridB() {
                   : null}
                 {g.rows.length === 0 || !skill ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">{skill ? "No student matches that search in this group." : "Choose at least one skill for this session."}</TableCell>
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">{skill ? "No student matches that search in this group." : `Choose at least one ${skillNoun()} for this session.`}</TableCell>
                   </TableRow>
                 ) : null}
               </TableBody>

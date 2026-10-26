@@ -49,7 +49,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
     return new Set([...newest.values()].map((v) => v.id))
   }, [months])
   // "5 attempts, 3 count" once per skill, on its newest row in view, counted over the whole record (not the filter).
-  const attemptLines = React.useMemo(() => new Map(groupBySkill(r.rows).map((g) => [g.skillId, recordAttemptLine(g.rows)])), [r.rows])
+  const attemptLines = React.useMemo(() => new Map(groupBySkill(r.rows).map((g) => [g.skillId, recordAttemptLine(ctx.state, ctx.studentId, g.skillId)])), [r.rows, ctx.state, ctx.studentId])
   const lineOn = React.useMemo(() => {
     const newest = new Map<string, { id: string; date: string }>()
     for (const x of capped) {

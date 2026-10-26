@@ -8,6 +8,7 @@
  * Maya is not verified in the seed, so sharing is closed with the reason; `?state=verified` shows the open path (demo).
  * [COMP rec 11 portable verified record; glossary: verification is a v2 proposal, not REQ]
  */
+import { skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Separator } from "@exxatdesignux/ui/components/ui/separator"
@@ -21,7 +22,7 @@ export function StudentShareA() {
     <Student2Frame
       title="Share record"
       back={(c) => ({ label: "Record", href: student2Href("record", {}, c.studentId) })}
-      empty={(c) => <EmptyBlock title="Nothing to share yet" body="Achieved skills appear here once evaluators sign them off." action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
+      empty={(c) => <EmptyBlock title="Nothing to share yet" body={`Achieved ${skillNounPlural()} appear here once evaluators sign them off.`} action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
       loading={<ShareSkeleton />}
     >
       {(ctx) => <PreviewPage ctx={ctx} />}

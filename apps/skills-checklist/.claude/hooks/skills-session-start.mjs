@@ -5,6 +5,7 @@ import fs from 'node:fs';
 let cwd = ''; try { cwd = JSON.parse(fs.readFileSync(0, 'utf8')).cwd || ''; } catch {}
 if (cwd && !cwd.includes('/apps/skills-checklist')) process.exit(0);
 const ctx = `SKILLS CHECKLIST (Prism Skills Tracking) — read apps/skills-checklist/docs/README.md before any design or code.
+ROUTING: for any Skills Checklist design, product, UX, content, chart, data, scope or review request, FIRST delegate to the skills-design-lead agent (Agent tool, subagent_type skills-design-lead) without being asked; never ask Romit to remember a command or to start a new session; if the agent is unavailable, read apps/skills-checklist/docs/knowledge/agent-playbook.md and follow its process yourself.
 DESIGN/UX/COPY/CHART/NAV tasks: first read apps/skills-checklist/docs/knowledge/00-design-brief.md, glossary.md and 02-decisions-ledger.md and state that you consulted them (skill skills-design-brief).
 Precedence when sources disagree: REQ (docs/source/requirements.extracted.txt) > CALL (vault raw transcript 2026-09-23) > PROTO (Sankalp prototype) > INFER for BEHAVIOUR. For VISUAL LAYOUT / IA / COPY STRUCTURE the prototype is the exact design to build (Romit 2026-10-08), rendered with DS components inside the DS base shell (left nav with brand header, utility bar, page header); see docs/build/prototype-parity.md.
 Tag every claim: [REQ SL-01] [OD-07] [PROTO] [CALL 09-23] [INFER]. Untagged claims are wrong.

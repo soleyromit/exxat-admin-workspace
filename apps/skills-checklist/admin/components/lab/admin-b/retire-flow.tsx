@@ -26,7 +26,7 @@ import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { intentEffects, validateListName, type Intent, type RetireImpact } from "@/lib/lab/retire"
-import { skillNoun } from "@/lib/lab/terms"
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { fmt } from "@/lib/v2/format"
 import { NUM_LINK } from "@/components/lab/link-styles"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
@@ -158,7 +158,7 @@ export function RetireFlow({ impact, cohorts, existingLists, layout, partial, in
           <div className="flex flex-col gap-4" data-new-list>
             <Field data-invalid={!!error.name || undefined}>
               <FieldLabel htmlFor={`list-name-${layout}`}>New list name</FieldLabel>
-              <Input id={`list-name-${layout}`} className="h-8 max-w-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="For example, Standard 6 skills" aria-invalid={!!error.name || undefined} aria-describedby={error.name ? `list-name-error-${layout}` : undefined} />
+              <Input id={`list-name-${layout}`} className="h-8 max-w-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder={`For example, Standard 6 ${skillNounPlural()}`} aria-invalid={!!error.name || undefined} aria-describedby={error.name ? `list-name-error-${layout}` : undefined} />
               {error.name ? <FieldError id={`list-name-error-${layout}`}>{error.name}</FieldError> : null}
             </Field>
             <fieldset className="flex flex-col gap-2" aria-describedby={error.cohorts ? `cohorts-error-${layout}` : undefined}>

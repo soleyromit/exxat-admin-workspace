@@ -6,6 +6,7 @@
  * overlay, "ready to verify" as the fourth figure), the ready-to-verify worklist (top rows, "All n"), and the not-complete list.
  * Every figure links to Dashboard C filtered to the same rows with the scope in the URL. Demo states via ?state=.
  */
+import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -51,7 +52,7 @@ function NotCompleteCard({ m, scope }: { m: Readiness; scope: LabScope }) {
           </Button>
         </div>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Every student in scope has achieved every required skill.</p>
+          <p className="text-sm text-muted-foreground">{`Every student in scope has achieved every required ${skillNoun()}.`}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {rows.slice(0, SHOWN + 1).map((r) => (

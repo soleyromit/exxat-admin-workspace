@@ -1,5 +1,9 @@
 import { evalsOfStudentSkill, skillById } from "@/lib/v2/evidence-index"
-import type { EvalModel, Evaluation, EvaluatorRole, Person, Skill, SkillConfig, V2State } from "@/lib/v2/types"
+import { NEED_UNSET_MESSAGE, qualifiesOn as engineQualifiesOn, runRule, type EngineRule, type RuleInvalidReason } from "@/lib/v2/rules"
+import { appendAudit } from "@/lib/v2/store"
+import { heldState } from "@/lib/v2/approvals"
+import { defaultConfig } from "@/lib/v2/config"
+import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, PublishedRuleSnapshot, QuestionRule, RuleChangeRecord, ScoredRule, Skill, SkillConfig, V2State } from "@/lib/v2/types"
 import { skillNoun } from "./terms"
 
 /**
@@ -17,19 +21,13 @@ import { skillNoun } from "./terms"
  * Labels are presentation only [REQ AE-06]: an evaluation qualifies on its recorded outcome (met), never on the label text.
  */
 
-export type QuestionRule = { kind: "all" } | { kind: "atLeast"; n: number } | { kind: "subset"; indices: number[] }
-export type ScoredRule = { kind: "average" | "minEach" | "total"; value: number }
+export type { LevelMinimum, QuestionRule, ScoredRule }
 export type FieldType = "date" | "short" | "long" | "number" | "choice"
 
 export interface StudentField {
   label: string
   type: FieldType
   mandatory: boolean
-}
-
-export interface LevelMinimum {
-  levelIndex: number
-  min: number
 }
 
 export interface SettingMinimum {
@@ -167,14 +165,15 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
   return {
     model: skill.model,
     outcomeLabels: labels,
-    qualifyingLabel: 0,
+    qualifyingLabel: c.qualifyingLabel === undefined ? 0 : c.qualifyingLabel,
     questions: [...c.questions],
-    questionRule: null,
+    // A rule published from the lab is read back from the shared store; the seed has none (outcome decides, as before).
+    questionRule: c.questionRule ? (JSON.parse(JSON.stringify(c.questionRule)) as QuestionRule) : null,
     scaleMax: 5,
-    scoredRule: null,
+    scoredRule: c.scoredRule ? { ...c.scoredRule } : null,
     levels: skill.model === "demonstration" ? [...c.levels] : [],
     need: a.need,
-    levelMinimums: [],
+    levelMinimums: (c.levelMinimums ?? []).map((m) => ({ ...m })),
     distinctEvaluators: a.distinctEvaluators,
     settingMinimums: a.settingMinimums.map((m) => ({ ...m })),
     studentFields: [{ label: "Date performed", type: "date", mandatory: true }],
@@ -486,61 +485,59 @@ export interface AttemptCount {
   count: number
 }
 
-function qualifiesOn(rule: LabRule, e: Evaluation): boolean {
-  const detail = e.versions[e.versions.length - 1]?.detail
-  if (rule.model === "question" && rule.questionRule && detail?.answers?.length) {
-    const yes = detail.answers.map((a) => a === "yes")
-    const r = rule.questionRule
-    if (r.kind === "all") return yes.length > 0 && yes.every(Boolean)
-    if (r.kind === "atLeast") return yes.filter(Boolean).length >= r.n
-    return r.indices.length > 0 && r.indices.every((i) => yes[i])
-  }
-  if (rule.model === "scored" && rule.scoredRule && detail?.scores?.length) {
-    const s = detail.scores.filter((x): x is number => typeof x === "number")
-    if (s.length === 0) return false
-    const r = rule.scoredRule
-    if (r.kind === "average") return s.reduce((a, b) => a + b, 0) / s.length >= r.value
-    if (r.kind === "minEach") return s.every((x) => x >= r.value)
-    return s.reduce((a, b) => a + b, 0) >= r.value
-  }
-  // Recorded outcome otherwise. Renaming labels never changes this [REQ AE-06].
-  return e.outcome === "met"
+/** A rule the engine refuses to run (an unset frequency): typed, never defaulted to 1. validateRule names the field. */
+export interface InvalidRuleResult {
+  state: "invalid"
+  reason: RuleInvalidReason
+  message: string
 }
 
-/** One student's record on one skill under `rule`, from that student's evaluations. Waiting and held evidence never counts [AE-01]. */
-export function evaluateRule(rule: LabRule, evals: readonly Evaluation[]): RuleResult {
-  const need = isInt(rule.need) && rule.need > 0 ? rule.need : 1
-  const counted = evals.filter((e) => e.status === "counted").sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
-  const windowed = rule.carried.window ? counted.slice(0, rule.carried.window) : counted
-  const minL = rule.carried.minLevelIndex
-  const levelOk = (e: Evaluation) => minL === null || e.levelIndex === undefined || e.levelIndex >= minL
-  let qualifying = windowed.filter((e) => qualifiesOn(rule, e) && levelOk(e))
-  const notQualifying = windowed.length - qualifying.length
-  if (rule.carried.simulationExcluded) qualifying = qualifying.filter((e) => e.setting !== "simulation")
-  else if (rule.carried.simulationCapPercent !== null) {
-    const maxSim = Math.floor((need * rule.carried.simulationCapPercent) / 100)
-    let used = 0
-    qualifying = qualifying.filter((e) => {
-      if (e.setting !== "simulation") return true
-      if (used < maxSim) {
-        used++
-        return true
-      }
-      return false
-    })
+export const isInvalidResult = (r: RuleResult | InvalidRuleResult): r is InvalidRuleResult => r.state === "invalid"
+
+/** The lab rule as the one engine reads it (lib/v2/rules.ts). Carried v2 parts are passed through unchanged. */
+export function engineRuleOfLab(rule: LabRule): EngineRule {
+  return {
+    model: rule.model,
+    questionRule: rule.model === "question" ? rule.questionRule : null,
+    scoredRule: rule.model === "scored" ? rule.scoredRule : null,
+    need: rule.need,
+    window: rule.carried.window,
+    minLevelIndex: rule.carried.minLevelIndex,
+    simulationExcluded: rule.carried.simulationExcluded,
+    simulationCapPercent: rule.carried.simulationExcluded ? null : rule.carried.simulationCapPercent,
+    distinctEvaluators: rule.distinctEvaluators,
+    settingMinimums: rule.settingMinimums,
+    levelMinimums: rule.levelMinimums,
+    levels: rule.levels,
   }
-  const have = qualifying.length
-  const distinctHave = new Set(qualifying.map((e) => e.evaluatorId)).size
-  // Only clinical evidence carrying that setting counts toward it; lab and simulation never do [REQ SC-11, SC-12].
-  const settings = rule.settingMinimums.map((m) => ({ setting: m.setting, min: m.min, have: qualifying.filter((e) => e.setting === "clinical" && e.clinicalSetting === m.setting).length }))
-  // An evaluation with no recorded level cannot count toward a level minimum.
-  const levels = rule.levelMinimums.map((m) => ({ level: rule.levels[m.levelIndex] ?? "", min: m.min, have: qualifying.filter((e) => e.levelIndex !== undefined && e.levelIndex >= m.levelIndex).length }))
-  const distinctNeed = Math.max(1, rule.distinctEvaluators)
-  const achieved = have >= need && distinctHave >= distinctNeed && settings.every((s) => s.have >= s.min) && levels.every((l) => l.have >= l.min)
-  const state: RecordState = achieved ? "achieved" : have > 0 ? "in-progress" : counted.length > 0 ? "not-qualifying" : "no-evidence"
-  const attempts: AttemptCount = { total: counted.length, notQualifying, notUsed: counted.length - notQualifying - have, count: have }
-  return { state, have, need, distinct: { have: distinctHave, need: distinctNeed }, settings, levels, attempts }
 }
+
+/** One evaluation is a valid attempt on its own answers under `rule`. The engine's own function, not a copy. */
+export const qualifiesOn = (rule: LabRule, e: Evaluation): boolean => engineQualifiesOn(engineRuleOfLab(rule), e)
+
+/**
+ * One student's record on one skill under `rule`, from that student's evaluations. Waiting and held evidence never counts [AE-01].
+ * Runs the shared engine (lib/v2/rules.ts runRule), the same call v2 student progress makes. An unset need returns the typed
+ * invalid result; there is no silent fallback to 1.
+ */
+export function evaluateRule(rule: LabRule, evals: readonly Evaluation[]): RuleResult | InvalidRuleResult {
+  const run = runRule(engineRuleOfLab(rule), evals)
+  if (!run.valid) return { state: "invalid", reason: run.reason, message: run.message }
+  const { have, need, counted, achieved } = run
+  const state: RecordState = achieved ? "achieved" : have > 0 ? "in-progress" : counted.length > 0 ? "not-qualifying" : "no-evidence"
+  const attempts: AttemptCount = { total: counted.length, notQualifying: run.notQualifying, notUsed: run.notUsed, count: have }
+  return {
+    state,
+    have,
+    need,
+    distinct: { have: run.distinctHave, need: run.distinctNeed },
+    settings: run.settings.map((x) => ({ setting: x.setting, have: x.have, min: x.min })),
+    levels: run.levels.map((x) => ({ level: x.level, have: x.have, min: x.min })),
+    attempts,
+  }
+}
+
+export { NEED_UNSET_MESSAGE }
 
 /** The word for an attempt that did not qualify: the program's own second label for a binary rule, else plain words. */
 function notQualifyingWord(rule: LabRule): string {
@@ -640,6 +637,8 @@ export interface Impact {
    * that did not qualify and two or more that count, else the first with any that did not qualify. Null when nobody has one.
    */
   example: AttemptCount | null
+  /** The draft cannot be evaluated (no frequency set): nobody changes until it is fixed. Null when the draft runs. */
+  invalid: InvalidRuleResult | null
 }
 
 const zero = (): Record<RecordState, number> => ({ achieved: 0, "in-progress": 0, "not-qualifying": 0, "no-evidence": 0 })
@@ -659,7 +658,10 @@ export function engineKey(rule: LabRule): string {
  * Re-run `after` over every evaluation already held for `skillId` and diff against `before`, per student. Pure; reads only
  * the evidence index. With mode "new-only" no current state changes (the new rule waits for new evidence).
  */
-export function computeImpact(s: V2State, skillId: string, before: LabRule, after: LabRule, mode: PublishMode | null = "reapply"): Impact {
+export function computeImpact(input: V2State, skillId: string, before: LabRule, after: LabRule, mode: PublishMode | null = "reapply"): Impact {
+  // Read the evidence the way every student screen and figure reads it (held evidence never counts), so the before and after
+  // counts are the counts the student screens show.
+  const s = heldState(input)
   const students = studentsOf(s)
   const verified = new Set((s.verifications ?? []).map((v) => v.studentId))
   const b = zero()
@@ -670,14 +672,19 @@ export function computeImpact(s: V2State, skillId: string, before: LabRule, afte
   let evaluations = 0
   let example: AttemptCount | null = null
   let exampleWeak = true
+  let invalid: InvalidRuleResult | null = null
   const live = mode !== "new-only"
   const configured = !!before.model
   for (const p of students) {
     const evals = evalsOfStudentSkill(s, p.id, skillId)
     if (evals.length) withEvidence++
     evaluations += evals.length
-    const rb = configured ? evaluateRule(before, evals) : null
-    const ra = after.model ? evaluateRule(after, evals) : null
+    const rbRaw = configured ? evaluateRule(before, evals) : null
+    const raRaw = after.model ? evaluateRule(after, evals) : null
+    if (raRaw && isInvalidResult(raRaw)) invalid = raRaw
+    const rb = rbRaw && !isInvalidResult(rbRaw) ? rbRaw : null
+    // An invalid draft (no frequency yet) changes nobody: "after" stays "before" and `invalid` says why.
+    const ra = raRaw && !isInvalidResult(raRaw) ? raRaw : null
     // Prefer a record that shows both sides (2 or more count, 1 or more did not); else the first with any that did not.
     if (ra && ra.attempts.notQualifying > 0 && ra.attempts.total >= 2) {
       if (!example || (exampleWeak && ra.attempts.count >= 2)) {
@@ -714,6 +721,7 @@ export function computeImpact(s: V2State, skillId: string, before: LabRule, afte
     changedVerified: changed.filter((r) => r.verified).length,
     ruleChanged: engineKey(before) !== engineKey(after),
     example,
+    invalid,
   }
 }
 
@@ -847,4 +855,94 @@ export function affectedStudentLine(skillName: string, rule: LabRule, row: Pick<
 /** Configured skills offered as a copy source [REQ IM-14], same program, excluding the skill itself. */
 export function copySources(s: V2State, skillId: string): Skill[] {
   return s.skills.filter((k) => k.id !== skillId && k.config && k.model).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Publish: write the rule to the shared store, where the v2 engine reads it [REQ AE-02, SC-19; decision D-X27]
+
+/**
+ * The lab rule as the skill's v2 configuration. Keeps what the lab does not edit (prerequisites, qualification, failure policy,
+ * the overall rating and its levels) from the previous configuration; the carried window, minimum level and simulation share are
+ * written back as they stand in the rule, so publishing an unchanged rule changes no count.
+ */
+export function toSkillConfig(prev: SkillConfig | null, rule: LabRule): SkillConfig {
+  const base: SkillConfig = prev ?? defaultConfig(rule.model)
+  const m = rule.model
+  const c = rule.carried
+  const simulation: SkillConfig["simulation"] = c.simulationExcluded
+    ? { ...base.simulation, allowed: false }
+    : c.simulationCapPercent !== null
+      ? { ...base.simulation, allowed: true, mode: "cap", maxSharePercent: c.simulationCapPercent }
+      : { ...base.simulation, allowed: true, mode: "allow-list" }
+  const achievement: SkillConfig["achievement"] = {
+    kind: c.window ? "last-n" : "count",
+    need: rule.need,
+    ...(c.window ? { window: c.window } : {}),
+    minLevelIndex: c.minLevelIndex,
+    distinctEvaluators: rule.distinctEvaluators,
+    settingMinimums: rule.settingMinimums.map((x) => ({ setting: x.setting, min: x.min })),
+  }
+  return {
+    ...base,
+    outcomeLabels: m === "binary" ? [rule.outcomeLabels[0], rule.outcomeLabels[1]] : base.outcomeLabels,
+    questions: m === "question" || m === "scored" ? [...rule.questions] : [],
+    levels: m === "demonstration" ? [...rule.levels] : base.levels,
+    achievement,
+    simulation,
+    evaluatorRoles: [...rule.evaluatorRoles],
+    feedbackRequired: rule.feedbackRequired,
+    approvalRequired: rule.approvalRequired,
+    questionRule: m === "question" && rule.questionRule ? (JSON.parse(JSON.stringify(rule.questionRule)) as QuestionRule) : null,
+    scoredRule: m === "scored" && rule.scoredRule ? { ...rule.scoredRule } : null,
+    levelMinimums: rule.levelMinimums.map((x) => ({ levelIndex: x.levelIndex, min: x.min })),
+    qualifyingLabel: m === "binary" ? rule.qualifyingLabel : null,
+  }
+}
+
+/** The rule version snapshot kept on the store's rule history (V2State.ruleChanges). */
+export function ruleSnapshot(rule: LabRule): PublishedRuleSnapshot {
+  if (!rule.model) throw new Error("A rule with no model cannot be published.")
+  return {
+    model: rule.model,
+    criteriaKind: criteriaKind(rule.model),
+    outcomeLabels: [rule.outcomeLabels[0], rule.outcomeLabels[1]],
+    qualifyingLabel: rule.qualifyingLabel,
+    questions: [...rule.questions],
+    questionRule: rule.model === "question" ? rule.questionRule : null,
+    scoredRule: rule.model === "scored" ? rule.scoredRule : null,
+    levels: [...rule.levels],
+    need: rule.need,
+    levelMinimums: rule.levelMinimums.map((x) => ({ ...x })),
+    distinctEvaluators: rule.distinctEvaluators,
+    settingMinimums: rule.settingMinimums.map((x) => ({ ...x })),
+    mode: "reapply",
+  }
+}
+
+export type PublishWrite =
+  | { ok: true; state: V2State; written: true; version: number }
+  /** New evidence only (PENDING-ROMIT): the engine has no per-evaluation rule version yet, so nothing is written; see D-X27. */
+  | { ok: true; state: V2State; written: false; reason: string }
+  | { ok: false; error: string; issues: RuleIssue[] }
+
+/**
+ * Writes a published lab rule to the shared v2 store as the skill's live configuration plus a rule version (V2State.ruleChanges),
+ * so skillProgress (and every figure built on it: student progress, dashboard, director, lists) reads it at once and after reload.
+ * Refuses an invalid rule (validateRule; an unset frequency is one of the issues, never defaulted). Pure; returns a new state.
+ */
+export function publishLabRule(s: V2State, skillId: string, rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null }): PublishWrite {
+  const issues = validateRule(rule)
+  if (issues.length) return { ok: false, error: issues[0]!.message, issues }
+  const skill = skillById(s, skillId)
+  if (!skill) return { ok: false, error: `This ${skillNoun()} is no longer in the library.`, issues: [] }
+  if (opts.mode === "new-only") return { ok: true, state: s, written: false, reason: "Applying a rule to new evidence only is not decided yet, so the shared rule is unchanged." }
+  const config = toSkillConfig(skill.config, rule)
+  const previous = (s.ruleChanges ?? []).filter((r) => r.skillId === skillId)
+  // The seed's first published rule is version 1; a skill with a rule and no history is on version 1.
+  const current = previous.length ? Math.max(...previous.map((r) => r.version)) : skill.config ? 1 : 0
+  const version = current + 1
+  const record: RuleChangeRecord = { skillId, at: opts.at, byId: opts.byId, version, published: ruleSnapshot(rule) }
+  const skills = s.skills.map((k) => (k.id === skillId ? { ...k, model: rule.model, configured: true, published: true, config } : k))
+  const next = appendAudit({ ...s, skills, ruleChanges: [...(s.ruleChanges ?? []), record] }, opts.byId, `Published rule version ${version}`, skill.name, opts.at)
+  return { ok: true, state: next, written: true, version }
 }

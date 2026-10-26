@@ -36,7 +36,7 @@ export function StudentShareB() {
       title="Share record"
       width="wide"
       back={(c) => ({ label: "Record", href: student2Href("record", {}, c.studentId) })}
-      empty={(c) => <EmptyBlock title="Nothing to share yet" body="Achieved skills appear here once evaluators sign them off." action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
+      empty={(c) => <EmptyBlock title="Nothing to share yet" body={`Achieved ${skillNounPlural()} appear here once evaluators sign them off.`} action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
       loading={<ShareSkeleton />}
     >
       {(ctx) => <RecipientFirst ctx={ctx} />}

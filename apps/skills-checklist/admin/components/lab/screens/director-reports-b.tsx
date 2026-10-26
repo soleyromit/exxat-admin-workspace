@@ -13,7 +13,7 @@ import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segme
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { DirectorPage } from "@/components/lab/director/frame"
 import { ExcludedLine, ExportControls, ReportTable, ViewSwitch, VIEW_OPTIONS, viewRows } from "@/components/lab/director/reports"
-import { CSV_COLUMNS, DIRECTOR_NAME, isReportView, plural, reportModel, shortDate, type Readiness, type ReportModel, type ReportView } from "@/lib/lab/director"
+import { csvColumns, DIRECTOR_NAME, isReportView, plural, reportModel, shortDate, type Readiness, type ReportModel, type ReportView } from "@/lib/lab/director"
 import { SCOPE_LABEL, type LabScope, type ScopeKey } from "@/lib/lab/scope"
 
 function filtersLine(m: Readiness, chip: (k: ScopeKey, v: string) => string): string {
@@ -55,7 +55,7 @@ function Preview({ m, r, view, chip }: { m: Readiness; r: ReportModel; view: Rep
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {CSV_COLUMNS.map((c) => <TableHead key={c} className="whitespace-nowrap">{c}</TableHead>)}
+                    {csvColumns().map((c) => <TableHead key={c} className="whitespace-nowrap">{c}</TableHead>)}
                   </TableRow>
                 </TableHeader>
                 <TableBody>

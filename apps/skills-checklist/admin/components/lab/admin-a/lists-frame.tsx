@@ -9,6 +9,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { useAdminData, type AdminData } from "./use-admin-data"
 import { useListActions, useListsModel, type ListsModel } from "./lists-parts"
+import { skillNounPlural } from "@/lib/lab/terms"
 
 export interface ListsContext extends AdminData {
   model: ListsModel
@@ -30,7 +31,7 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
     body = (
       <EmptyBlock
         title="No lists yet"
-        body="A list holds the skills a group of students works toward. Create one, then attach it to the cohorts it applies to."
+        body={`A list holds the ${skillNounPlural()} a group of students works toward. Create one, then attach it to the cohorts it applies to.`}
         action={{ label: "Create a list" }}
         onAction={() => actions.openNew(null)}
       />

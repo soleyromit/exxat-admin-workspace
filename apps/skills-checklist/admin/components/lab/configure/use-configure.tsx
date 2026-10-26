@@ -1,15 +1,19 @@
 "use client"
 
 /**
- * State for the configure-a-skill lab screens. The draft lives in component state; publishing in the lab never writes the shared
- * v2 store, so other lab screens keep the same sample data. Impact is recomputed from the real evidence index on every edit.
+ * State for the configure-a-skill lab screens. The draft lives in component state until Publish. Publish (re-apply) writes the rule
+ * to the shared v2 store (lib/lab/configure.ts publishLabRule, persisted as a delta): the skill's live configuration plus a rule
+ * version, which the one engine (lib/v2/rules.ts) reads for student progress, the dashboard, the director and the lists. "New
+ * evidence only" is not decided (PENDING-ROMIT), so it stays a lab-only preview and writes nothing. Impact is recomputed from the
+ * real evidence index on every edit.
  * URL: ?skill=<id> (default Oral medication administration) · ?change=sample (a stricter rule, for review) · ?state=loading.
  */
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
-import { useV2Hydrated, useV2State } from "@/lib/v2/react"
+import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
+import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { skillById } from "@/lib/v2/evidence-index"
-import { computeImpact, fromV2, sampleChange, validateRule, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { computeImpact, fromV2, publishLabRule, sampleChange, validateRule, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
 import type { Skill, V2State } from "@/lib/v2/types"
 
 export const DEFAULT_SKILL = "sk-med-admin"
@@ -19,6 +23,9 @@ export interface PublishedResult {
   mode: PublishMode | null
   impact: Impact
   rule: LabRule
+  /** True when the rule was written to the shared store (rule version `version`); false for new evidence only. */
+  written: boolean
+  version: number | null
 }
 
 export interface ConfigureModel {
@@ -45,6 +52,7 @@ export interface ConfigureModel {
 export function useConfigure(opts: { defaultSample?: boolean; skillId?: string } = {}): ConfigureModel {
   const params = useSearchParams()
   const state = useV2State()
+  const store = useV2Store()
   const hydrated = useV2Hydrated()
   const skillId = opts.skillId || params?.get("skill") || DEFAULT_SKILL
   const change = params?.get("change")
@@ -94,13 +102,25 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
   const publish = React.useCallback(
     (mode: PublishMode | null) => {
       if (!skill) return
+      // An invalid rule (an unset frequency among them) is never published; the screens show the same issues first.
+      if (validateRule(rule).length > 0) return
       const im = computeImpact(state, skill.id, current ?? fromV2({ model: null, config: null }), rule, mode ?? "reapply")
-      setPublished({ mode, impact: im, rule })
+      const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+      let written = false
+      let version: number | null = null
+      store.update((s) => {
+        const r = publishLabRule(s, skill.id, rule, { at, byId: IDS.ross, mode })
+        if (!r.ok || !r.written) return s
+        written = true
+        version = r.version
+        return r.state
+      })
+      setPublished({ mode, impact: im, rule, written, version })
       // In the lab the published rule becomes the baseline, so the panel reads "no change" afterwards. With new-only the
       // existing states are kept, so the old rule stays the baseline for display.
       if (mode !== "new-only") setOverride(rule)
     },
-    [skill, state, current, rule],
+    [skill, state, store, current, rule],
   )
 
   return {

@@ -122,10 +122,12 @@ export function reportSkills(s: V2State, f: ReportFilters): ReportSkill[] {
     if (f.mandatoryOnly && m.level !== "mandatory") continue
     out.push({ skill, level: m.level })
   }
-  // Mandatory first; recommended and optional share the non-mandatory block, by name.
-  const mand = (r: ReportSkill) => (r.level === "mandatory" ? 0 : 1)
-  return out.sort((a, b) => mand(a) - mand(b) || a.skill.name.localeCompare(b.skill.name))
+  // Three levels kept apart (B.9, CALL 10-26): mandatory, then recommended, then optional, each by name.
+  return out.sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level] || a.skill.name.localeCompare(b.skill.name))
 }
+
+/** Report order of the per-course levels: mandatory, recommended, optional (not expected never reaches a report). */
+export const LEVEL_RANK: Record<MappingRow["level"], number> = { mandatory: 0, recommended: 1, optional: 2, "not-expected": 3 }
 
 export const categoriesOf = (s: V2State): string[] => [...new Set(reportSkills(s, NO_FILTERS).map((r) => r.skill.category))].sort()
 
@@ -462,7 +464,7 @@ export function skillAttainment(s: V2State, f: ReportFilters): SkillAttainment[]
         stat: stats.get(r.skill.id)!,
       }
     })
-    .sort((a, b) => Number(a.level !== "mandatory") - Number(b.level !== "mandatory") || a.achieved - b.achieved || a.skill.name.localeCompare(b.skill.name))
+    .sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level] || a.achieved - b.achieved || a.skill.name.localeCompare(b.skill.name))
 }
 
 export interface PaceDot {

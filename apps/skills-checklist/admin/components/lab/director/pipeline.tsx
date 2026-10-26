@@ -7,6 +7,7 @@
  * generated data). Complete is neutral ink; every short band is the one amber accent. Counts are printed above each group and each count links to its list. The squares are decorative
  * (a 38 square chart is not 38 tab stops); the counts and the lists below carry the data, and the chart has a text summary.
  */
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -18,11 +19,12 @@ import { FAR_BEHIND_MISSING, GRADUATION_LIST, GRADUATION_STAGES, GRADUATION_STAG
 export const FILL: Record<GraduationStage, string> = { complete: "var(--muted-foreground)", "one-short": VIZ.behind, short: VIZ.behind, far: VIZ.behind }
 /** Hatching on the overlay: background stripes across the fill (no color-mix). */
 const HATCH = "repeating-linear-gradient(135deg, var(--background) 0 1.5px, transparent 1.5px 4.5px)"
+// Getters, so each hint follows the program's noun when it changes (Settings > Naming).
 export const STAGE_HINT: Record<GraduationStage, string> = {
-  complete: "Every required skill achieved",
-  "one-short": "Exactly one required skill not achieved",
-  short: `Two to ${FAR_BEHIND_MISSING - 1} required skills not achieved`,
-  far: `${FAR_BEHIND_MISSING} or more required skills not achieved`,
+  get complete() { return `Every required ${skillNoun()} achieved` },
+  get "one-short"() { return `Exactly one required ${skillNoun()} not achieved` },
+  get short() { return `Two to ${FAR_BEHIND_MISSING - 1} required ${skillNounPlural()} not achieved` },
+  get far() { return `${FAR_BEHIND_MISSING} or more required ${skillNounPlural()} not achieved` },
 }
 /** Bands drawn: Complete always, the others only when someone is in them. */
 export const shownBands = (m: Readiness): GraduationStage[] => GRADUATION_STAGES.filter((st) => st === "complete" || m.graduation[st] > 0)

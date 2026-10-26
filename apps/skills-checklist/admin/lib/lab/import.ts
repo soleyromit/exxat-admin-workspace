@@ -13,7 +13,7 @@
  */
 import hgtc from "@/lib/v2/hgtc-library.json"
 import { STARTER_LIBRARIES } from "@/lib/v2/starter-libraries"
-import { aNoun } from "@/lib/lab/terms"
+import { aNoun, skillNoun } from "@/lib/lab/terms"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Source data
@@ -459,7 +459,7 @@ export function fixOptions(review: Review, row: ParsedRow, kind: ExceptionKind, 
     case "unread":
       return [{ value: "skip", label: "Leave out" }, { value: "add", label: `Add as ${aNoun()}` }]
     case "continuation":
-      return [{ value: "join", label: "Join to the line above" }, { value: "separate", label: "Keep as its own skill" }, { value: "skip", label: "Leave out" }]
+      return [{ value: "join", label: "Join to the line above" }, { value: "separate", label: `Keep as its own ${skillNoun()}` }, { value: "skip", label: "Leave out" }]
     case "duplicate-library": {
       const m = review.library[row.id]
       const existing = library.find((k) => k.id === m?.skillId)
@@ -472,7 +472,7 @@ export function fixOptions(review: Review, row: ParsedRow, kind: ExceptionKind, 
     case "section":
       return [{ value: "section", label: `Use ${row.sectionCarried ?? "the section above"}` }, { value: "skip", label: "Leave out" }]
     case "mark":
-      return [{ value: "mark-this", label: "Mark belongs to this skill" }, { value: "mark-above", label: "Mark belongs to the skill above" }, { value: "mark-none", label: "No mark" }]
+      return [{ value: "mark-this", label: `Mark belongs to this ${skillNoun()}` }, { value: "mark-above", label: `Mark belongs to the ${skillNoun()} above` }, { value: "mark-none", label: "No mark" }]
   }
 }
 
@@ -617,7 +617,7 @@ export function resolve(review: Review, decisions: Decisions, names: Record<stri
     const key = normName(v.name)
     if (used.has(key) && used.get(key) !== v.row.id) {
       v.status = "look"
-      v.outcome = "Same name as another skill here"
+      v.outcome = `Same name as another ${skillNoun()} here`
     } else used.set(key, v.row.id)
   }
   return review.rows.map((r) => out.get(r.id)!)

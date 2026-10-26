@@ -6,6 +6,7 @@
  * at most 3 regions (light header, outcome, one supporting card) and about 15 words of prose above the fold.
  * Copy rules: one link per request (ledger D-L2), so no "next request" button; link lifetime is OD-18 (open), dates are samples.
  */
+import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
@@ -156,7 +157,7 @@ export function StudentSees({ req, lines, offline }: { req: EvRequest; lines: Re
 // Expired B: ask the student to resend, with a preview of which request this was (who, course, how many skills, dates).
 // Only for a link that reached its addressee and lapsed; "not for you" still shows nothing of the request.
 
-const mailto = (req: EvRequest) => `mailto:?subject=${encodeURIComponent(`Please resend your skills request, ${req.student.first}`)}`
+const mailto = (req: EvRequest) => `mailto:?subject=${encodeURIComponent(`Please resend your ${skillNoun()} request, ${req.student.first}`)}`
 
 export function ResendPreview({ req }: { req: EvRequest }) {
   const facts: Array<[string, string]> = [

@@ -6,6 +6,7 @@
  * exact students they block, so a tie reads as one line, strategy/07 Von Restorff), and the requests already waiting on a
  * blocking skill. The ranking is a dot plot on a 0 to cohort-size track, never a progress bar; every count links to its list.
  */
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -46,7 +47,7 @@ function groupLabel(g: BlockerGroup): React.ReactNode {
   if (g.skills.length === 1) return g.skills[0].name
   return (
     <Tip label={g.skills.map((k) => k.name).join(", ")}>
-      <span tabIndex={0} className="cursor-default rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">{`${g.skills.length} skills, the same ${g.students.length === 1 ? "student" : `${g.students.length} students`}`}</span>
+      <span tabIndex={0} className="cursor-default rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">{`${g.skills.length} ${skillNounPlural()}, the same ${g.students.length === 1 ? "student" : `${g.students.length} students`}`}</span>
     </Tip>
   )
 }
@@ -59,13 +60,13 @@ function Blockers({ m, scope }: { m: Readiness; scope: LabScope }) {
       <CardContent className="flex flex-col gap-3 py-4">
         <h2 className="text-base font-semibold text-foreground">What blocks graduation</h2>
         {shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No required skill blocks anyone in this scope.</p>
+          <p className="text-sm text-muted-foreground">{`No required ${skillNoun()} blocks anyone in this scope.`}</p>
         ) : (
-          <div data-chart aria-label={`Required skills not achieved, grouped by the students they block. Top: ${shown[0].skills.map((k) => k.name).join(", ")}, ${plural(shown[0].students.length, "student", "students")}.`}>
+          <div data-chart aria-label={`Required ${skillNounPlural()} not achieved, grouped by the students they block. Top: ${shown[0].skills.map((k) => k.name).join(", ")}, ${plural(shown[0].students.length, "student", "students")}.`}>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[38%]">Skill</TableHead>
+                  <TableHead className="w-[38%]">{capitalize(skillNoun())}</TableHead>
                   <TableHead>{`Students blocked, of ${n}`}</TableHead>
                   <TableHead className="text-end">Waiting</TableHead>
                   <TableHead className="text-end">
@@ -93,7 +94,7 @@ function Blockers({ m, scope }: { m: Readiness; scope: LabScope }) {
                             <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: VIZ.track }} />
                             <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${at}%`, background: i === 0 ? VIZ.behind : "var(--muted-foreground)" }} />
                           </span>
-                          <CountLink n={k} href={listHref(scope, { skill: ids(g) })} label={`${k} students blocked by ${g.skills.length === 1 ? g.skills[0].name : `${g.skills.length} skills`}. Open the list`} className="w-6 text-end" />
+                          <CountLink n={k} href={listHref(scope, { skill: ids(g) })} label={`${k} students blocked by ${g.skills.length === 1 ? g.skills[0].name : `${g.skills.length} ${skillNounPlural()}`}. Open the list`} className="w-6 text-end" />
                         </span>
                       </TableCell>
                       <TableCell className="text-end">
@@ -119,11 +120,11 @@ function Waiting({ m, scope, failed }: { m: Readiness; scope: LabScope; failed: 
   return (
     <Card className="self-start py-0 xl:col-span-5" data-region="waiting">
       <CardContent className="flex flex-col gap-3 py-4">
-        <h2 className="text-base font-semibold text-foreground">Requests waiting on a blocking skill</h2>
+        <h2 className="text-base font-semibold text-foreground">{`Requests waiting on a blocking ${skillNoun()}`}</h2>
         {failed ? (
           <p className="text-sm text-muted-foreground">Open requests could not load. The ranking is current.</p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No request is open for a blocking skill.</p>
+          <p className="text-sm text-muted-foreground">{`No request is open for a blocking ${skillNoun()}.`}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {rows.slice(0, SHOWN).map(({ r, o }) => (
@@ -147,15 +148,15 @@ function Waiting({ m, scope, failed }: { m: Readiness; scope: LabScope; failed: 
 
 export function DirectorDashboardB() {
   return (
-    <DirectorPage title="Dashboard" variant="B" pageType="dashboard" announce={(m) => (m.blockers[0] ? `${m.blockers[0].skills[0].name} blocks ${m.blockers[0].students.length} students` : "No required skill blocks anyone")}>
+    <DirectorPage title="Dashboard" variant="B" pageType="dashboard" announce={(m) => (m.blockers[0] ? `${m.blockers[0].skills[0].name} blocks ${m.blockers[0].students.length} students` : `No required ${skillNoun()} blocks anyone`)}>
       {({ model: m, scope, demo, setParams }) => (
         <div className="flex flex-col gap-4">
           <Figures m={m} scope={scope} />
-          {demo === "clear" ? <p className="text-sm text-foreground">No required skill blocks anyone in scope.</p> : null}
+          {demo === "clear" ? <p className="text-sm text-foreground">{`No required ${skillNoun()} blocks anyone in scope.`}</p> : null}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
             {demo === "error" ? (
               <div className="xl:col-span-7">
-                <LocalBanner variant="warning" title="Blocking skills could not be calculated" retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>
+                <LocalBanner variant="warning" title={`Blocking ${skillNounPlural()} could not be calculated`} retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>
                   The three figures above are current.
                 </LocalBanner>
               </div>

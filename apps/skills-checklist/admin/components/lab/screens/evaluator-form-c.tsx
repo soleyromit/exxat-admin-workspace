@@ -6,6 +6,7 @@
  * its own request (D-L2), so rows are this student's skills, never other students. "Mark all" sets the first outcome label on
  * every row; the evaluator still owns each answer.
  */
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -51,10 +52,10 @@ export function EvaluatorFormC() {
               <p className="text-sm font-medium text-foreground">{skillsWord(skills.length)}</p>
               <Button type="button" variant="outline" size="sm" onClick={() => m.setAll("met")}>{`Mark all ${firstLabel}`}</Button>
             </CardContent>
-            <Table scrollLabel="Skills in this request">
+            <Table scrollLabel={`${capitalize(skillNounPlural())} in this request`}>
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col" className="ps-3">Skill</TableHead>
+                  <TableHead scope="col" className="ps-3">{capitalize(skillNoun())}</TableHead>
                   <TableHead scope="col" className="hidden w-[13rem] md:table-cell">Outcome</TableHead>
                   <TableHead scope="col" className="hidden w-[11rem] md:table-cell">Level</TableHead>
                   <TableHead scope="col" className="w-12 pe-3 text-end"><span className="sr-only">Details</span></TableHead>
@@ -96,7 +97,7 @@ export function EvaluatorFormC() {
                               {k.levels.map((l, i) => <SelectItem key={l} value={String(i)}>{l}</SelectItem>)}
                             </SelectContent>
                           </Select>
-                        ) : <span className="sr-only">No level for this skill</span>}
+                        ) : <span className="sr-only">{`No level for this ${skillNoun()}`}</span>}
                       </TableCell>
                       <TableCell className="pe-3 text-end">
                         <Button type="button" variant={detailIssue ? "outline" : "ghost"} size="icon" className="max-sm:size-11" aria-label={`Details and feedback, ${k.name}${needs ? ", needs input" : ""}`} onClick={() => setOpen(k.id)}>
@@ -121,14 +122,14 @@ export function EvaluatorFormC() {
                 <>
                   <SheetHeader>
                     <SheetTitle>{openSkill.name}</SheetTitle>
-                    <SheetDescription>{`Skill ${openIdx + 1} of ${skills.length}`}</SheetDescription>
+                    <SheetDescription>{`${capitalize(skillNoun())} ${openIdx + 1} of ${skills.length}`}</SheetDescription>
                   </SheetHeader>
                   <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
                     <SelfNote skill={openSkill} student={req.student.first} />
                     <SkillFields m={m} skill={openSkill} compactQuestions />
                   </div>
                   <SheetFooter className="flex-row justify-end gap-2">
-                    {openIdx < skills.length - 1 ? <Button type="button" variant="ghost" size="default" onClick={() => setOpen(skills[openIdx + 1].id)}>Next skill</Button> : null}
+                    {openIdx < skills.length - 1 ? <Button type="button" variant="ghost" size="default" onClick={() => setOpen(skills[openIdx + 1].id)}>{`Next ${skillNoun()}`}</Button> : null}
                     <Button type="button" variant="default" size="default" onClick={() => setOpen(null)}>Done</Button>
                   </SheetFooter>
                 </>

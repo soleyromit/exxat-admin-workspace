@@ -6,6 +6,7 @@
  * primary in the panel footer is the next thing to do with that skill (Configure, Check and publish, Open configuration,
  * Reactivate). Everything else (edit details, deactivate, delete) sits in the panel's overflow menu.
  */
+import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -62,8 +63,8 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
             <FloatingSheetPanelToolbar
               onPrevious={prev ? () => onOpen(prev.id) : undefined}
               onNext={next ? () => onOpen(next.id) : undefined}
-              previousLabel="Previous skill"
-              nextLabel="Next skill"
+              previousLabel={`Previous ${skillNoun()}`}
+              nextLabel={`Next ${skillNoun()}`}
               closeLabel="Close"
               showSize={false}
               actions={<RowActions row={row} handlers={handlers} hideConfigure />}

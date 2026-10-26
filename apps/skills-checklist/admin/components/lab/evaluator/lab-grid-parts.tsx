@@ -1,5 +1,6 @@
 "use client"
 
+import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -41,10 +42,10 @@ export function LabToolbar({ g, showSkills = true }: { g: LabGridModel; showSkil
       {showSkills ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" size="sm" className="w-[calc(50%-0.25rem)] sm:w-auto">{`Skills (${g.skillIds.length})`}</Button>
+            <Button type="button" variant="outline" size="sm" className="w-[calc(50%-0.25rem)] sm:w-auto">{`${capitalize(skillNounPlural())} (${g.skillIds.length})`}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-80">
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Skills in this session</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{`${capitalize(skillNounPlural())} in this session`}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {g.skills.map((k) => (
               <DropdownMenuCheckboxItem key={k.id} checked={g.skillIds.includes(k.id)} disabled={!!k.blocked} onCheckedChange={(c) => g.toggleSkill(k.id, !!c)} onSelect={(e) => e.preventDefault()}>

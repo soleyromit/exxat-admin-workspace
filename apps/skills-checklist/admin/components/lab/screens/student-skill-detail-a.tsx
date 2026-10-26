@@ -7,6 +7,7 @@
  * Regions (detail budget 5): header (state-driven primary) · rule and parts · why it did not count (only when it applies) ·
  * attempt timeline · where it counts. ?skill=<id>, ?student=<id>.
  */
+import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { StudentFrame, type StudentFrameCtx } from "@/components/lab/student/frame"
@@ -17,7 +18,7 @@ import { studentHref } from "@/lib/lab/student"
 export function StudentSkillDetailA() {
   return (
     <StudentFrame
-      title={(c) => pickSkill(c)?.name ?? "Skill"}
+      title={(c) => pickSkill(c)?.name ?? capitalize(skillNoun())}
       width="wide"
       primary={(c) => skillPrimary(pickSkill(c), c.studentId)}
       back={(c) => ({ label: "My progress", href: studentHref("home", {}, c.studentId) })}
@@ -42,7 +43,7 @@ function Body({ ctx }: { ctx: StudentFrameCtx }) {
           <p className="text-sm text-foreground">{r.rule}</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <div data-figure="parts"><Parts parts={r.parts} className="text-base" /></div>
-            <AttemptCount rows={rows} />
+            <AttemptCount state={ctx.state} studentId={ctx.studentId} skillId={r.id} />
           </div>
           <WhyNotCounted record={r} studentId={ctx.studentId} withAction={false} />
         </CardContent>

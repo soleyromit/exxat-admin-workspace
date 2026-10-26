@@ -105,14 +105,20 @@ describe("student model at scale (123 students, Maya Ferreira hero path)", () =>
 })
 
 describe("how attempts are counted (Oct 26 call)", () => {
-  it("says 'n attempts, m count' from the same rows the timeline shows; only completed evaluations are attempts", () => {
-    expect(attemptCountLine([])).toBe("")
-    expect(attemptCountLine([{ kind: "waiting" }, { kind: "returned" }])).toBe("")
-    expect(attemptCountLine([{ kind: "counted" }, { kind: "not-counted" }, { kind: "counted" }, { kind: "not-counted" }, { kind: "counted" }, { kind: "waiting" }])).toBe("5 attempts, 3 count")
-    expect(attemptCountLine([{ kind: "counted" }])).toBe("1 attempt, 1 counts")
-    const dnq = maya.all.find((r) => r.state === "dnq")!
-    const rows = attempts(seed, DEFAULT_STUDENT, dnq.id)
-    const n = rows.filter((r) => r.kind === "counted").length
-    expect(attemptCountLine(rows)).toMatch(new RegExp(`, ${n} counts?$`))
+  it("says 'n attempts, k did not qualify: m count' from the published rule through the engine; only completed evaluations are attempts", () => {
+    // Maya's sterile dressing: two completed attempts, neither qualifies on its outcome (no question rule is published by the seed).
+    expect(attemptCountLine(seed, DEFAULT_STUDENT, "sk-sterile-dressing")).toBe("2 attempts, 2 not valid: 0 count")
+    // A skill with no evaluations has no line.
+    const none = seed.skills.find((k) => k.config && !seed.evaluations.some((e) => e.studentId === DEFAULT_STUDENT && e.skillId === k.id))!
+    expect(attemptCountLine(seed, DEFAULT_STUDENT, none.id)).toBe("")
+    // The count equals the timeline's counted rows for every skill on the hero's list.
+    for (const r of maya.all) {
+      const rows = attempts(seed, DEFAULT_STUDENT, r.id)
+      const total = rows.filter((x) => x.kind === "counted" || x.kind === "not-counted").length
+      const n = rows.filter((x) => x.kind === "counted").length
+      const line = attemptCountLine(seed, DEFAULT_STUDENT, r.id)
+      if (total === 0) expect(line).toBe("")
+      else expect(line).toMatch(new RegExp(`^${total} attempts?, .*${n} counts?$`))
+    }
   })
 })

@@ -83,7 +83,7 @@ function GroupFirst({ c }: { c: ListsContext }) {
           emptyState={<p className="p-4 text-sm text-muted-foreground">No student groups yet.</p>}
         />
       </div>
-      <p className="text-xs text-muted-foreground" data-region="legend">Each list is its own report. Check a box to attach a list; you confirm before a group changes lists.</p>
+      <p className="text-xs text-muted-foreground" data-region="legend"><span data-standards-pointer>Standards are managed in Program details.</span> Check a box to attach a list; you confirm before a group changes lists.</p>
     </>
   )
 }

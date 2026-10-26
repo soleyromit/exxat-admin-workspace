@@ -20,7 +20,7 @@ import { ABOVE_PANEL, ABOVE_PANEL_MENU } from "@/components/lab/overlay-layer"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { REASON_MAX } from "@/lib/v2/queue"
 import { RETURN_PATH_LABEL, bulkCheck, itemDetail, plural, type ReturnPath, type ReviewRow } from "@/lib/lab/reviewer"
-import { skillNounPlural } from "@/lib/lab/terms"
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
 import { decide } from "@/components/lab/reviewer/use-reviewer"
 
@@ -102,7 +102,7 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
         onClose={() => setAdopting(null)}
         onDone={(row, mode, released) => {
           onDecided?.([row.key])
-          setFeedback({ title: mode === "adopt" ? `Adopted ${row.evaluator}` : `Merged ${row.evaluator}`, body: `${plural(released, "held evaluation now counts", "held evaluations now count")} under the skill rule.`, tone: "promo" })
+          setFeedback({ title: mode === "adopt" ? `Adopted ${row.evaluator}` : `Merged ${row.evaluator}`, body: `${plural(released, "held evaluation now counts", "held evaluations now count")} under the ${skillNoun()} rule.`, tone: "promo" })
         }}
       />
       <AssignDialog
@@ -351,7 +351,7 @@ function AdoptDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | n
             </Select>
           ) : null}
           {error ? <p className="text-xs">{error}</p> : null}
-          <p className="text-xs text-muted-foreground">Their held evaluations then count under each skill rule.</p>
+          <p className="text-xs text-muted-foreground">{`Their held evaluations then count under each ${skillNoun()} rule.`}</p>
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
             <Button type="submit" variant="default" size="sm">{mode === "adopt" ? "Adopt" : "Merge"}</Button>

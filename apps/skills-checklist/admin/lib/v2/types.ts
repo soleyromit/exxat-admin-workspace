@@ -166,6 +166,28 @@ export interface SkillConfig {
   feedbackRequired?: boolean
   /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. */
   approvalRequired?: boolean
+  /**
+   * Published from the lab configure screens (lib/lab/configure.ts publishLabRule) and read by the one engine (lib/v2/rules.ts
+   * runRule). Absent on the seed: an evaluation then qualifies on its recorded outcome, exactly as before.
+   * Question model: what makes one evaluation a valid attempt [REQ SC-05] (all Yes, at least N of M Yes, or named questions Yes).
+   */
+  questionRule?: QuestionRule | null
+  /** Scored model: how a score qualifies [REQ SC-07]. Absent means the recorded outcome decides. */
+  scoredRule?: ScoredRule | null
+  /** "At least N at this level or above" [REQ SC-10]. Absent means no level minimum. */
+  levelMinimums?: LevelMinimum[]
+  /** Which outcome label qualifies [REQ SC-03]; presentation only, the engine reads the recorded outcome [REQ AE-06]. */
+  qualifyingLabel?: 0 | 1 | null
+}
+
+/** Question model qualification [REQ SC-05]: every question Yes, at least `n` Yes, or every named question (0-based) Yes. */
+export type QuestionRule = { kind: "all" } | { kind: "atLeast"; n: number } | { kind: "subset"; indices: number[] }
+/** Scored model qualification [REQ SC-07]. */
+export type ScoredRule = { kind: "average" | "minEach" | "total"; value: number }
+/** "At least `min` evaluations at levels[levelIndex] or above" [REQ SC-10]. */
+export interface LevelMinimum {
+  levelIndex: number
+  min: number
 }
 
 /** A configuration being edited in the wizard. Saved in the store so it survives navigation and reload. */
@@ -465,6 +487,30 @@ export interface RuleChangeRecord {
   byId: string
   /** Rule version after the change (the first published rule is version 1). */
   version: number
+  /**
+   * The rule as published from the lab configure screens (absent on records the seed or the v2 wizard wrote). A snapshot, so the
+   * history keeps what was in force even after a later publish; the live rule is always the skill's own config.
+   */
+  published?: PublishedRuleSnapshot
+}
+
+/** What a lab Publish wrote to the shared store, kept as a rule version (lib/lab/configure.ts publishLabRule). */
+export interface PublishedRuleSnapshot {
+  model: EvalModel
+  /** What the evaluation criteria step held: "Outcomes", "Questions" or "Levels". */
+  criteriaKind: string
+  outcomeLabels: [string, string]
+  qualifyingLabel: 0 | 1 | null
+  questions: string[]
+  questionRule: QuestionRule | null
+  scoredRule: ScoredRule | null
+  levels: string[]
+  need: number
+  levelMinimums: LevelMinimum[]
+  distinctEvaluators: number
+  settingMinimums: Array<{ setting: string; min: number }>
+  /** "reapply": re-applied to evidence already held [REQ AE-02]. */
+  mode: "reapply"
 }
 
 /** What the student said about their own performance when they sent it (RP-10 export column). */

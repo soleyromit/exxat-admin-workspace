@@ -3,8 +3,10 @@
 /**
  * Lists and cohort assignment building blocks: the model hook, the lists table, the completion rule with "what would change", and
  * the dialogs that keep every change visible before it lands (attach to a group that already uses a list of the same noun, detach,
- * make default, new list for a new standard). Nothing replaces a program's established list silently [CALL].
+ * make default, start a new list). A new standard is a new list; standards themselves are managed in Program details, so a list
+ * carries no standards field [CALL 10-26 B.12]. Nothing replaces a program's established list silently [CALL].
  */
+import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -189,7 +191,7 @@ function CreateGroupDialog({ model, open, onClose, onDone }: { model: ListsModel
             if (err) return setError(err)
             const g = customGroup(name.trim(), rule)
             model.addGroup(g)
-            onDone({ title: `${g.name} created`, body: `${plural(count ?? 0, "student", "students")}. It is now in the Group filter and in the list below.` })
+            onDone({ title: `${g.name} created`, body: `${plural(count ?? 0, "student", "students")}. It is now in the Group filter and in the student groups below.` })
             onClose()
           }}
         >
@@ -326,18 +328,16 @@ function DefaultDialog({ model, listId, onClose, onConfirm }: { model: ListsMode
 
 function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; target: { fromId: string | null } | null; onClose: () => void; onDone: (f: Feedback) => void }) {
   const [name, setName] = React.useState("")
-  const [noun, setNoun] = React.useState("skill")
-  const [nounPlural, setNounPlural] = React.useState("skills")
-  const [standard, setStandard] = React.useState("")
+  const [noun, setNoun] = React.useState(skillNoun)
+  const [nounPlural, setNounPlural] = React.useState(skillNounPlural)
   const [from, setFrom] = React.useState<string>("empty")
   const [error, setError] = React.useState<string | null>(null)
   React.useEffect(() => {
     if (!target) return
     const src = target.fromId ? listById(model.lists, target.fromId) : undefined
-    setName(src ? `${src.name}, new standard` : "")
-    setNoun(src?.noun ?? "skill")
-    setNounPlural(src?.nounPlural ?? "skills")
-    setStandard("")
+    setName("")
+    setNoun(src?.noun ?? skillNoun())
+    setNounPlural(src?.nounPlural ?? skillNounPlural())
     setFrom(src ? src.id : "empty")
     setError(null)
   }, [target, model.lists])
@@ -346,14 +346,15 @@ function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; 
     <Dialog open={!!target} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New list</DialogTitle>
-          <DialogDescription>A new standard gets its own list. The live list and its evidence stay as they are.</DialogDescription>
+          <DialogTitle>Start a new list</DialogTitle>
+          <DialogDescription>It starts as a draft. Live lists and their evidence stay as they are.</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
-            const input = { name, noun, nounPlural, standard, fromListId: from === "empty" ? null : from }
+            // No standards field: standards are managed in Program details (CALL 10-26 B.12). The data keeps an empty value.
+            const input = { name, noun, nounPlural, standard: "", fromListId: from === "empty" ? null : from }
             const err = validateNewList(model.lists, input)
             if (err) return setError(err)
             const created = createList(model.lists, input, `list-${Date.now().toString(36)}`)
@@ -375,10 +376,6 @@ function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; 
               <Label htmlFor="list-noun-plural">Or several</Label>
               <Input id="list-noun-plural" value={nounPlural} onChange={(e) => { setNounPlural(e.target.value); setError(null) }} maxLength={30} />
             </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="list-standard">Standard it measures</Label>
-            <Input id="list-standard" value={standard} onChange={(e) => setStandard(e.target.value)} maxLength={80} placeholder="For example, 2027 edition" />
           </div>
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-sm font-medium">Start from</legend>
@@ -427,12 +424,9 @@ export function ListsTable({ model, selectedId, hrefFor, onSelect }: { model: Li
         width: 340,
         sortable: true,
         cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <span className="flex items-center gap-2">
-              <Link className={`${LINK} truncate`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
-              {r.list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">{r.list.standard}</span>
+          <span className="flex min-w-0 items-center gap-2 py-0.5">
+            <Link className={`${LINK} truncate`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
+            {r.list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
           </span>
         ),
       },

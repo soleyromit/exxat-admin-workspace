@@ -47,7 +47,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
   const r = useRecord(ctx)
   const groups = React.useMemo(() => groupBySkill(r.shown), [r.shown])
   // "5 attempts, 3 count" per skill from the whole record, so a result filter never changes how attempts are counted.
-  const attemptLines = React.useMemo(() => new Map(groupBySkill(r.rows).map((g) => [g.skillId, recordAttemptLine(g.rows)])), [r.rows])
+  const attemptLines = React.useMemo(() => new Map(groupBySkill(r.rows).map((g) => [g.skillId, recordAttemptLine(ctx.state, ctx.studentId, g.skillId)])), [r.rows, ctx.state, ctx.studentId])
   const countText = (g: { skillId: string; rows: unknown[] }) => attemptLines.get(g.skillId) || (g.rows.length === 1 ? "1 evaluation" : `${g.rows.length} evaluations`)
   const [open, setOpen] = React.useState<Record<string, boolean>>({})
   const [all, setAll] = React.useState(false)

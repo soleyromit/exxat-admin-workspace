@@ -443,5 +443,8 @@ describe("determinism and the hand-written layer", () => {
 // SEED_VERSION 2026-10-26.7-level-words: the assisted level reads "With assistance" (lib/v2/config.ts ASSISTED_LEVEL), as the configure
 // preset says it, in place of "Works with prompts"; the seed is otherwise identical (label-swapped JSON compared equal) and every
 // fact in facts.ts is unchanged.
+// SEED_VERSION 2026-10-26.8-question-answers: Maya's two sterile dressing attempts (ev-maya-6, ev-maya-9) carry per-question Yes
+// and No answers (dataset spec section 14). Nothing else changed (the seed with those two details removed compared equal) and no
+// question rule is published by the seed, so every fact in facts.ts is unchanged.
 // To re-pin after a pool or generator change: run this test, paste the new pair, bump SEED_VERSION.
-const PINNED: [number, number] = [4928768, 897679549]
+const PINNED: [number, number] = [4929057, 942666486]

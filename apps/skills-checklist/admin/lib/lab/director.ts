@@ -26,7 +26,7 @@ import { skillProgress } from "@/lib/v2/student"
 import { strengthHint } from "@/lib/v2/rules"
 import { populationRows, recordStateOf, scopeOptions, type Population, type RecordState, type ScopeOptions } from "@/lib/lab/dashboard"
 import { parseScope, scopeQuery, type LabScope } from "@/lib/lab/scope"
-import { aNoun, capitalize } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 export const DIRECTOR_ID = "dir-brennan"
 export const DIRECTOR_NAME = "Dr. K. Brennan"
@@ -292,7 +292,7 @@ function changesSince(s: V2State, v: Verification, ruleChanges: RuleChange[], li
   }
   const nowAchieved = new Map(lines.map((l) => [l.skillId, l.state === "achieved"]))
   const flipped = v.skills.filter((k) => nowAchieved.has(k.skillId) && nowAchieved.get(k.skillId) !== k.achieved).length
-  if (flipped) out.push(`${plural(flipped, "required skill changed", "required skills changed")} state since then.`)
+  if (flipped) out.push(`${plural(flipped, `required ${skillNoun()} changed`, `required ${skillNounPlural()} changed`)} state since then.`)
   return out
 }
 
@@ -322,7 +322,7 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
     const latest = verifs.filter((v) => v.studentId === r.id).at(-1) ?? null
     const changes = latest ? changesSince(s, latest, ruleChanges, lines) : []
     const status: VerifyStatus = flux.length ? "blocked" : latest ? (changes.length ? "changed" : "verified") : "ready"
-    const gapWord = gaps.length === 1 ? `${gaps[0].name} not achieved` : `${fmt(gaps.length)} required skills not achieved`
+    const gapWord = gaps.length === 1 ? `${gaps[0].name} not achieved` : `${fmt(gaps.length)} required ${skillNounPlural()} not achieved`
     const next =
       status === "blocked"
         ? `${flux[0]}${flux.length > 1 ? `, and ${fmt(flux.length - 1)} more` : ""}`
@@ -488,7 +488,7 @@ export function detailModel(store: V2State, m: Readiness, studentId: string | nu
   const sections = [...bySection.entries()]
     .map(([section, ls]) => ({ section, lines: ls, achieved: ls.filter((l) => l.state === "achieved").length }))
     .sort((a, b) => a.achieved - a.lines.length - (b.achieved - b.lines.length) || a.section.localeCompare(b.section))
-  const statement = `${fmt(row.achieved)} of ${fmt(row.required)} required skills achieved.${row.gaps.length ? ` Not achieved: ${row.gaps.map((g) => g.name).join(", ")}.` : ""}`
+  const statement = `${fmt(row.achieved)} of ${fmt(row.required)} required ${skillNounPlural()} achieved.${row.gaps.length ? ` Not achieved: ${row.gaps.map((g) => g.name).join(", ")}.` : ""}`
   void store
   return { row, lines, sections, statement }
 }
@@ -605,4 +605,4 @@ export function reportModel(m: Readiness): ReportModel {
 }
 
 /** Columns the CSV carries, one row per evaluation [REQ RP-10]. Self-ratings and private notes stay out (v2 D36). */
-export const CSV_COLUMNS = ["Student", "Skill", "Date", "Outcome", "Evaluator", "Setting", "Location", "Feedback"] as const
+export const csvColumns = (): string[] => ["Student", capitalize(skillNoun()), "Date", "Outcome", "Evaluator", "Setting", "Location", "Feedback"]

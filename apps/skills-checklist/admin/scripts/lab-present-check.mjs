@@ -6,7 +6,8 @@
 //   - on each of the 11 marquee screens (after hydration), no internal lab label is in the DOM text or in an aria-label or title:
 //     tier, build status (Built, Planned), the "Tests:" question line and its tooltip trigger, the Components drawer, the
 //     Scenario menu, More variants, the variant switch, the "Design lab" crumb; and no lab chrome root ([data-lab-bar],
-//     [data-ds-used-panel], [data-lab-question], [data-variant-bar]).
+//     [data-ds-used-panel], [data-lab-question], [data-variant-bar]); the breadcrumb holds the screen title only; no tier or
+//     build badge markers ([data-tier], [data-build-status], [data-lab-tier]).
 // Prints a table and exits 1 on any failure. Usage: node scripts/lab-present-check.mjs [baseUrl]
 import { createRequire } from "node:module"
 
@@ -98,6 +99,12 @@ for (const l of targets) {
   check(l.label, "no lab chrome roots", chrome === 0, chrome)
   for (const [name, re] of BANNED) check(l.label, `no ${name}`, !re.test(text), text.match(re)?.[0])
   check(l.label, "still in present mode (URL)", /[?&]present=1\b/.test(page.url()), page.url())
+  // Breadcrumb (2026-10-26 sweep): in present mode it holds the screen title only, never "Design lab" or the persona's lab name.
+  const crumbs = await page.$$eval("[data-slot=breadcrumb-item]", (els) => els.map((e) => e.textContent.trim()))
+  check(l.label, "breadcrumb is the screen title only", crumbs.length <= 1 && !crumbs.some((c) => /Design lab|^(Administrator|Reviewer|Student|Evaluator|Program director|Lab instructor)$/.test(c)), crumbs)
+  // Tier and build badges, by their own markers as well as by text.
+  const marked = await page.locator("[data-tier], [data-build-status], [data-lab-tier]").count()
+  check(l.label, "no tier or build badge markers", marked === 0, marked)
   // D-X23: the Sample data chip stays visible in present mode.
   const sample = await page.getByText("Sample data", { exact: true }).first().isVisible().catch(() => false)
   if (SAMPLE.has(l.label)) check(l.label, "Sample data chip visible", sample, sample)

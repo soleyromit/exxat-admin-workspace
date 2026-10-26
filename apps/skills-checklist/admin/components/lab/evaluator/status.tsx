@@ -5,6 +5,7 @@
  * One message, one way out, no form content shown to someone who may not be the evaluator (per-request privacy, D-L2).
  * Link lifetime is OD-18 (open): the date is a lab sample.
  */
+import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -63,7 +64,7 @@ function Message({ title, badge, children, actions }: { title: string; badge?: s
   )
 }
 
-const mailto = (req: EvRequest) => `mailto:?subject=${encodeURIComponent(`Please resend your skills request, ${req.student.first}`)}`
+const mailto = (req: EvRequest) => `mailto:?subject=${encodeURIComponent(`Please resend your ${skillNoun()} request, ${req.student.first}`)}`
 
 export function Expired({ req }: { req: EvRequest }) {
   return (

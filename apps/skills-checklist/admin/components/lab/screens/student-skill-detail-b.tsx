@@ -6,6 +6,7 @@
  * what counted faster than a narrative timeline?
  * Regions: header · state and parts line · ledger · side: why the last one did not count and the rule.
  */
+import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { StudentFrame, type StudentFrameCtx } from "@/components/lab/student/frame"
@@ -16,7 +17,7 @@ import { studentHref } from "@/lib/lab/student"
 export function StudentSkillDetailB() {
   return (
     <StudentFrame
-      title={(c) => pickSkill(c)?.name ?? "Skill"}
+      title={(c) => pickSkill(c)?.name ?? capitalize(skillNoun())}
       primary={(c) => skillPrimary(pickSkill(c), c.studentId)}
       back={(c) => ({ label: "My progress", href: studentHref("home", {}, c.studentId) })}
     >
@@ -37,7 +38,7 @@ function Body({ ctx }: { ctx: StudentFrameCtx }) {
           <Overlay record={r} />
         </div>
         <div data-figure="parts"><Parts parts={r.parts} /></div>
-        <AttemptCount rows={rows} />
+        <AttemptCount state={ctx.state} studentId={ctx.studentId} skillId={r.id} />
       </div>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <Card data-region="ledger" className="py-0 lg:col-span-8">
